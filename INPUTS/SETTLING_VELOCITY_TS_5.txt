@@ -1,0 +1,16 @@
+# SETTLING VELOCITY SERIE 5 - Fe2+, Fe3+, Mn2+, Mn4+, Mg
+# DATA_SIZE
+2
+# NUMBER_OF_VARIABLES
+1
+# SCALE FACTORS
+#  SETTLING VELOCITY
+                 1.0
+# UNIT CONVERSION FACTORS
+#  SETTLING VELOCITY
+                 1.0
+# INTERPOLATE
+0
+#               TIME     SETTLING VELOCITY (m/day)
+                 0.0                          0.25
+             10000.0                          0.25

@@ -1,0 +1,6 @@
+pandas==2.3.3
+plotly==6.5.2
+shiny==1.5.1
+shinychat==0.2.8
+shinyswatch==0.9.0
+shinywidgets==0.7.0

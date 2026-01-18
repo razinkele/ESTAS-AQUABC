@@ -1,0 +1,2 @@
+# ********************* DISPERSIVE LINKS *********************
+# DISPERSIVE LINK NO           FIRST BOX          SECOND BOX   MIXING TIME SERIE       MIXING LENGTH

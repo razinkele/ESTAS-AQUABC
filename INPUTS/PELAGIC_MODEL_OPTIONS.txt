@@ -1,0 +1,16 @@
+# ZOOPLANKTON OPTION  if 0 unrealistic zooplankton CNP partitioning  
+            1
+# ADVANCED REDOX SIMULATION  if 0 not full redox cycle with Mn,Fe,So4,metahne
+            0            
+# LIGHT_EXTINCTION_OPTION  if 0 empiric equation Curonian specific  
+            0
+# CYANO_BOUYANT_STATE_SIMULATION
+            1
+# CONSIDER NON-OBLIGATORY FIXERS
+            0
+# CONSIDER HETEROCYST WITH AKINETES
+            1
+# CONSIDER_ALLELOPATHY
+            1
+# CYN_ALLELOPATHY_FILE_NAME
+ALLELOPATHIC_INFORMATION.txt

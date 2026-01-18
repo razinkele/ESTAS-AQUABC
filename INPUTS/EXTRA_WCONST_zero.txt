@@ -1,0 +1,4 @@
+# USER_ENTERED_frac_avail_DON
+0.0
+# K_B_E - Background light extinction
+0.70

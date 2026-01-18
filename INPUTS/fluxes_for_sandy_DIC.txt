@@ -1,0 +1,20 @@
+#Diffusive fluxes of DIC for SANDY bottoms
+# DATA SIZE
+6
+# NUMBER OF VARIABLES
+2
+# SCALE FACTORS
+#                    CO2C    OTHERS
+                      1.0       1.0
+# UNIT CONVERSION FACTORS (mmol/m2/day -> 10^3 moles/m2/day)
+#                    CO2C   OTHERS
+                 0.000001      1.0
+# INTERPOLATE
+1
+#          TIME      CO2C        OTHERS
+         6209.0  2.722348011     0.0      !20150101
+         6264.0  2.722348011     0.0      !20150225
+         6319.0  1.349378824     0.0      !20150422
+         6446.0  39.92084449     0.0      !20150827
+         6516.0  21.91491434     0.0      !20151104
+         6575.0  2.722348011     0.0      !20160102

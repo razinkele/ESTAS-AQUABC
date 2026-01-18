@@ -1,0 +1,101 @@
+# DESCRIPTION LINE 1
+# DESCRIPTION LINE 2
+# DESCRIPTION LINE 3
+# DESCRIPTION LINE 4
+# DESCRIPTION LINE 5
+# ADVANCED REDOX SIMULATION
+                1
+# NUM_SED_LAYERS
+        7
+# SED_DEPTHS_OPTIONS          (Now inactive, different options will be implemented in the future)
+        1
+# SED_DEPTHS          (meters)
+    0.0050   ! Layer 1
+    0.0100   ! Layer 2
+    0.0200   ! Layer 3
+    0.0300   ! Layer 4
+    0.0500   ! Layer 5
+    0.0700   ! Layer 6
+    0.1000   ! Layer 7
+# SED_POROSITIES_OPTIONS      (Now inactive, different options will be implemented in the future)
+        1
+# SED_POROSITIES     (unitless)
+      0.40   ! Layer 1
+      0.40   ! Layer 2
+      0.40   ! Layer 3
+      0.40   ! Layer 4
+      0.30   ! Layer 5
+      0.25   ! Layer 6
+      0.25   ! Layer 7
+# SED_DENSITIES_OPTIONS       (Now inactive, different options will be implemented in the future)
+        1
+# SED_DENSITIES      (g/cm^3)
+      1.75   ! Layer 1
+      1.75   ! Layer 2
+      1.75   ! Layer 3
+      1.75   ! Layer 4
+      1.75   ! Layer 5
+      1.75   ! Layer 6
+      1.75   ! Layer 7
+# ADVECTIVE_VELOCITY_OPTIONS
+         1
+# ADVECTIVE_VELOCITY (m/day)
+    0.0000000001
+# PART_MIXING_COEFFS_OPTIONS  (Now inactive, different options will be implemented in the future)
+         1
+# PART_MIXING_COEFFS (m^2/day)
+ 0.0000264
+# SED_BURRIALS_OPTIONS        (Now inactive, different options will be implemented in the future)
+         1
+# SED_BURRIALS       (m/day)
+ 0.0000274
+# SURF_MIXLEN_OPTIONS         (Now inactive, different options will be implemented in the future)
+         1
+# SURF_MIXLEN        (m)
+       1.5
+# INIT_SED_STATE_VARS_OPTIONS
+         1
+# INIT_SED_STATE_VARS
+#    Layer 1          Layer 2          Layer 3          Layer 4          Layer 5          Layer 6          Layer 7 !Sediment state var.
+      0.5000           0.5000           0.5000           0.5000           1.2000           1.5000           1.5000 !SED_NH4N 
+      0.0319           0.0319           0.0319           0.0319           0.0432           0.0509           0.0509 !SED_NO3N 
+       1.000            1.000            1.000            1.000            0.707           0.5000           0.5000 !SED_DON  
+      1000.0           1000.0           1000.0           1000.0           1500.0           1500.0           1500.0 !SED_PON  
+      0.1800           0.1800           0.1800           0.1800            0.160            0.150            0.150 !SED_PO4P 
+      0.1400           0.1400           0.1400           0.1400           0.1200           0.4000           0.4000 !SED_DOP  
+        10.0             10.0             10.0             10.0            130.0            165.0            165.0 !SED_POP  
+      0.0141           0.0141           0.0141           0.0141         0.000001         0.000001         0.000001 !SED_DOXY 
+       105.0            105.0            105.0            105.0             90.0             90.0             90.0 !SED_DOC  
+      1400.0           1400.0           1400.0           1400.0           1300.0           1000.0           1000.0 !SED_POC  
+       3.500            3.500            3.500            3.500            8.000            8.000            8.000 !SED_DSi  
+      10.000           10.000           10.000           10.000            130.0            165.0            165.0 !SED_PSi  
+     0.00301          0.00301          0.00301          0.00301          0.00301          0.00301          0.00301 !INORG_C  
+     0.00297          0.00297          0.00297          0.00297          0.00297          0.00297          0.00297 !TOT_ALK  
+         0.1              0.1              0.1              0.1              0.1              0.1              0.1 !SALT     
+         1.0              1.0              1.0              1.0              1.0              1.0              1.0 !FE_II    
+         1.0              1.0              1.0              1.0              1.0              1.0              1.0 !FE_III   
+         1.0              1.0              1.0              1.0              1.0              1.0              1.0 !MN_II    
+         1.0              1.0              1.0              1.0              1.0              1.0              1.0 !MN_IV    
+       0.208             0.20            0.208            0.208            0.208            0.208            0.208 !CA       
+      0.6475            0.647           0.6475           0.6475           0.6475           0.6475           0.6475 !MG       
+        1.35              1.3             1.35             1.35             1.35             1.35             1.35 !S_PLUS_6 
+0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001 !S_MINUS_2
+0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001     0.0000000001 !CH4_C
+# MODEL_COEFFICIENTS_FOR_BOTTOM_SEDIMENTS_OPTIONS  (Now inactive, different options will be implemented in the future)
+         1
+# MODEL_COEFFICIENTS_FOR_BOTTOM_SEDIMENTS
+# BSED_MODEL_COEFFICIENT_FILE
+     W_SED_CONST.txt
+# OUTPUT ORGANIZATION
+# BOTTOM_SEDIMENT_CONCENTRATIONS_FILENAME
+BOTTOM_SEDIMENTS_OUTPUTS.out
+# BOTTOM_SEDIMENT_FLUXES_FILENAME
+SEDIMENT_FLUX_OUTPUTS.out
+# COCOA_SEDIMENT_PROCESS_RATES_FILENAME
+COCOA_SEDIMENT_PROCESS_RATE_OUTPUTS.out
+# COCOA_SEDIMENT_BURIAL_RATES_FILENAME
+COCOA_SEDIMENT_BURIAL_RATE_OUTPUTS.out
+# COCOA_FLUXES_FROM_SEDIMENTS_FILENAME
+COCOA_FLUXES_FROM_SEDIMENT_OUTPUTS.out
+# COCOA_FLUXES_TO_SEDIMENTS_FILENAME
+COCOA_FLUXES_TO_SEDIMENT_OUTPUTS.out

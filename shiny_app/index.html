@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AQUABC Front End</title>
+  <style>html,body{height:100%;margin:0}iframe{border:0;width:100%;height:100%;}</style>
+</head>
+<body>
+  <h3 style="margin:8px">AQUABC Front End</h3>
+  <div style="height:calc(100% - 40px)">
+    <iframe id="appframe" src=""></iframe>
+  </div>
+<script>
+  // point iframe to the same host as this page, port 8001
+  var host = window.location.hostname || window.location.host;
+  document.getElementById('appframe').src = '//' + host + ':8001/';
+</script>
+</body>
+</html>

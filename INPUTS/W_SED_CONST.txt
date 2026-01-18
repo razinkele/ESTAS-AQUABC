@@ -1,0 +1,170 @@
+    1      K_OXIC_DISS_POC                   0.001      ! PARTICULATE ORGANIC CARBON Dissolution rate constant  at 20 C (aerobic) - 1/day
+    2      K_ANOXIC_DISS_POC                 0.0002     ! PARTICULATE ORGANIC CARBON Dissolution rate constant n at 20 C (anoxic) - 1/day
+    3      THETA_DISS_POC                    1.04       ! PARTICULATE ORGANIC CARBON Temperature correction for dissolution
+    4      KHS_DISS_POC                      1.00       ! PARTICULATE ORGANIC CARBON Half saturation concentration  for dissolution
+    5      K_OXIC_DISS_PON                   0.0005     ! PARTICULATE ORGANIC NITROGEN Dissolution rate constant  at 20 C (aerobic) - 1/day
+    6      K_ANOXIC_DISS_PON                 0.0001     ! PARTICULATE ORGANIC NITROGEN Dissolution rate constant  at 20 C (anoxic) - 1/day
+    7      THETA_DISS_PON                    1.04       ! PARTICULATE ORGANIC NITROGEN Temperature correction for dissolution
+    8      KHS_DISS_PON                      0.50       ! PARTICULATE ORGANIC NITROGEN Half saturation concentration  for dissolution
+    9      K_OXIC_DISS_POP                   0.0005     ! PARTICULATE ORGANIC PHOSPHORUS Dissolution rate constant  at 20 C (aerobic) - 1/day
+   10      K_ANOXIC_DISS_POP                 0.0001     ! PARTICULATE ORGANIC PHOSPHORUS Dissolution rate constant  at 20 C (anoxic) - 1/day
+   11      THETA_DISS_POP                    1.04       ! PARTICULATE ORGANIC PHOSPHORUS Temperature correction for dissolution
+   12      KHS_DISS_POP                      0.50       ! PARTICULATE ORGANIC PHOSPHORUS Half saturation concentration   for dissolution
+   13      K_OXIC_DISS_PSi                   0.005      ! PARTICULATE SILICON Dissolution rate constant  at 20 C (aerobic) - 1/day
+   14      K_ANOXIC_DISS_PSi                 0.001      ! PARTICULATE SILICON Dissolution rate constant  at 20 C (anoxic) - 1/day
+   15      THETA_DISS_PSi                    1.04       ! PARTICULATE SILICON Temperature correction for dissolution
+   16      KHS_DISS_PSi                      1.00       ! PARTICULATE SILICON Half saturation concentration  for dissolution
+   17      K_OXIC_MINER_DOC                  0.0125     ! DISSOLVED ORGANIC CARBON Mineralization rate constant  at 20 C (aerobic) - 1/day
+   18      K_ANOXIC_MINER_DOC                0.0025     ! DISSOLVED ORGANIC CARBON Mineralization rate constant  at 20 C (anoxic) - 1/day
+   19      THETA_MINER_DOC                   1.04       ! DISSOLVED ORGANIC CARBON Temperature correction for dissolution
+   20      KHS_MINER_DOC                     1.00       ! DISSOLVED ORGANIC CARBON Half saturation concentration  for mineralization
+   21      K_OXIC_MINER_DON                  0.025      ! DISSOLVED ORGANIC NITROGEN Mineralization rate constant  at 20 C (aerobic) - 1/day
+   22      K_ANOXIC_MINER_DON                0.005      ! DISSOLVED ORGANIC NITROGEN Mineralization rate constant  at 20 C (anoxic) - 1/day
+   23      THETA_MINER_DON                   1.04       ! DISSOLVED ORGANIC NITROGEN Temperature correction
+   24      KHS_MINER_DON                     1.00       ! DISSOLVED ORGANIC NITROGEN Half saturation concentration  for mineralization
+   25      K_OXIC_MINER_DOP                  0.025      ! DISSOLVED ORGANIC PHOSPHORUS Mineralization rate constant   at 20 C (aerobic) - 1/day
+   26      K_ANOXIC_MINER_DOP                0.005      ! DISSOLVED ORGANIC PHOSPHORUS Mineralization rate constant   at 20 C (anoxic) - 1/day
+   27      THETA_MINER_DOP                    1.04      ! DISSOLVED ORGANIC PHOSPHORUS Temperature correction for dissolution
+   28      KHS_MINER_DOP                      1.00      ! DISSOLVED ORGANIC PHOSPHORUS Half saturation concentration  for mineralization
+   29      O_TO_C                             2.66      ! Oxygen to carbon ratio
+   30      K_NITR                             0.10      ! Nitrification rate constant at 20 C - 1/day
+   31      THETA_NITR                         1.04      ! Temperature correction for nitrification
+   32      KHS_NITR_NH4N                      1.00      ! Half saturation constant of nitrification for NH4N - mg/L N
+   33      KHS_NITR_DOXY                      2.00      ! Half saturation constant of nitrification for DOXY - mg/L O2
+   34      K_DENITR                           0.15      ! Denitrification rate constant at 20 C - 1/day
+   35      THETA_DENITR                       1.04      ! Temperature correction for denitrification
+   36      KHS_DENITR_NO3N                    1.00      ! Half saturation constant of denitrification for NO3N - mg/L N
+   37      KHS_DENITR_DOC                     1.00      ! Half saturation constant of denitrification for DOC - mg/L C
+   38      KHS_DENITR_DOXY                    0.80      ! Half saturation constant of denitrification for DOXY - mg/L O
+   39      DENITR_YIELD                       10.0      ! Denitrification yield
+   40      DOXY_AT_ANOXIA                     0.30      ! DOXY, under which anoxia begins - mg/L O2
+   41      SOLID_PART_COEFF_NH4               3.50      ! Solid partition coeff for ammonium nitrogen (kg/L)^-1. Ratio of particulate to dissolved fraction per unit solid concentration
+   42      SOLID_PART_COEFF_PO4               3.50      ! Solid partition coeff for phosphate phosphorus (kg/L)^-1
+   43      SED_PH_MIN_DOC_MIN                  6.0      ! Optimum lower range for pH correction factor for DOC
+   44      SED_PH_MIN_DOC_MAX                  9.0      ! Optimum upper range for pH correction factor for DOC
+   45      SED_PH_MIN_DON_MIN                  6.0      ! Optimum lower range for pH correction factor for DON
+   46      SED_PH_MIN_DON_MAX                  9.0      ! Optimum upper range for pH correction factor for DON
+   47      SED_PH_MIN_DOP_MIN                  6.0      ! Optimum lower range for pH correction factor for DOP
+   48      SED_PH_MIN_DOP_MAX                  9.0      ! Optimum upper range for pH correction factor for DOP
+   49      SED_PH_NITR_NH4_MIN                 6.9      ! Optimum lower range for pH correction factor for nitrification
+   50      SED_PH_NITR_NH4_MAX                 8.2      ! Optimum upper range for pH correction factor for nitrification
+   51      SED_PH_DENITR_NO3_MIN               6.7      ! Optimum lower range for pH correction factor for denitrification
+   52      SED_PH_DENITR_NO3_MAX               8.5      ! Optimum upper range for pH correction factor for denitrification
+   53      SED_k_OX_FE_II                     0.01      ! Oxidation rate for iron 2+
+   54      SED_k_RED_FE_III                   0.01      ! reduction rate for iron 3+
+   55      SED_k_OX_MN_II                     0.01      ! oxidation rate for manganese 2+
+   56      SED_k_RED_MN_IV                    0.01      ! reduction rate for manganese 4+
+   57      SED_KHS_DOXY_FE_III_RED             0.2      ! reversed Monod half saturation of DOXY for iron 3+ reduction
+   58      SED_KHS_DOXY_MN_IV_RED              0.2      ! reversed Monod half saturation of DOXY for manganese 4+ reduction
+   59      SED_K_MIN_DOC_DOXY_20            0.0125      ! New model constants added in 28 th of January 2016
+   60      SED_K_MIN_DOC_NO3N_20            0.0025      ! New model constants added in 28 th of January 2016
+   61      SED_K_MIN_DOC_MN_IV_20           0.0025      ! New model constants added in 28 th of January 2016
+   62      SED_K_MIN_DOC_FE_III_20          0.0025      ! New model constants added in 28 th of January 2016
+   63      SED_K_MIN_DOC_S_PLUS_6_20        0.0025      ! New model constants added in 28 th of January 2016
+   64      SED_K_MIN_DOC_DOC_20             0.0025      ! New model constants added in 28 th of January 2016
+   65      SED_THETA_K_MIN_DOC_DOXY           1.04      ! New model constants added in 28 th of January 2016
+   66      SED_THETA_K_MIN_DOC_NO3N           1.04      ! New model constants added in 28 th of January 2016
+   67      SED_THETA_K_MIN_DOC_MN_IV          1.04      ! New model constants added in 28 th of January 2016
+   68      SED_THETA_K_MIN_DOC_FE_III         1.04      ! New model constants added in 28 th of January 2016
+   69      SED_THETA_K_MIN_DOC_S_PLUS_6       1.04      ! New model constants added in 28 th of January 2016
+   70      SED_THETA_K_MIN_DOC_DOC            1.04      ! New model constants added in 28 th of January 2016
+   71      SED_K_HS_DOC_MIN_DOXY              1.00      ! New model constants added in 28 th of January 2016
+   72      SED_K_HS_DOC_MIN_NO3N              1.00      ! New model constants added in 28 th of January 2016
+   73      SED_K_HS_DOC_MIN_MN_IV             1.00      ! New model constants added in 28 th of January 2016
+   74      SED_K_HS_DOC_MIN_FE_III            1.00      ! New model constants added in 28 th of January 2016
+   75      SED_K_HS_DOC_MIN_S_PLUS_6          1.00      ! New model constants added in 28 th of January 2016
+   76      SED_K_HS_DOC_MIN_DOC               1.00      ! New model constants added in 28 th of January 2016
+   77      SED_K_HS_DOXY_RED_LIM              1.00      ! New model constants added in 28 th of January 2016
+   78      SED_K_HS_NO3N_RED_LIM              1.00      ! New model constants added in 28 th of January 2016
+   79      SED_K_HS_MN_IV_RED_LIM             1.00      ! New model constants added in 28 th of January 2016
+   80      SED_K_HS_FE_III_RED_LIM            1.00      ! New model constants added in 28 th of January 2016
+   81      SED_K_HS_S_PLUS_6_RED_LIM          1.00      ! New model constants added in 28 th of January 2016
+   82      SED_K_HS_DOXY_RED_INHB             0.1       ! New model constants added in 28 th of January 2016
+   83      SED_K_HS_NO3N_RED_INHB             0.1       ! New model constants added in 28 th of January 2016
+   84      SED_K_HS_MN_IV_RED_INHB            0.1       ! New model constants added in 28 th of January 2016
+   85      SED_K_HS_FE_III_RED_INHB           0.1       ! New model constants added in 28 th of January 2016
+   86      SED_K_HS_S_PLUS_6_RED_INHB         0.1       ! New model constants added in 28 th of January 2016
+   87      SED_PH_MIN_DOC_MIN_DOXY            6.00      ! New model constants added in 28 th of January 2016
+   88      SED_PH_MIN_DOC_MIN_NO3N            6.00      ! New model constants added in 28 th of January 2016
+   89      SED_PH_MIN_DOC_MIN_MN_IV           6.00      ! New model constants added in 28 th of January 2016
+   90      SED_PH_MIN_DOC_MIN_FE_III          6.00      ! New model constants added in 28 th of January 2016
+   91      SED_PH_MIN_DOC_MIN_S_PLUS_6        6.00      ! New model constants added in 28 th of January 2016
+   92      SED_PH_MIN_DOC_MIN_DOC             6.00      ! New model constants added in 28 th of January 2016
+   93      SED_PH_MAX_DOC_MIN_DOXY            9.00      ! New model constants added in 28 th of January 2016
+   94      SED_PH_MAX_DOC_MIN_NO3N            9.00      ! New model constants added in 28 th of January 2016
+   95      SED_PH_MAX_DOC_MIN_MN_IV           9.00      ! New model constants added in 28 th of January 2016
+   96      SED_PH_MAX_DOC_MIN_FE_III          9.00      ! New model constants added in 28 th of January 2016
+   97      SED_PH_MAX_DOC_MIN_S_PLUS_6        9.00      ! New model constants added in 28 th of January 2016
+   98      SED_PH_MAX_DOC_MIN_DOC             9.00      ! New model constants added in 28 th of January 2016
+   99      SED_K_MIN_DON_DOXY_20              0.025     ! New model constants added in 28 th of January 2016
+  100      SED_K_MIN_DON_NO3N_20              0.005     ! New model constants added in 28 th of January 2016
+  101      SED_K_MIN_DON_MN_IV_20             0.005     ! New model constants added in 28 th of January 2016
+  102      SED_K_MIN_DON_FE_III_20            0.005     ! New model constants added in 28 th of January 2016
+  103      SED_K_MIN_DON_S_PLUS_6_20          0.005     ! New model constants added in 28 th of January 2016
+  104      SED_K_MIN_DON_DOC_20               0.005     ! New model constants added in 28 th of January 2016
+  105      SED_THETA_K_MIN_DON_DOXY           1.04      ! New model constants added in 28 th of January 2016
+  106      SED_THETA_K_MIN_DON_NO3N           1.04      ! New model constants added in 28 th of January 2016
+  107      SED_THETA_K_MIN_DON_MN_IV          1.04      ! New model constants added in 28 th of January 2016
+  108      SED_THETA_K_MIN_DON_FE_III         1.04      ! New model constants added in 28 th of January 2016
+  109      SED_THETA_K_MIN_DON_S_PLUS_6       1.04      ! New model constants added in 28 th of January 2016
+  110      SED_THETA_K_MIN_DON_DOC            1.04      ! New model constants added in 28 th of January 2016
+  111      SED_K_HS_DON_MIN_DOXY              1.00      ! New model constants added in 28 th of January 2016
+  112      SED_K_HS_DON_MIN_NO3N              1.00      ! New model constants added in 28 th of January 2016
+  113      SED_K_HS_DON_MIN_MN_IV             1.00      ! New model constants added in 28 th of January 2016
+  114      SED_K_HS_DON_MIN_FE_III            1.00      ! New model constants added in 28 th of January 2016
+  115      SED_K_HS_DON_MIN_S_PLUS_6          1.00      ! New model constants added in 28 th of January 2016
+  116      SED_K_HS_DON_MIN_DOC               1.00      ! New model constants added in 28 th of January 2016
+  117      SED_PH_MIN_DON_MIN_DOXY            6.00      ! New model constants added in 28 th of January 2016
+  118      SED_PH_MIN_DON_MIN_NO3N            6.00      ! New model constants added in 28 th of January 2016
+  119      SED_PH_MIN_DON_MIN_MN_IV           6.00      ! New model constants added in 28 th of January 2016
+  120      SED_PH_MIN_DON_MIN_FE_III          6.00      ! New model constants added in 28 th of January 2016
+  121      SED_PH_MIN_DON_MIN_S_PLUS_6        6.00      ! New model constants added in 28 th of January 2016
+  122      SED_PH_MIN_DON_MIN_DOC             6.00      ! New model constants added in 28 th of January 2016
+  123      SED_PH_MAX_DON_MIN_DOXY            9.00      ! New model constants added in 28 th of January 2016
+  124      SED_PH_MAX_DON_MIN_NO3N            9.00      ! New model constants added in 28 th of January 2016
+  125      SED_PH_MAX_DON_MIN_MN_IV           9.00      ! New model constants added in 28 th of January 2016
+  126      SED_PH_MAX_DON_MIN_FE_III          9.00      ! New model constants added in 28 th of January 2016
+  127      SED_PH_MAX_DON_MIN_S_PLUS_6        9.00      ! New model constants added in 28 th of January 2016
+  128      SED_PH_MAX_DON_MIN_DOC             9.00      ! New model constants added in 28 th of January 2016
+  129      SED_K_MIN_DOP_DOXY_20              0.025     ! New model constants added in 28 th of January 2016
+  130      SED_K_MIN_DOP_NO3N_20              0.005     ! New model constants added in 28 th of January 2016
+  131      SED_K_MIN_DOP_MN_IV_20             0.005     ! New model constants added in 28 th of January 2016
+  132      SED_K_MIN_DOP_FE_III_20            0.005     ! New model constants added in 28 th of January 2016
+  133      SED_K_MIN_DOP_S_PLUS_6_20          0.005     ! New model constants added in 28 th of January 2016
+  134      SED_K_MIN_DOP_DOC_20               0.005     ! New model constants added in 28 th of January 2016
+  135      SED_THETA_K_MIN_DOP_DOXY           1.04      ! New model constants added in 28 th of January 2016
+  136      SED_THETA_K_MIN_DOP_NO3N           1.04      ! New model constants added in 28 th of January 2016
+  137      SED_THETA_K_MIN_DOP_MN_IV          1.04      ! New model constants added in 28 th of January 2016
+  138      SED_THETA_K_MIN_DOP_FE_III         1.04      ! New model constants added in 28 th of January 2016
+  139      SED_THETA_K_MIN_DOP_S_PLUS_6       1.04      ! New model constants added in 28 th of January 2016
+  140      SED_THETA_K_MIN_DOP_DOC            1.04      ! New model constants added in 28 th of January 2016
+  141      SED_K_HS_DOP_MIN_DOXY              1.00      ! New model constants added in 28 th of January 2016
+  142      SED_K_HS_DOP_MIN_NO3N              1.00      ! New model constants added in 28 th of January 2016
+  143      SED_K_HS_DOP_MIN_MN_IV             1.00      ! New model constants added in 28 th of January 2016
+  144      SED_K_HS_DOP_MIN_FE_III            1.00      ! New model constants added in 28 th of January 2016
+  145      SED_K_HS_DOP_MIN_S_PLUS_6          1.00      ! New model constants added in 28 th of January 2016
+  146      SED_K_HS_DOP_MIN_DOC               1.00      ! New model constants added in 28 th of January 2016
+  147      SED_PH_MIN_DOP_MIN_DOXY            6.00      ! New model constants added in 28 th of January 2016
+  148      SED_PH_MIN_DOP_MIN_NO3N            6.00      ! New model constants added in 28 th of January 2016
+  149      SED_PH_MIN_DOP_MIN_MN_IV           6.00      ! New model constants added in 28 th of January 2016
+  150      SED_PH_MIN_DOP_MIN_FE_III          6.00      ! New model constants added in 28 th of January 2016
+  151      SED_PH_MIN_DOP_MIN_S_PLUS_6        6.00      ! New model constants added in 28 th of January 2016
+  152      SED_PH_MIN_DOP_MIN_DOC             6.00      ! New model constants added in 28 th of January 2016
+  153      SED_PH_MAX_DOP_MIN_DOXY            9.00      ! New model constants added in 28 th of January 2016
+  154      SED_PH_MAX_DOP_MIN_NO3N            9.00      ! New model constants added in 28 th of January 2016
+  155      SED_PH_MAX_DOP_MIN_MN_IV           9.00      ! New model constants added in 28 th of January 2016
+  156      SED_PH_MAX_DOP_MIN_FE_III          9.00      ! New model constants added in 28 th of January 2016
+  157      SED_PH_MAX_DOP_MIN_S_PLUS_6        9.00      ! New model constants added in 28 th of January 2016
+  158      SED_PH_MAX_DOP_MIN_DOC             9.00      ! New model constants added in 28 th of January 2016
+  159      SED_k_OX_CH4                       1.0       ! New model constants added in 28 th of January 2016
+  160      SED_THETA_k_OX_CH4                 1.4       ! New model constants added in 28 th of January 2016
+  161      SED_k_HS_OX_CH4_DOXY               1.5       ! New model constants added in 28 th of January 2016
+  162      SED_k_OX_H2S                       1.0       ! New model constants added in 28 th of January 2016
+  163      SED_THETA_k_OX_H2S                 1.4       ! New model constants added in 28 th of January 2016
+  164      SED_k_HS_OX_H2S_DOXY               1.5       ! New model constants added in 28 th of January 2016
+  165      SED_k_DISS_FE_II_20                0.001     ! 2016 08 21
+  166      SED_THETA_k_DISS_FE_II             1.04      ! 2016 08 21
+  167      SED_INIT_MULT_FE_II_DISS           0.01      ! 2016 08 21
+  168      SED_k_DISS_FE_III_20               0.001     ! 2016 08 21
+  169      SED_THETA_k_DISS_FE_III            1.04      ! 2016 08 21
+  170      SED_INIT_MULT_FE_III_DISS          0.5       ! 2016 08 21

@@ -1,0 +1,39 @@
+# PELAGIC INITIAL CONCENTRATION DATA SET 1: Mud
+#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION
+                          1          0.05             ! AMMONIUM NITROGEN                                   0.05000
+                          2          0.50             ! NITRATE NITROGEN                                    3.00000
+                          3          0.047            ! ORTHOPHOSPHATE PHOSPHORUS                           0.04000
+                          4          14.0             ! DISSOLVED OXYGEN                                   14.00000
+                          5          1.75              ! DIATOMS CARBON                                      0.90000
+                          6          0.020            ! ZOOPLANKTON CARBON                                  0.02000
+                          7          0.000            ! ZOOPLANKTON NITROGEN                                0.00000
+                          8          0.0000           ! ZOOPLANKTON PHOSPHORUS                              0.00000
+                          9          6.5              ! DETRITUS PARTICULATE ORG. CARBON                    2.00000
+                         10          1.0              ! DETRITUS PARTICULATE ORG. NITROGEN                  0.40000
+                         11          0.015            ! DETRITUS PARTICULATE ORG. PHOSPHORUS                0.01500
+                         12          10.              ! DISSOLVED ORGANIC CARBON                           10.00000
+                         13          1.5              ! DISSOLVED ORGANIC NITROGEN                          4.00000
+                         14          0.025            ! DISSOLVED ORGANIC PHOSPHORUS                        0.01500
+                         15          0.06             ! NON FIXING CYANOBACTERIA CARBON                     0.06000
+                         16          0.022            ! OTHER PHYTOPLANKTON CARBON                          0.02000
+                         17          3.0              ! DISSOLOVED SILICA                                   3.00000
+                         18          1.5              ! PARTICULATE SILICA                                  0.40000
+                         19          0.00             ! FIXING CYANOBACTERIA CARBON                         0.01000
+                         20          0.0027           ! INORG CARBON CARBON                                 0.00301
+                         21          0.0027           ! TOTAL ALKALNITY                                     0.00297
+                         22          0.23             ! Iron charged as plus 2                              0.23000
+                         23          0.55             ! Iron chargen as plus 3                              0.55000
+                         24          0.1              ! Manganese charged as plus 2                         0.10000
+                         25          0.1              ! Manganese charged as plus 4                         0.10000
+                         26          70.              ! Calcium                                            70.00000
+                         27          15.              ! Magnesium                                          15.00000
+                         28          1.35             ! Sulphur 6+ (Sulphate sulphur)                       1.35000
+                         29          0.0              ! Sulphur 2- (Sulphide sulphur)                       0.00000
+                         30          0.0              ! Methane carbon                                      0.00000
+                         31          0.0              ! Nostocales                                          0.00000
+                         32          7.5              ! Akinetes                                            0.00000
+                         33          1.0
+                         34          1.0
+                         35          1.0
+                         36          1.0
+                         37          1.0 

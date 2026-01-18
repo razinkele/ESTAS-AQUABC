@@ -1,0 +1,1614 @@
+# DESRIPTION LINE 1
+# DESRIPTION LINE 2
+# DESRIPTION LINE 3
+# DESRIPTION LINE 4
+# DESRIPTION LINE 5
+# NUM_PELAGIC_STATE_VARS
+                  32
+# NUM_MODEL_CONSTANTS
+                 307
+# NUM_PELAGIC_BASINS
+                  25
+# NUM_BATHYMETRIES
+                  25
+# NUM_PELAGIC_BOXES
+                  25
+# NUM_PELAGIC_INIT_CONC_SETS
+                   2
+# NUM_PELAGIC_ADVECTIVE_LINKS
+                  90
+# NUM_PELAGIC_DISPERSIVE_LINKS
+                   0
+# NUM_FLOW_TS
+                   2
+# NUM_MIXING_TS
+                   0
+# NUM_SETTLING_VELOCITIES
+                   6
+# NUM_OPEN_BOUNDARIES
+                   5
+# NUM_MASS_LOADS
+                   0
+# NUM_MASS_WITHDRAWALS
+                   0
+# NUM_FORCING_TS
+                  14
+# PELAGIC_MODEL_OPTIONS
+PELAGIC_MODEL_OPTIONS.txt
+# PELAGIC OUTPUT INFORMATION FILE
+PELAGIC_OUTPUT_INFORMATION_FILE.txt
+# PROCESS RATE OUTPUT TYPE, 1 Volume based 2 Area based
+1
+# ********************* PELAGIC STATE VARIABLES *********************  Units options: 1 - g/m^3. 2 - g/m^2
+#  STATE VARIABLE NO      STATE VARIABLE NAME  NUM_BOXES_WITH_MEASURED_VALS        MEASUREMENT ERROR    OUTPUT_TYPE    INITIAL_CONDITION_TYPE
+                   1                    NH4_N                             0              0.001000000              1                         1
+                   2                    NO3_N                             0              0.001000000              1                         1
+                   3                    PO4_P                             0              0.001000000              1                         1
+                   4              DISS_OXYGEN                             0              0.001000000              1                         1
+                   5                    DIA_C                             0              0.001000000              1                         1
+                   6                    ZOO_C                             0              0.001000000              1                         1
+                   7                    ZOO_N                             0              0.001000000              1                         1
+                   8                    ZOO_P                             0              0.001000000              1                         1
+                   9           DET_PART_ORG_C                             0              0.001000000              1                         1
+                  10           DET_PART_ORG_N                             0              0.001000000              1                         1
+                  11           DET_PART_ORG_P                             0              0.001000000              1                         1
+                  12               DISS_ORG_C                             0              0.001000000              1                         1
+                  13               DISS_ORG_N                             0              0.001000000              1                         1
+                  14               DISS_ORG_P                             0              0.001000000              1                         1
+                  15                    CYN_C                             0              0.001000000              1                         1
+                  16                    OPA_C                             0              0.001000000              1                         1
+                  17                  DISS_Si                             0              0.001000000              1                         1
+                  18                  PART_Si                             0              0.001000000              1                         1
+                  19                FIX_CYN_C                             0              0.001000000              1                         1
+                  20                  INORG_C                             0              0.001000000              1                         1
+                  21                  TOT_ALK                             0              0.001000000              1                         1
+                  22                    FE_II                             0              0.001000000              1                         1
+                  23                   FE_III                             0              0.001000000              1                         1
+                  24                    MN_II                             0              0.001000000              1                         1
+                  25                    MN_IV                             0              0.001000000              1                         1
+                  26                       CA                             0              0.001000000              1                         1
+                  27                       MG                             0              0.001000000              1                         1
+                  28                 S_PLUS_6                             0              0.001000000              1                         1
+                  29                S_MINUS_2                             0              0.001000000              1                         1
+                  30                    CH4_C                             0              0.001000000              1                         1
+                  31           NOST_VEG_HET_C                             0              0.001000000              1                         1
+                  32                    AKI_C                             0              0.001000000              2                         2
+# ********************* PELAGIC MODEL CONSTANTS *********************
+#     PELAGIC BOX NO       PELAGIC MODEL CONSTANTS FILE NAME
+                   1                           WCONST_04.txt
+                   2                           WCONST_04.txt
+                   3                           WCONST_04.txt
+                   4                           WCONST_04.txt
+                   5                           WCONST_04.txt
+                   6                           WCONST_04.txt
+                   7                           WCONST_04.txt
+                   8                           WCONST_04.txt
+                   9                           WCONST_04.txt
+                  10                           WCONST_04.txt
+                  11                           WCONST_04.txt
+                  12                           WCONST_04.txt
+                  13                           WCONST_04.txt
+                  14                           WCONST_04.txt
+                  15                           WCONST_04.txt
+                  16                           WCONST_04.txt
+                  17                           WCONST_04.txt
+                  18                           WCONST_04.txt
+                  19                           WCONST_04.txt
+                  20                           WCONST_04.txt
+                  21                           WCONST_04.txt
+                  22                           WCONST_04.txt
+                  23                           WCONST_04.txt
+                  24                           WCONST_04.txt
+                  25                           WCONST_04.txt
+# EXTRA MODEL CONSTANTS FILE NAME
+EXTRA_WCONST.txt
+# ********************* BOX INFORMATION *********************
+#     PELAGIC BOX NO       NUM MASS LOADS INTO BOX       NUM MASS WITH. FROM BOX
+                   1                             0                             0
+                   2                             0                             0
+                   3                             0                             0
+                   4                             0                             0
+                   5                             0                             0
+                   6                             0                             0
+                   7                             0                             0
+                   8                             0                             0
+                   9                             0                             0
+                  10                             0                             0
+                  11                             0                             0
+                  12                             0                             0
+                  13                             0                             0
+                  14                             0                             0
+                  15                             0                             0
+                  16                             0                             0
+                  17                             0                             0
+                  18                             0                             0
+                  19                             0                             0
+                  20                             0                             0
+                  21                             0                             0
+                  22                             0                             0
+                  23                             0                             0
+                  24                             0                             0
+                  25                             0                             0
+# ********************* BASIN INFORMATION *********************
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   1                   1                   1
+# PELAGIC BOXES
+              1
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   2                   1                   2
+# PELAGIC BOXES
+              2
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   3                   1                   3
+# PELAGIC BOXES
+              3
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   4                   1                   4
+# PELAGIC BOXES
+              4
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   5                   1                   5
+# PELAGIC BOXES
+              5
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   6                   1                   6
+# PELAGIC BOXES
+              6
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   7                   1                   7
+# PELAGIC BOXES
+              7
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   8                   1                   8
+# PELAGIC BOXES
+              8
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   9                   1                   9
+# PELAGIC BOXES
+              9
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  10                   1                  10
+# PELAGIC BOXES
+             10
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  11                   1                  11
+# PELAGIC BOXES
+             11
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  12                   1                  12
+# PELAGIC BOXES
+             12
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  13                   1                  13
+# PELAGIC BOXES
+             13
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  14                   1                  14
+# PELAGIC BOXES
+             14
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  15                   1                  15
+# PELAGIC BOXES
+             15
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  16                   1                  16
+# PELAGIC BOXES
+             16
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  17                   1                  17
+# PELAGIC BOXES
+             17
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  18                   1                  18
+# PELAGIC BOXES
+             18
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  19                   1                  19
+# PELAGIC BOXES
+             19
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  20                   1                  20
+# PELAGIC BOXES
+             20
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  21                   1                  21
+# PELAGIC BOXES
+             21
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  22                   1                  22
+# PELAGIC BOXES
+             22
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  23                   1                  23
+# PELAGIC BOXES
+             23
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  24                   1                  24
+# PELAGIC BOXES
+             24
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  25                   1                  25
+# PELAGIC BOXES
+             25
+# ********************* BATHYMETRIES *********************
+#      BATHYMETRY NO                                        BATHYMETRY FILE NAME
+                   1                                            BATHYMETRY_1.txt
+                   2                                            BATHYMETRY_2.txt
+                   3                                            BATHYMETRY_3.txt
+                   4                                            BATHYMETRY_4.txt
+                   5                                            BATHYMETRY_5.txt
+                   6                                            BATHYMETRY_6.txt
+                   7                                            BATHYMETRY_7.txt
+                   8                                            BATHYMETRY_8.txt
+                   9                                            BATHYMETRY_9.txt
+                  10                                           BATHYMETRY_10.txt
+                  11                                           BATHYMETRY_11.txt
+                  12                                           BATHYMETRY_12.txt
+                  13                                           BATHYMETRY_13.txt
+                  14                                           BATHYMETRY_14.txt
+                  15                                           BATHYMETRY_15.txt
+                  16                                           BATHYMETRY_16.txt
+                  17                                           BATHYMETRY_17.txt
+                  18                                           BATHYMETRY_18.txt
+                  19                                           BATHYMETRY_19.txt
+                  20                                           BATHYMETRY_20.txt
+                  21                                           BATHYMETRY_21.txt
+                  22                                           BATHYMETRY_22.txt
+                  23                                           BATHYMETRY_23.txt
+                  24                                           BATHYMETRY_24.txt
+                  25                                           BATHYMETRY_25.txt
+# ********************* INITIAL CONDITIONS *********************
+#     PELAGIC BOX NO    PEL. INIT CONC SET NO   SURFACE ELEVATION    BOTTOM ELEVATION
+                   1                        2              0.5757            -14.0000
+                   2                        2              0.6018             -3.0000
+                   3                        1              0.5454             -4.5000
+                   4                        2              0.5611            -22.0000
+                   5                        2              0.5636             -1.5000
+                   6                        2              0.5626             -2.5000
+                   7                        2              0.5745            -12.5000
+                   8                        2              0.5566             -3.0000
+                   9                        2              0.5538             -2.5000
+                  10                        2              0.5758            -14.5000
+                  11                        2              0.5674            -10.5000
+                  12                        2              0.5663            -33.0000
+                  13                        2              0.5704            -20.0000
+                  14                        1              0.5409             -4.0000
+                  15                        1              0.5737             -4.0000
+                  16                        2              0.5623            -15.0000
+                  17                        1              0.5573             -4.5000
+                  18                        1              0.5109             -4.5000
+                  19                        1              0.5847             -4.0000
+                  20                        2              0.5492             -3.0000
+                  21                        1              0.5199             -5.0000
+                  22                        2              0.5542             -3.0000
+                  23                        1              0.5506             -4.5000
+                  24                        2              0.7273             -3.0000
+                  25                        1              0.5770             -4.0000
+# ********************* MASS LOADS FOR EACH BOX *********************
+# PELAGIC BOX 1    : NO MASS LOADS
+# PELAGIC BOX 2    : NO MASS LOADS
+# PELAGIC BOX 3    : NO MASS LOADS
+# PELAGIC BOX 4    : NO MASS LOADS
+# PELAGIC BOX 5    : NO MASS LOADS
+# PELAGIC BOX 6    : NO MASS LOADS
+# PELAGIC BOX 7    : NO MASS LOADS
+# PELAGIC BOX 8    : NO MASS LOADS
+# PELAGIC BOX 9    : NO MASS LOADS
+# PELAGIC BOX 10    : NO MASS LOADS
+# PELAGIC BOX 11    : NO MASS LOADS
+# PELAGIC BOX 12    : NO MASS LOADS
+# PELAGIC BOX 13    : NO MASS LOADS
+# PELAGIC BOX 14    : NO MASS LOADS
+# PELAGIC BOX 15    : NO MASS LOADS
+# PELAGIC BOX 16    : NO MASS LOADS
+# PELAGIC BOX 17    : NO MASS LOADS
+# PELAGIC BOX 18    : NO MASS LOADS
+# PELAGIC BOX 19    : NO MASS LOADS
+# PELAGIC BOX 20    : NO MASS LOADS
+# PELAGIC BOX 21    : NO MASS LOADS
+# PELAGIC BOX 22    : NO MASS LOADS
+# PELAGIC BOX 23    : NO MASS LOADS
+# PELAGIC BOX 24    : NO MASS LOADS
+# PELAGIC BOX 25    : NO MASS LOADS
+# ********************* MASS WITHDRAWALS FOR EACH BOX *********************
+# PELAGIC BOX 1    : NO MASS WITHDRAWALS
+# PELAGIC BOX 2    : NO MASS WITHDRAWALS
+# PELAGIC BOX 3    : NO MASS WITHDRAWALS
+# PELAGIC BOX 4    : NO MASS WITHDRAWALS
+# PELAGIC BOX 5    : NO MASS WITHDRAWALS
+# PELAGIC BOX 6    : NO MASS WITHDRAWALS
+# PELAGIC BOX 7    : NO MASS WITHDRAWALS
+# PELAGIC BOX 8    : NO MASS WITHDRAWALS
+# PELAGIC BOX 9    : NO MASS WITHDRAWALS
+# PELAGIC BOX 10    : NO MASS WITHDRAWALS
+# PELAGIC BOX 11    : NO MASS WITHDRAWALS
+# PELAGIC BOX 12    : NO MASS WITHDRAWALS
+# PELAGIC BOX 13    : NO MASS WITHDRAWALS
+# PELAGIC BOX 14    : NO MASS WITHDRAWALS
+# PELAGIC BOX 15    : NO MASS WITHDRAWALS
+# PELAGIC BOX 16    : NO MASS WITHDRAWALS
+# PELAGIC BOX 17    : NO MASS WITHDRAWALS
+# PELAGIC BOX 18    : NO MASS WITHDRAWALS
+# PELAGIC BOX 19    : NO MASS WITHDRAWALS
+# PELAGIC BOX 20    : NO MASS WITHDRAWALS
+# PELAGIC BOX 21    : NO MASS WITHDRAWALS
+# PELAGIC BOX 22    : NO MASS WITHDRAWALS
+# PELAGIC BOX 23    : NO MASS WITHDRAWALS
+# PELAGIC BOX 24    : NO MASS WITHDRAWALS
+# PELAGIC BOX 25    : NO MASS WITHDRAWALS
+# ********************* ADVECTIVE LINKS *********************
+#  ADVECTIVE LINK NO        UPSTREAM BOX      DOWNSTREAM BOX             FLOW TS      FLOW TS VAR NO
+                   1                   1                  10                   1                   1
+                   2                  10                   1                   1                   2
+                   3                   1                  12                   1                   3
+                   4                  12                   1                   1                   4
+                   5                   1                  13                   1                   5
+                   6                  13                   1                   1                   6
+                   7                   2                  24                   1                   7
+                   8                  24                   2                   1                   8
+                   9                   2                  24                   1                   9
+                  10                  24                   2                   1                  10
+                  11                   2                  24                   1                  11
+                  12                  24                   2                   1                  12
+                  13                   2                  24                   1                  13
+                  14                  24                   2                   1                  14
+                  15                   2                  25                   1                  15
+                  16                  25                   2                   1                  16
+                  17                   3                  15                   1                  17
+                  18                  15                   3                   1                  18
+                  19                   3                  17                   1                  19
+                  20                  17                   3                   1                  20
+                  21                   3                  21                   1                  21
+                  22                  21                   3                   1                  22
+                  23                   3                  23                   1                  23
+                  24                  23                   3                   1                  24
+                  25                   4                  12                   1                  25
+                  26                  12                   4                   1                  26
+                  27                   4                  13                   1                  27
+                  28                  13                   4                   1                  28
+                  29                   4                  16                   1                  29
+                  30                  16                   4                   1                  30
+                  31                   5                   6                   1                  31
+                  32                   6                   5                   1                  32
+                  33                   5                   9                   1                  33
+                  34                   9                   5                   1                  34
+                  35                   5                  22                   1                  35
+                  36                  22                   5                   1                  36
+                  37                   6                   8                   1                  37
+                  38                   8                   6                   1                  38
+                  39                   6                  25                   1                  39
+                  40                  25                   6                   1                  40
+                  41                   7                  11                   1                  41
+                  42                  11                   7                   1                  42
+                  43                   7                  13                   1                  43
+                  44                  13                   7                   1                  44
+                  45                   8                   9                   1                  45
+                  46                   9                   8                   1                  46
+                  47                   8                  14                   1                  47
+                  48                  14                   8                   1                  48
+                  49                   8                  17                   1                  49
+                  50                  17                   8                   1                  50
+                  51                   9                  20                   1                  51
+                  52                  20                   9                   1                  52
+                  53                  10                  12                   1                  53
+                  54                  12                  10                   1                  54
+                  55                  11                  20                   1                  55
+                  56                  20                  11                   1                  56
+                  57                  11                  22                   1                  57
+                  58                  22                  11                   1                  58
+                  59                  12                  13                   1                  59
+                  60                  13                  12                   1                  60
+                  61                  12                  16                   1                  61
+                  62                  16                  12                   1                  62
+                  63                  14                  17                   1                  63
+                  64                  17                  14                   1                  64
+                  65                  14                  21                   1                  65
+                  66                  21                  14                   1                  66
+                  67                  15                  19                   1                  67
+                  68                  19                  15                   1                  68
+                  69                  15                  25                   1                  69
+                  70                  25                  15                   1                  70
+                  71                  17                  25                   1                  71
+                  72                  25                  17                   1                  72
+                  73                  18                  21                   1                  73
+                  74                  21                  18                   1                  74
+                  75                  18                  23                   1                  75
+                  76                  23                  18                   1                  76
+                  77                  19                  23                   1                  77
+                  78                  23                  19                   1                  78
+                  79                  20                  22                   1                  79
+                  80                  22                  20                   1                  80
+                  81                  -2                  24                   2                   1
+                  82                  24                  -2                   2                   2
+                  83                  -3                  24                   2                   3
+                  84                  24                  -3                   2                   4
+                  85                  -4                  19                   2                   5
+                  86                  19                  -4                   2                   6
+                  87                  -5                  19                   2                   7
+                  88                  19                  -5                   2                   8
+                  89                  -1                  12                   2                   9
+                  90                  12                  -1                   2                  10
+# ********************* DISPERSIVE LINKS *********************
+# DISPERSIVE LINK NO           FIRST BOX          SECOND BOX   MIXING TIME SERIE       MIXING LENGTH
+# ********************* SETTLING_VELOCITIES *********************
+#     PELAGIC BOX NO        STATE VAR NO      DISSOLVED FRAC     SETTLING VEL NO  DEPOSITED FRACTION   CHLA_SUPRESSION_OF_SETTLING
+                   1                   1                1.00                   0            0.900000                             1     ! BOX  1:          NH4_N
+                   1                   2                1.00                   0            0.900000                             1     ! BOX  1:          NO3_N
+                   1                   3                1.00                   0            0.900000                             1     ! BOX  1:          PO4_P
+                   1                   4                1.00                   0            0.900000                             1     ! BOX  1:    DISS_OXYGEN
+                   1                   5                0.00                   1            0.900000                             1     ! BOX  1:          DIA_C
+                   1                   6                0.00                   0            0.900000                             1     ! BOX  1:          ZOO_C
+                   1                   7                0.00                   0            0.900000                             1     ! BOX  1:          ZOO_N
+                   1                   8                0.00                   0            0.900000                             1     ! BOX  1:          ZOO_P
+                   1                   9                0.00                   2            0.900000                             1     ! BOX  1: DET_PART_ORG_C
+                   1                  10                0.00                   2            0.900000                             1     ! BOX  1: DET_PART_ORG_N
+                   1                  11                0.00                   2            0.900000                             1     ! BOX  1: DET_PART_ORG_P
+                   1                  12                1.00                   0            0.900000                             1     ! BOX  1:     DISS_ORG_C
+                   1                  13                1.00                   0            0.900000                             1     ! BOX  1:     DISS_ORG_N
+                   1                  14                1.00                   0            0.900000                             1     ! BOX  1:     DISS_ORG_P
+                   1                  15                0.00                   0            0.900000                             1     ! BOX  1:          CYN_C
+                   1                  16                0.00                   3            0.900000                             1     ! BOX  1:          OPA_C
+                   1                  17                1.00                   0            0.900000                             1     ! BOX  1:        DISS_Si
+                   1                  18                0.00                   4            0.900000                             1     ! BOX  1:        PART_Si
+                   1                  19                0.00                   0            0.900000                             1     ! BOX  1:      FIX_CYN_C
+                   1                  20                1.00                   0            0.900000                             1     ! BOX  1:        INORG_C
+                   1                  21                1.00                   0            0.900000                             1     ! BOX  1:        TOT_ALK
+                   1                  22               -1.10                   5            0.900000                             1     ! BOX  1:          FE_II
+                   1                  23               -2.10                   5            0.900000                             1     ! BOX  1:         FE_III
+                   1                  24               -3.10                   5            0.900000                             1     ! BOX  1:          MN_II
+                   1                  25               -4.10                   5            0.900000                             1     ! BOX  1:          MN_IV
+                   1                  26                0.00                   6            0.900000                             1     ! BOX  1:             CA
+                   1                  27                0.00                   5            0.900000                             1     ! BOX  1:             MG
+                   1                  28                1.00                   0            0.900000                             1     ! BOX  1:       S_PLUS_6
+                   1                  29                1.00                   0            0.900000                             1     ! BOX  1:      S_MINUS_2
+                   1                  30                1.00                   0            0.900000                             1     ! BOX  1:          CH4_C
+                   1                  31                0.00                   0            0.900000                             1     ! BOX  1: NOST_VEG_HET_C
+                   1                  32                0.00                   0            0.900000                             1     ! BOX  1:          AKI_C
+                   2                   1                1.00                   0            0.800000                             1     ! BOX  2:          NH4_N
+                   2                   2                1.00                   0            0.800000                             1     ! BOX  2:          NO3_N
+                   2                   3                1.00                   0            0.800000                             1     ! BOX  2:          PO4_P
+                   2                   4                1.00                   0            0.800000                             1     ! BOX  2:    DISS_OXYGEN
+                   2                   5                0.00                   1            0.800000                             1     ! BOX  2:          DIA_C
+                   2                   6                0.00                   0            0.800000                             1     ! BOX  2:          ZOO_C
+                   2                   7                0.00                   0            0.800000                             1     ! BOX  2:          ZOO_N
+                   2                   8                0.00                   0            0.800000                             1     ! BOX  2:          ZOO_P
+                   2                   9                0.00                   2            0.800000                             1     ! BOX  2: DET_PART_ORG_C
+                   2                  10                0.00                   2            0.800000                             1     ! BOX  2: DET_PART_ORG_N
+                   2                  11                0.00                   2            0.800000                             1     ! BOX  2: DET_PART_ORG_P
+                   2                  12                1.00                   0            0.800000                             1     ! BOX  2:     DISS_ORG_C
+                   2                  13                1.00                   0            0.800000                             1     ! BOX  2:     DISS_ORG_N
+                   2                  14                1.00                   0            0.800000                             1     ! BOX  2:     DISS_ORG_P
+                   2                  15                0.00                   0            0.800000                             1     ! BOX  2:          CYN_C
+                   2                  16                0.00                   3            0.800000                             1     ! BOX  2:          OPA_C
+                   2                  17                1.00                   0            0.800000                             1     ! BOX  2:        DISS_Si
+                   2                  18                0.00                   4            0.800000                             1     ! BOX  2:        PART_Si
+                   2                  19                0.00                   0            0.800000                             1     ! BOX  2:      FIX_CYN_C
+                   2                  20                1.00                   0            0.800000                             1     ! BOX  2:        INORG_C
+                   2                  21                1.00                   0            0.800000                             1     ! BOX  2:        TOT_ALK
+                   2                  22               -1.10                   5            0.800000                             1     ! BOX  2:          FE_II
+                   2                  23               -2.10                   5            0.800000                             1     ! BOX  2:         FE_III
+                   2                  24               -3.10                   5            0.800000                             1     ! BOX  2:          MN_II
+                   2                  25               -4.10                   5            0.800000                             1     ! BOX  2:          MN_IV
+                   2                  26                0.00                   6            0.800000                             1     ! BOX  2:             CA
+                   2                  27                0.00                   5            0.800000                             1     ! BOX  2:             MG
+                   2                  28                1.00                   0            0.800000                             1     ! BOX  2:       S_PLUS_6
+                   2                  29                1.00                   0            0.800000                             1     ! BOX  2:      S_MINUS_2
+                   2                  30                1.00                   0            0.800000                             1     ! BOX  2:          CH4_C
+                   2                  31                0.00                   0            0.800000                             1     ! BOX  2: NOST_VEG_HET_C
+                   2                  32                0.00                   0            0.800000                             1     ! BOX  2:          AKI_C
+                   3                   1                1.00                   0            0.990000                             1     ! BOX  3:          NH4_N
+                   3                   2                1.00                   0            0.990000                             1     ! BOX  3:          NO3_N
+                   3                   3                1.00                   0            0.990000                             1     ! BOX  3:          PO4_P
+                   3                   4                1.00                   0            0.990000                             1     ! BOX  3:    DISS_OXYGEN
+                   3                   5                0.00                   1            0.990000                             1     ! BOX  3:          DIA_C
+                   3                   6                0.00                   0            0.990000                             1     ! BOX  3:          ZOO_C
+                   3                   7                0.00                   0            0.990000                             1     ! BOX  3:          ZOO_N
+                   3                   8                0.00                   0            0.990000                             1     ! BOX  3:          ZOO_P
+                   3                   9                0.00                   2            0.990000                             1     ! BOX  3: DET_PART_ORG_C
+                   3                  10                0.00                   2            0.990000                             1     ! BOX  3: DET_PART_ORG_N
+                   3                  11                0.00                   2            0.990000                             1     ! BOX  3: DET_PART_ORG_P
+                   3                  12                1.00                   0            0.990000                             1     ! BOX  3:     DISS_ORG_C
+                   3                  13                1.00                   0            0.990000                             1     ! BOX  3:     DISS_ORG_N
+                   3                  14                1.00                   0            0.990000                             1     ! BOX  3:     DISS_ORG_P
+                   3                  15                0.00                   0            0.990000                             1     ! BOX  3:          CYN_C
+                   3                  16                0.00                   3            0.990000                             1     ! BOX  3:          OPA_C
+                   3                  17                1.00                   0            0.990000                             1     ! BOX  3:        DISS_Si
+                   3                  18                0.00                   4            0.990000                             1     ! BOX  3:        PART_Si
+                   3                  19                0.00                   0            0.990000                             1     ! BOX  3:      FIX_CYN_C
+                   3                  20                1.00                   0            0.990000                             1     ! BOX  3:        INORG_C
+                   3                  21                1.00                   0            0.990000                             1     ! BOX  3:        TOT_ALK
+                   3                  22               -1.10                   5            0.990000                             1     ! BOX  3:          FE_II
+                   3                  23               -2.10                   5            0.990000                             1     ! BOX  3:         FE_III
+                   3                  24               -3.10                   5            0.990000                             1     ! BOX  3:          MN_II
+                   3                  25               -4.10                   5            0.990000                             1     ! BOX  3:          MN_IV
+                   3                  26                0.00                   6            0.990000                             1     ! BOX  3:             CA
+                   3                  27                0.00                   5            0.990000                             1     ! BOX  3:             MG
+                   3                  28                1.00                   0            0.990000                             1     ! BOX  3:       S_PLUS_6
+                   3                  29                1.00                   0            0.990000                             1     ! BOX  3:      S_MINUS_2
+                   3                  30                1.00                   0            0.990000                             1     ! BOX  3:          CH4_C
+                   3                  31                0.00                   0            0.990000                             1     ! BOX  3: NOST_VEG_HET_C
+                   3                  32                0.00                   0            0.990000                             1     ! BOX  3:          AKI_C
+                   4                   1                1.00                   0            0.900000                             1     ! BOX  4:          NH4_N
+                   4                   2                1.00                   0            0.900000                             1     ! BOX  4:          NO3_N
+                   4                   3                1.00                   0            0.900000                             1     ! BOX  4:          PO4_P
+                   4                   4                1.00                   0            0.900000                             1     ! BOX  4:    DISS_OXYGEN
+                   4                   5                0.00                   1            0.900000                             1     ! BOX  4:          DIA_C
+                   4                   6                0.00                   0            0.900000                             1     ! BOX  4:          ZOO_C
+                   4                   7                0.00                   0            0.900000                             1     ! BOX  4:          ZOO_N
+                   4                   8                0.00                   0            0.900000                             1     ! BOX  4:          ZOO_P
+                   4                   9                0.00                   2            0.900000                             1     ! BOX  4: DET_PART_ORG_C
+                   4                  10                0.00                   2            0.900000                             1     ! BOX  4: DET_PART_ORG_N
+                   4                  11                0.00                   2            0.900000                             1     ! BOX  4: DET_PART_ORG_P
+                   4                  12                1.00                   0            0.900000                             1     ! BOX  4:     DISS_ORG_C
+                   4                  13                1.00                   0            0.900000                             1     ! BOX  4:     DISS_ORG_N
+                   4                  14                1.00                   0            0.900000                             1     ! BOX  4:     DISS_ORG_P
+                   4                  15                0.00                   0            0.900000                             1     ! BOX  4:          CYN_C
+                   4                  16                0.00                   3            0.900000                             1     ! BOX  4:          OPA_C
+                   4                  17                1.00                   0            0.900000                             1     ! BOX  4:        DISS_Si
+                   4                  18                0.00                   4            0.900000                             1     ! BOX  4:        PART_Si
+                   4                  19                0.00                   0            0.900000                             1     ! BOX  4:      FIX_CYN_C
+                   4                  20                1.00                   0            0.900000                             1     ! BOX  4:        INORG_C
+                   4                  21                1.00                   0            0.900000                             1     ! BOX  4:        TOT_ALK
+                   4                  22               -1.10                   5            0.900000                             1     ! BOX  4:          FE_II
+                   4                  23               -2.10                   5            0.900000                             1     ! BOX  4:         FE_III
+                   4                  24               -3.10                   5            0.900000                             1     ! BOX  4:          MN_II
+                   4                  25               -4.10                   5            0.900000                             1     ! BOX  4:          MN_IV
+                   4                  26                0.00                   6            0.900000                             1     ! BOX  4:             CA
+                   4                  27                0.00                   5            0.900000                             1     ! BOX  4:             MG
+                   4                  28                1.00                   0            0.900000                             1     ! BOX  4:       S_PLUS_6
+                   4                  29                1.00                   0            0.900000                             1     ! BOX  4:      S_MINUS_2
+                   4                  30                1.00                   0            0.900000                             1     ! BOX  4:          CH4_C
+                   4                  31                0.00                   0            0.900000                             1     ! BOX  4: NOST_VEG_HET_C
+                   4                  32                0.00                   0            0.900000                             1     ! BOX  4:          AKI_C
+                   5                   1                1.00                   0            0.800000                             1     ! BOX  5:          NH4_N
+                   5                   2                1.00                   0            0.800000                             1     ! BOX  5:          NO3_N
+                   5                   3                1.00                   0            0.800000                             1     ! BOX  5:          PO4_P
+                   5                   4                1.00                   0            0.800000                             1     ! BOX  5:    DISS_OXYGEN
+                   5                   5                0.00                   1            0.800000                             1     ! BOX  5:          DIA_C
+                   5                   6                0.00                   0            0.800000                             1     ! BOX  5:          ZOO_C
+                   5                   7                0.00                   0            0.800000                             1     ! BOX  5:          ZOO_N
+                   5                   8                0.00                   0            0.800000                             1     ! BOX  5:          ZOO_P
+                   5                   9                0.00                   2            0.800000                             1     ! BOX  5: DET_PART_ORG_C
+                   5                  10                0.00                   2            0.800000                             1     ! BOX  5: DET_PART_ORG_N
+                   5                  11                0.00                   2            0.800000                             1     ! BOX  5: DET_PART_ORG_P
+                   5                  12                1.00                   0            0.800000                             1     ! BOX  5:     DISS_ORG_C
+                   5                  13                1.00                   0            0.800000                             1     ! BOX  5:     DISS_ORG_N
+                   5                  14                1.00                   0            0.800000                             1     ! BOX  5:     DISS_ORG_P
+                   5                  15                0.00                   0            0.800000                             1     ! BOX  5:          CYN_C
+                   5                  16                0.00                   3            0.800000                             1     ! BOX  5:          OPA_C
+                   5                  17                1.00                   0            0.800000                             1     ! BOX  5:        DISS_Si
+                   5                  18                0.00                   4            0.800000                             1     ! BOX  5:        PART_Si
+                   5                  19                0.00                   0            0.800000                             1     ! BOX  5:      FIX_CYN_C
+                   5                  20                1.00                   0            0.800000                             1     ! BOX  5:        INORG_C
+                   5                  21                1.00                   0            0.800000                             1     ! BOX  5:        TOT_ALK
+                   5                  22               -1.10                   5            0.800000                             1     ! BOX  5:          FE_II
+                   5                  23               -2.10                   5            0.800000                             1     ! BOX  5:         FE_III
+                   5                  24               -3.10                   5            0.800000                             1     ! BOX  5:          MN_II
+                   5                  25               -4.10                   5            0.800000                             1     ! BOX  5:          MN_IV
+                   5                  26                0.00                   6            0.800000                             1     ! BOX  5:             CA
+                   5                  27                0.00                   5            0.800000                             1     ! BOX  5:             MG
+                   5                  28                1.00                   0            0.800000                             1     ! BOX  5:       S_PLUS_6
+                   5                  29                1.00                   0            0.800000                             1     ! BOX  5:      S_MINUS_2
+                   5                  30                1.00                   0            0.800000                             1     ! BOX  5:          CH4_C
+                   5                  31                0.00                   0            0.800000                             1     ! BOX  5: NOST_VEG_HET_C
+                   5                  32                0.00                   0            0.800000                             1     ! BOX  5:          AKI_C
+                   6                   1                1.00                   0            0.800000                             1     ! BOX  6:          NH4_N
+                   6                   2                1.00                   0            0.800000                             1     ! BOX  6:          NO3_N
+                   6                   3                1.00                   0            0.800000                             1     ! BOX  6:          PO4_P
+                   6                   4                1.00                   0            0.800000                             1     ! BOX  6:    DISS_OXYGEN
+                   6                   5                0.00                   1            0.800000                             1     ! BOX  6:          DIA_C
+                   6                   6                0.00                   0            0.800000                             1     ! BOX  6:          ZOO_C
+                   6                   7                0.00                   0            0.800000                             1     ! BOX  6:          ZOO_N
+                   6                   8                0.00                   0            0.800000                             1     ! BOX  6:          ZOO_P
+                   6                   9                0.00                   2            0.800000                             1     ! BOX  6: DET_PART_ORG_C
+                   6                  10                0.00                   2            0.800000                             1     ! BOX  6: DET_PART_ORG_N
+                   6                  11                0.00                   2            0.800000                             1     ! BOX  6: DET_PART_ORG_P
+                   6                  12                1.00                   0            0.800000                             1     ! BOX  6:     DISS_ORG_C
+                   6                  13                1.00                   0            0.800000                             1     ! BOX  6:     DISS_ORG_N
+                   6                  14                1.00                   0            0.800000                             1     ! BOX  6:     DISS_ORG_P
+                   6                  15                0.00                   0            0.800000                             1     ! BOX  6:          CYN_C
+                   6                  16                0.00                   3            0.800000                             1     ! BOX  6:          OPA_C
+                   6                  17                1.00                   0            0.800000                             1     ! BOX  6:        DISS_Si
+                   6                  18                0.00                   4            0.800000                             1     ! BOX  6:        PART_Si
+                   6                  19                0.00                   0            0.800000                             1     ! BOX  6:      FIX_CYN_C
+                   6                  20                1.00                   0            0.800000                             1     ! BOX  6:        INORG_C
+                   6                  21                1.00                   0            0.800000                             1     ! BOX  6:        TOT_ALK
+                   6                  22               -1.10                   5            0.800000                             1     ! BOX  6:          FE_II
+                   6                  23               -2.10                   5            0.800000                             1     ! BOX  6:         FE_III
+                   6                  24               -3.10                   5            0.800000                             1     ! BOX  6:          MN_II
+                   6                  25               -4.10                   5            0.800000                             1     ! BOX  6:          MN_IV
+                   6                  26                0.00                   6            0.800000                             1     ! BOX  6:             CA
+                   6                  27                0.00                   5            0.800000                             1     ! BOX  6:             MG
+                   6                  28                1.00                   0            0.800000                             1     ! BOX  6:       S_PLUS_6
+                   6                  29                1.00                   0            0.800000                             1     ! BOX  6:      S_MINUS_2
+                   6                  30                1.00                   0            0.800000                             1     ! BOX  6:          CH4_C
+                   6                  31                0.00                   0            0.800000                             1     ! BOX  6: NOST_VEG_HET_C
+                   6                  32                0.00                   0            0.800000                             1     ! BOX  6:          AKI_C
+                   7                   1                1.00                   0            0.990000                             1     ! BOX  7:          NH4_N
+                   7                   2                1.00                   0            0.990000                             1     ! BOX  7:          NO3_N
+                   7                   3                1.00                   0            0.990000                             1     ! BOX  7:          PO4_P
+                   7                   4                1.00                   0            0.990000                             1     ! BOX  7:    DISS_OXYGEN
+                   7                   5                0.00                   1            0.990000                             1     ! BOX  7:          DIA_C
+                   7                   6                0.00                   0            0.990000                             1     ! BOX  7:          ZOO_C
+                   7                   7                0.00                   0            0.990000                             1     ! BOX  7:          ZOO_N
+                   7                   8                0.00                   0            0.990000                             1     ! BOX  7:          ZOO_P
+                   7                   9                0.00                   2            0.990000                             1     ! BOX  7: DET_PART_ORG_C
+                   7                  10                0.00                   2            0.990000                             1     ! BOX  7: DET_PART_ORG_N
+                   7                  11                0.00                   2            0.990000                             1     ! BOX  7: DET_PART_ORG_P
+                   7                  12                1.00                   0            0.990000                             1     ! BOX  7:     DISS_ORG_C
+                   7                  13                1.00                   0            0.990000                             1     ! BOX  7:     DISS_ORG_N
+                   7                  14                1.00                   0            0.990000                             1     ! BOX  7:     DISS_ORG_P
+                   7                  15                0.00                   0            0.990000                             1     ! BOX  7:          CYN_C
+                   7                  16                0.00                   3            0.990000                             1     ! BOX  7:          OPA_C
+                   7                  17                1.00                   0            0.990000                             1     ! BOX  7:        DISS_Si
+                   7                  18                0.00                   4            0.990000                             1     ! BOX  7:        PART_Si
+                   7                  19                0.00                   0            0.990000                             1     ! BOX  7:      FIX_CYN_C
+                   7                  20                1.00                   0            0.990000                             1     ! BOX  7:        INORG_C
+                   7                  21                1.00                   0            0.990000                             1     ! BOX  7:        TOT_ALK
+                   7                  22               -1.10                   5            0.990000                             1     ! BOX  7:          FE_II
+                   7                  23               -2.10                   5            0.990000                             1     ! BOX  7:         FE_III
+                   7                  24               -3.10                   5            0.990000                             1     ! BOX  7:          MN_II
+                   7                  25               -4.10                   5            0.990000                             1     ! BOX  7:          MN_IV
+                   7                  26                0.00                   6            0.990000                             1     ! BOX  7:             CA
+                   7                  27                0.00                   5            0.990000                             1     ! BOX  7:             MG
+                   7                  28                1.00                   0            0.990000                             1     ! BOX  7:       S_PLUS_6
+                   7                  29                1.00                   0            0.990000                             1     ! BOX  7:      S_MINUS_2
+                   7                  30                1.00                   0            0.990000                             1     ! BOX  7:          CH4_C
+                   7                  31                0.00                   0            0.990000                             1     ! BOX  7: NOST_VEG_HET_C
+                   7                  32                0.00                   0            0.990000                             1     ! BOX  7:          AKI_C
+                   8                   1                1.00                   0            0.800000                             1     ! BOX  8:          NH4_N
+                   8                   2                1.00                   0            0.800000                             1     ! BOX  8:          NO3_N
+                   8                   3                1.00                   0            0.800000                             1     ! BOX  8:          PO4_P
+                   8                   4                1.00                   0            0.800000                             1     ! BOX  8:    DISS_OXYGEN
+                   8                   5                0.00                   1            0.800000                             1     ! BOX  8:          DIA_C
+                   8                   6                0.00                   0            0.800000                             1     ! BOX  8:          ZOO_C
+                   8                   7                0.00                   0            0.800000                             1     ! BOX  8:          ZOO_N
+                   8                   8                0.00                   0            0.800000                             1     ! BOX  8:          ZOO_P
+                   8                   9                0.00                   2            0.800000                             1     ! BOX  8: DET_PART_ORG_C
+                   8                  10                0.00                   2            0.800000                             1     ! BOX  8: DET_PART_ORG_N
+                   8                  11                0.00                   2            0.800000                             1     ! BOX  8: DET_PART_ORG_P
+                   8                  12                1.00                   0            0.800000                             1     ! BOX  8:     DISS_ORG_C
+                   8                  13                1.00                   0            0.800000                             1     ! BOX  8:     DISS_ORG_N
+                   8                  14                1.00                   0            0.800000                             1     ! BOX  8:     DISS_ORG_P
+                   8                  15                0.00                   0            0.800000                             1     ! BOX  8:          CYN_C
+                   8                  16                0.00                   3            0.800000                             1     ! BOX  8:          OPA_C
+                   8                  17                1.00                   0            0.800000                             1     ! BOX  8:        DISS_Si
+                   8                  18                0.00                   4            0.800000                             1     ! BOX  8:        PART_Si
+                   8                  19                0.00                   0            0.800000                             1     ! BOX  8:      FIX_CYN_C
+                   8                  20                1.00                   0            0.800000                             1     ! BOX  8:        INORG_C
+                   8                  21                1.00                   0            0.800000                             1     ! BOX  8:        TOT_ALK
+                   8                  22               -1.10                   5            0.800000                             1     ! BOX  8:          FE_II
+                   8                  23               -2.10                   5            0.800000                             1     ! BOX  8:         FE_III
+                   8                  24               -3.10                   5            0.800000                             1     ! BOX  8:          MN_II
+                   8                  25               -4.10                   5            0.800000                             1     ! BOX  8:          MN_IV
+                   8                  26                0.00                   6            0.800000                             1     ! BOX  8:             CA
+                   8                  27                0.00                   5            0.800000                             1     ! BOX  8:             MG
+                   8                  28                1.00                   0            0.800000                             1     ! BOX  8:       S_PLUS_6
+                   8                  29                1.00                   0            0.800000                             1     ! BOX  8:      S_MINUS_2
+                   8                  30                1.00                   0            0.800000                             1     ! BOX  8:          CH4_C
+                   8                  31                0.00                   0            0.800000                             1     ! BOX  8: NOST_VEG_HET_C
+                   8                  32                0.00                   0            0.800000                             1     ! BOX  8:          AKI_C
+                   9                   1                1.00                   0            0.800000                             1     ! BOX  9:          NH4_N
+                   9                   2                1.00                   0            0.800000                             1     ! BOX  9:          NO3_N
+                   9                   3                1.00                   0            0.800000                             1     ! BOX  9:          PO4_P
+                   9                   4                1.00                   0            0.800000                             1     ! BOX  9:    DISS_OXYGEN
+                   9                   5                0.00                   1            0.800000                             1     ! BOX  9:          DIA_C
+                   9                   6                0.00                   0            0.800000                             1     ! BOX  9:          ZOO_C
+                   9                   7                0.00                   0            0.800000                             1     ! BOX  9:          ZOO_N
+                   9                   8                0.00                   0            0.800000                             1     ! BOX  9:          ZOO_P
+                   9                   9                0.00                   2            0.800000                             1     ! BOX  9: DET_PART_ORG_C
+                   9                  10                0.00                   2            0.800000                             1     ! BOX  9: DET_PART_ORG_N
+                   9                  11                0.00                   2            0.800000                             1     ! BOX  9: DET_PART_ORG_P
+                   9                  12                1.00                   0            0.800000                             1     ! BOX  9:     DISS_ORG_C
+                   9                  13                1.00                   0            0.800000                             1     ! BOX  9:     DISS_ORG_N
+                   9                  14                1.00                   0            0.800000                             1     ! BOX  9:     DISS_ORG_P
+                   9                  15                0.00                   0            0.800000                             1     ! BOX  9:          CYN_C
+                   9                  16                0.00                   3            0.800000                             1     ! BOX  9:          OPA_C
+                   9                  17                1.00                   0            0.800000                             1     ! BOX  9:        DISS_Si
+                   9                  18                0.00                   4            0.800000                             1     ! BOX  9:        PART_Si
+                   9                  19                0.00                   0            0.800000                             1     ! BOX  9:      FIX_CYN_C
+                   9                  20                1.00                   0            0.800000                             1     ! BOX  9:        INORG_C
+                   9                  21                1.00                   0            0.800000                             1     ! BOX  9:        TOT_ALK
+                   9                  22               -1.10                   5            0.800000                             1     ! BOX  9:          FE_II
+                   9                  23               -2.10                   5            0.800000                             1     ! BOX  9:         FE_III
+                   9                  24               -3.10                   5            0.800000                             1     ! BOX  9:          MN_II
+                   9                  25               -4.10                   5            0.800000                             1     ! BOX  9:          MN_IV
+                   9                  26                0.00                   6            0.800000                             1     ! BOX  9:             CA
+                   9                  27                0.00                   5            0.800000                             1     ! BOX  9:             MG
+                   9                  28                1.00                   0            0.800000                             1     ! BOX  9:       S_PLUS_6
+                   9                  29                1.00                   0            0.800000                             1     ! BOX  9:      S_MINUS_2
+                   9                  30                1.00                   0            0.800000                             1     ! BOX  9:          CH4_C
+                   9                  31                0.00                   0            0.800000                             1     ! BOX  9: NOST_VEG_HET_C
+                   9                  32                0.00                   0            0.990000                             1     ! BOX  9:          AKI_C
+                  10                   1                1.00                   0            0.900000                             1     ! BOX 10:          NH4_N
+                  10                   2                1.00                   0            0.900000                             1     ! BOX 10:          NO3_N
+                  10                   3                1.00                   0            0.900000                             1     ! BOX 10:          PO4_P
+                  10                   4                1.00                   0            0.900000                             1     ! BOX 10:    DISS_OXYGEN
+                  10                   5                0.00                   1            0.900000                             1     ! BOX 10:          DIA_C
+                  10                   6                0.00                   0            0.900000                             1     ! BOX 10:          ZOO_C
+                  10                   7                0.00                   0            0.900000                             1     ! BOX 10:          ZOO_N
+                  10                   8                0.00                   0            0.900000                             1     ! BOX 10:          ZOO_P
+                  10                   9                0.00                   2            0.900000                             1     ! BOX 10: DET_PART_ORG_C
+                  10                  10                0.00                   2            0.900000                             1     ! BOX 10: DET_PART_ORG_N
+                  10                  11                0.00                   2            0.900000                             1     ! BOX 10: DET_PART_ORG_P
+                  10                  12                1.00                   0            0.900000                             1     ! BOX 10:     DISS_ORG_C
+                  10                  13                1.00                   0            0.900000                             1     ! BOX 10:     DISS_ORG_N
+                  10                  14                1.00                   0            0.900000                             1     ! BOX 10:     DISS_ORG_P
+                  10                  15                0.00                   0            0.900000                             1     ! BOX 10:          CYN_C
+                  10                  16                0.00                   3            0.900000                             1     ! BOX 10:          OPA_C
+                  10                  17                1.00                   0            0.900000                             1     ! BOX 10:        DISS_Si
+                  10                  18                0.00                   4            0.900000                             1     ! BOX 10:        PART_Si
+                  10                  19                0.00                   0            0.900000                             1     ! BOX 10:      FIX_CYN_C
+                  10                  20                1.00                   0            0.900000                             1     ! BOX 10:        INORG_C
+                  10                  21                1.00                   0            0.900000                             1     ! BOX 10:        TOT_ALK
+                  10                  22               -1.10                   5            0.900000                             1     ! BOX 10:          FE_II
+                  10                  23               -2.10                   5            0.900000                             1     ! BOX 10:         FE_III
+                  10                  24               -3.10                   5            0.900000                             1     ! BOX 10:          MN_II
+                  10                  25               -4.10                   5            0.900000                             1     ! BOX 10:          MN_IV
+                  10                  26                0.00                   6            0.900000                             1     ! BOX 10:             CA
+                  10                  27                0.00                   5            0.900000                             1     ! BOX 10:             MG
+                  10                  28                1.00                   0            0.900000                             1     ! BOX 10:       S_PLUS_6
+                  10                  29                1.00                   0            0.900000                             1     ! BOX 10:      S_MINUS_2
+                  10                  30                1.00                   0            0.900000                             1     ! BOX 10:          CH4_C
+                  10                  31                0.00                   0            0.900000                             1     ! BOX 10: NOST_VEG_HET_C
+                  10                  32                0.00                   0            0.900000                             1     ! BOX 10:          AKI_C
+                  11                   1                1.00                   0            0.800000                             1     ! BOX 11:          NH4_N
+                  11                   2                1.00                   0            0.800000                             1     ! BOX 11:          NO3_N
+                  11                   3                1.00                   0            0.800000                             1     ! BOX 11:          PO4_P
+                  11                   4                1.00                   0            0.800000                             1     ! BOX 11:    DISS_OXYGEN
+                  11                   5                0.00                   1            0.800000                             1     ! BOX 11:          DIA_C
+                  11                   6                0.00                   0            0.800000                             1     ! BOX 11:          ZOO_C
+                  11                   7                0.00                   0            0.800000                             1     ! BOX 11:          ZOO_N
+                  11                   8                0.00                   0            0.800000                             1     ! BOX 11:          ZOO_P
+                  11                   9                0.00                   2            0.800000                             1     ! BOX 11: DET_PART_ORG_C
+                  11                  10                0.00                   2            0.800000                             1     ! BOX 11: DET_PART_ORG_N
+                  11                  11                0.00                   2            0.800000                             1     ! BOX 11: DET_PART_ORG_P
+                  11                  12                1.00                   0            0.800000                             1     ! BOX 11:     DISS_ORG_C
+                  11                  13                1.00                   0            0.800000                             1     ! BOX 11:     DISS_ORG_N
+                  11                  14                1.00                   0            0.800000                             1     ! BOX 11:     DISS_ORG_P
+                  11                  15                0.00                   0            0.800000                             1     ! BOX 11:          CYN_C
+                  11                  16                0.00                   3            0.800000                             1     ! BOX 11:          OPA_C
+                  11                  17                1.00                   0            0.800000                             1     ! BOX 11:        DISS_Si
+                  11                  18                0.00                   4            0.800000                             1     ! BOX 11:        PART_Si
+                  11                  19                0.00                   0            0.800000                             1     ! BOX 11:      FIX_CYN_C
+                  11                  20                1.00                   0            0.800000                             1     ! BOX 11:        INORG_C
+                  11                  21                1.00                   0            0.800000                             1     ! BOX 11:        TOT_ALK
+                  11                  22               -1.10                   5            0.800000                             1     ! BOX 11:          FE_II
+                  11                  23               -2.10                   5            0.800000                             1     ! BOX 11:         FE_III
+                  11                  24               -3.10                   5            0.800000                             1     ! BOX 11:          MN_II
+                  11                  25               -4.10                   5            0.800000                             1     ! BOX 11:          MN_IV
+                  11                  26                0.00                   6            0.800000                             1     ! BOX 11:             CA
+                  11                  27                0.00                   5            0.800000                             1     ! BOX 11:             MG
+                  11                  28                1.00                   0            0.800000                             1     ! BOX 11:       S_PLUS_6
+                  11                  29                1.00                   0            0.800000                             1     ! BOX 11:      S_MINUS_2
+                  11                  30                1.00                   0            0.800000                             1     ! BOX 11:          CH4_C
+                  11                  31                0.00                   0            0.800000                             1     ! BOX 11: NOST_VEG_HET_C
+                  11                  32                0.00                   0            0.800000                             1     ! BOX 11:          AKI_C
+                  12                   1                1.00                   0            0.900000                             1     ! BOX 12:          NH4_N
+                  12                   2                1.00                   0            0.900000                             1     ! BOX 12:          NO3_N
+                  12                   3                1.00                   0            0.900000                             1     ! BOX 12:          PO4_P
+                  12                   4                1.00                   0            0.900000                             1     ! BOX 12:    DISS_OXYGEN
+                  12                   5                0.00                   1            0.900000                             1     ! BOX 12:          DIA_C
+                  12                   6                0.00                   0            0.900000                             1     ! BOX 12:          ZOO_C
+                  12                   7                0.00                   0            0.900000                             1     ! BOX 12:          ZOO_N
+                  12                   8                0.00                   0            0.900000                             1     ! BOX 12:          ZOO_P
+                  12                   9                0.00                   2            0.900000                             1     ! BOX 12: DET_PART_ORG_C
+                  12                  10                0.00                   2            0.900000                             1     ! BOX 12: DET_PART_ORG_N
+                  12                  11                0.00                   2            0.900000                             1     ! BOX 12: DET_PART_ORG_P
+                  12                  12                1.00                   0            0.900000                             1     ! BOX 12:     DISS_ORG_C
+                  12                  13                1.00                   0            0.900000                             1     ! BOX 12:     DISS_ORG_N
+                  12                  14                1.00                   0            0.900000                             1     ! BOX 12:     DISS_ORG_P
+                  12                  15                0.00                   0            0.900000                             1     ! BOX 12:          CYN_C
+                  12                  16                0.00                   3            0.900000                             1     ! BOX 12:          OPA_C
+                  12                  17                1.00                   0            0.900000                             1     ! BOX 12:        DISS_Si
+                  12                  18                0.00                   4            0.900000                             1     ! BOX 12:        PART_Si
+                  12                  19                0.00                   0            0.900000                             1     ! BOX 12:      FIX_CYN_C
+                  12                  20                1.00                   0            0.900000                             1     ! BOX 12:        INORG_C
+                  12                  21                1.00                   0            0.900000                             1     ! BOX 12:        TOT_ALK
+                  12                  22               -1.10                   5            0.900000                             1     ! BOX 12:          FE_II
+                  12                  23               -2.10                   5            0.900000                             1     ! BOX 12:         FE_III
+                  12                  24               -3.10                   5            0.900000                             1     ! BOX 12:          MN_II
+                  12                  25               -4.10                   5            0.900000                             1     ! BOX 12:          MN_IV
+                  12                  26                0.00                   6            0.900000                             1     ! BOX 12:             CA
+                  12                  27                0.00                   5            0.900000                             1     ! BOX 12:             MG
+                  12                  28                1.00                   0            0.900000                             1     ! BOX 12:       S_PLUS_6
+                  12                  29                1.00                   0            0.900000                             1     ! BOX 12:      S_MINUS_2
+                  12                  30                1.00                   0            0.900000                             1     ! BOX 12:          CH4_C
+                  12                  31                0.00                   0            0.900000                             1     ! BOX 12: NOST_VEG_HET_C
+                  12                  32                0.00                   0            0.900000                             1     ! BOX 12:          AKI_C
+                  13                   1                1.00                   0            0.900000                             1     ! BOX 13:          NH4_N
+                  13                   2                1.00                   0            0.900000                             1     ! BOX 13:          NO3_N
+                  13                   3                1.00                   0            0.900000                             1     ! BOX 13:          PO4_P
+                  13                   4                1.00                   0            0.900000                             1     ! BOX 13:    DISS_OXYGEN
+                  13                   5                0.00                   1            0.900000                             1     ! BOX 13:          DIA_C
+                  13                   6                0.00                   0            0.900000                             1     ! BOX 13:          ZOO_C
+                  13                   7                0.00                   0            0.900000                             1     ! BOX 13:          ZOO_N
+                  13                   8                0.00                   0            0.900000                             1     ! BOX 13:          ZOO_P
+                  13                   9                0.00                   2            0.900000                             1     ! BOX 13: DET_PART_ORG_C
+                  13                  10                0.00                   2            0.900000                             1     ! BOX 13: DET_PART_ORG_N
+                  13                  11                0.00                   2            0.900000                             1     ! BOX 13: DET_PART_ORG_P
+                  13                  12                1.00                   0            0.900000                             1     ! BOX 13:     DISS_ORG_C
+                  13                  13                1.00                   0            0.900000                             1     ! BOX 13:     DISS_ORG_N
+                  13                  14                1.00                   0            0.900000                             1     ! BOX 13:     DISS_ORG_P
+                  13                  15                0.00                   0            0.900000                             1     ! BOX 13:          CYN_C
+                  13                  16                0.00                   3            0.900000                             1     ! BOX 13:          OPA_C
+                  13                  17                1.00                   0            0.900000                             1     ! BOX 13:        DISS_Si
+                  13                  18                0.00                   4            0.900000                             1     ! BOX 13:        PART_Si
+                  13                  19                0.00                   0            0.900000                             1     ! BOX 13:      FIX_CYN_C
+                  13                  20                1.00                   0            0.900000                             1     ! BOX 13:        INORG_C
+                  13                  21                1.00                   0            0.900000                             1     ! BOX 13:        TOT_ALK
+                  13                  22               -1.10                   5            0.900000                             1     ! BOX 13:          FE_II
+                  13                  23               -2.10                   5            0.900000                             1     ! BOX 13:         FE_III
+                  13                  24               -3.10                   5            0.900000                             1     ! BOX 13:          MN_II
+                  13                  25               -4.10                   5            0.900000                             1     ! BOX 13:          MN_IV
+                  13                  26                0.00                   6            0.900000                             1     ! BOX 13:             CA
+                  13                  27                0.00                   5            0.900000                             1     ! BOX 13:             MG
+                  13                  28                1.00                   0            0.900000                             1     ! BOX 13:       S_PLUS_6
+                  13                  29                1.00                   0            0.900000                             1     ! BOX 13:      S_MINUS_2
+                  13                  30                1.00                   0            0.900000                             1     ! BOX 13:          CH4_C
+                  13                  31                0.00                   0            0.900000                             1     ! BOX 13: NOST_VEG_HET_C
+                  13                  32                0.00                   0            0.900000                             1     ! BOX 13:          AKI_C
+                  14                   1                1.00                   0            0.990000                             1     ! BOX 14:          NH4_N
+                  14                   2                1.00                   0            0.990000                             1     ! BOX 14:          NO3_N
+                  14                   3                1.00                   0            0.990000                             1     ! BOX 14:          PO4_P
+                  14                   4                1.00                   0            0.990000                             1     ! BOX 14:    DISS_OXYGEN
+                  14                   5                0.00                   1            0.990000                             1     ! BOX 14:          DIA_C
+                  14                   6                0.00                   0            0.990000                             1     ! BOX 14:          ZOO_C
+                  14                   7                0.00                   0            0.990000                             1     ! BOX 14:          ZOO_N
+                  14                   8                0.00                   0            0.990000                             1     ! BOX 14:          ZOO_P
+                  14                   9                0.00                   2            0.990000                             1     ! BOX 14: DET_PART_ORG_C
+                  14                  10                0.00                   2            0.990000                             1     ! BOX 14: DET_PART_ORG_N
+                  14                  11                0.00                   2            0.990000                             1     ! BOX 14: DET_PART_ORG_P
+                  14                  12                1.00                   0            0.990000                             1     ! BOX 14:     DISS_ORG_C
+                  14                  13                1.00                   0            0.990000                             1     ! BOX 14:     DISS_ORG_N
+                  14                  14                1.00                   0            0.990000                             1     ! BOX 14:     DISS_ORG_P
+                  14                  15                0.00                   0            0.990000                             1     ! BOX 14:          CYN_C
+                  14                  16                0.00                   3            0.990000                             1     ! BOX 14:          OPA_C
+                  14                  17                1.00                   0            0.990000                             1     ! BOX 14:        DISS_Si
+                  14                  18                0.00                   4            0.990000                             1     ! BOX 14:        PART_Si
+                  14                  19                0.00                   0            0.990000                             1     ! BOX 14:      FIX_CYN_C
+                  14                  20                1.00                   0            0.990000                             1     ! BOX 14:        INORG_C
+                  14                  21                1.00                   0            0.990000                             1     ! BOX 14:        TOT_ALK
+                  14                  22               -1.10                   5            0.990000                             1     ! BOX 14:          FE_II
+                  14                  23               -2.10                   5            0.990000                             1     ! BOX 14:         FE_III
+                  14                  24               -3.10                   5            0.990000                             1     ! BOX 14:          MN_II
+                  14                  25               -4.10                   5            0.990000                             1     ! BOX 14:          MN_IV
+                  14                  26                0.00                   6            0.990000                             1     ! BOX 14:             CA
+                  14                  27                0.00                   5            0.990000                             1     ! BOX 14:             MG
+                  14                  28                1.00                   0            0.990000                             1     ! BOX 14:       S_PLUS_6
+                  14                  29                1.00                   0            0.990000                             1     ! BOX 14:      S_MINUS_2
+                  14                  30                1.00                   0            0.990000                             1     ! BOX 14:          CH4_C
+                  14                  31                0.00                   0            0.990000                             1     ! BOX 14: NOST_VEG_HET_C
+                  14                  32                0.00                   0            0.990000                             1     ! BOX 14:          AKI_C
+                  15                   1                1.00                   0            0.990000                             1     ! BOX 15:          NH4_N
+                  15                   2                1.00                   0            0.990000                             1     ! BOX 15:          NO3_N
+                  15                   3                1.00                   0            0.990000                             1     ! BOX 15:          PO4_P
+                  15                   4                1.00                   0            0.990000                             1     ! BOX 15:    DISS_OXYGEN
+                  15                   5                0.00                   1            0.990000                             1     ! BOX 15:          DIA_C
+                  15                   6                0.00                   0            0.990000                             1     ! BOX 15:          ZOO_C
+                  15                   7                0.00                   0            0.990000                             1     ! BOX 15:          ZOO_N
+                  15                   8                0.00                   0            0.990000                             1     ! BOX 15:          ZOO_P
+                  15                   9                0.00                   2            0.990000                             1     ! BOX 15: DET_PART_ORG_C
+                  15                  10                0.00                   2            0.990000                             1     ! BOX 15: DET_PART_ORG_N
+                  15                  11                0.00                   2            0.990000                             1     ! BOX 15: DET_PART_ORG_P
+                  15                  12                1.00                   0            0.990000                             1     ! BOX 15:     DISS_ORG_C
+                  15                  13                1.00                   0            0.990000                             1     ! BOX 15:     DISS_ORG_N
+                  15                  14                1.00                   0            0.990000                             1     ! BOX 15:     DISS_ORG_P
+                  15                  15                0.00                   0            0.990000                             1     ! BOX 15:          CYN_C
+                  15                  16                0.00                   3            0.990000                             1     ! BOX 15:          OPA_C
+                  15                  17                1.00                   0            0.990000                             1     ! BOX 15:        DISS_Si
+                  15                  18                0.00                   4            0.990000                             1     ! BOX 15:        PART_Si
+                  15                  19                0.00                   0            0.990000                             1     ! BOX 15:      FIX_CYN_C
+                  15                  20                1.00                   0            0.990000                             1     ! BOX 15:        INORG_C
+                  15                  21                1.00                   0            0.990000                             1     ! BOX 15:        TOT_ALK
+                  15                  22               -1.10                   5            0.990000                             1     ! BOX 15:          FE_II
+                  15                  23               -2.10                   5            0.990000                             1     ! BOX 15:         FE_III
+                  15                  24               -3.10                   5            0.990000                             1     ! BOX 15:          MN_II
+                  15                  25               -4.10                   5            0.990000                             1     ! BOX 15:          MN_IV
+                  15                  26                0.00                   6            0.990000                             1     ! BOX 15:             CA
+                  15                  27                0.00                   5            0.990000                             1     ! BOX 15:             MG
+                  15                  28                1.00                   0            0.990000                             1     ! BOX 15:       S_PLUS_6
+                  15                  29                1.00                   0            0.990000                             1     ! BOX 15:      S_MINUS_2
+                  15                  30                1.00                   0            0.990000                             1     ! BOX 15:          CH4_C
+                  15                  31                0.00                   0            0.990000                             1     ! BOX 15: NOST_VEG_HET_C
+                  15                  32                0.00                   0            0.990000                             1     ! BOX 15:          AKI_C
+                  16                   1                1.00                   0            0.900000                             1     ! BOX 16:          NH4_N
+                  16                   2                1.00                   0            0.900000                             1     ! BOX 16:          NO3_N
+                  16                   3                1.00                   0            0.900000                             1     ! BOX 16:          PO4_P
+                  16                   4                1.00                   0            0.900000                             1     ! BOX 16:    DISS_OXYGEN
+                  16                   5                0.00                   1            0.900000                             1     ! BOX 16:          DIA_C
+                  16                   6                0.00                   0            0.900000                             1     ! BOX 16:          ZOO_C
+                  16                   7                0.00                   0            0.900000                             1     ! BOX 16:          ZOO_N
+                  16                   8                0.00                   0            0.900000                             1     ! BOX 16:          ZOO_P
+                  16                   9                0.00                   2            0.900000                             1     ! BOX 16: DET_PART_ORG_C
+                  16                  10                0.00                   2            0.900000                             1     ! BOX 16: DET_PART_ORG_N
+                  16                  11                0.00                   2            0.900000                             1     ! BOX 16: DET_PART_ORG_P
+                  16                  12                1.00                   0            0.900000                             1     ! BOX 16:     DISS_ORG_C
+                  16                  13                1.00                   0            0.900000                             1     ! BOX 16:     DISS_ORG_N
+                  16                  14                1.00                   0            0.900000                             1     ! BOX 16:     DISS_ORG_P
+                  16                  15                0.00                   0            0.900000                             1     ! BOX 16:          CYN_C
+                  16                  16                0.00                   3            0.900000                             1     ! BOX 16:          OPA_C
+                  16                  17                1.00                   0            0.900000                             1     ! BOX 16:        DISS_Si
+                  16                  18                0.00                   4            0.900000                             1     ! BOX 16:        PART_Si
+                  16                  19                0.00                   0            0.900000                             1     ! BOX 16:      FIX_CYN_C
+                  16                  20                1.00                   0            0.900000                             1     ! BOX 16:        INORG_C
+                  16                  21                1.00                   0            0.900000                             1     ! BOX 16:        TOT_ALK
+                  16                  22               -1.10                   5            0.900000                             1     ! BOX 16:          FE_II
+                  16                  23               -2.10                   5            0.900000                             1     ! BOX 16:         FE_III
+                  16                  24               -3.10                   5            0.900000                             1     ! BOX 16:          MN_II
+                  16                  25               -4.10                   5            0.900000                             1     ! BOX 16:          MN_IV
+                  16                  26                0.00                   6            0.900000                             1     ! BOX 16:             CA
+                  16                  27                0.00                   5            0.900000                             1     ! BOX 16:             MG
+                  16                  28                1.00                   0            0.900000                             1     ! BOX 16:       S_PLUS_6
+                  16                  29                1.00                   0            0.900000                             1     ! BOX 16:      S_MINUS_2
+                  16                  30                1.00                   0            0.900000                             1     ! BOX 16:          CH4_C
+                  16                  31                0.00                   0            0.900000                             1     ! BOX 16: NOST_VEG_HET_C
+                  16                  32                0.00                   0            0.900000                             1     ! BOX 16:          AKI_C
+                  17                   1                1.00                   0            0.990000                             1     ! BOX 17:          NH4_N
+                  17                   2                1.00                   0            0.990000                             1     ! BOX 17:          NO3_N
+                  17                   3                1.00                   0            0.990000                             1     ! BOX 17:          PO4_P
+                  17                   4                1.00                   0            0.990000                             1     ! BOX 17:    DISS_OXYGEN
+                  17                   5                0.00                   1            0.990000                             1     ! BOX 17:          DIA_C
+                  17                   6                0.00                   0            0.990000                             1     ! BOX 17:          ZOO_C
+                  17                   7                0.00                   0            0.990000                             1     ! BOX 17:          ZOO_N
+                  17                   8                0.00                   0            0.990000                             1     ! BOX 17:          ZOO_P
+                  17                   9                0.00                   2            0.990000                             1     ! BOX 17: DET_PART_ORG_C
+                  17                  10                0.00                   2            0.990000                             1     ! BOX 17: DET_PART_ORG_N
+                  17                  11                0.00                   2            0.990000                             1     ! BOX 17: DET_PART_ORG_P
+                  17                  12                1.00                   0            0.990000                             1     ! BOX 17:     DISS_ORG_C
+                  17                  13                1.00                   0            0.990000                             1     ! BOX 17:     DISS_ORG_N
+                  17                  14                1.00                   0            0.990000                             1     ! BOX 17:     DISS_ORG_P
+                  17                  15                0.00                   0            0.990000                             1     ! BOX 17:          CYN_C
+                  17                  16                0.00                   3            0.990000                             1     ! BOX 17:          OPA_C
+                  17                  17                1.00                   0            0.990000                             1     ! BOX 17:        DISS_Si
+                  17                  18                0.00                   4            0.990000                             1     ! BOX 17:        PART_Si
+                  17                  19                0.00                   0            0.990000                             1     ! BOX 17:      FIX_CYN_C
+                  17                  20                1.00                   0            0.990000                             1     ! BOX 17:        INORG_C
+                  17                  21                1.00                   0            0.990000                             1     ! BOX 17:        TOT_ALK
+                  17                  22               -1.10                   5            0.990000                             1     ! BOX 17:          FE_II
+                  17                  23               -2.10                   5            0.990000                             1     ! BOX 17:         FE_III
+                  17                  24               -3.10                   5            0.990000                             1     ! BOX 17:          MN_II
+                  17                  25               -4.10                   5            0.990000                             1     ! BOX 17:          MN_IV
+                  17                  26                0.00                   6            0.990000                             1     ! BOX 17:             CA
+                  17                  27                0.00                   5            0.990000                             1     ! BOX 17:             MG
+                  17                  28                1.00                   0            0.990000                             1     ! BOX 17:       S_PLUS_6
+                  17                  29                1.00                   0            0.990000                             1     ! BOX 17:      S_MINUS_2
+                  17                  30                1.00                   0            0.990000                             1     ! BOX 17:          CH4_C
+                  17                  31                0.00                   0            0.990000                             1     ! BOX 17: NOST_VEG_HET_C
+                  17                  32                0.00                   0            0.990000                             1     ! BOX 17:          AKI_C
+                  18                   1                1.00                   0            0.990000                             1     ! BOX 18:          NH4_N
+                  18                   2                1.00                   0            0.990000                             1     ! BOX 18:          NO3_N
+                  18                   3                1.00                   0            0.990000                             1     ! BOX 18:          PO4_P
+                  18                   4                1.00                   0            0.990000                             1     ! BOX 18:    DISS_OXYGEN
+                  18                   5                0.00                   1            0.990000                             1     ! BOX 18:          DIA_C
+                  18                   6                0.00                   0            0.990000                             1     ! BOX 18:          ZOO_C
+                  18                   7                0.00                   0            0.990000                             1     ! BOX 18:          ZOO_N
+                  18                   8                0.00                   0            0.990000                             1     ! BOX 18:          ZOO_P
+                  18                   9                0.00                   2            0.990000                             1     ! BOX 18: DET_PART_ORG_C
+                  18                  10                0.00                   2            0.990000                             1     ! BOX 18: DET_PART_ORG_N
+                  18                  11                0.00                   2            0.990000                             1     ! BOX 18: DET_PART_ORG_P
+                  18                  12                1.00                   0            0.990000                             1     ! BOX 18:     DISS_ORG_C
+                  18                  13                1.00                   0            0.990000                             1     ! BOX 18:     DISS_ORG_N
+                  18                  14                1.00                   0            0.990000                             1     ! BOX 18:     DISS_ORG_P
+                  18                  15                0.00                   0            0.990000                             1     ! BOX 18:          CYN_C
+                  18                  16                0.00                   3            0.990000                             1     ! BOX 18:          OPA_C
+                  18                  17                1.00                   0            0.990000                             1     ! BOX 18:        DISS_Si
+                  18                  18                0.00                   4            0.990000                             1     ! BOX 18:        PART_Si
+                  18                  19                0.00                   0            0.990000                             1     ! BOX 18:      FIX_CYN_C
+                  18                  20                1.00                   0            0.990000                             1     ! BOX 18:        INORG_C
+                  18                  21                1.00                   0            0.990000                             1     ! BOX 18:        TOT_ALK
+                  18                  22               -1.10                   5            0.990000                             1     ! BOX 18:          FE_II
+                  18                  23               -2.10                   5            0.990000                             1     ! BOX 18:         FE_III
+                  18                  24               -3.10                   5            0.990000                             1     ! BOX 18:          MN_II
+                  18                  25               -4.10                   5            0.990000                             1     ! BOX 18:          MN_IV
+                  18                  26                0.00                   6            0.990000                             1     ! BOX 18:             CA
+                  18                  27                0.00                   5            0.990000                             1     ! BOX 18:             MG
+                  18                  28                1.00                   0            0.990000                             1     ! BOX 18:       S_PLUS_6
+                  18                  29                1.00                   0            0.990000                             1     ! BOX 18:      S_MINUS_2
+                  18                  30                1.00                   0            0.990000                             1     ! BOX 18:          CH4_C
+                  18                  31                0.00                   0            0.990000                             1     ! BOX 18: NOST_VEG_HET_C
+                  18                  32                0.00                   0            0.990000                             1     ! BOX 18:          AKI_C
+                  19                   1                1.00                   0            0.990000                             1     ! BOX 19:          NH4_N
+                  19                   2                1.00                   0            0.990000                             1     ! BOX 19:          NO3_N
+                  19                   3                1.00                   0            0.990000                             1     ! BOX 19:          PO4_P
+                  19                   4                1.00                   0            0.990000                             1     ! BOX 19:    DISS_OXYGEN
+                  19                   5                0.00                   1            0.990000                             1     ! BOX 19:          DIA_C
+                  19                   6                0.00                   0            0.990000                             1     ! BOX 19:          ZOO_C
+                  19                   7                0.00                   0            0.990000                             1     ! BOX 19:          ZOO_N
+                  19                   8                0.00                   0            0.990000                             1     ! BOX 19:          ZOO_P
+                  19                   9                0.00                   2            0.990000                             1     ! BOX 19: DET_PART_ORG_C
+                  19                  10                0.00                   2            0.990000                             1     ! BOX 19: DET_PART_ORG_N
+                  19                  11                0.00                   2            0.990000                             1     ! BOX 19: DET_PART_ORG_P
+                  19                  12                1.00                   0            0.990000                             1     ! BOX 19:     DISS_ORG_C
+                  19                  13                1.00                   0            0.990000                             1     ! BOX 19:     DISS_ORG_N
+                  19                  14                1.00                   0            0.990000                             1     ! BOX 19:     DISS_ORG_P
+                  19                  15                0.00                   0            0.990000                             1     ! BOX 19:          CYN_C
+                  19                  16                0.00                   3            0.990000                             1     ! BOX 19:          OPA_C
+                  19                  17                1.00                   0            0.990000                             1     ! BOX 19:        DISS_Si
+                  19                  18                0.00                   4            0.990000                             1     ! BOX 19:        PART_Si
+                  19                  19                0.00                   0            0.990000                             1     ! BOX 19:      FIX_CYN_C
+                  19                  20                1.00                   0            0.990000                             1     ! BOX 19:        INORG_C
+                  19                  21                1.00                   0            0.990000                             1     ! BOX 19:        TOT_ALK
+                  19                  22               -1.10                   5            0.990000                             1     ! BOX 19:          FE_II
+                  19                  23               -2.10                   5            0.990000                             1     ! BOX 19:         FE_III
+                  19                  24               -3.10                   5            0.990000                             1     ! BOX 19:          MN_II
+                  19                  25               -4.10                   5            0.990000                             1     ! BOX 19:          MN_IV
+                  19                  26                0.00                   6            0.990000                             1     ! BOX 19:             CA
+                  19                  27                0.00                   5            0.990000                             1     ! BOX 19:             MG
+                  19                  28                1.00                   0            0.990000                             1     ! BOX 19:       S_PLUS_6
+                  19                  29                1.00                   0            0.990000                             1     ! BOX 19:      S_MINUS_2
+                  19                  30                1.00                   0            0.990000                             1     ! BOX 19:          CH4_C
+                  19                  31                0.00                   0            0.990000                             1     ! BOX 19: NOST_VEG_HET_C
+                  19                  32                0.00                   0            0.990000                             1     ! BOX 19:          AKI_C
+                  20                   1                1.00                   0            0.800000                             1     ! BOX 20:          NH4_N
+                  20                   2                1.00                   0            0.800000                             1     ! BOX 20:          NO3_N
+                  20                   3                1.00                   0            0.800000                             1     ! BOX 20:          PO4_P
+                  20                   4                1.00                   0            0.800000                             1     ! BOX 20:    DISS_OXYGEN
+                  20                   5                0.00                   1            0.800000                             1     ! BOX 20:          DIA_C
+                  20                   6                0.00                   0            0.800000                             1     ! BOX 20:          ZOO_C
+                  20                   7                0.00                   0            0.800000                             1     ! BOX 20:          ZOO_N
+                  20                   8                0.00                   0            0.800000                             1     ! BOX 20:          ZOO_P
+                  20                   9                0.00                   2            0.800000                             1     ! BOX 20: DET_PART_ORG_C
+                  20                  10                0.00                   2            0.800000                             1     ! BOX 20: DET_PART_ORG_N
+                  20                  11                0.00                   2            0.800000                             1     ! BOX 20: DET_PART_ORG_P
+                  20                  12                1.00                   0            0.800000                             1     ! BOX 20:     DISS_ORG_C
+                  20                  13                1.00                   0            0.800000                             1     ! BOX 20:     DISS_ORG_N
+                  20                  14                1.00                   0            0.800000                             1     ! BOX 20:     DISS_ORG_P
+                  20                  15                0.00                   0            0.800000                             1     ! BOX 20:          CYN_C
+                  20                  16                0.00                   3            0.800000                             1     ! BOX 20:          OPA_C
+                  20                  17                1.00                   0            0.800000                             1     ! BOX 20:        DISS_Si
+                  20                  18                0.00                   4            0.800000                             1     ! BOX 20:        PART_Si
+                  20                  19                0.00                   0            0.800000                             1     ! BOX 20:      FIX_CYN_C
+                  20                  20                1.00                   0            0.800000                             1     ! BOX 20:        INORG_C
+                  20                  21                1.00                   0            0.800000                             1     ! BOX 20:        TOT_ALK
+                  20                  22               -1.10                   5            0.800000                             1     ! BOX 20:          FE_II
+                  20                  23               -2.10                   5            0.800000                             1     ! BOX 20:         FE_III
+                  20                  24               -3.10                   5            0.800000                             1     ! BOX 20:          MN_II
+                  20                  25               -4.10                   5            0.800000                             1     ! BOX 20:          MN_IV
+                  20                  26                0.00                   6            0.800000                             1     ! BOX 20:             CA
+                  20                  27                0.00                   5            0.800000                             1     ! BOX 20:             MG
+                  20                  28                1.00                   0            0.800000                             1     ! BOX 20:       S_PLUS_6
+                  20                  29                1.00                   0            0.800000                             1     ! BOX 20:      S_MINUS_2
+                  20                  30                1.00                   0            0.800000                             1     ! BOX 20:          CH4_C
+                  20                  31                0.00                   0            0.800000                             1     ! BOX 20: NOST_VEG_HET_C
+                  20                  32                0.00                   0            0.800000                             1     ! BOX 20:          AKI_C
+                  21                   1                1.00                   0            0.990000                             1     ! BOX 21:          NH4_N
+                  21                   2                1.00                   0            0.990000                             1     ! BOX 21:          NO3_N
+                  21                   3                1.00                   0            0.990000                             1     ! BOX 21:          PO4_P
+                  21                   4                1.00                   0            0.990000                             1     ! BOX 21:    DISS_OXYGEN
+                  21                   5                0.00                   1            0.990000                             1     ! BOX 21:          DIA_C
+                  21                   6                0.00                   0            0.990000                             1     ! BOX 21:          ZOO_C
+                  21                   7                0.00                   0            0.990000                             1     ! BOX 21:          ZOO_N
+                  21                   8                0.00                   0            0.990000                             1     ! BOX 21:          ZOO_P
+                  21                   9                0.00                   2            0.990000                             1     ! BOX 21: DET_PART_ORG_C
+                  21                  10                0.00                   2            0.990000                             1     ! BOX 21: DET_PART_ORG_N
+                  21                  11                0.00                   2            0.990000                             1     ! BOX 21: DET_PART_ORG_P
+                  21                  12                1.00                   0            0.990000                             1     ! BOX 21:     DISS_ORG_C
+                  21                  13                1.00                   0            0.990000                             1     ! BOX 21:     DISS_ORG_N
+                  21                  14                1.00                   0            0.990000                             1     ! BOX 21:     DISS_ORG_P
+                  21                  15                0.00                   0            0.990000                             1     ! BOX 21:          CYN_C
+                  21                  16                0.00                   3            0.990000                             1     ! BOX 21:          OPA_C
+                  21                  17                1.00                   0            0.990000                             1     ! BOX 21:        DISS_Si
+                  21                  18                0.00                   4            0.990000                             1     ! BOX 21:        PART_Si
+                  21                  19                0.00                   0            0.990000                             1     ! BOX 21:      FIX_CYN_C
+                  21                  20                1.00                   0            0.990000                             1     ! BOX 21:        INORG_C
+                  21                  21                1.00                   0            0.990000                             1     ! BOX 21:        TOT_ALK
+                  21                  22               -1.10                   5            0.990000                             1     ! BOX 21:          FE_II
+                  21                  23               -2.10                   5            0.990000                             1     ! BOX 21:         FE_III
+                  21                  24               -3.10                   5            0.990000                             1     ! BOX 21:          MN_II
+                  21                  25               -4.10                   5            0.990000                             1     ! BOX 21:          MN_IV
+                  21                  26                0.00                   6            0.990000                             1     ! BOX 21:             CA
+                  21                  27                0.00                   5            0.990000                             1     ! BOX 21:             MG
+                  21                  28                1.00                   0            0.990000                             1     ! BOX 21:       S_PLUS_6
+                  21                  29                1.00                   0            0.990000                             1     ! BOX 21:      S_MINUS_2
+                  21                  30                1.00                   0            0.990000                             1     ! BOX 21:          CH4_C
+                  21                  31                0.00                   0            0.990000                             1     ! BOX 21: NOST_VEG_HET_C
+                  21                  32                0.00                   0            0.990000                             1     ! BOX 21:          AKI_C
+                  22                   1                1.00                   0            0.800000                             1     ! BOX 22:          NH4_N
+                  22                   2                1.00                   0            0.800000                             1     ! BOX 22:          NO3_N
+                  22                   3                1.00                   0            0.800000                             1     ! BOX 22:          PO4_P
+                  22                   4                1.00                   0            0.800000                             1     ! BOX 22:    DISS_OXYGEN
+                  22                   5                0.00                   1            0.800000                             1     ! BOX 22:          DIA_C
+                  22                   6                0.00                   0            0.800000                             1     ! BOX 22:          ZOO_C
+                  22                   7                0.00                   0            0.800000                             1     ! BOX 22:          ZOO_N
+                  22                   8                0.00                   0            0.800000                             1     ! BOX 22:          ZOO_P
+                  22                   9                0.00                   2            0.800000                             1     ! BOX 22: DET_PART_ORG_C
+                  22                  10                0.00                   2            0.800000                             1     ! BOX 22: DET_PART_ORG_N
+                  22                  11                0.00                   2            0.800000                             1     ! BOX 22: DET_PART_ORG_P
+                  22                  12                1.00                   0            0.800000                             1     ! BOX 22:     DISS_ORG_C
+                  22                  13                1.00                   0            0.800000                             1     ! BOX 22:     DISS_ORG_N
+                  22                  14                1.00                   0            0.800000                             1     ! BOX 22:     DISS_ORG_P
+                  22                  15                0.00                   0            0.800000                             1     ! BOX 22:          CYN_C
+                  22                  16                0.00                   3            0.800000                             1     ! BOX 22:          OPA_C
+                  22                  17                1.00                   0            0.800000                             1     ! BOX 22:        DISS_Si
+                  22                  18                0.00                   4            0.800000                             1     ! BOX 22:        PART_Si
+                  22                  19                0.00                   0            0.800000                             1     ! BOX 22:      FIX_CYN_C
+                  22                  20                1.00                   0            0.800000                             1     ! BOX 22:        INORG_C
+                  22                  21                1.00                   0            0.800000                             1     ! BOX 22:        TOT_ALK
+                  22                  22               -1.10                   5            0.800000                             1     ! BOX 22:          FE_II
+                  22                  23               -2.10                   5            0.800000                             1     ! BOX 22:         FE_III
+                  22                  24               -3.10                   5            0.800000                             1     ! BOX 22:          MN_II
+                  22                  25               -4.10                   5            0.800000                             1     ! BOX 22:          MN_IV
+                  22                  26                0.00                   6            0.800000                             1     ! BOX 22:             CA
+                  22                  27                0.00                   5            0.800000                             1     ! BOX 22:             MG
+                  22                  28                1.00                   0            0.800000                             1     ! BOX 22:       S_PLUS_6
+                  22                  29                1.00                   0            0.800000                             1     ! BOX 22:      S_MINUS_2
+                  22                  30                1.00                   0            0.800000                             1     ! BOX 22:          CH4_C
+                  22                  31                0.00                   0            0.800000                             1     ! BOX 22: NOST_VEG_HET_C
+                  22                  32                0.00                   0            0.800000                             1     ! BOX 22:          AKI_C
+                  23                   1                1.00                   0            0.990000                             1     ! BOX 23:          NH4_N
+                  23                   2                1.00                   0            0.990000                             1     ! BOX 23:          NO3_N
+                  23                   3                1.00                   0            0.990000                             1     ! BOX 23:          PO4_P
+                  23                   4                1.00                   0            0.990000                             1     ! BOX 23:    DISS_OXYGEN
+                  23                   5                0.00                   1            0.990000                             1     ! BOX 23:          DIA_C
+                  23                   6                0.00                   0            0.990000                             1     ! BOX 23:          ZOO_C
+                  23                   7                0.00                   0            0.990000                             1     ! BOX 23:          ZOO_N
+                  23                   8                0.00                   0            0.990000                             1     ! BOX 23:          ZOO_P
+                  23                   9                0.00                   2            0.990000                             1     ! BOX 23: DET_PART_ORG_C
+                  23                  10                0.00                   2            0.990000                             1     ! BOX 23: DET_PART_ORG_N
+                  23                  11                0.00                   2            0.990000                             1     ! BOX 23: DET_PART_ORG_P
+                  23                  12                1.00                   0            0.990000                             1     ! BOX 23:     DISS_ORG_C
+                  23                  13                1.00                   0            0.990000                             1     ! BOX 23:     DISS_ORG_N
+                  23                  14                1.00                   0            0.990000                             1     ! BOX 23:     DISS_ORG_P
+                  23                  15                0.00                   0            0.990000                             1     ! BOX 23:          CYN_C
+                  23                  16                0.00                   3            0.990000                             1     ! BOX 23:          OPA_C
+                  23                  17                1.00                   0            0.990000                             1     ! BOX 23:        DISS_Si
+                  23                  18                0.00                   4            0.990000                             1     ! BOX 23:        PART_Si
+                  23                  19                0.00                   0            0.990000                             1     ! BOX 23:      FIX_CYN_C
+                  23                  20                1.00                   0            0.990000                             1     ! BOX 23:        INORG_C
+                  23                  21                1.00                   0            0.990000                             1     ! BOX 23:        TOT_ALK
+                  23                  22               -1.10                   5            0.990000                             1     ! BOX 23:          FE_II
+                  23                  23               -2.10                   5            0.990000                             1     ! BOX 23:         FE_III
+                  23                  24               -3.10                   5            0.990000                             1     ! BOX 23:          MN_II
+                  23                  25               -4.10                   5            0.990000                             1     ! BOX 23:          MN_IV
+                  23                  26                0.00                   6            0.990000                             1     ! BOX 23:             CA
+                  23                  27                0.00                   5            0.990000                             1     ! BOX 23:             MG
+                  23                  28                1.00                   0            0.990000                             1     ! BOX 23:       S_PLUS_6
+                  23                  29                1.00                   0            0.990000                             1     ! BOX 23:      S_MINUS_2
+                  23                  30                1.00                   0            0.990000                             1     ! BOX 23:          CH4_C
+                  23                  31                0.00                   0            0.990000                             1     ! BOX 23: NOST_VEG_HET_C
+                  23                  32                0.00                   0            0.990000                             1     ! BOX 23:          AKI_C
+                  24                   1                1.00                   0            0.800000                             1     ! BOX 24:          NH4_N
+                  24                   2                1.00                   0            0.800000                             1     ! BOX 24:          NO3_N
+                  24                   3                1.00                   0            0.800000                             1     ! BOX 24:          PO4_P
+                  24                   4                1.00                   0            0.800000                             1     ! BOX 24:    DISS_OXYGEN
+                  24                   5                0.00                   1            0.800000                             1     ! BOX 24:          DIA_C
+                  24                   6                0.00                   0            0.800000                             1     ! BOX 24:          ZOO_C
+                  24                   7                0.00                   0            0.800000                             1     ! BOX 24:          ZOO_N
+                  24                   8                0.00                   0            0.800000                             1     ! BOX 24:          ZOO_P
+                  24                   9                0.00                   2            0.800000                             1     ! BOX 24: DET_PART_ORG_C
+                  24                  10                0.00                   2            0.800000                             1     ! BOX 24: DET_PART_ORG_N
+                  24                  11                0.00                   2            0.800000                             1     ! BOX 24: DET_PART_ORG_P
+                  24                  12                1.00                   0            0.800000                             1     ! BOX 24:     DISS_ORG_C
+                  24                  13                1.00                   0            0.800000                             1     ! BOX 24:     DISS_ORG_N
+                  24                  14                1.00                   0            0.800000                             1     ! BOX 24:     DISS_ORG_P
+                  24                  15                0.00                   0            0.800000                             1     ! BOX 24:          CYN_C
+                  24                  16                0.00                   3            0.800000                             1     ! BOX 24:          OPA_C
+                  24                  17                1.00                   0            0.800000                             1     ! BOX 24:        DISS_Si
+                  24                  18                0.00                   4            0.800000                             1     ! BOX 24:        PART_Si
+                  24                  19                0.00                   0            0.800000                             1     ! BOX 24:      FIX_CYN_C
+                  24                  20                1.00                   0            0.800000                             1     ! BOX 24:        INORG_C
+                  24                  21                1.00                   0            0.800000                             1     ! BOX 24:        TOT_ALK
+                  24                  22               -1.10                   5            0.800000                             1     ! BOX 24:          FE_II
+                  24                  23               -2.10                   5            0.800000                             1     ! BOX 24:         FE_III
+                  24                  24               -3.10                   5            0.800000                             1     ! BOX 24:          MN_II
+                  24                  25               -4.10                   5            0.800000                             1     ! BOX 24:          MN_IV
+                  24                  26                0.00                   6            0.800000                             1     ! BOX 24:             CA
+                  24                  27                0.00                   5            0.800000                             1     ! BOX 24:             MG
+                  24                  28                1.00                   0            0.800000                             1     ! BOX 24:       S_PLUS_6
+                  24                  29                1.00                   0            0.800000                             1     ! BOX 24:      S_MINUS_2
+                  24                  30                1.00                   0            0.800000                             1     ! BOX 24:          CH4_C
+                  24                  31                0.00                   0            0.800000                             1     ! BOX 24: NOST_VEG_HET_C
+                  24                  32                0.00                   0            0.800000                             1     ! BOX 24:          AKI_C
+                  25                   1                1.00                   0            0.990000                             1     ! BOX 25:          NH4_N
+                  25                   2                1.00                   0            0.990000                             1     ! BOX 25:          NO3_N
+                  25                   3                1.00                   0            0.990000                             1     ! BOX 25:          PO4_P
+                  25                   4                1.00                   0            0.990000                             1     ! BOX 25:    DISS_OXYGEN
+                  25                   5                0.00                   1            0.990000                             1     ! BOX 25:          DIA_C
+                  25                   6                0.00                   0            0.990000                             1     ! BOX 25:          ZOO_C
+                  25                   7                0.00                   0            0.990000                             1     ! BOX 25:          ZOO_N
+                  25                   8                0.00                   0            0.990000                             1     ! BOX 25:          ZOO_P
+                  25                   9                0.00                   2            0.990000                             1     ! BOX 25: DET_PART_ORG_C
+                  25                  10                0.00                   2            0.990000                             1     ! BOX 25: DET_PART_ORG_N
+                  25                  11                0.00                   2            0.990000                             1     ! BOX 25: DET_PART_ORG_P
+                  25                  12                1.00                   0            0.990000                             1     ! BOX 25:     DISS_ORG_C
+                  25                  13                1.00                   0            0.990000                             1     ! BOX 25:     DISS_ORG_N
+                  25                  14                1.00                   0            0.990000                             1     ! BOX 25:     DISS_ORG_P
+                  25                  15                0.00                   0            0.990000                             1     ! BOX 25:          CYN_C
+                  25                  16                0.00                   3            0.990000                             1     ! BOX 25:          OPA_C
+                  25                  17                1.00                   0            0.990000                             1     ! BOX 25:        DISS_Si
+                  25                  18                0.00                   4            0.990000                             1     ! BOX 25:        PART_Si
+                  25                  19                0.00                   0            0.990000                             1     ! BOX 25:      FIX_CYN_C
+                  25                  20                1.00                   0            0.990000                             1     ! BOX 25:        INORG_C
+                  25                  21                1.00                   0            0.990000                             1     ! BOX 25:        TOT_ALK
+                  25                  22               -1.10                   5            0.990000                             1     ! BOX 25:          FE_II
+                  25                  23               -2.10                   5            0.990000                             1     ! BOX 25:         FE_III
+                  25                  24               -3.10                   5            0.990000                             1     ! BOX 25:          MN_II
+                  25                  25               -4.10                   5            0.990000                             1     ! BOX 25:          MN_IV
+                  25                  26                0.00                   6            0.990000                             1     ! BOX 25:             CA
+                  25                  27                0.00                   5            0.990000                             1     ! BOX 25:             MG
+                  25                  28                1.00                   0            0.990000                             1     ! BOX 25:       S_PLUS_6
+                  25                  29                1.00                   0            0.990000                             1     ! BOX 25:      S_MINUS_2
+                  25                  30                1.00                   0            0.990000                             1     ! BOX 25:          CH4_C
+                  25                  31                0.00                   0            0.990000                             1     ! BOX 25: NOST_VEG_HET_C
+                  25                  32                0.00                   0            0.990000                             1     ! BOX 25:          AKI_C
+# ********************* OPEN BOUNDARIES *********************
+#   OPEN BOUNDARY NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   1                   1                   1
+                   1                   2                   1                   2
+                   1                   3                   1                   3
+                   1                   4                   1                   4
+                   1                   5                   1                   5
+                   1                   6                   1                   6
+                   1                   7                   1                   7
+                   1                   8                   1                   8
+                   1                   9                   1                   9
+                   1                  10                   1                  10
+                   1                  11                   1                  11
+                   1                  12                   1                  12
+                   1                  13                   1                  13
+                   1                  14                   1                  14
+                   1                  15                   1                  15
+                   1                  16                   1                  16
+                   1                  17                   1                  17
+                   1                  18                   1                  18
+                   1                  19                   1                   7
+                   1                  20                   1                  20
+                   1                  21                   1                  21
+                   1                  22                   1                  22
+                   1                  23                   1                  23
+                   1                  24                   1                  24
+                   1                  25                   1                  25
+                   1                  26                   1                  26
+                   1                  27                   1                  27
+                   1                  28                   1                  28
+                   1                  29                   1                  29
+                   1                  30                   1                  30
+                   1                  31                   1                  19
+                   1                  32                   2                   7
+                   2                   1                   2                   1
+                   2                   2                   2                   2
+                   2                   3                   2                   3
+                   2                   4                   2                   4
+                   2                   5                   2                   8
+                   2                   6                   2                   9
+                   2                   7                   2                  10
+                   2                   8                   2                  11
+                   2                   9                   2                  12
+                   2                  10                   2                  13
+                   2                  11                   2                  14
+                   2                  12                   2                  15
+                   2                  13                   2                  16
+                   2                  14                   2                  17
+                   2                  15                   2                  18
+                   2                  16                   2                  19
+                   2                  17                   2                  20
+                   2                  18                   2                  21
+                   2                  19                   2                   5
+                   2                  20                   2                  23
+                   2                  21                   2                  24
+                   2                  22                   2                  25
+                   2                  23                   2                  26
+                   2                  24                   2                  27
+                   2                  25                   2                  28
+                   2                  26                   2                  29
+                   2                  27                   2                  30
+                   2                  28                   2                  31
+                   2                  29                   2                  32
+                   2                  30                   2                  33
+                   2                  31                   2                  22
+                   2                  32                   2                   5
+                   3                   1                   3                   1
+                   3                   2                   3                   2
+                   3                   3                   3                   3
+                   3                   4                   3                   4
+                   3                   5                   3                   8
+                   3                   6                   3                   9
+                   3                   7                   3                  10
+                   3                   8                   3                  11
+                   3                   9                   3                  12
+                   3                  10                   3                  13
+                   3                  11                   3                  14
+                   3                  12                   3                  15
+                   3                  13                   3                  16
+                   3                  14                   3                  17
+                   3                  15                   3                  18
+                   3                  16                   3                  19
+                   3                  17                   3                  20
+                   3                  18                   3                  21
+                   3                  19                   3                   5
+                   3                  20                   3                  23
+                   3                  21                   3                  24
+                   3                  22                   3                  25
+                   3                  23                   3                  26
+                   3                  24                   3                  27
+                   3                  25                   3                  28
+                   3                  26                   3                  29
+                   3                  27                   3                  30
+                   3                  28                   3                  31
+                   3                  29                   3                  32
+                   3                  30                   3                  33
+                   3                  31                   3                  22
+                   3                  32                   3                   5
+                   4                   1                   4                   1
+                   4                   2                   4                   2
+                   4                   3                   4                   3
+                   4                   4                   4                   4
+                   4                   5                   4                   8
+                   4                   6                   4                   9
+                   4                   7                   4                  10
+                   4                   8                   4                  11
+                   4                   9                   4                  12
+                   4                  10                   4                  13
+                   4                  11                   4                  14
+                   4                  12                   4                  15
+                   4                  13                   4                  16
+                   4                  14                   4                  17
+                   4                  15                   4                  18
+                   4                  16                   4                  19
+                   4                  17                   4                  20
+                   4                  18                   4                  21
+                   4                  19                   4                   5
+                   4                  20                   4                  23
+                   4                  21                   4                  24
+                   4                  22                   4                  25
+                   4                  23                   4                  26
+                   4                  24                   4                  27
+                   4                  25                   4                  28
+                   4                  26                   4                  29
+                   4                  27                   4                  30
+                   4                  28                   4                  31
+                   4                  29                   4                  32
+                   4                  30                   4                  33
+                   4                  31                   4                  22
+                   4                  32                   4                   5
+                   5                   1                   5                   1
+                   5                   2                   5                   2
+                   5                   3                   5                   3
+                   5                   4                   5                   4
+                   5                   5                   5                   8
+                   5                   6                   5                   9
+                   5                   7                   5                  10
+                   5                   8                   5                  11
+                   5                   9                   5                  12
+                   5                  10                   5                  13
+                   5                  11                   5                  14
+                   5                  12                   5                  15
+                   5                  13                   5                  16
+                   5                  14                   5                  17
+                   5                  15                   5                  18
+                   5                  16                   5                  19
+                   5                  17                   5                  20
+                   5                  18                   5                  21
+                   5                  19                   5                   5
+                   5                  20                   5                  23
+                   5                  21                   5                  24
+                   5                  22                   5                  25
+                   5                  23                   5                  26
+                   5                  24                   5                  27
+                   5                  25                   5                  28
+                   5                  26                   5                  29
+                   5                  27                   5                  30
+                   5                  28                   5                  31
+                   5                  29                   5                  32
+                   5                  30                   5                  33
+                   5                  31                   5                  22
+                   5                  32                   5                   5
+# ********************* MASS LOADS *********************
+#       MASS LOAD NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+# ********************* MASS WITHDRAWALS *********************
+#MASS WITHDRAWALS NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+# ********************* WATER TEMPERATURE *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   6                   1
+                   2                   6                   2
+                   3                   6                   3
+                   4                   6                   4
+                   5                   6                   5
+                   6                   6                   6
+                   7                   6                   7
+                   8                   6                   8
+                   9                   6                   9
+                  10                   6                  10
+                  11                   6                  11
+                  12                   6                  12
+                  13                   6                  13
+                  14                   6                  14
+                  15                   6                  15
+                  16                   6                  16
+                  17                   6                  17
+                  18                   6                  18
+                  19                   6                  19
+                  20                   6                  20
+                  21                   6                  21
+                  22                   6                  22
+                  23                   6                  23
+                  24                   6                  24
+                  25                   6                  25
+# ********************* SALINITY *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   7                   1
+                   2                   7                   2
+                   3                   7                   3
+                   4                   7                   4
+                   5                   7                   5
+                   6                   7                   6
+                   7                   7                   7
+                   8                   7                   8
+                   9                   7                   9
+                  10                   7                  10
+                  11                   7                  11
+                  12                   7                  12
+                  13                   7                  13
+                  14                   7                  14
+                  15                   7                  15
+                  16                   7                  16
+                  17                   7                  17
+                  18                   7                  18
+                  19                   7                  19
+                  20                   7                  20
+                  21                   7                  21
+                  22                   7                  22
+                  23                   7                  23
+                  24                   7                  24
+                  25                   7                  25
+# ********************* SOLAR RADIATION *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   8                   1
+                   2                   8                   2
+                   3                   8                   3
+                   4                   8                   4
+                   5                   8                   5
+                   6                   8                   6
+                   7                   8                   7
+                   8                   8                   8
+                   9                   8                   9
+                  10                   8                  10
+                  11                   8                  11
+                  12                   8                  12
+                  13                   8                  13
+                  14                   8                  14
+                  15                   8                  15
+                  16                   8                  16
+                  17                   8                  17
+                  18                   8                  18
+                  19                   8                  19
+                  20                   8                  20
+                  21                   8                  21
+                  22                   8                  22
+                  23                   8                  23
+                  24                   8                  24
+                  25                   8                  25
+# ********************* SOLAR RADIATION *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   9                   1
+                   2                   9                   2
+                   3                   9                   3
+                   4                   9                   4
+                   5                   9                   5
+                   6                   9                   6
+                   7                   9                   7
+                   8                   9                   8
+                   9                   9                   9
+                  10                   9                  10
+                  11                   9                  11
+                  12                   9                  12
+                  13                   9                  13
+                  14                   9                  14
+                  15                   9                  15
+                  16                   9                  16
+                  17                   9                  17
+                  18                   9                  18
+                  19                   9                  19
+                  20                   9                  20
+                  21                   9                  21
+                  22                   9                  22
+                  23                   9                  23
+                  24                   9                  24
+                  25                   9                  25
+# ********************* AIR TEMPERATURE *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                  10                   1
+                   2                  10                   2
+                   3                  10                   3
+                   4                  10                   4
+                   5                  10                   5
+                   6                  10                   6
+                   7                  10                   7
+                   8                  10                   8
+                   9                  10                   9
+                  10                  10                  10
+                  11                  10                  11
+                  12                  10                  12
+                  13                  10                  13
+                  14                  10                  14
+                  15                  10                  15
+                  16                  10                  16
+                  17                  10                  17
+                  18                  10                  18
+                  19                  10                  19
+                  20                  10                  20
+                  21                  10                  21
+                  22                  10                  22
+                  23                  10                  23
+                  24                  10                  24
+                  25                  10                  25
+# ********************* WIND SPEED *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                  11                   1
+                   2                  11                   2
+                   3                  11                   3
+                   4                  11                   4
+                   5                  11                   5
+                   6                  11                   6
+                   7                  11                   7
+                   8                  11                   8
+                   9                  11                   9
+                  10                  11                  10
+                  11                  11                  11
+                  12                  11                  12
+                  13                  11                  13
+                  14                  11                  14
+                  15                  11                  15
+                  16                  11                  16
+                  17                  11                  17
+                  18                  11                  18
+                  19                  11                  19
+                  20                  11                  20
+                  21                  11                  21
+                  22                  11                  22
+                  23                  11                  23
+                  24                  11                  24
+                  25                  11                  25
+# ********************* INITIAL CONDITIONS *********************
+#   PEL. INIT SET NO                         PELAGIC INITIAL CONDITION FILE NAME
+                   1                                             INIT_CONC_1.txt
+                   2                                             INIT_CONC_2.txt
+# ********************* FLOW TIME SERIES *********************
+# FLOW TIME SERIE NO                                   FLOW TIME SERIE FILE NAME
+                   1                                                 FLOW_TS.txt
+                   2                                        BOUNDARY_FLOW_TS.txt
+# ********************* MIXING TIME SERIES *********************
+# MIX. TIME SERIE NO                                   MIX. TIME SERIE FILE NAME
+# ********************* SETTLING VEOCITIES *********************
+# SET. TIME SERIE NO                                   SET. TIME SERIE FILE NAME
+                   1                                  SETTLING_VELOCITY_TS_1.txt
+                   2                                  SETTLING_VELOCITY_TS_2.txt
+                   3                                  SETTLING_VELOCITY_TS_3.txt
+                   4                                  SETTLING_VELOCITY_TS_4.txt
+                   5                                  SETTLING_VELOCITY_TS_5.txt
+                   6                                  SETTLING_VELOCITY_TS_6.txt
+# ********************* FORCING TIME SERIES *********************
+# FORC TIME SERIE NO                                   FORC TIME SERIE FILE NAME
+                   1                                               FORC_TS_1.txt
+                   2                                               FORC_TS_2.txt
+                   3                                               FORC_TS_3.txt
+                   4                                               FORC_TS_4.txt
+                   5                                               FORC_TS_5.txt
+                   6                                                 TEMP_TS.txt
+                   7                                                 SALT_TS.txt
+                   8                                            SOLAR_RAD_TS.txt
+                   9                                               FORC_TS_9.txt
+                  10                                             AIR_TEMP_TS.txt
+                  11                                           WIND_SPEED_TS.txt
+                  12                              FLUXES_FOR_SANDY_SEDIMENTS.txt
+                  13                              FLUXES_FOR_MUDDY_SEDIMENTS.txt
+                  14                      FLUXES_FOR_MUDDY_SEDIMENTS_HYPOXIA.txt
+# ECOLOGICAL OUTPUTS
+# PRODUCE_ECOL_OUTPUT
+          1
+# SAVED OUTPUTS
+# CREATE_PELAGIC_SAVED_OUTPUTS
+          0
+# STATE VARIABLE OUTPUTS
+# CREATE_STATE VARIABLE OUTPUTS
+          0
+# COCOA OUTPUTS
+# PRODUCE_COCOA_OUTPUTS
+          0
+# PELAGIC EXERGY INPUTS
+# CALCULATE PELAGIC EXERGY
+          0
+# COST FUNCTION
+# PRODUCE_COST_FUNC
+          0

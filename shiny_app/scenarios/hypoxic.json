@@ -1,0 +1,20 @@
+{
+  "name": "Hypoxic",
+  "description": "Low oxygen conditions with enhanced redox cycling",
+  "created": "2026-01-17T19:11:18.973197",
+  "modified": "2026-01-17T19:11:18.973197",
+  "version": "1.0",
+  "ic_file": "INIT_CONC_1.txt",
+  "is_builtin": true,
+  "parameters": {},
+  "initial_conditions": {
+    "6": 2.0,
+    "9": 5.0
+  },
+  "model_options": {
+    "ZOOPLANKTON_OPTION": 1,
+    "ADVANCED_REDOX_SIMULATION": 1,
+    "CONSIDER_ALLELOPATHY": 0
+  },
+  "extra_constants": {}
+}

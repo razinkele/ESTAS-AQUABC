@@ -1,0 +1,16 @@
+# PRESCRIBED MUDY SEDIMENT DIFUSION-ADVECTION FLUX DATA 
+# DATA SIZE
+2
+# NUMBER OF VARIABLES 
+4
+# SCALE FACTORS
+#                    NH4N     NO3N      PO4P    OTHERS
+                      1.0      1.0       1.0       1.0
+# UNIT CONVERSION FACTORS (mmol/m2/day ---> g/m2/day) 
+#                    NH4N     NO3N      PO4P    OTHERS
+                    0.014    0.014    0.0315       1.0
+# INTERPOLATE                                         
+1                                                     
+#          TIME      NH4N     NO3N      PO4P    OTHERS
+        6209.00    0.0000   0.0000    0.0000       0.0
+        6575.00    0.0000   0.0000    0.0000       0.0

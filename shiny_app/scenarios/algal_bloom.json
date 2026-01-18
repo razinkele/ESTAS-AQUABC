@@ -1,0 +1,25 @@
+{
+  "name": "Algal Bloom",
+  "description": "Conditions favorable for phytoplankton bloom development",
+  "created": "2026-01-17T19:11:18.973200",
+  "modified": "2026-01-17T19:11:18.973200",
+  "version": "1.0",
+  "ic_file": "INIT_CONC_1.txt",
+  "is_builtin": true,
+  "parameters": {
+    "5": 4.0,
+    "29": 3.5
+  },
+  "initial_conditions": {
+    "1": 0.12,
+    "3": 0.06,
+    "5": 2.0,
+    "15": 1.5
+  },
+  "model_options": {
+    "ZOOPLANKTON_OPTION": 1,
+    "CYANO_BOUYANT_STATE_SIMULATION": 1,
+    "CONSIDER_ALLELOPATHY": 1
+  },
+  "extra_constants": {}
+}

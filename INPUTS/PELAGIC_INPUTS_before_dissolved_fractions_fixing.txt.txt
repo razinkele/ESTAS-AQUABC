@@ -1,0 +1,1614 @@
+# DESRIPTION LINE 1
+# DESRIPTION LINE 2
+# DESRIPTION LINE 3
+# DESRIPTION LINE 4
+# DESRIPTION LINE 5
+# NUM_PELAGIC_STATE_VARS
+                  32
+# NUM_MODEL_CONSTANTS
+                 307
+# NUM_PELAGIC_BASINS
+                  25
+# NUM_BATHYMETRIES
+                  25
+# NUM_PELAGIC_BOXES
+                  25
+# NUM_PELAGIC_INIT_CONC_SETS
+                   2
+# NUM_PELAGIC_ADVECTIVE_LINKS
+                  90
+# NUM_PELAGIC_DISPERSIVE_LINKS
+                   0
+# NUM_FLOW_TS
+                   2
+# NUM_MIXING_TS
+                   0
+# NUM_SETTLING_VELOCITIES
+                   6
+# NUM_OPEN_BOUNDARIES
+                   5
+# NUM_MASS_LOADS
+                   0
+# NUM_MASS_WITHDRAWALS
+                   0
+# NUM_FORCING_TS
+                  14
+# PELAGIC_MODEL_OPTIONS
+PELAGIC_MODEL_OPTIONS.txt
+# PELAGIC OUTPUT INFORMATION FILE
+PELAGIC_OUTPUT_INFORMATION_FILE.txt
+# PROCESS RATE OUTPUT TYPE, 1 Volume based 2 Area based
+1
+# ********************* PELAGIC STATE VARIABLES *********************
+#  STATE VARIABLE NO      STATE VARIABLE NAME  NUM_BOXES_WITH_MEASURED_VALS         MEASUREMENT ERROR
+                   1                    NH4_N                             0              0.001000000
+                   2                    NO3_N                             0              0.001000000
+                   3                    PO4_P                             0              0.001000000
+                   4              DISS_OXYGEN                             0              0.001000000
+                   5                    DIA_C                             0              0.001000000
+                   6                    ZOO_C                             0              0.001000000
+                   7                    ZOO_N                             0              0.001000000
+                   8                    ZOO_P                             0              0.001000000
+                   9           DET_PART_ORG_C                             0              0.001000000
+                  10           DET_PART_ORG_N                             0              0.001000000
+                  11           DET_PART_ORG_P                             0              0.001000000
+                  12               DISS_ORG_C                             0              0.001000000
+                  13               DISS_ORG_N                             0              0.001000000
+                  14               DISS_ORG_P                             0              0.001000000
+                  15                    CYN_C                             0              0.001000000
+                  16                    OPA_C                             0              0.001000000
+                  17                  DISS_Si                             0              0.001000000
+                  18                  PART_Si                             0              0.001000000
+                  19                FIX_CYN_C                             0              0.001000000
+                  20                  INORG_C                             0              0.001000000
+                  21                  TOT_ALK                             0              0.001000000
+                  22                    FE_II                             0              0.001000000
+                  23                   FE_III                             0              0.001000000
+                  24                    MN_II                             0              0.001000000
+                  25                    MN_IV                             0              0.001000000
+                  26                       CA                             0              0.001000000
+                  27                       MG                             0              0.001000000
+                  28                 S_PLUS_6                             0              0.001000000
+                  29                S_MINUS_2                             0              0.001000000
+                  30                    CH4_C                             0              0.001000000
+                  31           NOST_VEG_HET_C                             0              0.001000000
+                  32                    AKI_C                             0              0.001000000
+# ********************* PELAGIC MODEL CONSTANTS *********************
+#     PELAGIC BOX NO       PELAGIC MODEL CONSTANTS FILE NAME
+                   1                           WCONST_02.txt
+                   2                           WCONST_02.txt
+                   3                           WCONST_02.txt
+                   4                           WCONST_02.txt
+                   5                           WCONST_02.txt
+                   6                           WCONST_02.txt
+                   7                           WCONST_02.txt
+                   8                           WCONST_02.txt
+                   9                           WCONST_02.txt
+                  10                           WCONST_02.txt
+                  11                           WCONST_02.txt
+                  12                           WCONST_02.txt
+                  13                           WCONST_02.txt
+                  14                           WCONST_02.txt
+                  15                           WCONST_02.txt
+                  16                           WCONST_02.txt
+                  17                           WCONST_02.txt
+                  18                           WCONST_02.txt
+                  19                           WCONST_02.txt
+                  20                           WCONST_02.txt
+                  21                           WCONST_02.txt
+                  22                           WCONST_02.txt
+                  23                           WCONST_02.txt
+                  24                           WCONST_02.txt
+                  25                           WCONST_02.txt
+# EXTRA MODEL CONSTANTS FILE NAME
+EXTRA_WCONST.txt
+# ********************* BOX INFORMATION *********************
+#     PELAGIC BOX NO       NUM MASS LOADS INTO BOX       NUM MASS WITH. FROM BOX
+                   1                             0                             0
+                   2                             0                             0
+                   3                             0                             0
+                   4                             0                             0
+                   5                             0                             0
+                   6                             0                             0
+                   7                             0                             0
+                   8                             0                             0
+                   9                             0                             0
+                  10                             0                             0
+                  11                             0                             0
+                  12                             0                             0
+                  13                             0                             0
+                  14                             0                             0
+                  15                             0                             0
+                  16                             0                             0
+                  17                             0                             0
+                  18                             0                             0
+                  19                             0                             0
+                  20                             0                             0
+                  21                             0                             0
+                  22                             0                             0
+                  23                             0                             0
+                  24                             0                             0
+                  25                             0                             0
+# ********************* BASIN INFORMATION *********************
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   1                   1                   1
+# PELAGIC BOXES
+              1
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   2                   1                   2
+# PELAGIC BOXES
+              2
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   3                   1                   3
+# PELAGIC BOXES
+              3
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   4                   1                   4
+# PELAGIC BOXES
+              4
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   5                   1                   5
+# PELAGIC BOXES
+              5
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   6                   1                   6
+# PELAGIC BOXES
+              6
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   7                   1                   7
+# PELAGIC BOXES
+              7
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   8                   1                   8
+# PELAGIC BOXES
+              8
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                   9                   1                   9
+# PELAGIC BOXES
+              9
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  10                   1                  10
+# PELAGIC BOXES
+             10
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  11                   1                  11
+# PELAGIC BOXES
+             11
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  12                   1                  12
+# PELAGIC BOXES
+             12
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  13                   1                  13
+# PELAGIC BOXES
+             13
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  14                   1                  14
+# PELAGIC BOXES
+             14
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  15                   1                  15
+# PELAGIC BOXES
+             15
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  16                   1                  16
+# PELAGIC BOXES
+             16
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  17                   1                  17
+# PELAGIC BOXES
+             17
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  18                   1                  18
+# PELAGIC BOXES
+             18
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  19                   1                  19
+# PELAGIC BOXES
+             19
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  20                   1                  20
+# PELAGIC BOXES
+             20
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  21                   1                  21
+# PELAGIC BOXES
+             21
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  22                   1                  22
+# PELAGIC BOXES
+             22
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  23                   1                  23
+# PELAGIC BOXES
+             23
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  24                   1                  24
+# PELAGIC BOXES
+             24
+#   PELAGIC BASIN NO           NUM_BOXES       BATHYMERTY NO
+                  25                   1                  25
+# PELAGIC BOXES
+             25
+# ********************* BATHYMETRIES *********************
+#      BATHYMETRY NO                                        BATHYMETRY FILE NAME
+                   1                                            BATHYMETRY_1.txt
+                   2                                            BATHYMETRY_2.txt
+                   3                                            BATHYMETRY_3.txt
+                   4                                            BATHYMETRY_4.txt
+                   5                                            BATHYMETRY_5.txt
+                   6                                            BATHYMETRY_6.txt
+                   7                                            BATHYMETRY_7.txt
+                   8                                            BATHYMETRY_8.txt
+                   9                                            BATHYMETRY_9.txt
+                  10                                           BATHYMETRY_10.txt
+                  11                                           BATHYMETRY_11.txt
+                  12                                           BATHYMETRY_12.txt
+                  13                                           BATHYMETRY_13.txt
+                  14                                           BATHYMETRY_14.txt
+                  15                                           BATHYMETRY_15.txt
+                  16                                           BATHYMETRY_16.txt
+                  17                                           BATHYMETRY_17.txt
+                  18                                           BATHYMETRY_18.txt
+                  19                                           BATHYMETRY_19.txt
+                  20                                           BATHYMETRY_20.txt
+                  21                                           BATHYMETRY_21.txt
+                  22                                           BATHYMETRY_22.txt
+                  23                                           BATHYMETRY_23.txt
+                  24                                           BATHYMETRY_24.txt
+                  25                                           BATHYMETRY_25.txt
+# ********************* INITIAL CONDITIONS *********************
+#     PELAGIC BOX NO    PEL. INIT CONC SET NO   SURFACE ELEVATION    BOTTOM ELEVATION
+                   1                        2              0.5757            -14.0000
+                   2                        2              0.6018             -3.0000
+                   3                        1              0.5454             -4.5000
+                   4                        2              0.5611            -22.0000
+                   5                        2              0.5636             -1.5000
+                   6                        2              0.5626             -2.5000
+                   7                        2              0.5745            -12.5000
+                   8                        2              0.5566             -3.0000
+                   9                        2              0.5538             -2.5000
+                  10                        2              0.5758            -14.5000
+                  11                        2              0.5674            -10.5000
+                  12                        2              0.5663            -33.0000
+                  13                        2              0.5704            -20.0000
+                  14                        1              0.5409             -4.0000
+                  15                        1              0.5737             -4.0000
+                  16                        2              0.5623            -15.0000
+                  17                        1              0.5573             -4.5000
+                  18                        1              0.5109             -4.5000
+                  19                        1              0.5847             -4.0000
+                  20                        2              0.5492             -3.0000
+                  21                        1              0.5199             -5.0000
+                  22                        2              0.5542             -3.0000
+                  23                        1              0.5506             -4.5000
+                  24                        2              0.7273             -3.0000
+                  25                        1              0.5770             -4.0000
+# ********************* MASS LOADS FOR EACH BOX *********************
+# PELAGIC BOX 1    : NO MASS LOADS
+# PELAGIC BOX 2    : NO MASS LOADS
+# PELAGIC BOX 3    : NO MASS LOADS
+# PELAGIC BOX 4    : NO MASS LOADS
+# PELAGIC BOX 5    : NO MASS LOADS
+# PELAGIC BOX 6    : NO MASS LOADS
+# PELAGIC BOX 7    : NO MASS LOADS
+# PELAGIC BOX 8    : NO MASS LOADS
+# PELAGIC BOX 9    : NO MASS LOADS
+# PELAGIC BOX 10    : NO MASS LOADS
+# PELAGIC BOX 11    : NO MASS LOADS
+# PELAGIC BOX 12    : NO MASS LOADS
+# PELAGIC BOX 13    : NO MASS LOADS
+# PELAGIC BOX 14    : NO MASS LOADS
+# PELAGIC BOX 15    : NO MASS LOADS
+# PELAGIC BOX 16    : NO MASS LOADS
+# PELAGIC BOX 17    : NO MASS LOADS
+# PELAGIC BOX 18    : NO MASS LOADS
+# PELAGIC BOX 19    : NO MASS LOADS
+# PELAGIC BOX 20    : NO MASS LOADS
+# PELAGIC BOX 21    : NO MASS LOADS
+# PELAGIC BOX 22    : NO MASS LOADS
+# PELAGIC BOX 23    : NO MASS LOADS
+# PELAGIC BOX 24    : NO MASS LOADS
+# PELAGIC BOX 25    : NO MASS LOADS
+# ********************* MASS WITHDRAWALS FOR EACH BOX *********************
+# PELAGIC BOX 1    : NO MASS WITHDRAWALS
+# PELAGIC BOX 2    : NO MASS WITHDRAWALS
+# PELAGIC BOX 3    : NO MASS WITHDRAWALS
+# PELAGIC BOX 4    : NO MASS WITHDRAWALS
+# PELAGIC BOX 5    : NO MASS WITHDRAWALS
+# PELAGIC BOX 6    : NO MASS WITHDRAWALS
+# PELAGIC BOX 7    : NO MASS WITHDRAWALS
+# PELAGIC BOX 8    : NO MASS WITHDRAWALS
+# PELAGIC BOX 9    : NO MASS WITHDRAWALS
+# PELAGIC BOX 10    : NO MASS WITHDRAWALS
+# PELAGIC BOX 11    : NO MASS WITHDRAWALS
+# PELAGIC BOX 12    : NO MASS WITHDRAWALS
+# PELAGIC BOX 13    : NO MASS WITHDRAWALS
+# PELAGIC BOX 14    : NO MASS WITHDRAWALS
+# PELAGIC BOX 15    : NO MASS WITHDRAWALS
+# PELAGIC BOX 16    : NO MASS WITHDRAWALS
+# PELAGIC BOX 17    : NO MASS WITHDRAWALS
+# PELAGIC BOX 18    : NO MASS WITHDRAWALS
+# PELAGIC BOX 19    : NO MASS WITHDRAWALS
+# PELAGIC BOX 20    : NO MASS WITHDRAWALS
+# PELAGIC BOX 21    : NO MASS WITHDRAWALS
+# PELAGIC BOX 22    : NO MASS WITHDRAWALS
+# PELAGIC BOX 23    : NO MASS WITHDRAWALS
+# PELAGIC BOX 24    : NO MASS WITHDRAWALS
+# PELAGIC BOX 25    : NO MASS WITHDRAWALS
+# ********************* ADVECTIVE LINKS *********************
+#  ADVECTIVE LINK NO        UPSTREAM BOX      DOWNSTREAM BOX             FLOW TS      FLOW TS VAR NO
+                   1                   1                  10                   1                   1
+                   2                  10                   1                   1                   2
+                   3                   1                  12                   1                   3
+                   4                  12                   1                   1                   4
+                   5                   1                  13                   1                   5
+                   6                  13                   1                   1                   6
+                   7                   2                  24                   1                   7
+                   8                  24                   2                   1                   8
+                   9                   2                  24                   1                   9
+                  10                  24                   2                   1                  10
+                  11                   2                  24                   1                  11
+                  12                  24                   2                   1                  12
+                  13                   2                  24                   1                  13
+                  14                  24                   2                   1                  14
+                  15                   2                  25                   1                  15
+                  16                  25                   2                   1                  16
+                  17                   3                  15                   1                  17
+                  18                  15                   3                   1                  18
+                  19                   3                  17                   1                  19
+                  20                  17                   3                   1                  20
+                  21                   3                  21                   1                  21
+                  22                  21                   3                   1                  22
+                  23                   3                  23                   1                  23
+                  24                  23                   3                   1                  24
+                  25                   4                  12                   1                  25
+                  26                  12                   4                   1                  26
+                  27                   4                  13                   1                  27
+                  28                  13                   4                   1                  28
+                  29                   4                  16                   1                  29
+                  30                  16                   4                   1                  30
+                  31                   5                   6                   1                  31
+                  32                   6                   5                   1                  32
+                  33                   5                   9                   1                  33
+                  34                   9                   5                   1                  34
+                  35                   5                  22                   1                  35
+                  36                  22                   5                   1                  36
+                  37                   6                   8                   1                  37
+                  38                   8                   6                   1                  38
+                  39                   6                  25                   1                  39
+                  40                  25                   6                   1                  40
+                  41                   7                  11                   1                  41
+                  42                  11                   7                   1                  42
+                  43                   7                  13                   1                  43
+                  44                  13                   7                   1                  44
+                  45                   8                   9                   1                  45
+                  46                   9                   8                   1                  46
+                  47                   8                  14                   1                  47
+                  48                  14                   8                   1                  48
+                  49                   8                  17                   1                  49
+                  50                  17                   8                   1                  50
+                  51                   9                  20                   1                  51
+                  52                  20                   9                   1                  52
+                  53                  10                  12                   1                  53
+                  54                  12                  10                   1                  54
+                  55                  11                  20                   1                  55
+                  56                  20                  11                   1                  56
+                  57                  11                  22                   1                  57
+                  58                  22                  11                   1                  58
+                  59                  12                  13                   1                  59
+                  60                  13                  12                   1                  60
+                  61                  12                  16                   1                  61
+                  62                  16                  12                   1                  62
+                  63                  14                  17                   1                  63
+                  64                  17                  14                   1                  64
+                  65                  14                  21                   1                  65
+                  66                  21                  14                   1                  66
+                  67                  15                  19                   1                  67
+                  68                  19                  15                   1                  68
+                  69                  15                  25                   1                  69
+                  70                  25                  15                   1                  70
+                  71                  17                  25                   1                  71
+                  72                  25                  17                   1                  72
+                  73                  18                  21                   1                  73
+                  74                  21                  18                   1                  74
+                  75                  18                  23                   1                  75
+                  76                  23                  18                   1                  76
+                  77                  19                  23                   1                  77
+                  78                  23                  19                   1                  78
+                  79                  20                  22                   1                  79
+                  80                  22                  20                   1                  80
+                  81                  -2                  24                   2                   1
+                  82                  24                  -2                   2                   2
+                  83                  -3                  24                   2                   3
+                  84                  24                  -3                   2                   4
+                  85                  -4                  19                   2                   5
+                  86                  19                  -4                   2                   6
+                  87                  -5                  19                   2                   7
+                  88                  19                  -5                   2                   8
+                  89                  -1                  12                   2                   9
+                  90                  12                  -1                   2                  10
+# ********************* DISPERSIVE LINKS *********************
+# DISPERSIVE LINK NO           FIRST BOX          SECOND BOX   MIXING TIME SERIE       MIXING LENGTH
+# ********************* SETTLING_VELOCITIES *********************
+#     PELAGIC BOX NO        STATE VAR NO      DISSOLVED FRAC     SETTLING VEL NO  DEPOSITED FRACTION   CHLA_SUPRESSION_OF_SETTLING
+                   1                   1                1.00                   0            0.900000                             1
+                   1                   2                1.00                   0            0.900000                             1
+                   1                   3                1.00                   0            0.900000                             1
+                   1                   4                1.00                   0            0.900000                             1
+                   1                   5                0.00                   1            0.900000                             1
+                   1                   6                0.00                   0            0.900000                             1
+                   1                   7                0.00                   0            0.900000                             1
+                   1                   8                0.00                   0            0.900000                             1
+                   1                   9                0.00                   2            0.900000                             1
+                   1                  10                0.00                   2            0.900000                             1
+                   1                  11                0.00                   2            0.900000                             1
+                   1                  12                1.00                   0            0.900000                             1
+                   1                  13                1.00                   0            0.900000                             1
+                   1                  14                1.00                   0            0.900000                             1
+                   1                  15                1.00                   0            0.900000                             1
+                   1                  16                1.00                   3            0.900000                             1
+                   1                  17                1.00                   0            0.900000                             1
+                   1                  18                1.00                   4            0.900000                             1
+                   1                  19                1.00                   0            0.900000                             1
+                   1                  20                0.00                   0            0.900000                             1
+                   1                  21                0.00                   0            0.900000                             1
+                   1                  22               -1.10                   5            0.900000                             1
+                   1                  23               -2.10                   5            0.900000                             1
+                   1                  24               -3.10                   5            0.900000                             1
+                   1                  25               -4.10                   5            0.900000                             1
+                   1                  26                0.00                   6            0.900000                             1
+                   1                  27                0.00                   5            0.900000                             1
+                   1                  28                0.00                   0            0.900000                             1
+                   1                  29                0.00                   0            0.900000                             1
+                   1                  30                0.00                   0            0.900000                             1
+                   1                  31                0.00                   0            0.900000                             1
+                   1                  32                0.00                   0            0.900000                             1
+                   2                   1                1.00                   0            0.800000                             1
+                   2                   2                1.00                   0            0.800000                             1
+                   2                   3                1.00                   0            0.800000                             1
+                   2                   4                1.00                   0            0.800000                             1
+                   2                   5                0.00                   1            0.800000                             1
+                   2                   6                0.00                   0            0.800000                             1
+                   2                   7                0.00                   0            0.800000                             1
+                   2                   8                0.00                   0            0.800000                             1
+                   2                   9                0.00                   2            0.800000                             1
+                   2                  10                0.00                   2            0.800000                             1
+                   2                  11                0.00                   2            0.800000                             1
+                   2                  12                1.00                   0            0.800000                             1
+                   2                  13                1.00                   0            0.800000                             1
+                   2                  14                1.00                   0            0.800000                             1
+                   2                  15                1.00                   0            0.800000                             1
+                   2                  16                1.00                   3            0.800000                             1
+                   2                  17                1.00                   0            0.800000                             1
+                   2                  18                1.00                   4            0.800000                             1
+                   2                  19                1.00                   0            0.800000                             1
+                   2                  20                0.00                   0            0.800000                             1
+                   2                  21                0.00                   0            0.800000                             1
+                   2                  22               -1.10                   5            0.800000                             1
+                   2                  23               -2.10                   5            0.800000                             1
+                   2                  24               -3.10                   5            0.800000                             1
+                   2                  25               -4.10                   5            0.800000                             1
+                   2                  26                0.00                   6            0.800000                             1
+                   2                  27                0.00                   5            0.800000                             1
+                   2                  28                0.00                   0            0.800000                             1
+                   2                  29                0.00                   0            0.800000                             1
+                   2                  30                0.00                   0            0.800000                             1
+                   2                  31                0.00                   0            0.800000                             1
+                   2                  32                0.00                   0            0.800000                             1
+                   3                   1                1.00                   0            0.990000                             1
+                   3                   2                1.00                   0            0.990000                             1
+                   3                   3                1.00                   0            0.990000                             1
+                   3                   4                1.00                   0            0.990000                             1
+                   3                   5                0.00                   1            0.990000                             1
+                   3                   6                0.00                   0            0.990000                             1
+                   3                   7                0.00                   0            0.990000                             1
+                   3                   8                0.00                   0            0.990000                             1
+                   3                   9                0.00                   2            0.990000                             1
+                   3                  10                0.00                   2            0.990000                             1
+                   3                  11                0.00                   2            0.990000                             1
+                   3                  12                1.00                   0            0.990000                             1
+                   3                  13                1.00                   0            0.990000                             1
+                   3                  14                1.00                   0            0.990000                             1
+                   3                  15                1.00                   0            0.990000                             1
+                   3                  16                1.00                   3            0.990000                             1
+                   3                  17                1.00                   0            0.990000                             1
+                   3                  18                1.00                   4            0.990000                             1
+                   3                  19                1.00                   0            0.990000                             1
+                   3                  20                0.00                   0            0.990000                             1
+                   3                  21                0.00                   0            0.990000                             1
+                   3                  22               -1.10                   5            0.990000                             1
+                   3                  23               -2.10                   5            0.990000                             1
+                   3                  24               -3.10                   5            0.990000                             1
+                   3                  25               -4.10                   5            0.990000                             1
+                   3                  26                0.00                   6            0.990000                             1
+                   3                  27                0.00                   5            0.990000                             1
+                   3                  28                0.00                   0            0.990000                             1
+                   3                  29                0.00                   0            0.990000                             1
+                   3                  30                0.00                   0            0.990000                             1
+                   3                  31                0.00                   0            0.990000                             1
+                   3                  32                0.00                   0            0.990000                             1                   
+                   4                   1                1.00                   0            0.900000                             1
+                   4                   2                1.00                   0            0.900000                             1
+                   4                   3                1.00                   0            0.900000                             1
+                   4                   4                1.00                   0            0.900000                             1
+                   4                   5                0.00                   1            0.900000                             1
+                   4                   6                0.00                   0            0.900000                             1
+                   4                   7                0.00                   0            0.900000                             1
+                   4                   8                0.00                   0            0.900000                             1
+                   4                   9                0.00                   2            0.900000                             1
+                   4                  10                0.00                   2            0.900000                             1
+                   4                  11                0.00                   2            0.900000                             1
+                   4                  12                1.00                   0            0.900000                             1
+                   4                  13                1.00                   0            0.900000                             1
+                   4                  14                1.00                   0            0.900000                             1
+                   4                  15                1.00                   0            0.900000                             1
+                   4                  16                1.00                   3            0.900000                             1
+                   4                  17                1.00                   0            0.900000                             1
+                   4                  18                1.00                   4            0.900000                             1
+                   4                  19                1.00                   0            0.900000                             1
+                   4                  20                0.00                   0            0.900000                             1
+                   4                  21                0.00                   0            0.900000                             1
+                   4                  22               -1.10                   5            0.900000                             1
+                   4                  23               -2.10                   5            0.900000                             1
+                   4                  24               -3.10                   5            0.900000                             1
+                   4                  25               -4.10                   5            0.900000                             1
+                   4                  26                0.00                   6            0.900000                             1
+                   4                  27                0.00                   5            0.900000                             1
+                   4                  28                0.00                   0            0.900000                             1
+                   4                  29                0.00                   0            0.900000                             1
+                   4                  30                0.00                   0            0.900000                             1
+                   4                  31                0.00                   0            0.900000                             1
+                   4                  32                0.00                   0            0.900000                             1
+                   5                   1                1.00                   0            0.800000                             1
+                   5                   2                1.00                   0            0.800000                             1
+                   5                   3                1.00                   0            0.800000                             1
+                   5                   4                1.00                   0            0.800000                             1
+                   5                   5                0.00                   1            0.800000                             1
+                   5                   6                0.00                   0            0.800000                             1
+                   5                   7                0.00                   0            0.800000                             1
+                   5                   8                0.00                   0            0.800000                             1
+                   5                   9                0.00                   2            0.800000                             1
+                   5                  10                0.00                   2            0.800000                             1
+                   5                  11                0.00                   2            0.800000                             1
+                   5                  12                1.00                   0            0.800000                             1
+                   5                  13                1.00                   0            0.800000                             1
+                   5                  14                1.00                   0            0.800000                             1
+                   5                  15                1.00                   0            0.800000                             1
+                   5                  16                1.00                   3            0.800000                             1
+                   5                  17                1.00                   0            0.800000                             1
+                   5                  18                1.00                   4            0.800000                             1
+                   5                  19                1.00                   0            0.800000                             1
+                   5                  20                0.00                   0            0.800000                             1
+                   5                  21                0.00                   0            0.800000                             1
+                   5                  22               -1.10                   5            0.800000                             1
+                   5                  23               -2.10                   5            0.800000                             1
+                   5                  24               -3.10                   5            0.800000                             1
+                   5                  25               -4.10                   5            0.800000                             1
+                   5                  26                0.00                   6            0.800000                             1
+                   5                  27                0.00                   5            0.800000                             1
+                   5                  28                0.00                   0            0.800000                             1
+                   5                  29                0.00                   0            0.800000                             1
+                   5                  30                0.00                   0            0.800000                             1
+                   5                  31                0.00                   0            0.800000                             1
+                   5                  32                0.00                   0            0.800000                             1
+                   6                   1                1.00                   0            0.800000                             1
+                   6                   2                1.00                   0            0.800000                             1
+                   6                   3                1.00                   0            0.800000                             1
+                   6                   4                1.00                   0            0.800000                             1
+                   6                   5                0.00                   1            0.800000                             1
+                   6                   6                0.00                   0            0.800000                             1
+                   6                   7                0.00                   0            0.800000                             1
+                   6                   8                0.00                   0            0.800000                             1
+                   6                   9                0.00                   2            0.800000                             1
+                   6                  10                0.00                   2            0.800000                             1
+                   6                  11                0.00                   2            0.800000                             1
+                   6                  12                1.00                   0            0.800000                             1
+                   6                  13                1.00                   0            0.800000                             1
+                   6                  14                1.00                   0            0.800000                             1
+                   6                  15                1.00                   0            0.800000                             1
+                   6                  16                1.00                   3            0.800000                             1
+                   6                  17                1.00                   0            0.800000                             1
+                   6                  18                1.00                   4            0.800000                             1
+                   6                  19                1.00                   0            0.800000                             1
+                   6                  20                0.00                   0            0.800000                             1
+                   6                  21                0.00                   0            0.800000                             1
+                   6                  22               -1.10                   5            0.800000                             1
+                   6                  23               -2.10                   5            0.800000                             1
+                   6                  24               -3.10                   5            0.800000                             1
+                   6                  25               -4.10                   5            0.800000                             1
+                   6                  26                0.00                   6            0.800000                             1
+                   6                  27                0.00                   5            0.800000                             1
+                   6                  28                0.00                   0            0.800000                             1
+                   6                  29                0.00                   0            0.800000                             1
+                   6                  30                0.00                   0            0.800000                             1
+                   6                  31                0.00                   0            0.800000                             1
+                   6                  32                0.00                   0            0.800000                             1
+                   7                   1                1.00                   0            0.990000                             1
+                   7                   2                1.00                   0            0.990000                             1
+                   7                   3                1.00                   0            0.990000                             1
+                   7                   4                1.00                   0            0.990000                             1
+                   7                   5                0.00                   1            0.990000                             1
+                   7                   6                0.00                   0            0.990000                             1
+                   7                   7                0.00                   0            0.990000                             1
+                   7                   8                0.00                   0            0.990000                             1
+                   7                   9                0.00                   2            0.990000                             1
+                   7                  10                0.00                   2            0.990000                             1
+                   7                  11                0.00                   2            0.990000                             1
+                   7                  12                1.00                   0            0.990000                             1
+                   7                  13                1.00                   0            0.990000                             1
+                   7                  14                1.00                   0            0.990000                             1
+                   7                  15                1.00                   0            0.990000                             1
+                   7                  16                1.00                   3            0.990000                             1
+                   7                  17                1.00                   0            0.990000                             1
+                   7                  18                1.00                   4            0.990000                             1
+                   7                  19                1.00                   0            0.990000                             1
+                   7                  20                0.00                   0            0.990000                             1
+                   7                  21                0.00                   0            0.990000                             1
+                   7                  22               -1.10                   5            0.990000                             1
+                   7                  23               -2.10                   5            0.990000                             1
+                   7                  24               -3.10                   5            0.990000                             1
+                   7                  25               -4.10                   5            0.990000                             1
+                   7                  26                0.00                   6            0.990000                             1
+                   7                  27                0.00                   5            0.990000                             1
+                   7                  28                0.00                   0            0.990000                             1
+                   7                  29                0.00                   0            0.990000                             1
+                   7                  30                0.00                   0            0.990000                             1
+                   7                  31                0.00                   0            0.990000                             1
+                   7                  32                0.00                   0            0.990000                             1
+                   8                   1                1.00                   0            0.800000                             1
+                   8                   2                1.00                   0            0.800000                             1
+                   8                   3                1.00                   0            0.800000                             1
+                   8                   4                1.00                   0            0.800000                             1
+                   8                   5                0.00                   1            0.800000                             1
+                   8                   6                0.00                   0            0.800000                             1
+                   8                   7                0.00                   0            0.800000                             1
+                   8                   8                0.00                   0            0.800000                             1
+                   8                   9                0.00                   2            0.800000                             1
+                   8                  10                0.00                   2            0.800000                             1
+                   8                  11                0.00                   2            0.800000                             1
+                   8                  12                1.00                   0            0.800000                             1
+                   8                  13                1.00                   0            0.800000                             1
+                   8                  14                1.00                   0            0.800000                             1
+                   8                  15                1.00                   0            0.800000                             1
+                   8                  16                1.00                   3            0.800000                             1
+                   8                  17                1.00                   0            0.800000                             1
+                   8                  18                1.00                   4            0.800000                             1
+                   8                  19                1.00                   0            0.800000                             1
+                   8                  20                0.00                   0            0.800000                             1
+                   8                  21                0.00                   0            0.800000                             1
+                   8                  22               -1.10                   5            0.800000                             1
+                   8                  23               -2.10                   5            0.800000                             1
+                   8                  24               -3.10                   5            0.800000                             1
+                   8                  25               -4.10                   5            0.800000                             1
+                   8                  26                0.00                   6            0.800000                             1
+                   8                  27                0.00                   5            0.800000                             1
+                   8                  28                0.00                   0            0.800000                             1
+                   8                  29                0.00                   0            0.800000                             1
+                   8                  30                0.00                   0            0.800000                             1
+                   8                  31                0.00                   0            0.800000                             1
+                   8                  32                0.00                   0            0.800000                             1
+                   9                   1                1.00                   0            0.800000                             1
+                   9                   2                1.00                   0            0.800000                             1
+                   9                   3                1.00                   0            0.800000                             1
+                   9                   4                1.00                   0            0.800000                             1
+                   9                   5                0.00                   1            0.800000                             1
+                   9                   6                0.00                   0            0.800000                             1
+                   9                   7                0.00                   0            0.800000                             1
+                   9                   8                0.00                   0            0.800000                             1
+                   9                   9                0.00                   2            0.800000                             1
+                   9                  10                0.00                   2            0.800000                             1
+                   9                  11                0.00                   2            0.800000                             1
+                   9                  12                1.00                   0            0.800000                             1
+                   9                  13                1.00                   0            0.800000                             1
+                   9                  14                1.00                   0            0.800000                             1
+                   9                  15                1.00                   0            0.800000                             1
+                   9                  16                1.00                   3            0.800000                             1
+                   9                  17                1.00                   0            0.800000                             1
+                   9                  18                1.00                   4            0.800000                             1
+                   9                  19                1.00                   0            0.800000                             1
+                   9                  20                0.00                   0            0.800000                             1
+                   9                  21                0.00                   0            0.800000                             1
+                   9                  22               -1.10                   5            0.800000                             1
+                   9                  23               -2.10                   5            0.800000                             1
+                   9                  24               -3.10                   5            0.800000                             1
+                   9                  25               -4.10                   5            0.800000                             1
+                   9                  26                0.00                   6            0.800000                             1
+                   9                  27                0.00                   5            0.800000                             1
+                   9                  28                0.00                   0            0.800000                             1
+                   9                  29                0.00                   0            0.800000                             1
+                   9                  30                0.00                   0            0.800000                             1
+                   9                  31                0.00                   0            0.800000                             1
+                   9                  32                0.00                   0            0.990000                             1
+                  10                   1                1.00                   0            0.900000                             1
+                  10                   2                1.00                   0            0.900000                             1
+                  10                   3                1.00                   0            0.900000                             1
+                  10                   4                1.00                   0            0.900000                             1
+                  10                   5                0.00                   1            0.900000                             1
+                  10                   6                0.00                   0            0.900000                             1
+                  10                   7                0.00                   0            0.900000                             1
+                  10                   8                0.00                   0            0.900000                             1
+                  10                   9                0.00                   2            0.900000                             1
+                  10                  10                0.00                   2            0.900000                             1
+                  10                  11                0.00                   2            0.900000                             1
+                  10                  12                1.00                   0            0.900000                             1
+                  10                  13                1.00                   0            0.900000                             1
+                  10                  14                1.00                   0            0.900000                             1
+                  10                  15                1.00                   0            0.900000                             1
+                  10                  16                1.00                   3            0.900000                             1
+                  10                  17                1.00                   0            0.900000                             1
+                  10                  18                1.00                   4            0.900000                             1
+                  10                  19                1.00                   0            0.900000                             1
+                  10                  20                0.00                   0            0.900000                             1
+                  10                  21                0.00                   0            0.900000                             1
+                  10                  22               -1.10                   5            0.900000                             1
+                  10                  23               -2.10                   5            0.900000                             1
+                  10                  24               -3.10                   5            0.900000                             1
+                  10                  25               -4.10                   5            0.900000                             1
+                  10                  26                0.00                   6            0.900000                             1
+                  10                  27                0.00                   5            0.900000                             1
+                  10                  28                0.00                   0            0.900000                             1
+                  10                  29                0.00                   0            0.900000                             1
+                  10                  30                0.00                   0            0.900000                             1
+                  10                  31                0.00                   0            0.900000                             1
+                  10                  32                0.00                   0            0.900000                             1
+                  11                   1                1.00                   0            0.800000                             1
+                  11                   2                1.00                   0            0.800000                             1
+                  11                   3                1.00                   0            0.800000                             1
+                  11                   4                1.00                   0            0.800000                             1
+                  11                   5                0.00                   1            0.800000                             1
+                  11                   6                0.00                   0            0.800000                             1
+                  11                   7                0.00                   0            0.800000                             1
+                  11                   8                0.00                   0            0.800000                             1
+                  11                   9                0.00                   2            0.800000                             1
+                  11                  10                0.00                   2            0.800000                             1
+                  11                  11                0.00                   2            0.800000                             1
+                  11                  12                1.00                   0            0.800000                             1
+                  11                  13                1.00                   0            0.800000                             1
+                  11                  14                1.00                   0            0.800000                             1
+                  11                  15                1.00                   0            0.800000                             1
+                  11                  16                1.00                   3            0.800000                             1
+                  11                  17                1.00                   0            0.800000                             1
+                  11                  18                1.00                   4            0.800000                             1
+                  11                  19                1.00                   0            0.800000                             1
+                  11                  20                0.00                   0            0.800000                             1
+                  11                  21                0.00                   0            0.800000                             1
+                  11                  22               -1.10                   5            0.800000                             1
+                  11                  23               -2.10                   5            0.800000                             1
+                  11                  24               -3.10                   5            0.800000                             1
+                  11                  25               -4.10                   5            0.800000                             1
+                  11                  26                0.00                   6            0.800000                             1
+                  11                  27                0.00                   5            0.800000                             1
+                  11                  28                0.00                   0            0.800000                             1
+                  11                  29                0.00                   0            0.800000                             1
+                  11                  30                0.00                   0            0.800000                             1
+                  11                  31                0.00                   0            0.800000                             1
+                  11                  32                0.00                   0            0.800000                             1
+                  12                   1                1.00                   0            0.900000                             1
+                  12                   2                1.00                   0            0.900000                             1
+                  12                   3                1.00                   0            0.900000                             1
+                  12                   4                1.00                   0            0.900000                             1
+                  12                   5                0.00                   1            0.900000                             1
+                  12                   6                0.00                   0            0.900000                             1
+                  12                   7                0.00                   0            0.900000                             1
+                  12                   8                0.00                   0            0.900000                             1
+                  12                   9                0.00                   2            0.900000                             1
+                  12                  10                0.00                   2            0.900000                             1
+                  12                  11                0.00                   2            0.900000                             1
+                  12                  12                1.00                   0            0.900000                             1
+                  12                  13                1.00                   0            0.900000                             1
+                  12                  14                1.00                   0            0.900000                             1
+                  12                  15                1.00                   0            0.900000                             1
+                  12                  16                1.00                   3            0.900000                             1
+                  12                  17                1.00                   0            0.900000                             1
+                  12                  18                1.00                   4            0.900000                             1
+                  12                  19                1.00                   0            0.900000                             1
+                  12                  20                0.00                   0            0.900000                             1
+                  12                  21                0.00                   0            0.900000                             1
+                  12                  22               -1.10                   5            0.900000                             1
+                  12                  23               -2.10                   5            0.900000                             1
+                  12                  24               -3.10                   5            0.900000                             1
+                  12                  25               -4.10                   5            0.900000                             1
+                  12                  26                0.00                   6            0.900000                             1
+                  12                  27                0.00                   5            0.900000                             1
+                  12                  28                0.00                   0            0.900000                             1
+                  12                  29                0.00                   0            0.900000                             1
+                  12                  30                0.00                   0            0.900000                             1
+                  12                  31                0.00                   0            0.900000                             1
+                  12                  32                0.00                   0            0.900000                             1
+                  13                   1                1.00                   0            0.900000                             1
+                  13                   2                1.00                   0            0.900000                             1
+                  13                   3                1.00                   0            0.900000                             1
+                  13                   4                1.00                   0            0.900000                             1
+                  13                   5                0.00                   1            0.900000                             1
+                  13                   6                0.00                   0            0.900000                             1
+                  13                   7                0.00                   0            0.900000                             1
+                  13                   8                0.00                   0            0.900000                             1
+                  13                   9                0.00                   2            0.900000                             1
+                  13                  10                0.00                   2            0.900000                             1
+                  13                  11                0.00                   2            0.900000                             1
+                  13                  12                1.00                   0            0.900000                             1
+                  13                  13                1.00                   0            0.900000                             1
+                  13                  14                1.00                   0            0.900000                             1
+                  13                  15                1.00                   0            0.900000                             1
+                  13                  16                1.00                   3            0.900000                             1
+                  13                  17                1.00                   0            0.900000                             1
+                  13                  18                1.00                   4            0.900000                             1
+                  13                  19                1.00                   0            0.900000                             1
+                  13                  20                0.00                   0            0.900000                             1
+                  13                  21                0.00                   0            0.900000                             1
+                  13                  22               -1.10                   5            0.900000                             1
+                  13                  23               -2.10                   5            0.900000                             1
+                  13                  24               -3.10                   5            0.900000                             1
+                  13                  25               -4.10                   5            0.900000                             1
+                  13                  26                0.00                   6            0.900000                             1
+                  13                  27                0.00                   5            0.900000                             1
+                  13                  28                0.00                   0            0.900000                             1
+                  13                  29                0.00                   0            0.900000                             1
+                  13                  30                0.00                   0            0.900000                             1
+                  13                  31                0.00                   0            0.900000                             1
+                  13                  32                0.00                   0            0.900000                             1
+                  14                   1                1.00                   0            0.990000                             1
+                  14                   2                1.00                   0            0.990000                             1
+                  14                   3                1.00                   0            0.990000                             1
+                  14                   4                1.00                   0            0.990000                             1
+                  14                   5                0.00                   1            0.990000                             1
+                  14                   6                0.00                   0            0.990000                             1
+                  14                   7                0.00                   0            0.990000                             1
+                  14                   8                0.00                   0            0.990000                             1
+                  14                   9                0.00                   2            0.990000                             1
+                  14                  10                0.00                   2            0.990000                             1
+                  14                  11                0.00                   2            0.990000                             1
+                  14                  12                1.00                   0            0.990000                             1
+                  14                  13                1.00                   0            0.990000                             1
+                  14                  14                1.00                   0            0.990000                             1
+                  14                  15                1.00                   0            0.990000                             1
+                  14                  16                1.00                   3            0.990000                             1
+                  14                  17                1.00                   0            0.990000                             1
+                  14                  18                1.00                   4            0.990000                             1
+                  14                  19                1.00                   0            0.990000                             1
+                  14                  20                0.00                   0            0.990000                             1
+                  14                  21                0.00                   0            0.990000                             1
+                  14                  22               -1.10                   5            0.990000                             1
+                  14                  23               -2.10                   5            0.990000                             1
+                  14                  24               -3.10                   5            0.990000                             1
+                  14                  25               -4.10                   5            0.990000                             1
+                  14                  26                0.00                   6            0.990000                             1
+                  14                  27                0.00                   5            0.990000                             1
+                  14                  28                0.00                   0            0.990000                             1
+                  14                  29                0.00                   0            0.990000                             1
+                  14                  30                0.00                   0            0.990000                             1
+                  14                  31                0.00                   0            0.990000                             1
+                  14                  32                0.00                   0            0.990000                             1
+                  15                   1                1.00                   0            0.990000                             1
+                  15                   2                1.00                   0            0.990000                             1
+                  15                   3                1.00                   0            0.990000                             1
+                  15                   4                1.00                   0            0.990000                             1
+                  15                   5                0.00                   1            0.990000                             1
+                  15                   6                0.00                   0            0.990000                             1
+                  15                   7                0.00                   0            0.990000                             1
+                  15                   8                0.00                   0            0.990000                             1
+                  15                   9                0.00                   2            0.990000                             1
+                  15                  10                0.00                   2            0.990000                             1
+                  15                  11                0.00                   2            0.990000                             1
+                  15                  12                1.00                   0            0.990000                             1
+                  15                  13                1.00                   0            0.990000                             1
+                  15                  14                1.00                   0            0.990000                             1
+                  15                  15                1.00                   0            0.990000                             1
+                  15                  16                1.00                   3            0.990000                             1
+                  15                  17                1.00                   0            0.990000                             1
+                  15                  18                1.00                   4            0.990000                             1
+                  15                  19                1.00                   0            0.990000                             1
+                  15                  20                0.00                   0            0.990000                             1
+                  15                  21                0.00                   0            0.990000                             1
+                  15                  22               -1.10                   5            0.990000                             1
+                  15                  23               -2.10                   5            0.990000                             1
+                  15                  24               -3.10                   5            0.990000                             1
+                  15                  25               -4.10                   5            0.990000                             1
+                  15                  26                0.00                   6            0.990000                             1
+                  15                  27                0.00                   5            0.990000                             1
+                  15                  28                0.00                   0            0.990000                             1
+                  15                  29                0.00                   0            0.990000                             1
+                  15                  30                0.00                   0            0.990000                             1
+                  15                  31                0.00                   0            0.990000                             1
+                  15                  32                0.00                   0            0.990000                             1
+                  16                   1                1.00                   0            0.900000                             1
+                  16                   2                1.00                   0            0.900000                             1
+                  16                   3                1.00                   0            0.900000                             1
+                  16                   4                1.00                   0            0.900000                             1
+                  16                   5                0.00                   1            0.900000                             1
+                  16                   6                0.00                   0            0.900000                             1
+                  16                   7                0.00                   0            0.900000                             1
+                  16                   8                0.00                   0            0.900000                             1
+                  16                   9                0.00                   2            0.900000                             1
+                  16                  10                0.00                   2            0.900000                             1
+                  16                  11                0.00                   2            0.900000                             1
+                  16                  12                1.00                   0            0.900000                             1
+                  16                  13                1.00                   0            0.900000                             1
+                  16                  14                1.00                   0            0.900000                             1
+                  16                  15                1.00                   0            0.900000                             1
+                  16                  16                1.00                   3            0.900000                             1
+                  16                  17                1.00                   0            0.900000                             1
+                  16                  18                1.00                   4            0.900000                             1
+                  16                  19                1.00                   0            0.900000                             1
+                  16                  20                0.00                   0            0.900000                             1
+                  16                  21                0.00                   0            0.900000                             1
+                  16                  22               -1.10                   5            0.900000                             1
+                  16                  23               -2.10                   5            0.900000                             1
+                  16                  24               -3.10                   5            0.900000                             1
+                  16                  25               -4.10                   5            0.900000                             1
+                  16                  26                0.00                   6            0.900000                             1
+                  16                  27                0.00                   5            0.900000                             1
+                  16                  28                0.00                   0            0.900000                             1
+                  16                  29                0.00                   0            0.900000                             1
+                  16                  30                0.00                   0            0.900000                             1
+                  16                  31                0.00                   0            0.900000                             1
+                  16                  32                0.00                   0            0.900000                             1
+                  17                   1                1.00                   0            0.990000                             1
+                  17                   2                1.00                   0            0.990000                             1
+                  17                   3                1.00                   0            0.990000                             1
+                  17                   4                1.00                   0            0.990000                             1
+                  17                   5                0.00                   1            0.990000                             1
+                  17                   6                0.00                   0            0.990000                             1
+                  17                   7                0.00                   0            0.990000                             1
+                  17                   8                0.00                   0            0.990000                             1
+                  17                   9                0.00                   2            0.990000                             1
+                  17                  10                0.00                   2            0.990000                             1
+                  17                  11                0.00                   2            0.990000                             1
+                  17                  12                1.00                   0            0.990000                             1
+                  17                  13                1.00                   0            0.990000                             1
+                  17                  14                1.00                   0            0.990000                             1
+                  17                  15                1.00                   0            0.990000                             1
+                  17                  16                1.00                   3            0.990000                             1
+                  17                  17                1.00                   0            0.990000                             1
+                  17                  18                1.00                   4            0.990000                             1
+                  17                  19                1.00                   0            0.990000                             1
+                  17                  20                0.00                   0            0.990000                             1
+                  17                  21                0.00                   0            0.990000                             1
+                  17                  22               -1.10                   5            0.990000                             1
+                  17                  23               -2.10                   5            0.990000                             1
+                  17                  24               -3.10                   5            0.990000                             1
+                  17                  25               -4.10                   5            0.990000                             1
+                  17                  26                0.00                   6            0.990000                             1
+                  17                  27                0.00                   5            0.990000                             1
+                  17                  28                0.00                   0            0.990000                             1
+                  17                  29                0.00                   0            0.990000                             1
+                  17                  30                0.00                   0            0.990000                             1
+                  17                  31                0.00                   0            0.990000                             1
+                  17                  32                0.00                   0            0.990000                             1
+                  18                   1                1.00                   0            0.990000                             1
+                  18                   2                1.00                   0            0.990000                             1
+                  18                   3                1.00                   0            0.990000                             1
+                  18                   4                1.00                   0            0.990000                             1
+                  18                   5                0.00                   1            0.990000                             1
+                  18                   6                0.00                   0            0.990000                             1
+                  18                   7                0.00                   0            0.990000                             1
+                  18                   8                0.00                   0            0.990000                             1
+                  18                   9                0.00                   2            0.990000                             1
+                  18                  10                0.00                   2            0.990000                             1
+                  18                  11                0.00                   2            0.990000                             1
+                  18                  12                1.00                   0            0.990000                             1
+                  18                  13                1.00                   0            0.990000                             1
+                  18                  14                1.00                   0            0.990000                             1
+                  18                  15                1.00                   0            0.990000                             1
+                  18                  16                1.00                   3            0.990000                             1
+                  18                  17                1.00                   0            0.990000                             1
+                  18                  18                1.00                   4            0.990000                             1
+                  18                  19                1.00                   0            0.990000                             1
+                  18                  20                0.00                   0            0.990000                             1
+                  18                  21                0.00                   0            0.990000                             1
+                  18                  22               -1.10                   5            0.990000                             1
+                  18                  23               -2.10                   5            0.990000                             1
+                  18                  24               -3.10                   5            0.990000                             1
+                  18                  25               -4.10                   5            0.990000                             1
+                  18                  26                0.00                   6            0.990000                             1
+                  18                  27                0.00                   5            0.990000                             1
+                  18                  28                0.00                   0            0.990000                             1
+                  18                  29                0.00                   0            0.990000                             1
+                  18                  30                0.00                   0            0.990000                             1
+                  18                  31                0.00                   0            0.990000                             1
+                  18                  32                0.00                   0            0.990000                             1
+                  19                   1                1.00                   0            0.990000                             1
+                  19                   2                1.00                   0            0.990000                             1
+                  19                   3                1.00                   0            0.990000                             1
+                  19                   4                1.00                   0            0.990000                             1
+                  19                   5                0.00                   1            0.990000                             1
+                  19                   6                0.00                   0            0.990000                             1
+                  19                   7                0.00                   0            0.990000                             1
+                  19                   8                0.00                   0            0.990000                             1
+                  19                   9                0.00                   2            0.990000                             1
+                  19                  10                0.00                   2            0.990000                             1
+                  19                  11                0.00                   2            0.990000                             1
+                  19                  12                1.00                   0            0.990000                             1
+                  19                  13                1.00                   0            0.990000                             1
+                  19                  14                1.00                   0            0.990000                             1
+                  19                  15                1.00                   0            0.990000                             1
+                  19                  16                1.00                   3            0.990000                             1
+                  19                  17                1.00                   0            0.990000                             1
+                  19                  18                1.00                   4            0.990000                             1
+                  19                  19                1.00                   0            0.990000                             1
+                  19                  20                0.00                   0            0.990000                             1
+                  19                  21                0.00                   0            0.990000                             1
+                  19                  22               -1.10                   5            0.990000                             1
+                  19                  23               -2.10                   5            0.990000                             1
+                  19                  24               -3.10                   5            0.990000                             1
+                  19                  25               -4.10                   5            0.990000                             1
+                  19                  26                0.00                   6            0.990000                             1
+                  19                  27                0.00                   5            0.990000                             1
+                  19                  28                0.00                   0            0.990000                             1
+                  19                  29                0.00                   0            0.990000                             1
+                  19                  30                0.00                   0            0.990000                             1
+                  19                  31                0.00                   0            0.990000                             1
+                  19                  32                0.00                   0            0.990000                             1
+                  20                   1                1.00                   0            0.800000                             1
+                  20                   2                1.00                   0            0.800000                             1
+                  20                   3                1.00                   0            0.800000                             1
+                  20                   4                1.00                   0            0.800000                             1
+                  20                   5                0.00                   1            0.800000                             1
+                  20                   6                0.00                   0            0.800000                             1
+                  20                   7                0.00                   0            0.800000                             1
+                  20                   8                0.00                   0            0.800000                             1
+                  20                   9                0.00                   2            0.800000                             1
+                  20                  10                0.00                   2            0.800000                             1
+                  20                  11                0.00                   2            0.800000                             1
+                  20                  12                1.00                   0            0.800000                             1
+                  20                  13                1.00                   0            0.800000                             1
+                  20                  14                1.00                   0            0.800000                             1
+                  20                  15                1.00                   0            0.800000                             1
+                  20                  16                1.00                   3            0.800000                             1
+                  20                  17                1.00                   0            0.800000                             1
+                  20                  18                1.00                   4            0.800000                             1
+                  20                  19                1.00                   0            0.800000                             1
+                  20                  20                0.00                   0            0.800000                             1
+                  20                  21                0.00                   0            0.800000                             1
+                  20                  22               -1.10                   5            0.800000                             1
+                  20                  23               -2.10                   5            0.800000                             1
+                  20                  24               -3.10                   5            0.800000                             1
+                  20                  25               -4.10                   5            0.800000                             1
+                  20                  26                0.00                   6            0.800000                             1
+                  20                  27                0.00                   5            0.800000                             1
+                  20                  28                0.00                   0            0.800000                             1
+                  20                  29                0.00                   0            0.800000                             1
+                  20                  30                0.00                   0            0.800000                             1
+                  20                  31                0.00                   0            0.800000                             1
+                  20                  32                0.00                   0            0.800000                             1
+                  21                   1                1.00                   0            0.990000                             1
+                  21                   2                1.00                   0            0.990000                             1
+                  21                   3                1.00                   0            0.990000                             1
+                  21                   4                1.00                   0            0.990000                             1
+                  21                   5                0.00                   1            0.990000                             1
+                  21                   6                0.00                   0            0.990000                             1
+                  21                   7                0.00                   0            0.990000                             1
+                  21                   8                0.00                   0            0.990000                             1
+                  21                   9                0.00                   2            0.990000                             1
+                  21                  10                0.00                   2            0.990000                             1
+                  21                  11                0.00                   2            0.990000                             1
+                  21                  12                1.00                   0            0.990000                             1
+                  21                  13                1.00                   0            0.990000                             1
+                  21                  14                1.00                   0            0.990000                             1
+                  21                  15                1.00                   0            0.990000                             1
+                  21                  16                1.00                   3            0.990000                             1
+                  21                  17                1.00                   0            0.990000                             1
+                  21                  18                1.00                   4            0.990000                             1
+                  21                  19                1.00                   0            0.990000                             1
+                  21                  20                0.00                   0            0.990000                             1
+                  21                  21                0.00                   0            0.990000                             1
+                  21                  22               -1.10                   5            0.990000                             1
+                  21                  23               -2.10                   5            0.990000                             1
+                  21                  24               -3.10                   5            0.990000                             1
+                  21                  25               -4.10                   5            0.990000                             1
+                  21                  26                0.00                   6            0.990000                             1
+                  21                  27                0.00                   5            0.990000                             1
+                  21                  28                0.00                   0            0.990000                             1
+                  21                  29                0.00                   0            0.990000                             1
+                  21                  30                0.00                   0            0.990000                             1
+                  21                  31                0.00                   0            0.990000                             1
+                  21                  32                0.00                   0            0.990000                             1
+                  22                   1                1.00                   0            0.800000                             1
+                  22                   2                1.00                   0            0.800000                             1
+                  22                   3                1.00                   0            0.800000                             1
+                  22                   4                1.00                   0            0.800000                             1
+                  22                   5                0.00                   1            0.800000                             1
+                  22                   6                0.00                   0            0.800000                             1
+                  22                   7                0.00                   0            0.800000                             1
+                  22                   8                0.00                   0            0.800000                             1
+                  22                   9                0.00                   2            0.800000                             1
+                  22                  10                0.00                   2            0.800000                             1
+                  22                  11                0.00                   2            0.800000                             1
+                  22                  12                1.00                   0            0.800000                             1
+                  22                  13                1.00                   0            0.800000                             1
+                  22                  14                1.00                   0            0.800000                             1
+                  22                  15                1.00                   0            0.800000                             1
+                  22                  16                1.00                   3            0.800000                             1
+                  22                  17                1.00                   0            0.800000                             1
+                  22                  18                1.00                   4            0.800000                             1
+                  22                  19                1.00                   0            0.800000                             1
+                  22                  20                0.00                   0            0.800000                             1
+                  22                  21                0.00                   0            0.800000                             1
+                  22                  22               -1.10                   5            0.800000                             1
+                  22                  23               -2.10                   5            0.800000                             1
+                  22                  24               -3.10                   5            0.800000                             1
+                  22                  25               -4.10                   5            0.800000                             1
+                  22                  26                0.00                   6            0.800000                             1
+                  22                  27                0.00                   5            0.800000                             1
+                  22                  28                0.00                   0            0.800000                             1
+                  22                  29                0.00                   0            0.800000                             1
+                  22                  30                0.00                   0            0.800000                             1
+                  22                  31                0.00                   0            0.800000                             1
+                  22                  32                0.00                   0            0.800000                             1
+                  23                   1                1.00                   0            0.990000                             1
+                  23                   2                1.00                   0            0.990000                             1
+                  23                   3                1.00                   0            0.990000                             1
+                  23                   4                1.00                   0            0.990000                             1
+                  23                   5                0.00                   1            0.990000                             1
+                  23                   6                0.00                   0            0.990000                             1
+                  23                   7                0.00                   0            0.990000                             1
+                  23                   8                0.00                   0            0.990000                             1
+                  23                   9                0.00                   2            0.990000                             1
+                  23                  10                0.00                   2            0.990000                             1
+                  23                  11                0.00                   2            0.990000                             1
+                  23                  12                1.00                   0            0.990000                             1
+                  23                  13                1.00                   0            0.990000                             1
+                  23                  14                1.00                   0            0.990000                             1
+                  23                  15                1.00                   0            0.990000                             1
+                  23                  16                1.00                   3            0.990000                             1
+                  23                  17                1.00                   0            0.990000                             1
+                  23                  18                1.00                   4            0.990000                             1
+                  23                  19                1.00                   0            0.990000                             1
+                  23                  20                0.00                   0            0.990000                             1
+                  23                  21                0.00                   0            0.990000                             1
+                  23                  22               -1.10                   5            0.990000                             1
+                  23                  23               -2.10                   5            0.990000                             1
+                  23                  24               -3.10                   5            0.990000                             1
+                  23                  25               -4.10                   5            0.990000                             1
+                  23                  26                0.00                   6            0.990000                             1
+                  23                  27                0.00                   5            0.990000                             1
+                  23                  28                0.00                   0            0.990000                             1
+                  23                  29                0.00                   0            0.990000                             1
+                  23                  30                0.00                   0            0.990000                             1
+                  23                  31                0.00                   0            0.990000                             1
+                  23                  32                0.00                   0            0.990000                             1
+                  24                   1                1.00                   0            0.800000                             1
+                  24                   2                1.00                   0            0.800000                             1
+                  24                   3                1.00                   0            0.800000                             1
+                  24                   4                1.00                   0            0.800000                             1
+                  24                   5                0.00                   1            0.800000                             1
+                  24                   6                0.00                   0            0.800000                             1
+                  24                   7                0.00                   0            0.800000                             1
+                  24                   8                0.00                   0            0.800000                             1
+                  24                   9                0.00                   2            0.800000                             1
+                  24                  10                0.00                   2            0.800000                             1
+                  24                  11                0.00                   2            0.800000                             1
+                  24                  12                1.00                   0            0.800000                             1
+                  24                  13                1.00                   0            0.800000                             1
+                  24                  14                1.00                   0            0.800000                             1
+                  24                  15                1.00                   0            0.800000                             1
+                  24                  16                1.00                   3            0.800000                             1
+                  24                  17                1.00                   0            0.800000                             1
+                  24                  18                1.00                   4            0.800000                             1
+                  24                  19                1.00                   0            0.800000                             1
+                  24                  20                0.00                   0            0.800000                             1
+                  24                  21                0.00                   0            0.800000                             1
+                  24                  22               -1.10                   5            0.800000                             1
+                  24                  23               -2.10                   5            0.800000                             1
+                  24                  24               -3.10                   5            0.800000                             1
+                  24                  25               -4.10                   5            0.800000                             1
+                  24                  26                0.00                   6            0.800000                             1
+                  24                  27                0.00                   5            0.800000                             1
+                  24                  28                0.00                   0            0.800000                             1
+                  24                  29                0.00                   0            0.800000                             1
+                  24                  30                0.00                   0            0.800000                             1
+                  24                  31                0.00                   0            0.800000                             1
+                  24                  32                0.00                   0            0.800000                             1
+                  25                   1                1.00                   0            0.990000                             1
+                  25                   2                1.00                   0            0.990000                             1
+                  25                   3                1.00                   0            0.990000                             1
+                  25                   4                1.00                   0            0.990000                             1
+                  25                   5                0.00                   1            0.990000                             1
+                  25                   6                0.00                   0            0.990000                             1
+                  25                   7                0.00                   0            0.990000                             1
+                  25                   8                0.00                   0            0.990000                             1
+                  25                   9                0.00                   2            0.990000                             1
+                  25                  10                0.00                   2            0.990000                             1
+                  25                  11                0.00                   2            0.990000                             1
+                  25                  12                1.00                   0            0.990000                             1
+                  25                  13                1.00                   0            0.990000                             1
+                  25                  14                1.00                   0            0.990000                             1
+                  25                  15                1.00                   0            0.990000                             1
+                  25                  16                1.00                   3            0.990000                             1
+                  25                  17                1.00                   0            0.990000                             1
+                  25                  18                1.00                   4            0.990000                             1
+                  25                  19                1.00                   0            0.990000                             1
+                  25                  20                0.00                   0            0.990000                             1
+                  25                  21                0.00                   0            0.990000                             1
+                  25                  22               -1.10                   5            0.990000                             1
+                  25                  23               -2.10                   5            0.990000                             1
+                  25                  24               -3.10                   5            0.990000                             1
+                  25                  25               -4.10                   5            0.990000                             1
+                  25                  26                0.00                   6            0.990000                             1
+                  25                  27                0.00                   5            0.990000                             1
+                  25                  28                0.00                   0            0.990000                             1
+                  25                  29                0.00                   0            0.990000                             1
+                  25                  30                0.00                   0            0.990000                             1
+                  25                  31                0.00                   0            0.990000                             1
+                  25                  32                0.00                   0            0.990000                             1
+# ********************* OPEN BOUNDARIES *********************
+#   OPEN BOUNDARY NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   1                   1                   1
+                   1                   2                   1                   2
+                   1                   3                   1                   3
+                   1                   4                   1                   4
+                   1                   5                   1                   5
+                   1                   6                   1                   6
+                   1                   7                   1                   7
+                   1                   8                   1                   8
+                   1                   9                   1                   9
+                   1                  10                   1                  10
+                   1                  11                   1                  11
+                   1                  12                   1                  12
+                   1                  13                   1                  13
+                   1                  14                   1                  14
+                   1                  15                   1                  15
+                   1                  16                   1                  16
+                   1                  17                   1                  17
+                   1                  18                   1                  18
+                   1                  19                   1                  19
+                   1                  20                   1                  20
+                   1                  21                   1                  21
+                   1                  22                   1                  22
+                   1                  23                   1                  23
+                   1                  24                   1                  24
+                   1                  25                   1                  25
+                   1                  26                   1                  26
+                   1                  27                   1                  27
+                   1                  28                   1                  28
+                   1                  29                   1                  29
+                   1                  30                   1                  30
+                   1                  31                   1                  19
+                   1                  32                   2                   5
+                   2                   1                   2                   1
+                   2                   2                   2                   2
+                   2                   3                   2                   3
+                   2                   4                   2                   4
+                   2                   5                   2                   8
+                   2                   6                   2                   9
+                   2                   7                   2                  10
+                   2                   8                   2                  11
+                   2                   9                   2                  12
+                   2                  10                   2                  13
+                   2                  11                   2                  14
+                   2                  12                   2                  15
+                   2                  13                   2                  16
+                   2                  14                   2                  17
+                   2                  15                   2                  18
+                   2                  16                   2                  19
+                   2                  17                   2                  20
+                   2                  18                   2                  21
+                   2                  19                   2                  22
+                   2                  20                   2                  23
+                   2                  21                   2                  24
+                   2                  22                   2                  25
+                   2                  23                   2                  26
+                   2                  24                   2                  27
+                   2                  25                   2                  28
+                   2                  26                   2                  29
+                   2                  27                   2                  30
+                   2                  28                   2                  31
+                   2                  29                   2                  32
+                   2                  30                   2                  33
+                   2                  31                   2                  22
+                   2                  32                   2                   5
+                   3                   1                   3                   1
+                   3                   2                   3                   2
+                   3                   3                   3                   3
+                   3                   4                   3                   4
+                   3                   5                   3                   8
+                   3                   6                   3                   9
+                   3                   7                   3                  10
+                   3                   8                   3                  11
+                   3                   9                   3                  12
+                   3                  10                   3                  13
+                   3                  11                   3                  14
+                   3                  12                   3                  15
+                   3                  13                   3                  16
+                   3                  14                   3                  17
+                   3                  15                   3                  18
+                   3                  16                   3                  19
+                   3                  17                   3                  20
+                   3                  18                   3                  21
+                   3                  19                   3                  22
+                   3                  20                   3                  23
+                   3                  21                   3                  24
+                   3                  22                   3                  25
+                   3                  23                   3                  26
+                   3                  24                   3                  27
+                   3                  25                   3                  28
+                   3                  26                   3                  29
+                   3                  27                   3                  30
+                   3                  28                   3                  31
+                   3                  29                   3                  32
+                   3                  30                   3                  33
+                   3                  31                   3                  22
+                   3                  32                   3                   5
+                   4                   1                   4                   1
+                   4                   2                   4                   2
+                   4                   3                   4                   3
+                   4                   4                   4                   4
+                   4                   5                   4                   8
+                   4                   6                   4                   9
+                   4                   7                   4                  10
+                   4                   8                   4                  11
+                   4                   9                   4                  12
+                   4                  10                   4                  13
+                   4                  11                   4                  14
+                   4                  12                   4                  15
+                   4                  13                   4                  16
+                   4                  14                   4                  17
+                   4                  15                   4                  18
+                   4                  16                   4                  19
+                   4                  17                   4                  20
+                   4                  18                   4                  21
+                   4                  19                   4                  22
+                   4                  20                   4                  23
+                   4                  21                   4                  24
+                   4                  22                   4                  25
+                   4                  23                   4                  26
+                   4                  24                   4                  27
+                   4                  25                   4                  28
+                   4                  26                   4                  29
+                   4                  27                   4                  30
+                   4                  28                   4                  31
+                   4                  29                   4                  32
+                   4                  30                   4                  33
+                   4                  31                   4                  22
+                   4                  32                   4                   5
+                   5                   1                   5                   1
+                   5                   2                   5                   2
+                   5                   3                   5                   3
+                   5                   4                   5                   4
+                   5                   5                   5                   8
+                   5                   6                   5                   9
+                   5                   7                   5                  10
+                   5                   8                   5                  11
+                   5                   9                   5                  12
+                   5                  10                   5                  13
+                   5                  11                   5                  14
+                   5                  12                   5                  15
+                   5                  13                   5                  16
+                   5                  14                   5                  17
+                   5                  15                   5                  18
+                   5                  16                   5                  19
+                   5                  17                   5                  20
+                   5                  18                   5                  21
+                   5                  19                   5                  22
+                   5                  20                   5                  23
+                   5                  21                   5                  24
+                   5                  22                   5                  25
+                   5                  23                   5                  26
+                   5                  24                   5                  27
+                   5                  25                   5                  28
+                   5                  26                   5                  29
+                   5                  27                   5                  30
+                   5                  28                   5                  31
+                   5                  29                   5                  32
+                   5                  30                   5                  33
+                   5                  31                   5                  22
+                   5                  32                   5                   5
+# ********************* MASS LOADS *********************
+#       MASS LOAD NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+# ********************* MASS WITHDRAWALS *********************
+#MASS WITHDRAWALS NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO
+# ********************* WATER TEMPERATURE *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   6                   1
+                   2                   6                   2
+                   3                   6                   3
+                   4                   6                   4
+                   5                   6                   5
+                   6                   6                   6
+                   7                   6                   7
+                   8                   6                   8
+                   9                   6                   9
+                  10                   6                  10
+                  11                   6                  11
+                  12                   6                  12
+                  13                   6                  13
+                  14                   6                  14
+                  15                   6                  15
+                  16                   6                  16
+                  17                   6                  17
+                  18                   6                  18
+                  19                   6                  19
+                  20                   6                  20
+                  21                   6                  21
+                  22                   6                  22
+                  23                   6                  23
+                  24                   6                  24
+                  25                   6                  25
+# ********************* SALINITY *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   7                   1
+                   2                   7                   2
+                   3                   7                   3
+                   4                   7                   4
+                   5                   7                   5
+                   6                   7                   6
+                   7                   7                   7
+                   8                   7                   8
+                   9                   7                   9
+                  10                   7                  10
+                  11                   7                  11
+                  12                   7                  12
+                  13                   7                  13
+                  14                   7                  14
+                  15                   7                  15
+                  16                   7                  16
+                  17                   7                  17
+                  18                   7                  18
+                  19                   7                  19
+                  20                   7                  20
+                  21                   7                  21
+                  22                   7                  22
+                  23                   7                  23
+                  24                   7                  24
+                  25                   7                  25
+# ********************* SOLAR RADIATION *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   8                   1
+                   2                   8                   2
+                   3                   8                   3
+                   4                   8                   4
+                   5                   8                   5
+                   6                   8                   6
+                   7                   8                   7
+                   8                   8                   8
+                   9                   8                   9
+                  10                   8                  10
+                  11                   8                  11
+                  12                   8                  12
+                  13                   8                  13
+                  14                   8                  14
+                  15                   8                  15
+                  16                   8                  16
+                  17                   8                  17
+                  18                   8                  18
+                  19                   8                  19
+                  20                   8                  20
+                  21                   8                  21
+                  22                   8                  22
+                  23                   8                  23
+                  24                   8                  24
+                  25                   8                  25
+# ********************* SOLAR RADIATION *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                   9                   1
+                   2                   9                   2
+                   3                   9                   3
+                   4                   9                   4
+                   5                   9                   5
+                   6                   9                   6
+                   7                   9                   7
+                   8                   9                   8
+                   9                   9                   9
+                  10                   9                  10
+                  11                   9                  11
+                  12                   9                  12
+                  13                   9                  13
+                  14                   9                  14
+                  15                   9                  15
+                  16                   9                  16
+                  17                   9                  17
+                  18                   9                  18
+                  19                   9                  19
+                  20                   9                  20
+                  21                   9                  21
+                  22                   9                  22
+                  23                   9                  23
+                  24                   9                  24
+                  25                   9                  25
+# ********************* AIR TEMPERATURE *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                  10                   1
+                   2                  10                   2
+                   3                  10                   3
+                   4                  10                   4
+                   5                  10                   5
+                   6                  10                   6
+                   7                  10                   7
+                   8                  10                   8
+                   9                  10                   9
+                  10                  10                  10
+                  11                  10                  11
+                  12                  10                  12
+                  13                  10                  13
+                  14                  10                  14
+                  15                  10                  15
+                  16                  10                  16
+                  17                  10                  17
+                  18                  10                  18
+                  19                  10                  19
+                  20                  10                  20
+                  21                  10                  21
+                  22                  10                  22
+                  23                  10                  23
+                  24                  10                  24
+                  25                  10                  25
+# ********************* WIND SPEED *********************
+#     PELAGIC BOX NO       FORCING TS NO   FORCING TS VAR NO
+                   1                  11                   1
+                   2                  11                   2
+                   3                  11                   3
+                   4                  11                   4
+                   5                  11                   5
+                   6                  11                   6
+                   7                  11                   7
+                   8                  11                   8
+                   9                  11                   9
+                  10                  11                  10
+                  11                  11                  11
+                  12                  11                  12
+                  13                  11                  13
+                  14                  11                  14
+                  15                  11                  15
+                  16                  11                  16
+                  17                  11                  17
+                  18                  11                  18
+                  19                  11                  19
+                  20                  11                  20
+                  21                  11                  21
+                  22                  11                  22
+                  23                  11                  23
+                  24                  11                  24
+                  25                  11                  25
+# ********************* INITIAL CONDITIONS *********************
+#   PEL. INIT SET NO                         PELAGIC INITIAL CONDITION FILE NAME
+                   1                                             INIT_CONC_1.txt
+                   2                                             INIT_CONC_2.txt
+# ********************* FLOW TIME SERIES *********************
+# FLOW TIME SERIE NO                                   FLOW TIME SERIE FILE NAME
+                   1                                                 FLOW_TS.txt
+                   2                                        BOUNDARY_FLOW_TS.txt
+# ********************* MIXING TIME SERIES *********************
+# MIX. TIME SERIE NO                                   MIX. TIME SERIE FILE NAME
+# ********************* SETTLING VEOCITIES *********************
+# SET. TIME SERIE NO                                   SET. TIME SERIE FILE NAME
+                   1                                  SETTLING_VELOCITY_TS_1.txt
+                   2                                  SETTLING_VELOCITY_TS_2.txt
+                   3                                  SETTLING_VELOCITY_TS_3.txt
+                   4                                  SETTLING_VELOCITY_TS_4.txt
+                   5                                  SETTLING_VELOCITY_TS_5.txt
+                   6                                  SETTLING_VELOCITY_TS_6.txt
+# ********************* FORCING TIME SERIES *********************
+# FORC TIME SERIE NO                                   FORC TIME SERIE FILE NAME
+                   1                                               FORC_TS_1.txt
+                   2                                               FORC_TS_2.txt
+                   3                                               FORC_TS_3.txt
+                   4                                               FORC_TS_4.txt
+                   5                                               FORC_TS_5.txt
+                   6                                                 TEMP_TS.txt
+                   7                                                 SALT_TS.txt
+                   8                                            SOLAR_RAD_TS.txt
+                   9                                               FORC_TS_9.txt
+                  10                                             AIR_TEMP_TS.txt
+                  11                                           WIND_SPEED_TS.txt
+                  12                              FLUXES_FOR_SANDY_SEDIMENTS.txt
+                  13                              FLUXES_FOR_MUDDY_SEDIMENTS.txt
+                  14                      FLUXES_FOR_MUDDY_SEDIMENTS_HYPOXIA.txt
+# ECOLOGICAL OUTPUTS
+# PRODUCE_ECOL_OUTPUT
+          1
+# SAVED OUTPUTS
+# CREATE_PELAGIC_SAVED_OUTPUTS
+          0
+# STATE VARIABLE OUTPUTS
+# CREATE_STATE VARIABLE OUTPUTS
+          0
+# COCOA OUTPUTS
+# PRODUCE_COCOA_OUTPUTS
+          0
+# PELAGIC EXERGY INPUTS
+# CALCULATE PELAGIC EXERGY
+          0
+# COST FUNCTION
+# PRODUCE_COST_FUNC
+          0

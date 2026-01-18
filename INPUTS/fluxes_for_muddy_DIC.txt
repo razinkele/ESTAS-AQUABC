@@ -1,0 +1,44 @@
+#Diffusive fluxes of DIC for MUDDY bottoms
+# DATA SIZE
+6
+# NUMBER OF VARIABLES
+2
+# SCALE FACTORS
+#                    CO2C    OTHERS
+                      1.0       1.0
+# UNIT CONVERSION FACTORS (mmol/m2/day ---> 10^3 moles/m2/day)
+#                    CO2C   OTHERS
+                 0.000001      1.0
+# INTERPOLATE
+1
+#          TIME      CO2C         OTHERS
+           6209.0  6.002669007     0.0      !20150101
+           6264.0  6.002669007     0.0      !20150225
+           6319.0  49.45514267     0.0      !20150422
+           6446.0  47.40018073     0.0      !20150827
+           6516.0  45.04152414     0.0      !20151104
+           6575.0  6.002669007     0.0      !20160102
+                 
+                 
+                 
+                 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran make
+
+      - name: Link data (repo-root convenience)
+        run: make link-data
+
+      - name: Build library
+        run: make build-lib
+
+      - name: Build example
+        run: make build-example
+
+      - name: Run example and capture log
+        run: |
+          make run-example | tee run.log
+
+      - name: Run example tests
+        run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
+
+      - name: Check simulation finished
+        run: grep -q "simulation finished" run.log

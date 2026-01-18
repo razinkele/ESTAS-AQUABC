@@ -1,0 +1,133 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Jan 18 10:38:45 2026
+        ! This source file is for reference only and may not completely
+        ! represent the generated interface used by the compiler.
+        MODULE SED_DOC_MINERALIZATION__genmod
+          INTERFACE 
+            SUBROUTINE SED_DOC_MINERALIZATION(SED_K_MIN_DOC_DOXY_20,    &
+     &SED_K_MIN_DOC_NO3N_20,SED_K_MIN_DOC_MN_IV_20,                     &
+     &SED_K_MIN_DOC_FE_III_20,SED_K_MIN_DOC_S_PLUS_6_20,                &
+     &SED_K_MIN_DOC_DOC_20,SED_THETA_K_MIN_DOC_DOXY,                    &
+     &SED_THETA_K_MIN_DOC_NO3N,SED_THETA_K_MIN_DOC_MN_IV,               &
+     &SED_THETA_K_MIN_DOC_FE_III,SED_THETA_K_MIN_DOC_S_PLUS_6,          &
+     &SED_THETA_K_MIN_DOC_DOC,SED_K_HS_DOC_MIN_DOXY,                    &
+     &SED_K_HS_DOC_MIN_NO3N,SED_K_HS_DOC_MIN_MN_IV,                     &
+     &SED_K_HS_DOC_MIN_FE_III,SED_K_HS_DOC_MIN_S_PLUS_6,                &
+     &SED_K_HS_DOC_MIN_DOC,SED_K_HS_DOXY_RED_LIM,SED_K_HS_NO3N_RED_LIM, &
+     &SED_K_HS_MN_IV_RED_LIM,SED_K_HS_FE_III_RED_LIM,                   &
+     &SED_K_HS_S_PLUS_6_RED_LIM,SED_K_HS_DOXY_RED_INHB,                 &
+     &SED_K_HS_NO3N_RED_INHB,SED_K_HS_MN_IV_RED_INHB,                   &
+     &SED_K_HS_FE_III_RED_INHB,SED_K_HS_S_PLUS_6_RED_INHB,              &
+     &SED_PH_MIN_DOC_MIN_DOXY,SED_PH_MIN_DOC_MIN_NO3N,                  &
+     &SED_PH_MIN_DOC_MIN_MN_IV,SED_PH_MIN_DOC_MIN_FE_III,               &
+     &SED_PH_MIN_DOC_MIN_S_PLUS_6,SED_PH_MIN_DOC_MIN_DOC,               &
+     &SED_PH_MAX_DOC_MIN_DOXY,SED_PH_MAX_DOC_MIN_NO3N,                  &
+     &SED_PH_MAX_DOC_MIN_MN_IV,SED_PH_MAX_DOC_MIN_FE_III,               &
+     &SED_PH_MAX_DOC_MIN_S_PLUS_6,SED_PH_MAX_DOC_MIN_DOC,SED_TEMPS,     &
+     &SED_DOC,SED_DOXY,SED_NO3N,MN_IV_DISS,FE_III_DISS,S_PLUS_6,PH,NKN, &
+     &NUM_SED_LAYERS,PH_CORR_DOC_MIN_DOXY,PH_CORR_DOC_MIN_NO3N,         &
+     &PH_CORR_DOC_MIN_MN_IV,PH_CORR_DOC_MIN_FE_III,                     &
+     &PH_CORR_DOC_MIN_S_PLUS_6,PH_CORR_DOC_MIN_DOC,LIM_DOXY_RED,        &
+     &LIM_NO3N_RED,LIM_MN_IV_RED,LIM_FE_III_RED,LIM_S_PLUS_6_RED,       &
+     &LIM_DOC_RED,K_NO3_RED,K_MN_IV_RED,K_FE_III_RED,K_S_PLUS_6_RED,    &
+     &K_DOC_RED,R_MINER_DOC_DOXY,R_MINER_DOC_NO3N,R_MINER_DOC_MN_IV,    &
+     &R_MINER_DOC_FE_III,R_MINER_DOC_S_PLUS_6,R_MINER_DOC_DOC)
+              INTEGER(KIND=4) :: NUM_SED_LAYERS
+              INTEGER(KIND=4) :: NKN
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_DOXY_20
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_NO3N_20
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_MN_IV_20
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_FE_III_20
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_S_PLUS_6_20
+              REAL(KIND=8), INTENT(IN) :: SED_K_MIN_DOC_DOC_20
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_DOXY
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_NO3N
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_MN_IV
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_FE_III
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_S_PLUS_6
+              REAL(KIND=8), INTENT(IN) :: SED_THETA_K_MIN_DOC_DOC
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_DOXY
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_NO3N
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_MN_IV
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_FE_III
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_S_PLUS_6
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOC_MIN_DOC
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOXY_RED_LIM
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_NO3N_RED_LIM
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_MN_IV_RED_LIM
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_FE_III_RED_LIM
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_S_PLUS_6_RED_LIM
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_DOXY_RED_INHB
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_NO3N_RED_INHB
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_MN_IV_RED_INHB
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_FE_III_RED_INHB
+              REAL(KIND=8), INTENT(IN) :: SED_K_HS_S_PLUS_6_RED_INHB
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_DOXY
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_NO3N
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_MN_IV
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_FE_III
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_S_PLUS_6
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MIN_DOC_MIN_DOC
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_DOXY
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_NO3N
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_MN_IV
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_FE_III
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_S_PLUS_6
+              REAL(KIND=8), INTENT(IN) :: SED_PH_MAX_DOC_MIN_DOC
+              REAL(KIND=8), INTENT(IN) :: SED_TEMPS(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: SED_DOC(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: SED_DOXY(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: SED_NO3N(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: MN_IV_DISS(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: FE_III_DISS(NKN,NUM_SED_LAYERS&
+     &)
+              REAL(KIND=8), INTENT(IN) :: S_PLUS_6(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(IN) :: PH(NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_DOXY(NKN,  &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_NO3N(NKN,  &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_MN_IV(NKN, &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_FE_III(NKN,&
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_S_PLUS_6(  &
+     &NKN,NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: PH_CORR_DOC_MIN_DOC(NKN,   &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_DOXY_RED(NKN,          &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_NO3N_RED(NKN,          &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_MN_IV_RED(NKN,         &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_FE_III_RED(NKN,        &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_S_PLUS_6_RED(NKN,      &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_DOC_RED(NKN,           &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: K_NO3_RED(NKN,             &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: K_MN_IV_RED(NKN,           &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: K_FE_III_RED(NKN,          &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: K_S_PLUS_6_RED(NKN,        &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: K_DOC_RED(NKN,             &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_DOXY(NKN,      &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_NO3N(NKN,      &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_MN_IV(NKN,     &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_FE_III(NKN,    &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_S_PLUS_6(NKN,  &
+     &NUM_SED_LAYERS)
+              REAL(KIND=8), INTENT(INOUT) :: R_MINER_DOC_DOC(NKN,       &
+     &NUM_SED_LAYERS)
+            END SUBROUTINE SED_DOC_MINERALIZATION
+          END INTERFACE 
+        END MODULE SED_DOC_MINERALIZATION__genmod

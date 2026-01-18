@@ -1,0 +1,21 @@
+{
+  "name": "Default",
+  "description": "Standard model configuration with baseline parameters",
+  "created": "2026-01-17T19:11:18.973184",
+  "modified": "2026-01-17T19:11:18.973184",
+  "version": "1.0",
+  "ic_file": "INIT_CONC_1.txt",
+  "is_builtin": true,
+  "parameters": {},
+  "initial_conditions": {},
+  "model_options": {
+    "ZOOPLANKTON_OPTION": 1,
+    "ADVANCED_REDOX_SIMULATION": 0,
+    "LIGHT_EXTINCTION_OPTION": 0,
+    "CYANO_BOUYANT_STATE_SIMULATION": 1,
+    "CONSIDER_NON_OBLIGATORY_FIXERS": 0,
+    "CONSIDER_HETEROCYST_WITH_AKINETES": 1,
+    "CONSIDER_ALLELOPATHY": 1
+  },
+  "extra_constants": {}
+}

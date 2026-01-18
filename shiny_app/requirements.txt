@@ -1,0 +1,5 @@
+shiny==1.5.1
+pandas
+plotly
+shinywidgets
+python-dotenv

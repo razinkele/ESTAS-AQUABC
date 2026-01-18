@@ -1,0 +1,18 @@
+# Minimal R Shiny wrapper that embeds the Python Shiny app via iframe
+# Shiny Server will run this, and the iframe will point to the same host on port 8001
+
+library(shiny)
+
+ui <- fluidPage(
+  tags$h3("AQUABC Front End"),
+  tags$div(style = "height: 90vh;",
+    tags$iframe(id = "appframe", src = "", style = "width:100%; height:100%; border:0;")
+  ),
+  tags$script(HTML("document.getElementById('appframe').src='//' + window.location.hostname + ':8001/';"))
+)
+
+server <- function(input, output, session) {
+  # no server-side logic needed for the wrapper
+}
+
+shinyApp(ui, server)

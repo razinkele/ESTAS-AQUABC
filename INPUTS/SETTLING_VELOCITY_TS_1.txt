@@ -1,0 +1,16 @@
+# SETTLING VELOCITY SERIE 1 - Diatoms carbon
+# DATA_SIZE
+2
+# NUMBER_OF_VARIABLES
+1
+# SCALE FACTORS
+#  SETTLING VELOCITY
+                 1.0
+# UNIT CONVERSION FACTORS
+#  SETTLING VELOCITY
+                 1.0
+# INTERPOLATE
+0
+#               TIME     SETTLING VELOCITY (m/day)
+                 1.0                          0.15           
+             10000.0                          0.15

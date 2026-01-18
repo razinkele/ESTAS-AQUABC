@@ -1,0 +1,14 @@
+[Unit]
+Description=AQUABC Shiny app (Python)
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{REPO_ROOT}}
+ExecStart={{VENV}}/bin/python -m shiny run --server.port={{PORT}} --server.host={{HOST}} {{APP}}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

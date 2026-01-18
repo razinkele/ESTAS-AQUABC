@@ -1,0 +1,77 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Jan 18 10:38:46 2026
+        ! This source file is for reference only and may not completely
+        ! represent the generated interface used by the compiler.
+        MODULE OTHER_PLANKTONIC_ALGAE__genmod
+          INTERFACE 
+            SUBROUTINE OTHER_PLANKTONIC_ALGAE(KG_OPA_OPT_TEMP,          &
+     &OPA_OPT_TEMP_LR,OPA_OPT_TEMP_UR,EFF_OPA_GROWTH,                   &
+     &KAPPA_OPA_UNDER_OPT_TEMP,KAPPA_OPA_OVER_OPT_TEMP,KR_OPA_20,       &
+     &THETA_KR_OPA,KD_OPA_20,THETA_KD_OPA,KHS_DIN_OPA,KHS_DIP_OPA,      &
+     &KHS_O2_OPA,FRAC_OPA_EXCR,I_S_OPA,DO_STR_HYPOX_OPA_D,              &
+     &THETA_HYPOX_OPA_D,EXPON_HYPOX_OPA_D,OPA_N_TO_C,OPA_P_TO_C,        &
+     &OPA_O2_TO_C,OPA_C_TO_CHLA,OPA_LIGHT_SAT,NH4_N,NO3_N,PO4_P,        &
+     &DISS_OXYGEN,OPA_C,ZOO_C,TEMP,I_A,K_E,DEPTH,CHLA,FDAY,TIME_STEP,   &
+     &SMITH,NKN,KG_OPA,ALPHA_0,ALPHA_1,LIM_KG_OPA_TEMP,LIM_KG_OPA_LIGHT,&
+     &LIM_KG_OPA_DOXY,LIM_KG_OPA_N,LIM_KG_OPA_P,LIM_KG_OPA_NUTR,        &
+     &LIM_KG_OPA,R_OPA_GROWTH,R_OPA_MET,R_OPA_RESP,R_OPA_EXCR,          &
+     &R_OPA_INT_RESP,KD_OPA,FAC_HYPOX_OPA_D,R_OPA_DEATH,PREF_NH4N_OPA)
+              INTEGER(KIND=4), INTENT(IN) :: NKN
+              REAL(KIND=8), INTENT(IN) :: KG_OPA_OPT_TEMP
+              REAL(KIND=8), INTENT(IN) :: OPA_OPT_TEMP_LR
+              REAL(KIND=8), INTENT(IN) :: OPA_OPT_TEMP_UR
+              REAL(KIND=8), INTENT(IN) :: EFF_OPA_GROWTH
+              REAL(KIND=8), INTENT(IN) :: KAPPA_OPA_UNDER_OPT_TEMP
+              REAL(KIND=8), INTENT(IN) :: KAPPA_OPA_OVER_OPT_TEMP
+              REAL(KIND=8), INTENT(IN) :: KR_OPA_20
+              REAL(KIND=8), INTENT(IN) :: THETA_KR_OPA
+              REAL(KIND=8), INTENT(IN) :: KD_OPA_20
+              REAL(KIND=8), INTENT(IN) :: THETA_KD_OPA
+              REAL(KIND=8), INTENT(IN) :: KHS_DIN_OPA
+              REAL(KIND=8), INTENT(IN) :: KHS_DIP_OPA
+              REAL(KIND=8), INTENT(IN) :: KHS_O2_OPA
+              REAL(KIND=8), INTENT(IN) :: FRAC_OPA_EXCR
+              REAL(KIND=8), INTENT(IN) :: I_S_OPA
+              REAL(KIND=8), INTENT(IN) :: DO_STR_HYPOX_OPA_D
+              REAL(KIND=8), INTENT(IN) :: THETA_HYPOX_OPA_D
+              REAL(KIND=8), INTENT(IN) :: EXPON_HYPOX_OPA_D
+              REAL(KIND=8), INTENT(IN) :: OPA_N_TO_C
+              REAL(KIND=8), INTENT(IN) :: OPA_P_TO_C
+              REAL(KIND=8), INTENT(IN) :: OPA_O2_TO_C
+              REAL(KIND=8), INTENT(IN) :: OPA_C_TO_CHLA
+              REAL(KIND=8), INTENT(INOUT) :: OPA_LIGHT_SAT(NKN)
+              REAL(KIND=8), INTENT(IN) :: NH4_N(NKN)
+              REAL(KIND=8), INTENT(IN) :: NO3_N(NKN)
+              REAL(KIND=8), INTENT(IN) :: PO4_P(NKN)
+              REAL(KIND=8), INTENT(IN) :: DISS_OXYGEN(NKN)
+              REAL(KIND=8), INTENT(IN) :: OPA_C(NKN)
+              REAL(KIND=8), INTENT(IN) :: ZOO_C(NKN)
+              REAL(KIND=8), INTENT(IN) :: TEMP(NKN)
+              REAL(KIND=8), INTENT(IN) :: I_A(NKN)
+              REAL(KIND=8), INTENT(IN) :: K_E(NKN)
+              REAL(KIND=8), INTENT(IN) :: DEPTH(NKN)
+              REAL(KIND=8), INTENT(IN) :: CHLA(NKN)
+              REAL(KIND=8), INTENT(IN) :: FDAY(NKN)
+              REAL(KIND=8), INTENT(IN) :: TIME_STEP
+              INTEGER(KIND=4), INTENT(IN) :: SMITH
+              REAL(KIND=8), INTENT(INOUT) :: KG_OPA(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: ALPHA_0(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: ALPHA_1(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_TEMP(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_LIGHT(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_DOXY(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_N(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_P(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA_NUTR(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: LIM_KG_OPA(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_GROWTH(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_MET(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_RESP(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_EXCR(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_INT_RESP(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: KD_OPA(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: FAC_HYPOX_OPA_D(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: R_OPA_DEATH(NKN)
+              REAL(KIND=8), INTENT(INOUT) :: PREF_NH4N_OPA(NKN)
+            END SUBROUTINE OTHER_PLANKTONIC_ALGAE
+          END INTERFACE 
+        END MODULE OTHER_PLANKTONIC_ALGAE__genmod

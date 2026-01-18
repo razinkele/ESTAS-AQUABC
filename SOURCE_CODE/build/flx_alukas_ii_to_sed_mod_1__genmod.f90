@@ -1,0 +1,38 @@
+        !COMPILER-GENERATED INTERFACE MODULE: Sun Jan 18 10:38:52 2026
+        ! This source file is for reference only and may not completely
+        ! represent the generated interface used by the compiler.
+        MODULE FLX_ALUKAS_II_TO_SED_MOD_1__genmod
+          INTERFACE 
+            SUBROUTINE FLX_ALUKAS_II_TO_SED_MOD_1(STATE_VARIABLES,      &
+     &NUM_VARS,MODEL_CONSTANTS,NUM_CONSTS,DRIVING_FUNCTIONS,NUM_DRIV,   &
+     &SETTLING_VELOCITIES,DISSOLVED_FRACTIONS,BOTTOM_FACTOR,CELLNO,     &
+     &PSTIME,SETTLING_RATES,FLUXES,NUM_FLUXES,SEDIMENT_TYPE,            &
+     &FRACTION_OF_DEPOSITION,NOT_DEPOSITED_FLUXES,                      &
+     &NUM_NOT_DEPOSITED_FLUXES,CONSIDER_NON_OBLIGATORY_FIXERS,          &
+     &CONSIDER_NOSTOCALES)
+              INTEGER(KIND=4) :: NUM_NOT_DEPOSITED_FLUXES
+              INTEGER(KIND=4) :: NUM_FLUXES
+              INTEGER(KIND=4) :: NUM_DRIV
+              INTEGER(KIND=4) :: NUM_CONSTS
+              INTEGER(KIND=4) :: NUM_VARS
+              REAL(KIND=8) :: STATE_VARIABLES(NUM_VARS)
+              REAL(KIND=8) :: MODEL_CONSTANTS(NUM_CONSTS)
+              REAL(KIND=8) :: DRIVING_FUNCTIONS(NUM_DRIV)
+              REAL(KIND=8) :: SETTLING_VELOCITIES(NUM_VARS)
+              REAL(KIND=8) :: DISSOLVED_FRACTIONS(NUM_VARS)
+              REAL(KIND=8) :: BOTTOM_FACTOR
+              INTEGER(KIND=4) :: CELLNO
+              REAL(KIND=8) :: PSTIME
+              REAL(KIND=8) :: SETTLING_RATES(NUM_VARS)
+              REAL(KIND=8) :: FLUXES(NUM_FLUXES)
+              INTEGER(KIND=4) :: SEDIMENT_TYPE
+              REAL(KIND=8) :: FRACTION_OF_DEPOSITION(                   &
+     &NUM_NOT_DEPOSITED_FLUXES)
+              REAL(KIND=8) :: NOT_DEPOSITED_FLUXES(                     &
+     &NUM_NOT_DEPOSITED_FLUXES)
+              INTEGER(KIND=4), INTENT(IN) ::                            &
+     &CONSIDER_NON_OBLIGATORY_FIXERS
+              INTEGER(KIND=4), INTENT(IN) :: CONSIDER_NOSTOCALES
+            END SUBROUTINE FLX_ALUKAS_II_TO_SED_MOD_1
+          END INTERFACE 
+        END MODULE FLX_ALUKAS_II_TO_SED_MOD_1__genmod

@@ -1,0 +1,20 @@
+# PRESCRIBED SANDY SEDIMENT DIFUSION-ADVECTION FLUX DATA
+# DATA SIZE
+6
+# NUMBER OF VARIABLES 
+6
+# SCALE FACTORS
+#                    NH4N     NO3N      PO4P    OTHERS   SiO2Si      O2  
+                      1.0      1.0       1.0       1.0   1.0         1.0 
+# UNIT CONVERSION FACTORS (mmol/m2/day ---> g/m2/day)                    
+#                    NH4N     NO3N      PO4P     OTHERS  SiO2Si      O2  
+                    0.014    0.014    0.0315       1.0   0.0281     0.016
+# INTERPOLATE
+1
+#          TIME      NH4N     NO3N      PO4P    OTHERS    SiO2Si        O2
+         6209.0   -0.8600   0.5700  -0.00242       0.0   -1.51286     -8.983674065
+         6264.0   -0.8600   0.5700  -0.00242       0.0   -1.51286     -8.983674065
+         6319.0    0.0418  -0.6630   0.00360       0.0   -0.02584     -11.31417602
+         6446.0    0.3524  -0.3892  -0.01790       0.0    2.17491     -56.76881377
+         6516.0    0.0967  -0.3558  -0.09700       0.0   -4.03852     -2.21001845 
+         6575.0   -0.8600   0.5700  -0.00242       0.0   -1.51286     -8.983674065              
