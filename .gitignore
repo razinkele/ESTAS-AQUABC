@@ -4,3 +4,19 @@ __pycache__/
 
 # Shiny edits backup
 INPUTS/*.bak
+
+# Output directories
+OUTPUTS/
+OUTPUTS_*
+
+# Build artifacts
+*.o
+*.mod
+
+# Logs and runtime files
+*.log
+run.pid
+tmp_*
+out_*.txt
+summary_*.txt
+time_*.txt
