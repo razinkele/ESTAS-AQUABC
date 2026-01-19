@@ -19,4 +19,8 @@ identifier MODULEALLELOPATHY has embedded space
 #   module (KIND selectors, allocatable/assumed-shape, allocate/expressions). The
 #   module compiles cleanly with gfortran and has been manually triaged; suppress
 #   these messages until the module is refactored for better ftnchek compatibility.
+
+# File-level ignore: specific files we have manually triaged and verified with compiler.
+# Add file path substrings here when the static checker cannot be made to understand
+# the code without a large refactor (temporary pragmatic measure).
 SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
