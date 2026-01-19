@@ -32,5 +32,28 @@ jobs:
       - name: Run example tests
         run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
 
+      - name: Install ftnchek
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ftnchek
+
+      - name: Run ftnchek (Fortran static checks)
+        run: |
+          # Run ftnchek across all Fortran sources, save full output to a report
+          find SOURCE_CODE -name "*.f90" -print0 | xargs -0 ftnchek -usage -truncation -f90 -portability -pretty -columns=132 > ftnchek_report.txt 2>&1 || true
+
+      - name: Summarize ftnchek results
+        run: |
+          echo "--- ftnchek report summary (first 40 matches of 'Error near line') ---"
+          grep -n "Error near line" ftnchek_report.txt | head -n 40 || true
+          echo "--- tail of report (last 20 lines) ---"
+          tail -n 20 ftnchek_report.txt || true
+
+      - name: Upload ftnchek report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftnchek-report
+          path: ftnchek_report.txt
+
       - name: Check simulation finished
         run: grep -q "simulation finished" run.log
