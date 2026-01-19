@@ -11,6 +11,3 @@ syntax error, unexpected identifier
 syntax error, unexpected end of statement
 # - Known file-level quirks
 identifier MODULEALLELOPATHY has embedded space
-
-# - Temporarily ignore the whole ALLELOPATHY module due to many ftnchek false positives
-SOURCE_CODE/ALLELOPATHY/
