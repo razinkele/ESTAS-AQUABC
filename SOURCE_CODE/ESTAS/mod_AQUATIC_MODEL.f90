@@ -283,6 +283,7 @@ contains
         write(unit = *, fmt = *) 'RESUSPENSION_OPTION : ', RESUSPENSION_OPTION
 
         SHUT_DOWN_SETTLING = 0
+        MODEL_BOTTOM_SED_PRESET = .false.
 
         if (RESUSPENSION_OPTION < 1) then
             CONSIDER_RESUSPENSION = 0
@@ -332,10 +333,13 @@ contains
             end if
 
             if (.not. MODEL_BOTTOM_SED_PRESET) then
-                ! Ensure trailing slash on Linux (same fix as PELAGIC_OUTPUT_FOLDER)
-                !DEC$ IF DEFINED(__linux)
-                RESUSPENSION_INPUT_FOLDER = trim(RESUSPENSION_INPUT_FOLDER) // '/'
-                !DEC$ ENDIF
+                ! Ensure trailing slash (portable, works with gfortran and ifort)
+                if (len_trim(RESUSPENSION_INPUT_FOLDER) > 0) then
+                    if (RESUSPENSION_INPUT_FOLDER(len_trim(RESUSPENSION_INPUT_FOLDER):len_trim(RESUSPENSION_INPUT_FOLDER)) /= '/' .and. &
+                        RESUSPENSION_INPUT_FOLDER(len_trim(RESUSPENSION_INPUT_FOLDER):len_trim(RESUSPENSION_INPUT_FOLDER)) /= '\') then
+                        RESUSPENSION_INPUT_FOLDER = trim(RESUSPENSION_INPUT_FOLDER) // '/'
+                    end if
+                end if
 
                 write(unit = *, fmt = *) &
                       'RESUSPENSION INPUT FOLDER : ', trim(adjustl(RESUSPENSION_INPUT_FOLDER))
@@ -349,10 +353,13 @@ contains
                 read(unit = IN_FILE, fmt = *)
                 read(unit = IN_FILE, fmt = *) RESUSPENSION_OUTPUT_FOLDER
 
-                ! Ensure trailing slash on Linux (same fix as PELAGIC_OUTPUT_FOLDER)
-                !DEC$ IF DEFINED(__linux)
-                RESUSPENSION_OUTPUT_FOLDER = trim(RESUSPENSION_OUTPUT_FOLDER) // '/'
-                !DEC$ ENDIF
+                ! Ensure trailing slash (portable, works with gfortran and ifort)
+                if (len_trim(RESUSPENSION_OUTPUT_FOLDER) > 0) then
+                    if (RESUSPENSION_OUTPUT_FOLDER(len_trim(RESUSPENSION_OUTPUT_FOLDER):len_trim(RESUSPENSION_OUTPUT_FOLDER)) /= '/' .and. &
+                        RESUSPENSION_OUTPUT_FOLDER(len_trim(RESUSPENSION_OUTPUT_FOLDER):len_trim(RESUSPENSION_OUTPUT_FOLDER)) /= '\') then
+                        RESUSPENSION_OUTPUT_FOLDER = trim(RESUSPENSION_OUTPUT_FOLDER) // '/'
+                    end if
+                end if
 
                 write(unit = *, fmt = *) &
                       'RESUSPENSION OUTPUT FOLDER : ', &

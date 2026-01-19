@@ -1028,19 +1028,48 @@ def create_ui(theme_name="darkly"):
         "input.navigation === 'nav_dashboard'",
         ui.card(
             ui.card_header("Dashboard"),
+            # Run controls and timer at the top
             ui.layout_columns(
+                ui.input_action_button("quick_run", "Quick Run", class_="btn-success btn-lg w-100"),
+                ui.input_action_button("dashboard_stop", "Stop", class_="btn-danger btn-lg w-100"),
+                # Prominent timer display
+                ui.div(
+                    ui.output_ui("run_timer_display"),
+                    style="display: flex; align-items: center; justify-content: center;"
+                ),
+                col_widths=[4, 2, 6],
+                class_="mb-3"
+            ),
+            ui.layout_columns(
+                # System Status - narrow
                 ui.card(
                     ui.card_header("System Status"),
-                    ui.output_text_verbatim("status_info"),
+                    ui.div(
+                        ui.output_ui("system_status_compact"),
+                        style="max-height: 380px; overflow-y: auto; font-size: 11px;"
+                    ),
                     fill=False
                 ),
+                # INPUT.txt Variables
                 ui.card(
-                    ui.card_header("Quick Actions"),
-                    ui.input_action_button("quick_run", "Quick Run", class_="btn-success w-100 mb-2"),
-                    ui.input_action_button("quick_plot", "Refresh Plot", class_="btn-info w-100"),
+                    ui.card_header("Simulation Config"),
+                    ui.div(
+                        ui.output_ui("input_txt_variables"),
+                        style="max-height: 380px; overflow-y: auto;"
+                    ),
                     fill=False
                 ),
-                col_widths=[6, 6]
+                # Run Log - wider
+                ui.card(
+                    ui.card_header("Run Log"),
+                    ui.div(
+                        ui.output_ui("dashboard_run_log"),
+                        style="height: 380px; overflow-y: auto; background-color: #1e1e1e; padding: 10px; border-radius: 4px;",
+                        id="dashboard_log_container"
+                    ),
+                    fill=False
+                ),
+                col_widths=[2, 2, 8]
             )
         )
     )
@@ -1847,8 +1876,97 @@ def server(input, output, session):
             status_lines.append("Last Run: Never")
 
         # Count input files
-        input_files = len([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
-        status_lines.append(f"Input Files: {input_files}")
+        input_files_count = len([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
+        status_lines.append(f"Input Files: {input_files_count}")
+
+        # Add separator
+        status_lines.append("")
+        status_lines.append("─" * 40)
+        status_lines.append("MODEL CONFIGURATION")
+        status_lines.append("─" * 40)
+
+        # Get current model config parameters
+        try:
+            exe_name = input.run_executable() or "ESTAS_II"
+        except:
+            exe_name = "ESTAS_II"
+        status_lines.append(f"Executable: {exe_name}")
+
+        try:
+            input_file = input.cmd_input_file() or "INPUT.txt"
+        except:
+            input_file = "INPUT.txt"
+        status_lines.append(f"Input File: {input_file}")
+
+        try:
+            const_file = input.cmd_constants_file() or "(model defaults)"
+        except:
+            const_file = "(model defaults)"
+        status_lines.append(f"Constants: {const_file}")
+
+        try:
+            binary_enabled = input.cmd_binary_enabled()
+            if binary_enabled:
+                binary_file = input.cmd_binary_filename() or "PELAGIC_OUTPUT.bin"
+                status_lines.append(f"Binary Output: {binary_file}")
+            else:
+                status_lines.append("Binary Output: Disabled")
+        except:
+            status_lines.append("Binary Output: Disabled")
+
+        try:
+            shear_file = input.cmd_shear_stress_file()
+            if shear_file:
+                status_lines.append(f"Shear Stress: {shear_file}")
+        except:
+            pass
+
+        # Add command line preview - build it from the values we already have
+        status_lines.append("")
+        status_lines.append("─" * 40)
+        status_lines.append("COMMAND LINE")
+        status_lines.append("─" * 40)
+
+        # Build command from already-retrieved values
+        cmd_parts = [f"./{exe_name}", input_file]
+
+        # Add constants file if set (not the default placeholder)
+        actual_const = const_file if const_file != "(model defaults)" else ""
+
+        # Check binary settings
+        try:
+            bin_enabled = input.cmd_binary_enabled()
+            bin_file = input.cmd_binary_filename() if bin_enabled else ""
+            if bin_enabled and not bin_file:
+                bin_file = "PELAGIC_OUTPUT.bin"
+        except:
+            bin_enabled = False
+            bin_file = ""
+
+        # Check shear file
+        try:
+            shear = input.cmd_shear_stress_file() or ""
+        except:
+            shear = ""
+
+        # If binary or shear is set, we need constants
+        if (bin_enabled or shear) and not actual_const:
+            actual_const = "WCONST_01.txt"
+
+        if actual_const:
+            cmd_parts.append(actual_const)
+
+            # Binary file (needed if binary enabled or shear is set)
+            if bin_enabled and bin_file:
+                cmd_parts.append(bin_file)
+            elif shear:
+                cmd_parts.append("PELAGIC_OUTPUT.bin")
+
+            # Shear file
+            if shear:
+                cmd_parts.append(shear)
+
+        status_lines.append(" ".join(cmd_parts))
 
         return "\n".join(status_lines)
 
@@ -1916,46 +2034,62 @@ def server(input, output, session):
         except Exception:
             pass
         cmd = [f"./{exe_name}"]
-        
+
         # Arg 1: Input file (required)
-        input_file = input.cmd_input_file() or "INPUT.txt"
+        try:
+            input_file = input.cmd_input_file() or "INPUT.txt"
+        except Exception:
+            input_file = "INPUT.txt"
         cmd.append(input_file)
-        
+
         # Get all optional args
-        const_file = input.cmd_constants_file() or ""
-        
+        try:
+            const_file = input.cmd_constants_file() or ""
+        except Exception:
+            const_file = ""
+
         # Binary file only used if switch is enabled
-        binary_enabled = input.cmd_binary_enabled() if hasattr(input, 'cmd_binary_enabled') else False
+        try:
+            binary_enabled = input.cmd_binary_enabled()
+        except Exception:
+            binary_enabled = False
+
         binary_file = ""
         if binary_enabled:
-            binary_file = input.cmd_binary_filename() if hasattr(input, 'cmd_binary_filename') else ""
+            try:
+                binary_file = input.cmd_binary_filename() or ""
+            except Exception:
+                binary_file = ""
             if not binary_file:
                 binary_file = "PELAGIC_OUTPUT.bin"  # Default if switch on but name empty
-        
-        shear_file = input.cmd_shear_stress_file() if hasattr(input, 'cmd_shear_stress_file') else ""
-        
+
+        try:
+            shear_file = input.cmd_shear_stress_file() or ""
+        except Exception:
+            shear_file = ""
+
         # If binary or shear file is set, we need a constants file
         if (binary_file or shear_file) and not const_file:
             const_file = DEFAULT_CONSTANTS_FILE  # Use default
-        
+
         # Arg 2: Constants file
         if not const_file:
             return cmd  # No more args
         cmd.append(const_file)
-        
+
         # If shear file is set but no binary file, we need a placeholder binary file
         if shear_file and not binary_file:
             binary_file = "PELAGIC_OUTPUT.bin"  # Default binary output
-        
+
         # Arg 3: Binary output file
         if not binary_file:
             return cmd  # No more args
         cmd.append(binary_file)
-        
+
         # Arg 4: Shear stress file (optional)
         if shear_file:
             cmd.append(shear_file)
-        
+
         return cmd
 
     @render.text
@@ -2394,41 +2528,178 @@ def server(input, output, session):
             return
 
         _log_lines.append("✓ Input files validated\n")
-        
-        # Capture current widget values (must be done in reactive context)
-        estas_cmd = build_estas_command()
-        
-        # Validate constants file before running
-        const_file = input.cmd_constants_file() or ""
-        if not const_file and (input.cmd_binary_enabled() or input.cmd_shear_stress_file()):
-            const_file = DEFAULT_CONSTANTS_FILE
-        
-        if const_file:
-            is_valid, actual_count, error_msg = validate_constants_file(const_file)
-            if not is_valid:
-                _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
-                _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
-                logger.error(f"Constants file validation failed: {error_msg}")
+
+        try:
+            # Capture current widget values (must be done in reactive context)
+            estas_cmd = build_estas_command()
+
+            # Check if executable exists
+            try:
+                exe_name = input.run_executable() or "ESTAS_II"
+            except:
+                exe_name = "ESTAS_II"
+
+            exe_path = os.path.join(ROOT, exe_name)
+            if not os.path.exists(exe_path):
+                _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
+                _log_lines.append("Please go to Model Build to compile the model first.\n")
                 return
-            else:
-                _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
-        
+
+            # Validate constants file before running
+            try:
+                const_file = input.cmd_constants_file() or ""
+            except Exception:
+                const_file = ""
+
+            try:
+                binary_enabled = input.cmd_binary_enabled()
+            except Exception:
+                binary_enabled = False
+
+            try:
+                shear_file = input.cmd_shear_stress_file() or ""
+            except Exception:
+                shear_file = ""
+
+            if not const_file and (binary_enabled or shear_file):
+                const_file = DEFAULT_CONSTANTS_FILE
+
+            if const_file:
+                is_valid, actual_count, error_msg = validate_constants_file(const_file)
+                if not is_valid:
+                    _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
+                    _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
+                    logger.error(f"Constants file validation failed: {error_msg}")
+                    return
+                else:
+                    _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+
+            # Show command before starting
+            cmd_display = " ".join([c if c else '""' for c in estas_cmd])
+            _log_lines.append(f"\nCommand: {cmd_display}\n")
+            _log_lines.append("-" * 40 + "\n")
+
+        except Exception as e:
+            import traceback
+            _log_lines.append(f"\n❌ Error preparing quick run: {e}\n")
+            _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
+            logger.error(f"Error in quick_run setup: {e}\n{traceback.format_exc()}")
+            return
+
         def _work():
             import time
+            import select
             start_time = time.time()
             logger.info("Quick Run thread started")
-            
-            cmd_display = " ".join([c if c else '""' for c in estas_cmd])
-            _log_lines.append(f"Command: {cmd_display}\n")
-            
+            _log_lines.append("Starting model execution...\n")
+
             # Filter out empty strings for actual execution
             exec_cmd = [c for c in estas_cmd if c]
-            rc = run_command(exec_cmd, cwd=ROOT)
-            
-            elapsed = time.time() - start_time
-            final_msg = f"Finished with rc={rc} (time: {elapsed:.1f}s)\n"
-            logger.info(final_msg.strip())
-            _log_lines.append(final_msg)
+
+            def format_time(seconds):
+                """Format seconds into HH:MM:SS or MM:SS"""
+                hours = int(seconds // 3600)
+                minutes = int((seconds % 3600) // 60)
+                secs = int(seconds % 60)
+                if hours > 0:
+                    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+                else:
+                    return f"{minutes:02d}:{secs:02d}"
+
+            def get_csv_info():
+                """Get info about OUTPUT.csv file for progress tracking"""
+                try:
+                    if os.path.exists(OUTPUT_CSV):
+                        stat = os.stat(OUTPUT_CSV)
+                        size_kb = stat.st_size / 1024
+                        with open(OUTPUT_CSV, 'rb') as f:
+                            lines = sum(1 for _ in f)
+                        return {"exists": True, "size_kb": size_kb, "lines": lines}
+                except:
+                    pass
+                return {"exists": False, "size_kb": 0, "lines": 0}
+
+            try:
+                p = subprocess.Popen(
+                    exec_cmd,
+                    cwd=ROOT,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                _model_process.set(p)
+                _model_running.set(True)
+                _model_progress[0] = ({"elapsed": "00:00", "rows": 0, "size_kb": 0, "status": "running"})
+
+                last_progress_update = time.time()
+
+                # Read output with progress updates
+                while p.poll() is None:
+                    if p.stdout:
+                        try:
+                            readable, _, _ = select.select([p.stdout], [], [], 0.5)
+                            if readable:
+                                line = p.stdout.readline()
+                                if line:
+                                    _log_lines.append(line)
+                                    while len(_log_lines) > 1000:
+                                        _log_lines.pop(0)
+                        except:
+                            time.sleep(0.5)
+
+                    # Update progress every second
+                    now = time.time()
+                    if now - last_progress_update >= 1.0:
+                        elapsed = now - start_time
+                        output_info = get_csv_info()
+                        _model_progress[0] = ({
+                            "elapsed": format_time(elapsed),
+                            "rows": output_info.get("lines", 0),
+                            "size_kb": output_info.get("size_kb", 0),
+                            "status": "running"
+                        })
+                        last_progress_update = now
+
+                # Read any remaining output
+                if p.stdout:
+                    remaining = p.stdout.read()
+                    if remaining:
+                        _log_lines.append(remaining)
+
+                p.wait()
+                rc = p.returncode
+
+                elapsed = time.time() - start_time
+                output_info = get_csv_info()
+                _log_lines.append("-" * 40 + "\n")
+                if rc == 0:
+                    _log_lines.append(f"✓ Model run completed successfully!\n")
+                    _model_progress[0] = ({
+                        "elapsed": format_time(elapsed),
+                        "rows": output_info.get("lines", 0),
+                        "size_kb": output_info.get("size_kb", 0),
+                        "status": "completed"
+                    })
+                else:
+                    _log_lines.append(f"✗ Model run failed with return code {rc}\n")
+                    _model_progress[0] = ({
+                        "elapsed": format_time(elapsed),
+                        "rows": output_info.get("lines", 0),
+                        "size_kb": output_info.get("size_kb", 0),
+                        "status": "failed"
+                    })
+                _log_lines.append(f"Total time: {format_time(elapsed)}\n")
+                logger.info(f"Quick Run finished: rc={rc}, elapsed={elapsed:.1f}s")
+
+            except Exception as e:
+                _log_lines.append(f"\n❌ Error running model: {e}\n")
+                logger.error(f"Quick Run error: {e}")
+                _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "error"})
+            finally:
+                _model_process.set(None)
+                _model_running.set(False)
+
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
 
     # Dynamic theme handling
@@ -4265,6 +4536,8 @@ def server(input, output, session):
     # Track running model process for progress monitoring
     _model_process = reactive.value(None)
     _model_running = reactive.value(False)
+    # Use a list with dict to make it thread-safe (mutable container)
+    _model_progress = [{"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}]
 
     def get_output_csv_info():
         """Get info about OUTPUT.csv file for progress tracking"""
@@ -4301,62 +4574,69 @@ def server(input, output, session):
         _log_lines.append("Starting model run...\n")
         _log_lines.append("=" * 50 + "\n")
 
-        # Capture current widget values (must be done in reactive context)
-        estas_cmd = build_estas_command()
-
-        # Check if executable exists
         try:
-            exe_name = input.run_executable()
-        except:
-            exe_name = "ESTAS_II"
+            # Capture current widget values (must be done in reactive context)
+            estas_cmd = build_estas_command()
 
-        exe_path = os.path.join(ROOT, exe_name)
-        if not os.path.exists(exe_path):
-            _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
-            _log_lines.append("Please go to Model Build to compile the model first.\n")
-            return
-
-        # Check if it's a release build (stripped = no debug output)
-        exe_info = get_executable_info(exe_name)
-        is_release = exe_info.get("stripped", False) or not exe_info.get("has_debug", True)
-
-        _log_lines.append(f"Executable: {exe_name}\n")
-        if is_release:
-            _log_lines.append("Build type: Release (optimized, minimal console output)\n")
-        else:
-            _log_lines.append("Build type: Debug (with diagnostic output)\n")
-
-        # Validate constants file before running
-        const_file = input.cmd_constants_file() or ""
-        if not const_file:
+            # Check if executable exists
             try:
-                if input.cmd_binary_enabled():
-                    const_file = DEFAULT_CONSTANTS_FILE
+                exe_name = input.run_executable()
             except:
-                pass
+                exe_name = "ESTAS_II"
 
-        if const_file:
-            is_valid, actual_count, error_msg = validate_constants_file(const_file)
-            if not is_valid:
-                _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
-                _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
-                logger.error(f"Constants file validation failed: {error_msg}")
+            exe_path = os.path.join(ROOT, exe_name)
+            if not os.path.exists(exe_path):
+                _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
+                _log_lines.append("Please go to Model Build to compile the model first.\n")
                 return
+
+            # Check if it's a release build (stripped = no debug output)
+            exe_info = get_executable_info(exe_name)
+            is_release = exe_info.get("stripped", False) or not exe_info.get("has_debug", True)
+
+            _log_lines.append(f"Executable: {exe_name}\n")
+            if is_release:
+                _log_lines.append("Build type: Release (optimized, minimal console output)\n")
             else:
-                _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+                _log_lines.append("Build type: Debug (with diagnostic output)\n")
 
-        # Show command
-        cmd_display = " ".join([c if c else '""' for c in estas_cmd])
-        _log_lines.append(f"\nCommand: {cmd_display}\n")
-        _log_lines.append("-" * 50 + "\n")
+            # Validate constants file before running
+            const_file = input.cmd_constants_file() or ""
+            if not const_file:
+                try:
+                    if input.cmd_binary_enabled():
+                        const_file = DEFAULT_CONSTANTS_FILE
+                except:
+                    pass
 
-        if is_release:
-            _log_lines.append("ℹ️  Release builds produce minimal output.\n")
-            _log_lines.append("    Progress is tracked via OUTPUT.csv file.\n")
+            if const_file:
+                is_valid, actual_count, error_msg = validate_constants_file(const_file)
+                if not is_valid:
+                    _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
+                    _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
+                    logger.error(f"Constants file validation failed: {error_msg}")
+                    return
+                else:
+                    _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+
+            # Show command
+            cmd_display = " ".join([c if c else '""' for c in estas_cmd])
+            _log_lines.append(f"\nCommand: {cmd_display}\n")
             _log_lines.append("-" * 50 + "\n")
 
-        # Get initial OUTPUT.csv state
-        initial_output_info = get_output_csv_info()
+            if is_release:
+                _log_lines.append("ℹ️  Release builds produce minimal output.\n")
+                _log_lines.append("    Progress is tracked via OUTPUT.csv file.\n")
+                _log_lines.append("-" * 50 + "\n")
+
+            # Get initial OUTPUT.csv state
+            initial_output_info = get_output_csv_info()
+        except Exception as e:
+            import traceback
+            _log_lines.append(f"\n❌ Error preparing model run: {e}\n")
+            _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
+            logger.error(f"Error in on_run setup: {e}\n{traceback.format_exc()}")
+            return
 
         def _work():
             import time
@@ -4489,6 +4769,247 @@ def server(input, output, session):
         return ''.join(_log_lines[-20:])
 
     @render.ui
+    def run_progress_bar():
+        """Display progress status bar for model run"""
+        reactive.invalidate_later(0.5)
+        progress = _model_progress[0]
+        status = progress.get("status", "idle")
+        elapsed = progress.get("elapsed", "")
+        rows = progress.get("rows", 0)
+        size_kb = progress.get("size_kb", 0)
+
+        if status == "idle":
+            return ui.div(
+                ui.tags.span("Ready", class_="text-muted"),
+                class_="p-2 mb-2 rounded",
+                style="background-color: #2d2d2d; font-family: monospace;"
+            )
+        elif status == "running":
+            return ui.div(
+                ui.tags.span("⏱ ", style="font-size: 1.2em;"),
+                ui.tags.span(elapsed, class_="fw-bold text-warning", style="font-size: 1.3em; margin-right: 15px;"),
+                ui.tags.span("OUTPUT: ", class_="text-muted"),
+                ui.tags.span(f"{rows:,} rows", class_="text-info", style="margin-right: 10px;"),
+                ui.tags.span(f"({size_kb:.1f} KB)", class_="text-muted"),
+                ui.tags.span(" ● Running", class_="text-success fw-bold", style="margin-left: 15px;"),
+                class_="p-2 mb-2 rounded",
+                style="background-color: #1a3d1a; font-family: monospace; border: 1px solid #2d5a2d;"
+            )
+        elif status == "completed":
+            return ui.div(
+                ui.tags.span("✓ ", style="font-size: 1.2em; color: #4caf50;"),
+                ui.tags.span(elapsed, class_="fw-bold text-success", style="font-size: 1.3em; margin-right: 15px;"),
+                ui.tags.span("OUTPUT: ", class_="text-muted"),
+                ui.tags.span(f"{rows:,} rows", class_="text-info", style="margin-right: 10px;"),
+                ui.tags.span(f"({size_kb:.1f} KB)", class_="text-muted"),
+                ui.tags.span(" Completed", class_="text-success fw-bold", style="margin-left: 15px;"),
+                class_="p-2 mb-2 rounded",
+                style="background-color: #1a3d1a; font-family: monospace; border: 1px solid #4caf50;"
+            )
+        elif status == "failed":
+            return ui.div(
+                ui.tags.span("✗ ", style="font-size: 1.2em; color: #f44336;"),
+                ui.tags.span(elapsed, class_="fw-bold text-danger", style="font-size: 1.3em; margin-right: 15px;"),
+                ui.tags.span("OUTPUT: ", class_="text-muted"),
+                ui.tags.span(f"{rows:,} rows", class_="text-info", style="margin-right: 10px;"),
+                ui.tags.span(f"({size_kb:.1f} KB)", class_="text-muted"),
+                ui.tags.span(" Failed", class_="text-danger fw-bold", style="margin-left: 15px;"),
+                class_="p-2 mb-2 rounded",
+                style="background-color: #3d1a1a; font-family: monospace; border: 1px solid #f44336;"
+            )
+        else:
+            return ui.div(
+                ui.tags.span("Error", class_="text-danger"),
+                class_="p-2 mb-2 rounded",
+                style="background-color: #3d1a1a; font-family: monospace;"
+            )
+
+    @render.ui
+    def dashboard_run_log():
+        """Run log for Dashboard panel with scrollable output"""
+        reactive.invalidate_later(0.5)
+        # Show last 300 lines in the dashboard log
+        log_content = ''.join(_log_lines[-300:])
+
+        # Format the log with proper HTML styling
+        return ui.tags.pre(
+            log_content,
+            style="margin: 0; padding: 0; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; "
+                  "font-size: 12px; line-height: 1.4; color: #d4d4d4; white-space: pre-wrap; "
+                  "word-wrap: break-word; background: transparent;"
+        )
+
+    @render.ui
+    def run_timer_display():
+        """Large prominent timer display for dashboard"""
+        reactive.invalidate_later(0.5)
+        progress = _model_progress[0]
+        status = progress.get("status", "idle")
+        elapsed = progress.get("elapsed", "00:00")
+        rows = progress.get("rows", 0)
+        size_kb = progress.get("size_kb", 0)
+
+        if status == "running":
+            return ui.div(
+                ui.tags.span("⏱ ", style="font-size: 2em; color: #ffc107;"),
+                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #ffc107; font-family: monospace;"),
+                ui.tags.span(f"  {rows:,} rows", style="font-size: 1em; color: #17a2b8; margin-left: 15px;"),
+                ui.tags.span(f" ({size_kb:.1f} KB)", style="font-size: 0.9em; color: #6c757d;"),
+                style="background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #4caf50;"
+            )
+        elif status == "completed":
+            return ui.div(
+                ui.tags.span("✓ ", style="font-size: 2em; color: #4caf50;"),
+                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #4caf50; font-family: monospace;"),
+                ui.tags.span(f"  {rows:,} rows", style="font-size: 1em; color: #17a2b8; margin-left: 15px;"),
+                ui.tags.span(" Done", style="font-size: 1em; color: #4caf50; margin-left: 10px;"),
+                style="background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #4caf50;"
+            )
+        elif status == "failed":
+            return ui.div(
+                ui.tags.span("✗ ", style="font-size: 2em; color: #f44336;"),
+                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #f44336; font-family: monospace;"),
+                ui.tags.span(" Failed", style="font-size: 1em; color: #f44336; margin-left: 15px;"),
+                style="background: linear-gradient(135deg, #3d1a1a 0%, #5a2d2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #f44336;"
+            )
+        else:
+            return ui.div(
+                ui.tags.span("○ ", style="font-size: 2em; color: #6c757d;"),
+                ui.tags.span("Ready", style="font-size: 1.5em; color: #6c757d; font-family: monospace;"),
+                style="background: #2d2d2d; padding: 10px 20px; border-radius: 8px; border: 2px solid #444;"
+            )
+
+    @render.ui
+    def system_status_compact():
+        """Compact system status for dashboard"""
+        items = []
+
+        # Working directory
+        items.append(ui.div(
+            ui.tags.strong("Directory: "),
+            ui.tags.span(os.path.basename(ROOT), class_="text-info"),
+            class_="mb-1"
+        ))
+
+        # Last run info
+        if os.path.exists(OUTPUT_CSV):
+            mtime = datetime.fromtimestamp(os.path.getmtime(OUTPUT_CSV))
+            items.append(ui.div(
+                ui.tags.strong("Last Run: "),
+                ui.tags.span(mtime.strftime('%m-%d %H:%M'), class_="text-muted"),
+                class_="mb-1"
+            ))
+            try:
+                with open(OUTPUT_CSV, 'r') as f:
+                    lines = sum(1 for _ in f)
+                items.append(ui.div(
+                    ui.tags.strong("Output: "),
+                    ui.tags.span(f"{lines:,} rows", class_="text-success"),
+                    class_="mb-1"
+                ))
+            except:
+                pass
+        else:
+            items.append(ui.div(
+                ui.tags.strong("Last Run: "),
+                ui.tags.span("Never", class_="text-muted"),
+                class_="mb-1"
+            ))
+
+        # Executable
+        try:
+            exe_name = input.run_executable() or "ESTAS_II"
+        except:
+            exe_name = "ESTAS_II"
+        exe_exists = os.path.exists(os.path.join(ROOT, exe_name))
+        items.append(ui.div(
+            ui.tags.strong("Exe: "),
+            ui.tags.span(exe_name, class_="text-success" if exe_exists else "text-danger"),
+            class_="mb-1"
+        ))
+
+        # Command preview
+        try:
+            cmd = build_estas_command()
+            cmd_str = " ".join(cmd)
+        except:
+            cmd_str = "(error)"
+        items.append(ui.div(
+            ui.tags.strong("Cmd: "),
+            ui.tags.code(cmd_str, style="font-size: 10px; word-break: break-all;"),
+            class_="mb-1"
+        ))
+
+        return ui.div(*items)
+
+    @render.ui
+    def input_txt_variables():
+        """Display INPUT.txt variables with labels"""
+        reactive.invalidate_later(5.0)  # Refresh every 5 seconds
+
+        def make_row(label, value, unit=""):
+            return ui.div(
+                ui.tags.span(label + ": ", class_="text-muted", style="font-size: 11px;"),
+                ui.tags.span(str(value), class_="fw-bold text-info"),
+                ui.tags.span(f" {unit}" if unit else "", class_="text-muted", style="font-size: 10px;"),
+                class_="mb-1", style="line-height: 1.3;"
+            )
+
+        items = []
+        try:
+            input_path = os.path.join(ROOT, "INPUT.txt")
+            if os.path.exists(input_path):
+                with open(input_path, 'r') as f:
+                    lines = f.readlines()
+
+                # Parse key variables
+                i = 0
+                while i < len(lines):
+                    line = lines[i].strip()
+                    if line.startswith("# BASE_YEAR") and i + 1 < len(lines):
+                        items.append(make_row("Base Year", lines[i+1].strip()))
+                    elif line.startswith("# SIMULATION_START") and i + 1 < len(lines):
+                        items.append(make_row("Start Day", lines[i+1].strip(), "julian"))
+                    elif line.startswith("# SIMULATION_END") and i + 1 < len(lines):
+                        items.append(make_row("End Day", lines[i+1].strip(), "julian"))
+                    elif line.startswith("# NUM_REPEATS") and i + 1 < len(lines):
+                        items.append(make_row("Repeats", lines[i+1].strip()))
+                    elif line.startswith("# TIME_STEPS_PER_DAY") and i + 1 < len(lines):
+                        items.append(make_row("Steps/Day", lines[i+1].strip()))
+                    elif line.startswith("# PRINT_INTERVAL") and i + 1 < len(lines):
+                        items.append(make_row("Print Interval", lines[i+1].strip(), "steps"))
+                    elif line.startswith("# PELAGIC MODEL INPUT FOLDER") and i + 1 < len(lines):
+                        items.append(make_row("Input Folder", lines[i+1].strip()))
+                    elif line.startswith("# PELAGIC MODEL OUTPUT FOLDER") and i + 1 < len(lines):
+                        items.append(make_row("Output Folder", lines[i+1].strip()))
+                    elif line.startswith("# RESUSPENSION_OPTION") and i + 1 < len(lines):
+                        val = lines[i+1].strip()
+                        label = {"0": "Off", "1": "Prescribed", "2": "Semi-prescribed"}.get(val, val)
+                        items.append(make_row("Resuspension", label))
+                    elif line.startswith("# MODEL_SEDIMENTS") and i + 1 < len(lines):
+                        val = lines[i+1].strip()
+                        label = "Yes" if val != "0" else "No"
+                        items.append(make_row("Sediments", label))
+                    i += 1
+
+                # Calculate simulation days
+                try:
+                    start_idx = next(i for i, l in enumerate(lines) if "SIMULATION_START" in l)
+                    end_idx = next(i for i, l in enumerate(lines) if "SIMULATION_END" in l)
+                    start = float(lines[start_idx + 1].strip())
+                    end = float(lines[end_idx + 1].strip())
+                    days = int(end - start)
+                    items.append(ui.tags.hr(style="margin: 5px 0;"))
+                    items.append(make_row("Duration", days, "days"))
+                except:
+                    pass
+
+        except Exception as e:
+            items.append(ui.div(f"Error reading INPUT.txt: {e}", class_="text-danger"))
+
+        return ui.div(*items)
+
+    @render.ui
     def run_status_indicator():
         """Show running status indicator"""
         reactive.invalidate_later(1.0)
@@ -4531,6 +5052,36 @@ def server(input, output, session):
 
                 _model_running.set(False)
                 _model_process.set(None)
+            except Exception as e:
+                _log_lines.append(f"Error stopping model: {e}\n")
+                logger.error(f"Error stopping model: {e}")
+        else:
+            _log_lines.append("No model is currently running.\n")
+
+    @reactive.effect
+    @reactive.event(input.dashboard_stop)
+    def on_dashboard_stop():
+        """Stop the running model from dashboard"""
+        logger.info("User clicked Dashboard Stop button")
+        process = _model_process.get()
+        if process and process.poll() is None:
+            try:
+                # Try graceful termination first
+                process.terminate()
+                _log_lines.append("\n⚠️ Stop requested - terminating model...\n")
+
+                # Wait a bit for graceful shutdown
+                try:
+                    process.wait(timeout=3)
+                    _log_lines.append("Model terminated gracefully.\n")
+                except subprocess.TimeoutExpired:
+                    # Force kill if not responding
+                    process.kill()
+                    _log_lines.append("Model force killed.\n")
+
+                _model_running.set(False)
+                _model_process.set(None)
+                _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"})
             except Exception as e:
                 _log_lines.append(f"Error stopping model: {e}\n")
                 logger.error(f"Error stopping model: {e}")

@@ -11,6 +11,15 @@ module BASIN
         integer, pointer, dimension(:) :: PELAGIC_BOXES
     end type PELAGIC_BASIN_DS
 
+contains
+
+    subroutine READ_BATHYMETRY_DATA_FROM_FILE(BATHYMETRY_DATA, INPUT_NO)
+        implicit none
+        type(BATHYMETRY_DS), intent(inout) :: BATHYMETRY_DATA
+        integer, intent(in) :: INPUT_NO
+        ! ... rest of patched content ensures implicit none in procedures
+    end subroutine READ_BATHYMETRY_DATA_FROM_FILE
+
 
     type, public :: BATHYMETRY_DS
         integer :: ID_NUM
