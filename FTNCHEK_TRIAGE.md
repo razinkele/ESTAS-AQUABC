@@ -29,8 +29,9 @@
 
 ## Actionable next steps (prioritised) ⚡
 1. Short-term (this PR):
-   - Keep the temporary ignore for `SOURCE_CODE/ALLELOPATHY/` in `tools/ftnchek_ignore_patterns.txt` while we inspect it manually.
-   - Add a CI step that runs `tools/run_ftnchek.sh` + `tools/filter_ftnchek.sh` and uploads both `ftnchek_report.txt` and `ftnchek_unexpected.txt` as artifacts. (CI already uploads raw report; I suggest also uploading the filtered output.)
+   - Keep the temporary ignore for `SOURCE_CODE/ALLELOPATHY/` in `tools/ftnchek_ignore_patterns.txt` while we inspect it manually (see comment in the ignore file explaining reason).
+   - CI now runs `tools/run_ftnchek.sh` and `tools/filter_ftnchek.sh` and *fails the job* if any unexpected lines are found. The workflow also uploads both `ftnchek_report.txt` and `tools/ftnchek_unexpected.txt` as artifacts for debugging.
+   - When the ALLELOPATHY module has been manually reviewed and any real issues fixed, remove the ALLELOPATHY file-level ignore and re-run the triage to ensure CI remains green.
 2. Medium-term:
    - Manually inspect `ALLELOPATHY` and the library files to check whether any true issues exist. Fix only *true* bugs (typos, missing tokens, accidental wraps). The normalization/fix scripts already corrected many accidental splits.
    - Remove the module-level ignore once all real issues are resolved. We should favor fine-grained ignores (pattern-level) rather than whole-file ignores when possible.
