@@ -10,19 +10,26 @@ REPORT_FILE="tools/ftnchek_report.txt"
 OUTPUT_FILE="tools/ftnchek_unexpected.txt"
 IGNORE_FILE="tools/ftnchek_ignore_patterns.txt"
 
-# Build ignore regex from patterns file (skip comments and blank lines)
-IGNORE_REGEX=$(grep -vE '^\s*#|^\s*$' "$IGNORE_FILE" | sed -E 's@([\.\^\$\*\+\?\(\)\[\{\\\|])@\\\1@g' | tr '\n' '|' | sed -E 's/\|$//')
-
+# Build ignore patterns array from patterns file (skip comments and blank lines)
+# We'll read patterns into awk and do literal substring matches (index) to avoid ERE escaping issues
 if [ ! -f "$REPORT_FILE" ]; then
     echo "Report not found: $REPORT_FILE"
     exit 1
 fi
 
-awk -v IGNORE="$IGNORE_REGEX" '
+awk -v IGNORE_FILE="$IGNORE_FILE" '
   function trim(s){gsub(/^\s+|\s+$/,"",s); return s}
+  BEGIN {
+    np = 0;
+    while ((getline p < IGNORE_FILE) > 0) {
+      if (p ~ /^[[:space:]]*#/ || p ~ /^[[:space:]]*$/) { }
+      else pats[++np] = p;
+    }
+    close(IGNORE_FILE);
+  }
   /^Error near line [0-9]+/ {
-    header=$0;
-    msg="";
+    header = $0;
+    msg = "";
     # Fetch the next up-to-three lines which may contain the message
     if (getline tmp1 > 0) msg = tmp1;
     if (getline tmp2 > 0) {
@@ -33,7 +40,11 @@ awk -v IGNORE="$IGNORE_REGEX" '
       $0 = saved; saved = ""; # next iteration will see it
     }
     combined = header "\n" msg;
-    if (IGNORE == "" || combined !~ IGNORE) {
+    skip = 0;
+    for (i = 1; i <= np; i++) {
+      if (index(combined, pats[i]) > 0) { skip = 1; break }
+    }
+    if (!skip) {
       print header;
       print msg;
       print "";

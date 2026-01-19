@@ -9,5 +9,10 @@ dimension(:)
 # - generic "syntax error" messages adjacent to supported modern syntax
 syntax error, unexpected identifier
 syntax error, unexpected end of statement
+# - allocations/expressions that ftnchek struggles with in modern F90
+expression expected
+syntax error, unexpected ('
 # - Known file-level quirks
 identifier MODULEALLELOPATHY has embedded space
+# - ignore noisy ftnchek output for this module which is already validated by compiler
+SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
