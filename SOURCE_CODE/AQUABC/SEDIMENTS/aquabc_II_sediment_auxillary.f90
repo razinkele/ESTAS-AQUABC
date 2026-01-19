@@ -256,7 +256,6 @@ end subroutine SED_MOD_1_CVISC
 
 
 subroutine FLX_SED_MOD_1_TO_ALUKAS_II &
-        implicit none
            (FLUXES_FROM_SEDIMENT, NUM_FLUXES_FROM_SEDIMENT, &
             FLUXES_TO_ALUKAS    , NUM_FLUXES_TO_ALUKAS)
 
@@ -359,7 +358,6 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II &
 
 
 subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
-        implicit none
            (FLUXES_FROM_SEDIMENT, NUM_FLUXES_FROM_SEDIMENT, &
             FLUXES_TO_ALUKAS    , nkn, NUM_FLUXES_TO_ALUKAS)
 

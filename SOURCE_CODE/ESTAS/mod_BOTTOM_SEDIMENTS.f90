@@ -307,7 +307,6 @@ end module BOTTOM_SEDIMENTS
     !end subroutine SEDIMENT_TRANSPORT
 
     subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS &
-        implicit none
                (TIME                  , &
                 SED_DEPTHS_LOC        , SED_POROSITIES_LOC, SED_DENSITIES_LOC     , &
                 PART_MIXING_COEFFS_LOC, ADVECTIVE_VELOCITY_LOC, SED_DIFFUSIONS_LOC, &
@@ -399,7 +398,6 @@ end module BOTTOM_SEDIMENTS
 
 
     subroutine SEDIMENT_TRANSPORT &
-        implicit none
                (SETTLING_VELOCITIES, DISSOLVED_FRACTIONS, FRACTION_OF_DEPOSITION, &
                 SAVED_OUTPUTS      , nkn_loc, nstate, n_saved_outputs, TIME)
 

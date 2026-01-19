@@ -13,7 +13,6 @@ contains
 
 
     subroutine CO2SYS &
-        implicit none
                (PAR1     , PAR2  , PAR1TYPE, PAR2TYPE, SALT, TEMPIN,   &
                 TEMPOUT  , PRESIN, PRESOUT , SI , PO4, pHSCALEIN  ,   &
                 K1K2CONSTANTS, KSO4CONSTANTS, &
@@ -1304,7 +1303,6 @@ contains
     !                except KS and KF are on the free scale
     !                and KW is in units of (mol/kg-SW)^2
     subroutine Constants &
-        implicit none
                (TempC, Pdbar, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -2557,7 +2555,6 @@ contains
 
 
     subroutine CalculatepHfCO2fromTATC &
-        implicit none
                (DEBUG, TAx, TCx, pHx, fCO2x, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -2660,7 +2657,6 @@ contains
 
 
     subroutine CalculatepHfromTATC &
-        implicit none
                (DEBUG, TAx, TCx, pHx, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -3170,7 +3166,6 @@ contains
 
 
     subroutine CalculatefCO2fromTCpH &
-        implicit none
                (TCx, pHx, fCO2x, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -3254,7 +3249,6 @@ contains
 
 
     subroutine CalculateTCfromTApH &
-        implicit none
                (TAx, pHx, TCxtemp, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -3457,7 +3451,6 @@ contains
 
 
     subroutine CalculatepHfromTAfCO2 &
-        implicit none
                (TAi, fCO2i, pH, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -3734,7 +3727,6 @@ contains
 
 
     subroutine CalculateTAfromTCpH &
-        implicit none
                (TCi, pHi, TActemp, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -3937,7 +3929,6 @@ contains
 
 
     subroutine CalculatepHfromTCfCO2 &
-        implicit none
                (TCi, fCO2i, pHctemp, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -4028,7 +4019,6 @@ contains
 
 
     subroutine CalculateTCfrompHfCO2 &
-        implicit none
                (pHi, fCO2i, TCctemp, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -4109,7 +4099,6 @@ contains
 
 
     subroutine RevelleFactor &
-        implicit none
                (DEBUG, TAi, TCi, Revelle, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -4266,7 +4255,6 @@ contains
 
 
     subroutine CalculateAlkParts &
-        implicit none
                (pHx, TCx, HCO3, CO3, BAlk, OH, PAlk, SiAlk, Hfree, HSO4, HF, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -4403,7 +4391,6 @@ contains
 
 
     subroutine CaSolubility &
-        implicit none
                (Salt, TempC, Pdbar, TC, pH, OmegaCa, OmegaAr, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &
@@ -4632,7 +4619,6 @@ contains
 
 
     subroutine FindpHOnAllScales &
-        implicit none
                (pH, pHtot, pHsws, pHfree, pHNBS, &
                 ntps, &
                 pHScale, WhichKs, WhoseKSO4, p1, p2, &

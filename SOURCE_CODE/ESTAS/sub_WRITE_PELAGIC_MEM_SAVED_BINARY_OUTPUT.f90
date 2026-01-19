@@ -1,5 +1,4 @@
 subroutine WRITE_PELAGIC_MEM_SAVED_BINARY_OUTPUT &
-        implicit none
            (PELAGIC_BOX_MODEL_DATA, RES_OUTPUT_UNIT, NUM_LINES)
 
     use PELAGIC_BOX_MODEL
