@@ -15,4 +15,8 @@ syntax error, unexpected ('
 # - Known file-level quirks
 identifier MODULEALLELOPATHY has embedded space
 # - ignore noisy ftnchek output for this module which is already validated by compiler
+#   Reason: ftnchek produces many false positives for modern F90 constructs in this
+#   module (KIND selectors, allocatable/assumed-shape, allocate/expressions). The
+#   module compiles cleanly with gfortran and has been manually triaged; suppress
+#   these messages until the module is refactored for better ftnchek compatibility.
 SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90

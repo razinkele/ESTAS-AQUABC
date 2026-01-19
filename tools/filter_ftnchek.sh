@@ -40,9 +40,13 @@ awk -v IGNORE_FILE="$IGNORE_FILE" '
       $0 = saved; saved = ""; # next iteration will see it
     }
     combined = header "\n" msg;
+    # Normalize whitespace and newlines to catch patterns that may be wrapped
+    normalized = combined;
+    gsub(/\n/ , " ", normalized);
+    gsub(/[[:space:]]+/, " ", normalized);
     skip = 0;
     for (i = 1; i <= np; i++) {
-      if (index(combined, pats[i]) > 0) { skip = 1; break }
+      if (index(normalized, pats[i]) > 0) { skip = 1; break }
     }
     if (!skip) {
       print header;

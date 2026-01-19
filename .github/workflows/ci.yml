@@ -55,5 +55,13 @@ jobs:
           name: ftnchek-report
           path: ftnchek_report.txt
 
+      - name: Filter ftnchek and fail on unexpected lines
+        run: |
+          bash tools/filter_ftnchek.sh ftnchek_report.txt > tools/ftnchek_unexpected.txt
+          # If unexpected lines exist, print them and fail the job
+          if ! grep -q "No unexpected ftnchek lines found. Clean." tools/ftnchek_unexpected.txt; then
+            echo "Unexpected ftnchek output detected:"; sed -n '1,200p' tools/ftnchek_unexpected.txt; exit 1
+          fi
+
       - name: Check simulation finished
         run: grep -q "simulation finished" run.log
