@@ -63,5 +63,11 @@ jobs:
             echo "Unexpected ftnchek output detected:"; sed -n '1,200p' tools/ftnchek_unexpected.txt; exit 1
           fi
 
+      - name: Upload filtered ftnchek output
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftnchek-unexpected
+          path: tools/ftnchek_unexpected.txt
+
       - name: Check simulation finished
         run: grep -q "simulation finished" run.log
