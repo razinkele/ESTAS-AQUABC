@@ -1,0 +1,16 @@
+# Patterns of ftnchek messages we consider false-positive for this codebase
+# - KIND selector warnings (selected_real_kind / real(kind=...))
+I do not yet support KIND selectors
+selected_real_kind
+real(kind
+# - allocatable declarations and assumed-shape that ftnchek mis-parses
+allocatable ::
+dimension(:)
+# - generic "syntax error" messages adjacent to supported modern syntax
+syntax error, unexpected identifier
+syntax error, unexpected end of statement
+# - Known file-level quirks
+identifier MODULEALLELOPATHY has embedded space
+
+# - Temporarily ignore the whole ALLELOPATHY module due to many ftnchek false positives
+SOURCE_CODE/ALLELOPATHY/

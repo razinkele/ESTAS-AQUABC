@@ -1,103 +1,36 @@
 module ALLELOPATHY
 
-    implicit none
-    integer :: DBL_ALLEL
-    parameter(DBL_ALLEL = selected_real_kind(15, 307))
+    implicit nonnteger :: DBL_ALLEarameter(DBL_ALLEL = selected_real_kind(15, 307))
 
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOFIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_FIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOST
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_OPA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_ZOO
-    real(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_DIA_20
-    real(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_DIA
+    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOFIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_FIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOSeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_OPeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_ZOeal(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_DIA_2eal(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_DIA
 
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_DIA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_FIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_NOST
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_OPA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_ZOO
-    real(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_NOFIX_CYN_20
-    real(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_NOFIX_CYN
+    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_DIeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_FIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_NOSeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_OPeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOFIX_CYN_ZOeal(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_NOFIX_CYN_2eal(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_NOFIX_CYN
 
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_DIA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_NOFIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_NOST
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_OPA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_ZOO
-    real(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_FIX_CYN_20
-    real(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_FIX_CYN
+    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_DIeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_NOFIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_NOSeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_OPeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_FIX_CYN_ZOeal(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_FIX_CYN_2eal(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_FIX_CYN
 
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_DIA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_NOFIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_FIX_CYN
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_OPA
-    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_ZOO
-    real(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_NOST_20
-    real(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_NOST
+    real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_DIeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_NOFIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_FIX_CYeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_OPeal(kind = DBL_ALLEL) :: K_HS_SEC_METAB_NOST_ZOeal(kind = DBL_ALLEL) :: k_DEG_SEC_METAB_NOST_2eal(kind = DBL_ALLEL) :: THETA_k_DEG_SEC_METAB_NOST
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOST
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOST
 
-    real(kind = DBL_ALLEL) :: S_SEC_METAB_TO_DIAC
-    real(kind = DBL_ALLEL) :: S_SEC_METAB_TO_NOFIX_CYNC
-    real(kind = DBL_ALLEL) :: S_SEC_METAB_TO_FIX_CYNC
-    real(kind = DBL_ALLEL) :: S_SEC_METAB_TO_NOSTC
+    real(kind = DBL_ALLEL) :: S_SEC_METAB_TO_DIAeal(kind = DBL_ALLEL) :: S_SEC_METAB_TO_NOFIX_CYNeal(kind = DBL_ALLEL) :: S_SEC_METAB_TO_FIX_CYNeal(kind = DBL_ALLEL) :: S_SEC_METAB_TO_NOSTC
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOST
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOST
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOST
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOST
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOST
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_OPA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_ZOO
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_NOST
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_OPA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_ZOO
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOST
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_OPA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_ZOO
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_OPA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_ZOO
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOSeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_OPeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_ZOeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_NOSeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_OPeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_ZOeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOSeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_OPeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_ZOeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_OPeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_ZOO
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_OPA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_ZOO
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOSeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_OPeal(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_ZOO
 
     real(kind = DBL_ALLEL), dimension(:,:), allocatable :: DERIVATIVES_SEC_METAB
 
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: WATER_TEMP
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_DIA
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOFIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_FIX_CYN
-    real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOST
+    real(kind = DBL_ALLEL), dimension(:), allocatable :: WATER_TEMeal(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_DIeal(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOFIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_FIX_CYeal(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOST
 
 contains
 
     subroutine ALLOC_ALLEOPATHY(nkn)
 
-        implicit none
-        integer, intent(in) :: nkn
+        implicit nonnteger, intent(in) :: nkn
 
         allocate(SEC_METAB_DIA                   (nkn))
         allocate(SEC_METAB_NOFIX_CYN             (nkn))
