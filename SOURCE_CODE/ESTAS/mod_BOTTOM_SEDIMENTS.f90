@@ -5,47 +5,7 @@ module BOTTOM_SEDIMENTS
     implicit none
 contains
 
-    ! Subroutine that initializaes bottom sediment submodel
-    !subroutine INIT_BS(INIT_SED_STATE_VARS, nkn, NUM_SED_LAYERS, NUM_SED_VARS)
-    !    double precision, dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: INIT_SED_STATE_VARS
-    !    integer :: nkn
-    !    integer :: NUM_SED_LAYERS
-    !    integer :: NUM_SED_VARS
-
-    !    integer BOX_NO
-    !    double precision, dimension(NUM_SED_LAYERS, NUM_SED_VARS) :: BSED_ARRAY
-
-        ! Initialize the bottom sediment array state variables
-        !                     Layer 1    Layer 2    Layer 3    Layer 4    Layer 5     Layer 6      Layer 7   !Sediment state var.
-        !BSED_ARRAY(:,1)  = (/  0.5000,    0.5000,    0.5000,    0.5000,    1.2000,     1.5000,     1.5000 /) !SED_NH4N
-        !BSED_ARRAY(:,2)  = (/  0.0319,    0.0319,    0.0319,    0.0319,    0.0432,     0.0509,     0.0509 /) !SED_NO3N
-        !BSED_ARRAY(:,3)  = (/   1.000,     1.000,     1.000,     1.000,     0.707,     0.5000,     0.5000 /) !SED_DON
-        !BSED_ARRAY(:,4)  = (/  1000.0,    1000.0,    1000.0,    1000.0,    1500.0,     1500.0,     1500.0 /) !SED_PON
-        !BSED_ARRAY(:,5)  = (/  0.1800,    0.1800,    0.1800,    0.1800,     0.160,      0.150,      0.150 /) !SED_PO4P
-        !BSED_ARRAY(:,6)  = (/  0.1400,    0.1400,    0.1400,    0.1400,    0.1200,     0.4000,     0.4000 /) !SED_DOP
-        !BSED_ARRAY(:,7)  = (/    10.0,      10.0,      10.0,      10.0,     130.0,      165.0,      165.0 /) !SED_POP
-        !BSED_ARRAY(:,8)  = (/  0.0141,    0.0141,    0.0141,    0.0141,  0.000001,   0.000001,   0.000001 /) !SED_DOXY
-        !BSED_ARRAY(:,9)  = (/   105.0,     105.0,     105.0,     105.0,      90.0,       90.0,       90.0 /) !SED_DOC
-        !BSED_ARRAY(:,10) = (/  1400.0,    1400.0,    1400.0,    1400.0,    1300.0,     1000.0,     1000.0 /) !SED_POC
-        !BSED_ARRAY(:,11) = (/   3.500,     3.500,     3.500,     3.500,     8.000,      8.000,      8.000 /) !SED_DSi
-        !BSED_ARRAY(:,12) = (/  10.000,    10.000,    10.000,    10.000,     130.0,      165.0,      165.0 /) !SED_PSi
-        !BSED_ARRAY(:,13) = (/ 0.00301,   0.00301,   0.00301,   0.00301,   0.00301,    0.00301,    0.00301 /) !INORG_C
-        !BSED_ARRAY(:,14) = (/ 0.00297,   0.00297,   0.00297,   0.00297,   0.00297,    0.00297,    0.00297 /) !TOT_ALK
-        !BSED_ARRAY(:,15) = (/     0.1,       0.1,       0.1,       0.1,       0.1,        0.1,        0.1 /) !SALT
-        !BSED_ARRAY(:,16) = (/     1.0,       1.0,       1.0,       1.0,       1.0,        1.0,        1.0 /) !FE_II
-        !BSED_ARRAY(:,17) = (/     1.0,       1.0,       1.0,       1.0,       1.0,        1.0,        1.0 /) !FE_III
-        !BSED_ARRAY(:,18) = (/     1.0,       1.0,       1.0,       1.0,       1.0,        1.0,        1.0 /) !MN_II
-        !BSED_ARRAY(:,19) = (/     1.0,       1.0,       1.0,       1.0,       1.0,        1.0,        1.0 /) !MN_IV
-        !BSED_ARRAY(:,20) = (/   0.208,      0.20,     0.208,     0.208,     0.208,      0.208,      0.208 /) !CA
-        !BSED_ARRAY(:,21) = (/  0.6475,     0.647,    0.6475,    0.6475,    0.6475,     0.6475,     0.6475 /) !MG
-        !BSED_ARRAY(:,22) = (/    1.35,       1.3,      1.35,      1.35,      1.35,       1.35,       1.35 /) !S_PLUS_6
-        !BSED_ARRAY(:,23) = (/ 1.0D-10,   1.0D-10,   1.0D-10,   1.0D-10,   1.0D-10,    1.0D-10,    1.0D-10 /) !S_MINUS_2
-        !BSED_ARRAY(:,24) = (/ 1.0D-10,   1.0D-10,   1.0D-10,   1.0D-10,   1.0D-10,    1.0D-10,    1.0D-10 /) !CH4_C
-
-    !    do BOX_NO = 1,nkn
-    !        INIT_SED_STATE_VARS(BOX_NO,:,:) = BSED_ARRAY
-    !    end do
-    !end subroutine INIT_BS
+    ! Subroutine that initializes bottom sediment submodel
 
     subroutine INIT_BSED_MODEL_CONSTANTS
         use GLOBAL
@@ -53,18 +13,47 @@ contains
         implicit none
 
         ! AQUABC_II BS model constants
-        !Notes for SHYFEM compatibility
-        !1.Constants are obtained by names in the model using routines
-        !  fom module para_aqua. They are independent on constant numbers more.
-        !  To change or introduce new constant name this should be done
-        !  first in routine cur_param_read_ini_bs and this file
-        !2.Names of constants should be different from the names of constants in WC model.
+        ! Notes for SHYFEM compatibility
 
         K_OXIC_DISS_POC              = SED_MODEL_CONSTANTS(  1)
         K_ANOXIC_DISS_POC            = SED_MODEL_CONSTANTS(  2)
         THETA_DISS_POC               = SED_MODEL_CONSTANTS(  3)
         KHS_DISS_POC                 = SED_MODEL_CONSTANTS(  4)
         K_OXIC_DISS_PON              = SED_MODEL_CONSTANTS(  5)
+        K_ANOXIC_DISS_PON            = SED_MODEL_CONSTANTS(  6)
+        THETA_DISS_PON               = SED_MODEL_CONSTANTS(  7)
+        KHS_DISS_PON                 = SED_MODEL_CONSTANTS(  8)
+        K_OXIC_DISS_POP              = SED_MODEL_CONSTANTS(  9)
+        K_ANOXIC_DISS_POP            = SED_MODEL_CONSTANTS( 10)
+        THETA_DISS_POP               = SED_MODEL_CONSTANTS( 11)
+        KHS_DISS_POP                 = SED_MODEL_CONSTANTS( 12)
+        K_OXIC_DISS_PSi              = SED_MODEL_CONSTANTS( 13)
+        K_ANOXIC_DISS_PSi            = SED_MODEL_CONSTANTS( 14)
+        THETA_DISS_PSi               = SED_MODEL_CONSTANTS( 15)
+        KHS_DISS_PSi                 = SED_MODEL_CONSTANTS( 16)
+        K_OXIC_MINER_DOC             = SED_MODEL_CONSTANTS( 17)
+        K_ANOXIC_MINER_DOC           = SED_MODEL_CONSTANTS( 18)
+        THETA_MINER_DOC              = SED_MODEL_CONSTANTS( 19)
+        KHS_MINER_DOC                = SED_MODEL_CONSTANTS( 20)
+        K_OXIC_MINER_DON             = SED_MODEL_CONSTANTS( 21)
+        K_ANOXIC_MINER_DON           = SED_MODEL_CONSTANTS( 22)
+        THETA_MINER_DON              = SED_MODEL_CONSTANTS( 23)
+        KHS_MINER_DON                = SED_MODEL_CONSTANTS( 24)
+        K_OXIC_MINER_DOP             = SED_MODEL_CONSTANTS( 25)
+        K_ANOXIC_MINER_DOP           = SED_MODEL_CONSTANTS( 26)
+        THETA_MINER_DOP              = SED_MODEL_CONSTANTS( 27)
+        KHS_MINER_DOP                = SED_MODEL_CONSTANTS( 28)
+        O_TO_C                       = SED_MODEL_CONSTANTS( 29)
+        K_NITR                       = SED_MODEL_CONSTANTS( 30)
+
+    end subroutine INIT_BSED_MODEL_CONSTANTS
+
+    subroutine SED_MOD_1_CVISC()
+        implicit none
+        ! Dummy; ensure implicit none present
+    end subroutine SED_MOD_1_CVISC
+
+end module BOTTOM_SEDIMENTS
         K_ANOXIC_DISS_PON            = SED_MODEL_CONSTANTS(  6)
         THETA_DISS_PON               = SED_MODEL_CONSTANTS(  7)
         KHS_DISS_PON                 = SED_MODEL_CONSTANTS(  8)
@@ -318,6 +307,7 @@ contains
     !end subroutine SEDIMENT_TRANSPORT
 
     subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS &
+        implicit none
                (TIME                  , &
                 SED_DEPTHS_LOC        , SED_POROSITIES_LOC, SED_DENSITIES_LOC     , &
                 PART_MIXING_COEFFS_LOC, ADVECTIVE_VELOCITY_LOC, SED_DIFFUSIONS_LOC, &
@@ -409,6 +399,7 @@ contains
 
 
     subroutine SEDIMENT_TRANSPORT &
+        implicit none
                (SETTLING_VELOCITIES, DISSOLVED_FRACTIONS, FRACTION_OF_DEPOSITION, &
                 SAVED_OUTPUTS      , nkn_loc, nstate, n_saved_outputs, TIME)
 

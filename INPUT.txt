@@ -22,7 +22,13 @@ INPUTS/
 # PELAGIC MODEL OUTPUT FOLDER write the folder always "\" (windows) or "/" (UNIX) in the end
 OUTPUTS/
 # RESUSPENSION_OPTION
-          0
+          2
+# RESUSPENSION INPUT FOLDER (include trailing slash for gfortran builds)
+INPUTS/
+# RESUSPENSION INPUT FILE
+RESUSPENSION_INPUTS_2.txt
+# RESUSPENSION OUTPUT FOLDER (include trailing slash for gfortran builds)
+OUTPUTS/
 # MODEL_SEDIMENTS
           0
 # NUM_PRESCRIBED_SEDIMENT_FLUX_SETS

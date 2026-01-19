@@ -29,6 +29,7 @@
 
 !Subroutine to calculate temperature limitation factor for growth
 subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_TEMP,  &
+        implicit none
                           KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP,nkn) !result(K_GROWTH)
 ! Output:
 ! LIM_TEMP_GROWTH,
@@ -836,6 +837,7 @@ end subroutine UNIONIZED_AMMONIA
 
 
 subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
+        implicit none
            (STATE_VARIABLES               , NUM_VARS                , &
             MODEL_CONSTANTS               , NUM_CONSTS              , &
             DRIVING_FUNCTIONS             , NUM_DRIV                , &
@@ -1087,6 +1089,7 @@ end subroutine FLX_ALUKAS_II_TO_SED_MOD_1
 !********************************************************************
 
 subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
+        implicit none
            (STATE_VARIABLES               , nkn        , NUM_VARS, &
             MODEL_CONSTANTS               , NUM_CONSTS ,         &
             DRIVING_FUNCTIONS             , NUM_DRIV   ,         &
@@ -1352,6 +1355,7 @@ end function STRANGERSD
 !************************************************************************
 
 subroutine chlorophyl_a &
+        implicit none
            (state, nstate, chla, &
             CONSIDER_NON_OBLIGATORY_FIXERS, CONSIDER_NOSTOCALES)
 
