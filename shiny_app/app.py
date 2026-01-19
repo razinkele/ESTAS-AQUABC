@@ -337,6 +337,57 @@ COMPILERS = {
     }
 }
 
+# Common Intel oneAPI compiler installation paths to search
+INTEL_COMPILER_SEARCH_PATHS = [
+    "/opt/intel/oneapi/compiler/latest/bin",
+    "/opt/intel/oneapi/compiler/2025.3/bin",
+    "/opt/intel/oneapi/compiler/2025.1/bin",
+    "/opt/intel/oneapi/compiler/2025.0/bin",
+    "/opt/intel/oneapi/compiler/2024.2/bin",
+    "/opt/intel/oneapi/compiler/2024.1/bin",
+    "/opt/intel/oneapi/compiler/2024.0/bin",
+    os.path.expanduser("~/intel/oneapi/compiler/latest/bin"),
+    os.path.expanduser("~/intel/compilers_and_libraries/linux/bin/intel64"),
+    os.path.expanduser("~/intel/compilers_and_libraries_2020.2.254/linux/bin/intel64"),
+]
+
+def find_compiler_path(compiler_name):
+    """Find the full path to a compiler, searching PATH and known Intel locations.
+
+    Returns tuple: (full_path or None, version_string or None)
+    """
+    import subprocess
+
+    # First try PATH via 'which'
+    try:
+        result = subprocess.run(["which", compiler_name], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            path = result.stdout.strip()
+            # Get version
+            try:
+                ver_result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+                version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
+            except:
+                version = None
+            return path, version
+    except:
+        pass
+
+    # For Intel compilers, search known installation paths
+    if compiler_name in ["ifort", "ifx"]:
+        for search_path in INTEL_COMPILER_SEARCH_PATHS:
+            full_path = os.path.join(search_path, compiler_name)
+            if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+                # Get version
+                try:
+                    ver_result = subprocess.run([full_path, "--version"], capture_output=True, text=True, timeout=5)
+                    version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
+                except:
+                    version = None
+                return full_path, version
+
+    return None, None
+
 # Input file categories and metadata for display in Input Files panel
 INPUT_FILE_CATEGORIES = {
     # Timeseries files - standard format with DATA_SIZE, NUMBER_OF_VARIABLES, SCALE_FACTORS, etc.
@@ -1037,18 +1088,21 @@ def create_ui(theme_name="darkly"):
                     ui.output_ui("run_timer_display"),
                     style="display: flex; align-items: center; justify-content: center;"
                 ),
-                col_widths=[4, 2, 6],
+                col_widths=[4, 4, 4],
                 class_="mb-3"
             ),
             ui.layout_columns(
                 # System Status - narrow
-                ui.card(
-                    ui.card_header("System Status"),
-                    ui.div(
-                        ui.output_ui("system_status_compact"),
-                        style="max-height: 380px; overflow-y: auto; font-size: 11px;"
+                ui.div(
+                    ui.card(
+                        ui.card_header("System Status"),
+                        ui.div(
+                            ui.output_ui("system_status_compact"),
+                            style="max-height: 340px; overflow-y: auto; font-size: 11px;"
+                        ),
+                        fill=False
                     ),
-                    fill=False
+                    ui.input_action_button("goto_model_config", "Model Config", class_="btn-primary btn-sm w-100 mt-2"),
                 ),
                 # INPUT.txt Variables
                 ui.card(
@@ -2157,23 +2211,20 @@ def server(input, output, session):
         cmd = compiler_info.get("command", compiler)
 
         try:
-            import subprocess
-            result = subprocess.run(["which", cmd], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                # Get version
-                try:
-                    ver_result = subprocess.run([cmd, "--version"], capture_output=True, text=True, timeout=5)
-                    version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else "Unknown version"
-                except:
-                    version = "Version check failed"
+            path, version = find_compiler_path(cmd)
+            if path:
+                # Show short path for display
+                display_path = path if len(path) < 40 else "..." + path[-37:]
                 return ui.div(
                     ui.tags.small(f"✓ {cmd} available", class_="text-success"),
                     ui.tags.br(),
-                    ui.tags.small(version, class_="text-muted")
+                    ui.tags.small(version or "Unknown version", class_="text-muted"),
+                    ui.tags.br(),
+                    ui.tags.small(display_path, class_="text-muted", style="font-size: 9px;")
                 )
             else:
                 return ui.div(
-                    ui.tags.small(f"✗ {cmd} not found in PATH", class_="text-danger"),
+                    ui.tags.small(f"✗ {cmd} not found", class_="text-danger"),
                     ui.tags.br(),
                     ui.tags.small(compiler_info.get("description", ""), class_="text-muted")
                 )
@@ -2308,6 +2359,12 @@ def server(input, output, session):
         ui.update_radio_buttons("navigation", selected="nav_model_build")
 
     @reactive.effect
+    @reactive.event(input.goto_model_config)
+    def navigate_to_model_config():
+        """Navigate to the Model Config panel from dashboard"""
+        ui.update_radio_buttons("navigation", selected="nav_model_control")
+
+    @reactive.effect
     @reactive.event(input.btn_build)
     def on_build():
         """Handle Build button click - builds named executable"""
@@ -2318,11 +2375,24 @@ def server(input, output, session):
         clean_first = input.build_clean_first()
         exe_name = get_target_exe_name()
 
+        # Find the full path to the compiler
+        compiler_path, compiler_version = find_compiler_path(compiler)
+        if not compiler_path:
+            _build_log_lines.set([
+                "=" * 50 + "\n",
+                f"ERROR: Compiler '{compiler}' not found!\n",
+                "=" * 50 + "\n",
+                "Please ensure the compiler is installed and accessible.\n",
+                "For Intel compilers, check /opt/intel/oneapi/compiler/\n",
+            ])
+            return
+
         _build_log_lines.set([
             "=" * 50 + "\n",
             f"Building: {exe_name}\n",
             "=" * 50 + "\n",
-            f"Compiler: {compiler}\n",
+            f"Compiler: {compiler_path}\n",
+            f"Version: {compiler_version or 'Unknown'}\n",
             f"Build Type: {build_type}\n",
         ])
 
@@ -2350,9 +2420,9 @@ def server(input, output, session):
                 lines.append("\n=== Building library and executable ===\n")
                 _build_log_lines.set(lines)
 
-                # Use build-named target for named executables
+                # Use build-named target for named executables with full compiler path
                 p = subprocess.Popen(
-                    ["make", f"FC={compiler}", f"BUILD_TYPE={build_type}", "build-named"],
+                    ["make", f"FC={compiler_path}", f"BUILD_TYPE={build_type}", "build-named"],
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -2395,11 +2465,24 @@ def server(input, output, session):
         build_type = input.build_type()
         exe_name = get_target_exe_name()
 
+        # Find the full path to the compiler
+        compiler_path, compiler_version = find_compiler_path(compiler)
+        if not compiler_path:
+            _build_log_lines.set([
+                "=" * 50 + "\n",
+                f"ERROR: Compiler '{compiler}' not found!\n",
+                "=" * 50 + "\n",
+                "Please ensure the compiler is installed and accessible.\n",
+                "For Intel compilers, check /opt/intel/oneapi/compiler/\n",
+            ])
+            return
+
         _build_log_lines.set([
             "=" * 50 + "\n",
             f"Full Rebuild: {exe_name}\n",
             "=" * 50 + "\n",
-            f"Compiler: {compiler}\n",
+            f"Compiler: {compiler_path}\n",
+            f"Version: {compiler_version or 'Unknown'}\n",
             f"Build Type: {build_type}\n",
         ])
 
@@ -2427,9 +2510,9 @@ def server(input, output, session):
                 lines.append("\n=== Rebuilding library and executable ===\n")
                 _build_log_lines.set(lines)
 
-                # Use build-named target for named executables
+                # Use build-named target for named executables with full compiler path
                 p = subprocess.Popen(
-                    ["make", f"FC={compiler}", f"BUILD_TYPE={build_type}", "build-named"],
+                    ["make", f"FC={compiler_path}", f"BUILD_TYPE={build_type}", "build-named"],
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -4962,16 +5045,36 @@ def server(input, output, session):
                 with open(input_path, 'r') as f:
                     lines = f.readlines()
 
-                # Parse key variables
+                # First pass: get base_year for date conversion
+                base_year = 1998  # default
+                for i, line in enumerate(lines):
+                    if line.strip().startswith("# BASE_YEAR") and i + 1 < len(lines):
+                        try:
+                            base_year = int(lines[i+1].strip())
+                        except:
+                            pass
+                        break
+
+                def julian_to_date(julian_day, base_year):
+                    """Convert Julian day to actual date string"""
+                    try:
+                        from datetime import date, timedelta
+                        base_date = date(base_year, 1, 1)
+                        actual_date = base_date + timedelta(days=int(float(julian_day)) - 1)
+                        return actual_date.strftime("%d-%b-%Y")
+                    except:
+                        return str(julian_day)
+
+                # Parse key variables (skip base year display)
                 i = 0
                 while i < len(lines):
                     line = lines[i].strip()
-                    if line.startswith("# BASE_YEAR") and i + 1 < len(lines):
-                        items.append(make_row("Base Year", lines[i+1].strip()))
-                    elif line.startswith("# SIMULATION_START") and i + 1 < len(lines):
-                        items.append(make_row("Start Day", lines[i+1].strip(), "julian"))
+                    if line.startswith("# SIMULATION_START") and i + 1 < len(lines):
+                        julian = lines[i+1].strip()
+                        items.append(make_row("Start Date", julian_to_date(julian, base_year)))
                     elif line.startswith("# SIMULATION_END") and i + 1 < len(lines):
-                        items.append(make_row("End Day", lines[i+1].strip(), "julian"))
+                        julian = lines[i+1].strip()
+                        items.append(make_row("End Date", julian_to_date(julian, base_year)))
                     elif line.startswith("# NUM_REPEATS") and i + 1 < len(lines):
                         items.append(make_row("Repeats", lines[i+1].strip()))
                     elif line.startswith("# TIME_STEPS_PER_DAY") and i + 1 < len(lines):
@@ -5001,6 +5104,26 @@ def server(input, output, session):
                     days = int(end - start)
                     items.append(ui.tags.hr(style="margin: 5px 0;"))
                     items.append(make_row("Duration", days, "days"))
+                except:
+                    pass
+
+                # Read output box settings from PELAGIC_OUTPUT_INFORMATION_FILE.txt
+                try:
+                    output_info_path = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+                    if os.path.exists(output_info_path):
+                        with open(output_info_path, 'r') as f:
+                            output_lines = f.readlines()
+                        output_boxes = []
+                        for line in output_lines[1:]:  # Skip header
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                box_num = parts[0]
+                                state_var = parts[1] if len(parts) > 1 else "0"
+                                if state_var == "1":
+                                    output_boxes.append(box_num)
+                        if output_boxes:
+                            items.append(ui.tags.hr(style="margin: 5px 0;"))
+                            items.append(make_row("Output Boxes", ", ".join(output_boxes)))
                 except:
                     pass
 

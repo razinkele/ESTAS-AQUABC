@@ -40,15 +40,18 @@ BUILD_TYPE ?= release
 #        make FC=gfortran BUILD_TYPE=debug build-named
 # =============================================================================
 
+# Extract compiler base name (handles full paths like /opt/intel/oneapi/compiler/2024.2/bin/ifx)
+FC_BASE = $(notdir $(FC))
+
 # Short compiler name for executable naming
-ifeq ($(FC),gfortran)
+ifeq ($(FC_BASE),gfortran)
     FC_SHORT = gf
-else ifeq ($(FC),ifort)
+else ifeq ($(FC_BASE),ifort)
     FC_SHORT = ifort
-else ifeq ($(FC),ifx)
+else ifeq ($(FC_BASE),ifx)
     FC_SHORT = ifx
 else
-    FC_SHORT = $(FC)
+    FC_SHORT = $(FC_BASE)
 endif
 
 # Default executable name

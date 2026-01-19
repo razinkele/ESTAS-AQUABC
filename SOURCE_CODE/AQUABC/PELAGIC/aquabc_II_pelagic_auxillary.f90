@@ -28,10 +28,8 @@
 !*********************************************'
 
 !Subroutine to calculate temperature limitation factor for growth
-subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_TEMP,  &
-subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_TEMP,  &
-        implicit none
-                          KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP,nkn) !result(K_GROWTH)
+subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_TEMP, &
+                          KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn) !result(K_GROWTH)
 ! Output:
 ! LIM_TEMP_GROWTH,
 !

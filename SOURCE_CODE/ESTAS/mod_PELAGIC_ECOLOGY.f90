@@ -1248,16 +1248,16 @@ subroutine READ_EXTRA_PELAGIC_MODEL_CONSTS(IN_FILE)
         read(IN_FILE + 1, fmt = *) THETA_k_DEG_SEC_METAB_NOST
 
         read(IN_FILE + 1, fmt = *)
-        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_DIAC
+        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_DIA
 
         read(IN_FILE + 1, fmt = *)
-        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_NOFIX_CYNC
+        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_NOFIX_CYN
 
         read(IN_FILE + 1, fmt = *)
-        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_FIX_CYNC
+        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_FIX_CYN
 
         read(IN_FILE + 1, fmt = *)
-        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_NOSTC
+        read(IN_FILE + 1, fmt = *) S_SEC_METAB_TO_NOST
     end if
 
 end subroutine READ_EXTRA_PELAGIC_MODEL_CONSTS

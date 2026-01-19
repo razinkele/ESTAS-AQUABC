@@ -42,6 +42,9 @@ contains
         integer :: MODEL_BOTTOM_SEDIMENTS_PRESET
         integer :: iostat_tmp
 
+        integer :: nlen
+        character(len=1) :: LASTCHAR
+
         !READ DESCRIPTION LINES
         do i = 1, 5
             read(unit = IN_FILE, fmt = *)
@@ -335,8 +338,9 @@ contains
             if (.not. MODEL_BOTTOM_SED_PRESET) then
                 ! Ensure trailing slash (portable, works with gfortran and ifort)
                 if (len_trim(RESUSPENSION_INPUT_FOLDER) > 0) then
-                    if (RESUSPENSION_INPUT_FOLDER(len_trim(RESUSPENSION_INPUT_FOLDER):len_trim(RESUSPENSION_INPUT_FOLDER)) /= '/' .and. &
-                        RESUSPENSION_INPUT_FOLDER(len_trim(RESUSPENSION_INPUT_FOLDER):len_trim(RESUSPENSION_INPUT_FOLDER)) /= '\') then
+                    nlen = len_trim(RESUSPENSION_INPUT_FOLDER)
+                    LASTCHAR = RESUSPENSION_INPUT_FOLDER(nlen:nlen)
+                    if (LASTCHAR /= '/' .and. LASTCHAR /= '\\') then
                         RESUSPENSION_INPUT_FOLDER = trim(RESUSPENSION_INPUT_FOLDER) // '/'
                     end if
                 end if
@@ -355,12 +359,12 @@ contains
 
                 ! Ensure trailing slash (portable, works with gfortran and ifort)
                 if (len_trim(RESUSPENSION_OUTPUT_FOLDER) > 0) then
-                    if (RESUSPENSION_OUTPUT_FOLDER(len_trim(RESUSPENSION_OUTPUT_FOLDER):len_trim(RESUSPENSION_OUTPUT_FOLDER)) /= '/' .and. &
-                        RESUSPENSION_OUTPUT_FOLDER(len_trim(RESUSPENSION_OUTPUT_FOLDER):len_trim(RESUSPENSION_OUTPUT_FOLDER)) /= '\') then
-                        RESUSPENSION_OUTPUT_FOLDER = trim(RESUSPENSION_OUTPUT_FOLDER) // '/'
+                        nlen = len_trim(RESUSPENSION_OUTPUT_FOLDER)
+                        LASTCHAR = RESUSPENSION_OUTPUT_FOLDER(nlen:nlen)
+                        if (LASTCHAR /= '/' .and. LASTCHAR /= '\\') then
+                            RESUSPENSION_OUTPUT_FOLDER = trim(RESUSPENSION_OUTPUT_FOLDER) // '/'
+                        end if
                     end if
-                end if
-
                 write(unit = *, fmt = *) &
                       'RESUSPENSION OUTPUT FOLDER : ', &
                       trim(adjustl(RESUSPENSION_OUTPUT_FOLDER))

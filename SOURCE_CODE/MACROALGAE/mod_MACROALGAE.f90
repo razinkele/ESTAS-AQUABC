@@ -60,7 +60,6 @@ module MacroAlgae
                                                      ! -------------    ------------------------------------------------------------------------------------------------------------------ ------------
                                                      ! INPUT/OUTPUT     DESCRIPTION                                                                                                        UNIT
     subroutine MACRO_ALGAE_KINETICS &                ! -------------    ------------------------------------------------------------------------------------------------------------------ ------------
-        implicit none
         (nkn                                     , & ! SUBMODEL_INPUT : Number of array element (number of boxes) to enable the submodel to be called in a vectorized way                  (Unitless)
          I_A                                     , & ! SUBMODEL_INPUT : Surface light                                                                                                      (langleys)
          K_E                                     , & ! SUBMODEL_INPUT : Light extinction coefficient                                                                                       (1/m)

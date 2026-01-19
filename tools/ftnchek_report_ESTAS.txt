@@ -1,0 +1,1186 @@
+
+FTNCHEK Version 3.3 November 2004
+
+File SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90:
+      5 module TIME_SERIES
+        ^
+Error near line 5 col 1 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: identifier 
+ MODULETIME_SERIES has embedded space
+      7     use INTERPOLATE
+            ^
+Error near line 7 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected end of statement, expecting pointer assignment or '='
+            ^
+Error near line 7 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: identifier 
+ USEINTERPOLATE has embedded space
+      9     implicit none
+            ^
+Error near line 9 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected end of statement, expecting pointer assignment or '='
+     11     type, public :: TIME_SERIE
+                  ^
+Error near line 11 col 11 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ','
+     18         real(kind = DBL_PRECISION), pointer, dimension(:)   :: TIMES
+                     ^
+Warning near line 18 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: I do
+ not yet support KIND selectors.  All KINDs are treated as default KIND.
+ Checking of type agreement may be incorrect as a result.  (This message is
+ only given once.)
+                                                   ^
+Error near line 18 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     19         real(kind = DBL_PRECISION), pointer, dimension(:)   :: SCALE_FACTORS
+                                                   ^
+Error near line 19 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     20         real(kind = DBL_PRECISION), pointer, dimension(:)   :: UNIT_CONVERSION_FACTORS
+                                                   ^
+Error near line 20 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     21         real(kind = DBL_PRECISION), pointer, dimension(:,:) :: VARIABLES
+                                                   ^
+Error near line 21 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     22     end type TIME_SERIE
+            ^
+Error near line 22 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ identifier ENDTYPETIME_SERIE has embedded space
+     24 contains
+        ^
+Error near line 24 col 1 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected end of statement, expecting pointer assignment or '='
+     26     subroutine INITIALIZE_TIME_SERIE(TIME_FUNCTION)
+            ^
+Error near line 26 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected end of statement, expecting pointer assignment or '='
+Error near line 26 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: missing END
+ statement inserted prior to statement
+Warning near line 26 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Module
+ contains no executable statements
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables declared but never referenced:
+    ALLOCATED declared at line 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    CONTAINS first occurrence at line 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DATA_SIZE declared at line 12 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 18 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    ENDTYPETIME_SERIE first occurrence at line 22 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTERPOLATE declared at line 15 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    MODULETIME_SERIES first occurrence at line 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    NUMBER_OF_VARIABLES declared at line 13 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_INDEX declared at line 16 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    USEINTERPOLATE first occurrence at line 7 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Identifiers of undeclared type
+    CONTAINS first occurrence at line 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 18 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    ENDTYPETIME_SERIE first occurrence at line 22 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    MODULETIME_SERIES first occurrence at line 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    USEINTERPOLATE first occurrence at line 7 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+     29         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 29 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 29 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+     31         TIME_FUNCTION % DATA_SIZE           = 0
+                              ^
+Error near line 31 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 31 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     32         TIME_FUNCTION % NUMBER_OF_VARIABLES = 0
+                              ^
+Error near line 32 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 32 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     33         TIME_FUNCTION % ALLOCATED           = 0
+                              ^
+Error near line 33 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 33 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     34         TIME_FUNCTION % INTERPOLATE         = 0
+                              ^
+Error near line 34 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 34 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     35         TIME_FUNCTION % TIME_INDEX          = 1
+                              ^
+Error near line 35 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 35 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     36     end subroutine INITIALIZE_TIME_SERIE
+Warning near line 36 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Module
+ contains no executable statements
+
+Warning in module INITIALIZE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    TIME_FUNCTION declared at line 26 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module INITIALIZE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module INITIALIZE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    INOUT first occurrence at line 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 26 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+     41         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 41 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 41 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+     42         integer, intent(in) :: DATA_SIZE
+                               ^
+Error near line 42 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     43         integer, intent(in) :: NUMBER_OF_VARIABLES
+                               ^
+Error near line 43 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     45         if (TIME_FUNCTION % ALLOCATED == 1) then
+                                  ^
+Error near line 45 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 45 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+     46             deallocate(TIME_FUNCTION % TIMES)
+                                             ^
+Error near line 46 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 46 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     47             deallocate(TIME_FUNCTION % SCALE_FACTORS)
+                                             ^
+Error near line 47 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                            ^
+Error near line 47 col 53 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     48             deallocate(TIME_FUNCTION % UNIT_CONVERSION_FACTORS)
+                                             ^
+Error near line 48 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                      ^
+Error near line 48 col 63 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     49             deallocate(TIME_FUNCTION % VARIABLES)
+                                             ^
+Error near line 49 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                        ^
+Error near line 49 col 49 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     50         end if
+                ^
+Error near line 50 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ENDIF 
+ statement does not match SUBROUTINE block it closes
+     52         allocate(TIME_FUNCTION % TIMES(DATA_SIZE))
+                                       ^
+Error near line 52 col 32 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 52 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     53         allocate(TIME_FUNCTION % SCALE_FACTORS(NUMBER_OF_VARIABLES))
+                                       ^
+Error near line 53 col 32 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                      ^
+Error near line 53 col 47 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     54         allocate(TIME_FUNCTION % UNIT_CONVERSION_FACTORS(NUMBER_OF_VARIABLES))
+                                       ^
+Error near line 54 col 32 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                ^
+Error near line 54 col 57 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     55         allocate(TIME_FUNCTION % VARIABLES(DATA_SIZE, NUMBER_OF_VARIABLES))
+                                       ^
+Error near line 55 col 32 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                  ^
+Error near line 55 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     57         TIME_FUNCTION % DATA_SIZE = DATA_SIZE
+                              ^
+Error near line 57 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                          ^
+Error near line 57 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     58         TIME_FUNCTION % NUMBER_OF_VARIABLES = NUMBER_OF_VARIABLES
+                              ^
+Error near line 58 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 58 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     59         TIME_FUNCTION % ALLOCATED = 1
+                              ^
+Error near line 59 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                          ^
+Error near line 59 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     60     end subroutine ALLOCATE_TIME_SERIE
+            ^
+Error near line 60 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+
+Warning in module ALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DATA_SIZE declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+    NUMBER_OF_VARIABLES declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+    TIME_FUNCTION declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module ALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module ALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    DATA_SIZE declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    NUMBER_OF_VARIABLES declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+     66         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 66 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 66 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+     68         if (TIME_FUNCTION % ALLOCATED == 1) then
+                                  ^
+Error near line 68 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 68 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+     69             deallocate(TIME_FUNCTION % TIMES)
+                                             ^
+Error near line 69 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 69 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     70             deallocate(TIME_FUNCTION % SCALE_FACTORS)
+                                             ^
+Error near line 70 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                            ^
+Error near line 70 col 53 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     71             deallocate(TIME_FUNCTION % UNIT_CONVERSION_FACTORS)
+                                             ^
+Error near line 71 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                      ^
+Error near line 71 col 63 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     72             deallocate(TIME_FUNCTION % VARIABLES)
+                                             ^
+Error near line 72 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                        ^
+Error near line 72 col 49 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')' or ','
+     73         end if
+                ^
+Error near line 73 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ENDIF 
+ statement does not match SUBROUTINE block it closes
+     75         TIME_FUNCTION % DATA_SIZE = 0
+                              ^
+Error near line 75 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                          ^
+Error near line 75 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     76         TIME_FUNCTION % NUMBER_OF_VARIABLES = 0
+                              ^
+Error near line 76 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                    ^
+Error near line 76 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     77         TIME_FUNCTION % ALLOCATED = 0
+                              ^
+Error near line 77 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                          ^
+Error near line 77 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+     78     end subroutine DEALLOCATE_TIME_SERIE
+            ^
+Error near line 78 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+
+Warning in module DEALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    TIME_FUNCTION declared at line 63 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module DEALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module DEALLOCATE_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    INOUT first occurrence at line 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 63 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+     84         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 84 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 84 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+     86         real(kind = DBL_PRECISION), dimension(:,:), intent(in) :: VALUE_ARRAY
+                                                     ^
+Error near line 86 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+     90         if (TIME_FUNCTION % ALLOCATED == 1) then
+                                  ^
+Error near line 90 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 90 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+     91             DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                              ^
+Error near line 91 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                              ^
+Warning near line 91 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                         ^
+Error near line 91 col 50 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+     92             NUMBER_OF_VARIABLES = TIME_FUNCTION % NUMBER_OF_VARIABLES
+                                                        ^
+Error near line 92 col 49 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                        ^
+Warning near line 92 col 33 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg NUMBER_OF_VARIABLES
+                                                                             ^
+Error near line 92 col 70 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+     94             if ((size(VALUE_ARRAY, dim = 2) /= NUMBER_OF_VARIABLES + 1).or. &
+                                                 ^
+Error near line 94 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '=', expecting ')'
+    104                             size(VALUE_ARRAY, dim = 1)
+                                                            ^
+Error near line 104 col 53 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '=', expecting ')'
+    109                             size(VALUE_ARRAY, dim = 2)
+                                                            ^
+Error near line 109 col 53 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '=', expecting ')'
+    115             end if
+                    ^
+Error near line 115 col 13 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ENDIF 
+ statement does not match SUBROUTINE block it closes
+    116         else
+                ^
+Error near line 116 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    117             DATA_SIZE = size(VALUE_ARRAY, dim = 1)
+                                                        ^
+Error near line 117 col 49 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '=', expecting ')'
+    118             NUMBER_OF_VARIABLES = size(VALUE_ARRAY, dim = 2) - 1
+                                                                  ^
+Error near line 118 col 59 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '=', expecting ')'
+    132             TIME_FUNCTION % TIMES(i) = VALUE_ARRAY(i, 1)
+                                  ^
+Error near line 132 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                         ^
+Error near line 132 col 34 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    135                 TIME_FUNCTION % VARIABLES(i, j) = VALUE_ARRAY(i, j + 1)
+                                      ^
+Error near line 135 col 31 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                 ^
+Error near line 135 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    138     end subroutine TIMES_AND_VALUES_TO_TIME_SERIE
+            ^
+Error near line 138 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+
+Warning in module TIMES_AND_VALUES_TO_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 86 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DIM first occurrence at line 94 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SIZE first occurrence in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    VALUE_ARRAY declared at line 81 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module TIMES_AND_VALUES_TO_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 84 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 84 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module TIMES_AND_VALUES_TO_TIME_SERIE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    DBL_PRECISION first occurrence at line 86 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DIM first occurrence at line 94 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 84 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 84 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SIZE first occurrence in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 81 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 84 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    VALUE_ARRAY declared at line 81 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    144         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 144 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 144 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    145         integer, intent(in) :: INPUT_FILE
+                               ^
+Error near line 145 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    149         real(kind = DBL_PRECISION), dimension(:), allocatable   :: SCALE_FACTOR_ARRAY
+                                                     ^
+Error near line 149 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    150         real(kind = DBL_PRECISION), dimension(:), allocatable   :: UNIT_CONV_FACTOR_ARRAY
+                                                     ^
+Error near line 150 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    151         real(kind = DBL_PRECISION), dimension(:), allocatable   :: ROW_ARRAY
+                                                     ^
+Error near line 151 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    152         real(kind = DBL_PRECISION), dimension(:,:), allocatable :: VALUE_ARRAY
+                                                     ^
+Error near line 152 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    162         allocate(SCALE_FACTOR_ARRAY(NUMBER_OF_VARIABLES))
+                                            ^
+Error near line 162 col 37 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '(', expecting ')' or ','
+    163         allocate(UNIT_CONV_FACTOR_ARRAY(NUMBER_OF_VARIABLES))
+                                                ^
+Error near line 163 col 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '(', expecting ')' or ','
+    176         allocate(ROW_ARRAY(NUMBER_OF_VARIABLES + 1))
+                                   ^
+Error near line 176 col 28 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '(', expecting ')' or ','
+    177         allocate(VALUE_ARRAY(DATA_SIZE, NUMBER_OF_VARIABLES + 1))
+                                     ^
+Error near line 177 col 30 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected '(', expecting ')' or ','
+    185                 VALUE_ARRAY(i, j) = ROW_ARRAY(j)
+Warning near line 185 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Nonstandard
+ syntax (not adopted in Fortran 90): Statement out of order.
+    192             TIME_FUNCTION % INTERPOLATE = 0
+                                  ^
+Error near line 192 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                ^
+Error near line 192 col 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    194             TIME_FUNCTION % INTERPOLATE = 1
+                                  ^
+Error near line 194 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                ^
+Error near line 194 col 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    198             TIME_FUNCTION % SCALE_FACTORS(i)           = SCALE_FACTOR_ARRAY(i)
+                                  ^
+Error near line 198 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                 ^
+Error near line 198 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    199             TIME_FUNCTION % UNIT_CONVERSION_FACTORS(i) = UNIT_CONV_FACTOR_ARRAY(i)
+                                  ^
+Error near line 199 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                           ^
+Error near line 199 col 52 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+
+Warning in module READ_TIME_SERIE_FROM_FILE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 149 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module READ_TIME_SERIE_FROM_FILE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables set but never used:
+    SCALE_FACTOR_ARRAY set at line 167 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    UNIT_CONV_FACTOR_ARRAY set at line 171 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module READ_TIME_SERIE_FROM_FILE in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    DBL_PRECISION first occurrence at line 149 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 144 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INPUT_FILE declared at line 141 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 144 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    ROW_ARRAY defined at line 176 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALE_FACTOR_ARRAY first occurrence at line 162 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 141 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 144 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    UNIT_CONV_FACTOR_ARRAY first occurrence at line 163 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    209     function VALUE_FROM_TIME_SERIE(TIME_FUNCTION, TIME, VARIABLE_NO) result(VALUE)
+                                                                                   ^
+Error near line 209 col 76 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    212         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 212 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 212 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    213         real(kind = DBL_PRECISION), intent(in) :: TIME
+                                                  ^
+Error near line 213 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    214         integer, intent(in) :: VARIABLE_NO
+                               ^
+Error near line 214 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    222         NUMBER_OF_VARIABLES = TIME_FUNCTION % NUMBER_OF_VARIABLES
+                                                    ^
+Error near line 222 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                    ^
+Warning near line 222 col 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg NUMBER_OF_VARIABLES
+                                                                         ^
+Error near line 222 col 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    231         if (TIME_FUNCTION % ALLOCATED == 0) then 
+                                  ^
+Error near line 231 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 231 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    232             VALUE = 0.0D0
+                          ^
+Warning near line 232 col 19 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: dble 
+ const 0.0D0 truncated to real VALUE
+    233         else
+                ^
+Error near line 233 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ELSE 
+ statement does not match PROGRAM block it closes
+    235             if(TIME < TIME_FUNCTION % TIMES(1)) then
+                                            ^
+Error near line 235 col 37 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                   ^
+Error near line 235 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    236                 VALUE = 0.0D0
+                              ^
+Warning near line 236 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: dble 
+ const 0.0D0 truncated to real VALUE
+    238                 DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                                  ^
+Error near line 238 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                  ^
+Warning near line 238 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                             ^
+Error near line 238 col 54 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    240                 if(TIME > TIME_FUNCTION % TIMES(DATA_SIZE)) then
+                                                ^
+Error near line 240 col 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                       ^
+Error near line 240 col 48 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    241                     VALUE = TIME_FUNCTION % VARIABLES(DATA_SIZE, VARIABLE_NO)
+                                                  ^
+Error near line 241 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                             ^
+Error near line 241 col 54 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    243                     VALUE = VALUE * TIME_FUNCTION % SCALE_FACTORS(VARIABLE_NO) * &
+                                                          ^
+Error near line 243 col 51 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                         ^
+Error near line 243 col 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    244                          TIME_FUNCTION % UNIT_CONVERSION_FACTORS(VARIABLE_NO)
+                                               ^
+Error near line 244 col 40 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+    246                     do i = TIME_FUNCTION % TIME_INDEX, DATA_SIZE
+                            ^
+Error near line 246 col 21 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ identifier DOI has embedded space
+                                                 ^
+Error near line 246 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                             ^
+Error near line 246 col 54 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    247                         if (TIME_FUNCTION % TIMES(i) > TIME) then
+                                                  ^
+Error near line 247 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                         ^
+Error near line 247 col 50 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    248                             PREVIOUS_TIME  = TIME_FUNCTION % TIMES(i - 1)
+                                                                   ^
+Error near line 248 col 60 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                          ^
+Error near line 248 col 67 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    249                             PREVIOUS_VALUE = TIME_FUNCTION % VARIABLES(i - 1, VARIABLE_NO)
+                                                                   ^
+Error near line 249 col 60 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                              ^
+Error near line 249 col 71 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    250                             NEXT_TIME      = TIME_FUNCTION % TIMES(i)
+                                                                   ^
+Error near line 250 col 60 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                          ^
+Error near line 250 col 67 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    251                             NEXT_VALUE     = TIME_FUNCTION % VARIABLES(i, VARIABLE_NO)
+                                                                   ^
+Error near line 251 col 60 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                                              ^
+Error near line 251 col 71 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    252                             exit
+                                    ^
+Error near line 252 col 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ statement not within range of any DO loop
+    255                         TIME_FUNCTION % TIME_INDEX = TIME_FUNCTION % TIME_INDEX + 1
+                                              ^
+Error near line 255 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                           ^
+Error near line 255 col 52 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+                                                                           ^
+Error near line 255 col 68 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+    256                     end do
+                            ^
+Error near line 256 col 21 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    258                     if (TIME_FUNCTION % INTERPOLATE == 1) then
+                                              ^
+Error near line 258 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                            ^
+Error near line 258 col 53 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    261                     else
+                            ^
+Error near line 261 col 21 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    266                          TIME_FUNCTION % SCALE_FACTORS(VARIABLE_NO) * &
+                                               ^
+Error near line 266 col 40 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                              ^
+Error near line 266 col 55 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    267                          TIME_FUNCTION % UNIT_CONVERSION_FACTORS(VARIABLE_NO)
+                                               ^
+Error near line 267 col 40 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+    268                 end if
+                        ^
+Error near line 268 col 17 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    269             end if
+                    ^
+Error near line 269 col 13 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    270         end if
+                ^
+Error near line 270 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    271     end function VALUE_FROM_TIME_SERIE
+            ^
+Error near line 271 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 213 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    I declared at line 218 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables set but never used:
+    DATA_SIZE set at line 238 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DOI set at line 246 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables used before set
+    INOUT used at line 212 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 212 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Identifiers of undeclared type
+    DBL_PRECISION first occurrence at line 213 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DOI first occurrence at line 246 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 212 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 212 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    LDPS_INTERPOLATE referenced at line 259 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME declared at line 209 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 209 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 212 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    VARIABLE_NO declared at line 209 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    273     function GET_TIME_INDEX(TIME_FUNCTION, TIME) result(TIME_INDEX)
+                                                               ^
+Error near line 273 col 56 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    276         type(TIME_SERIE), intent(in) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 276 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                              ^
+Error near line 276 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    277         real(kind = DBL_PRECISION), intent(in) :: TIME
+                                                  ^
+Error near line 277 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    287         if (TIME_FUNCTION % ALLOCATED == 0) then 
+                                  ^
+Error near line 287 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                              ^
+Error near line 287 col 39 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    289         else
+                ^
+Error near line 289 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ELSE 
+ statement does not match PROGRAM block it closes
+    290             if(TIME < TIME_FUNCTION % TIMES(1)) then
+                                            ^
+Error near line 290 col 37 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                   ^
+Error near line 290 col 44 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    293                 DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                                  ^
+Error near line 293 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                  ^
+Warning near line 293 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                             ^
+Error near line 293 col 54 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    295                 if(TIME > TIME_FUNCTION % TIMES(DATA_SIZE)) then
+                                                ^
+Error near line 295 col 41 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                       ^
+Error near line 295 col 48 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting EQV or NEQV or ')'
+    301                         if (abs(TIME_FUNCTION % TIMES(i) -  TIME) < 1.0D-10) then
+                                                      ^
+Error near line 301 col 47 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                             ^
+Error near line 301 col 54 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting ')'
+    304                         end if
+                                ^
+Error near line 304 col 25 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ENDIF 
+ statement does not match DO block it closes
+    305                     end do
+                            ^
+Error near line 305 col 21 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: ENDDO 
+ statement does not match IF block it closes
+    306                 end if
+                        ^
+Error near line 306 col 17 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    307             end if
+                    ^
+Error near line 307 col 13 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    308         end if
+                ^
+Error near line 308 col 9 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+    309     end function GET_TIME_INDEX
+            ^
+Error near line 309 col 5 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: no
+ construct to end here
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables declared but never referenced:
+    ABS first occurrence in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 277 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    NEXT_TIME declared at line 283 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    NEXT_VALUE declared at line 283 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    PREVIOUS_TIME declared at line 283 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    PREVIOUS_VALUE declared at line 283 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables set but never used:
+    TIME_INDEX set at line 285 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables used before set
+    IN used at line 276 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never set
+    TIME_SERIE used at line 276 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Identifiers of undeclared type
+    ABS first occurrence in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 277 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    IN first occurrence at line 276 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 276 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME declared at line 273 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 273 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 276 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    314         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 314 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 314 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    315         real(kind = DBL_PRECISION), intent(in) :: SCALAR
+                                                  ^
+Error near line 315 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    319         DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                          ^
+Error near line 319 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                          ^
+Warning near line 319 col 19 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                     ^
+Error near line 319 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    320         NUMBER_OF_VARIABLES = TIME_FUNCTION % NUMBER_OF_VARIABLES
+                                                    ^
+Error near line 320 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                    ^
+Warning near line 320 col 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg NUMBER_OF_VARIABLES
+                                                                         ^
+Error near line 320 col 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    324                 TIME_FUNCTION % VARIABLES(i, j) = TIME_FUNCTION % VARIABLES(i, j) * SCALAR
+                                      ^
+Error near line 324 col 31 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                                 ^
+Error near line 324 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+                                                                        ^
+Error near line 324 col 65 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+
+Warning in module MULTIPLY_TIME_SERIE_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 315 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 312 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module MULTIPLY_TIME_SERIE_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 314 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 314 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module MULTIPLY_TIME_SERIE_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    DBL_PRECISION first occurrence at line 315 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 314 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 314 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 312 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 312 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 314 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    333         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 333 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 333 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    334         real(kind = DBL_PRECISION), intent(in) :: SCALAR
+                                                  ^
+Error near line 334 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    335         integer, intent(in) :: COLUMN
+                               ^
+Error near line 335 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    339         DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                          ^
+Error near line 339 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                          ^
+Warning near line 339 col 19 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                     ^
+Error near line 339 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    340         NUMBER_OF_VARIABLES = TIME_FUNCTION % NUMBER_OF_VARIABLES
+                                                    ^
+Error near line 340 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                    ^
+Warning near line 340 col 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg NUMBER_OF_VARIABLES
+                                                                         ^
+Error near line 340 col 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    353             TIME_FUNCTION % VARIABLES(i, COLUMN) = &
+                                  ^
+Error near line 353 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                             ^
+Error near line 353 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    354             &               TIME_FUNCTION % VARIABLES(i, COLUMN) * SCALAR
+                                                  ^
+Error near line 354 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+
+Warning in module MULTIPLY_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 334 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 330 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module MULTIPLY_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 333 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 333 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module MULTIPLY_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    COLUMN declared at line 330 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 334 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 333 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 333 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 330 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 330 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 333 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    363         type(TIME_SERIE), intent(inout) :: TIME_FUNCTION
+                     ^
+Possibly misleading appearance near line 363 col 14 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Extraneous parentheses
+                                                 ^
+Error near line 363 col 42 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected ':', expecting end of statement
+    364         real(kind = DBL_PRECISION), intent(in) :: SCALAR
+                                                  ^
+Error near line 364 col 43 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    365         integer, intent(in) :: COLUMN
+                               ^
+Error near line 365 col 24 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier
+    369         DATA_SIZE = TIME_FUNCTION % DATA_SIZE
+                                          ^
+Error near line 369 col 35 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                          ^
+Warning near line 369 col 19 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg DATA_SIZE
+                                                     ^
+Error near line 369 col 46 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    370         NUMBER_OF_VARIABLES = TIME_FUNCTION % NUMBER_OF_VARIABLES
+                                                    ^
+Error near line 370 col 45 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                    ^
+Warning near line 370 col 29 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: real 
+ TIME_FUNCTION truncated to intg NUMBER_OF_VARIABLES
+                                                                         ^
+Error near line 370 col 66 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting end of statement
+    383             TIME_FUNCTION % VARIABLES(i, COLUMN) = &
+                                  ^
+Error near line 383 col 27 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+                                             ^
+Error near line 383 col 38 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected identifier, expecting pointer assignment or '='
+    384                  TIME_FUNCTION % VARIABLES(i, COLUMN) + SCALAR
+                                       ^
+Error near line 384 col 32 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Illegal
+ character
+
+Warning in module ADD_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables declared but never referenced:
+    DBL_PRECISION first occurrence at line 364 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 360 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90 
+ (dummy argument)
+
+Warning in module ADD_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Variables used before set
+    INOUT used at line 363 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90; never
+ set
+    TIME_SERIE used at line 363 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90;
+ never set
+
+Warning in module ADD_TS_COLUMN_WITH_SCALAR in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ : Identifiers of undeclared type
+    COLUMN declared at line 360 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    DBL_PRECISION first occurrence at line 364 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INOUT first occurrence at line 363 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    INTENT referenced at line 363 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    SCALAR declared at line 360 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_FUNCTION declared at line 360 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    TIME_SERIE first occurrence at line 363 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+    388 end module TIME_SERIES
+        ^
+Error near line 388 col 1 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ identifier ENDMODULETIME_SERIES has embedded space
+                              ^
+Error near line 388 col 23 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: syntax
+ error, unexpected end of statement, expecting pointer assignment or '='
+Error near line 388 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: missing END
+ statement inserted at end of file
+Warning near line 388 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: Module
+ contains no executable statements
+
+Warning in module %MAIN in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90: 
+ Variables declared but never referenced:
+    ENDMODULETIME_SERIES first occurrence at line 388 file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+ 210 syntax errors detected in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+ 63 warnings issued in file SOURCE_CODE/ESTAS/mod_TIME_SERIES.f90
+
+File SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90:
+      4     use PELAGIC_BOX_MODEL
+            ^
+Error near line 4 col 5 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : identifier USEPELAGIC_BOX_MODEL has embedded space
+      5     implicit none
+            ^
+Error near line 5 col 5 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected end of statement, expecting pointer assignment or
+ '='
+      7     type(PELAGIC_BOX_MODEL_DS), intent(in) :: PELAGIC_BOX_MODEL_DATA
+                 ^
+Possibly misleading appearance near line 7 col 10 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : Extraneous parentheses
+                                                    ^
+Error near line 7 col 45 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected ':', expecting end of statement
+      8     integer, intent(in) :: RES_OUTPUT_UNIT
+                           ^
+Error near line 8 col 20 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected identifier
+      9     integer, intent(in) :: NUM_LINES
+                           ^
+Error near line 9 col 20 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected identifier
+     18     NUM_BOXES = PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                                               ^
+Error near line 18 col 40 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : Illegal character
+                      ^
+Warning near line 18 col 15 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : real PELAGIC_BOX_MODEL_DATA truncated to intg NUM_BOXES
+                                                                  ^
+Error near line 18 col 59 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected identifier, expecting end of statement
+     20     do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_EXERGY_COMPONENTS
+                                             ^
+Error near line 20 col 38 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : Illegal character
+                                                                    ^
+Error near line 20 col 61 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected identifier, expecting end of statement
+     22         open(unit   = RES_OUTPUT_UNIT, &
+                              ^
+Error near line 22 col 23 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : control specifier is incorrect type
+     23              file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // &
+                                                                   ^
+Error near line 23 col 60 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : operands cannot be combined in expression: real expr 
+ TRIM(ADJUSTL(PELAGIC_OUT .. // real expr TRIM(ADJUSTL(BINARY_PELA ..
+     25           trim(adjustl(PELAGIC_BOX_MODEL_DATA % &
+                                                      ^
+Error near line 25 col 47 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : Illegal character
+     26                                         EXERGY_COMPONENT_NAMES(i))) // '.bin', &
+                                                                      ^
+Error near line 26 col 63 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : syntax error, unexpected identifier, expecting ')'
+     27              status = 'UNKNOWN', access = 'STREAM')
+Error near line 27 file SOURCE_CODE/ESTAS/sub_WRITE_PELAGIC_EX_MEM_BINARY_OUTPUT.f90
+ : Continuation in character context must resume with '&'
+     30             TIME = PELAGIC_BOX_MODEL_DATA % EXERGY_RESULTS(LINE_NO, 0, *** buffer overflow detected ***: terminated
+xargs: ftnchek: terminated by signal 6

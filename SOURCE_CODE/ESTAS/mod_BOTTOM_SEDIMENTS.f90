@@ -45,40 +45,6 @@ contains
         KHS_MINER_DOP                = SED_MODEL_CONSTANTS( 28)
         O_TO_C                       = SED_MODEL_CONSTANTS( 29)
         K_NITR                       = SED_MODEL_CONSTANTS( 30)
-
-    end subroutine INIT_BSED_MODEL_CONSTANTS
-
-    subroutine SED_MOD_1_CVISC()
-        implicit none
-        ! Dummy; ensure implicit none present
-    end subroutine SED_MOD_1_CVISC
-
-end module BOTTOM_SEDIMENTS
-        K_ANOXIC_DISS_PON            = SED_MODEL_CONSTANTS(  6)
-        THETA_DISS_PON               = SED_MODEL_CONSTANTS(  7)
-        KHS_DISS_PON                 = SED_MODEL_CONSTANTS(  8)
-        K_OXIC_DISS_POP              = SED_MODEL_CONSTANTS(  9)
-        K_ANOXIC_DISS_POP            = SED_MODEL_CONSTANTS( 10)
-        THETA_DISS_POP               = SED_MODEL_CONSTANTS( 11)
-        KHS_DISS_POP                 = SED_MODEL_CONSTANTS( 12)
-        K_OXIC_DISS_PSi              = SED_MODEL_CONSTANTS( 13)
-        K_ANOXIC_DISS_PSi            = SED_MODEL_CONSTANTS( 14)
-        THETA_DISS_PSi               = SED_MODEL_CONSTANTS( 15)
-        KHS_DISS_PSi                 = SED_MODEL_CONSTANTS( 16)
-        K_OXIC_MINER_DOC             = SED_MODEL_CONSTANTS( 17)
-        K_ANOXIC_MINER_DOC           = SED_MODEL_CONSTANTS( 18)
-        THETA_MINER_DOC              = SED_MODEL_CONSTANTS( 19)
-        KHS_MINER_DOC                = SED_MODEL_CONSTANTS( 20)
-        K_OXIC_MINER_DON             = SED_MODEL_CONSTANTS( 21)
-        K_ANOXIC_MINER_DON           = SED_MODEL_CONSTANTS( 22)
-        THETA_MINER_DON              = SED_MODEL_CONSTANTS( 23)
-        KHS_MINER_DON                = SED_MODEL_CONSTANTS( 24)
-        K_OXIC_MINER_DOP             = SED_MODEL_CONSTANTS( 25)
-        K_ANOXIC_MINER_DOP           = SED_MODEL_CONSTANTS( 26)
-        THETA_MINER_DOP              = SED_MODEL_CONSTANTS( 27)
-        KHS_MINER_DOP                = SED_MODEL_CONSTANTS( 28)
-        O_TO_C                       = SED_MODEL_CONSTANTS( 29)
-        K_NITR                       = SED_MODEL_CONSTANTS( 30)
         THETA_NITR                   = SED_MODEL_CONSTANTS( 31)
         KHS_NITR_NH4N                = SED_MODEL_CONSTANTS( 32)
         KHS_NITR_DOXY                = SED_MODEL_CONSTANTS( 33)
@@ -219,8 +185,15 @@ end module BOTTOM_SEDIMENTS
         SED_k_DISS_FE_III_20         = SED_MODEL_CONSTANTS(168)
         SED_THETA_k_DISS_FE_III      = SED_MODEL_CONSTANTS(169)
         SED_INIT_MULT_FE_III_DISS    = SED_MODEL_CONSTANTS(170)
+
     end subroutine INIT_BSED_MODEL_CONSTANTS
 
+    subroutine SED_MOD_1_CVISC()
+        implicit none
+        ! Dummy; ensure implicit none present
+    end subroutine SED_MOD_1_CVISC
+
+        
 
     !subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS &
     !           (TIME              , &
