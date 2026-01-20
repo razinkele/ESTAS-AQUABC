@@ -9,6 +9,17 @@ module PELAGIC_SOLVER
 
     implicit none
 
+    ! Optimization: Module-level arrays to avoid reallocation
+    real(kind = DBL), allocatable, dimension(:)   :: FLOWS
+    real(kind = DBL), allocatable, dimension(:,:) :: BOUND_CONCS
+    real(kind = DBL), allocatable, dimension(:)   :: DISPERSION_COEFFS
+    real(kind = DBL), allocatable, dimension(:)   :: INTERFACE_AREAS
+    real(kind = DBL), allocatable, dimension(:,:) :: SETTLING_VELOCITIES
+    real(kind = DBL), allocatable, dimension(:)   :: SURFACE_AREAS
+    real(kind = DBL), allocatable, dimension(:)   :: BOTTOM_AREAS
+    real(kind = DBL), allocatable, dimension(:,:) :: MASS_LOADS
+    real(kind = DBL), allocatable, dimension(:,:) :: MASS_WITHDRAWALS
+
 contains
 
     subroutine SOLVE(PELAGIC_BOX_MODEL_DATA        , &
@@ -53,18 +64,8 @@ contains
         integer :: j
         integer :: k
 
-        real(kind = DBL), dimension(:)  , allocatable :: FLOWS
-
         ! Debug temporaries for mass update diagnostics
         real(kind = DBL) :: tot_deriv, old_mass, new_mass
-        real(kind = DBL), dimension(:,:), allocatable :: BOUND_CONCS
-        real(kind = DBL), dimension(:)  , allocatable :: DISPERSION_COEFFS
-        real(kind = DBL), dimension(:)  , allocatable :: INTERFACE_AREAS
-        real(kind = DBL), dimension(:,:), allocatable :: SETTLING_VELOCITIES
-        real(kind = DBL), dimension(:)  , allocatable :: SURFACE_AREAS
-        real(kind = DBL), dimension(:)  , allocatable :: BOTTOM_AREAS
-        real(kind = DBL), dimension(:,:), allocatable :: MASS_LOADS
-        real(kind = DBL), dimension(:,:), allocatable :: MASS_WITHDRAWALS
 
         integer :: NUM_PELAGIC_ADVECTIVE_LINKS
         integer :: NUM_OPEN_BOUNDARIES
@@ -86,24 +87,26 @@ contains
         NUM_MASS_LOADS               = PELAGIC_BOX_MODEL_DATA % NUM_MASS_LOADS
         NUM_MASS_WITHDRAWALS         = PELAGIC_BOX_MODEL_DATA % NUM_MASS_WITHDRAWALS
 
-        allocate(BOUND_CONCS        (NUM_OPEN_BOUNDARIES , NUM_PELAGIC_STATE_VARS))
-        allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS))
-        allocate(MASS_LOADS         (NUM_MASS_LOADS      , NUM_PELAGIC_STATE_VARS))
-        allocate(MASS_WITHDRAWALS   (NUM_MASS_WITHDRAWALS, NUM_PELAGIC_STATE_VARS))
-        allocate(FLOWS              (NUM_PELAGIC_ADVECTIVE_LINKS))
-        allocate(DISPERSION_COEFFS  (NUM_PELAGIC_DISPERSIVE_LINKS))
-        allocate(INTERFACE_AREAS    (NUM_PELAGIC_DISPERSIVE_LINKS))
-        allocate(SURFACE_AREAS      (NUM_PELAGIC_BOXES))
-        allocate(BOTTOM_AREAS       (NUM_PELAGIC_BOXES))
+        if (.not. allocated(BOUND_CONCS)) then
+            allocate(BOUND_CONCS        (NUM_OPEN_BOUNDARIES , NUM_PELAGIC_STATE_VARS))
+            allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS))
+            allocate(MASS_LOADS         (NUM_MASS_LOADS      , NUM_PELAGIC_STATE_VARS))
+            allocate(MASS_WITHDRAWALS   (NUM_MASS_WITHDRAWALS, NUM_PELAGIC_STATE_VARS))
+            allocate(FLOWS              (NUM_PELAGIC_ADVECTIVE_LINKS))
+            allocate(DISPERSION_COEFFS  (NUM_PELAGIC_DISPERSIVE_LINKS))
+            allocate(INTERFACE_AREAS    (NUM_PELAGIC_DISPERSIVE_LINKS))
+            allocate(SURFACE_AREAS      (NUM_PELAGIC_BOXES))
+            allocate(BOTTOM_AREAS       (NUM_PELAGIC_BOXES))
+        end if
 
         if (PELAGIC_SOLVER_NO == 1) then
 
             call UPDATE_TIME_FUNCS &
                  (PELAGIC_BOX_MODEL_DATA  , TIME, &
-				  FLOWS                   , &
-				  BOUND_CONCS             , DISPERSION_COEFFS, INTERFACE_AREAS , &
+                  FLOWS                   , &
+                  BOUND_CONCS             , DISPERSION_COEFFS, INTERFACE_AREAS , &
                   SETTLING_VELOCITIES     , SURFACE_AREAS    , &
-				  BOTTOM_AREAS, MASS_LOADS, MASS_WITHDRAWALS , &
+                  BOTTOM_AREAS, MASS_LOADS, MASS_WITHDRAWALS , &
                   PRESCRIBED_SEDIMENT_FLUXES)
 
             do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
@@ -151,11 +154,16 @@ contains
                         write(6,*) '  NEW_MASS=', new_mass
                         write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
                         write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
-                        ! Additional context for FIX_CYN_C
-                        if (j .eq. FIX_CYN_C_INDEX) then
-                            write(6,*) '  FIX_CYN CONTEXT: ECOL_KINETIC_DERIV='
-                            write(6,*) PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, j, 1)
-                            write(6,*) '  FIX_CYN PROCESS_RATES (first 6)=', PROCESS_RATES(i,j,1:min(6,NDIAGVAR))
+                        ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                        if (j >= 33 .and. j <= 36) then
+                            write(6,*) '  DERIV BREAKDOWN for STATE', j, ':'
+                            write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(i, j, 1)
+                            write(6,*) '    DISPERSION=', PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(i, j, 1)
+                            write(6,*) '    SETTLING=', PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS(i, j, 1)
+                            write(6,*) '    MASS_LOAD=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS(i, j, 1)
+                            write(6,*) '    MASS_WITHDRAWAL=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1)
+                            write(6,*) '    KINETIC=', PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, j, 1)
+                            write(6,*) '    SED_FLUX=', PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1)
                         end if
                     end if
 
@@ -172,11 +180,6 @@ contains
                         write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
                         write(6,*) '  VOLUME='
                         write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
-                        if (j .eq. FIX_CYN_C_INDEX) then
-                            write(6,*) '  FIX_CYN CONTEXT: ECOL_KINETIC_DERIV='
-                            write(6,*) PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, j, 1)
-                            write(6,*) '  FIX_CYN PROCESS_RATES (first 6)=', PROCESS_RATES(i,j,1:min(6,NDIAGVAR))
-                        end if
                     end if
 
                     if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < 1.0D-10) then
@@ -264,15 +267,6 @@ contains
             end do
         end if
 
-        deallocate(FLOWS)
-        deallocate(BOUND_CONCS)
-        deallocate(DISPERSION_COEFFS)
-        deallocate(INTERFACE_AREAS)
-        deallocate(SETTLING_VELOCITIES)
-        deallocate(SURFACE_AREAS)
-        deallocate(BOTTOM_AREAS)
-        deallocate(MASS_LOADS)
-        deallocate(MASS_WITHDRAWALS)
     end subroutine SOLVE
 
 

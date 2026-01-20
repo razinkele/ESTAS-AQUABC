@@ -1425,6 +1425,13 @@ subroutine PELAGIC_KINETICS &
     end if
 
     if (CONSIDER_ALLELOPATHY > 0) then
+        ! Populate allelopathy module SEC_METAB concentrations from state variables
+        ! States 33-36 (nstate+1 to nstate+4) are the secondary metabolite concentrations
+        SEC_METAB_DIA(:)       = STATE_VARIABLES(:, nstate + 1)
+        SEC_METAB_NOFIX_CYN(:) = STATE_VARIABLES(:, nstate + 2)
+        SEC_METAB_FIX_CYN(:)   = STATE_VARIABLES(:, nstate + 3)
+        SEC_METAB_NOST(:)      = STATE_VARIABLES(:, nstate + 4)
+
         call ALLELOPATHY_INHIBITION_RATES()
         GROWTH_INHIB_FACTOR_DIA    (:) = IHBF_SEC_METAB_DIA      (:)
         GROWTH_INHIB_FACTOR_CYN    (:) = IHBF_SEC_METAB_NOFIX_CYN(:)
@@ -1483,20 +1490,6 @@ subroutine PELAGIC_KINETICS &
         ALLEL_R_DEATH_NOFIX_CYN = AQUABC_PROCESS_RATES(:, CYN_C_INDEX         , 4)
         ALLEL_R_DEATH_FIX_CYN   = AQUABC_PROCESS_RATES(:, FIX_CYN_C_INDEX     , 4)
         ALLEL_R_DEATH_NOST      = AQUABC_PROCESS_RATES(:, NOST_VEG_HET_C_INDEX, 4)
-
-        ! Diagnostic: check allelopathy death relative to biomass for fixing cyanobacteria
-        do i = 1, nkn
-            fix_cyn = STATE_VARIABLES(i, FIX_CYN_C_INDEX)
-            if (fix_cyn > 0.0D0) then
-                if (ALLEL_R_DEATH_FIX_CYN(i) > 0.5D0 * fix_cyn / TIME_STEP) then
-                    write(6,*) 'DEBUG: ALLEL_R_DEATH large relative to FIX_CYN biomass at node', i
-                    write(6,*) '  TIME=', TIME, 'TIME_STEP=', TIME_STEP
-                    write(6,*) '  FIX_CYN_C=', fix_cyn
-                    write(6,*) '  ALLEL_R_DEATH_FIX_CYN=', ALLEL_R_DEATH_FIX_CYN(i)
-                    write(6,*) '  PROCESS_RATES FIX_CYN (1:6)=', AQUABC_PROCESS_RATES(i,FIX_CYN_C_INDEX,1:6)
-                end if
-            end if
-        end do
 
         call allelopathy_SEC_METABOLITES(nkn)
 

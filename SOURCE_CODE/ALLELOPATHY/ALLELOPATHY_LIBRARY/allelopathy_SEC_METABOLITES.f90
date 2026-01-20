@@ -17,21 +17,24 @@ subroutine allelopathy_SEC_METABOLITES(nkn)
     R_FORM_SEC_METAB_FIX_CYN   = S_SEC_METAB_TO_FIX_CYN   * ALLEL_R_DEATH_FIX_CYN
     R_FORM_SEC_METAB_NOST      = S_SEC_METAB_TO_NOST      * ALLEL_R_DEATH_NOST
 
+    ! BUG FIX: Degradation rate must be proportional to concentration (first-order kinetics)
+    ! Previously R_DEG was just k*theta^(T-20), missing the concentration term.
+    ! Correct form: R_DEG = k * theta^(T-20) * SEC_METAB_CONCENTRATION
     R_DEG_SEC_METAB_DIA        = &
         k_DEG_SEC_METAB_DIA_20       * &
-        (THETA_k_DEG_SEC_METAB_DIA       ** (WATER_TEMP - 20.0D0))
+        (THETA_k_DEG_SEC_METAB_DIA       ** (WATER_TEMP - 20.0D0)) * SEC_METAB_DIA
 
     R_DEG_SEC_METAB_NOFIX_CYN  = &
         k_DEG_SEC_METAB_NOFIX_CYN_20 * &
-        (THETA_k_DEG_SEC_METAB_NOFIX_CYN ** (WATER_TEMP - 20.0D0))
+        (THETA_k_DEG_SEC_METAB_NOFIX_CYN ** (WATER_TEMP - 20.0D0)) * SEC_METAB_NOFIX_CYN
 
     R_DEG_SEC_METAB_FIX_CYN    = &
         k_DEG_SEC_METAB_FIX_CYN_20   * &
-        (THETA_k_DEG_SEC_METAB_FIX_CYN   ** (WATER_TEMP - 20.0D0))
+        (THETA_k_DEG_SEC_METAB_FIX_CYN   ** (WATER_TEMP - 20.0D0)) * SEC_METAB_FIX_CYN
 
     R_DEG_SEC_METAB_NOST       = &
         k_DEG_SEC_METAB_NOST_20      * &
-        (THETA_k_DEG_SEC_METAB_NOST      ** (WATER_TEMP - 20.0D0))
+        (THETA_k_DEG_SEC_METAB_NOST      ** (WATER_TEMP - 20.0D0)) * SEC_METAB_NOST
 
     DERIVATIVES_SEC_METAB(:, 1) = R_FORM_SEC_METAB_DIA       - R_DEG_SEC_METAB_DIA
     DERIVATIVES_SEC_METAB(:, 2) = R_FORM_SEC_METAB_NOFIX_CYN - R_DEG_SEC_METAB_NOFIX_CYN
