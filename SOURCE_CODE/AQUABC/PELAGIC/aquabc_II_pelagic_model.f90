@@ -87,7 +87,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     use AQUABC_PEL_STATE_VAR_INDEXES
     use AQUABC_PELAGIC_INTERNAL
     use AQUABC_PHYSICAL_CONSTANTS, only: NSTATE_EXPECTED, CELSIUS_TO_KELVIN, &
-         FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG
+         FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
 
     implicit none
@@ -1574,8 +1574,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     !if (present(ZOOP_OPTION_1)) then
         if (ZOOP_OPTION_1 > 0) then
-            ACTUAL_ZOO_N_TO_C = ZOO_N / ZOO_C
-            ACTUAL_ZOO_P_TO_C = ZOO_P / ZOO_C
+            ACTUAL_ZOO_N_TO_C = ZOO_N / max(ZOO_C, MIN_CONCENTRATION)
+            ACTUAL_ZOO_P_TO_C = ZOO_P / max(ZOO_C, MIN_CONCENTRATION)
         end if
     !end if
 
@@ -1604,8 +1604,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             LIM_PHYT_DISS_DET_PART_ORG_C, &
             R_DET_PART_ORG_C_DISSOLUTION)
 
-    ACTUAL_DET_N_TO_C = DET_PART_ORG_N / DET_PART_ORG_C
-    ACTUAL_DET_P_TO_C = DET_PART_ORG_P / DET_PART_ORG_C
+    ACTUAL_DET_N_TO_C = DET_PART_ORG_N / max(DET_PART_ORG_C, MIN_CONCENTRATION)
+    ACTUAL_DET_P_TO_C = DET_PART_ORG_P / max(DET_PART_ORG_C, MIN_CONCENTRATION)
 
     ! Nitrogen dissolution
 
@@ -1794,17 +1794,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     call CALCULATE_PH_CORR &
          (PH_CORR_DON_MIN_NO3N, PH, PH_MIN_DON_MIN_NO3N, PH_MAX_DON_MIN_NO3N, nkn)
 
-    where(DISS_ORG_N .lt. 0.D0 .and. K_HS_DON_MIN_DOXY .lt. 0.D0)
-        LIM_DON_DON = 1.D0
+    where(DISS_ORG_N .le. 0.D0)
+        LIM_DON_DON = 0.D0
     elsewhere
-        LIM_DON_DON  =   (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_DOXY))
+        LIM_DON_DON = DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_DOXY)
     end where
-
-    if(any(DISS_ORG_N .le. 0.D0)) then
-        print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
-        print *, 'PELAGIC MODEL: Warning, some DISS_ORG_N <= 0'
-        print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
-    end if
 
     R_ABIOTIC_DON_MIN_DOXY = &
         (K_MIN_DON_DOXY_20 + LIM_PHY_N_AMIN_DON) * &
