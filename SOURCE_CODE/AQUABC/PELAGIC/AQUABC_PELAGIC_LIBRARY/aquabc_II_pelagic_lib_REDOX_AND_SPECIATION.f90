@@ -43,6 +43,7 @@ subroutine REDOX_AND_SPECIATION &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, MN_MOLAR_MASS_MG, S_MOLAR_MASS_MG
+    use, intrinsic :: IEEE_ARITHMETIC
     implicit none
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DOXY          ! Dissolved oxygen (mg/L)
@@ -316,7 +317,7 @@ subroutine REDOX_AND_SPECIATION &
              ((3.0D0*BETA_4_3_FE_OH_3*FE_III_FREE*FE_III_FREE)/H_PLUS_OVER_4));
     !end where
 
-    if(any(isnan(FE_III_DISS))) then
+    if(any(IEEE_IS_NAN(FE_III_DISS))) then
        print *,'REDOX_AND_SPECIATION:'
        print *,'FE_III_DISS is NaN:', FE_III_DISS
        print *,'FREE_FE_III:'   , FREE_FE_III

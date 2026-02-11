@@ -40,6 +40,7 @@ subroutine CALC_DISS_ME_CONC &
             DISS_ME_CONC_TS_AVG)
 
     use AQUABC_II_GLOBAL
+    use, intrinsic :: IEEE_ARITHMETIC
     implicit none
 
     ! In going variables
@@ -128,7 +129,7 @@ subroutine CALC_DISS_ME_CONC &
 
     ! Check for saturation case where logarithms in both over and undersaturation solutions may give NaNs
     ! and assume that neither dissolution nor precipitation occurs.
-    where (isnan(DISS_ME_CONC_TS_END).or.isnan(DISS_ME_CONC_TS_AVG))
+    where (IEEE_IS_NAN(DISS_ME_CONC_TS_END).or.IEEE_IS_NAN(DISS_ME_CONC_TS_AVG))
         DISS_ME_CONC_TS_END = ME_DISS_INIT
         DISS_ME_CONC_TS_AVG = ME_DISS_INIT
     end where

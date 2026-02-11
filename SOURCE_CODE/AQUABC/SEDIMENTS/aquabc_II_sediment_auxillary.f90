@@ -11,32 +11,23 @@
 !*******************************************************************
 !*******************************************************************
 INTEGER FUNCTION STRANGER(VALUE)
-    ! cheks for NaN and Inf in double precision
+    ! Checks for NaN, Inf, and out-of-range values
+    use, intrinsic :: IEEE_ARITHMETIC
 
-    DOUBLE PRECISION VALUE, BIGNUMBER, RATIO, LLIMIT, ULIMIT
+    DOUBLE PRECISION, intent(in) :: VALUE
+    DOUBLE PRECISION :: LLIMIT, ULIMIT
     LLIMIT    = -1.0D4
     ULIMIT    =  1.0D4
-    BIGNUMBER = 1.0D300
-    RATIO     = 1.0D0
     STRANGER  = 0
 
-    if (isnan(VALUE)) then
-        STRANGER=1
-    end if
-
-    if (isnan(VALUE)) then
-        STRANGER=1
-    end if
-
-    if(RATIO .eq. 0.D0) then
-        STRANGER=1
+    if (IEEE_IS_NAN(VALUE) .or. .not. IEEE_IS_FINITE(VALUE)) then
+        STRANGER = 1
+        return
     end if
 
     if(VALUE .le. LLIMIT .or. VALUE .ge. ULIMIT) then
         STRANGER=1
     end if
-
-    return
 end
 !************************************************************************
 !************************************************************************

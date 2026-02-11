@@ -2,7 +2,6 @@ subroutine ALLELOPATHY_INHIBITION_RATES()
 
     use ALLELOPATHY
     implicit none
-    integer :: i
 
 
     IHBF_SEC_METAB_DIA_NOFIX_CYN     = &
@@ -96,15 +95,6 @@ subroutine ALLELOPATHY_INHIBITION_RATES()
     IHBF_SEC_METAB_FIX_CYN   = &
         min(IHBF_SEC_METAB_DIA_FIX_CYN  , IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN, &
             IHBF_SEC_METAB_NOST_FIX_CYN  )
-
-    ! Diagnostic: report strong inhibition (IHBF small) for FIX_CYN
-    do i = 1, size(IHBF_SEC_METAB_FIX_CYN)
-        if (IHBF_SEC_METAB_FIX_CYN(i) < 0.1D0) then
-            write(6,*) 'DEBUG: ALLELOP INHIB FIX_CYN node', i, ' IHBF=', IHBF_SEC_METAB_FIX_CYN(i)
-            write(6,*) '  SEC_MET_FIX=', SEC_METAB_FIX_CYN(i)
-        end if
-    end do
-
 
     IHBF_SEC_METAB_NOST      = &
         min(IHBF_SEC_METAB_DIA_NOST     , IHBF_SEC_METAB_NOFIX_CYN_NOST   , &
