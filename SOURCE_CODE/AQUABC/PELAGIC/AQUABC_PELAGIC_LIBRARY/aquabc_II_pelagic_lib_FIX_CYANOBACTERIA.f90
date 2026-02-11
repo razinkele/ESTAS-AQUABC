@@ -205,9 +205,13 @@ subroutine FIX_CYANOBACTERIA  &
                               (KHS_DIN_FIX_CYN + NH4_N +(DON * frac_avail_DON) + NO3_N)
 
     LIM_KG_NON_FIX_CYN_P    = PO4_P / (KHS_DIP_FIX_CYN + PO4_P)
-    LIM_KG_NON_FIX_CYN_NUTR = min(LIM_KG_NON_FIX_CYN_N, LIM_KG_NON_FIX_CYN_P)
+    ! Synthesizing Unit colimitation for non-fixing fraction (Saito et al. 2008)
+    LIM_KG_NON_FIX_CYN_NUTR = LIM_KG_NON_FIX_CYN_N * LIM_KG_NON_FIX_CYN_P / &
+        max(LIM_KG_NON_FIX_CYN_N + LIM_KG_NON_FIX_CYN_P - &
+            LIM_KG_NON_FIX_CYN_N * LIM_KG_NON_FIX_CYN_P, 1.0D-20)
 
     !Nutrient limitation of fixing cyanobacteria in fixing fraction
+    ! (Liebig min retained: N term is DIN-inhibition switch, not colimitation)
     LIM_KG_FIX_FIX_CYN_N    = (K_FIX / (K_FIX + NH4_N +(DON * frac_avail_DON) + NO3_N))
     LIM_KG_FIX_FIX_CYN_P    = LIM_KG_NON_FIX_CYN_P
     LIM_KG_FIX_FIX_CYN_NUTR = min(LIM_KG_FIX_FIX_CYN_N, LIM_KG_FIX_FIX_CYN_P)
@@ -509,9 +513,13 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         (KHS_DIN_FIX_CYN + NH4_N +(DON * frac_avail_DON) + NO3_N)
 
     LIM_KG_NON_FIX_CYN_P    = PO4_P / (KHS_DIP_FIX_CYN + PO4_P)
-    LIM_KG_NON_FIX_CYN_NUTR = min(LIM_KG_NON_FIX_CYN_N, LIM_KG_NON_FIX_CYN_P)
+    ! Synthesizing Unit colimitation for non-fixing fraction (Saito et al. 2008)
+    LIM_KG_NON_FIX_CYN_NUTR = LIM_KG_NON_FIX_CYN_N * LIM_KG_NON_FIX_CYN_P / &
+        max(LIM_KG_NON_FIX_CYN_N + LIM_KG_NON_FIX_CYN_P - &
+            LIM_KG_NON_FIX_CYN_N * LIM_KG_NON_FIX_CYN_P, 1.0D-20)
 
     !Nutrient limitation of fixing cyanobacteria in fixing fraction.
+    ! (Liebig min retained: N term is DIN-inhibition switch, not colimitation)
     LIM_KG_FIX_FIX_CYN_N    = (K_FIX / (K_FIX + NH4_N +(DON * frac_avail_DON) + NO3_N))
     LIM_KG_FIX_FIX_CYN_P    = LIM_KG_NON_FIX_CYN_P
     LIM_KG_FIX_FIX_CYN_NUTR = min(LIM_KG_FIX_FIX_CYN_N, LIM_KG_FIX_FIX_CYN_P)

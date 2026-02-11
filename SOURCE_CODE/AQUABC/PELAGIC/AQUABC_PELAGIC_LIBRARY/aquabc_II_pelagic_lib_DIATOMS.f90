@@ -187,7 +187,12 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
      LIM_KG_DIA_N       = (NH4_N + NO3_N) / (KHS_DIN_DIA + NH4_N + NO3_N)
      LIM_KG_DIA_P       = PO4_P   / (KHS_DIP_DIA + PO4_P)
      LIM_KG_DIA_DISS_Si = DISS_Si / (KHS_DSi_DIA + DISS_Si)
-     LIM_KG_DIA_NUTR    = min(LIM_KG_DIA_N, LIM_KG_DIA_P, LIM_KG_DIA_DISS_Si)
+     ! Synthesizing Unit colimitation (Saito et al. 2008): SU lies between
+     ! Liebig minimum (upper bound) and multiplicative (lower bound)
+     LIM_KG_DIA_NUTR = LIM_KG_DIA_N * LIM_KG_DIA_P / &
+         max(LIM_KG_DIA_N + LIM_KG_DIA_P - LIM_KG_DIA_N * LIM_KG_DIA_P, 1.0D-20)
+     LIM_KG_DIA_NUTR = LIM_KG_DIA_NUTR * LIM_KG_DIA_DISS_Si / &
+         max(LIM_KG_DIA_NUTR + LIM_KG_DIA_DISS_Si - LIM_KG_DIA_NUTR * LIM_KG_DIA_DISS_Si, 1.0D-20)
      LIM_KG_DIA         = LIM_KG_DIA_LIGHT * min(LIM_KG_DIA_DOXY, LIM_KG_DIA_NUTR)
 
      !Diatom photo growth rate

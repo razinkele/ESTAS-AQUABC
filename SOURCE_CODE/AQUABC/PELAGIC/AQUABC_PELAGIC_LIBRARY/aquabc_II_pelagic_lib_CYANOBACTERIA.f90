@@ -191,9 +191,10 @@ subroutine CYANOBACTERIA &
                       (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
 
     LIM_KG_CYN_P    = PO4_P   / (KHS_DIP_CYN + PO4_P)
-    LIM_KG_CYN_NUTR = min(LIM_KG_CYN_N, LIM_KG_CYN_P)
-    !LIM_KG_CYN      = min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR, LIM_KG_CYN_LIGHT)
-    LIM_KG_CYN      = LIM_KG_CYN_LIGHT*min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR) !changed by Petras
+    ! Synthesizing Unit colimitation (Saito et al. 2008)
+    LIM_KG_CYN_NUTR = LIM_KG_CYN_N * LIM_KG_CYN_P / &
+        max(LIM_KG_CYN_N + LIM_KG_CYN_P - LIM_KG_CYN_N * LIM_KG_CYN_P, 1.0D-20)
+    LIM_KG_CYN      = LIM_KG_CYN_LIGHT*min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR)
     !Non-fixing cyanobacteria growth rate
     R_CYN_GROWTH    = KG_CYN * LIM_KG_CYN * CYN_C
 
@@ -461,7 +462,9 @@ subroutine CYANOBACTERIA_BOUYANT &
                       (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
 
     LIM_KG_CYN_P    = PO4_P   / (KHS_DIP_CYN + PO4_P)
-    LIM_KG_CYN_NUTR = min(LIM_KG_CYN_N, LIM_KG_CYN_P)
+    ! Synthesizing Unit colimitation (Saito et al. 2008)
+    LIM_KG_CYN_NUTR = LIM_KG_CYN_N * LIM_KG_CYN_P / &
+        max(LIM_KG_CYN_N + LIM_KG_CYN_P - LIM_KG_CYN_N * LIM_KG_CYN_P, 1.0D-20)
     LIM_KG_CYN      = LIM_KG_CYN_LIGHT*min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR)
 
     !Non-fixing cyanobacteria growth rate

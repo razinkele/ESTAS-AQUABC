@@ -181,7 +181,9 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     LIM_KG_OPA_DOXY = DISS_OXYGEN / (KHS_O2_OPA + DISS_OXYGEN)
     LIM_KG_OPA_N    = (NH4_N + NO3_N) / (KHS_DIN_OPA + NH4_N + NO3_N)
     LIM_KG_OPA_P    = PO4_P   / (KHS_DIP_OPA + PO4_P)
-    LIM_KG_OPA_NUTR = min(LIM_KG_OPA_N, LIM_KG_OPA_P)
+    ! Synthesizing Unit colimitation (Saito et al. 2008)
+    LIM_KG_OPA_NUTR = LIM_KG_OPA_N * LIM_KG_OPA_P / &
+        max(LIM_KG_OPA_N + LIM_KG_OPA_P - LIM_KG_OPA_N * LIM_KG_OPA_P, 1.0D-20)
     !    LIM_KG_OPA      = min(LIM_KG_OPA_DOXY, LIM_KG_OPA_NUTR, LIM_KG_OPA_LIGHT)
     LIM_KG_OPA      = LIM_KG_OPA_LIGHT * min(LIM_KG_OPA_DOXY, LIM_KG_OPA_NUTR) !changed by Petras
 
