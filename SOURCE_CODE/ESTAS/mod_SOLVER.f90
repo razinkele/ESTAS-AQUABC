@@ -1410,7 +1410,7 @@ contains
         if (MODEL_BOTTOM_SEDIMENTS > 1) then
             ! Get sediment temperature from water column assuming it is equal
             do SED_LAYER_NO = 1,NUM_SED_LAYERS
-                SED_TEMPS(:,SED_LAYER_NO) = DRIVING_FUNCTIONS(:,1)
+                SED_TEMPS(:,SED_LAYER_NO) = max(0.0D0, min(45.0D0, DRIVING_FUNCTIONS(:,1)))
             end do
 
             ! Uptate the time dependent forcings in sediments

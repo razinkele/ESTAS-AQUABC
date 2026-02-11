@@ -65,6 +65,7 @@ subroutine IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_TOT)
     K_10_B = 1.3D-13
     K_W    = 1.0D-14
 
+    PH = max(4.0D0, min(11.0D0, PH))
     H_PLUS   = 10.0D0 ** (-PH)
     OH_MINUS = K_W / H_PLUS
 
@@ -151,7 +152,7 @@ subroutine IRON_II_OXIDATION(FE_II_DISS, DOXY, PH, TEMP, SALT, ELEVATION, nkn, R
     k_FE_OH_PLUS = 1.7D0
     k_FE_OH_2    = 4.3D5
 
-    H_PLUS    = 10.0D0 ** (-PH)
+    H_PLUS    = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
     OH_MINUS  = K_W / H_PLUS
     FE_II_TOT = FE_II_DISS / FE_MOLAR_MASS_MG
 

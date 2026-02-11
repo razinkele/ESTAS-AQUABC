@@ -52,7 +52,7 @@ subroutine IP_SOLUBLE_FRACTION &
     K_2_FE     = 10.0D0 ** (-6.31D0)
     K_3_FE     = 10.0D0 ** (-13.8D0)
     K_4_FE     = 10.0D0 ** (-22.7D0)
-    H_PLUS     = 10.0D0 ** (-PH)
+    H_PLUS     = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
     C_T_FE_III = FE_III / FE_MOLAR_MASS_MG
 
     ! COEFF_1: accounts for all 4 Fe(III) hydrolysis products

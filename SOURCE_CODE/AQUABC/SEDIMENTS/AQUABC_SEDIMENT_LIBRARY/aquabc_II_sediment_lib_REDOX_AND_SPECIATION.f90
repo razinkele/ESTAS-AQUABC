@@ -110,7 +110,7 @@ subroutine SED_REDOX_AND_SPECIATION &
     integer :: i, j
 
     ! Calculate H+ concentration from pH (standard conversion: [H+] = 10^(-pH))
-    H_PLUS(:,:) = 10.0D0**(-PH)
+    H_PLUS(:,:) = 10.0D0**(-max(4.0D0, min(11.0D0, PH)))
 
     LIM_DOXY_RED = DOXY  / (DOXY + K_HS_DOXY_RED_LIM)
 

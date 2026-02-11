@@ -137,7 +137,7 @@ subroutine REDOX_AND_SPECIATION &
     real(kind = DBL_PREC) :: BETA_2_2_FE_OH_3
     real(kind = DBL_PREC) :: BETA_4_3_FE_OH_3
 
-    H_PLUS       = 10.0D0 ** (-PH)
+    H_PLUS       = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
     LIM_DOXY_RED = DOXY  / (DOXY + K_HS_DOXY_RED_LIM)
 
     LIM_NO3N_RED = &

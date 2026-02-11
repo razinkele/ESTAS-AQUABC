@@ -331,7 +331,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end if
 
     TEMP     (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 1)
+    TEMP     (1:nkn) = max(0.0D0, min(45.0D0, TEMP(1:nkn)))
     SALT     (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 2)
+    SALT     (1:nkn) = max(0.0D0, SALT(1:nkn))
 
     ! Conversion from W/m^2 to langleys
     I_A      (1:nkn) =(DRIVING_FUNCTIONS(1:nkn, 3) * 5.0D-1 * 8.64D4 * 0.238846) / 1.0D4
