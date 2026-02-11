@@ -17,24 +17,54 @@ htmlcov/
 *~
 .DS_Store
 
-# Shiny edits backup
-INPUTS/*.bak
-
-# Output directories
-OUTPUTS/
-OUTPUTS_*
-
-# Build artifacts
+# Fortran build artifacts
 *.o
 *.mod
 *.a
+*__genmod.f90
 *.exe
-build_log.txt
-compile_err.txt
 
-# Executables
+# Build directories
+build/
+SOURCE_CODE/build/*__genmod.f90
+SOURCE_CODE/build/*.o
+SOURCE_CODE/build/*.mod
+SOURCE_CODE/build/*.a
+
+# Compiled executables / binaries
 ESTAS_II
 ESTAS_II_*
+AQUABC02*
+SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/aquabc_II_pelagic_0D
+SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/unit_test_limiter
+SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/test/unit_test_limiter
+
+# Test binaries (keep .f90 sources and Makefile)
+tests/fortran/test_allelopathy
+tests/fortran/test_ammonia_chem
+tests/fortran/test_chla
+tests/fortran/test_diss_me
+tests/fortran/test_do_saturation
+tests/fortran/test_file_unit
+tests/fortran/test_growth_temp
+tests/fortran/test_ip_soluble
+tests/fortran/test_iron_ii
+tests/fortran/test_light
+tests/fortran/test_nutrient_prefs
+tests/fortran/test_organic_carbon
+tests/fortran/test_para_aqua
+tests/fortran/test_ph_corr
+tests/fortran/test_settling
+tests/fortran/test_settling_suppres
+tests/fortran/test_vector_utils
+tests/fortran/*.o
+tests/fortran/*.mod
+
+# Simulation outputs
+OUTPUT.csv
+OUTPUTS/
+OUTPUTS_*/
+const_out.txt
 
 # Logs and runtime files
 *.log
@@ -45,3 +75,35 @@ out_*.txt
 summary_*.txt
 time_*.txt
 *.exit_status
+build_log.txt
+compile_err.txt
+
+# Backup files
+*.bak
+*.allocbak
+*.headerbak
+*.premerge
+*.prestrip
+INPUTS/*.bak
+INPUT.txt.*.bak
+INPUT.txt.backup_*
+INPUT_30day.txt
+INPUT_debug_run.txt
+
+# Archives and patches
+*.zip
+*.tar.gz
+fortran_implicit_none_patch/
+
+# Lint / analysis reports
+implicit_none_lint_report.txt
+missing_implicit_none.txt
+
+# Data symlink (points to AQUABC_PELAGIC_0D/data)
+/data
+
+# Documents (generated/local)
+*.docx
+
+# Observation data (local)
+OBSERVATIONS/
