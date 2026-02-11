@@ -86,7 +86,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
          CLAMP_WARNED, CLAMP_COUNT, CLAMP_PROC_COUNT
     use AQUABC_PEL_STATE_VAR_INDEXES
     use AQUABC_PELAGIC_INTERNAL
-    use AQUABC_PHYSICAL_CONSTANTS, only: NSTATE_EXPECTED, CELSIUS_TO_KELVIN
+    use AQUABC_PHYSICAL_CONSTANTS, only: NSTATE_EXPECTED, CELSIUS_TO_KELVIN, &
+         FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
 
     implicit none
@@ -438,7 +439,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
              LIM_FE_III_RED      , LIM_S_PLUS_6_RED      , LIM_DOC_RED, &
              PE, FE_II_DISS_EQ   , FE_III_DISS_EQ, MN_II_DISS)
 
-        FE_III_DISS_EQ = FE_III_DISS_EQ * 56000.0D0
+        FE_III_DISS_EQ = FE_III_DISS_EQ * FE_MOLAR_MASS_MG
         PROCESS_RATES(1:nkn,FE_III_INDEX, 4) = FE_III_DISS_EQ
         ! ---------------------------------------------------------------------------
         ! Handle Fe2+ dissolution changes by Ali Ert�rk, 2 nd of july 2016
@@ -458,7 +459,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! -------------------------------------------------------------------------
 
         ! Convert sulphide to moles for aquatic chemistry calculations
-        HS2_TOT(:) = S_MINUS_2(:) / 32000.0D0
+        HS2_TOT(:) = S_MINUS_2(:) / S_MOLAR_MASS_MG
 
         H2S_DIVISOR(:) = (H_PLUS(:) * H_PLUS(:)) + &
             (H_PLUS(:) * K_EQ_S_1(:)) + (K_EQ_S_1(:) * K_EQ_S_2(:))
@@ -481,7 +482,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! Change updated by Ali (9 August 2016)
         ! -------------------------------------------------------------------------
         call IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_DISS_EQ)
-        FE_II_DISS_EQ = FE_II_DISS_EQ * 56000.0D0
+        FE_II_DISS_EQ = FE_II_DISS_EQ * FE_MOLAR_MASS_MG
 
         ! -------------------------------------------------------------------------
         ! End of changes by Ali Ert�rk (2 July 2016)
@@ -3848,7 +3849,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         ! Diagnostics:
         PROCESS_RATES(1:nkn,FE_II_INDEX, 3) = FE_II_DISS
-        PROCESS_RATES(1:nkn,FE_II_INDEX, 4) = FE_II_DISS/56000.0D0
+        PROCESS_RATES(1:nkn,FE_II_INDEX, 4) = FE_II_DISS/FE_MOLAR_MASS_MG
 
         DERIVATIVES(1:nkn,FE_II_INDEX) = &
             PROCESS_RATES(1:nkn,FE_II_INDEX, 1) - PROCESS_RATES(1:nkn,FE_II_INDEX, 2)

@@ -58,19 +58,12 @@ subroutine CALC_DISS_ME_CONC &
     real(kind = DBL_PREC), dimension(nkn, nlayers), intent(inout) :: DISS_ME_CONC_TS_AVG
 
     ! Auxillary variables
-    !real(kind = DBL_PREC), dimension(nkn, nlayers) :: A_2
-    !real(kind = DBL_PREC), dimension(nkn, nlayers) :: A_3
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: C
-    !real(kind = DBL_PREC), dimension(nkn, nlayers) :: Y_0
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: INT_ME_DISS_t
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: INT_ME_DISS_zero
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: LOG_INT_ME_DISS_t
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: LOG_INT_ME_DISS_zero
 
-
-    ! Updated by Ali and Petras, 15 th of August 2016.
-
-    !Y_0 = ME_DISS_INIT
 
     where (ME_DISS_INIT > ME_SOLUB_EQ)
         ! This is the oversaturated case, so dissolution reaction will move oppsite way to
@@ -91,20 +84,6 @@ subroutine CALC_DISS_ME_CONC &
         INT_ME_DISS_zero =  (1.0D0 / (k_DISS_ME)) * LOG_INT_ME_DISS_zero
 
         DISS_ME_CONC_TS_AVG = (1.0D0/t) * (INT_ME_DISS_t - INT_ME_DISS_zero)
-
-        ! Old code
-        !A_2 = k_DISS_ME * ME_SOLUB_EQ
-        !A_3 = k_DISS_ME
-        !C   = (log(Y_0) / A_2) - (log(A_2 - (A_3 * Y_0)) / A_2)
-
-        ! Calculate the dissolved metal at the end of timestep
-        !DISS_ME_CONC_TS_END = (A_2 * exp(A_2 * (t + C))) / ((A_3 * exp(A_2 * (t + C))) + 1.0D0)
-
-        ! Calculate the definite integral for the solution and divide it by time to
-        ! get dissolved metal averaged over timestep
-        !DISS_ME_CONC_TS_AVG  = (1.0D0/t) * &
-        !    (((1.0D0 * A_3)*(log(dabs((1.0D0/A_3)*((A_3*exp(C*A_2)*exp(t*A_2))+1.0D0)))-(C * A_2))) - &
-        !    ((1.0D0 * A_3)*(log(dabs((1.0D0/A_3)*((A_3*exp(C*A_2))+1.0D0)))-(C * A_2))))
 
     else where (ME_DISS_INIT < ME_SOLUB_EQ)
         ! This is the undersaturated case where more metals will be dissolved.
@@ -140,16 +119,6 @@ subroutine CALC_DISS_ME_CONC &
 
         INT_ME_DISS_zero = &
             (3.0D0*ME_SOLUB_EQ*(-(LOG_INT_ME_DISS_zero/(3.0D0*k_DISS_ME*ME_SOLUB_EQ))))
-
-        ! Old code
-        !LOG_INT_ME_DISS_t    = (1.0D0/((4.0D0*ME_SOLUB_EQ) - ME_DISS_INIT)) * &
-        !    (ME_DISS_INIT - ME_SOLUB_EQ + (((4.0D0*ME_SOLUB_EQ) - ME_DISS_INIT)*exp(3.0D0*k_DISS_ME*ME_SOLUB_EQ*t)))
-        !
-        !LOG_INT_ME_DISS_zero = (1.0D0/((4.0D0*ME_SOLUB_EQ)-ME_DISS_INIT))* &
-        !    (ME_DISS_INIT - ME_SOLUB_EQ+((4.0D0*ME_SOLUB_EQ)-ME_DISS_INIT))
-        !
-        !INT_ME_DISS_t    = (-1.0D0/k_DISS_ME)*(log(dabs(LOG_INT_ME_DISS_t)) - (4.0D0*t*ME_SOLUB_EQ*k_DISS_ME))
-        !INT_ME_DISS_zero = (-1.0D0/k_DISS_ME)*log(dabs(LOG_INT_ME_DISS_zero))
 
         DISS_ME_CONC_TS_AVG = (1.0D0/t) * (INT_ME_DISS_t - INT_ME_DISS_zero)
     else where

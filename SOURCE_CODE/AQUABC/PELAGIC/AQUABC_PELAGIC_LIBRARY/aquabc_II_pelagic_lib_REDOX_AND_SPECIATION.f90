@@ -42,6 +42,7 @@ subroutine REDOX_AND_SPECIATION &
             MN_II_DISS)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, MN_MOLAR_MASS_MG, S_MOLAR_MASS_MG
     implicit none
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DOXY          ! Dissolved oxygen (mg/L)
@@ -192,7 +193,7 @@ subroutine REDOX_AND_SPECIATION &
     where (REDUCED_AGENT_NO == 3)
         PE = &
             20.8D0 - &
-            log10(((MN_II/54938.0D0)**0.5D0) / (((MN_IV/54938.0D0)**0.5D0)*(H_PLUS**2.0D0)))
+            log10(((MN_II/MN_MOLAR_MASS_MG)**0.5D0) / (((MN_IV/MN_MOLAR_MASS_MG)**0.5D0)*(H_PLUS**2.0D0)))
     end where
 
     ! FE III is reduced
@@ -203,12 +204,12 @@ subroutine REDOX_AND_SPECIATION &
     ! S VI is reduced
     where (REDUCED_AGENT_NO == 5)
         HS_MOLAR = &
-            (S_MINUS_2 / 32000.0D0) * &
+            (S_MINUS_2 / S_MOLAR_MASS_MG) * &
             ((H_PLUS * 8.9D-8) / ((H_PLUS*H_PLUS) + (H_PLUS*8.9D-8) + (8.9D-8 * 1.2D-13)))
 
         PE = &
             4.25D0 - &
-            log10((HS_MOLAR**0.125D0)/(((S_PLUS_6/32000.0D0) **0.125D0)*(H_PLUS**1.125D0)))
+            log10((HS_MOLAR**0.125D0)/(((S_PLUS_6/S_MOLAR_MASS_MG) **0.125D0)*(H_PLUS**1.125D0)))
     end where
 
     ! Methanogenesis
@@ -228,11 +229,11 @@ subroutine REDOX_AND_SPECIATION &
 
     ! FE_S / DISS_FE_II
     FE_S_OVER_FE_II    = &
-        10.0D0**(38.0D0  - (8.0D0*PH) + log10((S_PLUS_6 / 32000.0D0)) - (8.0D0*PE))
+        10.0D0**(38.0D0  - (8.0D0*PH) + log10((S_PLUS_6 / S_MOLAR_MASS_MG)) - (8.0D0*PE))
 
     ! FE_S_2 / DISS_FE_II
     FE_S_2_OVER_FE_II  = &
-        10.0D0**(86.8D0 -(16.0D0*PH)+(2.0D0*log10((S_PLUS_6 / 32000.0D0))) - (14.0D0*PE))
+        10.0D0**(86.8D0 -(16.0D0*PH)+(2.0D0*log10((S_PLUS_6 / S_MOLAR_MASS_MG))) - (14.0D0*PE))
 
 
     ! Now find out which Fe II salt is more likely to form for each reactor
@@ -254,7 +255,7 @@ subroutine REDOX_AND_SPECIATION &
     end where
 
     S_MINUS_2_MOLAR = &
-        (S_MINUS_2 / 32000.0D0) * &
+        (S_MINUS_2 / S_MOLAR_MASS_MG) * &
         ((8.9D-8 * 1.2D-13)/((H_PLUS * H_PLUS) + (H_PLUS * 8.9D-8) + (8.9D-8 * 1.2D-13)))
 
     !FeS
@@ -263,7 +264,7 @@ subroutine REDOX_AND_SPECIATION &
     end where
 
     where((FE_II_SALT_NO == 3).and.(S_MINUS_2_MOLAR <= 1.0D-12) )
-        FREE_FE_II = FE_II / 56000.0D0
+        FREE_FE_II = FE_II / FE_MOLAR_MASS_MG
     end where
 
 
@@ -273,7 +274,7 @@ subroutine REDOX_AND_SPECIATION &
     end where
 
     where((FE_II_SALT_NO == 4).and.(S_MINUS_2_MOLAR <= 1.0D-12) )
-        FREE_FE_II = FE_II / 56000.0D0
+        FREE_FE_II = FE_II / FE_MOLAR_MASS_MG
     end where
 
     ! For a while no complex formation (to be fixed)
@@ -345,7 +346,7 @@ subroutine REDOX_AND_SPECIATION &
 
     ! MN_S / DISS_MN_II
     MN_S_OVER_MN_II    = &
-        10.0D0**(34.0D0  - (8.0D0*PH) + log10((S_PLUS_6 / 32000.0D0)) - (8.0D0*PE))
+        10.0D0**(34.0D0  - (8.0D0*PH) + log10((S_PLUS_6 / S_MOLAR_MASS_MG)) - (8.0D0*PE))
 
     ! Now find out which Mn II salt is more likely to form for each reactor
     MN_II_ACTIVITY_RATIOS (:, 1) = MN_CO3_OVER_MN_II
@@ -370,7 +371,7 @@ subroutine REDOX_AND_SPECIATION &
     end where
 
     where((MN_II_SALT_NO == 3).and.(S_MINUS_2_MOLAR <= 1.0D-12))
-        FREE_MN_II = MN_II / 54938.0D0
+        FREE_MN_II = MN_II / MN_MOLAR_MASS_MG
     end where
 
     ! For a while no complex formation (to be fixed)

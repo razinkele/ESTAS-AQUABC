@@ -75,6 +75,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
     use AQUABC_BSED_MODEL_CONSTANTS
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG
     !use para_aqua
 
     !use basin, only: ipv !0d correction
@@ -1083,7 +1084,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
              SED_LIM_S_PLUS_6_RED     , SED_LIM_DOC_RED           , &
              PE, FE_II_DISS_EQ        , FE_III_DISS_EQ, MN_II_DISS)
 
-        FE_III_DISS_EQ = FE_III_DISS_EQ * 56000.0D0
+        FE_III_DISS_EQ = FE_III_DISS_EQ * FE_MOLAR_MASS_MG
 
         ! For now, take fixed values for equlibrium and solubility constants
         ! In future, change these to temperature and/or other environmental
@@ -1099,7 +1100,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         ! -------------------------------------------------------------------------
 
         ! Convert sulphide to moles for aquatic chemistry calculations
-        HS2_TOT(:,:) = S_MINUS_2(:,:) / 32000.0D0
+        HS2_TOT(:,:) = S_MINUS_2(:,:) / S_MOLAR_MASS_MG
 
         H2S_DIVISOR(:,:) = &
             (H_PLUS(:,:) * H_PLUS(:,:)) + &
@@ -1138,7 +1139,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
         ! Calculate how much Fe2+ from FeS could be dissolved for equlibrium
         !where (S_MINUS_TWO > 1.0D-12)
-        !    FE_II_DISS = (K_SP_FES / S_MINUS_TWO) * 56000.0D0
+        !    FE_II_DISS = (K_SP_FES / S_MINUS_TWO) * FE_MOLAR_MASS_MG
         !elsewhere
         !    FE_II_DISS = FE_II
         !end where
@@ -1165,7 +1166,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         call SED_IRON_II_DISSOLUTION &
              (HS2_TOT, PH, TOT_ALK, nkn, NUM_SED_LAYERS, FE_II_DISS_EQ)
 
-        FE_II_DISS_EQ = FE_II_DISS_EQ * 56000.0D0
+        FE_II_DISS_EQ = FE_II_DISS_EQ * FE_MOLAR_MASS_MG
         ! -------------------------------------------------------------------------
         ! End of changes by Ali Ert�rk (5 July 2016)
         ! -------------------------------------------------------------------------

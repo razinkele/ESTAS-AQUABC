@@ -45,66 +45,27 @@ contains
 
 
     integer function STRANGER(SUSPECTED_VALUE)
+        use, intrinsic :: IEEE_ARITHMETIC
+        ! Checks for NaN and Inf
+        real(kind = DBL), intent(in) :: SUSPECTED_VALUE
 
-        !Checks for NaN and Inf
-
-        real(kind = DBL) ::  SUSPECTED_VALUE, BIGNUMBER, SMALLVALUE, RATIO
-
-        BIGNUMBER  = 1.0D300
-        SMALLVALUE = 1.0D-30
-
-        STRANGER=0
-
-        if (dabs(SUSPECTED_VALUE) < SMALLVALUE) then
-            return
+        STRANGER = 0
+        if (IEEE_IS_NAN(SUSPECTED_VALUE) .or. .not. IEEE_IS_FINITE(SUSPECTED_VALUE)) then
+            STRANGER = 1
         end if
-
-        if (.not.(SUSPECTED_VALUE .lt. 0.D0).and..not.(SUSPECTED_VALUE .ge. 0.D0)) then
-            STRANGER=1
-        end if
-
-        if ((SUSPECTED_VALUE .lt. 0.D0).and.(SUSPECTED_VALUE .ge. 0.D0)) then
-            STRANGER=1
-        end if
-
-        if (SUSPECTED_VALUE > BIGNUMBER) then
-            RATIO = BIGNUMBER / SUSPECTED_VALUE
-
-            if(RATIO .eq. 0.D0) then
-                STRANGER=1
-            endif
-        endif
-
-        return
-    end function stranger
+    end function STRANGER
 
 
     integer function STRANGERSD(SUSPECTED_VALUE)
+        use, intrinsic :: IEEE_ARITHMETIC
+        ! Checks for NaN and Inf
+        ! Input is real(kind = DBL)
+        real(kind = DBL), intent(in) :: SUSPECTED_VALUE
 
-        ! Cheks for NaN and Inf
-        ! Input is real(kind = DBL)!
-
-          real(kind = DBL) :: SUSPECTED_VALUE, BIGNUMBER, RATIO
-          integer :: STRANGERD
-
-          BIGNUMBER=1.0D30
-          STRANGERD=0
-
-          if (.not.(SUSPECTED_VALUE .lt. 0.).and..not.(SUSPECTED_VALUE .ge. 0.)) then
-              STRANGERD=1
-          end if
-
-          if ((SUSPECTED_VALUE .lt. 0.).and.(SUSPECTED_VALUE .ge. 0.D0)) then
-              STRANGERD=1
-          end if
-
-          RATIO = BIGNUMBER/SUSPECTED_VALUE
-
-          if(RATIO .eq. 0.) then
-            STRANGERSD=1
-          endif
-
-          return
+        STRANGERSD = 0
+        if (IEEE_IS_NAN(SUSPECTED_VALUE) .or. .not. IEEE_IS_FINITE(SUSPECTED_VALUE)) then
+            STRANGERSD = 1
+        end if
     end function STRANGERSD
 
 

@@ -16,6 +16,7 @@
 ! -----------------------------------------------------------------------------
 subroutine IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_TOT)
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG
     implicit none
 
     integer, intent(in) ::  nkn
@@ -108,6 +109,7 @@ end subroutine IRON_II_DISSOLUTION
 ! -----------------------------------------------------------------------------
 subroutine IRON_II_OXIDATION(FE_II_DISS, DOXY, PH, TEMP, SALT, ELEVATION, nkn, R_FE_II_OXIDATION)
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG
     implicit none
 
     integer, intent(in) ::  nkn
@@ -151,7 +153,7 @@ subroutine IRON_II_OXIDATION(FE_II_DISS, DOXY, PH, TEMP, SALT, ELEVATION, nkn, R
 
     H_PLUS    = 10.0D0 ** (-PH)
     OH_MINUS  = K_W / H_PLUS
-    FE_II_TOT = FE_II_DISS / 56000.0D0
+    FE_II_TOT = FE_II_DISS / FE_MOLAR_MASS_MG
 
     call DO_SATURATION_VEC(TEMP, SALT, ELEVATION, nkn, CS);
 
@@ -166,5 +168,5 @@ subroutine IRON_II_OXIDATION(FE_II_DISS, DOXY, PH, TEMP, SALT, ELEVATION, nkn, R
                           ((H_PLUS) / (K_2*K_W)) + &
                            ((H_PLUS*H_PLUS) / (K_1*K_2*K_W*K_W))))) * FE_II_TOT
 
-    R_FE_II_OXIDATION = (R_FE_II_OXIDATION * (DOXY / CS)) * 56000.0D0
+    R_FE_II_OXIDATION = (R_FE_II_OXIDATION * (DOXY / CS)) * FE_MOLAR_MASS_MG
 end subroutine IRON_II_OXIDATION

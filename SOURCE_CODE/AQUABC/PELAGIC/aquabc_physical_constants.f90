@@ -23,6 +23,14 @@ module AQUABC_PHYSICAL_CONSTANTS
     ! Unit conversions
     double precision, parameter :: MM_TO_M = 1.0D-3
 
+    ! Molar masses in mg/mol (= g/mol * 1000), rounded for model consistency
+    double precision, parameter :: FE_MOLAR_MASS_MG = 56000.0D0   ! Iron      (~55.845 g/mol)
+    double precision, parameter :: MN_MOLAR_MASS_MG = 54938.0D0   ! Manganese ( 54.938 g/mol)
+    double precision, parameter :: S_MOLAR_MASS_MG  = 32000.0D0   ! Sulfur    (~32.06  g/mol)
+
+    ! Water ion product at 25 degrees C
+    double precision, parameter :: K_W_25C = 1.0D-14
+
     ! Numerical safety guards
     double precision, parameter :: EPSILON_GUARD = 1.0D-15
     double precision, parameter :: SAFE_EXP_MIN = -700.0D0

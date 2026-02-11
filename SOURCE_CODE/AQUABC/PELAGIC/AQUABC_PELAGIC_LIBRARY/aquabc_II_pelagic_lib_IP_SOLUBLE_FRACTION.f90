@@ -17,6 +17,7 @@ subroutine IP_SOLUBLE_FRACTION &
             (FE_III, PO4P, K_A_1, K_A_2, K_A_3, PH, nkn, nlayers, DIP_OVER_IP)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG
     implicit none
 
     integer, intent(in) ::  nkn, nlayers
@@ -44,7 +45,7 @@ subroutine IP_SOLUBLE_FRACTION &
     K_1        = 1.0D-5
     K_4        = 10.0D0 ** (-21.7D0)
     H_PLUS     = 10.0D0 ** (-PH)
-    C_T_FE_III = FE_III / 56000.0D0
+    C_T_FE_III = FE_III / FE_MOLAR_MASS_MG
     COEFF_1    = 1.0D0 + (K_1/H_PLUS) + (K_4/(H_PLUS*H_PLUS*H_PLUS*H_PLUS))
 
     COEFF_2    = 1.0D0 + ((H_PLUS*H_PLUS*H_PLUS)/(K_A_1*K_A_2*K_A_3)) + &

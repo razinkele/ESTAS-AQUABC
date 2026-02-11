@@ -522,7 +522,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
 
     logical VALUE_strange(nkn)
     integer STRANGERSD
-    integer :: i, imax
+    integer :: i
 
     integer user_defined_saturation
 
@@ -532,7 +532,6 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
       user_defined_saturation = 1
     end if
 
-    write(6,*) 'ENTERING LIM_LIGHT'
     SKE       = ke
 
     if (STRANGERSD(ke, VALUE_strange, nkn).eq.1) then
@@ -554,14 +553,6 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
         write(6,*) 'LIM_LIGHT: TCHLA has strange values'
         write(6,*) 'TCHLA=', TCHLA
     end if
-
-    write(6,*) 'LIM_LIGHT: nkn=', nkn
-
-    ! Print first few input values for quick inspection
-    imax = min(8,nkn)
-    do i = 1, imax
-        write(6,*) 'LIM_LIGHT inputs i=', i, 'ke=', ke(i), 'H=', H(i), 'Ia=', Ia(i), 'TCHLA=', TCHLA(i), 'GITMAX=', GITMAX(i)
-    end do
 
     TEMP1     = SKE * H
 
@@ -1303,8 +1294,9 @@ end subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC
 
 integer function STRANGERSD(VALUE, VALUE_strange, nkn)
 
-    ! Cheks for NaN and Inf in 1D array with nkn elements
-    ! Input is double precision!
+    ! Checks for NaN and Inf in 1D array with nkn elements
+    ! Input is double precision
+      use, intrinsic :: IEEE_ARITHMETIC
       use AQUABC_PHYSICAL_CONSTANTS, only: STRANGER_THRESHOLD
 
       implicit none
@@ -1312,27 +1304,24 @@ integer function STRANGERSD(VALUE, VALUE_strange, nkn)
       integer, intent(in) :: nkn
 
       double precision, intent(in)  :: VALUE(nkn)
-      double precision :: RATIO
-      double precision :: value_left, value_right
       logical :: VALUE_NaN(nkn)
       logical :: VALUE_Inf(nkn)
       logical, intent(out) :: VALUE_strange(nkn)
-      logical :: VALUE_out(nkn)
+
+      integer :: i
 
       STRANGERSD = 0
-      value_left = -10000.D0
-      value_right=  10000.D0
 
-      VALUE_out     = (VALUE < value_left) .or. (VALUE > value_right)
-      VALUE_NAN     = isnan(VALUE)
-      VALUE_Inf     = abs(VALUE) > STRANGER_THRESHOLD
-      VALUE_strange = VALUE_NAN .or. VALUE_Inf
+      do i = 1, nkn
+          VALUE_NaN(i) = IEEE_IS_NAN(VALUE(i))
+          VALUE_Inf(i) = .not. IEEE_IS_FINITE(VALUE(i))
+      end do
+
+      VALUE_strange = VALUE_NaN .or. VALUE_Inf
 
       if(any(VALUE_strange)) then
           STRANGERSD = 1
       end if
-
-      return
 
 end function STRANGERSD
 !************************************************************************
