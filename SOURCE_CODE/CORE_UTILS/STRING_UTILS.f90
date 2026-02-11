@@ -120,7 +120,7 @@ end module para_aqua
 function getpar(name)
     use para_aqua
     implicit none
-    real getpar
+    double precision getpar
     character*(*) name
     double precision value
     call para_get_value(name,value)

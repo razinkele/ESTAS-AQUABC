@@ -93,55 +93,100 @@ contains
         integer :: ierr
 
         allocate(SEC_METAB_DIA(nkn), stat=ierr)
-        if (ierr /= 0) then
-            write(*,*) 'ERROR: ALLOC_ALLEOPATHY: allocation failed, nkn=', nkn
-            stop
-        end if
+        if (ierr /= 0) goto 99
         allocate(SEC_METAB_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
         allocate(SEC_METAB_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
         allocate(SEC_METAB_NOST(nkn), stat=ierr)
-        allocate(R_FORM_SEC_METAB_DIA(nkn))
-        allocate(R_FORM_SEC_METAB_NOFIX_CYN(nkn))
-        allocate(R_FORM_SEC_METAB_FIX_CYN(nkn))
-        allocate(R_FORM_SEC_METAB_NOST(nkn))
-        allocate(R_DEG_SEC_METAB_DIA(nkn))
-        allocate(R_DEG_SEC_METAB_NOFIX_CYN(nkn))
-        allocate(R_DEG_SEC_METAB_FIX_CYN(nkn))
-        allocate(R_DEG_SEC_METAB_NOST(nkn))
-        allocate(IHBF_SEC_METAB_DIA_NOFIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_DIA_FIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_DIA_NOST(nkn))
-        allocate(IHBF_SEC_METAB_DIA_OPA(nkn))
-        allocate(IHBF_SEC_METAB_DIA_ZOO(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN_DIA(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN_NOST(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN_OPA(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN_ZOO(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN_DIA(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN_NOST(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN_OPA(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN_ZOO(nkn))
-        allocate(IHBF_SEC_METAB_NOST_DIA(nkn))
-        allocate(IHBF_SEC_METAB_NOST_NOFIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_NOST_FIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_NOST_OPA(nkn))
-        allocate(IHBF_SEC_METAB_NOST_ZOO(nkn))
-        allocate(IHBF_SEC_METAB_DIA(nkn))
-        allocate(IHBF_SEC_METAB_NOFIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_FIX_CYN(nkn))
-        allocate(IHBF_SEC_METAB_NOST(nkn))
-        allocate(IHBF_SEC_METAB_OPA(nkn))
-        allocate(IHBF_SEC_METAB_ZOO(nkn))
+        if (ierr /= 0) goto 99
+        allocate(R_FORM_SEC_METAB_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_FORM_SEC_METAB_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_FORM_SEC_METAB_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_FORM_SEC_METAB_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_DEG_SEC_METAB_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_DEG_SEC_METAB_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_DEG_SEC_METAB_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(R_DEG_SEC_METAB_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA_OPA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA_ZOO(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN_OPA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN_ZOO(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN_OPA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN_ZOO(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST_OPA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST_ZOO(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_OPA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(IHBF_SEC_METAB_ZOO(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
 
-        allocate(DERIVATIVES_SEC_METAB(nkn,4))
+        allocate(DERIVATIVES_SEC_METAB(nkn,4), stat=ierr)
+        if (ierr /= 0) goto 99
 
-        allocate(WATER_TEMP(nkn))
-        allocate(ALLEL_R_DEATH_DIA(nkn))
-        allocate(ALLEL_R_DEATH_NOFIX_CYN(nkn))
-        allocate(ALLEL_R_DEATH_FIX_CYN(nkn))
-        allocate(ALLEL_R_DEATH_NOST(nkn))
+        allocate(WATER_TEMP(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(ALLEL_R_DEATH_DIA(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(ALLEL_R_DEATH_NOFIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(ALLEL_R_DEATH_FIX_CYN(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+        allocate(ALLEL_R_DEATH_NOST(nkn), stat=ierr)
+        if (ierr /= 0) goto 99
+
+        return
+
+     99 write(*,*) 'ERROR: ALLOC_ALLEOPATHY: allocation failed, nkn=', nkn
+        stop 'ALLOC_ALLEOPATHY: memory allocation failed'
     end subroutine ALLOC_ALLEOPATHY
 
 

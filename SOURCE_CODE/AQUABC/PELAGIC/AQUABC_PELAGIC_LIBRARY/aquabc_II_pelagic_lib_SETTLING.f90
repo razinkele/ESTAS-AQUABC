@@ -33,8 +33,8 @@ subroutine settling_suppres_factor_vec(chla, nkn, factor)
     chlamax = 140.0D0
 
     call settl_vel_vec(chlamin, nkn, settl_max)
-    call settl_vel_vec(chlamin, nkn, factor_chla)
-    call settl_vel_vec(chlamin, nkn, factor_chlamax)
+    call settl_vel_vec(chla,    nkn, factor_chla)
+    call settl_vel_vec(chlamax, nkn, factor_chlamax)
 
     where (chla .lt. chlamin)
         factor = 1.0
