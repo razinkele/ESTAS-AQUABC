@@ -598,7 +598,6 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_FE_III_CONC_TS_AVG
 
     integer  :: DO_ADVANCED_REDOX_SIMULATION
-    integer  :: DO_CYANO_BOUYANT_STATE_SIMULATION
     integer  :: DO_NON_OBLIGATORY_FIXERS
     integer  :: DO_NOSTOCALES
 

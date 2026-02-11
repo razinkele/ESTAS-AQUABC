@@ -231,7 +231,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
     error = 0
 
     DO_ADVANCED_REDOX_SIMULATION      = 0
-    DO_CYANO_BOUYANT_STATE_SIMULATION = 1
     DO_NON_OBLIGATORY_FIXERS          = 0
     DO_NOSTOCALES                     = 1
 
@@ -241,15 +240,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
             DO_ADVANCED_REDOX_SIMULATION = 1
         else
             DO_ADVANCED_REDOX_SIMULATION = 0
-        end if
-    !end if
-
-
-    !if (present(CYANO_BOUYANT_STATE_SIMULATION)) then
-        if (CYANO_BOUYANT_STATE_SIMULATION > 0) then
-            DO_CYANO_BOUYANT_STATE_SIMULATION = 1
-        else
-            DO_CYANO_BOUYANT_STATE_SIMULATION = 0
         end if
     !end if
 
@@ -981,295 +971,152 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*************************************
 
     !Calculations for non-fixing cyanobacteria growth
-    if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-        call CYANOBACTERIA_BOUYANT &
-             (KG_CYN_OPT_TEMP         , &
-              CYN_OPT_TEMP_LR         , &
-              CYN_OPT_TEMP_UR         , &
-              EFF_CYN_GROWTH          , &
-              KAPPA_CYN_UNDER_OPT_TEMP, &
-              KAPPA_CYN_OVER_OPT_TEMP , &
-              KR_CYN_20               , &
-              THETA_KR_CYN            , &
-              KD_CYN_20               , &
-              THETA_KD_CYN            , &
-              KHS_DIN_CYN             , &
-              KHS_DIP_CYN             , &
-              KHS_O2_CYN              , &
-              FRAC_CYN_EXCR           , &
-              I_S_CYN                 , &
-              DO_STR_HYPOX_CYN_D      , &
-              THETA_HYPOX_CYN_D       , &
-              EXPON_HYPOX_CYN_D       , &
-              CYN_N_TO_C              , &
-              CYN_P_TO_C              , &
-              CYN_O2_TO_C             , &
-              CYN_C_TO_CHLA           , &
-              CYN_LIGHT_SAT           , &
-              NH4_N                   , &
-              NO3_N                   , &
-              DISS_ORG_N              , &
-              (PO4_P * DIP_OVER_IP)   , &
-              DISS_OXYGEN             , &
-              CYN_C                   , &
-              ZOO_C                   , &
-              TEMP                    , &
-              WINDS                   , &
-              I_A                     , &
-              K_E                     , &
-              DEPTH                   , &
-              CHLA                    , &
-              FDAY                    , &
-              TIME_STEP               , &
-              SMITH                   , &
-              frac_avail_DON          , &
-              nkn                     , &
-              KG_CYN                  , &
-              ALPHA_0                 , &
-              ALPHA_1                 , &
-              LIM_KG_CYN_TEMP         , &
-              LIM_KG_CYN_LIGHT        , &
-              LIM_KG_CYN_DOXY         , &
-              LIM_KG_CYN_N            , &
-              LIM_KG_CYN_P            , &
-              LIM_KG_CYN_NUTR         , &
-              LIM_KG_CYN              , &
-              R_CYN_GROWTH            , &
-              R_CYN_MET               , &
-              R_CYN_RESP              , &
-              R_CYN_EXCR              , &
-              R_CYN_INT_RESP          , &
-              KD_CYN                  , &
-              FAC_HYPOX_CYN_D         , &
-              R_CYN_DEATH             , &
-              PREF_DIN_DON_CYN        , &
-              PREF_NH4N_CYN)
+    call CYANOBACTERIA_BOUYANT &
+         (KG_CYN_OPT_TEMP         , &
+          CYN_OPT_TEMP_LR         , &
+          CYN_OPT_TEMP_UR         , &
+          EFF_CYN_GROWTH          , &
+          KAPPA_CYN_UNDER_OPT_TEMP, &
+          KAPPA_CYN_OVER_OPT_TEMP , &
+          KR_CYN_20               , &
+          THETA_KR_CYN            , &
+          KD_CYN_20               , &
+          THETA_KD_CYN            , &
+          KHS_DIN_CYN             , &
+          KHS_DIP_CYN             , &
+          KHS_O2_CYN              , &
+          FRAC_CYN_EXCR           , &
+          I_S_CYN                 , &
+          DO_STR_HYPOX_CYN_D      , &
+          THETA_HYPOX_CYN_D       , &
+          EXPON_HYPOX_CYN_D       , &
+          CYN_N_TO_C              , &
+          CYN_P_TO_C              , &
+          CYN_O2_TO_C             , &
+          CYN_C_TO_CHLA           , &
+          CYN_LIGHT_SAT           , &
+          NH4_N                   , &
+          NO3_N                   , &
+          DISS_ORG_N              , &
+          (PO4_P * DIP_OVER_IP)   , &
+          DISS_OXYGEN             , &
+          CYN_C                   , &
+          ZOO_C                   , &
+          TEMP                    , &
+          WINDS                   , &
+          I_A                     , &
+          K_E                     , &
+          DEPTH                   , &
+          CHLA                    , &
+          FDAY                    , &
+          TIME_STEP               , &
+          SMITH                   , &
+          frac_avail_DON          , &
+          nkn                     , &
+          KG_CYN                  , &
+          ALPHA_0                 , &
+          ALPHA_1                 , &
+          LIM_KG_CYN_TEMP         , &
+          LIM_KG_CYN_LIGHT        , &
+          LIM_KG_CYN_DOXY         , &
+          LIM_KG_CYN_N            , &
+          LIM_KG_CYN_P            , &
+          LIM_KG_CYN_NUTR         , &
+          LIM_KG_CYN              , &
+          R_CYN_GROWTH            , &
+          R_CYN_MET               , &
+          R_CYN_RESP              , &
+          R_CYN_EXCR              , &
+          R_CYN_INT_RESP          , &
+          KD_CYN                  , &
+          FAC_HYPOX_CYN_D         , &
+          R_CYN_DEATH             , &
+          PREF_DIN_DON_CYN        , &
+          PREF_NH4N_CYN)
 
-        ! Consider the effect of growth inhibition which is supplied from outside
-        ! by external models
-        R_CYN_GROWTH(:) = R_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_CYN(:)
-    else
-        call CYANOBACTERIA &
-               (KG_CYN_OPT_TEMP         , &
-                CYN_OPT_TEMP_LR         , &
-                CYN_OPT_TEMP_UR         , &
-                EFF_CYN_GROWTH          , &
-                KAPPA_CYN_UNDER_OPT_TEMP, &
-                KAPPA_CYN_OVER_OPT_TEMP , &
-                KR_CYN_20               , &
-                THETA_KR_CYN            , &
-                KD_CYN_20               , &
-                THETA_KD_CYN            , &
-                KHS_DIN_CYN             , &
-                KHS_DIP_CYN             , &
-                KHS_O2_CYN              , &
-                FRAC_CYN_EXCR           , &
-                I_S_CYN                 , &
-                DO_STR_HYPOX_CYN_D      , &
-                THETA_HYPOX_CYN_D       , &
-                EXPON_HYPOX_CYN_D       , &
-                CYN_N_TO_C              , &
-                CYN_P_TO_C              , &
-                CYN_O2_TO_C             , &
-                CYN_C_TO_CHLA           , &
-                CYN_LIGHT_SAT           , &
-                NH4_N                   , &
-                NO3_N                   , &
-                DISS_ORG_N              , &
-                (PO4_P * DIP_OVER_IP)   , & ! Change, 6 July 2016, original call was PO4P
-                DISS_OXYGEN             , &
-                CYN_C                   , &
-                ZOO_C                   , &
-                TEMP                    , &
-                I_A                     , &
-                K_E                     , &
-                DEPTH                   , &
-                CHLA                    , &
-                FDAY                    , &
-                TIME_STEP               , &
-                SMITH                   , &
-                frac_avail_DON          , &
-                nkn                     , &
-                KG_CYN                  , &
-                ALPHA_0                 , &
-                ALPHA_1                 , &
-                LIM_KG_CYN_TEMP         , &
-                LIM_KG_CYN_LIGHT        , &
-                LIM_KG_CYN_DOXY         , &
-                LIM_KG_CYN_N            , &
-                LIM_KG_CYN_P            , &
-                LIM_KG_CYN_NUTR         , &
-                LIM_KG_CYN              , &
-                R_CYN_GROWTH            , &
-                R_CYN_MET               , &
-                R_CYN_RESP              , &
-                R_CYN_EXCR              , &
-                R_CYN_INT_RESP          , &
-                KD_CYN                  , &
-                FAC_HYPOX_CYN_D         , &
-                R_CYN_DEATH             , &
-                PREF_NH4N_DON_CYN)
-
-        ! Consider the effect of growth inhibition which is supplied from outside
-        ! by external models
-        R_CYN_GROWTH(:) = R_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_CYN(:)
-    end if
+    ! Consider the effect of growth inhibition which is supplied from outside
+    ! by external models
+    R_CYN_GROWTH(:) = R_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_CYN(:)
 
 
     !********************************
     ! NITROGEN FIXING CYANOBACTERIA !
     !********************************
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-            call FIX_CYANOBACTERIA_BOUYANT  &
-                   (KG_FIX_CYN_OPT_TEMP          , &
-                    FIX_CYN_OPT_TEMP_LR          , &
-                    FIX_CYN_OPT_TEMP_UR          , &
-                    EFF_FIX_CYN_GROWTH           , &
-                    KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
-                    KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
-                    KR_FIX_CYN_20                , &
-                    THETA_KR_FIX_CYN             , &
-                    KD_FIX_CYN_20                , &
-                    THETA_KD_FIX_CYN             , &
-                    KHS_DIN_FIX_CYN              , &
-                    KHS_DIP_FIX_CYN              , &
-                    KHS_O2_FIX_CYN               , &
-                    I_S_FIX_CYN                  , &
-                    DO_STR_HYPOX_FIX_CYN_D       , &
-                    THETA_HYPOX_FIX_CYN_D        , &
-                    EXPON_HYPOX_FIX_CYN_D        , &
-                    FIX_CYN_N_TO_C               , &
-                    FIX_CYN_P_TO_C               , &
-                    FIX_CYN_O2_TO_C              , &
-                    FIX_CYN_C_TO_CHLA            , &
-                    FIX_CYN_LIGHT_SAT            , &
-                    FRAC_FIX_CYN_EXCR            , &
-                    R_FIX                        , &
-                    K_FIX                        , &
-                    TIME_STEP                    , &
-                    SMITH                        , &
-                    frac_avail_DON               , &
-                    nkn                          , &
-                    FDAY                         , &
-                    I_A                          , &
-                    K_E                          , &
-                    DEPTH                        , &
-                    CHLA                         , &
-                    TEMP                         , &
-                    WINDS                        , &
-                    NH4_N                        , &
-                    NO3_N                        , &
-                    DISS_ORG_N                   , &
-                    (PO4_P * DIP_OVER_IP)        , &
-                    DISS_OXYGEN                  , &
-                    FIX_CYN_C                    , &
-                    ALPHA_0                      , &
-                    ALPHA_1                      , &
-                    KG_FIX_CYN                   , &
-                    LIM_KG_FIX_CYN_LIGHT         , &
-                    LIM_KG_FIX_CYN_TEMP          , &
-                    LIM_KG_FIX_CYN_DOXY          , &
-                    LIM_KG_NON_FIX_CYN_N         , &
-                    LIM_KG_NON_FIX_CYN_P         , &
-                    LIM_KG_NON_FIX_CYN_NUTR      , &
-                    LIM_KG_FIX_FIX_CYN_N         , &
-                    LIM_KG_FIX_FIX_CYN_P         , &
-                    LIM_KG_FIX_FIX_CYN_NUTR      , &
-                    LIM_KG_NON_FIX_CYN           , &
-                    LIM_KG_FIX_FIX_CYN           , &
-                    R_NON_FIX_CYN_GROWTH         , &
-                    R_FIX_FIX_CYN_GROWTH         , &
-                    R_FIX_CYN_GROWTH             , &
-                    R_FIX_CYN_MET                , &
-                    R_FIX_CYN_RESP               , &
-                    R_FIX_CYN_EXCR               , &
-                    R_FIX_CYN_INT_RESP           , &
-                    KD_FIX_CYN                   , &
-                    FAC_HYPOX_FIX_CYN_D          , &
-                    R_FIX_CYN_DEATH              , &
-                    PREF_NH4N_DON_FIX_CYN)
+        call FIX_CYANOBACTERIA_BOUYANT  &
+               (KG_FIX_CYN_OPT_TEMP          , &
+                FIX_CYN_OPT_TEMP_LR          , &
+                FIX_CYN_OPT_TEMP_UR          , &
+                EFF_FIX_CYN_GROWTH           , &
+                KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
+                KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
+                KR_FIX_CYN_20                , &
+                THETA_KR_FIX_CYN             , &
+                KD_FIX_CYN_20                , &
+                THETA_KD_FIX_CYN             , &
+                KHS_DIN_FIX_CYN              , &
+                KHS_DIP_FIX_CYN              , &
+                KHS_O2_FIX_CYN               , &
+                I_S_FIX_CYN                  , &
+                DO_STR_HYPOX_FIX_CYN_D       , &
+                THETA_HYPOX_FIX_CYN_D        , &
+                EXPON_HYPOX_FIX_CYN_D        , &
+                FIX_CYN_N_TO_C               , &
+                FIX_CYN_P_TO_C               , &
+                FIX_CYN_O2_TO_C              , &
+                FIX_CYN_C_TO_CHLA            , &
+                FIX_CYN_LIGHT_SAT            , &
+                FRAC_FIX_CYN_EXCR            , &
+                R_FIX                        , &
+                K_FIX                        , &
+                TIME_STEP                    , &
+                SMITH                        , &
+                frac_avail_DON               , &
+                nkn                          , &
+                FDAY                         , &
+                I_A                          , &
+                K_E                          , &
+                DEPTH                        , &
+                CHLA                         , &
+                TEMP                         , &
+                WINDS                        , &
+                NH4_N                        , &
+                NO3_N                        , &
+                DISS_ORG_N                   , &
+                (PO4_P * DIP_OVER_IP)        , &
+                DISS_OXYGEN                  , &
+                FIX_CYN_C                    , &
+                ALPHA_0                      , &
+                ALPHA_1                      , &
+                KG_FIX_CYN                   , &
+                LIM_KG_FIX_CYN_LIGHT         , &
+                LIM_KG_FIX_CYN_TEMP          , &
+                LIM_KG_FIX_CYN_DOXY          , &
+                LIM_KG_NON_FIX_CYN_N         , &
+                LIM_KG_NON_FIX_CYN_P         , &
+                LIM_KG_NON_FIX_CYN_NUTR      , &
+                LIM_KG_FIX_FIX_CYN_N         , &
+                LIM_KG_FIX_FIX_CYN_P         , &
+                LIM_KG_FIX_FIX_CYN_NUTR      , &
+                LIM_KG_NON_FIX_CYN           , &
+                LIM_KG_FIX_FIX_CYN           , &
+                R_NON_FIX_CYN_GROWTH         , &
+                R_FIX_FIX_CYN_GROWTH         , &
+                R_FIX_CYN_GROWTH             , &
+                R_FIX_CYN_MET                , &
+                R_FIX_CYN_RESP               , &
+                R_FIX_CYN_EXCR               , &
+                R_FIX_CYN_INT_RESP           , &
+                KD_FIX_CYN                   , &
+                FAC_HYPOX_FIX_CYN_D          , &
+                R_FIX_CYN_DEATH              , &
+                PREF_NH4N_DON_FIX_CYN)
 
-            ! Consider the effect of growth inhibition which is supplied from outside
-            ! by external models
-            R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-        else
-            call FIX_CYANOBACTERIA  &
-                   (KG_FIX_CYN_OPT_TEMP          , &
-                    FIX_CYN_OPT_TEMP_LR          , &
-                    FIX_CYN_OPT_TEMP_UR          , &
-                    EFF_FIX_CYN_GROWTH           , &
-                    KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
-                    KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
-                    KR_FIX_CYN_20                , &
-                    THETA_KR_FIX_CYN             , &
-                    KD_FIX_CYN_20                , &
-                    THETA_KD_FIX_CYN             , &
-                    KHS_DIN_FIX_CYN              , &
-                    KHS_DIP_FIX_CYN              , &
-                    KHS_O2_FIX_CYN               , &
-                    I_S_FIX_CYN                  , &
-                    DO_STR_HYPOX_FIX_CYN_D       , &
-                    THETA_HYPOX_FIX_CYN_D        , &
-                    EXPON_HYPOX_FIX_CYN_D        , &
-                    FIX_CYN_N_TO_C               , &
-                    FIX_CYN_P_TO_C               , &
-                    FIX_CYN_O2_TO_C              , &
-                    FIX_CYN_C_TO_CHLA            , &
-                    FIX_CYN_LIGHT_SAT            , &
-                    FRAC_FIX_CYN_EXCR            , &
-                    R_FIX                        , &
-                    K_FIX                        , &
-                    TIME_STEP                    , &
-                    SMITH                        , &
-                    frac_avail_DON               , &
-                    nkn                          , &
-                    FDAY                         , &
-                    I_A                          , &
-                    K_E                          , &
-                    DEPTH                        , &
-                    CHLA                         , &
-                    TEMP                         , &
-                    NH4_N                        , &
-                    NO3_N                        , &
-                    DISS_ORG_N                   , &
-                    (PO4_P * DIP_OVER_IP)        , & ! Change, 6 July 2016, original call was PO4P
-                    DISS_OXYGEN                  , &
-                    FIX_CYN_C                    , &
-                    ALPHA_0                      , &
-                    ALPHA_1                      , &
-                    KG_FIX_CYN                   , &
-                    LIM_KG_FIX_CYN_LIGHT         , &
-                    LIM_KG_FIX_CYN_TEMP          , &
-                    LIM_KG_FIX_CYN_DOXY          , &
-                    LIM_KG_NON_FIX_CYN_N         , &
-                    LIM_KG_NON_FIX_CYN_P         , &
-                    LIM_KG_NON_FIX_CYN_NUTR      , &
-                    LIM_KG_FIX_FIX_CYN_N         , &
-                    LIM_KG_FIX_FIX_CYN_P         , &
-                    LIM_KG_FIX_FIX_CYN_NUTR      , &
-                    LIM_KG_NON_FIX_CYN           , &
-                    LIM_KG_FIX_FIX_CYN           , &
-                    R_NON_FIX_CYN_GROWTH         , &
-                    R_FIX_FIX_CYN_GROWTH         , &
-                    R_FIX_CYN_GROWTH             , &
-                    R_FIX_CYN_MET                , &
-                    R_FIX_CYN_RESP               , &
-                    R_FIX_CYN_EXCR               , &
-                    R_FIX_CYN_INT_RESP           , &
-                    KD_FIX_CYN                   , &
-                    FAC_HYPOX_FIX_CYN_D          , &
-                    R_FIX_CYN_DEATH              , &
-                    PREF_NH4N_DON_FIX_CYN)
-
-            ! Consider the effect of growth inhibition which is supplied from outside
-            ! by external models
-            R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-        end if
+        ! Consider the effect of growth inhibition which is supplied from outside
+        ! by external models
+        R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
+        R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
+        R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
     else
         FIX_CYN_C           (:) = 0.0D0
         R_NON_FIX_CYN_GROWTH(:) = 0.0D0
@@ -2165,21 +2012,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 5) = R_ZOO_TOT_RESP * ACTUAL_ZOO_N_TO_C
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 6) = R_DIA_GROWTH   * PREF_NH4N_DIA * DIA_N_TO_C
 
-    if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-       PROCESS_RATES(1:nkn,NH4_N_INDEX, 7) = R_CYN_GROWTH* CYN_N_TO_C *PREF_DIN_DON_CYN * PREF_NH4N_CYN
-    else
-       ! Old formulation. Why uptake is limited by NH4 and partialy DON? fixme
-       PROCESS_RATES(1:nkn,NH4_N_INDEX, 7) = &
-           R_CYN_GROWTH * PREF_NH4N_DON_CYN * &
-           CYN_N_TO_C * (NH4_N / ((NH4_N + (DISS_ORG_N *  frac_avail_DON))))
-    end if
+    PROCESS_RATES(1:nkn,NH4_N_INDEX, 7) = R_CYN_GROWTH * CYN_N_TO_C * PREF_DIN_DON_CYN * PREF_NH4N_CYN
 
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 8) = R_OPA_GROWTH * PREF_NH4N_OPA * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
         PROCESS_RATES(1:nkn,NH4_N_INDEX, 9) = &
             R_NON_FIX_CYN_GROWTH * PREF_NH4N_DON_FIX_CYN * FIX_CYN_N_TO_C * &
-            (NH4_N / ((NH4_N + (DISS_ORG_N *  frac_avail_DON))))
+            (NH4_N / max(NH4_N + (DISS_ORG_N * frac_avail_DON), 1.0D-10))
     else
         PROCESS_RATES(1:nkn,NH4_N_INDEX, 9)  = 0.0D0
     end if
@@ -2207,7 +2047,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Auxiliary
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 13) = PREF_NH4N_DIA
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 14) = PREF_NH4N_DON_CYN
+    PROCESS_RATES(1:nkn,NH4_N_INDEX, 14) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 15) = PREF_NH4N_OPA
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 16) = PREF_NH4N_DON_FIX_CYN
     PROCESS_RATES(1:nkn,NH4_N_INDEX, 18) = PREF_NH4N_CYN
@@ -2246,13 +2086,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
     PROCESS_RATES(1:nkn,NO3_N_INDEX, 3) = &
         R_DIA_GROWTH * (1.0D0 - PREF_NH4N_DIA) * DIA_N_TO_C
 
-    if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-        PROCESS_RATES(1:nkn,NO3_N_INDEX, 4) = &
-            R_CYN_GROWTH * CYN_N_TO_C * PREF_DIN_DON_CYN * (1.0D0 - PREF_NH4N_CYN)
-    else
-        PROCESS_RATES(1:nkn,NO3_N_INDEX, 4) = &
-            R_CYN_GROWTH * (1.0D0 - PREF_NH4N_DON_CYN)    * CYN_N_TO_C
-    end if
+    PROCESS_RATES(1:nkn,NO3_N_INDEX, 4) = &
+        R_CYN_GROWTH * CYN_N_TO_C * PREF_DIN_DON_CYN * (1.0D0 - PREF_NH4N_CYN)
 
     PROCESS_RATES(1:nkn,NO3_N_INDEX, 5) = R_OPA_GROWTH         * (1.0D0 - PREF_NH4N_OPA)         * OPA_N_TO_C
 
@@ -2267,7 +2102,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Auxiliary
     PROCESS_RATES(1:nkn,NO3_N_INDEX, 7) = PREF_NH4N_DIA
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 8) = PREF_NH4N_DON_CYN
+    PROCESS_RATES(1:nkn,NO3_N_INDEX, 8) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
     PROCESS_RATES(1:nkn,NO3_N_INDEX, 9) = PREF_NH4N_OPA
 
     DERIVATIVES(1:nkn,NO3_N_INDEX) = &
@@ -2358,13 +2193,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
     PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 2)  = &
         R_DIA_GROWTH * (1.3D0 - 0.3D0*PREF_NH4N_DIA)    * DIA_O2_TO_C
 
-    if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 3)  = &
-            R_CYN_GROWTH * (1.3D0 - 0.3D0 * PREF_NH4N_CYN * PREF_DIN_DON_CYN) * CYN_O2_TO_C
-    else
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 3)  = &
-            R_CYN_GROWTH * (1.3D0 - 0.3D0 * PREF_NH4N_DON_CYN) * CYN_O2_TO_C
-    endif
+    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 3)  = &
+        R_CYN_GROWTH * (1.3D0 - 0.3D0 * PREF_NH4N_CYN * PREF_DIN_DON_CYN) * CYN_O2_TO_C
 
     PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 4) = &
         R_OPA_GROWTH  * (1.3D0 - 0.3D0*PREF_NH4N_OPA) * OPA_O2_TO_C
@@ -3099,14 +2929,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
     PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) = &
         (R_DIA_EXCR * DIA_N_TO_C) + (R_CYN_EXCR * CYN_N_TO_C) + (R_OPA_EXCR * OPA_N_TO_C)
 
-    if (DO_CYANO_BOUYANT_STATE_SIMULATION > 0) then
-     PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) = &
-        (R_CYN_GROWTH * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN))
-    else
-     PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) = &
-        (R_CYN_GROWTH * PREF_NH4N_DON_CYN * CYN_N_TO_C) * &
-        ((DISS_ORG_N * frac_avail_DON) / ((NH4_N + (DISS_ORG_N *  frac_avail_DON))))
-    end if
+    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) = &
+        R_CYN_GROWTH * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN)
 
     if(DO_NOSTOCALES > 0) then
         PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 6) = &
@@ -3114,7 +2938,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     else
        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 6) = &
            R_NON_FIX_CYN_GROWTH * PREF_NH4N_DON_FIX_CYN * CYN_N_TO_C * &
-           ((DISS_ORG_N * frac_avail_DON)  / ((NH4_N + (DISS_ORG_N *  frac_avail_DON))))
+           ((DISS_ORG_N * frac_avail_DON) / max(NH4_N + (DISS_ORG_N * frac_avail_DON), 1.0D-10))
     end if
 
     PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 7) = R_DIA_EXCR

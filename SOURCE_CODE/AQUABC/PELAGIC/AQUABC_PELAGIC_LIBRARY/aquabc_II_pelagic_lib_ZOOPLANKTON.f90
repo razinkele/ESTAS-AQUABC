@@ -234,17 +234,23 @@ subroutine ZOOPLANKTON &
     
     where (TOTAL_FOOD > 1.0D-10)
         DYN_PREF_DIA = PREF_ZOO_DIA * &
-            ((PREF_ZOO_DIA * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_DIA * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
         DYN_PREF_CYN = PREF_ZOO_CYN * &
-            ((PREF_ZOO_CYN * max(CYN_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_CYN * max(CYN_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
         DYN_PREF_OPA = PREF_ZOO_OPA * &
-            ((PREF_ZOO_OPA * max(OPA_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_OPA * max(OPA_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
         DYN_PREF_FIX_CYN = PREF_ZOO_FIX_CYN * &
-            ((PREF_ZOO_FIX_CYN * max(FIX_CYN_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_FIX_CYN * max(FIX_CYN_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
         DYN_PREF_NOST = PREF_ZOO_NOST_VEG_HET * &
-            ((PREF_ZOO_NOST_VEG_HET * max(NOST_VEG_HET_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_NOST_VEG_HET * max(NOST_VEG_HET_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
         DYN_PREF_DET = PREF_ZOO_DET_PART_ORG_C * &
-            ((PREF_ZOO_DET_PART_ORG_C * max(DET_PART_ORG_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+            (max(PREF_ZOO_DET_PART_ORG_C * max(DET_PART_ORG_C - FOOD_MIN_ZOO, 0.0D0) &
+                 / TOTAL_FOOD, 0.0D0) ** (SWITCHING_POWER - 1.0D0))
     elsewhere
         ! No food available - use base preferences
         DYN_PREF_DIA     = PREF_ZOO_DIA

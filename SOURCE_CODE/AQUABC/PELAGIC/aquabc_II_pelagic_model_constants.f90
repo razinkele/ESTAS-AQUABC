@@ -672,7 +672,208 @@ subroutine INIT_PELAGIC_MODEL_CONSTANTS
     call para_get_value('K_MIN_PHYT_AMIN_DON'              ,               K_MIN_PHYT_AMIN_DON) !Model constant no 317 :
     call para_get_value('K_MIN_PHYT_AMIN_DOP'              ,               K_MIN_PHYT_AMIN_DOP) !Model constant no 318 :
 
+    call VALIDATE_PELAGIC_MODEL_CONSTANTS()
+
 end subroutine INIT_PELAGIC_MODEL_CONSTANTS
+
+!--------------------------------------------------------------------------
+
+subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
+
+    use AQUABC_PELAGIC_MODEL_CONSTANTS
+    use AQUABC_II_GLOBAL
+
+    implicit none
+
+    integer :: n_fixes
+    real(kind = DBL_PREC), parameter :: KHS_MIN = 1.0D-6
+    real(kind = DBL_PREC), parameter :: RATIO_MIN = 1.0D-6
+    real(kind = DBL_PREC) :: tmp
+
+    n_fixes = 0
+
+    ! ------------------------------------------------------------------
+    ! Check half-saturation constants > 0
+    ! A zero K_HS causes division by zero in Monod: S/(S+K_HS)
+    ! ------------------------------------------------------------------
+    call CHK_POS(KHS_DIN_DIA,          'KHS_DIN_DIA',          n_fixes)
+    call CHK_POS(KHS_DIP_DIA,          'KHS_DIP_DIA',          n_fixes)
+    call CHK_POS(KHS_DSi_DIA,          'KHS_DSi_DIA',          n_fixes)
+    call CHK_POS(KHS_O2_DIA,           'KHS_O2_DIA',           n_fixes)
+    call CHK_POS(KHS_DIN_CYN,          'KHS_DIN_CYN',          n_fixes)
+    call CHK_POS(KHS_DIP_CYN,          'KHS_DIP_CYN',          n_fixes)
+    call CHK_POS(KHS_O2_CYN,           'KHS_O2_CYN',           n_fixes)
+    call CHK_POS(KHS_DIN_FIX_CYN,      'KHS_DIN_FIX_CYN',      n_fixes)
+    call CHK_POS(KHS_DIP_FIX_CYN,      'KHS_DIP_FIX_CYN',      n_fixes)
+    call CHK_POS(KHS_O2_FIX_CYN,       'KHS_O2_FIX_CYN',       n_fixes)
+    call CHK_POS(KHS_DIN_OPA,          'KHS_DIN_OPA',          n_fixes)
+    call CHK_POS(KHS_DIP_OPA,          'KHS_DIP_OPA',          n_fixes)
+    call CHK_POS(KHS_O2_OPA,           'KHS_O2_OPA',           n_fixes)
+    call CHK_POS(KHS_DIA_C_ZOO,        'KHS_DIA_C_ZOO',        n_fixes)
+    call CHK_POS(KHS_CYN_C_ZOO,        'KHS_CYN_C_ZOO',        n_fixes)
+    call CHK_POS(KHS_FIX_CYN_C_ZOO,    'KHS_FIX_CYN_C_ZOO',    n_fixes)
+    call CHK_POS(KHS_NOST_VEG_HET_C_ZOO, &
+                                        'KHS_NOST_VEG_HET_C_ZOO', n_fixes)
+    call CHK_POS(KHS_OPA_C_ZOO,        'KHS_OPA_C_ZOO',        n_fixes)
+    call CHK_POS(KHS_DET_PART_ORG_C_ZOO, &
+                                        'KHS_DET_PART_ORG_C_ZOO', n_fixes)
+    call CHK_POS(KHS_DISS_N,           'KHS_DISS_N',           n_fixes)
+    call CHK_POS(KHS_DISS_P,           'KHS_DISS_P',           n_fixes)
+    call CHK_POS(KHS_AMIN_N,           'KHS_AMIN_N',           n_fixes)
+    call CHK_POS(KHS_AMIN_P,           'KHS_AMIN_P',           n_fixes)
+    call CHK_POS(KHS_NITR_OXY,         'KHS_NITR_OXY',         n_fixes)
+    call CHK_POS(KHS_NITR_NH4_N,       'KHS_NITR_NH4_N',       n_fixes)
+    call CHK_POS(KHS_DOXY_FE_III_RED,  'KHS_DOXY_FE_III_RED',  n_fixes)
+    call CHK_POS(KHS_DOXY_MN_IV_RED,   'KHS_DOXY_MN_IV_RED',   n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_DOXY,    'K_HS_DOC_MIN_DOXY',    n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_NO3N,    'K_HS_DOC_MIN_NO3N',    n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_MN_IV,   'K_HS_DOC_MIN_MN_IV',   n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_FE_III,  'K_HS_DOC_MIN_FE_III',  n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_S_PLUS_6, &
+                                        'K_HS_DOC_MIN_S_PLUS_6', n_fixes)
+    call CHK_POS(K_HS_DOC_MIN_DOC,     'K_HS_DOC_MIN_DOC',     n_fixes)
+    call CHK_POS(K_HS_DOXY_RED_LIM,    'K_HS_DOXY_RED_LIM',    n_fixes)
+    call CHK_POS(K_HS_NO3N_RED_LIM,    'K_HS_NO3N_RED_LIM',    n_fixes)
+    call CHK_POS(K_HS_MN_IV_RED_LIM,   'K_HS_MN_IV_RED_LIM',   n_fixes)
+    call CHK_POS(K_HS_FE_III_RED_LIM,  'K_HS_FE_III_RED_LIM',  n_fixes)
+    call CHK_POS(K_HS_S_PLUS_6_RED_LIM, &
+                                        'K_HS_S_PLUS_6_RED_LIM', n_fixes)
+    call CHK_POS(K_HS_DOXY_RED_INHB,   'K_HS_DOXY_RED_INHB',   n_fixes)
+    call CHK_POS(K_HS_NO3N_RED_INHB,   'K_HS_NO3N_RED_INHB',   n_fixes)
+    call CHK_POS(K_HS_MN_IV_RED_INHB,  'K_HS_MN_IV_RED_INHB',  n_fixes)
+    call CHK_POS(K_HS_FE_III_RED_INHB, 'K_HS_FE_III_RED_INHB', n_fixes)
+    call CHK_POS(K_HS_S_PLUS_6_RED_INHB, &
+                                        'K_HS_S_PLUS_6_RED_INHB', n_fixes)
+    call CHK_POS(K_HS_DON_MIN_DOXY,    'K_HS_DON_MIN_DOXY',    n_fixes)
+    call CHK_POS(K_HS_DON_MIN_NO3N,    'K_HS_DON_MIN_NO3N',    n_fixes)
+    call CHK_POS(K_HS_DON_MIN_MN_IV,   'K_HS_DON_MIN_MN_IV',   n_fixes)
+    call CHK_POS(K_HS_DON_MIN_FE_III,  'K_HS_DON_MIN_FE_III',  n_fixes)
+    call CHK_POS(K_HS_DON_MIN_S_PLUS_6, &
+                                        'K_HS_DON_MIN_S_PLUS_6', n_fixes)
+    call CHK_POS(K_HS_DON_MIN_DOC,     'K_HS_DON_MIN_DOC',     n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_DOXY,    'K_HS_DOP_MIN_DOXY',    n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_NO3N,    'K_HS_DOP_MIN_NO3N',    n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_MN_IV,   'K_HS_DOP_MIN_MN_IV',   n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_FE_III,  'K_HS_DOP_MIN_FE_III',  n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_S_PLUS_6, &
+                                        'K_HS_DOP_MIN_S_PLUS_6', n_fixes)
+    call CHK_POS(K_HS_DOP_MIN_DOC,     'K_HS_DOP_MIN_DOC',     n_fixes)
+    call CHK_POS(k_HS_OX_CH4_DOXY,     'k_HS_OX_CH4_DOXY',     n_fixes)
+    call CHK_POS(k_HS_OX_H2S_DOXY,     'k_HS_OX_H2S_DOXY',     n_fixes)
+    call CHK_POS(KHS_DP_NOST_VEG_HET,  'KHS_DP_NOST_VEG_HET',  n_fixes)
+    call CHK_POS(KHS_O2_NOST_VEG_HET,  'KHS_O2_NOST_VEG_HET',  n_fixes)
+    call CHK_POS(KHS_DN_NOST_VEG_HET,  'KHS_DN_NOST_VEG_HET',  n_fixes)
+    call CHK_POS(KHS_POC_DISS_SAT,     'KHS_POC_DISS_SAT',     n_fixes)
+    call CHK_POS(KHS_PON_DISS_SAT,     'KHS_PON_DISS_SAT',     n_fixes)
+    call CHK_POS(KHS_POP_DISS_SAT,     'KHS_POP_DISS_SAT',     n_fixes)
+
+    ! ------------------------------------------------------------------
+    ! Check temperature ranges: OPT_TEMP_LR < OPT_TEMP_UR
+    ! ------------------------------------------------------------------
+    if (DIA_OPT_TEMP_LR >= DIA_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: DIA temps inverted, swapping'
+        tmp = DIA_OPT_TEMP_LR
+        DIA_OPT_TEMP_LR = DIA_OPT_TEMP_UR
+        DIA_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+    if (CYN_OPT_TEMP_LR >= CYN_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: CYN temps inverted, swapping'
+        tmp = CYN_OPT_TEMP_LR
+        CYN_OPT_TEMP_LR = CYN_OPT_TEMP_UR
+        CYN_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+    if (FIX_CYN_OPT_TEMP_LR >= FIX_CYN_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: FIX_CYN temps inverted, swapping'
+        tmp = FIX_CYN_OPT_TEMP_LR
+        FIX_CYN_OPT_TEMP_LR = FIX_CYN_OPT_TEMP_UR
+        FIX_CYN_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+    if (OPA_OPT_TEMP_LR >= OPA_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: OPA temps inverted, swapping'
+        tmp = OPA_OPT_TEMP_LR
+        OPA_OPT_TEMP_LR = OPA_OPT_TEMP_UR
+        OPA_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+    if (ZOO_OPT_TEMP_LR >= ZOO_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: ZOO temps inverted, swapping'
+        tmp = ZOO_OPT_TEMP_LR
+        ZOO_OPT_TEMP_LR = ZOO_OPT_TEMP_UR
+        ZOO_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+    if (NOST_VEG_HET_OPT_TEMP_LR >= &
+        NOST_VEG_HET_OPT_TEMP_UR) then
+        write(*,*) 'WARNING: NOST temps inverted, swapping'
+        tmp = NOST_VEG_HET_OPT_TEMP_LR
+        NOST_VEG_HET_OPT_TEMP_LR = NOST_VEG_HET_OPT_TEMP_UR
+        NOST_VEG_HET_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+
+    ! ------------------------------------------------------------------
+    ! Check stoichiometric ratios > 0
+    ! ------------------------------------------------------------------
+    call CHK_RATIO(DIA_N_TO_C,      'DIA_N_TO_C',      n_fixes)
+    call CHK_RATIO(DIA_P_TO_C,      'DIA_P_TO_C',      n_fixes)
+    call CHK_RATIO(DIA_Si_TO_C,     'DIA_Si_TO_C',     n_fixes)
+    call CHK_RATIO(DIA_O2_TO_C,     'DIA_O2_TO_C',     n_fixes)
+    call CHK_RATIO(CYN_N_TO_C,      'CYN_N_TO_C',      n_fixes)
+    call CHK_RATIO(CYN_P_TO_C,      'CYN_P_TO_C',      n_fixes)
+    call CHK_RATIO(CYN_O2_TO_C,     'CYN_O2_TO_C',     n_fixes)
+    call CHK_RATIO(FIX_CYN_N_TO_C,  'FIX_CYN_N_TO_C',  n_fixes)
+    call CHK_RATIO(FIX_CYN_P_TO_C,  'FIX_CYN_P_TO_C',  n_fixes)
+    call CHK_RATIO(FIX_CYN_O2_TO_C, 'FIX_CYN_O2_TO_C', n_fixes)
+    call CHK_RATIO(OPA_N_TO_C,      'OPA_N_TO_C',      n_fixes)
+    call CHK_RATIO(OPA_P_TO_C,      'OPA_P_TO_C',      n_fixes)
+    call CHK_RATIO(OPA_O2_TO_C,     'OPA_O2_TO_C',     n_fixes)
+    call CHK_RATIO(ZOO_N_TO_C,      'ZOO_N_TO_C',      n_fixes)
+    call CHK_RATIO(ZOO_P_TO_C,      'ZOO_P_TO_C',      n_fixes)
+    call CHK_RATIO(ZOO_O2_TO_C,     'ZOO_O2_TO_C',     n_fixes)
+    call CHK_RATIO(NOST_N_TO_C,     'NOST_N_TO_C',     n_fixes)
+    call CHK_RATIO(NOST_P_TO_C,     'NOST_P_TO_C',     n_fixes)
+    call CHK_RATIO(NOST_O2_TO_C,    'NOST_O2_TO_C',    n_fixes)
+
+    ! ------------------------------------------------------------------
+    ! Summary
+    ! ------------------------------------------------------------------
+    if (n_fixes > 0) then
+        write(*,*) '======================================='
+        write(*,*) 'VALIDATE_PELAGIC_MODEL_CONSTANTS:', &
+                   ' corrected', n_fixes, 'parameter(s)'
+        write(*,*) '======================================='
+    end if
+
+contains
+
+    subroutine CHK_POS(val, name, nfix)
+        real(kind = DBL_PREC), intent(inout) :: val
+        character(len=*), intent(in) :: name
+        integer, intent(inout) :: nfix
+        if (val <= 0.0D0) then
+            write(*,*) 'WARNING: ', trim(name), &
+                       ' <= 0, setting to', KHS_MIN
+            val = KHS_MIN
+            nfix = nfix + 1
+        end if
+    end subroutine CHK_POS
+
+    subroutine CHK_RATIO(val, name, nfix)
+        real(kind = DBL_PREC), intent(inout) :: val
+        character(len=*), intent(in) :: name
+        integer, intent(inout) :: nfix
+        if (val <= 0.0D0) then
+            write(*,*) 'WARNING: ', trim(name), &
+                       ' <= 0, setting to', RATIO_MIN
+            val = RATIO_MIN
+            nfix = nfix + 1
+        end if
+    end subroutine CHK_RATIO
+
+end subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
 
 !--------------------------------------------------------------------------
 
