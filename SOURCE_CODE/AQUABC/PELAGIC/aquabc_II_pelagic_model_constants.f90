@@ -28,11 +28,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                               XKC !Model constant no   3 : Light extinction per chlorophyl unit,( mcg Chla/l/m)
     real(kind = DBL_PREC) ::                             PHIMX !Model constant no   4 : Quantum yield const. mg C/mole photon
     real(kind = DBL_PREC) ::                   KG_DIA_OPT_TEMP !Model constant no   5 : Diatoms Growth rate
-    real(kind = DBL_PREC) ::                   DIA_OPT_TEMP_LR !Model constant no   6 : Diatoms optimal temperature lower range
-    real(kind = DBL_PREC) ::                   DIA_OPT_TEMP_UR !Model constant no   7 : Diatoms optimal temperature upper range
+    real(kind = DBL_PREC) ::                   DIA_OPT_TEMP_LR !Model constant no   6 : Diatoms CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::                   DIA_OPT_TEMP_UR !Model constant no   7 : Diatoms CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::                    EFF_DIA_GROWTH !Model constant no   8 : Diatoms Effective growth. (1-EG)*growth - losses for respiration and excretion
-    real(kind = DBL_PREC) ::          KAPPA_DIA_UNDER_OPT_TEMP !Model constant no   9 : Diatoms Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::          KAPPA_DIA_OVER_OPT_TEMP  !Model constant no  10 : Diatoms Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) ::          KAPPA_DIA_UNDER_OPT_TEMP !Model constant no   9 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::          KAPPA_DIA_OVER_OPT_TEMP  !Model constant no  10 : Diatoms CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                         KR_DIA_20 !Model constant no  11 : Diatoms Respiration rate
     real(kind = DBL_PREC) ::                      THETA_KR_DIA !Model constant no  12 : Diatoms Temperature correction for basal respiration rate
     real(kind = DBL_PREC) ::                         KD_DIA_20 !Model constant no  13 : Diatoms Mortality rate
@@ -52,11 +52,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                       DIA_O2_TO_C !Model constant no  27 : Diatoms Oxygen to Carbon ratio for respiration
     real(kind = DBL_PREC) ::                     DIA_C_TO_CHLA !Model constant no  28 : Diatoms Carbon to Chlorophil a ratio
     real(kind = DBL_PREC) ::                   KG_CYN_OPT_TEMP !Model constant no  29 : Non-fixing cyanobacteria Growth rate
-    real(kind = DBL_PREC) ::                   CYN_OPT_TEMP_LR !Model constant no  30 : Non-fixing cyanobacteria optimal temperature lower range
-    real(kind = DBL_PREC) ::                   CYN_OPT_TEMP_UR !Model constant no  31 : Non-fixing cyanobacteria optimal temperature upper range
+    real(kind = DBL_PREC) ::                   CYN_OPT_TEMP_LR !Model constant no  30 : Non-fixing cyanobacteria CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::                   CYN_OPT_TEMP_UR !Model constant no  31 : Non-fixing cyanobacteria CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::                    EFF_CYN_GROWTH !Model constant no  32 : Non-fixing cyanobacteria Effective growth. (1-EG)*growth - losses for respiration and excretion
-    real(kind = DBL_PREC) ::          KAPPA_CYN_UNDER_OPT_TEMP !Model constant no  33 : Non-fixing cyanobacteria Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::           KAPPA_CYN_OVER_OPT_TEMP !Model constant no  34 : Non-fixing cyanobacteria Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) ::          KAPPA_CYN_UNDER_OPT_TEMP !Model constant no  33 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::           KAPPA_CYN_OVER_OPT_TEMP !Model constant no  34 : Non-fixing cyanobacteria CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                         KR_CYN_20 !Model constant no  35 : Non-fixing cyanobacteria Respiration rate
     real(kind = DBL_PREC) ::                      THETA_KR_CYN !Model constant no  36 : Non-fixing cyanobacteria Temperature correction for respiration rate
     real(kind = DBL_PREC) ::                         KD_CYN_20 !Model constant no  37 : Non-fixing cyanobacteria Mortality rate
@@ -74,11 +74,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                       CYN_O2_TO_C !Model constant no  49 : Non-fixing cyanobacteria Oxygen to Carbon ratio for respiration
     real(kind = DBL_PREC) ::                     CYN_C_TO_CHLA !Model constant no  50 : Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
     real(kind = DBL_PREC) ::               KG_FIX_CYN_OPT_TEMP !Model constant no  51 : Fixing cyanobacteria Growth rate constant
-    real(kind = DBL_PREC) ::               FIX_CYN_OPT_TEMP_LR !Model constant no  52 : Fixing Cyanobacteria optimal temperature lower range
-    real(kind = DBL_PREC) ::               FIX_CYN_OPT_TEMP_UR !Model constant no  53 : Fixing Cyanobacteria optimal temperature upper range
+    real(kind = DBL_PREC) ::               FIX_CYN_OPT_TEMP_LR !Model constant no  52 : Fixing Cyanobacteria CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::               FIX_CYN_OPT_TEMP_UR !Model constant no  53 : Fixing Cyanobacteria CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::                EFF_FIX_CYN_GROWTH !Model constant no  54 : Fixing cyanobacteria Effective growth. (1-EG)*growth - losses for RESP and excretion
-    real(kind = DBL_PREC) ::      KAPPA_FIX_CYN_UNDER_OPT_TEMP !Model constant no  55 : Fixing cyanobacteria Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::       KAPPA_FIX_CYN_OVER_OPT_TEMP !Model constant no  56 : Fixing cyanobacteria Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) ::      KAPPA_FIX_CYN_UNDER_OPT_TEMP !Model constant no  55 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::       KAPPA_FIX_CYN_OVER_OPT_TEMP !Model constant no  56 : Fixing cyanobacteria CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                     KR_FIX_CYN_20 !Model constant no  57 : Fixing cyanobacteria RESP rate constant
     real(kind = DBL_PREC) ::                  THETA_KR_FIX_CYN !Model constant no  58 : Fixing cyanobacteria Temperature correction for RESP rate
     real(kind = DBL_PREC) ::                     KD_FIX_CYN_20 !Model constant no  59 : Fixing cyanobacteria Mortality rate constant
@@ -98,11 +98,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                             R_FIX !Model constant no  73 : Fixing cyanobacteria Ratio between non-fixing and fixing fractions growth rate
     real(kind = DBL_PREC) ::                             K_FIX !Model constant no  74 : Fixing cyanobacteria Effectivity parameter of switching to nitrogen fixation
     real(kind = DBL_PREC) ::                   KG_OPA_OPT_TEMP !Model constant no  75 : OtherPhyto Growth rate constant
-    real(kind = DBL_PREC) ::                   OPA_OPT_TEMP_LR !Model constant no  76 : OtherPhyto optimal temperature lower range
-    real(kind = DBL_PREC) ::                   OPA_OPT_TEMP_UR !Model constant no  77 : OtherPhyto optimal temperature upper range
+    real(kind = DBL_PREC) ::                   OPA_OPT_TEMP_LR !Model constant no  76 : OtherPhyto CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::                   OPA_OPT_TEMP_UR !Model constant no  77 : OtherPhyto CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::                    EFF_OPA_GROWTH !Model constant no  78 : OtherPhyto Effective growth. (1-EG)*growth - losses for respiration and excretion
-    real(kind = DBL_PREC) ::          KAPPA_OPA_UNDER_OPT_TEMP !Model constant no  79 : OtherPhyto Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::           KAPPA_OPA_OVER_OPT_TEMP !Model constant no  80 : OtherPhyto Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) ::          KAPPA_OPA_UNDER_OPT_TEMP !Model constant no  79 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::           KAPPA_OPA_OVER_OPT_TEMP !Model constant no  80 : OtherPhyto CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                         KR_OPA_20 !Model constant no  81 : OtherPhyto Respiration rate constant
     real(kind = DBL_PREC) ::                      THETA_KR_OPA !Model constant no  82 : OtherPhyto Temperature correction for respiration rate
     real(kind = DBL_PREC) ::                         KD_OPA_20 !Model constant no  83 : OtherPhyto Mortality rate constant
@@ -120,11 +120,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                       OPA_O2_TO_C !Model constant no  95 : OtherPhyto Oxygen to Carbon ratio for respiration
     real(kind = DBL_PREC) ::                     OPA_C_TO_CHLA !Model constant no  96 : OtherPhyto Carbon to Chlorophyl a ratio
     real(kind = DBL_PREC) ::                   KG_ZOO_OPT_TEMP !Model constant no  97 : Zooplankton Growth rate
-    real(kind = DBL_PREC) ::                   ZOO_OPT_TEMP_LR !Model constant no  98 : Zooplankton optimal temperature lower range
-    real(kind = DBL_PREC) ::                   ZOO_OPT_TEMP_UR !Model constant no  99 : Zooplankton optimal temperature upper range
+    real(kind = DBL_PREC) ::                   ZOO_OPT_TEMP_LR !Model constant no  98 : Zooplankton CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::                   ZOO_OPT_TEMP_UR !Model constant no  99 : Zooplankton CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::                    EFF_ZOO_GROWTH !Model constant no 100 : Zooplankton Effective growth. (1-EG)*growth - losses for respiration and excretion
-    real(kind = DBL_PREC) ::          KAPPA_ZOO_UNDER_OPT_TEMP !Model constant no 101 : Zooplankton Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::           KAPPA_ZOO_OVER_OPT_TEMP !Model constant no 102 : Zooplankton Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) ::          KAPPA_ZOO_UNDER_OPT_TEMP !Model constant no 101 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::           KAPPA_ZOO_OVER_OPT_TEMP !Model constant no 102 : Zooplankton CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                      GRAT_ZOO_DIA !Model constant no 103 : Zooplankton Grazing rate (growhth rate multiplier) on diatoms
     real(kind = DBL_PREC) ::                      GRAT_ZOO_CYN !Model constant no 104 : Zooplankton Grazing rate (growhth rate multiplier) on Cyanobacteria
     real(kind = DBL_PREC) ::                      GRAT_ZOO_OPA !Model constant no 105 : Zooplankton Grazing rate (growhth rate multiplier) on OtherPhyto
@@ -299,11 +299,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::               THETA_k_DISS_FE_III !Model constant no 274 : Dissolution rate constant for Fe III
     real(kind = DBL_PREC) ::             INIT_MULT_FE_III_DISS !Model constant no 275 : Initial fraction of dissolved Fe III                                                                                                                               K_A
     real(kind = DBL_PREC) ::          KG_NOST_VEG_HET_OPT_TEMP !Model constant no 276 : Nostocales (veg + het) Growth rate constant
-    real(kind = DBL_PREC) ::          NOST_VEG_HET_OPT_TEMP_LR !Model constant no 277 : Nostocales (veg + het) optimal temperature lower range
-    real(kind = DBL_PREC) ::          NOST_VEG_HET_OPT_TEMP_UR !Model constant no 278 : Nostocales (veg + het) optimal temperature upper range
+    real(kind = DBL_PREC) ::          NOST_VEG_HET_OPT_TEMP_LR !Model constant no 277 : Nostocales (veg + het) CTMI minimum cardinal temperature (T_min)
+    real(kind = DBL_PREC) ::          NOST_VEG_HET_OPT_TEMP_UR !Model constant no 278 : Nostocales (veg + het) CTMI optimal temperature (T_opt)
     real(kind = DBL_PREC) ::           EFF_NOST_VEG_HET_GROWTH !Model constant no 279 : Nostocales (veg + het) Effective growth. (1-EG)*growth - losses for RESP and excretion
-    real(kind = DBL_PREC) :: KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP !Model constant no 280 : Nostocales (veg + het) Temperature correction for growth lower temperature
-    real(kind = DBL_PREC) ::  KAPPA_NOST_VEG_HET_OVER_OPT_TEMP !Model constant no 281 : Nostocales (veg + het) Temperature correction for growth upper temperature
+    real(kind = DBL_PREC) :: KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP !Model constant no 280 : (unused, kept for backward compat)
+    real(kind = DBL_PREC) ::  KAPPA_NOST_VEG_HET_OVER_OPT_TEMP !Model constant no 281 : Nostocales (veg + het) CTMI maximum cardinal temperature (T_max)
     real(kind = DBL_PREC) ::                KR_NOST_VEG_HET_20 !Model constant no 282 : Nostocales (veg + het) RESP rate constant
     real(kind = DBL_PREC) ::             THETA_KR_NOST_VEG_HET !Model constant no 283 : Nostocales (veg + het) Temperature correction for RESP rate
     real(kind = DBL_PREC) ::                KD_NOST_VEG_HET_20 !Model constant no 284 : Nostocales (veg + het) Mortality rate constant
@@ -768,38 +768,72 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     call CHK_POS(KHS_POP_DISS_SAT,     'KHS_POP_DISS_SAT',     n_fixes)
 
     ! ------------------------------------------------------------------
-    ! Check temperature ranges: OPT_TEMP_LR < OPT_TEMP_UR
+    ! Check CTMI cardinal temperatures: T_min < T_opt < T_max
+    ! OPT_TEMP_LR = T_min, OPT_TEMP_UR = T_opt, KAPPA_*_OVER = T_max
     ! ------------------------------------------------------------------
+    ! Detect old-format kappa values (< 1.0) in T_max slots
+    if (KAPPA_DIA_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_DIA_OVER_OPT_TEMP looks like old kappa value, setting T_max=35'
+        KAPPA_DIA_OVER_OPT_TEMP = 35.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (KAPPA_CYN_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_CYN_OVER_OPT_TEMP looks like old kappa value, setting T_max=38'
+        KAPPA_CYN_OVER_OPT_TEMP = 38.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (KAPPA_FIX_CYN_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_FIX_CYN_OVER_OPT_TEMP looks like old kappa, setting T_max=38'
+        KAPPA_FIX_CYN_OVER_OPT_TEMP = 38.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (KAPPA_OPA_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_OPA_OVER_OPT_TEMP looks like old kappa value, setting T_max=33'
+        KAPPA_OPA_OVER_OPT_TEMP = 33.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (KAPPA_ZOO_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_ZOO_OVER_OPT_TEMP looks like old kappa value, setting T_max=35'
+        KAPPA_ZOO_OVER_OPT_TEMP = 35.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (KAPPA_NOST_VEG_HET_OVER_OPT_TEMP < 1.0D0) then
+        write(*,*) 'WARNING: KAPPA_NOST_VEG_HET_OVER_OPT_TEMP old kappa, setting T_max=38'
+        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = 38.0D0
+        n_fixes = n_fixes + 1
+    end if
+
+    ! Check T_min < T_opt for all groups
     if (DIA_OPT_TEMP_LR >= DIA_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: DIA temps inverted, swapping'
+        write(*,*) 'WARNING: DIA T_min >= T_opt, swapping'
         tmp = DIA_OPT_TEMP_LR
         DIA_OPT_TEMP_LR = DIA_OPT_TEMP_UR
         DIA_OPT_TEMP_UR = tmp
         n_fixes = n_fixes + 1
     end if
     if (CYN_OPT_TEMP_LR >= CYN_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: CYN temps inverted, swapping'
+        write(*,*) 'WARNING: CYN T_min >= T_opt, swapping'
         tmp = CYN_OPT_TEMP_LR
         CYN_OPT_TEMP_LR = CYN_OPT_TEMP_UR
         CYN_OPT_TEMP_UR = tmp
         n_fixes = n_fixes + 1
     end if
     if (FIX_CYN_OPT_TEMP_LR >= FIX_CYN_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: FIX_CYN temps inverted, swapping'
+        write(*,*) 'WARNING: FIX_CYN T_min >= T_opt, swapping'
         tmp = FIX_CYN_OPT_TEMP_LR
         FIX_CYN_OPT_TEMP_LR = FIX_CYN_OPT_TEMP_UR
         FIX_CYN_OPT_TEMP_UR = tmp
         n_fixes = n_fixes + 1
     end if
     if (OPA_OPT_TEMP_LR >= OPA_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: OPA temps inverted, swapping'
+        write(*,*) 'WARNING: OPA T_min >= T_opt, swapping'
         tmp = OPA_OPT_TEMP_LR
         OPA_OPT_TEMP_LR = OPA_OPT_TEMP_UR
         OPA_OPT_TEMP_UR = tmp
         n_fixes = n_fixes + 1
     end if
     if (ZOO_OPT_TEMP_LR >= ZOO_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: ZOO temps inverted, swapping'
+        write(*,*) 'WARNING: ZOO T_min >= T_opt, swapping'
         tmp = ZOO_OPT_TEMP_LR
         ZOO_OPT_TEMP_LR = ZOO_OPT_TEMP_UR
         ZOO_OPT_TEMP_UR = tmp
@@ -807,10 +841,43 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     end if
     if (NOST_VEG_HET_OPT_TEMP_LR >= &
         NOST_VEG_HET_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: NOST temps inverted, swapping'
+        write(*,*) 'WARNING: NOST T_min >= T_opt, swapping'
         tmp = NOST_VEG_HET_OPT_TEMP_LR
         NOST_VEG_HET_OPT_TEMP_LR = NOST_VEG_HET_OPT_TEMP_UR
         NOST_VEG_HET_OPT_TEMP_UR = tmp
+        n_fixes = n_fixes + 1
+    end if
+
+    ! Check T_opt < T_max for all groups
+    if (DIA_OPT_TEMP_UR >= KAPPA_DIA_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: DIA T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_DIA_OVER_OPT_TEMP = DIA_OPT_TEMP_UR + 10.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (CYN_OPT_TEMP_UR >= KAPPA_CYN_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: CYN T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_CYN_OVER_OPT_TEMP = CYN_OPT_TEMP_UR + 10.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (FIX_CYN_OPT_TEMP_UR >= KAPPA_FIX_CYN_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: FIX_CYN T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_FIX_CYN_OVER_OPT_TEMP = FIX_CYN_OPT_TEMP_UR + 10.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (OPA_OPT_TEMP_UR >= KAPPA_OPA_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: OPA T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_OPA_OVER_OPT_TEMP = OPA_OPT_TEMP_UR + 10.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (ZOO_OPT_TEMP_UR >= KAPPA_ZOO_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: ZOO T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_ZOO_OVER_OPT_TEMP = ZOO_OPT_TEMP_UR + 10.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (NOST_VEG_HET_OPT_TEMP_UR >= &
+        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP) then
+        write(*,*) 'WARNING: NOST T_opt >= T_max, setting T_max = T_opt + 10'
+        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = NOST_VEG_HET_OPT_TEMP_UR + 10.0D0
         n_fixes = n_fixes + 1
     end if
 
@@ -1217,11 +1284,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                                   XKC =   0.08  !fixme. Light extinction per chlorophyl unit,( mcg Chla/l/m) for calculation of saturation for Smith. Should be di
                                 PHIMX = 720.00  !Quantum yield const. mg C/mole photon
                       KG_DIA_OPT_TEMP =    3.7  !3.3 3.1  Diatoms Growth rate
-                      DIA_OPT_TEMP_LR =    1.0  !Diatoms optimal temperature lower range
-                      DIA_OPT_TEMP_UR =   24.0  !Diatoms optimal temperature upper range
+                      DIA_OPT_TEMP_LR =    1.0  !Diatoms CTMI T_min (minimum cardinal temperature)
+                      DIA_OPT_TEMP_UR =   24.0  !Diatoms CTMI T_opt (optimal temperature)
                        EFF_DIA_GROWTH =   0.95  !Diatoms Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_DIA_UNDER_OPT_TEMP =   0.04  !Diatoms Temperature correction for growth lower temperature
-             KAPPA_DIA_OVER_OPT_TEMP  =   0.07  !Diatoms Temperature correction for growth upper temperature
+             KAPPA_DIA_UNDER_OPT_TEMP =   0.0   !(unused, kept for backward compat)
+             KAPPA_DIA_OVER_OPT_TEMP  =  35.0   !Diatoms CTMI T_max (maximum cardinal temperature)
                             KR_DIA_20 =   0.05  !Diatoms Respiration rate
                          THETA_KR_DIA =   1.04  !Diatoms Temperature correction for basal respiration rate
                             KD_DIA_20 =   0.12  !Diatoms Mortality rate
@@ -1241,11 +1308,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           DIA_O2_TO_C =   2.66  !Diatoms Oxygen to Carbon ratio for respiration
                         DIA_C_TO_CHLA =  30.00  !Diatoms Carbon to Chlorophil a ratio
                       KG_CYN_OPT_TEMP =    2.4  !Non-fixing cyanobacteria Growth rate
-                      CYN_OPT_TEMP_LR =   15.0  !Non-fixing cyanobacteria optimal temperature lower range
-                      CYN_OPT_TEMP_UR =   26.0  !Non-fixing cyanobacteria optimal temperature upper range
+                      CYN_OPT_TEMP_LR =   15.0  !Non-fixing cyanobacteria CTMI T_min
+                      CYN_OPT_TEMP_UR =   26.0  !Non-fixing cyanobacteria CTMI T_opt
                        EFF_CYN_GROWTH =   0.95  !Non-fixing cyanobacteria Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_CYN_UNDER_OPT_TEMP =   0.08  !Non-fixing cyanobacteria Temperature correction for growth lower temperature
-              KAPPA_CYN_OVER_OPT_TEMP =   0.05  !Non-fixing cyanobacteria Temperature correction for growth upper temperature
+             KAPPA_CYN_UNDER_OPT_TEMP =   0.0   !(unused)
+              KAPPA_CYN_OVER_OPT_TEMP =  38.0   !Non-fixing cyanobacteria CTMI T_max
                             KR_CYN_20 =   0.06  !Non-fixing cyanobacteria Respiration rate
                          THETA_KR_CYN =   1.04  !Non-fixing cyanobacteria Temperature correction for respiration rate
                             KD_CYN_20 =  0.125  !Non-fixing cyanobacteria Mortality rate
@@ -1263,11 +1330,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           CYN_O2_TO_C =   2.66  !Non-fixing cyanobacteria Oxygen to Carbon ratio for respiration
                         CYN_C_TO_CHLA =  40.00  !Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
                   KG_FIX_CYN_OPT_TEMP =    3.5  !Fixing cyanobacteria Growth rate constant
-                  FIX_CYN_OPT_TEMP_LR =   18.0  !Fixing Cyanobacteria optimal temperature lower range
-                  FIX_CYN_OPT_TEMP_UR =   26.0  !Fixing Cyanobacteria optimal temperature upper range
+                  FIX_CYN_OPT_TEMP_LR =   18.0  !Fixing Cyanobacteria CTMI T_min
+                  FIX_CYN_OPT_TEMP_UR =   26.0  !Fixing Cyanobacteria CTMI T_opt
                    EFF_FIX_CYN_GROWTH =   0.95  !Fixing cyanobacteria Effective growth. (1-EG)*growth - losses for RESP and excretion
-         KAPPA_FIX_CYN_UNDER_OPT_TEMP =  0.075  !Fixing cyanobacteria Temperature correction for growth lower temperature
-          KAPPA_FIX_CYN_OVER_OPT_TEMP =   0.05  !Fixing cyanobacteria Temperature correction for growth upper temperature
+         KAPPA_FIX_CYN_UNDER_OPT_TEMP =   0.0   !(unused)
+          KAPPA_FIX_CYN_OVER_OPT_TEMP =  38.0   !Fixing cyanobacteria CTMI T_max
                         KR_FIX_CYN_20 =   0.06  !Fixing cyanobacteria RESP rate constant
                      THETA_KR_FIX_CYN =   1.04  !Fixing cyanobacteria Temperature correction for RESP rate
                         KD_FIX_CYN_20 =   0.10  !Fixing cyanobacteria Mortality rate constant
@@ -1287,11 +1354,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                                 R_FIX =    1.0  !Fixing cyanobacteria Ratio between non-fixing and fixing fractions growth rate
                                 K_FIX =  0.008  !Fixing cyanobacteria Effectivity parameter of switching to nitrogen fixation
                       KG_OPA_OPT_TEMP =    2.9  !OtherPhyto Growth rate constant
-                      OPA_OPT_TEMP_LR =    9.0  !OtherPhyto optimal temperature lower range
-                      OPA_OPT_TEMP_UR =   20.0  !OtherPhyto optimal temperature upper range
+                      OPA_OPT_TEMP_LR =    9.0  !OtherPhyto CTMI T_min
+                      OPA_OPT_TEMP_UR =   20.0  !OtherPhyto CTMI T_opt
                        EFF_OPA_GROWTH =   0.95  !OtherPhyto Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_OPA_UNDER_OPT_TEMP =   0.05  !OtherPhyto Temperature correction for growth lower temperature
-              KAPPA_OPA_OVER_OPT_TEMP =   0.10  !OtherPhyto Temperature correction for growth upper temperature
+             KAPPA_OPA_UNDER_OPT_TEMP =   0.0   !(unused)
+              KAPPA_OPA_OVER_OPT_TEMP =  33.0   !OtherPhyto CTMI T_max
                             KR_OPA_20 =   0.06  !OtherPhyto Respiration rate constant
                          THETA_KR_OPA =   1.02  !OtherPhyto Temperature correction for respiration rate
                             KD_OPA_20 =   0.11  !OtherPhyto Mortality rate constant
@@ -1309,11 +1376,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           OPA_O2_TO_C =   2.66  !OtherPhyto Oxygen to Carbon ratio for respiration
                         OPA_C_TO_CHLA =  30.00  !OtherPhyto Carbon to Chlorophyl a ratio
                       KG_ZOO_OPT_TEMP =   0.45  !Zooplankton Growth rate
-                      ZOO_OPT_TEMP_LR =   10.0  !Zooplankton optimal temperature lower range
-                      ZOO_OPT_TEMP_UR =   25.0  !Zooplankton optimal temperature upper range
+                      ZOO_OPT_TEMP_LR =   10.0  !Zooplankton CTMI T_min
+                      ZOO_OPT_TEMP_UR =   25.0  !Zooplankton CTMI T_opt
                        EFF_ZOO_GROWTH =   0.80  !Zooplankton Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_ZOO_UNDER_OPT_TEMP =   0.04  !Zooplankton Temperature correction for growth lower temperature
-              KAPPA_ZOO_OVER_OPT_TEMP =   0.01  !Zooplankton Temperature correction for growth upper temperature
+             KAPPA_ZOO_UNDER_OPT_TEMP =   0.0   !(unused)
+              KAPPA_ZOO_OVER_OPT_TEMP =  35.0   !Zooplankton CTMI T_max
                          GRAT_ZOO_DIA =   1.00  !Zooplankton Grazing rate (growhth rate multiplier) on diatoms
                          GRAT_ZOO_CYN =   1.00  !Zooplankton Grazing rate (growhth rate multiplier) on Cyanobacteria
                          GRAT_ZOO_OPA =   1.00  !Zooplankton Grazing rate (growhth rate multiplier) on OtherPhyto
@@ -1488,11 +1555,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                   THETA_k_DISS_FE_III =   1.04  !Dissolution rate constant for Fe III
                 INIT_MULT_FE_III_DISS =   0.50  !Initial fraction of dissolved Fe III
              KG_NOST_VEG_HET_OPT_TEMP =   1.29  !Nostocales (veg + het) Growth rate constant
-             NOST_VEG_HET_OPT_TEMP_LR =   16.0  !Nostocales (veg + het) optimal temperature lower range
-             NOST_VEG_HET_OPT_TEMP_UR =   26.0  !Nostocales (veg + het) optimal temperature upper range
+             NOST_VEG_HET_OPT_TEMP_LR =   16.0  !Nostocales (veg + het) CTMI T_min
+             NOST_VEG_HET_OPT_TEMP_UR =   26.0  !Nostocales (veg + het) CTMI T_opt
               EFF_NOST_VEG_HET_GROWTH =   0.95  !Nostocales (veg + het) Effective growth. (1-EG)*growth - losses for RESP and excretion
-    KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP =  0.080  !Nostocales (veg + het) Temperature correction for growth lower temperature
-     KAPPA_NOST_VEG_HET_OVER_OPT_TEMP =   0.05  !Nostocales (veg + het) Temperature correction for growth upper temperature
+    KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP =   0.0   !(unused)
+     KAPPA_NOST_VEG_HET_OVER_OPT_TEMP =  38.0   !Nostocales (veg + het) CTMI T_max
                    KR_NOST_VEG_HET_20 =   0.06  !Nostocales (veg + het) RESP rate constant
                 THETA_KR_NOST_VEG_HET =   1.04  !Nostocales (veg + het) Temperature correction for RESP rate
                    KD_NOST_VEG_HET_20 =  0.040  !Nostocales (veg + het) Mortality rate constant

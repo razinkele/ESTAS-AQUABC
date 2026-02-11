@@ -29,21 +29,21 @@
 !*********************************************'
 
 !Subroutine to calculate temperature limitation factor for growth
+! Uses the Cardinal Temperature Model with Inflection (CTMI)
+! (Rosso et al. 1993, J. Theor. Biol. 162:447-463)
+!
+! phi(T) = (T-T_max)*(T-T_min)^2 / ((T_opt-T_min)*D)
+! where D = (T_opt-T_min)*(T-T_opt) - (T_opt-T_max)*(T_opt+T_min-2*T)
+! phi = 0 outside [T_min, T_max], peaks at 1.0 when T = T_opt
+!
+! Parameter reinterpretation (signature unchanged for call-site compatibility):
+!   Lower_TEMP          -> T_min  (minimum cardinal temperature, zero growth)
+!   Upper_TEMP          -> T_opt  (optimal temperature, maximum growth)
+!   KAPPA_OVER_OPT_TEMP -> T_max  (maximum cardinal temperature, zero growth)
+!   K_AT_OPT_TEMP       -> unused
+!   KAPPA_UNDER_OPT_TEMP-> unused
 subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OPT_TEMP, &
                           KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn)
-! Output:
-! LIM_TEMP_GROWTH,
-!
-! Inputs:
-! TEMP,
-! Lower_TEMP,              Constant
-! Upper_TEMP,              Constant
-! K_AT_OPT_TEMP,           Constant, not used now
-! KAPPA_UNDER_OPT_TEMP,    Constant
-! KAPPA_OVER_OPT_TEMP,     Constant
-! nkn                      Constant
-
-    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
 
     implicit none
 
@@ -57,19 +57,26 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
     double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
     double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
 
-    where (TEMP <= Lower_TEMP)
-        LIM_TEMP_GROWTH = 1.0D0 * &
-            safe_exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * dabs(Lower_TEMP - TEMP))
+    ! Local: CTMI aliases for clarity
+    double precision :: T_min, T_opt, T_max
+    double precision :: denom(nkn)
+
+    T_min = Lower_TEMP
+    T_opt = Upper_TEMP
+    T_max = KAPPA_OVER_OPT_TEMP
+
+    ! CTMI denominator (computed for all T, guarded later)
+    denom = (T_opt - T_min) * ((T_opt - T_min) * (TEMP - T_opt) - &
+            (T_opt - T_max) * (T_opt + T_min - 2.0D0 * TEMP))
+
+    where (TEMP <= T_min .or. TEMP >= T_max .or. abs(denom) < 1.0D-20)
+        LIM_TEMP_GROWTH = 0.0D0
+    elsewhere
+        LIM_TEMP_GROWTH = (TEMP - T_max) * (TEMP - T_min)**2 / denom
     end where
 
-    where ((TEMP > Lower_TEMP) .and. (TEMP < Upper_TEMP))
-        LIM_TEMP_GROWTH = 1.D0
-    end where
-
-    where (TEMP >= Upper_TEMP)
-        LIM_TEMP_GROWTH = 1.0D0 * &
-            safe_exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * dabs(Upper_TEMP - TEMP))
-    end where
+    ! Clamp to [0, 1] for numerical safety
+    LIM_TEMP_GROWTH = max(0.0D0, min(1.0D0, LIM_TEMP_GROWTH))
 
 end subroutine GROWTH_AT_TEMP
 

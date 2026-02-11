@@ -3,11 +3,11 @@
      3                                XKC              0.08  !  3   fixme. Light extinction per chlorophyl unit,( mcg Chla/l/m) for calculation of saturation for Smith. Should be different for different phyto?
      4                              PHIMX            720.00  !  4   Quantum yield const. mg C/mole photon
      5                    KG_DIA_OPT_TEMP               3.7  !  5 3.3 3.1  Diatoms Growth rate
-     6                    DIA_OPT_TEMP_LR               1.0  !  6   Diatoms optimal temperature lower range
-     7                    DIA_OPT_TEMP_UR              24.0  !  7   Diatoms optimal temperature upper range
+     6                    DIA_OPT_TEMP_LR               1.0  !  6   Diatoms CTMI T_min (minimum cardinal temperature)
+     7                    DIA_OPT_TEMP_UR              24.0  !  7   Diatoms CTMI T_opt (optimal temperature)
      8                     EFF_DIA_GROWTH              0.95  !  8   Diatoms Effective growth. (1-EG)*growth - losses for respiration and excretion
-     9           KAPPA_DIA_UNDER_OPT_TEMP              0.04  !  9   Diatoms Temperature correction for growth lower temperature
-    10            KAPPA_DIA_OVER_OPT_TEMP              0.07  ! 10   Diatoms Temperature correction for growth upper temperature
+     9           KAPPA_DIA_UNDER_OPT_TEMP               0.0  !  9   (unused, kept for backward compat)
+    10            KAPPA_DIA_OVER_OPT_TEMP              35.0  ! 10   Diatoms CTMI T_max (maximum cardinal temperature)
     11                          KR_DIA_20              0.05  ! 11   Diatoms Respiration rate
     12                       THETA_KR_DIA              1.04  ! 12   Diatoms Temperature correction for basal respiration rate
     13                          KD_DIA_20              0.12  ! 13   Diatoms Mortality rate
@@ -27,11 +27,11 @@
     27                        DIA_O2_TO_C              2.66  ! 27   Diatoms Oxygen to Carbon ratio for respiration
     28                      DIA_C_TO_CHLA             30.00  ! 28   Diatoms Carbon to Chlorophil a ratio
     29                    KG_CYN_OPT_TEMP               2.4  ! 29   2.1 Non-fixing cyanobacteria Growth rate
-    30                    CYN_OPT_TEMP_LR              15.0  ! 30   Non-fixing cyanobacteria optimal temperature lower range
-    31                    CYN_OPT_TEMP_UR              26.0  ! 31   Non-fixing cyanobacteria optimal temperature upper range
+    30                    CYN_OPT_TEMP_LR              15.0  ! 30   Non-fixing cyanobacteria CTMI T_min
+    31                    CYN_OPT_TEMP_UR              26.0  ! 31   Non-fixing cyanobacteria CTMI T_opt
     32                     EFF_CYN_GROWTH              0.95  ! 32   Non-fixing cyanobacteria Effective growth. (1-EG)*growth - losses for respiration and excretion
-    33           KAPPA_CYN_UNDER_OPT_TEMP              0.08  ! 33   Non-fixing cyanobacteria Temperature correction for growth lower temperature
-    34            KAPPA_CYN_OVER_OPT_TEMP              0.05  ! 34   Non-fixing cyanobacteria Temperature correction for growth upper temperature
+    33           KAPPA_CYN_UNDER_OPT_TEMP               0.0  ! 33   (unused)
+    34            KAPPA_CYN_OVER_OPT_TEMP              38.0  ! 34   Non-fixing cyanobacteria CTMI T_max
     35                          KR_CYN_20              0.06  ! 35   Non-fixing cyanobacteria Respiration rate
     36                       THETA_KR_CYN              1.04  ! 36   Non-fixing cyanobacteria Temperature correction for respiration rate
     37                          KD_CYN_20              0.125 ! 37   Non-fixing cyanobacteria Mortality rate
@@ -49,11 +49,11 @@
     49                        CYN_O2_TO_C              2.66  ! 49   Non-fixing cyanobacteria Oxygen to Carbon ratio for respiration
     50                      CYN_C_TO_CHLA             40.00  ! 50   Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
     51                KG_FIX_CYN_OPT_TEMP               3.5  ! 51    Fixing cyanobacteria Growth rate constant
-    52                FIX_CYN_OPT_TEMP_LR              18.0  ! 52   Fixing Cyanobacteria optimal temperature lower range
-    53                FIX_CYN_OPT_TEMP_UR              26.0  ! 53   Fixing Cyanobacteria optimal temperature upper range
+    52                FIX_CYN_OPT_TEMP_LR              18.0  ! 52   Fixing Cyanobacteria CTMI T_min
+    53                FIX_CYN_OPT_TEMP_UR              26.0  ! 53   Fixing Cyanobacteria CTMI T_opt
     54                 EFF_FIX_CYN_GROWTH              0.95  ! 54   Fixing cyanobacteria Effective growth. (1-EG)*growth - losses for RESP and excretion
-    55       KAPPA_FIX_CYN_UNDER_OPT_TEMP             0.075  ! 55   Fixing cyanobacteria Temperature correction for growth lower temperature
-    56        KAPPA_FIX_CYN_OVER_OPT_TEMP              0.05  ! 56   Fixing cyanobacteria Temperature correction for growth upper temperature
+    55       KAPPA_FIX_CYN_UNDER_OPT_TEMP               0.0  ! 55   (unused)
+    56        KAPPA_FIX_CYN_OVER_OPT_TEMP              38.0  ! 56   Fixing cyanobacteria CTMI T_max
     57                      KR_FIX_CYN_20              0.06  ! 57   Fixing cyanobacteria RESP rate constant
     58                   THETA_KR_FIX_CYN              1.04  ! 58   Fixing cyanobacteria Temperature correction for RESP rate
     59                      KD_FIX_CYN_20              0.10  ! 59   Fixing cyanobacteria Mortality rate constant
@@ -73,11 +73,11 @@
     73                              R_FIX               1.0  ! 73   Fixing cyanobacteria Ratio between non-fixing and fixing fractions growth rate
     74                              K_FIX             0.008  ! 74   Fixing cyanobacteria Effectivity parameter of switching to nitrogen fixation
     75                    KG_OPA_OPT_TEMP               2.9  ! 75  2.7  OtherPhyto Growth rate constant
-    76                    OPA_OPT_TEMP_LR               9.0  ! 76   OtherPhyto optimal temperature lower range
-    77                    OPA_OPT_TEMP_UR              20.0  ! 77   OtherPhyto optimal temperature upper range
+    76                    OPA_OPT_TEMP_LR               9.0  ! 76   OtherPhyto CTMI T_min
+    77                    OPA_OPT_TEMP_UR              20.0  ! 77   OtherPhyto CTMI T_opt
     78                     EFF_OPA_GROWTH              0.95  ! 78   OtherPhyto Effective growth. (1-EG)*growth - losses for respiration and excretion
-    79           KAPPA_OPA_UNDER_OPT_TEMP              0.05  ! 79   OtherPhyto Temperature correction for growth lower temperature
-    80            KAPPA_OPA_OVER_OPT_TEMP              0.10  ! 80   OtherPhyto Temperature correction for growth upper temperature
+    79           KAPPA_OPA_UNDER_OPT_TEMP               0.0  ! 79   (unused)
+    80            KAPPA_OPA_OVER_OPT_TEMP              33.0  ! 80   OtherPhyto CTMI T_max
     81                          KR_OPA_20              0.06  ! 81   OtherPhyto Respiration rate constant
     82                       THETA_KR_OPA              1.02  ! 82   OtherPhyto Temperature correction for respiration rate
     83                          KD_OPA_20              0.11  ! 83   OtherPhyto Mortality rate constant
@@ -95,11 +95,11 @@
     95                        OPA_O2_TO_C              2.66  ! 95   OtherPhyto Oxygen to Carbon ratio for respiration
     96                      OPA_C_TO_CHLA             30.00  ! 96   OtherPhyto Carbon to Chlorophyl a ratio
     97                    KG_ZOO_OPT_TEMP               0.45 ! 97    Zooplankton Growth rate
-    98                    ZOO_OPT_TEMP_LR              10.0  ! 98   Zooplankton optimal temperature lower range
-    99                    ZOO_OPT_TEMP_UR              25.0  ! 99   Zooplankton optimal temperature upper range
+    98                    ZOO_OPT_TEMP_LR              10.0  ! 98   Zooplankton CTMI T_min
+    99                    ZOO_OPT_TEMP_UR              25.0  ! 99   Zooplankton CTMI T_opt
    100                     EFF_ZOO_GROWTH              0.80  !100   Zooplankton Effective growth. (1-EG)*growth - losses for respiration and excretion
-   101           KAPPA_ZOO_UNDER_OPT_TEMP              0.04  !101   Zooplankton Temperature correction for growth lower temperature
-   102            KAPPA_ZOO_OVER_OPT_TEMP              0.01  !102   Zooplankton Temperature correction for growth upper temperature
+   101           KAPPA_ZOO_UNDER_OPT_TEMP               0.0  !101   (unused)
+   102            KAPPA_ZOO_OVER_OPT_TEMP              35.0  !102   Zooplankton CTMI T_max
    103                       GRAT_ZOO_DIA              1.00  !103   Zooplankton Grazing rate (growhth rate multiplier) on diatoms
    104                       GRAT_ZOO_CYN              1.00  !104   Zooplankton Grazing rate (growhth rate multiplier) on Cyanobacteria
    105                       GRAT_ZOO_OPA              1.00  !105   Zooplankton Grazing rate (growhth rate multiplier) on OtherPhyto
@@ -274,11 +274,11 @@
    274                THETA_k_DISS_FE_III              1.04  !274   Dissolution rate constant for Fe III
    275              INIT_MULT_FE_III_DISS              0.50  !275   Initial fraction of dissolved Fe III
    276           KG_NOST_VEG_HET_OPT_TEMP              1.29  !276  1.3   Nostocales (veg + het) Growth rate constant
-   277           NOST_VEG_HET_OPT_TEMP_LR              16.0  !277   Nostocales (veg + het) optimal temperature lower range
-   278           NOST_VEG_HET_OPT_TEMP_UR              26.0  !278   Nostocales (veg + het) optimal temperature upper range
+   277           NOST_VEG_HET_OPT_TEMP_LR              16.0  !277   Nostocales (veg + het) CTMI T_min
+   278           NOST_VEG_HET_OPT_TEMP_UR              26.0  !278   Nostocales (veg + het) CTMI T_opt
    279            EFF_NOST_VEG_HET_GROWTH              0.95  !279   Nostocales (veg + het) Effective growth. (1-EG)*growth - losses for RESP and excretion
-   280  KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP             0.080  !280   Nostocales (veg + het) Temperature correction for growth lower temperature
-   281   KAPPA_NOST_VEG_HET_OVER_OPT_TEMP              0.05  !281   Nostocales (veg + het) Temperature correction for growth upper temperature
+   280  KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP               0.0  !280   (unused)
+   281   KAPPA_NOST_VEG_HET_OVER_OPT_TEMP              38.0  !281   Nostocales (veg + het) CTMI T_max
    282                 KR_NOST_VEG_HET_20              0.06  !282   Nostocales (veg + het) RESP rate constant
    283              THETA_KR_NOST_VEG_HET              1.04  !283   Nostocales (veg + het) Temperature correction for RESP rate
    284                 KD_NOST_VEG_HET_20             0.040  !284   Nostocales (veg + het) Mortality rate constant
