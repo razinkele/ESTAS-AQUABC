@@ -4,6 +4,7 @@ program ESTAS_II
     !use INITIALIZE_AQUATIC_MODEL
     use SIMULATE
     use BOTTOM_SEDIMENTS
+    use PELAGIC_SOLVER, only: CLEANUP_SOLVER
     
     implicit none
 
@@ -126,6 +127,10 @@ program ESTAS_II
     ! End of deallocate AQUABC sediment arrays
     ! -----------------------------------------------------------------------------------
  
+    call CLEANUP_SOLVER()
+
+    write(*,*) 'simulation finished'
+
     close(1000)
     close(1001)
 

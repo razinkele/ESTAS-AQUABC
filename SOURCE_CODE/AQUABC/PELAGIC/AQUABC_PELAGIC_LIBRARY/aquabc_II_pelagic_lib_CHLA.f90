@@ -31,8 +31,10 @@ subroutine chlorophyl_a_vec &
             CONSIDER_NON_OBLIGATORY_FIXERS, &
             CONSIDER_NOSTOCALES)
 
-    use chla_diagnostics, only: CHLA_NEG_FLAG, CHLA_NEG_NODE, CHLA_NEG_VALUE, CHLA_DUMP_DONE
+    use chla_diagnostics, only: CHLA_NEG_FLAG, CHLA_NEG_NODE, CHLA_NEG_VALUE
     implicit none
+
+    integer, intent(in) :: nkn
 
     double precision, dimension(nkn), intent(in) :: DIA_C
     double precision, dimension(nkn), intent(in) :: CYN_C
@@ -45,8 +47,6 @@ subroutine chlorophyl_a_vec &
     double precision, intent(in) :: FIX_CYN_C_TO_CHLA
     double precision, intent(in) :: OPA_C_TO_CHLA
     double precision, intent(in) :: NOST_C_TO_CHLA
-
-    integer, intent(in) :: nkn
 
     double precision, dimension(nkn), intent(inout) :: chla
 

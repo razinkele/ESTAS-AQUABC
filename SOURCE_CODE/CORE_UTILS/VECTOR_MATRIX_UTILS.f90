@@ -48,14 +48,18 @@ contains
         implicit none
         real(kind = DBL_PREC), intent(in)   , dimension(:) :: ARRAY_FROM
         real(kind = DBL_PREC), intent(inout), allocatable, dimension(:) :: ARRAY_TO
-        !real(kind = DBL_PREC), intent(inout), dimension(:) :: ARRAY_TO
+        integer :: ierr
         !END OF INGOING VARIABLES
 
         if(allocated(ARRAY_TO)) then
             deallocate(ARRAY_TO)
         endif
 
-        allocate(ARRAY_TO(size(ARRAY_FROM)))
+        allocate(ARRAY_TO(size(ARRAY_FROM)), stat=ierr)
+        if (ierr /= 0) then
+            write(*,*) 'ERROR: ASSIGN_DBL_VECTOR_CONTENT: allocation failed, size=', size(ARRAY_FROM)
+            stop
+        end if
         ARRAY_TO(:) = ARRAY_FROM(:)
     end subroutine ASSIGN_DBL_VECTOR_CONTENT
 
@@ -66,13 +70,18 @@ contains
         implicit none
         integer, intent(in)   , dimension(:) :: ARRAY_FROM
         integer, intent(inout), allocatable, dimension(:) :: ARRAY_TO
+        integer :: ierr
         !END OF INGOING VARIABLES
 
         if(allocated(ARRAY_TO)) then
             deallocate(ARRAY_TO)
         endif
 
-        allocate(ARRAY_TO(size(ARRAY_FROM)))
+        allocate(ARRAY_TO(size(ARRAY_FROM)), stat=ierr)
+        if (ierr /= 0) then
+            write(*,*) 'ERROR: ASSIGN_INT_VECTOR_CONTENT: allocation failed, size=', size(ARRAY_FROM)
+            stop
+        end if
         ARRAY_TO(:) = ARRAY_FROM(:)
     end subroutine ASSIGN_INT_VECTOR_CONTENT
 
@@ -83,13 +92,18 @@ contains
         logical, intent(in)   , dimension(:)              :: LOGICAL_VECTOR
         integer, intent(inout), allocatable, dimension(:) :: INT_VECTOR
         integer :: i
+        integer :: ierr
 
         if(size(LOGICAL_VECTOR) > 0) then
             if(allocated(INT_VECTOR)) then
                 deallocate(INT_VECTOR)
             end if
 
-        allocate(INT_VECTOR(size(LOGICAL_VECTOR)))
+        allocate(INT_VECTOR(size(LOGICAL_VECTOR)), stat=ierr)
+        if (ierr /= 0) then
+            write(*,*) 'ERROR: LOGICAL_VECTOR_TO_INT_VECTOR: allocation failed, size=', size(LOGICAL_VECTOR)
+            stop
+        end if
         
             INT_VECTOR = 0
 
@@ -112,12 +126,17 @@ contains
         integer, intent(inout), allocatable, dimension(:) :: INDEX_ARRAY
         integer :: i
         integer :: j
+        integer :: ierr
 
         if (allocated(INDEX_ARRAY)) then
             deallocate(INDEX_ARRAY)
         end if
 
-        allocate(INDEX_ARRAY(sum(INDEX_ARRAY_MASK)))
+        allocate(INDEX_ARRAY(sum(INDEX_ARRAY_MASK)), stat=ierr)
+        if (ierr /= 0) then
+            write(*,*) 'ERROR: GENERATE_INDEX_ARRAY: allocation failed, size=', sum(INDEX_ARRAY_MASK)
+            stop
+        end if
         j = 1
 
         do i = lbound(INDEX_ARRAY_MASK,1), ubound(INDEX_ARRAY_MASK,1)

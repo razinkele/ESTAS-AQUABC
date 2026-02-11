@@ -1,4 +1,5 @@
 program unit_test_limiter
+    use AQUABC_II_GLOBAL, only: DBL_PREC
     use pelagic_limiter_test
     use aquabc_pel_state_var_indexes, only: FIX_CYN_C_INDEX
     implicit none
@@ -7,10 +8,10 @@ program unit_test_limiter
     integer, parameter :: nstate = 50
     integer, parameter :: NDIAGVAR = 20
 
-    real(kind=8) :: TIME_STEP
-    real(kind=8), dimension(nkn) :: FIX_CYN_C
-    real(kind=8), dimension(nkn,nstate,NDIAGVAR) :: PROCESS_RATES
-    real(kind=8) :: allowed
+    real(kind=DBL_PREC) :: TIME_STEP
+    real(kind=DBL_PREC), dimension(nkn) :: FIX_CYN_C
+    real(kind=DBL_PREC), dimension(nkn,nstate,NDIAGVAR) :: PROCESS_RATES
+    real(kind=DBL_PREC) :: allowed
     integer :: clamps_applied
     integer, dimension(NDIAGVAR) :: clamp_counts
     integer :: k

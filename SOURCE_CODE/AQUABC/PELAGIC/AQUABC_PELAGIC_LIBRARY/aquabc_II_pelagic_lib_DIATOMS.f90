@@ -205,21 +205,24 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     !Calculations for diatom death
     KD_DIA = KD_DIA_20 * (THETA_KD_DIA ** (TEMP - 2.0D1))
 
-    where (DISS_OXYGEN <= DO_STR_HYPOX_DIA_D)
+    FAC_HYPOX_DIA_D = 1.0D0
+    if(KD_DIA_20 .gt. 0.D0) then
+        where (DISS_OXYGEN <= DO_STR_HYPOX_DIA_D)
 
-        where (DISS_OXYGEN / DO_STR_HYPOX_DIA_D > 1.0D-1)
-            FAC_HYPOX_DIA_D = THETA_HYPOX_DIA_D ** &
-                (EXPON_HYPOX_DIA_D * &
-                    (DO_STR_HYPOX_DIA_D - DISS_OXYGEN))
+            where (DISS_OXYGEN / DO_STR_HYPOX_DIA_D > 1.0D-1)
+                FAC_HYPOX_DIA_D = THETA_HYPOX_DIA_D ** &
+                    (EXPON_HYPOX_DIA_D * &
+                        (DO_STR_HYPOX_DIA_D - DISS_OXYGEN))
+            elsewhere
+                FAC_HYPOX_DIA_D = TIME_STEP / (5.0D-1 * KD_DIA)
+                R_DIA_INT_RESP = 0.0D0
+                R_DIA_RESP     = 0.0D0
+                R_DIA_GROWTH   = 0.0D0
+            end where
         elsewhere
-            FAC_HYPOX_DIA_D = TIME_STEP / (5.0D-1 * KD_DIA)
-            R_DIA_INT_RESP = 0.0D0
-            R_DIA_RESP     = 0.0D0
-            R_DIA_GROWTH   = 0.0D0
+            FAC_HYPOX_DIA_D = 1.0D0
         end where
-    else where
-        FAC_HYPOX_DIA_D = 1.0D0
-    end where
+    end if
 
     R_DIA_DEATH = KD_DIA * FAC_HYPOX_DIA_D * DIA_C
 

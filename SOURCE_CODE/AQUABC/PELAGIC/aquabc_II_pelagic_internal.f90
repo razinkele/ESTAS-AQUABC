@@ -681,6 +681,7 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: GROWTH_INHIB_FACTOR_OPA
     real(kind = DBL_PREC), allocatable, dimension(:) :: GROWTH_INHIB_FACTOR_ZOO
 
+
 end module AQUABC_PELAGIC_INTERNAL
 
 
@@ -688,9 +689,14 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     use AQUABC_PELAGIC_INTERNAL
     implicit none
     integer, intent(in) :: nkn
+    integer :: ierr
 
     !State variables
-    allocate(NH4_N                         (nkn))
+    allocate(NH4_N                         (nkn), stat=ierr)
+    if (ierr /= 0) then
+        write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: state variables allocation failed, nkn=', nkn
+        stop
+    end if
     allocate(NO3_N                         (nkn))
     allocate(PO4_P                         (nkn))
     allocate(DISS_OXYGEN                   (nkn))
@@ -726,7 +732,11 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(PHYT_TOT_C                    (nkn))
 
     !Driving functions
-    allocate(TEMP                          (nkn))
+    allocate(TEMP                          (nkn), stat=ierr)
+    if (ierr /= 0) then
+        write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: driving functions allocation failed, nkn=', nkn
+        stop
+    end if
     allocate(FDAY                          (nkn))
     allocate(DEPTH                         (nkn))
     allocate(I_A                           (nkn))
@@ -739,7 +749,11 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
 	allocate(K_A_CALC                      (nkn))   !calculated aeration reactLr specific coefficient
 
     !Main process rates
-    allocate(R_FE_II_OXIDATION             (nkn))
+    allocate(R_FE_II_OXIDATION             (nkn), stat=ierr)
+    if (ierr /= 0) then
+        write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: main process rates allocation failed, nkn=', nkn
+        stop
+    end if
     allocate(R_FE_III_REDUCTION            (nkn))
     allocate(R_MN_II_OXIDATION             (nkn))
     allocate(R_MN_IV_REDUCTION             (nkn))
@@ -832,7 +846,11 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(R_AMMONIA_VOLATIL             (nkn))
 
     !Derived process rates
-    allocate(R_DENITRIFICATION             (nkn))
+    allocate(R_DENITRIFICATION             (nkn), stat=ierr)
+    if (ierr /= 0) then
+        write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: derived process rates allocation failed, nkn=', nkn
+        stop
+    end if
     allocate(R_DET_PART_ORG_N_DISSOLUTION  (nkn))
     allocate(LIM_N_DISS_DET_PART_ORG_N     (nkn))
     allocate(LIM_PHY_N_DISS_DET_PART_ORG_N (nkn))
@@ -841,7 +859,11 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(LIM_PHY_P_DISS_DET_PART_ORG_P (nkn))
 
     !Auxillary variables
-    allocate(DISS_OXYGEN_SAT               (nkn))
+    allocate(DISS_OXYGEN_SAT               (nkn), stat=ierr)
+    if (ierr /= 0) then
+        write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: auxillary variables allocation failed, nkn=', nkn
+        stop
+    end if
     allocate(CHLA                          (nkn))
     allocate(K_E                           (nkn))
     allocate(KG_DIA                        (nkn))
@@ -1152,6 +1174,24 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     GROWTH_INHIB_FACTOR_NOST   (:) = 1.0D0
     GROWTH_INHIB_FACTOR_OPA    (:) = 1.0D0
     GROWTH_INHIB_FACTOR_ZOO    (:) = 1.0D0
+
+    ! CO2SYS Allocations
+    allocate(CO2SYS_PAR1         (nkn))
+    allocate(CO2SYS_PAR2         (nkn))
+    allocate(CO2SYS_PAR1TYPE     (nkn))
+    allocate(CO2SYS_PAR2TYPE     (nkn))
+    allocate(CO2SYS_SALT         (nkn))
+    allocate(CO2SYS_TEMPIN       (nkn))
+    allocate(CO2SYS_TEMPOUT      (nkn))
+    allocate(CO2SYS_PRESIN       (nkn))
+    allocate(CO2SYS_PRESOUT      (nkn))
+    allocate(CO2SYS_SI           (nkn))
+    allocate(CO2SYS_PO4          (nkn))
+    allocate(CO2SYS_pHSCALEIN    (nkn))
+    allocate(CO2SYS_K1K2CONSTANTS(nkn))
+    allocate(CO2SYS_KSO4CONSTANTS(nkn))
+    allocate(CO2SYS_OUT_DATA     (nkn, 100)) ! Assuming 100 parameters as per CO2SYS output size
+    allocate(CO2SYS_NICEHEADERS  (100))
 
 end subroutine ALLOC_AQUABC_PELAGIC_INTERNAL
 
@@ -1569,5 +1609,23 @@ subroutine DEALLOC_AQUABC_PELAGIC_INTERNAL
     deallocate(GROWTH_INHIB_FACTOR_NOST      )
     deallocate(GROWTH_INHIB_FACTOR_OPA       )
     deallocate(GROWTH_INHIB_FACTOR_ZOO       )
+
+    ! CO2SYS Deallocations
+    if (allocated(CO2SYS_PAR1))          deallocate(CO2SYS_PAR1)
+    if (allocated(CO2SYS_PAR2))          deallocate(CO2SYS_PAR2)
+    if (allocated(CO2SYS_PAR1TYPE))      deallocate(CO2SYS_PAR1TYPE)
+    if (allocated(CO2SYS_PAR2TYPE))      deallocate(CO2SYS_PAR2TYPE)
+    if (allocated(CO2SYS_SALT))          deallocate(CO2SYS_SALT)
+    if (allocated(CO2SYS_TEMPIN))        deallocate(CO2SYS_TEMPIN)
+    if (allocated(CO2SYS_TEMPOUT))       deallocate(CO2SYS_TEMPOUT)
+    if (allocated(CO2SYS_PRESIN))        deallocate(CO2SYS_PRESIN)
+    if (allocated(CO2SYS_PRESOUT))       deallocate(CO2SYS_PRESOUT)
+    if (allocated(CO2SYS_SI))            deallocate(CO2SYS_SI)
+    if (allocated(CO2SYS_PO4))           deallocate(CO2SYS_PO4)
+    if (allocated(CO2SYS_pHSCALEIN))     deallocate(CO2SYS_pHSCALEIN)
+    if (allocated(CO2SYS_K1K2CONSTANTS)) deallocate(CO2SYS_K1K2CONSTANTS)
+    if (allocated(CO2SYS_KSO4CONSTANTS)) deallocate(CO2SYS_KSO4CONSTANTS)
+    if (allocated(CO2SYS_OUT_DATA))      deallocate(CO2SYS_OUT_DATA)
+    if (allocated(CO2SYS_NICEHEADERS))   deallocate(CO2SYS_NICEHEADERS)
 
 end subroutine DEALLOC_AQUABC_PELAGIC_INTERNAL

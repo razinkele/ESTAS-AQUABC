@@ -8,6 +8,7 @@
 ! subroutine LIM_LIGHT
 ! subroutine GROWTH_AT_TEMP
 ! subroutine AMMONIA_PREFS
+! subroutine DUAL_NUTRIENT_PREFERENCE
 ! function DO_SATURATION
 ! function KAWIND
 ! function AMMONIA_VOLATILIZATION
@@ -28,8 +29,8 @@
 !*********************************************'
 
 !Subroutine to calculate temperature limitation factor for growth
-subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_TEMP, &
-                          KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn) !result(K_GROWTH)
+subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OPT_TEMP, &
+                          KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn)
 ! Output:
 ! LIM_TEMP_GROWTH,
 !
@@ -42,58 +43,78 @@ subroutine GROWTH_AT_TEMP(TEMP,LIM_TEMP_GROWTH, Lower_TEMP,Upper_TEMP, K_AT_OPT_
 ! KAPPA_OVER_OPT_TEMP,     Constant
 ! nkn                      Constant
 
+    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
+    double precision, intent(in)  :: TEMP(nkn)
+    double precision, intent(out) :: LIM_TEMP_GROWTH(nkn)
 
-    double precision, intent(in) :: TEMP                 (nkn)
-    double precision             :: LIM_TEMP_GROWTH      (nkn)
-
-    double precision, intent(in) :: Lower_TEMP,Upper_TEMP
+    double precision, intent(in) :: Lower_TEMP, Upper_TEMP
     double precision, intent(in) :: K_AT_OPT_TEMP
     double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
     double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
 
     where (TEMP <= Lower_TEMP)
         LIM_TEMP_GROWTH = 1.0D0 * &
-            exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * dabs(Lower_TEMP - TEMP))
+            safe_exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * dabs(Lower_TEMP - TEMP))
     end where
 
-    where ((TEMP>Lower_TEMP).and.(TEMP<Upper_TEMP))
-        LIM_TEMP_GROWTH = 1.D0 ! K_AT_OPT_TEMP
+    where ((TEMP > Lower_TEMP) .and. (TEMP < Upper_TEMP))
+        LIM_TEMP_GROWTH = 1.D0
     end where
 
     where (TEMP >= Upper_TEMP)
         LIM_TEMP_GROWTH = 1.0D0 * &
-            exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * dabs(Upper_TEMP - TEMP))
+            safe_exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * dabs(Upper_TEMP - TEMP))
     end where
-
-    !GROWTH_AT_TEMP = K_GROWTH
 
 end subroutine GROWTH_AT_TEMP
 
 
-!Function to calculate ammonia preference (WASP)
-subroutine AMMONIA_PREFS(AMMONIA_PREF, NH3, NOx, kn,nkn)
+! Generic dual-nutrient preference function (WASP formulation)
+! Computes the preference for source1 over source2, given half-saturation ks.
+! Used by AMMONIA_PREFS, DIN_DON_PREFS, DIP_DOP_PREFS, AMMONIA_DON_PREFS.
+subroutine DUAL_NUTRIENT_PREFERENCE(pref_out, source1, source2, ks, nkn)
+
+    use AQUABC_PHYSICAL_CONSTANTS, only: EPSILON_GUARD
 
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision :: AMMONIA_PREF(nkn)
-    double precision, intent(in) :: NH3(nkn)
-    double precision, intent(in) :: NOx(nkn)
-    double precision, intent(in) :: kn
-    double precision             :: PN (nkn)
+    double precision, intent(out) :: pref_out(nkn)
+    double precision, intent(in)  :: source1(nkn)
+    double precision, intent(in)  :: source2(nkn)
+    double precision, intent(in)  :: ks
 
-    where (NH3 .lt. 1.0D-6 .and. NOx .lt. 1.0D-6)
-        PN = 0.0D0
+    where ((source1 + source2) .lt. 1.0D-6)
+        pref_out = 0.0D0
     elsewhere
-        PN = (NH3 * NOx) / ((kn + NH3) * (kn + NOx)) + (kn * NH3) / ((NH3 + NOx) * (kn + NOx))
+        pref_out = (source1 * source2) / &
+                   (max(ks + source1, EPSILON_GUARD) * max(ks + source2, EPSILON_GUARD)) + &
+                   (ks * source1) / &
+                   (max(source1 + source2, EPSILON_GUARD) * max(ks + source2, EPSILON_GUARD))
     end where
 
-    AMMONIA_PREF = PN
+end subroutine DUAL_NUTRIENT_PREFERENCE
+
+
+!Function to calculate ammonia preference (WASP)
+subroutine AMMONIA_PREFS(AMMONIA_PREF, NH3, NOx, kn, nkn)
+
+    implicit none
+
+    integer, intent(in) :: nkn
+
+    double precision, intent(out) :: AMMONIA_PREF(nkn)
+    double precision, intent(in)  :: NH3(nkn)
+    double precision, intent(in)  :: NOx(nkn)
+    double precision, intent(in)  :: kn
+
+    call DUAL_NUTRIENT_PREFERENCE(AMMONIA_PREF, NH3, NOx, kn, nkn)
 
 end subroutine AMMONIA_PREFS
 
@@ -102,15 +123,14 @@ subroutine DIN_DON_PREFS(DIN_DON_PREF, NH3, DON, frac_avail_DON, NOx, kn, nkn)
 
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision :: DIN_DON_PREF(nkn)
-    double precision, intent(in) :: NH3(nkn)
-    double precision, intent(in) :: DON(nkn)
-    double precision, intent(in) :: frac_avail_DON
-    double precision, intent(in) :: NOx(nkn)
-    double precision, intent(in) :: kn
-    double precision             :: PN (nkn)
+    double precision, intent(out) :: DIN_DON_PREF(nkn)
+    double precision, intent(in)  :: NH3(nkn)
+    double precision, intent(in)  :: DON(nkn)
+    double precision, intent(in)  :: frac_avail_DON
+    double precision, intent(in)  :: NOx(nkn)
+    double precision, intent(in)  :: kn
 
     double precision :: DIN(nkn)
     double precision :: AVAIL_DON(nkn)
@@ -118,15 +138,8 @@ subroutine DIN_DON_PREFS(DIN_DON_PREF, NH3, DON, frac_avail_DON, NOx, kn, nkn)
     DIN = NH3 + NOx
     AVAIL_DON = (frac_avail_DON * DON)
 
-    where (AVAIL_DON .lt. 1.0D-6 .and. DIN .lt. 1.0D-6)
-     PN = 0.0D0
-    elsewhere
+    call DUAL_NUTRIENT_PREFERENCE(DIN_DON_PREF, DIN, AVAIL_DON, kn, nkn)
 
-     PN = (DIN * AVAIL_DON) / ((kn + DIN) * (kn + AVAIL_DON)) + &
-          (kn * DIN) / ((DIN + AVAIL_DON) * (kn + AVAIL_DON))
-    end where
-
-    DIN_DON_PREF = PN
 end subroutine DIN_DON_PREFS
 
 !Subroutine to calculate dissolved DIP preference against DOP
@@ -134,26 +147,15 @@ subroutine DIP_DOP_PREFS(DIP_DOP_PREF, AVAIL_DIP, AVAIL_DOP, KP, nkn)
 
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision :: DIP_DOP_PREF(nkn)
-    double precision, intent(in) :: AVAIL_DIP(nkn)
-    double precision, intent(in) :: AVAIL_DOP(nkn)
+    double precision, intent(out) :: DIP_DOP_PREF(nkn)
+    double precision, intent(in)  :: AVAIL_DIP(nkn)
+    double precision, intent(in)  :: AVAIL_DOP(nkn)
+    double precision, intent(in)  :: KP
 
-    double precision, intent(in) :: KP
-    double precision             :: PP (nkn)
+    call DUAL_NUTRIENT_PREFERENCE(DIP_DOP_PREF, AVAIL_DIP, AVAIL_DOP, KP, nkn)
 
-
-    where (AVAIL_DOP .lt. 1.0D-6 .and. AVAIL_DIP .lt. 1.0D-6)
-        PP = 0.0D0
-    elsewhere
-
-        PP = &
-            (AVAIL_DIP * AVAIL_DOP) / ((KP + AVAIL_DIP) * (KP + AVAIL_DOP)) + &
-            (KP        * AVAIL_DIP) / ((AVAIL_DIP + AVAIL_DOP) * (KP + AVAIL_DOP))
-    end where
-
-    DIP_DOP_PREF = PP
 end subroutine DIP_DOP_PREFS
 
 !Subroutine to calculate dissolved DOP preference against DIP
@@ -161,24 +163,17 @@ subroutine DOP_DIP_PREFS(DIP_DOP_PREF, AVAIL_DIP, AVAIL_DOP, KP, nkn)
     ! DIP and DOP should be changed by place during call to routine
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision :: DIP_DOP_PREF(nkn)
-    double precision, intent(in) :: AVAIL_DIP(nkn)
-    double precision, intent(in) :: AVAIL_DOP(nkn)
+    double precision, intent(out) :: DIP_DOP_PREF(nkn)
+    double precision, intent(in)  :: AVAIL_DIP(nkn)
+    double precision, intent(in)  :: AVAIL_DOP(nkn)
+    double precision, intent(in)  :: KP
 
-    double precision, intent(in) :: KP
-    double precision             :: PP (nkn)
+    double precision :: PP(nkn)
 
-
-    where (AVAIL_DOP .lt. 1.0D-6 .and. AVAIL_DIP .lt. 1.0D-6)
-        PP = 0.0D0
-    elsewhere
-
-        PP = &
-            (AVAIL_DIP * AVAIL_DOP) / ((KP + AVAIL_DIP)        * (KP + AVAIL_DOP)) + &
-            (KP       * AVAIL_DIP)  / ((AVAIL_DIP + AVAIL_DOP) * (KP + AVAIL_DOP))
-    end where
+    ! Compute DOP preference, then invert to get DIP preference
+    call DUAL_NUTRIENT_PREFERENCE(PP, AVAIL_DIP, AVAIL_DOP, KP, nkn)
 
     ! Calculating DIP preference in order not to change equations in pelagic kinetics
     ! written for the case when DIP is prefered or DIP pref is given
@@ -187,39 +182,32 @@ subroutine DOP_DIP_PREFS(DIP_DOP_PREF, AVAIL_DIP, AVAIL_DOP, KP, nkn)
 end subroutine DOP_DIP_PREFS
 
 !Subroutine to calculate dissolved nitrogen preference (WASP)
-subroutine AMMONIA_DON_PREFS(AMMONIA_DON_PREF,NH3,  DON, frac_avail_DON,NOx, kn,nkn)
+subroutine AMMONIA_DON_PREFS(AMMONIA_DON_PREF, NH3, DON, frac_avail_DON, NOx, kn, nkn)
     implicit none
 
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision :: AMMONIA_DON_PREF(nkn)
-    double precision, intent(in) :: NH3(nkn)
-    double precision, intent(in) :: DON(nkn)
-    double precision, intent(in) :: frac_avail_DON
-    double precision, intent(in) :: NOx(nkn)
-    double precision, intent(in) :: kn
-    double precision             :: PN (nkn)
+    double precision, intent(out) :: AMMONIA_DON_PREF(nkn)
+    double precision, intent(in)  :: NH3(nkn)
+    double precision, intent(in)  :: DON(nkn)
+    double precision, intent(in)  :: frac_avail_DON
+    double precision, intent(in)  :: NOx(nkn)
+    double precision, intent(in)  :: kn
 
     double precision :: NH3_AND_AVAIL_DON(nkn)
 
-
     NH3_AND_AVAIL_DON = NH3 + (frac_avail_DON * DON)
 
-    where (NH3_AND_AVAIL_DON .lt. 1.0D-6 .and. NOx .lt. 1.0D-6)
-        PN = 0.0D0
-    elsewhere
-        PN = &
-            (NH3_AND_AVAIL_DON * NOx) / ((kn + NH3_AND_AVAIL_DON ) * (kn + NOx)) + &
-            (kn * NH3_AND_AVAIL_DON ) / ((NH3_AND_AVAIL_DON + NOx) * (kn + NOx))
-    end where
-
-    AMMONIA_DON_PREF = PN
+    call DUAL_NUTRIENT_PREFERENCE(AMMONIA_DON_PREF, NH3_AND_AVAIL_DON, NOx, kn, nkn)
 
 end subroutine AMMONIA_DON_PREFS
 
 
 !Function, which returns saturation concentration of dissolved oxygen
-double precision function DO_SATURATION(T, S, H) !result(CS)
+double precision function DO_SATURATION(T, S, H)
+
+    use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, METERS_TO_FEET, &
+                                         STD_PRESSURE_MMHG, safe_exp
 
     !Water temperature (in Celcius)
     double precision, intent(in) :: T
@@ -242,13 +230,9 @@ double precision function DO_SATURATION(T, S, H) !result(CS)
     double precision :: CSS
     double precision :: CSP
 
-    !double precision :: CS
     double precision       :: CS
     !Pressure at altitude H (in atm)
     double precision :: P
-
-    !Standart pressure (in mmHg)
-    double precision :: P0
 
     double precision :: LN_PWV
 
@@ -258,8 +242,8 @@ double precision function DO_SATURATION(T, S, H) !result(CS)
     !A constant
     double precision :: THETA
 
-    T_KELVIN = T + 273.15
-    H_FEET = H / 0.3048
+    T_KELVIN = T + CELSIUS_TO_KELVIN
+    H_FEET = H / METERS_TO_FEET
 
     !Calculate the effect of temperature on dissolved oxygen saturation
     LN_CSF = -139.34411 + (157570.1 / T_KELVIN) - &
@@ -270,23 +254,20 @@ double precision function DO_SATURATION(T, S, H) !result(CS)
     LN_CSS = LN_CSF - S * &
              (0.017674 - (10.754 / T_KELVIN) + (2140.7 / (T_KELVIN ** 2.0D0)))
 
-    CSS = exp(LN_CSS)
+    CSS = safe_exp(LN_CSS)
 
     !Calculate the effect of altitude on dissolved oxygen saturation
 
     !Calculate THETA
     THETA = 0.000975 - (0.00001426 * T) + (0.00000006436 * (T ** 2.0D0))
 
-    !Set standard pressure to mean sea level
-    P0 = 760.0
-
     !Calculate atmospheric pressure at altitude H
-    P = (P0 - (0.02667 * H_FEET)) / 760.0
+    P = (STD_PRESSURE_MMHG - (0.02667 * H_FEET)) / STD_PRESSURE_MMHG
 
     !Calculate vapour pressure of water(DIKKAT)
     LN_PWV = 11.8571 - (3840.7 / T_KELVIN) - (216961.0 / (T_KELVIN ** 2.0D0))
 
-    PWV = exp(LN_PWV)
+    PWV = safe_exp(LN_PWV)
 
     !Final calculation including altitude effect
     CSP = CSS  * P * (((1.0D0 - (PWV / P)) * (1.0D0 - (THETA * P))) &
@@ -299,7 +280,9 @@ end function DO_SATURATION
 
 !Function to calculate kind based reareation constant
 !Borrowed from EUTRO5, Ambrose et al., 1993
-double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE) !result(KA_W)
+double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
+
+    use AQUABC_PHYSICAL_CONSTANTS, only: VON_KARMAN, SECONDS_PER_DAY, EULER_E, safe_exp
 
     !WS         wind speed, m/s
     !TW         water temperature C
@@ -413,7 +396,7 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE) !result(KA_W)
     !COEFFICIENT
     N = 0
 
-    KARMAN = 0.4
+    KARMAN = VON_KARMAN
     KA3    = KARMAN**0.3333
     WH     = 1000.0
 
@@ -424,7 +407,7 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE) !result(KA_W)
     do N = 1, 9
         !CALCULATE VALUE OF FUNCTION(F2) AND
         !DERIVATIVE OF FUNCTION(FP)
-        EF  = exp( - SRCD*WS/UT)
+        EF  = safe_exp( - SRCD*WS/UT)
         F1  = LOG((WH/ZE) + (WH*LAM/VA)*SRCD*WS*EF)
         F2  = F1 - KARMAN / SRCD
         FP1 = 1.0/((WH/ZE) + (LAM*WH/VA)*SRCD*WS*EF)
@@ -452,29 +435,29 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE) !result(KA_W)
 
     CDDRAG = SRCD**2.0
     US     = SRCD * WS
-    Z0     = 1.0 / ((1.0 / ZE) + LAM * US * exp(-US / UT) / VA)
+    Z0     = 1.0 / ((1.0 / ZE) + LAM * US * safe_exp(-US / UT) / VA)
     WS     = WS / 100.0
 
     if (WS.LT.6.0) then
         RK1 = ((DifF / VW)**0.666667) * SRCD * ((PA / PW)**0.5)
         RK  = RK1 * KA3 * (WS/GAM)
-        RK  = RK * 3600.0 *24.0
+        RK  = RK * SECONDS_PER_DAY
         RK  = RK / DEPTH
     end if
 
     if ((WS.GE.6.0).AND.(WS.LE.20.0)) then
-        GAMU = GAM * US * (exp(-(US / UC) + 1.0) / UC)
+        GAMU = GAM * US * (safe_exp(-(US / UC) + 1.0) / UC)
         RK1  = ((DifF/VW)**0.6667) * KA3 * ((PA/PW)**0.5) * (US / GAMU)
         RK2  = ((DifF * US * PA * VA) / (KARMAN * Z0 * PW * VW))**0.5
         RK3  = (1.0 / RK1) + (1.0 / RK2)
         RK   = 1.0 / RK3
-        RK   = RK * 3600.0 * (24.0 / 100.0)
+        RK   = RK * SECONDS_PER_DAY / 100.0
         RK   = RK / DEPTH
     end if
 
     if (WS.GT.20.0) then
         RK = ((DifF * PA * VA * US) / (KARMAN * ZE * PW * VW))**0.5
-        RK = RK * 3600.0 * (24.0 / 100.0)
+        RK = RK * SECONDS_PER_DAY / 100.0
         RK = RK / DEPTH
     end if
 
@@ -487,7 +470,7 @@ end function KAWIND
 
 !********************************************************************
 !********************************************************************
-subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO,K_LIGHT_SAT,LIGHT_SAT,nkn)
+subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn)
 
     !   Dick-Smith light limitation
     !
@@ -514,43 +497,41 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO,K_LIGHT_SAT,LI
     !      PHIMX - Max. Quantum Yield, parameter
 
     use AQUABC_PELAGIC_MODEL_CONSTANTS
+    use AQUABC_PHYSICAL_CONSTANTS, only: EULER_E, safe_exp
     use, intrinsic :: ieee_arithmetic
-    !use para_aqua
 
     implicit none
-    integer nkn  ! number of nodes in grid
+    integer, intent(in) :: nkn
 
-    double precision Ia    (nkn)         ! Light intensity, langlays/day
-    double precision TCHLA (nkn)         ! Total chla mcg/l
-    double precision GITMAX(nkn)         !
-    double precision H     (nkn)         ! Depth,m
-    double precision ke    (nkn)         ! Light extinction
-    double precision CCHL_RATIO
-    double precision K_LIGHT_SAT         !
-    double precision LLIGHT   (nkn)      !
-    double precision LIGHT_SAT(nkn)      !
-    double precision KESHD    (nkn)      !
-    double precision SKE      (nkn)      !
-    double precision TEMP1    (nkn)      !
-    double precision TEMP2    (nkn)      !
-    double precision TEMP3    (nkn)      !
-    double precision chla_pos  (nkn)      !
-    double precision PI                  !
+    double precision, intent(in)  :: Ia(nkn)
+    double precision, intent(in)  :: TCHLA(nkn)
+    double precision, intent(in)  :: GITMAX(nkn)
+    double precision, intent(in)  :: H(nkn)
+    double precision, intent(in)  :: ke(nkn)
+    double precision, intent(in)  :: CCHL_RATIO
+    double precision, intent(in)  :: K_LIGHT_SAT
+    double precision, intent(out) :: LLIGHT(nkn)
+    double precision, intent(out) :: LIGHT_SAT(nkn)
 
-    logical VALUE_strange(nkn) ! array containing 'true' on strange values
-    integer STRANGERSD         ! function searching strange values
+    double precision :: KESHD(nkn)
+    double precision :: SKE(nkn)
+    double precision :: TEMP1(nkn)
+    double precision :: TEMP2(nkn)
+    double precision :: TEMP3(nkn)
+    double precision :: chla_pos(nkn)
+
+    logical VALUE_strange(nkn)
+    integer STRANGERSD
     integer :: i, imax
 
     integer user_defined_saturation
 
-    !user_defined_saturation = 1
     user_defined_saturation = 0
 
     if((PHIMX .le. 0.D0) .or.  (XKC .le. 0.D0) .or. all((GITMAX .le. 0.D0))) then
       user_defined_saturation = 1
     end if
 
-    PI        = 3.14159D0
     write(6,*) 'ENTERING LIM_LIGHT'
     SKE       = ke
 
@@ -592,14 +573,37 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO,K_LIGHT_SAT,LI
         end if
     end do
 
+    ! Guard against zero TEMP1 (ke*H) — at very shallow depth or zero extinction
+    do i = 1, nkn
+        if (TEMP1(i) .lt. 1.0D-10) then
+            TEMP1(i) = 1.0D-10
+        end if
+    end do
+
     if(user_defined_saturation .eq. 0) then
      !1/TEMP2 - the saturating light intensity
-     TEMP2     = (0.083D0 * PHIMX * XKC) / (GITMAX * CCHL_RATIO * 2.718D0)
-     LIGHT_SAT = 1.0D0/TEMP2
+     ! Guard: ensure denominator is not zero
+     do i = 1, nkn
+         if (abs(GITMAX(i)) .lt. 1.0D-20) then
+             TEMP2(i) = 1.0D0 / K_LIGHT_SAT
+         else
+             TEMP2(i) = (0.083D0 * PHIMX * XKC) / (GITMAX(i) * CCHL_RATIO * EULER_E)
+         end if
+     end do
+     ! Guard: ensure TEMP2 is not zero before inversion
+     where (abs(TEMP2) .lt. 1.0D-30)
+         LIGHT_SAT = K_LIGHT_SAT
+     elsewhere
+         LIGHT_SAT = 1.0D0 / TEMP2
+     end where
      where(LIGHT_SAT .lt. 10.D0)
       LIGHT_SAT = K_LIGHT_SAT
      end where
     else
+     if (abs(K_LIGHT_SAT) .lt. 1.0D-20) then
+         write(6,*) 'LIM_LIGHT: K_LIGHT_SAT is zero or near-zero, cannot compute TEMP2'
+         stop
+     end if
      TEMP2     = 1.0D0/K_LIGHT_SAT
      LIGHT_SAT = K_LIGHT_SAT
     end if
@@ -614,8 +618,8 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO,K_LIGHT_SAT,LI
         stop
     end if
 
-    TEMP3  = EXP( - TEMP1)  ! fraction of the light at bottom
-    LLIGHT = (2.7183D0 / TEMP1) * (EXP( -TEMP2 * Ia * TEMP3) - EXP( -TEMP2 * Ia))
+    TEMP3  = safe_exp( - TEMP1)
+    LLIGHT = (EULER_E / TEMP1) * (safe_exp( -TEMP2 * Ia * TEMP3) - safe_exp( -TEMP2 * Ia))
 
     if (STRANGERSD(LLIGHT,VALUE_strange,nkn).eq.1) then
         write(6,*) 'LIM_LIGT: Light limitation value is strange'
@@ -642,14 +646,14 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO,K_LIGHT_SAT,LI
 
 
 !***********************************
-subroutine light_kd(kdb,kd, chla, nkn)
+subroutine light_kd(kdb, kd, chla, nkn)
     implicit none
 
     ! Derived from measured kd in Curonian lagoon
-   integer nkn
-   double precision :: kdb(nkn)      ! free of chla extinction
-   double precision :: kd(nkn)       ! chla extinction
-   double precision :: chla(nkn)
+   integer, intent(in) :: nkn
+   double precision, intent(in)  :: kdb(nkn)
+   double precision, intent(out) :: kd(nkn)
+   double precision, intent(in)  :: chla(nkn)
 
    where(chla .le. 50.d0 )
        kd = kdb + 0.4d0 + 0.02d0*chla
@@ -662,7 +666,10 @@ end subroutine light_kd
 
 
 !********************************************************************
-subroutine CUR_SMITH(Ia,TCHLA,CCHLXI,GITMAX,H,ke, LLIGHT,CCHLX)
+subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
+
+    use AQUABC_PHYSICAL_CONSTANTS, only: PI, EULER_E, safe_exp
+
     implicit none
 
     !    Can not be used for instanteneous light
@@ -687,40 +694,35 @@ subroutine CUR_SMITH(Ia,TCHLA,CCHLXI,GITMAX,H,ke, LLIGHT,CCHLX)
     !      XKC    - HARDCODED. Chlorophyll light extinction coefficient (1/m)
     !      PHIMAX - HARDCODED. Max. Quantum Yield
 
-    double precision PHOTO
-    double precision Ia
-    double precision TCHLA
-    double precision CCHLXI
-    double precision GITMAX
-    double precision H
-    double precision ke
-    double precision XKC
-    double precision PHIMX
+    double precision, intent(in)  :: Ia
+    double precision, intent(in)  :: TCHLA
+    double precision, intent(in)  :: CCHLXI
+    double precision, intent(in)  :: GITMAX
+    double precision, intent(in)  :: H
+    double precision, intent(in)  :: ke
+    double precision, intent(out) :: LLIGHT
+    double precision, intent(out) :: CCHLX
 
-    double precision LLIGHT
-    double precision CCHLX
+    double precision :: PHOTO
+    double precision :: XKC
+    double precision :: PHIMX
 
-
-    double precision FDAY
-    double precision ITOT
-    double precision CCHL1
-    double precision KESHD
-    double precision SKE
-    double precision TEMP1
-    double precision TEMP2
-    double precision TEMP3
-    double precision IMAX
-    double precision SUM
-    double precision DTDAY
-    double precision I0
-    double precision RLIGHT
-    double precision IAV
-    double precision IAVSG
-    double precision PI
+    double precision :: FDAY
+    double precision :: ITOT
+    double precision :: CCHL1
+    double precision :: KESHD
+    double precision :: SKE
+    double precision :: TEMP1
+    double precision :: TEMP2
+    double precision :: TEMP3
+    double precision :: IMAX
+    double precision :: SUM
+    double precision :: DTDAY
+    double precision :: I0
+    double precision :: RLIGHT
+    double precision :: IAV
+    double precision :: IAVSG
     integer :: I
-
-
-    PI = 3.14159D0
 
     ! Chloroph. extinction, ( mcg Chla/l/m)
     ! 0.04 is approximatelly the value that corresponds to the angle of curve given in Chapra
@@ -739,12 +741,21 @@ subroutine CUR_SMITH(Ia,TCHLA,CCHLXI,GITMAX,H,ke, LLIGHT,CCHLX)
         stop
     end if
 
+    ! Guard against division by zero when TEMP1 (extinction * depth) is very small
+    ! This can happen at very shallow depths or with zero extinction coefficient
+    if (TEMP1 .lt. 1.0D-10) then
+        ! At very shallow depth or no extinction, assume full light availability
+        LLIGHT = 1.0D0
+        CCHLX  = 15.0D0  ! Minimum C:Chla ratio
+        return
+    end if
+
     !1/TEMP2 - the saturating light intensity
-    TEMP2 = 0.083D0 * PHIMX * XKC / (GITMAX * CCHL1 * 2.718D0)
-    TEMP3 = EXP( - TEMP1) !fraction of the light at bottom
+    TEMP2 = 0.083D0 * PHIMX * XKC / (GITMAX * CCHL1 * EULER_E)
+    TEMP3 = safe_exp( - TEMP1) !fraction of the light at bottom
 
     !Light limitation varies during the day
-    RLIGHT = 2.7183D0 / TEMP1 * (EXP( -TEMP2 * ITOT * TEMP3) - EXP( -TEMP2 * ITOT))
+    RLIGHT = EULER_E / TEMP1 * (safe_exp( -TEMP2 * ITOT * TEMP3) - safe_exp( -TEMP2 * ITOT))
     LLIGHT = RLIGHT
 
     !Adapt carbon to chlorophyll ratio:
@@ -752,7 +763,7 @@ subroutine CUR_SMITH(Ia,TCHLA,CCHLXI,GITMAX,H,ke, LLIGHT,CCHLX)
     ! It can not be used for instantenous light because total light is unknown!
     IAV=0.9D0 * ITOT/FDAY
     IAVSG=IAV*(1.0D0-TEMP3)/TEMP1
-    CCHLX=0.3D0 * 0.083D0 * PHIMX * XKC * IAVSG / (GITMAX * 2.718D0)
+    CCHLX=0.3D0 * 0.083D0 * PHIMX * XKC * IAVSG / (GITMAX * EULER_E)
 
     if (CCHLX.LT.15.0D0) then
         CCHLX=15.0D0
@@ -762,7 +773,7 @@ end subroutine CUR_SMITH
 !********************************************************************
 !********************************************************************
 !Function to calculate the volatilization rate of unionized ammonia
-subroutine AMMONIA_VOLATILIZATION(AMMONIA_VOLATIL_RATE,NH4N, pH, TEMP, KA,nkn)
+subroutine AMMONIA_VOLATILIZATION(AMMONIA_VOLATIL_RATE, NH4N, pH, TEMP, KA, nkn)
 
 ! Output:
 !    AMMONIA_VOLATIL_RATE
@@ -774,27 +785,23 @@ subroutine AMMONIA_VOLATILIZATION(AMMONIA_VOLATIL_RATE,NH4N, pH, TEMP, KA,nkn)
 !    nkn
 
     implicit none
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision, intent(in) :: NH4N(nkn)      !NH4N (mg/L)
-    double precision, intent(in) :: pH  (nkn)      !pH
-    double precision, intent(in) :: TEMP(nkn)      !Temperature in Celcisus
-    double precision, intent(in) :: KA  (nkn)      !Reaeration rate
+    double precision, intent(in)  :: NH4N(nkn)
+    double precision, intent(in)  :: pH(nkn)
+    double precision, intent(in)  :: TEMP(nkn)
+    double precision, intent(in)  :: KA(nkn)
 
-    double precision :: AMMONIA_VOLATIL_RATE(nkn)  !Ammonia volatilization rate (mgN/L.day)
-    double precision :: NH3N (nkn)                 !Concentration of unionized ammonia (mgN/L)
-    double precision :: NH3S                       !Satuation concentration of unionized ammonia in water (mgNH3N/L)
-
-    !Declaration of function name
-    !double precision :: UNIONIZED_AMMONIA
+    double precision, intent(out) :: AMMONIA_VOLATIL_RATE(nkn)
+    double precision :: NH3N(nkn)
+    double precision :: NH3S
 
     NH3S = 0.0D0                              !Taken zero for a while assuming that the partial pressure of
                                               !unionized ammonia is zero in the atmosphere (unpolluted air)
-    call UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP,nkn)
+    call UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP, nkn)
 
     !1.4D1/1.70D1 : Ratio of NH3N:NH3
     !3.2D1/1.7D1  : Ratio of molecular weight of oxygen to ammonia
-    !AMMONIA_VOLATIL_RATE = KA * ((NH3S * (1.4D1/1.70D1)) - NH3N) * ((3.2D1/1.7D1)**2.5D-1)
     AMMONIA_VOLATIL_RATE = KA * (NH3N - (NH3S * (1.4D1/1.70D1))) * ((3.2D1/1.7D1)**2.5D-1)
 end subroutine AMMONIA_VOLATILIZATION
 
@@ -802,7 +809,7 @@ end subroutine AMMONIA_VOLATILIZATION
 !************************************************************************
 
 !Function to calculate the concentration of unionized ammonia
-subroutine UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP,nkn)
+subroutine UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP, nkn)
     ! Output:
     !     NH3N
     ! Inputs:
@@ -811,20 +818,22 @@ subroutine UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP,nkn)
     !   TEMP,
     !   nkn
 
+    use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN
+
     implicit none
-    integer nkn
+    integer, intent(in) :: nkn
 
-    double precision NH3N(nkn)     !Concentration of unionized ammonia (mgN/L)
+    double precision, intent(out) :: NH3N(nkn)
 
-    double precision, intent(in) :: NH4N(nkn)      !NH4N (mg/L)
-    double precision, intent(in) :: pH  (nkn)      !pH
-    double precision, intent(in) :: TEMP(nkn)      !Temperature in Celcisus
+    double precision, intent(in) :: NH4N(nkn)
+    double precision, intent(in) :: pH(nkn)
+    double precision, intent(in) :: TEMP(nkn)
 
-    double precision :: FRAC_NH3(nkn)              !Fraction of unionized ammonia
-    double precision :: pKH     (nkn)              !Concentration of unionized ammonia (mgN/L)
-    double precision :: T_KELVIN(nkn)              !Temperature in Kelvins
+    double precision :: FRAC_NH3(nkn)
+    double precision :: pKH(nkn)
+    double precision :: T_KELVIN(nkn)
 
-    T_KELVIN = TEMP + 2.7316D2
+    T_KELVIN = TEMP + CELSIUS_TO_KELVIN
     pKH      = 9.018D-2 + (2.72992D3 / T_KELVIN)
     FRAC_NH3 = 1.0D0 / (1.0D0 + (1.0D1 ** (pKH - pH)))
     NH3N     = FRAC_NH3 * NH4N
@@ -859,54 +868,43 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use AQUABC_PEL_STATE_VAR_INDEXES
+    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS
 
     implicit none
 
-    integer NUM_VARS     !Number of WC state variables
-    integer NUM_CONSTS
-    integer NUM_FLUXES   !Number of fluxes to BS == number of BS state variables
-    integer NUM_DRIV
+    integer, intent(in) :: NUM_VARS
+    integer, intent(in) :: NUM_CONSTS
+    integer, intent(in) :: NUM_FLUXES
+    integer, intent(in) :: NUM_DRIV
 
     integer, intent(in) :: CONSIDER_NON_OBLIGATORY_FIXERS
     integer, intent(in) :: CONSIDER_NOSTOCALES
 
-    double precision STATE_VARIABLES
-    DIMENSION STATE_VARIABLES(NUM_VARS)
+    double precision, intent(in) :: STATE_VARIABLES(NUM_VARS)
+    double precision, intent(in) :: MODEL_CONSTANTS(NUM_CONSTS)
 
-    double precision MODEL_CONSTANTS
-    DIMENSION MODEL_CONSTANTS(NUM_CONSTS)
+    double precision, intent(in) :: SETTLING_VELOCITIES(NUM_VARS)
+    double precision, intent(in) :: DISSOLVED_FRACTIONS(NUM_VARS)
 
-    double precision SETTLING_VELOCITIES
-    DIMENSION SETTLING_VELOCITIES(NUM_VARS)
+    double precision, intent(out) :: SETTLING_RATES(NUM_VARS)
+    double precision, intent(out) :: FLUXES(NUM_FLUXES)
 
-    double precision DISSOLVED_FRACTIONS
-    DIMENSION DISSOLVED_FRACTIONS(NUM_VARS)
+    double precision :: FLUXES_FROM_WC(NUM_VARS)
 
-    double precision SETTLING_RATES
-    DIMENSION SETTLING_RATES(NUM_VARS)
+    double precision, intent(in) :: DRIVING_FUNCTIONS(NUM_DRIV)
 
-    double precision FLUXES
-    DIMENSION FLUXES(NUM_FLUXES) !Fluxes to BS for BS variables
+    integer, intent(in) :: CELLNO
+    integer :: LAYER
 
-    double precision FLUXES_FROM_WC
-    DIMENSION FLUXES_FROM_WC(NUM_VARS)   !Fluxes from WC to BS  for WC variables
+    double precision, intent(in) :: PSTIME
+    double precision, intent(in) :: BOTTOM_FACTOR
 
-    double precision DRIVING_FUNCTIONS
-    DIMENSION DRIVING_FUNCTIONS(NUM_DRIV)
+    integer, intent(in) :: SEDIMENT_TYPE
+    integer, intent(in) :: NUM_NOT_DEPOSITED_FLUXES
+    double precision, intent(in)  :: FRACTION_OF_DEPOSITION(NUM_NOT_DEPOSITED_FLUXES)
+    double precision, intent(out) :: NOT_DEPOSITED_FLUXES(NUM_NOT_DEPOSITED_FLUXES)
 
-    integer CELLNO
-    integer LAYER
-
-    double precision PSTIME
-    double precision BOTTOM_FACTOR
-
-    integer SEDIMENT_TYPE
-    integer NUM_NOT_DEPOSITED_FLUXES
-    double precision FRACTION_OF_DEPOSITION(NUM_NOT_DEPOSITED_FLUXES)
-    double precision NOT_DEPOSITED_FLUXES(NUM_NOT_DEPOSITED_FLUXES)
-
-    double precision SETTLING_FACTORS
-    DIMENSION SETTLING_FACTORS(NUM_VARS)
+    double precision :: SETTLING_FACTORS(NUM_VARS)
 
     double precision chla, settlsup_factor
 
@@ -928,10 +926,10 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
         DO_NOSTOCALES = 0
     end if
 
-    if(num_vars .ne. 32) then
+    if(num_vars .ne. nstate) then
         print *, 'FLX_ALUKAS_II_TO_SED_MOD_1:'
         print *, 'To get values correctly by fluxes from WC and not deposited fluxes'
-        print *, 'number of state variables should be equal to 32 but is ', NUM_VARS
+        print *, 'number of state variables should be equal to', nstate, 'but is ', NUM_VARS
         stop
     end if
 
@@ -967,10 +965,11 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
 	    FLUXES_FROM_WC(1:NUM_VARS) * (1.0D0 - FRACTION_OF_DEPOSITION(1:NUM_VARS))
 
     ! FLUXES FROM WC TO BS FOR BS VARIABLES
-    if(NUM_FLUXES .ne. 24) then
+    if(NUM_FLUXES .ne. NUM_FLUXES_TO_SEDIMENTS) then
         print *, 'FLX_ALUKAS_II_TO_SED_MOD_1:'
         print *, 'To get values correctly by fluxes to sediments and not deposited fluxes'
-        print *, 'number of BS state vars(fluxes) should be equal to 24 but is ',NUM_FLUXES
+        print *, 'number of BS state vars(fluxes) should be equal to', NUM_FLUXES_TO_SEDIMENTS, &
+                 'but is ', NUM_FLUXES
         stop
     end if
 
@@ -1044,7 +1043,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
        (FLUXES_FROM_WC(DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(DIA_C_INDEX)         ) + &
        (FLUXES_FROM_WC(CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(CYN_C_INDEX)         ) + &
        (FLUXES_FROM_WC(OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(OPA_C_INDEX)         ) + &
-       (FLUXES_FROM_WC(ZOO_P_INDEX)          * FRACTION_OF_DEPOSITION(ZOO_P_INDEX)         ) + &
+       (FLUXES_FROM_WC(ZOO_C_INDEX)          * FRACTION_OF_DEPOSITION(ZOO_C_INDEX)         ) + &
        (FLUXES_FROM_WC(DET_PART_ORG_C_INDEX) * FRACTION_OF_DEPOSITION(DET_PART_ORG_C_INDEX))
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -1105,92 +1104,78 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
 	use AQUABC_PEL_STATE_VAR_INDEXES
+    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS
 
     implicit none
 
     integer, intent(in) :: CONSIDER_NON_OBLIGATORY_FIXERS
     integer, intent(in) :: CONSIDER_NOSTOCALES
 
-    integer nkn
-    integer NUM_VARS     !Number of WC state variables
-    integer NUM_CONSTS
-    integer NUM_FLUXES   !Number of fluxes to BS == number of BS state variables
-    integer NUM_DRIV
+    integer, intent(in) :: nkn
+    integer, intent(in) :: NUM_VARS
+    integer, intent(in) :: NUM_CONSTS
+    integer, intent(in) :: NUM_FLUXES
+    integer, intent(in) :: NUM_DRIV
 
-    integer DO_NON_OBLIGATORY_FIXERS
-    integer DO_NOSTOCALES
+    integer :: DO_NON_OBLIGATORY_FIXERS
+    integer :: DO_NOSTOCALES
 
-    double precision STATE_VARIABLES
-    DIMENSION STATE_VARIABLES(nkn, NUM_VARS)
+    double precision, intent(in) :: STATE_VARIABLES(nkn, NUM_VARS)
+    double precision, intent(in) :: MODEL_CONSTANTS(NUM_CONSTS)
 
-    double precision MODEL_CONSTANTS
-    DIMENSION MODEL_CONSTANTS(NUM_CONSTS)
+    double precision, intent(in) :: SETTLING_VELOCITIES(nkn, NUM_VARS)
+    double precision, intent(in) :: DISSOLVED_FRACTIONS(nkn, NUM_VARS)
 
-    double precision SETTLING_VELOCITIES
-    DIMENSION SETTLING_VELOCITIES(nkn, NUM_VARS)
+    double precision, intent(out) :: SETTLING_RATES(nkn, NUM_VARS)
+    double precision, intent(out) :: FLUXES(nkn, NUM_FLUXES)
 
-    double precision DISSOLVED_FRACTIONS
-    DIMENSION DISSOLVED_FRACTIONS(nkn, NUM_VARS)
+    double precision :: FLUXES_FROM_WC(nkn, NUM_VARS)
 
-    double precision SETTLING_RATES
-    DIMENSION SETTLING_RATES(nkn, NUM_VARS)
+    double precision, intent(in) :: DRIVING_FUNCTIONS(nkn, NUM_DRIV)
 
-    double precision FLUXES
-    DIMENSION FLUXES(nkn, NUM_FLUXES) !Fluxes to BS for BS variables
+    integer, intent(in) :: CELLNO
+    integer :: LAYER
 
-    double precision FLUXES_FROM_WC
-    DIMENSION FLUXES_FROM_WC(nkn, NUM_VARS)   !Fluxes from WC to BS for WC variables
+    double precision, intent(in) :: PSTIME
+    double precision, intent(in) :: BOTTOM_FACTOR
 
-    double precision DRIVING_FUNCTIONS
-    DIMENSION DRIVING_FUNCTIONS(nkn, NUM_DRIV)
+    integer, intent(in) :: SEDIMENT_TYPE
+    integer, intent(in) :: NUM_NOT_DEPOSITED_FLUXES
+    double precision, intent(in)  :: FRACTION_OF_DEPOSITION(nkn, NUM_NOT_DEPOSITED_FLUXES)
+    double precision, intent(out) :: NOT_DEPOSITED_FLUXES(nkn, NUM_NOT_DEPOSITED_FLUXES)
 
-    integer CELLNO
-    integer LAYER
-
-    double precision PSTIME
-    double precision BOTTOM_FACTOR ! never used other value than 1
-
-    integer SEDIMENT_TYPE
-    integer NUM_NOT_DEPOSITED_FLUXES
-    double precision FRACTION_OF_DEPOSITION(nkn, NUM_NOT_DEPOSITED_FLUXES)
-    double precision NOT_DEPOSITED_FLUXES  (nkn, NUM_NOT_DEPOSITED_FLUXES)
-
-    double precision SETTLING_FACTORS
-    DIMENSION SETTLING_FACTORS(nkn, NUM_VARS)
+    double precision :: SETTLING_FACTORS(nkn, NUM_VARS)
 
     integer I
 
     DO_NON_OBLIGATORY_FIXERS          = 0
     DO_NOSTOCALES                     = 1
 
-    !if (present(CONSIDER_NON_OBLIGATORY_FIXERS)) then
-        if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
-            DO_NON_OBLIGATORY_FIXERS = 1
-        else
-            DO_NON_OBLIGATORY_FIXERS = 0
-        end if
-    !end if
+    if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
+        DO_NON_OBLIGATORY_FIXERS = 1
+    else
+        DO_NON_OBLIGATORY_FIXERS = 0
+    end if
 
-    !if (present(CONSIDER_NOSTOCALES)) then
-        if (CONSIDER_NOSTOCALES > 0) then
-            DO_NOSTOCALES = 1
-        else
-            DO_NOSTOCALES = 0
-        end if
-    !end if
+    if (CONSIDER_NOSTOCALES > 0) then
+        DO_NOSTOCALES = 1
+    else
+        DO_NOSTOCALES = 0
+    end if
 
-    if(num_vars .ne. 32) then
-        print *, 'FLX_ALUKAS_II_TO_SED_MOD_1:'
+    if(num_vars .ne. nstate) then
+        print *, 'FLX_ALUKAS_II_TO_SED_MOD_1_VEC:'
         print *, 'To get values correctly by fluxes from WC and not deposited fluxes'
-        print *, 'number of state variables should be equal to 32 but is ',NUM_VARS
+        print *, 'number of state variables should be equal to', nstate, 'but is ', NUM_VARS
         stop
     end if
 
     ! FLUXES FROM WC TO BS FOR BS VARIABLES
-    if(NUM_FLUXES .ne. 24) then
-        print *, 'FLX_ALUKAS_II_TO_SED_MOD_1:'
+    if(NUM_FLUXES .ne. NUM_FLUXES_TO_SEDIMENTS) then
+        print *, 'FLX_ALUKAS_II_TO_SED_MOD_1_VEC:'
         print *, 'To get values correctly by fluxes to sediments and not deposited fluxes'
-        print *, 'number of BS state vars(fluxes) should be equal to 24 but is ',NUM_FLUXES
+        print *, 'number of BS state vars(fluxes) should be equal to', NUM_FLUXES_TO_SEDIMENTS, &
+                 'but is ', NUM_FLUXES
         stop
     end if
 
@@ -1274,7 +1259,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
        (FLUXES_FROM_WC(:, DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, DIA_C_INDEX)         ) + &
        (FLUXES_FROM_WC(:, CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(:, CYN_C_INDEX)         ) + &
        (FLUXES_FROM_WC(:, OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, OPA_C_INDEX)         ) + &
-       (FLUXES_FROM_WC(:, ZOO_P_INDEX)          * FRACTION_OF_DEPOSITION(:, ZOO_P_INDEX)         ) + &
+       (FLUXES_FROM_WC(:, ZOO_C_INDEX)          * FRACTION_OF_DEPOSITION(:, ZOO_C_INDEX)         ) + &
        (FLUXES_FROM_WC(:, DET_PART_ORG_C_INDEX) * FRACTION_OF_DEPOSITION(:, DET_PART_ORG_C_INDEX))
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -1316,30 +1301,32 @@ end subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC
 !********************************************************************
 !********************************************************************
 
-integer function STRANGERSD(VALUE,VALUE_strange,nkn)
+integer function STRANGERSD(VALUE, VALUE_strange, nkn)
 
     ! Cheks for NaN and Inf in 1D array with nkn elements
     ! Input is double precision!
+      use AQUABC_PHYSICAL_CONSTANTS, only: STRANGER_THRESHOLD
+
       implicit none
 
-      integer nkn
+      integer, intent(in) :: nkn
 
-      double precision VALUE(nkn), BIGNUMBER, RATIO
-      double precision value_left, value_right
-      logical VALUE_NaN(nkn)
-      logical VALUE_Inf(nkn)
-      logical VALUE_strange(nkn)
-      logical VALUE_out(nkn)
+      double precision, intent(in)  :: VALUE(nkn)
+      double precision :: RATIO
+      double precision :: value_left, value_right
+      logical :: VALUE_NaN(nkn)
+      logical :: VALUE_Inf(nkn)
+      logical, intent(out) :: VALUE_strange(nkn)
+      logical :: VALUE_out(nkn)
 
-      BIGNUMBER=1.0D30
       STRANGERSD = 0
       value_left = -10000.D0
       value_right=  10000.D0
 
       VALUE_out     = (VALUE < value_left) .or. (VALUE > value_right)
       VALUE_NAN     = isnan(VALUE)
-      VALUE_Inf     = abs(VALUE) > BIGNUMBER
-      VALUE_strange = VALUE_NAN .or. VALUE_Inf !.or. VALUE_out
+      VALUE_Inf     = abs(VALUE) > STRANGER_THRESHOLD
+      VALUE_strange = VALUE_NAN .or. VALUE_Inf
 
       if(any(VALUE_strange)) then
           STRANGERSD = 1
@@ -1362,8 +1349,9 @@ subroutine chlorophyl_a &
 
     implicit none
 
-    integer nstate
-    double precision state(nstate), chla
+    integer, intent(in) :: nstate
+    double precision, intent(in)  :: state(nstate)
+    double precision, intent(out) :: chla
 
     double precision DIA_C
     double precision CYN_C
@@ -1380,28 +1368,20 @@ subroutine chlorophyl_a &
     integer, intent(in) :: CONSIDER_NON_OBLIGATORY_FIXERS
     integer, intent(in) :: CONSIDER_NOSTOCALES
 
-
     integer DO_NON_OBLIGATORY_FIXERS
     integer DO_NOSTOCALES
 
-    !DO_NON_OBLIGATORY_FIXERS          = 0
-    !DO_NOSTOCALES                     = 1
+    if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
+        DO_NON_OBLIGATORY_FIXERS = 1
+    else
+        DO_NON_OBLIGATORY_FIXERS = 0
+    end if
 
-    !if (present(CONSIDER_NON_OBLIGATORY_FIXERS)) then
-        if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
-            DO_NON_OBLIGATORY_FIXERS = 1
-        else
-            DO_NON_OBLIGATORY_FIXERS = 0
-        end if
-    !end if
-
-    !if (present(CONSIDER_NOSTOCALES)) then
-        if (CONSIDER_NOSTOCALES > 0) then
-            DO_NOSTOCALES = 1
-        else
-            DO_NOSTOCALES = 0
-        end if
-    !end if
+    if (CONSIDER_NOSTOCALES > 0) then
+        DO_NOSTOCALES = 1
+    else
+        DO_NOSTOCALES = 0
+    end if
 
     ! Ratios C to Chla
     call para_get_value('DIA_C_TO_CHLA'    ,DIA_C_TO_CHLA)
@@ -1438,7 +1418,9 @@ subroutine settling_suppres_factor(chla, factor)
     ! Chla in mcg/l
 
     implicit none
-    double precision chla, factor, setl_vel, chlamin, chlamax, settl_max
+    double precision, intent(in)  :: chla
+    double precision, intent(out) :: factor
+    double precision :: setl_vel, chlamin, chlamax, settl_max
 
     ! observed interval endpoints for chla impacting settling velocity
     ! We do not know what happens outside of this interval and assume
@@ -1460,7 +1442,7 @@ subroutine settling_suppres_factor(chla, factor)
 contains
 
     double precision function settl_vel(chla)
-        double precision chla
+        double precision, intent(in) :: chla
         settl_vel = -(0.0061D0 * chla) + 1.0383
     end function settl_vel
 

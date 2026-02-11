@@ -154,6 +154,7 @@ subroutine FIX_CYANOBACTERIA  &
     real(kind = DBL_PREC) :: FIX_CYN_DEPTH
     integer :: i
     real(kind = DBL_PREC) :: loss
+    real(kind = DBL_PREC) :: scale_loss
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &
@@ -262,15 +263,19 @@ subroutine FIX_CYANOBACTERIA  &
     !Nitrogen fixing cyanobacteria death rate
     R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C
 
-    ! Diagnostic: check for predicted negative mass due to losses
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    ! This prevents negative concentrations when loss rates exceed growth
     do i = 1, nkn
-        loss = R_FIX_CYN_DEATH(i) + R_FIX_CYN_EXCR(i) + R_FIX_CYN_INT_RESP(i) + R_FIX_CYN_RESP(i)
-        if (FIX_CYN_C(i) > 0.0D0 .and. loss > 0.9D0 * FIX_CYN_C(i) / TIME_STEP) then
-            write(6,*) 'DEBUG: PREDICT_LARGE_LOSS FIX_CYN at node', i
-            write(6,*) '  TIME_STEP', TIME_STEP, 'FIX_CYN_C', FIX_CYN_C(i)
-            write(6,*) '  R_FIX_CYN_GROWTH', R_FIX_CYN_GROWTH(i), 'R_FIX_CYN_DEATH', R_FIX_CYN_DEATH(i)
-            write(6,*) '  R_FIX_CYN_EXCR', R_FIX_CYN_EXCR(i), 'R_FIX_CYN_MET', R_FIX_CYN_MET(i)
-            write(6,*) '  R_FIX_CYN_INT_RESP', R_FIX_CYN_INT_RESP(i), 'R_FIX_CYN_RESP', R_FIX_CYN_RESP(i)
+        if (FIX_CYN_C(i) > 0.0D0) then
+            loss = R_FIX_CYN_DEATH(i) + R_FIX_CYN_EXCR(i) + R_FIX_CYN_INT_RESP(i) + R_FIX_CYN_RESP(i)
+            ! Limit total loss to 50% of available biomass per timestep (excluding grazing, handled elsewhere)
+            if (loss > 0.5D0 * FIX_CYN_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * FIX_CYN_C(i) / TIME_STEP) / loss
+                R_FIX_CYN_DEATH(i) = R_FIX_CYN_DEATH(i) * scale_loss
+                R_FIX_CYN_EXCR(i) = R_FIX_CYN_EXCR(i) * scale_loss
+                R_FIX_CYN_INT_RESP(i) = R_FIX_CYN_INT_RESP(i) * scale_loss
+                R_FIX_CYN_RESP(i) = R_FIX_CYN_RESP(i) * scale_loss
+            end if
         end if
     end do
 
@@ -432,17 +437,11 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: R_FIX_CYN_DEATH
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_NH4_DON_FIX_CYN
 
-    !Auxillary variables Itroduced by Pzem 2019-08
-
-    ! Depth where bacteria ara concentrated
-    ! WIND_SPEAD
-    ! Euphothic deph
-    ! Mixing depth!
-    ! Slope for light extinction by chlorophyl
+    !Auxillary variables introduced by Pzem 2019-08
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS  ! Wind speed (input parameter)
     real(kind = DBL_PREC), dimension(nkn) :: FIX_CYN_DEPTH
-    double precision :: WINDS         (nkn)
-    double precision :: EUPHOTIC_DEPTH(nkn)
-    double precision :: MIX_DEPTH     (nkn)
+    real(kind = DBL_PREC) :: EUPHOTIC_DEPTH(nkn)
+    real(kind = DBL_PREC) :: MIX_DEPTH     (nkn)
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &

@@ -1151,6 +1151,10 @@ subroutine READ_EXTRA_PELAGIC_MODEL_CONSTS(IN_FILE)
 
     integer, intent(in) :: IN_FILE
 
+    ! Allelopathy constants are provided by the `ALLELOPATHY` module via use-association.
+    ! Do not redeclare these names here (that conflicts with the module); if build-order
+    ! visibility becomes an issue later, prefer `use ALLELOPATHY, only: <symbol>`.
+
     !  Read the user entered fraction of available DON for cyanobacteria uptake
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, fmt = *) USER_ENTERED_frac_avail_DON
@@ -1300,27 +1304,16 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
     ! One-shot full dump if CHLA negative was detected in the CHLA routine
     if (CHLA_NEG_FLAG .and. .not. CHLA_DUMP_DONE) then
         nd = CHLA_NEG_NODE
-        write(6,*) '=== ONE-SHOT CHLA_NEGATIVE DUMP ==='
-        write(6,*) ' BOX=', nd
-        write(6,*) ' CHLA_NEG_VALUE=', CHLA_NEG_VALUE, ' CHLA(nd)=', CHLA(nd)
-        write(6,*) ' STATE VARS at BOX=', nd
-        write(6,*) '  DIA_C=', STATE_VARIABLES(nd, DIA_C_INDEX)
-        write(6,*) '  CYN_C=', STATE_VARIABLES(nd, CYN_C_INDEX)
-        write(6,*) '  FIX_CYN_C=', STATE_VARIABLES(nd, FIX_CYN_C_INDEX)
-        write(6,*) '  OPA_C=', STATE_VARIABLES(nd, OPA_C_INDEX)
-        write(6,*) '  NOST_VEG_HET_C=', STATE_VARIABLES(nd, NOST_VEG_HET_C_INDEX)
-        write(6,*) '  NH4_N=', STATE_VARIABLES(nd, NH4_N_INDEX)
-        write(6,*) '  NO3_N=', STATE_VARIABLES(nd, NO3_N_INDEX)
-        write(6,*) '  PO4_P=', STATE_VARIABLES(nd, PO4_P_INDEX)
-        write(6,*) ' PROCESS_RATES FIX_CYN (first 18)=', PROCESS_RATES(nd, FIX_CYN_C_INDEX, 1:min(18,NDIAGVAR))
-        write(6,*) ' PROCESS_RATES CYN     (first 18)=', PROCESS_RATES(nd, CYN_C_INDEX, 1:min(18,NDIAGVAR))
-        write(6,*) ' DERIVATIVES FIX_CYN=', DERIVATIVES(nd, FIX_CYN_C_INDEX)
-        write(6,*) ' DERIVATIVE CYN=', DERIVATIVES(nd, CYN_C_INDEX)
-        write(6,*) ' All process rates (first 18) for all states at node', nd
-        do i = 1, nstate
-            write(6,*) '  STATE=', i
-            write(6,*) '    PR(1:18)=', PROCESS_RATES(nd,i,1:min(18,NDIAGVAR))
-        end do
+        write(6,'(A)') '=== ONE-SHOT CHLA_NEGATIVE DUMP ==='
+        write(6,'(A,I4,A,ES12.4,A,ES12.4)') ' BOX=', nd, ' NEG_VAL=', CHLA_NEG_VALUE, ' CHLA=', CHLA(nd)
+        write(6,'(A,5ES11.3)') ' DIA/CYN/FIX/OPA/NOST=', &
+            STATE_VARIABLES(nd, DIA_C_INDEX), STATE_VARIABLES(nd, CYN_C_INDEX), &
+            STATE_VARIABLES(nd, FIX_CYN_C_INDEX), STATE_VARIABLES(nd, OPA_C_INDEX), &
+            STATE_VARIABLES(nd, NOST_VEG_HET_C_INDEX)
+        write(6,'(A,3ES12.4)') ' NH4/NO3/PO4=', STATE_VARIABLES(nd, NH4_N_INDEX), &
+            STATE_VARIABLES(nd, NO3_N_INDEX), STATE_VARIABLES(nd, PO4_P_INDEX)
+        write(6,'(A,ES12.4,A,ES12.4)') ' DERIV_FIX=', DERIVATIVES(nd, FIX_CYN_C_INDEX), &
+            ' DERIV_CYN=', DERIVATIVES(nd, CYN_C_INDEX)
         CHLA_DUMP_DONE = .true.
         ! Stop to preserve dump in logs for analysis
         stop

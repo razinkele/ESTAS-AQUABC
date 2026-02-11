@@ -147,6 +147,10 @@ subroutine CYANOBACTERIA &
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
+    ! Local variables for mass-balance safeguard
+    integer :: i
+    real(kind = DBL_PREC) :: loss, scale_loss
+
     ! Temperature growth limitation factor
     call GROWTH_AT_TEMP &
          (TEMP, LIM_KG_CYN_TEMP, CYN_OPT_TEMP_LR, CYN_OPT_TEMP_UR, KG_CYN_OPT_TEMP,  &
@@ -223,6 +227,20 @@ subroutine CYANOBACTERIA &
 
     !Non-fixing cyanobacteria death rate
     R_CYN_DEATH = KD_CYN * FAC_HYPOX_CYN_D * CYN_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (CYN_C(i) > 0.0D0) then
+            loss = R_CYN_DEATH(i) + R_CYN_EXCR(i) + R_CYN_INT_RESP(i) + R_CYN_RESP(i)
+            if (loss > 0.5D0 * CYN_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * CYN_C(i) / TIME_STEP) / loss
+                R_CYN_DEATH(i) = R_CYN_DEATH(i) * scale_loss
+                R_CYN_EXCR(i) = R_CYN_EXCR(i) * scale_loss
+                R_CYN_INT_RESP(i) = R_CYN_INT_RESP(i) * scale_loss
+                R_CYN_RESP(i) = R_CYN_RESP(i) * scale_loss
+            end if
+        end if
+    end do
 
     call AMMONIA_DON_PREFS &
          (PREF_NH4N_DON_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_CYN,nkn)
@@ -375,10 +393,10 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
 
     ! Pzem 2019-08
-    double precision :: CYANO_DEPTH   (nkn)     ! Depth where bacteria ara concentrated
-    double precision :: WINDS        (nkn)      ! WIND_SPEAD. Input variable!
-    double precision :: EUPHOTIC_DEPTH (nkn)    ! Euphothic deph
-    double precision :: MIX_DEPTH    (nkn)      ! Mixing depth
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS  ! Wind speed (input parameter)
+    real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
+    real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
+    real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------

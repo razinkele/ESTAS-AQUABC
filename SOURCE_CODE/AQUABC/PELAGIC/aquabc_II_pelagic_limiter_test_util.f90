@@ -1,19 +1,20 @@
 module pelagic_limiter_test
+    use AQUABC_II_GLOBAL, only: DBL_PREC
     use aquabc_pel_state_var_indexes, only: FIX_CYN_C_INDEX
     implicit none
 contains
     subroutine apply_fix_cyn_clamp(FIX_CYN_C, PROCESS_RATES, TIME_STEP, NDIAGVAR, node_idx, clamps_applied, clamp_counts)
         implicit none
         integer, intent(in) :: NDIAGVAR, node_idx
-        real(kind=8), intent(in) :: TIME_STEP
-        real(kind=8), dimension(:), intent(in) :: FIX_CYN_C
-        real(kind=8), dimension(:,:,:), intent(inout) :: PROCESS_RATES
+        real(kind=DBL_PREC), intent(in) :: TIME_STEP
+        real(kind=DBL_PREC), dimension(:), intent(in) :: FIX_CYN_C
+        real(kind=DBL_PREC), dimension(:,:,:), intent(inout) :: PROCESS_RATES
         integer, intent(out) :: clamps_applied
         integer, dimension(:), intent(out) :: clamp_counts
 
-        real(kind=8) :: allowed_rate_local
+        real(kind=DBL_PREC) :: allowed_rate_local
         integer :: k
-        real(kind=8) :: old_rate
+        real(kind=DBL_PREC) :: old_rate
 
         clamps_applied = 0
         clamp_counts = 0
