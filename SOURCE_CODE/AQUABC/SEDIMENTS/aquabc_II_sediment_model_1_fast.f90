@@ -430,7 +430,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     integer :: CONSIDER_CO2_REARATION
     !End of new variables for DIC and ALK
 
-    real getpar    !function to getn isedi value
+    double precision getpar    !function to getn isedi value
     integer isedi  !indicator if sediment transport model is used
 
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_DOC_MIN
@@ -1160,14 +1160,14 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         !     - Multiplier for particulate Fe2+ is between 0 and 1
 
         ! -------------------------------------------------------------------------
-        ! Changes by Ali Ertürk 5 July 2016)
+        ! Changes by Ali Ertï¿½rk 5 July 2016)
         ! -------------------------------------------------------------------------
         call SED_IRON_II_DISSOLUTION &
              (HS2_TOT, PH, TOT_ALK, nkn, NUM_SED_LAYERS, FE_II_DISS_EQ)
 
         FE_II_DISS_EQ = FE_II_DISS_EQ * 56000.0D0
         ! -------------------------------------------------------------------------
-        ! End of changes by Ali Ertürk (5 July 2016)
+        ! End of changes by Ali Ertï¿½rk (5 July 2016)
         ! -------------------------------------------------------------------------
 
 

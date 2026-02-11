@@ -40,7 +40,7 @@ program aquabc_II_pelagic_0D
     double precision :: FLOW_RATE
 
     double precision :: val
-    real getpar
+    double precision getpar
     
     ! This is a 0D model, so the number of boxes should be 1
 
