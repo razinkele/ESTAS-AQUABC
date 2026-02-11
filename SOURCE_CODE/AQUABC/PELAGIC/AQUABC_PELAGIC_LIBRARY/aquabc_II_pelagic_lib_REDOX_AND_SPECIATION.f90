@@ -199,7 +199,7 @@ subroutine REDOX_AND_SPECIATION &
 
     ! FE III is reduced
     where (REDUCED_AGENT_NO == 4)
-        PE = 13.0D0 - log10(FE_II / FE_III)
+        PE = 13.0D0 - log10(max(FE_II, 1.0D-20) / max(FE_III, 1.0D-20))
     end where
 
     ! S VI is reduced
@@ -223,7 +223,7 @@ subroutine REDOX_AND_SPECIATION &
     ! "Aquatic Chemistry, Chemical Equilibria and Rates in Natural Waters"
 
     ! FE_CO3  / DISS_FE_II
-    FE_CO3_OVER_FE_II  = 10.0D0**(-0.2D0 +  PH + log10(HCO3))
+    FE_CO3_OVER_FE_II  = 10.0D0**(-0.2D0 +  PH + log10(max(HCO3, 1.0D-20)))
 
     ! FE_OH_2 / DISS_FE_II
     FE_OH_2_OVER_FE_II = 10.0D0**(-11.7D0 + (2.0D0*PH))
@@ -247,7 +247,7 @@ subroutine REDOX_AND_SPECIATION &
 
     !FeCO3
     where(FE_II_SALT_NO == 1)
-        FREE_FE_II = 10.0D0**(-0.3D0 - PH + log10(HCO3))
+        FREE_FE_II = 10.0D0**(-0.3D0 - PH + log10(max(HCO3, 1.0D-20)))
     end where
 
     !Fe(OH)2
@@ -340,7 +340,7 @@ subroutine REDOX_AND_SPECIATION &
     ! -------------------------------------------------------------------------
 
     ! MN_CO3  / DISS_MN_II
-    MN_CO3_OVER_MN_II  = 10.0D0**(-0.2D0 +  PH + log10(HCO3))
+    MN_CO3_OVER_MN_II  = 10.0D0**(-0.2D0 +  PH + log10(max(HCO3, 1.0D-20)))
 
     ! MN_OH_2 / DISS_MN_II
     MN_OH_2_OVER_MN_II = 10.0D0**(-15.0D0 + (2.0D0*PH))
@@ -358,7 +358,7 @@ subroutine REDOX_AND_SPECIATION &
 
     !MnCO3
     where(MN_II_SALT_NO == 1)
-        FREE_MN_II = (10.0D0 ** (8.03D0)) / CO3
+        FREE_MN_II = (10.0D0 ** (8.03D0)) / max(CO3, 1.0D-20)
     end where
 
     !Mn(OH)2
