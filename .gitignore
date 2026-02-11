@@ -1,6 +1,21 @@
 # Python
 .venv/
 __pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+htmlcov/
+
+# Environment and editor files
+.env
+.env.*
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
 
 # Shiny edits backup
 INPUTS/*.bak
@@ -12,11 +27,21 @@ OUTPUTS_*
 # Build artifacts
 *.o
 *.mod
+*.a
+*.exe
+build_log.txt
+compile_err.txt
+
+# Executables
+ESTAS_II
+ESTAS_II_*
 
 # Logs and runtime files
 *.log
+logs/
 run.pid
 tmp_*
 out_*.txt
 summary_*.txt
 time_*.txt
+*.exit_status

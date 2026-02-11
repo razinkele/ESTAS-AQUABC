@@ -288,6 +288,11 @@ contains
         SHUT_DOWN_SETTLING = 0
         MODEL_BOTTOM_SED_PRESET = .false.
 
+        ! Default to NO bottom-sediment model unless the input file or a preset
+        ! explicitly requests sediments. This makes the "no sediment" configuration
+        ! the default behavior for backward compatibility with lightweight runs.
+        MODEL_BOTTOM_SEDIMENTS = 0
+
         if (RESUSPENSION_OPTION < 1) then
             CONSIDER_RESUSPENSION = 0
             write(unit = *, fmt = *) &

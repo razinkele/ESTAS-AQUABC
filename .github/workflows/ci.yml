@@ -27,10 +27,14 @@ jobs:
 
       - name: Run example and capture log
         run: |
+          mkdir -p OUTPUTS
           make run-example | tee run.log
 
       - name: Run example tests
         run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
+
+      - name: Run Fortran unit tests
+        run: make -C tests/fortran clean test
 
       - name: Install ftnchek
         run: |

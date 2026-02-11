@@ -54,7 +54,7 @@ module aquabc_II_pelagic_interface
     integer, save :: nstate              = 32
     integer, save :: nconst              = 318
     integer, save :: n_driving_functions = 10
-    integer, save :: nflags              = 5
+    integer, save :: nflags              = 12
     integer, save :: n_saved_outputs     = 5	! was 4 -> bug (ggu)
     integer, save :: NDIAGVAR            = 30
 
@@ -63,7 +63,7 @@ module aquabc_II_pelagic_interface
     integer, save :: CALLED_BEFORE = 0
     double precision, save :: TIME_FIRST = -1.	! first time of call
 
-    integer, save :: FLAGS(5)
+    integer, save :: FLAGS(12)
 
     integer, save :: ZOOP_OPTION_1
     integer, save :: ADVANCED_REDOX_SIMULATION
@@ -98,10 +98,10 @@ subroutine aquabc_init		              ( &
 
     implicit none
 
-    integer nkn_g		   ! number of boxes
-    integer nstate_g		   ! number of state variables (must be 32)
-    integer n_driving_functions_g  ! number of driving functions (forcings, 10)
-    integer SURFACE_BOXES_g(nkn_g) ! indicates box is on surface
+    integer, intent(in) :: nkn_g                   ! number of boxes
+    integer, intent(in) :: nstate_g                ! number of state variables (must be 32)
+    integer, intent(in) :: n_driving_functions_g   ! number of driving functions (forcings, 10)
+    integer, intent(in) :: SURFACE_BOXES_g(nkn_g)  ! indicates box is on surface
 
     ! -------------------------------------------------------------------------
     ! Initial checks
@@ -135,11 +135,18 @@ subroutine aquabc_init		              ( &
     CONSIDER_NOSTOCALES            = 0  !Consider nostocales
     USER_ENTERED_frac_avail_DON    = 0.15 !(probably not important)
 
-    FLAGS(1) = 1	! safe mode - not used
-    FLAGS(2) = 1	! not used
-    FLAGS(3) = 1	! first time called?
-    FLAGS(4) = 1	! use initial conditions Fe2+
-    FLAGS(5) = 1	! use initial conditions Fe3+
+    FLAGS(1)  = 1	! safe mode - not used
+    FLAGS(2)  = 1	! not used
+    FLAGS(3)  = 1	! first time called?
+    FLAGS(4)  = 1	! use initial conditions Fe2+
+    FLAGS(5)  = 1	! use initial conditions Fe3+
+    FLAGS(6)  = ZOOP_OPTION_1
+    FLAGS(7)  = ADVANCED_REDOX_SIMULATION
+    FLAGS(8)  = LIGHT_EXTINCTION_OPTION
+    FLAGS(9)  = CYANO_BOUYANT_STATE_SIMULATION
+    FLAGS(10) = CONSIDER_NON_OBLIGATORY_FIXERS
+    FLAGS(11) = CONSIDER_NOSTOCALES
+    FLAGS(12) = nint(USER_ENTERED_frac_avail_DON * 100.0D0)
 
     ! -------------------------------------------------------------------------
     ! Allocate the arrays
@@ -181,8 +188,8 @@ subroutine aquabc_init_flags		    ( &
 
     implicit none
 
-    integer :: nflags_g
-    integer :: flags_g(nflags_g)
+    integer, intent(in) :: nflags_g
+    integer, intent(in) :: flags_g(nflags_g)
 
     integer, parameter :: nflags_l = 12
 
@@ -247,8 +254,8 @@ subroutine aquabc_run                       ( &
 
         DAY_OF_YEAR   = 1 + mod(int(TIME)-1,365)
 
-	if( BFIRSTCALL ) then
-	  BFIRSTCALL = .false.
+	if( bfirstcall ) then
+	  bfirstcall = .false.
 	  TIME_FIRST = TIME
 	end if
 	if( CALLED_BEFORE == 0 .and. TIME /= TIME_FIRST ) then

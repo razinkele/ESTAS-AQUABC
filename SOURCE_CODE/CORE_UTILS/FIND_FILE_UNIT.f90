@@ -43,7 +43,7 @@ subroutine find_unit(iunit)
 
     iunit = iu
 
-end
+end subroutine find_unit
 
 !*******************************************************
 

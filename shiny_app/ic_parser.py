@@ -15,60 +15,149 @@ from typing import List, Dict, Optional, Tuple
 
 logger = logging.getLogger("AQUABC.ic")
 
-# State variable definitions with names and typical units
+# State variable definitions with names, descriptions, units, and CSV column names
+# The 'csv_name' field matches column headers in OUTPUT.csv
 STATE_VARIABLES = {
-    1: {"name": "NH4_N", "description": "Ammonium Nitrogen", "units": "mg N/L"},
-    2: {"name": "NO3_N", "description": "Nitrate Nitrogen", "units": "mg N/L"},
-    3: {"name": "PO4_P", "description": "Orthophosphate Phosphorus", "units": "mg P/L"},
-    4: {"name": "DISS_OXYGEN", "description": "Dissolved Oxygen", "units": "mg O2/L"},
-    5: {"name": "DIA_C", "description": "Diatoms Carbon", "units": "mg C/L"},
-    6: {"name": "ZOO_C", "description": "Zooplankton Carbon", "units": "mg C/L"},
-    7: {"name": "ZOO_N", "description": "Zooplankton Nitrogen", "units": "mg N/L"},
-    8: {"name": "ZOO_P", "description": "Zooplankton Phosphorus", "units": "mg P/L"},
-    9: {"name": "DET_PART_ORG_C", "description": "Detritus Particulate Organic Carbon", "units": "mg C/L"},
-    10: {"name": "DET_PART_ORG_N", "description": "Detritus Particulate Organic Nitrogen", "units": "mg N/L"},
-    11: {"name": "DET_PART_ORG_P", "description": "Detritus Particulate Organic Phosphorus", "units": "mg P/L"},
-    12: {"name": "DISS_ORG_C", "description": "Dissolved Organic Carbon", "units": "mg C/L"},
-    13: {"name": "DISS_ORG_N", "description": "Dissolved Organic Nitrogen", "units": "mg N/L"},
-    14: {"name": "DISS_ORG_P", "description": "Dissolved Organic Phosphorus", "units": "mg P/L"},
-    15: {"name": "CYN_C", "description": "Non-fixing Cyanobacteria Carbon", "units": "mg C/L"},
-    16: {"name": "OPA_C", "description": "Other Phytoplankton Carbon", "units": "mg C/L"},
-    17: {"name": "DISS_Si", "description": "Dissolved Silica", "units": "mg Si/L"},
-    18: {"name": "PART_Si", "description": "Particulate Silica", "units": "mg Si/L"},
-    19: {"name": "FIX_CYN_C", "description": "Fixing Cyanobacteria Carbon", "units": "mg C/L"},
-    20: {"name": "INORG_C", "description": "Inorganic Carbon", "units": "mol C/L"},
-    21: {"name": "TOT_ALK", "description": "Total Alkalinity", "units": "eq/L"},
-    22: {"name": "FE_II", "description": "Iron (Fe2+)", "units": "mg Fe/L"},
-    23: {"name": "FE_III", "description": "Iron (Fe3+)", "units": "mg Fe/L"},
-    24: {"name": "MN_II", "description": "Manganese (Mn2+)", "units": "mg Mn/L"},
-    25: {"name": "MN_IV", "description": "Manganese (Mn4+)", "units": "mg Mn/L"},
-    26: {"name": "CA", "description": "Calcium", "units": "mg Ca/L"},
-    27: {"name": "MG", "description": "Magnesium", "units": "mg Mg/L"},
-    28: {"name": "S_PLUS_6", "description": "Sulphate Sulphur (S6+)", "units": "mg S/L"},
-    29: {"name": "S_MINUS_2", "description": "Sulphide Sulphur (S2-)", "units": "mg S/L"},
-    30: {"name": "CH4_C", "description": "Methane Carbon", "units": "mg C/L"},
-    31: {"name": "NOST_VEG_HET_C", "description": "Nostocales Carbon", "units": "mg C/L"},
-    32: {"name": "AKI_C", "description": "Akinetes Carbon", "units": "g/m2"},
-    33: {"name": "SEC_METAB_1", "description": "Secondary Metabolite 1", "units": "-"},
-    34: {"name": "SEC_METAB_2", "description": "Secondary Metabolite 2", "units": "-"},
-    35: {"name": "SEC_METAB_3", "description": "Secondary Metabolite 3", "units": "-"},
-    36: {"name": "SEC_METAB_4", "description": "Secondary Metabolite 4", "units": "-"},
-    37: {"name": "EXTRA_VAR", "description": "Extra Variable", "units": "-"},
+    1: {"name": "NH4_N", "csv_name": "NH4N", "description": "Ammonium Nitrogen", "units": "mg N/L", "category": "Nutrients"},
+    2: {"name": "NO3_N", "csv_name": "NO3N", "description": "Nitrate Nitrogen", "units": "mg N/L", "category": "Nutrients"},
+    3: {"name": "PO4_P", "csv_name": "PO4P", "description": "Orthophosphate Phosphorus", "units": "mg P/L", "category": "Nutrients"},
+    4: {"name": "DISS_OXYGEN", "csv_name": "DOXY", "description": "Dissolved Oxygen", "units": "mg O₂/L", "category": "Gases"},
+    5: {"name": "DIA_C", "csv_name": "DIAC", "description": "Diatoms Carbon", "units": "mg C/L", "category": "Phytoplankton"},
+    6: {"name": "ZOO_C", "csv_name": "ZOOC", "description": "Zooplankton Carbon", "units": "mg C/L", "category": "Zooplankton"},
+    7: {"name": "ZOO_N", "csv_name": "ZOON", "description": "Zooplankton Nitrogen", "units": "mg N/L", "category": "Zooplankton"},
+    8: {"name": "ZOO_P", "csv_name": "ZOOP", "description": "Zooplankton Phosphorus", "units": "mg P/L", "category": "Zooplankton"},
+    9: {"name": "DET_PART_ORG_C", "csv_name": "DETC", "description": "Detritus Particulate Organic Carbon", "units": "mg C/L", "category": "Particulates"},
+    10: {"name": "DET_PART_ORG_N", "csv_name": "DETN", "description": "Detritus Particulate Organic Nitrogen", "units": "mg N/L", "category": "Particulates"},
+    11: {"name": "DET_PART_ORG_P", "csv_name": "DETP", "description": "Detritus Particulate Organic Phosphorus", "units": "mg P/L", "category": "Particulates"},
+    12: {"name": "DISS_ORG_C", "csv_name": "DOC", "description": "Dissolved Organic Carbon", "units": "mg C/L", "category": "Dissolved OM"},
+    13: {"name": "DISS_ORG_N", "csv_name": "DON", "description": "Dissolved Organic Nitrogen", "units": "mg N/L", "category": "Dissolved OM"},
+    14: {"name": "DISS_ORG_P", "csv_name": "DOP", "description": "Dissolved Organic Phosphorus", "units": "mg P/L", "category": "Dissolved OM"},
+    15: {"name": "CYN_C", "csv_name": "NOFIX_CYNC", "description": "Non-fixing Cyanobacteria Carbon", "units": "mg C/L", "category": "Phytoplankton"},
+    16: {"name": "OPA_C", "csv_name": "OPA", "description": "Other Phytoplankton Carbon", "units": "mg C/L", "category": "Phytoplankton"},
+    17: {"name": "DISS_Si", "csv_name": "DISSOLVED_SILICA", "description": "Dissolved Silica", "units": "mg Si/L", "category": "Nutrients"},
+    18: {"name": "PART_Si", "csv_name": "PARTICULATE_SILICA", "description": "Particulate Silica", "units": "mg Si/L", "category": "Particulates"},
+    19: {"name": "FIX_CYN_C", "csv_name": "FIX_CYNC", "description": "N-fixing Cyanobacteria Carbon", "units": "mg C/L", "category": "Phytoplankton"},
+    20: {"name": "INORG_C", "csv_name": "DIC", "description": "Dissolved Inorganic Carbon", "units": "mol C/L", "category": "Carbonate"},
+    21: {"name": "TOT_ALK", "csv_name": "ALKALINITY", "description": "Total Alkalinity", "units": "eq/L", "category": "Carbonate"},
+    22: {"name": "FE_II", "csv_name": "FE_II", "description": "Ferrous Iron (Fe²⁺)", "units": "mg Fe/L", "category": "Metals"},
+    23: {"name": "FE_III", "csv_name": "FE_III", "description": "Ferric Iron (Fe³⁺)", "units": "mg Fe/L", "category": "Metals"},
+    24: {"name": "MN_II", "csv_name": "MN_II", "description": "Manganous Manganese (Mn²⁺)", "units": "mg Mn/L", "category": "Metals"},
+    25: {"name": "MN_IV", "csv_name": "MN_IV", "description": "Manganic Manganese (Mn⁴⁺)", "units": "mg Mn/L", "category": "Metals"},
+    26: {"name": "CA", "csv_name": "CA", "description": "Calcium", "units": "mg Ca/L", "category": "Metals"},
+    27: {"name": "MG", "csv_name": "MG", "description": "Magnesium", "units": "mg Mg/L", "category": "Metals"},
+    28: {"name": "S_PLUS_6", "csv_name": "S_PLUS_6", "description": "Sulphate Sulphur (SO₄²⁻)", "units": "mg S/L", "category": "Sulphur"},
+    29: {"name": "S_MINUS_2", "csv_name": "S_MINUS_2", "description": "Sulphide Sulphur (H₂S)", "units": "mg S/L", "category": "Sulphur"},
+    30: {"name": "CH4_C", "csv_name": "CH4_C", "description": "Methane Carbon", "units": "mg C/L", "category": "Gases"},
+    31: {"name": "NOST_VEG_HET_C", "csv_name": "NOST_VEG_HET_C", "description": "Nostocales Heterocyst Carbon", "units": "mg C/L", "category": "Phytoplankton"},
+    32: {"name": "AKI_C", "csv_name": "AKI_C", "description": "Akinetes Carbon", "units": "g/m²", "category": "Phytoplankton"},
+    33: {"name": "SEC_METAB_DIA", "csv_name": "SEC_METAB_DIA", "description": "Diatom Secondary Metabolites", "units": "relative", "category": "Allelopathy"},
+    34: {"name": "SEC_METAB_NOFIX_CYN", "csv_name": "SEC_METAB_NOFIX_CYN", "description": "Non-fixing Cyanobacteria Metabolites", "units": "relative", "category": "Allelopathy"},
+    35: {"name": "SEC_METAB_FIX_CYN", "csv_name": "SEC_METAB_FIX_CYN", "description": "N-fixing Cyanobacteria Metabolites", "units": "relative", "category": "Allelopathy"},
+    36: {"name": "SEC_METAB_NOST", "csv_name": "SEC_METAB_NOST", "description": "Nostocales Metabolites", "units": "relative", "category": "Allelopathy"},
+    37: {"name": "EXTRA_VAR", "csv_name": "EXTRA_VAR", "description": "Extra Variable", "units": "-", "category": "Other"},
 }
 
-# Categories for state variables
+# Categories for state variables (by index)
 STATE_VARIABLE_CATEGORIES = {
     "Nutrients": [1, 2, 3, 17],
     "Dissolved Gases": [4, 30],
-    "Phytoplankton": [5, 15, 16, 19, 31],
+    "Phytoplankton": [5, 15, 16, 19, 31, 32],
     "Zooplankton": [6, 7, 8],
     "Particulate Organics": [9, 10, 11, 18],
     "Dissolved Organics": [12, 13, 14],
     "Carbonate System": [20, 21],
     "Metals": [22, 23, 24, 25, 26, 27],
     "Sulphur": [28, 29],
-    "Other": [32, 33, 34, 35, 36, 37],
+    "Allelopathy": [33, 34, 35, 36],
+    "Other": [37],
 }
+
+# Build CSV column name to info mapping
+CSV_COLUMN_INFO = {}
+for idx, info in STATE_VARIABLES.items():
+    csv_name = info.get("csv_name", info["name"])
+    var_name = info["name"]
+    info_dict = {
+        "index": idx,
+        "name": info["name"],
+        "description": info["description"],
+        "units": info["units"],
+        "category": info.get("category", "Other"),
+    }
+    # Add by csv_name (e.g., "NH4N")
+    CSV_COLUMN_INFO[csv_name] = info_dict
+    CSV_COLUMN_INFO[csv_name.lower()] = info_dict
+    # Also add by variable name (e.g., "NH4_N") for PELAGIC_BOX output files
+    if var_name != csv_name:
+        CSV_COLUMN_INFO[var_name] = info_dict
+        CSV_COLUMN_INFO[var_name.lower()] = info_dict
+
+
+def get_variable_display_name(csv_column: str) -> str:
+    """Get a human-readable display name for a CSV column.
+    
+    Args:
+        csv_column: Column name from OUTPUT.csv (e.g., 'NH4N', 'DIAC')
+        
+    Returns:
+        Descriptive name like 'NH4N - Ammonium Nitrogen (mg N/L)'
+    """
+    col_clean = csv_column.strip()
+    info = CSV_COLUMN_INFO.get(col_clean) or CSV_COLUMN_INFO.get(col_clean.lower())
+    
+    if info:
+        return f"{col_clean} - {info['description']} ({info['units']})"
+    else:
+        # Unknown column - return as-is
+        return col_clean
+
+
+def get_variable_info(csv_column: str) -> Optional[Dict]:
+    """Get full info dict for a CSV column name.
+    
+    Args:
+        csv_column: Column name from OUTPUT.csv
+        
+    Returns:
+        Dict with index, name, description, units, category or None
+    """
+    col_clean = csv_column.strip()
+    return CSV_COLUMN_INFO.get(col_clean) or CSV_COLUMN_INFO.get(col_clean.lower())
+
+
+def get_grouped_variable_choices(columns: List[str]) -> Dict[str, Dict[str, str]]:
+    """Create grouped choices for selectize input from CSV columns.
+    
+    Args:
+        columns: List of column names from CSV header
+        
+    Returns:
+        Dict of {category: {csv_name: display_name}} for grouped selectize
+    """
+    # Group columns by category
+    grouped = {}
+    unknown = {}
+    
+    for col in columns:
+        col_clean = col.strip()
+        if col_clean.lower() in ['time', 'time_days', 'date', 'datetime', 'julian_day']:
+            continue
+            
+        info = get_variable_info(col_clean)
+        if info:
+            category = info['category']
+            if category not in grouped:
+                grouped[category] = {}
+            # Use only the description as display name (no code)
+            grouped[category][col_clean] = info['description']
+        else:
+            unknown[col_clean] = col_clean
+    
+    # Add unknown columns at the end
+    if unknown:
+        grouped["Other"] = unknown
+    
+    return grouped
 
 
 @dataclass

@@ -125,7 +125,7 @@ function getpar(name)
     double precision value
     call para_get_value(name,value)
     getpar = value
-end
+end function getpar
 
 !==================================================================
 

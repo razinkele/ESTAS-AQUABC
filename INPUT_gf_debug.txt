@@ -22,9 +22,9 @@ INPUTS/
 # PELAGIC MODEL OUTPUT FOLDER write the folder always "\" (windows) or "/" (UNIX) in the end
 OUTPUTS_gf_debug/
 # RESUSPENSION_OPTION
-          2
+          0
 # MODEL_SEDIMENTS
-          1
+          0
 # NUM_PRESCRIBED_SEDIMENT_FLUX_SETS
           2
 # SEDIMENT MODEL INPUT FILE

@@ -4,6 +4,7 @@ module PELAGIC_SOLVER
     use PELAGIC_BOX_MODEL
     use PELAGIC_ECOLOGY
     use AQUABC_PELAGIC_MODEL_CONSTANTS
+    use AQUABC_PHYSICAL_CONSTANTS, only: SECONDS_PER_DAY, MM_TO_M, MIN_CONCENTRATION
     use BOTTOM_SEDIMENTS
 
 
@@ -88,15 +89,19 @@ contains
         NUM_MASS_WITHDRAWALS         = PELAGIC_BOX_MODEL_DATA % NUM_MASS_WITHDRAWALS
 
         if (.not. allocated(BOUND_CONCS)) then
-            allocate(BOUND_CONCS        (NUM_OPEN_BOUNDARIES , NUM_PELAGIC_STATE_VARS))
-            allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS))
-            allocate(MASS_LOADS         (NUM_MASS_LOADS      , NUM_PELAGIC_STATE_VARS))
-            allocate(MASS_WITHDRAWALS   (NUM_MASS_WITHDRAWALS, NUM_PELAGIC_STATE_VARS))
-            allocate(FLOWS              (NUM_PELAGIC_ADVECTIVE_LINKS))
-            allocate(DISPERSION_COEFFS  (NUM_PELAGIC_DISPERSIVE_LINKS))
-            allocate(INTERFACE_AREAS    (NUM_PELAGIC_DISPERSIVE_LINKS))
-            allocate(SURFACE_AREAS      (NUM_PELAGIC_BOXES))
-            allocate(BOTTOM_AREAS       (NUM_PELAGIC_BOXES))
+            allocate(BOUND_CONCS        (NUM_OPEN_BOUNDARIES , NUM_PELAGIC_STATE_VARS), stat=i)
+            if (i /= 0) then
+                write(*,*) 'ERROR: SOLVE: allocation of solver arrays failed'
+                stop
+            end if
+            allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS), stat=i)
+            allocate(MASS_LOADS         (NUM_MASS_LOADS      , NUM_PELAGIC_STATE_VARS), stat=i)
+            allocate(MASS_WITHDRAWALS   (NUM_MASS_WITHDRAWALS, NUM_PELAGIC_STATE_VARS), stat=i)
+            allocate(FLOWS              (NUM_PELAGIC_ADVECTIVE_LINKS), stat=i)
+            allocate(DISPERSION_COEFFS  (NUM_PELAGIC_DISPERSIVE_LINKS), stat=i)
+            allocate(INTERFACE_AREAS    (NUM_PELAGIC_DISPERSIVE_LINKS), stat=i)
+            allocate(SURFACE_AREAS      (NUM_PELAGIC_BOXES), stat=i)
+            allocate(BOTTOM_AREAS       (NUM_PELAGIC_BOXES), stat=i)
         end if
 
         if (PELAGIC_SOLVER_NO == 1) then
@@ -127,6 +132,8 @@ contains
             SETTLING_VELOCITIES_OUTPUT(:,:) = SETTLING_VELOCITIES
 
             !CALCULATE THE STATE VARIABLES IN PELAGIC BOXES
+            !$omp parallel do default(shared) private(i, j, tot_deriv, old_mass, new_mass) &
+            !$omp& private(STATE_VAR_NO, SED_STATE_VAR_NO, SED_LAYER_NO, k)
             do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
 
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
@@ -148,6 +155,7 @@ contains
                     new_mass = old_mass + tot_deriv * TIME_STEP
 
                     if (new_mass < 0.0D0) then
+                        !$omp critical
                         write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', i, ' STATE=', j
                         write(6,*) '  OLD_MASS=', old_mass
                         write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
@@ -165,6 +173,7 @@ contains
                             write(6,*) '    KINETIC=', PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, j, 1)
                             write(6,*) '    SED_FLUX=', PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1)
                         end if
+                        !$omp end critical
                     end if
 
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = new_mass
@@ -174,22 +183,25 @@ contains
 
                     ! Diagnostic: if concentration becomes strongly negative, print context
                     if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < -1.0D-12) then
+                        !$omp critical
                         write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', i, ' STATE=', j
                         write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
                         write(6,*) '  CONC='
                         write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
                         write(6,*) '  VOLUME='
                         write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+                        !$omp end critical
                     end if
 
-                    if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < 1.0D-10) then
-                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = 1.0D-10
+                    if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < MIN_CONCENTRATION) then
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = MIN_CONCENTRATION
 
                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = &
-                             1.0D-10 * PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+                             MIN_CONCENTRATION * PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
                     end if
 
                     if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) > 1.0D10) then
+                        !$omp critical
                         write(*,*) '!!! ERROR IN SUBROUTINE PELAGIC SOLVER !!!'
                         write(*,*) '!!!     UNREALISTIC VALUE DETECTED     !!!'
                         write(*,*)
@@ -261,10 +273,143 @@ contains
                             write(*,fmt = '(a35)')      '-----------------------------------'
                         end do
 
+                        !$omp end critical
                         stop
                     end if
                 end do
             end do
+            !$omp end parallel do
+
+        else if (PELAGIC_SOLVER_NO == 2) then
+            ! =====================================================================
+            ! RK2 (Heun's method) solver
+            ! =====================================================================
+            ! Stage 1: Evaluate derivatives at current state
+            ! Stage 2: Evaluate derivatives at predicted state (Euler step)
+            ! Final:   Average of both derivative evaluations
+            ! =====================================================================
+
+            call UPDATE_TIME_FUNCS &
+                 (PELAGIC_BOX_MODEL_DATA  , TIME, &
+                  FLOWS                   , &
+                  BOUND_CONCS             , DISPERSION_COEFFS, INTERFACE_AREAS , &
+                  SETTLING_VELOCITIES     , SURFACE_AREAS    , &
+                  BOTTOM_AREAS, MASS_LOADS, MASS_WITHDRAWALS , &
+                  PRESCRIBED_SEDIMENT_FLUXES)
+
+            do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                STATE_VARIABLES(i, :) = &
+                    PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
+            end do
+
+            ! Stage 1: compute K1 derivatives at current state
+            call CALC_DERIV &
+                 (PELAGIC_BOX_MODEL_DATA, TIME             , TIME_STEP            , &
+                  FLOWS, BOUND_CONCS    , DISPERSION_COEFFS, INTERFACE_AREAS      , &
+                  SETTLING_VELOCITIES   , SURFACE_AREAS, BOTTOM_AREAS, MASS_LOADS , &
+                  MASS_WITHDRAWALS      , PRESCRIBED_SEDIMENT_FLUXES, 1     , &
+                  EFFECTIVE_DISSLOVED_FRACTIONS , &
+                  EFFECTIVE_DEPOSITION_FRACTIONS, &
+                  DEPOSITION_AREA_RATIOS        , &
+                  nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
+
+            SETTLING_VELOCITIES_OUTPUT(:,:) = SETTLING_VELOCITIES
+
+            ! Save K1 total derivatives and apply Euler predictor step
+            block
+                real(kind = DBL), dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES, &
+                                            PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS) :: &
+                    K1_TOTAL_DERIVS
+                real(kind = DBL) :: k1_deriv, k2_deriv
+
+                ! Store K1 derivatives and advance state to predicted position
+                do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                    PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
+                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME + &
+                         (PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, 1) * TIME_STEP)
+
+                    do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
+                        K1_TOTAL_DERIVS(i, j) = &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS               (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS              (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS                (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS               (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS         (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS                 (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1)
+
+                        ! Euler predictor: temporarily advance masses and concentrations
+                        old_mass = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j)
+                        new_mass = old_mass + K1_TOTAL_DERIVS(i, j) * TIME_STEP
+
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = new_mass
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = &
+                            new_mass / PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+                    end do
+                end do
+
+                ! Stage 2: compute K2 derivatives at predicted state
+                do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                    STATE_VARIABLES(i, :) = &
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
+                end do
+
+                call CALC_DERIV &
+                     (PELAGIC_BOX_MODEL_DATA, TIME + TIME_STEP, TIME_STEP          , &
+                      FLOWS, BOUND_CONCS    , DISPERSION_COEFFS, INTERFACE_AREAS   , &
+                      SETTLING_VELOCITIES   , SURFACE_AREAS, BOTTOM_AREAS, MASS_LOADS, &
+                      MASS_WITHDRAWALS      , PRESCRIBED_SEDIMENT_FLUXES, 1        , &
+                      EFFECTIVE_DISSLOVED_FRACTIONS , &
+                      EFFECTIVE_DEPOSITION_FRACTIONS, &
+                      DEPOSITION_AREA_RATIOS        , &
+                      nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
+
+                ! Final RK2 update: restore original masses and apply averaged derivatives
+                do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                    do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
+                        k1_deriv = K1_TOTAL_DERIVS(i, j)
+
+                        k2_deriv = &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS               (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS              (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS                (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS               (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS         (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS                 (i, j, 1) + &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1)
+
+                        ! Restore original mass and apply RK2 averaged derivative
+                        old_mass = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) - &
+                                   k1_deriv * TIME_STEP
+                        new_mass = old_mass + 0.5D0 * (k1_deriv + k2_deriv) * TIME_STEP
+
+                        if (new_mass < 0.0D0) then
+                            write(6,*) 'RK2: NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', i, ' STATE=', j
+                            write(6,*) '  OLD_MASS=', old_mass, ' K1=', k1_deriv, ' K2=', k2_deriv
+                        end if
+
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = new_mass
+
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = &
+                            new_mass / PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+
+                        ! Apply same concentration floor as Euler solver
+                        if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < MIN_CONCENTRATION) then
+                            PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = MIN_CONCENTRATION
+                            PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = &
+                                 MIN_CONCENTRATION * PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+                        end if
+
+                        if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) > 1.0D10) then
+                            write(*,*) '!!! ERROR IN RK2 SOLVER: UNREALISTIC VALUE !!!'
+                            write(*,*) 'TIME=', TIME, ' BOX=', i, ' STATE=', j
+                            write(*,*) 'CONC=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
+                            stop
+                        end if
+                    end do
+                end do
+            end block
+
         end if
 
     end subroutine SOLVE
@@ -695,7 +840,7 @@ contains
             PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(BOX_NO, DERIV_NO) = &
                 PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(BOX_NO, DERIV_NO) + &
                 (PELAGIC_BOX_MODEL_DATA % FORCINGS(FLOW_TS_NO, FLOW_TS_VAR_NO) * &
-                 SURFACE_AREAS(BOX_NO) * 1.0D-3)
+                 SURFACE_AREAS(BOX_NO) * MM_TO_M)
             !----------------------------------------------------------------------------
 
 
@@ -714,7 +859,7 @@ contains
             PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(BOX_NO, DERIV_NO) = &
                 PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(BOX_NO, DERIV_NO) - &
                 (PELAGIC_BOX_MODEL_DATA % FORCINGS(FLOW_TS_NO, FLOW_TS_VAR_NO) * &
-                 SURFACE_AREAS(BOX_NO) * 1.0D-3)
+                 SURFACE_AREAS(BOX_NO) * MM_TO_M)
             !----------------------------------------------------------------------------
         end do
         !--------------------------------------------------------------------------------
@@ -740,7 +885,7 @@ contains
                     PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(UPSTREAM_BOX_NO, DERIV_NO) = &
                          PELAGIC_BOX_MODEL_DATA % &
                              VOLUME_DERIVS(UPSTREAM_BOX_NO, DERIV_NO)   - &
-                         (FLOWS(i) * 8.64D4)
+                         (FLOWS(i) * SECONDS_PER_DAY)
                 end if
 
                 if (DOWNSTREAM_BOX_NO > 0) then
@@ -748,7 +893,7 @@ contains
                     PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(DOWNSTREAM_BOX_NO, DERIV_NO) = &
                          PELAGIC_BOX_MODEL_DATA % &
                              VOLUME_DERIVS(DOWNSTREAM_BOX_NO, DERIV_NO) + &
-                         (FLOWS(i) * 8.64D4)
+                         (FLOWS(i) * SECONDS_PER_DAY)
                 end if
             else
                 if (UPSTREAM_BOX_NO > 0) then
@@ -756,7 +901,7 @@ contains
                     PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(UPSTREAM_BOX_NO, DERIV_NO) = &
                          PELAGIC_BOX_MODEL_DATA % &
                              VOLUME_DERIVS(UPSTREAM_BOX_NO, DERIV_NO)   + &
-                         (FLOWS(i) * 8.64D4)
+                         (FLOWS(i) * SECONDS_PER_DAY)
                 end if
 
                 if (DOWNSTREAM_BOX_NO > 0) then
@@ -764,7 +909,7 @@ contains
                     PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(DOWNSTREAM_BOX_NO, DERIV_NO) = &
                          PELAGIC_BOX_MODEL_DATA % &
                              VOLUME_DERIVS(DOWNSTREAM_BOX_NO, DERIV_NO) - &
-                         (FLOWS(i) * 8.64D4)
+                         (FLOWS(i) * SECONDS_PER_DAY)
                 end if
             end if
 
@@ -805,7 +950,7 @@ contains
                                 (UPSTREAM_BOX_NO, j, DERIV_NO) = &
                             PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS  &
                                 (UPSTREAM_BOX_NO, j, DERIV_NO) - &
-                                (FLOWS(i) * 8.64D4 * UPSTREAM_CONC)
+                                (FLOWS(i) * SECONDS_PER_DAY * UPSTREAM_CONC)
                         end if
 
                         if (DOWNSTREAM_BOX_NO > 0) then
@@ -814,7 +959,7 @@ contains
                                  (DOWNSTREAM_BOX_NO, j, DERIV_NO) = &
                             PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS  &
                                  (DOWNSTREAM_BOX_NO, j, DERIV_NO) + &
-                                 (FLOWS(i) * 8.64D4 * UPSTREAM_CONC)
+                                 (FLOWS(i) * SECONDS_PER_DAY * UPSTREAM_CONC)
                         end if
                     else
                         if (UPSTREAM_BOX_NO > 0) then
@@ -823,7 +968,7 @@ contains
                                 (UPSTREAM_BOX_NO, j, DERIV_NO) = &
                             PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS  &
                                 (UPSTREAM_BOX_NO, j, DERIV_NO) + &
-                            (FLOWS(i) * 8.64D4 * DOWNSTREAM_CONC)
+                            (FLOWS(i) * SECONDS_PER_DAY * DOWNSTREAM_CONC)
                         end if
 
                         if (DOWNSTREAM_BOX_NO > 0) then
@@ -832,7 +977,7 @@ contains
                                 (DOWNSTREAM_BOX_NO, j, DERIV_NO) = &
                             PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS  &
                                 (DOWNSTREAM_BOX_NO, j, DERIV_NO) - &
-                            (FLOWS(i) * 8.64D4 * DOWNSTREAM_CONC)
+                            (FLOWS(i) * SECONDS_PER_DAY * DOWNSTREAM_CONC)
                         end if
                     end if
                 end if
@@ -894,7 +1039,7 @@ contains
                             ECOL_DISPERSION_DERIVS (FIRST_BOX_NO, j, DERIV_NO) = &
                         PELAGIC_BOX_MODEL_DATA % &
                             ECOL_DISPERSION_DERIVS(FIRST_BOX_NO, j, DERIV_NO) + &
-                            (((DISPERSION_COEFF * 8.64D4 * INTERFACE_AREA) / MIXING_LENGTH) * &
+                            (((DISPERSION_COEFF * SECONDS_PER_DAY * INTERFACE_AREA) / MIXING_LENGTH) * &
                              (SECOND_BOX_CONC - FIRST_BOX_CONC))
                     end if
 
@@ -904,7 +1049,7 @@ contains
                             ECOL_DISPERSION_DERIVS (SECOND_BOX_NO, j, DERIV_NO) = &
                         PELAGIC_BOX_MODEL_DATA % &
                             ECOL_DISPERSION_DERIVS(SECOND_BOX_NO, j, DERIV_NO) + &
-                            (((DISPERSION_COEFF * 8.64D4 * INTERFACE_AREA) / MIXING_LENGTH) * &
+                            (((DISPERSION_COEFF * SECONDS_PER_DAY * INTERFACE_AREA) / MIXING_LENGTH) * &
                              (FIRST_BOX_CONC - SECOND_BOX_CONC))
                     end if
 
@@ -1437,5 +1582,19 @@ contains
         end do
 
     end subroutine CALC_DERIV
+
+    subroutine CLEANUP_SOLVER()
+        ! Deallocate module-level arrays to prevent memory leaks
+        implicit none
+        if (allocated(FLOWS))               deallocate(FLOWS)
+        if (allocated(BOUND_CONCS))         deallocate(BOUND_CONCS)
+        if (allocated(DISPERSION_COEFFS))   deallocate(DISPERSION_COEFFS)
+        if (allocated(INTERFACE_AREAS))     deallocate(INTERFACE_AREAS)
+        if (allocated(SETTLING_VELOCITIES)) deallocate(SETTLING_VELOCITIES)
+        if (allocated(SURFACE_AREAS))       deallocate(SURFACE_AREAS)
+        if (allocated(BOTTOM_AREAS))        deallocate(BOTTOM_AREAS)
+        if (allocated(MASS_LOADS))          deallocate(MASS_LOADS)
+        if (allocated(MASS_WITHDRAWALS))    deallocate(MASS_WITHDRAWALS)
+    end subroutine CLEANUP_SOLVER
 
 end module PELAGIC_SOLVER

@@ -26,19 +26,43 @@ if [ -n "$BUILD_TYPE" ]; then
     echo "Build type: $BUILD_TYPE"
 fi
 
-# Set module output directory flag based on compiler
-case "$FC" in
+# Extract compiler base name for pattern matching (handles full paths)
+FC_BASE=$(basename "$FC")
+
+# Set module output directory flag and archiver based on compiler
+case "$FC_BASE" in
     gfortran*)
         MOD_FLAG="-J."
+        AR_CMD="ar rcs"
         ;;
     ifort*|ifx*)
         MOD_FLAG="-module ."
+        # For Intel compilers with IPO, we need to use Intel's llvm-ar or xiar
+        FC_DIR=$(dirname "$FC")
+        if [ -x "$FC_DIR/compiler/llvm-ar" ]; then
+            # Intel oneAPI 2024+ uses llvm-ar
+            AR_CMD="$FC_DIR/compiler/llvm-ar rcs"
+            echo "Using Intel LLVM archiver: $FC_DIR/compiler/llvm-ar"
+        elif [ -x "$FC_DIR/xiar" ]; then
+            # Classic Intel compilers use xiar
+            AR_CMD="$FC_DIR/xiar rcs"
+            echo "Using Intel archiver: $FC_DIR/xiar"
+        else
+            # Fall back to standard ar - will work without IPO
+            AR_CMD="ar rcs"
+            echo "Warning: Intel archiver not found, using standard ar"
+            echo "  This may cause issues when building with -ipo"
+        fi
         ;;
     *)
         # Default to gfortran-style
         MOD_FLAG="-J."
+        AR_CMD="ar rcs"
         ;;
 esac
+
+# Use local temp file for error output (avoid /tmp permission issues)
+COMPILE_ERR="./compile_err.txt"
 echo "Module flag: $MOD_FLAG"
 echo "=============================================="
 
@@ -70,7 +94,10 @@ while [ -n "$remaining" ] && [ "$compiled_any" -eq 1 ]; do
       continue
     fi
     echo "Compiling: $src"
-    if $FC -c $FFLAGS $MOD_FLAG -o "$base.o" "$src" 2>/tmp/compile_err.txt; then
+    if $FC -c $FFLAGS $MOD_FLAG -o "$base.o" "$src" >"$COMPILE_ERR" 2>&1; then
+      if [ -s "$COMPILE_ERR" ]; then
+         cat "$COMPILE_ERR"
+      fi
       compiled_any=1
       compiled_count=$((compiled_count + 1))
       total_compiled=$((total_compiled + 1))
@@ -94,7 +121,7 @@ if [ -n "$remaining" ]; then
   echo "" >&2
   echo "Last compiler error:" >&2
   echo "----------------------------------------------" >&2
-  cat /tmp/compile_err.txt >&2 || true
+  cat "$COMPILE_ERR" >&2 || true
   echo "----------------------------------------------" >&2
   exit 1
 fi
@@ -102,7 +129,7 @@ fi
 # Create static archive
 echo ""
 echo "Creating static library..."
-ar rcs libaquabc.a *.o
+$AR_CMD libaquabc.a *.o
 
 echo ""
 echo "=============================================="
@@ -110,3 +137,6 @@ echo "Build complete!"
 echo "Built libaquabc.a with $(ls -1 *.o | wc -l) object file(s)"
 echo "Compiler: $FC"
 echo "=============================================="
+
+# Clean up temp file
+rm -f "$COMPILE_ERR"

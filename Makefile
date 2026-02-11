@@ -1,4 +1,4 @@
-.PHONY: link-data build-lib build-example build-estas build-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler
+.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler
 
 # =============================================================================
 # Compiler Configuration
@@ -28,6 +28,18 @@ LIBAQUABC = $(BUILDDIR)/libaquabc.a
 # =============================================================================
 
 BUILD_TYPE ?= release
+
+# =============================================================================
+# OpenMP Configuration
+# =============================================================================
+# OPENMP options:
+#   0 - Disabled (default)
+#   1 - Enabled (adds -fopenmp for gfortran, -qopenmp for Intel)
+#
+# Usage: make OPENMP=1 FC=gfortran BUILD_TYPE=release build-estas
+# =============================================================================
+
+OPENMP ?= 0
 
 # =============================================================================
 # Executable Naming
@@ -60,37 +72,53 @@ EXE_NAME ?= ESTAS_II
 # Auto-generated name for build-named target
 EXE_NAME_AUTO = ESTAS_II_$(FC_SHORT)_$(BUILD_TYPE)
 
-# Set compiler-specific flags based on FC and BUILD_TYPE
-ifeq ($(FC),gfortran)
+# Set compiler-specific flags based on FC_BASE and BUILD_TYPE
+# (FC_BASE extracts the compiler name from full paths)
+ifeq ($(FC_BASE),gfortran)
     COMPILER_NAME = GNU Fortran (gfortran)
     ifeq ($(BUILD_TYPE),debug)
         FFLAGS = -g -Og -fcheck=all -fbacktrace -Wall -Wextra -pedantic -ffpe-trap=invalid,zero,overflow
         BUILD_DESC = Debug (bounds checking, backtraces, warnings)
     else ifeq ($(BUILD_TYPE),fast)
+        # WARNING: -ffast-math breaks IEEE 754 compliance. It enables:
+        #   -fno-math-errno, -funsafe-math-optimizations, -ffinite-math-only,
+        #   -fno-rounding-math, -fno-signaling-nans, -fcx-limited-range
+        # This can produce different results for exp(), log(), and trig functions,
+        # and may affect Michaelis-Menten kinetics, light limitation, and DO
+        # saturation calculations. Use BUILD_TYPE=release for validated results.
         FFLAGS = -O3 -march=native -mtune=native -funroll-loops -ffast-math -flto
         BUILD_DESC = Fast (-O3, -ffast-math, LTO)
     else
         FFLAGS = -O2 -march=native -mtune=native
         BUILD_DESC = Release (-O2, native arch)
     endif
-else ifeq ($(FC),ifort)
+else ifeq ($(FC_BASE),ifort)
     COMPILER_NAME = Intel Fortran Classic (ifort)
     ifeq ($(BUILD_TYPE),debug)
         FFLAGS = -g -O0 -check all -traceback -warn all -fpe0 -debug full
         BUILD_DESC = Debug (full checking, traceback)
     else ifeq ($(BUILD_TYPE),fast)
+        # WARNING: -no-prec-div and -fp-model fast=2 break IEEE 754 compliance.
+        # -no-prec-div replaces division with reciprocal multiplication (less accurate).
+        # -fp-model fast=2 allows aggressive FP reordering and approximations.
+        # This can affect scientific results. Use BUILD_TYPE=release for validated runs.
         FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2
         BUILD_DESC = Fast (-O3, IPO, fast math)
     else
         FFLAGS = -O2 -xHost
         BUILD_DESC = Release (-O2, host arch)
     endif
-else ifeq ($(FC),ifx)
+else ifeq ($(FC_BASE),ifx)
     COMPILER_NAME = Intel Fortran LLVM (ifx)
+    # IFX requires explicit linking with Intel Fortran runtime libraries
+    IFX_LIB_PATH = $(dir $(FC))../lib
+    LDFLAGS_IFX = -L$(IFX_LIB_PATH) -lifcore -lifport -Wl,-rpath,$(IFX_LIB_PATH)
     ifeq ($(BUILD_TYPE),debug)
         FFLAGS = -g -O0 -check all -traceback -warn all -fpe0 -debug full
         BUILD_DESC = Debug (full checking, traceback)
     else ifeq ($(BUILD_TYPE),fast)
+        # WARNING: -no-prec-div and -fp-model fast=2 break IEEE 754 compliance.
+        # See ifort fast flags above for details.
         FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2
         BUILD_DESC = Fast (-O3, IPO, fast math)
     else
@@ -109,6 +137,17 @@ else
     else
         FFLAGS = -O2
         BUILD_DESC = Release (generic)
+    endif
+endif
+
+# Append OpenMP flags if enabled
+ifeq ($(OPENMP),1)
+    ifeq ($(FC_BASE),gfortran)
+        FFLAGS += -fopenmp
+    else ifeq ($(FC_BASE),ifort)
+        FFLAGS += -qopenmp
+    else ifeq ($(FC_BASE),ifx)
+        FFLAGS += -qopenmp
     endif
 endif
 
@@ -143,7 +182,7 @@ build-estas: build-lib
 	@echo "Build Type: $(BUILD_DESC)"
 	@echo "FFLAGS:     $(FFLAGS)"
 	@echo "=============================================="
-	$(FC) $(FFLAGS) -I$(BUILDDIR) -o $(EXE_NAME) $(BUILDDIR)/ESTAS_II.o -L$(BUILDDIR) -laquabc
+	$(FC) $(FFLAGS) -I$(BUILDDIR) -o $(EXE_NAME) $(BUILDDIR)/ESTAS_II.o -L$(BUILDDIR) -laquabc $(LDFLAGS_IFX)
 	@echo ""
 	@echo "Executable '$(EXE_NAME)' created successfully"
 	@echo "  Compiler:   $(FC)"
@@ -158,7 +197,7 @@ build-named: build-lib
 	@echo "Build Type: $(BUILD_DESC)"
 	@echo "FFLAGS:     $(FFLAGS)"
 	@echo "=============================================="
-	$(FC) $(FFLAGS) -I$(BUILDDIR) -o $(EXE_NAME_AUTO) $(BUILDDIR)/ESTAS_II.o -L$(BUILDDIR) -laquabc
+	$(FC) $(FFLAGS) -I$(BUILDDIR) -o $(EXE_NAME_AUTO) $(BUILDDIR)/ESTAS_II.o -L$(BUILDDIR) -laquabc $(LDFLAGS_IFX)
 	@echo ""
 	@echo "Executable '$(EXE_NAME_AUTO)' created successfully"
 	@echo "  Compiler:   $(FC)"
@@ -184,6 +223,22 @@ build-all-configs: build-lib
 # Build the simple 0D example (for testing/comparison)
 build-example: build-lib
 	cd SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D && make aquabc0D
+
+# =============================================================================
+# Rebuild Targets (clean + build in one step)
+# =============================================================================
+# NOTE: The build system uses a single-pass compilation script (make_lib.sh)
+# that compiles all .f90 files in a fixed order. Module dependencies are
+# handled by compiling modules before their dependents. If you add a new
+# module that is used by existing files, you may need to update the
+# compilation order in SOURCE_CODE/build/make_lib.sh.
+# =============================================================================
+
+# Full rebuild with default executable name
+rebuild: clean-lib build-estas
+
+# Full rebuild with auto-generated name
+rebuild-named: clean-lib build-named
 
 # =============================================================================
 # Run Targets

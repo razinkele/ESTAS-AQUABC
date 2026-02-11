@@ -86,6 +86,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
          CLAMP_WARNED, CLAMP_COUNT, CLAMP_PROC_COUNT
     use AQUABC_PEL_STATE_VAR_INDEXES
     use AQUABC_PELAGIC_INTERNAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: NSTATE_EXPECTED, CELSIUS_TO_KELVIN
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
 
     implicit none
@@ -282,8 +283,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end if
 
     !INITIALIZE STATE VARIABLES
-    if (nstate.ne.32) then
+    if (nstate .ne. NSTATE_EXPECTED) then
         write(*,*) 'PELAGIC_KINETICS: Number of state variables is wrong : ', nstate
+        write(*,*) 'Expected: ', NSTATE_EXPECTED
         stop
     end if
 
@@ -364,20 +366,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     CO2SYS_NUM_SAMPLES = nkn ! number of nodes
     CO2SYS_ntps = nkn ! correction of bug: just CO2SYS_NUM_SAMPLES is not passed to co2sys
 
-    allocate(CO2SYS_PAR1         (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PAR2         (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PAR1TYPE     (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PAR2TYPE     (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_SALT         (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_TEMPIN       (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_TEMPOUT      (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PRESIN       (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PRESOUT      (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_SI           (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_PO4          (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_pHSCALEIN    (CO2SYS_NUM_SAMPLES), &
-             CO2SYS_K1K2CONSTANTS(CO2SYS_NUM_SAMPLES), &
-             CO2SYS_KSO4CONSTANTS(CO2SYS_NUM_SAMPLES))
+    ! Allocation moved to AQUABC_PELAGIC_INTERNAL initialization for performance
 
     if (RUN_CO2SYS .eq. 1) then
         CO2SYS_PAR1         (1:nkn) = TOT_ALK(1:nkn) * 1.0D6
@@ -412,22 +401,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         HCO3       (1:nkn) = CO2SYS_OUT_DATA(1:nkn, 21)
         CO3        (1:nkn) = CO2SYS_OUT_DATA(1:nkn, 22)
 
-        deallocate(CO2SYS_PAR1         )
-        deallocate(CO2SYS_PAR2         )
-        deallocate(CO2SYS_PAR1TYPE     )
-        deallocate(CO2SYS_PAR2TYPE     )
-        deallocate(CO2SYS_SALT         )
-        deallocate(CO2SYS_TEMPIN       )
-        deallocate(CO2SYS_TEMPOUT      )
-        deallocate(CO2SYS_PRESIN       )
-        deallocate(CO2SYS_PRESOUT      )
-        deallocate(CO2SYS_SI           )
-        deallocate(CO2SYS_PO4          )
-        deallocate(CO2SYS_pHSCALEIN    )
-        deallocate(CO2SYS_K1K2CONSTANTS)
-        deallocate(CO2SYS_KSO4CONSTANTS)
-        deallocate(CO2SYS_OUT_DATA     )
-        deallocate(CO2SYS_NICEHEADERS  )
+        ! Deallocation handled by AQUABC_PELAGIC_INTERNAL cleanup
     end if ! call co2sys
 
     HCO3 = HCO3 / 1000000.0
@@ -550,6 +524,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
                         FE_II_DISS      = FE_II
                         MULT_FE_II_DISS = 1.0D0
                         MULT_FE_II_PART = 0.0D0
+                    elsewhere(FE_II .lt. 1.0D-20)
+                        ! Guard against division by zero when total Fe2+ is depleted
+                        FE_II_DISS      = 0.0D0
+                        MULT_FE_II_DISS = 1.0D0
+                        MULT_FE_II_PART = 0.0D0
                     elsewhere
                         MULT_FE_II_DISS = FE_II_DISS_EQ / FE_II
                         MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
@@ -589,6 +568,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         where(DISS_FE_II_CONC_TS_AVG >= FE_II)
             FE_II_DISS      = FE_II
+            MULT_FE_II_DISS = 1.0D0
+            MULT_FE_II_PART = 0.0D0
+        elsewhere(FE_II .lt. 1.0D-20)
+            ! Guard against division by zero when total Fe2+ is depleted
+            FE_II_DISS      = 0.0D0
             MULT_FE_II_DISS = 1.0D0
             MULT_FE_II_PART = 0.0D0
         elsewhere
@@ -691,6 +675,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
             FE_III_DISS      = FE_III
             MULT_FE_III_DISS = 1.0D0
             MULT_FE_III_PART = 0.0D0
+        elsewhere(FE_III .lt. 1.0D-20)
+            ! Guard against division by zero when total Fe3+ is depleted
+            FE_III_DISS      = 0.0D0
+            MULT_FE_III_DISS = 1.0D0
+            MULT_FE_III_PART = 0.0D0
         elsewhere
             MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
             MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
@@ -723,6 +712,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
             MN_II_DISS      = MN_II
             MULT_MN_II_DISS = 1.0D0
             MULT_MN_II_PART = 0.0D0
+        elsewhere(MN_II .lt. 1.0D-20)
+            ! Guard against division by zero when total Mn2+ is depleted
+            MN_II_DISS      = 0.0D0
+            MULT_MN_II_DISS = 1.0D0
+            MULT_MN_II_PART = 0.0D0
         elsewhere
             MULT_MN_II_DISS = MN_II_DISS / MN_II
             MULT_MN_II_PART = 1.0D0 - MULT_MN_II_DISS
@@ -746,8 +740,17 @@ subroutine AQUABC_PELAGIC_KINETICS &
         !
         ! Updated by Ali and Petras 9th of August 2016
         ! -----------------------------------------------------------------------
-        SAVED_OUTPUTS(:,1) = DISS_FE_II_CONC_TS_END  / FE_II
-        SAVED_OUTPUTS(:,2) = DISS_FE_III_CONC_TS_END / FE_III
+        ! Guard against division by zero for saved outputs
+        where(FE_II .lt. 1.0D-20)
+            SAVED_OUTPUTS(:,1) = 1.0D0
+        elsewhere
+            SAVED_OUTPUTS(:,1) = DISS_FE_II_CONC_TS_END  / FE_II
+        end where
+        where(FE_III .lt. 1.0D-20)
+            SAVED_OUTPUTS(:,2) = 1.0D0
+        elsewhere
+            SAVED_OUTPUTS(:,2) = DISS_FE_III_CONC_TS_END / FE_III
+        end where
         SAVED_OUTPUTS(:,3) = MULT_MN_II_DISS(:)
         SAVED_OUTPUTS(:,4) = MULT_MN_IV_DISS(:)
         ! -----------------------------------------------------------------------
@@ -865,12 +868,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
             (NOST_VEG_HET_C / NOST_C_TO_CHLA)) * 1.0D3
 
     ! Debug: print CHLA components for node 1 to find negative values (include time/context)
-    write(6,*) 'DEBUG: CHLA components node1: TIME=', TIME, ' TIME_STEP=', TIME_STEP
-    write(6,*) ' DIA_C(1)=', DIA_C(1), ' DIA_C/DIA_C_TO_CHLA=', DIA_C(1) / DIA_C_TO_CHLA
-    write(6,*) ' CYN_C(1)=', CYN_C(1), ' CYN_C/CYN_C_TO_CHLA=', CYN_C(1) / CYN_C_TO_CHLA
-    write(6,*) ' FIX_CYN_C(1)=', FIX_CYN_C(1), ' FIX_CYN_C/FIX_CYN_C_TO_CHLA=', FIX_CYN_C(1) / FIX_CYN_C_TO_CHLA
-    write(6,*) ' OPA_C(1)=', OPA_C(1), ' OPA_C/OPA_C_TO_CHLA=', OPA_C(1) / OPA_C_TO_CHLA
-    write(6,*) ' NOST_VEG_HET_C(1)=', NOST_VEG_HET_C(1), ' NOST_C/NOST_C_TO_CHLA=', NOST_VEG_HET_C(1) / NOST_C_TO_CHLA
+    ! Note: Commented out to reduce log noise - uncomment for detailed CHLA debugging
+    ! write(6,'(A,F12.4,A,ES10.3)') 'DEBUG: CHLA node1: TIME=', TIME, ' DT=', TIME_STEP
+    ! write(6,'(A,5ES12.4)') '  DIA/CYN/FIX/OPA/NOST=', DIA_C(1), CYN_C(1), FIX_CYN_C(1), OPA_C(1), NOST_VEG_HET_C(1)
 
     !if (present(LIGHT_EXTINCTION_OPTION)) then
 
@@ -883,7 +883,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                 ! Defensive guard: ensure CHLA is non-negative before fractional exponent
                 do i = 1, nkn
                     if (CHLA(i) < 0.0D0) then
-                        write(6,*) 'WARN: negative CHLA at node', i, 'value', CHLA(i)
+                        write(6,'(A,I4,A,ES12.4)') 'WARN: negative CHLA at node ', i, ' value=', CHLA(i)
                     end if
                 end do
                 chla_pos = CHLA
@@ -894,8 +894,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         end select
 
-        ! Debug print: K_E and DEPTH for troubleshooting NaNs
-        write(6,*) 'DEBUG: K_E(1)=', K_E(1), 'DEPTH(1)=', DEPTH(1), 'CHLA(1)=', CHLA(1)
+        ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
+        ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
 
     !else
     !    call light_kd(K_B_E, K_E, CHLA, nkn)
@@ -1191,7 +1191,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             ! by external models
             R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
             R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
+            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
         else
             call FIX_CYANOBACTERIA  &
                    (KG_FIX_CYN_OPT_TEMP          , &
@@ -1265,7 +1265,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             ! by external models
             R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
             R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
+            R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
         end if
     else
         FIX_CYN_C           (:) = 0.0D0
@@ -2480,8 +2480,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
         PROCESS_RATES(1:nkn,CYN_C_INDEX, 3) - PROCESS_RATES(1:nkn,CYN_C_INDEX, 4) - &
 		PROCESS_RATES(1:nkn,CYN_C_INDEX, 5)
 
-    ! Debug: print derivatives for CYN_C node1
-    write(6,*) 'DEBUG: DERIVATIVES CYN node1=', DERIVATIVES(1,CYN_C_INDEX)
+    ! Debug: print derivatives for CYN_C node1 (commented to reduce log noise)
+    ! write(6,'(A,ES14.6)') 'DEBUG: DERIV CYN node1=', DERIVATIVES(1,CYN_C_INDEX)
 
     ! Debug code for CYN_C
     if(debug_stranger) then
@@ -2513,10 +2513,16 @@ subroutine AQUABC_PELAGIC_KINETICS &
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 14) = LIM_KG_NON_FIX_CYN_P
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 15) = LIM_KG_FIX_CYN_LIGHT
 
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = &
-	        ((NH4_N + NO3_N)/14.D0)/(DIP_OVER_IP*PO4_P/31.D0) ! NP molar ratio
+        ! NP molar ratio calculation with guard against division by zero
+        ! When phosphorus is depleted, set ratio to very high value indicating P limitation
+        where (DIP_OVER_IP * PO4_P .lt. 1.0D-10)
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = 999.0D0  ! Extreme N:P indicates P limitation
+        elsewhere
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = &
+                ((NH4_N + NO3_N)/14.D0)/(DIP_OVER_IP*PO4_P/31.D0)
+        end where
 
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = NH4_N + NO3_N
+        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = NH4_N + NO3_N
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 18) = FIX_CYN_LIGHT_SAT
 
         DERIVATIVES(1:nkn,FIX_CYN_C_INDEX) = &
@@ -2527,55 +2533,59 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! Diagnostic check: if applying derivative over TIME_STEP would make concentration negative, dump context and stop
         do i = 1, nkn
             if (FIX_CYN_C(i) + DERIVATIVES(i,FIX_CYN_C_INDEX) * TIME_STEP < 0.0D0) then
-                write(6,*) 'PREDICTED NEGATIVE FIX_CYN_C: TIME=', TIME, ' TIME_STEP=', TIME_STEP, ' BOX=', i
-                write(6,*) '  FIX_CYN_C=', FIX_CYN_C(i), ' DERIVATIVE=', DERIVATIVES(i,FIX_CYN_C_INDEX)
-                write(6,*) '  PROCESS_RATES(1:6)=', PROCESS_RATES(i,FIX_CYN_C_INDEX,1:6)
-                write(6,*) '  NH4_N=', NH4_N(i), ' NO3_N=', NO3_N(i), ' PO4_P=', PO4_P(i)
+                write(6,'(A,F12.4,A,ES12.4,A,I4)') &
+                    'ERROR: PREDICTED NEGATIVE FIX_CYN_C: TIME=', TIME, ' DT=', TIME_STEP, ' BOX=', i
+                write(6,'(A,ES14.6,A,ES14.6)') &
+                    '  FIX_CYN_C=', FIX_CYN_C(i), '  DERIV=', DERIVATIVES(i,FIX_CYN_C_INDEX)
+                write(6,'(A,6ES12.4)') '  PROCESS_RATES(1:6)=', PROCESS_RATES(i,FIX_CYN_C_INDEX,1:6)
+                write(6,'(A,3ES14.6)') '  NH4_N/NO3_N/PO4_P=', NH4_N(i), NO3_N(i), PO4_P(i)
                 stop
             end if
 
-            ! New diagnostic: check individual process terms for unusually large instantaneous removal
+            ! New diagnostic: check actual process rates (indices 1-5) for unusually large values
+            ! Note: Indices 6-18 are diagnostic values (limiters, ratios) not actual rates
             if (FIX_CYN_C(i) > 1.0D-12) then
-                do k = 1, min(NDIAGVAR, 18)
+                do k = 1, 5  ! Only check actual process rates, not diagnostic values
                     if (dabs(PROCESS_RATES(i,FIX_CYN_C_INDEX,k)) * TIME_STEP > 0.2D0 * FIX_CYN_C(i)) then
-                        write(6,*) 'DEBUG: LARGE PROCESS TERM ON FIX_CYN: TIME=', TIME, ' TIME_STEP=', TIME_STEP, ' BOX=', i
-                        write(6,*) '  FIX_CYN_C=', FIX_CYN_C(i)
-                        write(6,*) '  PROCESS_INDEX=', k, ' PROCESS_RATE=', PROCESS_RATES(i,FIX_CYN_C_INDEX,k)
-                        write(6,*) '  PROCESS_RATES FIX_CYN (1:18)=', PROCESS_RATES(i,FIX_CYN_C_INDEX,1:min(18,NDIAGVAR))
-                        write(6,*) '  PROCESS_RATES CYN   (1:18)=', PROCESS_RATES(i,CYN_C_INDEX,1:min(18,NDIAGVAR))
-                        write(6,*) '  DERIV FIX=', DERIVATIVES(i,FIX_CYN_C_INDEX), ' DERIV CYN=', DERIVATIVES(i,CYN_C_INDEX)
-                        write(6,*) '  NH4_N=', NH4_N(i), ' NO3_N=', NO3_N(i), ' PO4_P=', PO4_P(i)
-                        write(6,*) 'DEBUG: large process detected, continuing to removal-limiter to attempt scaling'
+                        write(6,'(A,F12.4,A,ES12.4,A,I4)') &
+                            'DEBUG: LARGE PROCESS ON FIX_CYN: TIME=', TIME, ' DT=', TIME_STEP, ' BOX=', i
+                        write(6,'(A,ES14.6,A,I3,A,ES14.6)') &
+                            '  FIX_CYN_C=', FIX_CYN_C(i), '  PROC_IDX=', k, '  RATE=', PROCESS_RATES(i,FIX_CYN_C_INDEX,k)
+                        write(6,'(A,ES14.6,A,ES14.6)') &
+                            '  DERIV_FIX=', DERIVATIVES(i,FIX_CYN_C_INDEX), '  DERIV_CYN=', DERIVATIVES(i,CYN_C_INDEX)
+                        write(6,'(A,3ES14.6)') &
+                            '  NH4_N/NO3_N/PO4_P=', NH4_N(i), NO3_N(i), PO4_P(i)
 
-                        ! Safety clamp for single large process (if it would remove more than available in one time step)
-                        allowed_rate_local = FIX_CYN_C(i) / max(TIME_STEP, 1.0D-12)
-                        if (dabs(PROCESS_RATES(i,FIX_CYN_C_INDEX,k)) > allowed_rate_local) then
-                            old_rate = PROCESS_RATES(i,FIX_CYN_C_INDEX,k)
-                            PROCESS_RATES(i,FIX_CYN_C_INDEX,k) = sign(allowed_rate_local, PROCESS_RATES(i,FIX_CYN_C_INDEX,k))
+                        ! Safety clamp for single large process (only for actual rates 2-5)
+                        if (k >= 2) then
+                            allowed_rate_local = FIX_CYN_C(i) / max(TIME_STEP, 1.0D-12)
+                            if (dabs(PROCESS_RATES(i,FIX_CYN_C_INDEX,k)) > allowed_rate_local) then
+                                write(6,'(A)') '  Applying removal-limiter scaling...'
+                                old_rate = PROCESS_RATES(i,FIX_CYN_C_INDEX,k)
+                                PROCESS_RATES(i,FIX_CYN_C_INDEX,k) = sign(allowed_rate_local, PROCESS_RATES(i,FIX_CYN_C_INDEX,k))
 
-                            ! Recompute derivative for this node (sum removals dynamically)
-                            sum_removals = 0.0D0
-                            do kk = 2, min(NDIAGVAR, size(PROCESS_RATES,3))
-                                sum_removals = sum_removals + PROCESS_RATES(i,FIX_CYN_C_INDEX,kk)
-                            end do
-                            DERIVATIVES(i,FIX_CYN_C_INDEX) = PROCESS_RATES(i,FIX_CYN_C_INDEX,1) - sum_removals
+                                ! Recompute derivative for this node (sum only actual removals 2-5)
+                                sum_removals = PROCESS_RATES(i,FIX_CYN_C_INDEX,2) + &
+                                               PROCESS_RATES(i,FIX_CYN_C_INDEX,3) + &
+                                               PROCESS_RATES(i,FIX_CYN_C_INDEX,4) + &
+                                               PROCESS_RATES(i,FIX_CYN_C_INDEX,5)
+                                DERIVATIVES(i,FIX_CYN_C_INDEX) = PROCESS_RATES(i,FIX_CYN_C_INDEX,1) - sum_removals
 
-                            ! Increment compact per-node and per-process clamp counters (summary printed once later)
-                            if (.not. allocated(CLAMP_COUNT)) then
-                                allocate(CLAMP_COUNT(nkn))
-                                CLAMP_COUNT = 0
-                            end if
-                            CLAMP_COUNT(i) = CLAMP_COUNT(i) + 1
-                            if (NDIAGVAR > 0) then
-                                if (.not. allocated(CLAMP_PROC_COUNT)) then
-                                    allocate(CLAMP_PROC_COUNT(nkn, NDIAGVAR))
-                                    CLAMP_PROC_COUNT = 0
+                                ! Increment compact per-node and per-process clamp counters (summary printed once later)
+                                if (.not. allocated(CLAMP_COUNT)) then
+                                    allocate(CLAMP_COUNT(nkn))
+                                    CLAMP_COUNT = 0
                                 end if
-                                CLAMP_PROC_COUNT(i,k) = CLAMP_PROC_COUNT(i,k) + 1
+                                CLAMP_COUNT(i) = CLAMP_COUNT(i) + 1
+                                if (NDIAGVAR > 0) then
+                                    if (.not. allocated(CLAMP_PROC_COUNT)) then
+                                        allocate(CLAMP_PROC_COUNT(nkn, NDIAGVAR))
+                                        CLAMP_PROC_COUNT = 0
+                                    end if
+                                    CLAMP_PROC_COUNT(i,k) = CLAMP_PROC_COUNT(i,k) + 1
+                                end if
                             end if
                         end if
-
-                        ! stop  ! Diagnostic stop removed to let removal-limiter run in production runs
                     end if
                 end do
             end if
@@ -2589,10 +2599,12 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
                 ! Log when total removal is a significant fraction of allowed rate to aid debugging
                 if (total_removal > 0.1D0 * allowed_rate) then
-                    write(6,*) 'DEBUG: REMOVAL LIMITER CHECK: TIME=', TIME, ' BOX=', i
-                    write(6,*) '  TOTAL_REMOVAL=', total_removal, ' ALLOWED_RATE=', allowed_rate, ' FIX_CYN_C=', FIX_CYN_C(i)
-                    write(6,*) '  COMPONENTS: RESP=', R_FIX_CYN_RESP(i), ' INT_RESP=', R_FIX_CYN_INT_RESP(i)
-                    write(6,*) '   EXCR=', R_FIX_CYN_EXCR(i), ' DEATH=', R_FIX_CYN_DEATH(i), ' GRAZ=', R_ZOO_FEEDING_FIX_CYN(i)
+                    write(6,'(A,F12.4,A,I4)') 'DEBUG: REMOVAL LIMITER CHECK: TIME=', TIME, ' BOX=', i
+                    write(6,'(A,ES12.4,A,ES12.4,A,ES12.4)') &
+                        '  TOT_REM=', total_removal, ' ALLOW=', allowed_rate, ' FIX_CYN_C=', FIX_CYN_C(i)
+                    write(6,'(A,5ES11.3)') '  RESP/INT/EXCR/DEATH/GRAZ=', &
+                        R_FIX_CYN_RESP(i), R_FIX_CYN_INT_RESP(i), R_FIX_CYN_EXCR(i), &
+                        R_FIX_CYN_DEATH(i), R_ZOO_FEEDING_FIX_CYN(i)
                 end if
 
                 if (total_removal > allowed_rate) then
@@ -2627,8 +2639,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
                         PROCESS_RATES(i,FIX_CYN_C_INDEX,2) - PROCESS_RATES(i,FIX_CYN_C_INDEX,3) - &
                         PROCESS_RATES(i,FIX_CYN_C_INDEX,4) - PROCESS_RATES(i,FIX_CYN_C_INDEX,5)
 
-                    write(6,*) 'WARN: Scaled FIX_CYN removal at TIME=', TIME, ' BOX=', i, ' SCALE=', scale
-                    write(6,*) '  TOTAL_REMOVAL_BEFORE=', total_removal, ' FIX_CYN_C=', FIX_CYN_C(i)
+                    write(6,'(A,F12.4,A,I4,A,ES10.3)') &
+                        'WARN: Scaled FIX_CYN removal: TIME=', TIME, ' BOX=', i, ' SCALE=', scale
+                    write(6,'(A,ES12.4,A,ES12.4)') &
+                        '  TOT_REM_BEFORE=', total_removal, ' FIX_CYN_C=', FIX_CYN_C(i)
                 end if
             end if
         end do
@@ -3215,12 +3229,13 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! One-shot CHLA negative dump: if computed CHLA went negative in CHLA routine, print full local context once
     if (CHLA_NEG_FLAG .and. (.not. CHLA_DUMP_DONE)) then
         dump_node = CHLA_NEG_NODE
-        write(6,*) 'ONE-SHOT CHLA NEGATIVE DUMP: TIME=', TIME, ' NODE=', dump_node, ' CHLA=', CHLA_NEG_VALUE
-        write(6,*) '  FIX_CYN_C=', FIX_CYN_C(dump_node), ' CYN_C=', CYN_C(dump_node)
-        write(6,*) '  PROCESS_RATES FIX_CYN (1:18)=', PROCESS_RATES(dump_node,FIX_CYN_C_INDEX,1:min(18,NDIAGVAR))
-        write(6,*) '  PROCESS_RATES CYN (1:18)=', PROCESS_RATES(dump_node,CYN_C_INDEX,1:min(18,NDIAGVAR))
-        write(6,*) '  DERIV FIX=', DERIVATIVES(dump_node,FIX_CYN_C_INDEX), ' DERIV CYN=', DERIVATIVES(dump_node,CYN_C_INDEX)
-        write(6,*) '  NH4_N=', NH4_N(dump_node), ' NO3_N=', NO3_N(dump_node), ' PO4_P=', PO4_P(dump_node)
+        write(6,'(A,F12.4,A,I4,A,ES12.4)') &
+            'ONE-SHOT CHLA NEG DUMP: TIME=', TIME, ' NODE=', dump_node, ' CHLA=', CHLA_NEG_VALUE
+        write(6,'(A,ES12.4,A,ES12.4)') &
+            '  FIX_CYN_C=', FIX_CYN_C(dump_node), ' CYN_C=', CYN_C(dump_node)
+        write(6,'(A,ES12.4,A,ES12.4)') &
+            '  DERIV_FIX=', DERIVATIVES(dump_node,FIX_CYN_C_INDEX), ' DERIV_CYN=', DERIVATIVES(dump_node,CYN_C_INDEX)
+        write(6,'(A,3ES12.4)') '  NH4_N/NO3_N/PO4_P=', NH4_N(dump_node), NO3_N(dump_node), PO4_P(dump_node)
         CHLA_DUMP_DONE = .true.
     end if
 
@@ -3242,7 +3257,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end if
 
     ! Atmospheric exchange
-    T_A = TEMP + 273.6D0
+    T_A = TEMP + CELSIUS_TO_KELVIN
 
     ! Calculate the saturaion concentration of CO2 in water
     P_K_H   = -(2385.73D0 / T_A) - (0.0152642D0 * T_A) + 14.0184D0
@@ -3401,7 +3416,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------
     ! Calculate the NH4 and NH3 fractions in ammonia
     ! -------------------------------------------------------------------------
-    T_A      = TEMP + 2.7316D2
+    T_A      = TEMP + CELSIUS_TO_KELVIN
     pKH      = 9.018D-2 + (2.72992D3 / T_A)
     FRAC_NH3 = 1.0D0 / (1.0D0 + (10.0D0 ** (pKH - PH)))
     FRAC_NH4 = 1.0D0 - FRAC_NH3
@@ -3644,7 +3659,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ALPHA_PO4   = (K_ONE_TIP * K_TWO_TIP * K_THREE_TIP) / FRACTION_DIVISOR_TIP
 
     PHOSPHATE_EQ_CONSTANT = &
-        ALPHA_H2PO4 + (2.0D0 * ALPHA_HPO4) + (3.0D0 * ALPHA_HPO4)
+        ALPHA_H2PO4 + (2.0D0 * ALPHA_HPO4) + (3.0D0 * ALPHA_PO4)
     end do
     ! -------------------------------------------------------------------------
     ! End of calculate the dissociation constants of H2PO3
@@ -3878,13 +3893,12 @@ subroutine AQUABC_PELAGIC_KINETICS &
         if (allocated(CLAMP_COUNT)) then
             do i=1,nkn
                 if (CLAMP_COUNT(i) > 0 .and. .not. CLAMP_WARNED(i)) then
-                    write(6,*) 'WARN SUMMARY: TIME=', TIME
-                    write(6,*) '  BOX=', i, ' TOTAL_CLAMPS=', CLAMP_COUNT(i)
+                    write(6,'(A,F12.4,A,I4,A,I6)') &
+                        'WARN SUMMARY: TIME=', TIME, ' BOX=', i, ' CLAMPS=', CLAMP_COUNT(i)
                     if (NDIAGVAR > 0 .and. allocated(CLAMP_PROC_COUNT)) then
-                        write(6,*) '  PROC_COUNTS (k:count):'
                         do k=1,min(NDIAGVAR, size(CLAMP_PROC_COUNT,2))
                             if (CLAMP_PROC_COUNT(i,k) > 0) then
-                                write(6,*) '   k=', k, ' cnt=', CLAMP_PROC_COUNT(i,k)
+                                write(6,'(A,I3,A,I6)') '  PROC k=', k, ' cnt=', CLAMP_PROC_COUNT(i,k)
                             end if
                         end do
                     end if

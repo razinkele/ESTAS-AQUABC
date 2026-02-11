@@ -180,6 +180,16 @@ subroutine ZOOPLANKTON &
     real(kind = DBL_PREC), dimension(nkn) ::LIM_TEMP_ZOO
     integer :: i
     real(kind = DBL_PREC) :: pred_limit
+    
+    ! Active switching model variables
+    real(kind = DBL_PREC), dimension(nkn) :: TOTAL_FOOD
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_DIA
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_CYN
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_OPA
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_FIX_CYN
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_NOST
+    real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_DET
+    real(kind = DBL_PREC) :: SWITCHING_POWER
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
@@ -198,36 +208,86 @@ subroutine ZOOPLANKTON &
     KG_ZOO_NOST_VEG_HET   = KG_ZOO * GRAT_ZOO_NOST_VEG_HET
     KG_ZOO_DET_PART_ORG_C = KG_ZOO * GRAT_ZOO_DET_PART_ORG_C
 
+    ! =========================================================================
+    ! ACTIVE SWITCHING MODEL
+    ! Dynamic preferences scale with prey's fraction of total available food
+    ! This creates adaptive behavior: zooplankton shift effort to abundant prey
+    ! Reference: Gentleman et al. (2003), Kiorboe (2008)
+    ! =========================================================================
+    
+    ! Switching power: 1.0 = linear, 2.0 = strong switching
+    SWITCHING_POWER = 1.5D0
+    
+    ! Calculate total preference-weighted food availability
+    TOTAL_FOOD = PREF_ZOO_DIA            * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) + &
+                 PREF_ZOO_CYN            * max(CYN_C - FOOD_MIN_ZOO, 0.0D0) + &
+                 PREF_ZOO_OPA            * max(OPA_C - FOOD_MIN_ZOO, 0.0D0) + &
+                 PREF_ZOO_FIX_CYN        * max(FIX_CYN_C - FOOD_MIN_ZOO, 0.0D0) + &
+                 PREF_ZOO_NOST_VEG_HET   * max(NOST_VEG_HET_C - FOOD_MIN_ZOO, 0.0D0) + &
+                 PREF_ZOO_DET_PART_ORG_C * max(DET_PART_ORG_C - FOOD_MIN_ZOO, 0.0D0)
+    
+    ! Calculate dynamic (switching) preferences for each prey type
+    ! Formula: DYN_PREF_i = BASE_PREF_i * (relative_abundance_i)^(n-1)
+    ! where relative_abundance_i = (PREF_i * PREY_i) / TOTAL_FOOD
+    ! This makes preference increase for abundant prey
+    
+    where (TOTAL_FOOD > 1.0D-10)
+        DYN_PREF_DIA = PREF_ZOO_DIA * &
+            ((PREF_ZOO_DIA * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+        DYN_PREF_CYN = PREF_ZOO_CYN * &
+            ((PREF_ZOO_CYN * max(CYN_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+        DYN_PREF_OPA = PREF_ZOO_OPA * &
+            ((PREF_ZOO_OPA * max(OPA_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+        DYN_PREF_FIX_CYN = PREF_ZOO_FIX_CYN * &
+            ((PREF_ZOO_FIX_CYN * max(FIX_CYN_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+        DYN_PREF_NOST = PREF_ZOO_NOST_VEG_HET * &
+            ((PREF_ZOO_NOST_VEG_HET * max(NOST_VEG_HET_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+        DYN_PREF_DET = PREF_ZOO_DET_PART_ORG_C * &
+            ((PREF_ZOO_DET_PART_ORG_C * max(DET_PART_ORG_C - FOOD_MIN_ZOO, 0.0D0) / TOTAL_FOOD) ** (SWITCHING_POWER - 1.0D0))
+    elsewhere
+        ! No food available - use base preferences
+        DYN_PREF_DIA     = PREF_ZOO_DIA
+        DYN_PREF_CYN     = PREF_ZOO_CYN
+        DYN_PREF_OPA     = PREF_ZOO_OPA
+        DYN_PREF_FIX_CYN = PREF_ZOO_FIX_CYN
+        DYN_PREF_NOST    = PREF_ZOO_NOST_VEG_HET
+        DYN_PREF_DET     = PREF_ZOO_DET_PART_ORG_C
+    end where
+    ! =========================================================================
+    ! END ACTIVE SWITCHING MODEL
+    ! =========================================================================
+
+    ! Use DYNAMIC preferences (from active switching model) instead of static ones
     where (DIA_C > FOOD_MIN_ZOO)
-        FOOD_FACTOR_ZOO_DIA = (PREF_ZOO_DIA * (DIA_C - FOOD_MIN_ZOO)) / &
+        FOOD_FACTOR_ZOO_DIA = (DYN_PREF_DIA * (DIA_C - FOOD_MIN_ZOO)) / &
             (DIA_C + KHS_DIA_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_DIA = 0.0D0
     end where
 
     where (CYN_C > FOOD_MIN_ZOO)
-        FOOD_FACTOR_ZOO_CYN = (PREF_ZOO_CYN * (CYN_C - FOOD_MIN_ZOO)) / &
+        FOOD_FACTOR_ZOO_CYN = (DYN_PREF_CYN * (CYN_C - FOOD_MIN_ZOO)) / &
             (CYN_C + KHS_CYN_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_CYN = 0.0D0
     end where
 
     where (OPA_C > FOOD_MIN_ZOO)
-        FOOD_FACTOR_ZOO_OPA = (PREF_ZOO_OPA * (OPA_C - FOOD_MIN_ZOO)) / &
+        FOOD_FACTOR_ZOO_OPA = (DYN_PREF_OPA * (OPA_C - FOOD_MIN_ZOO)) / &
             (OPA_C + KHS_OPA_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_OPA = 0.0D0
     end where
 
     where (FIX_CYN_C > FOOD_MIN_ZOO)
-        FOOD_FACTOR_ZOO_FIX_CYN = (PREF_ZOO_FIX_CYN * (FIX_CYN_C - FOOD_MIN_ZOO)) / &
+        FOOD_FACTOR_ZOO_FIX_CYN = (DYN_PREF_FIX_CYN * (FIX_CYN_C - FOOD_MIN_ZOO)) / &
             (FIX_CYN_C + KHS_FIX_CYN_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_FIX_CYN = 0.0D0
     end where
 
     where (NOST_VEG_HET_C > FOOD_MIN_ZOO)
-        FOOD_FACTOR_ZOO_NOST_VEG_HET = (PREF_ZOO_NOST_VEG_HET * (NOST_VEG_HET_C - FOOD_MIN_ZOO)) / &
+        FOOD_FACTOR_ZOO_NOST_VEG_HET = (DYN_PREF_NOST * (NOST_VEG_HET_C - FOOD_MIN_ZOO)) / &
             (NOST_VEG_HET_C + KHS_NOST_VEG_HET_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_NOST_VEG_HET = 0.0D0
@@ -235,7 +295,7 @@ subroutine ZOOPLANKTON &
 
     where (DET_PART_ORG_C > FOOD_MIN_ZOO)
         FOOD_FACTOR_ZOO_DET_PART_ORG_C = &
-            (PREF_ZOO_DET_PART_ORG_C * (DET_PART_ORG_C - FOOD_MIN_ZOO)) / &
+            (DYN_PREF_DET * (DET_PART_ORG_C - FOOD_MIN_ZOO)) / &
             (DET_PART_ORG_C + KHS_DET_PART_ORG_C_ZOO)
     elsewhere
         FOOD_FACTOR_ZOO_DET_PART_ORG_C = 0.0D0
@@ -248,15 +308,44 @@ subroutine ZOOPLANKTON &
     R_ZOO_FEEDING_OPA            = KG_ZOO_OPA            * FOOD_FACTOR_ZOO_OPA            * ZOO_C
     R_ZOO_FEEDING_DET_PART_ORG_C = KG_ZOO_DET_PART_ORG_C * FOOD_FACTOR_ZOO_DET_PART_ORG_C * ZOO_C
 
-    ! Diagnostic: check for unusually large grazing on fixing cyanobacteria
-    pred_limit = 0.5D0  ! fraction of biomass that being grazed in one TIME_STEP
+    ! Mass-balance safeguard: limit grazing rates to available prey biomass per TIME_STEP
+    ! This prevents removing more biomass than exists when ZOO_C >> prey biomass
+    pred_limit = 0.5D0  ! max fraction of prey that can be consumed in one TIME_STEP
     do i = 1, nkn
+        ! Limit DIA grazing
+        if (DIA_C(i) > 0.0D0) then
+            if (R_ZOO_FEEDING_DIA(i) > pred_limit * DIA_C(i) / TIME_STEP) then
+                R_ZOO_FEEDING_DIA(i) = pred_limit * DIA_C(i) / TIME_STEP
+            end if
+        end if
+        ! Limit CYN grazing
+        if (CYN_C(i) > 0.0D0) then
+            if (R_ZOO_FEEDING_CYN(i) > pred_limit * CYN_C(i) / TIME_STEP) then
+                R_ZOO_FEEDING_CYN(i) = pred_limit * CYN_C(i) / TIME_STEP
+            end if
+        end if
+        ! Limit FIX_CYN grazing
         if (FIX_CYN_C(i) > 0.0D0) then
             if (R_ZOO_FEEDING_FIX_CYN(i) > pred_limit * FIX_CYN_C(i) / TIME_STEP) then
-                write(6,*) 'DEBUG: PREDICT_LARGE_GRAZING FIX_CYN at node', i
-                write(6,*) '  FDAY/TimeStep', TIME_STEP, 'FIX_CYN_C', FIX_CYN_C(i)
-                write(6,*) '  ZOO_C', ZOO_C(i), 'KG_ZOO_FIX_CYN', KG_ZOO_FIX_CYN(i), 'FOOD_FACTOR', FOOD_FACTOR_ZOO_FIX_CYN(i)
-                write(6,*) '  R_ZOO_FEEDING_FIX_CYN', R_ZOO_FEEDING_FIX_CYN(i), 'R_ZOO_FEEDING_CYN', R_ZOO_FEEDING_CYN(i)
+                R_ZOO_FEEDING_FIX_CYN(i) = pred_limit * FIX_CYN_C(i) / TIME_STEP
+            end if
+        end if
+        ! Limit OPA grazing
+        if (OPA_C(i) > 0.0D0) then
+            if (R_ZOO_FEEDING_OPA(i) > pred_limit * OPA_C(i) / TIME_STEP) then
+                R_ZOO_FEEDING_OPA(i) = pred_limit * OPA_C(i) / TIME_STEP
+            end if
+        end if
+        ! Limit NOST grazing
+        if (NOST_VEG_HET_C(i) > 0.0D0) then
+            if (R_ZOO_FEEDING_NOST_VEG_HET(i) > pred_limit * NOST_VEG_HET_C(i) / TIME_STEP) then
+                R_ZOO_FEEDING_NOST_VEG_HET(i) = pred_limit * NOST_VEG_HET_C(i) / TIME_STEP
+            end if
+        end if
+        ! Limit DET_PART_ORG_C grazing
+        if (DET_PART_ORG_C(i) > 0.0D0) then
+            if (R_ZOO_FEEDING_DET_PART_ORG_C(i) > pred_limit * DET_PART_ORG_C(i) / TIME_STEP) then
+                R_ZOO_FEEDING_DET_PART_ORG_C(i) = pred_limit * DET_PART_ORG_C(i) / TIME_STEP
             end if
         end if
     end do

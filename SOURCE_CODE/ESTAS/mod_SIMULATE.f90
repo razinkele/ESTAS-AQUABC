@@ -88,10 +88,8 @@ contains
 
         integer :: MEM_ERROR
 
-        do i = 1, AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
-            SUM_RELATIVE_ERRORS = 0.0D0
-            NUM_RELATIVE_ERRORS = 0
-        end do
+        SUM_RELATIVE_ERRORS = 0.0D0
+        NUM_RELATIVE_ERRORS = 0
 
         AUX_OUTPUT_UNIT   = 20
         PELAGIC_SOLVER_NO = 1
@@ -281,7 +279,6 @@ contains
                 end do
             else
                 if (PRINT_PELA_OUTPUT_TO_MEMORY == 0) then
-write(*,*) 'A1'
                     if (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                         CREATE_PELAGIC_ECOL_OUTPUT > 0) then
 

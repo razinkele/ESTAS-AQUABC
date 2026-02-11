@@ -5,7 +5,21 @@ import threading
 import logging
 import sys
 import shutil
-from datetime import datetime, date
+import time
+import select
+import signal
+import traceback
+import re
+import glob
+import shlex
+from datetime import datetime, date, timedelta
+
+# Try to import markdown for help rendering
+try:
+    import markdown
+    MARKDOWN_AVAILABLE = True
+except ImportError:
+    MARKDOWN_AVAILABLE = False
 
 # Add the script's directory and parent to path for module imports
 # This ensures imports work both locally and on Shiny server
@@ -19,13 +33,18 @@ if _parent_dir not in sys.path:
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import folium
+
 from shiny import App, ui, reactive, render, req
 from shinywidgets import output_widget, render_widget
 
 # Import parameter parser (try both absolute and relative imports)
 try:
     from shiny_app.parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
-    from shiny_app.ic_parser import ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files
+    from shiny_app.ic_parser import (
+        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
+        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
+    )
     from shiny_app.options_parser import (
         ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
         load_model_options, load_extra_constants
@@ -38,7 +57,10 @@ try:
 except ImportError:
     # Fallback for when running from within shiny_app directory
     from parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
-    from ic_parser import ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files
+    from ic_parser import (
+        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
+        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
+    )
     from options_parser import (
         ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
         load_model_options, load_extra_constants
@@ -57,6 +79,20 @@ try:
 except ImportError:
     from observation_compare import (
         ObservationData, ModelObservationComparison, create_sample_observations
+    )
+
+# Import observation file loader (try both paths)
+try:
+    from shiny_app.obs_loader import (
+        scan_observations_directory, load_observation_file as load_obs_file,
+        get_file_preview, ObservationFile, LoadedObservations, 
+        get_variable_description, STATE_VARIABLE_INDEX
+    )
+except ImportError:
+    from obs_loader import (
+        scan_observations_directory, load_observation_file as load_obs_file,
+        get_file_preview, ObservationFile, LoadedObservations,
+        get_variable_description, STATE_VARIABLE_INDEX
     )
 
 # Import scenario manager (try both paths)
@@ -90,15 +126,163 @@ logger.info("AQUABC Application starting...")
 logger.info("=" * 60)
 
 # Constants
-MAX_LOG_LENGTH = 50000
+MAX_LOG_LENGTH = 1000000  # 1MB buffer for run log
 MIN_SMOOTH_WINDOW = 2
 DEFAULT_PLOT_ROWS = 10000  # Max rows to read for plotting to avoid OOM
 REQUIRED_MODEL_CONSTANTS = 318  # Model requires exactly 318 constants
+
+
+def count_file_lines_fast(filepath, sample_size=8192):
+    """Efficiently count lines in a file using buffered reading.
+    
+    For large files, uses sampling to estimate. For small files, counts exactly.
+    """
+    try:
+        file_size = os.path.getsize(filepath)
+        if file_size < 1024 * 1024:  # < 1MB: count exactly
+            with open(filepath, 'rb') as f:
+                return sum(1 for _ in f)
+        else:
+            # Sample first chunk to estimate bytes per line
+            with open(filepath, 'rb') as f:
+                sample = f.read(sample_size)
+                lines_in_sample = sample.count(b'\n')
+                if lines_in_sample > 0:
+                    bytes_per_line = sample_size / lines_in_sample
+                    return int(file_size / bytes_per_line)
+            return file_size // 100  # Fallback estimate
+    except Exception:
+        return 0
 
 # Fix ROOT path when running via symlink
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
+
+# Standard column names for PELAGIC_BOX output files (binary and text)
+PELAGIC_BOX_COLUMNS = [
+    "TIME_DAYS", "NH4_N", "NO3_N", "PO4_P", "DISS_OXYGEN", "DIA_C",
+    "ZOO_C", "ZOO_N", "ZOO_P", "DET_PART_ORG_C", "DET_PART_ORG_N",
+    "DET_PART_ORG_P", "DISS_ORG_C", "DISS_ORG_N", "DISS_ORG_P",
+    "CYN_C", "OPA_C", "DISS_Si", "PART_Si", "FIX_CYN_C",
+    "INORG_C", "TOT_ALK", "FE_II", "FE_III", "MN_II", "MN_IV",
+    "CA", "MG", "S_PLUS_6", "S_MINUS_2", "CH4_C",
+    "NOST_VEG_HET_C", "AKI_C", "SEC_METAB_DIA",
+    "SEC_METAB_NOFIX_CYN", "SEC_METAB_FIX_CYN", "SEC_METAB_NOST"
+]
+
+def get_output_folder():
+    """Get the output folder from INPUT.txt or use default."""
+    input_file = os.path.join(ROOT, 'INPUT.txt')
+    try:
+        if os.path.exists(input_file):
+            with open(input_file, 'r') as f:
+                lines = f.readlines()
+            # Line 22 (1-indexed) contains OUTPUT folder
+            if len(lines) >= 22:
+                folder = lines[21].strip().split('!')[0].strip()
+                return os.path.join(ROOT, folder)
+    except Exception as e:
+        logger.debug(f"Could not read output folder from INPUT.txt: {e}")
+    # Fallback to OUTPUTS directory
+    return os.path.join(ROOT, 'OUTPUTS')
+
+def find_pelagic_box_file(output_folder=None, file_type='text'):
+    """Find a PELAGIC_BOX output file in the output folder.
+    
+    Args:
+        output_folder: Output folder path (defaults to get_output_folder())
+        file_type: 'text' for .out files, 'binary' for .bin files
+        
+    Returns:
+        Path to first matching file, or None if not found
+    """
+    if output_folder is None:
+        output_folder = get_output_folder()
+    
+    if not output_folder or not os.path.isdir(output_folder):
+        return None
+    
+    import glob
+    
+    if file_type == 'binary':
+        # Binary files: patterns like __PELAGIC_BOX_00005.bin
+        patterns = [
+            os.path.join(output_folder, "__PELAGIC_BOX_*.bin"),
+            os.path.join(output_folder, "*PELAGIC_BOX_?????.bin"),
+        ]
+    else:
+        # Text files: PELAGIC_BOX_00005.out
+        patterns = [
+            os.path.join(output_folder, "PELAGIC_BOX_*.out"),
+        ]
+    
+    files = []
+    for pattern in patterns:
+        matches = glob.glob(pattern)
+        # Exclude PROCESS_RATES files
+        matches = [f for f in matches if "PROCESS_RATES" not in f]
+        files.extend(matches)
+    
+    # Sort and deduplicate
+    files = sorted(set(files))
+    
+    if files:
+        return files[0]
+    return None
+
+def read_pelagic_binary(bin_file, max_rows=None):
+    """Read Fortran binary PELAGIC_BOX output file.
+    
+    Binary format (from Fortran stream I/O):
+    - Each row: TIME (float64) + 36 state variables (float64)
+    - Total 37 columns, all double precision (8 bytes)
+    - No record markers (Fortran ACCESS='STREAM')
+    
+    Args:
+        bin_file: Path to .bin file
+        max_rows: Maximum rows to read (None for all)
+        
+    Returns:
+        DataFrame with TIME_DAYS and state variable columns
+    """
+    import numpy as np
+    
+    ncols = len(PELAGIC_BOX_COLUMNS)  # 37
+    
+    with open(bin_file, 'rb') as f:
+        data = np.fromfile(f, dtype=np.float64)
+    
+    nrows = len(data) // ncols
+    remainder = len(data) % ncols
+    
+    if remainder != 0:
+        logger.warning(f"Binary file has {remainder} extra bytes, truncating")
+        data = data[:nrows * ncols]
+    
+    data = data.reshape(nrows, ncols)
+    
+    if max_rows is not None and nrows > max_rows:
+        data = data[:max_rows]
+    
+    df = pd.DataFrame(data, columns=PELAGIC_BOX_COLUMNS)
+    logger.info(f"Read binary file: {len(df)} rows x {ncols} cols")
+    return df
+
+def read_pelagic_text(text_file, max_rows=None):
+    """Read PELAGIC_BOX text output file (whitespace-separated).
+    
+    Args:
+        text_file: Path to .out file
+        max_rows: Maximum rows to read (None for all)
+        
+    Returns:
+        DataFrame with state variable columns
+    """
+    df = pd.read_csv(text_file, sep=r'\s+', nrows=max_rows)
+    df.columns = [c.strip() for c in df.columns]
+    logger.info(f"Read text file: {len(df)} rows x {len(df.columns)} cols")
+    return df
 
 # Startup diagnostics
 logger.info("=== Path Configuration ===")
@@ -142,13 +326,12 @@ if os.path.exists(OUTPUT_CSV):
             first_line = f.readline().strip()
             logger.info(f"  Header preview: {first_line[:100]}")
         # Count lines (quick estimate)
-        import subprocess
         try:
             result = subprocess.run(['wc', '-l', OUTPUT_CSV], capture_output=True, text=True, timeout=2)
             if result.returncode == 0:
                 line_count = result.stdout.split()[0]
                 logger.info(f"  Line count: {line_count}")
-        except:
+        except Exception:
             pass
     except Exception as e:
         logger.warning(f"  Could not read OUTPUT.csv header: {e}")
@@ -165,19 +348,19 @@ logger.info(f"HOME: {os.environ.get('HOME', 'unknown')}")
 logger.info("=== Module Versions ===")
 try:
     logger.info(f"pandas: {pd.__version__}")
-except:
+except Exception:
     logger.warning("Could not get pandas version")
 
 try:
     import plotly
     logger.info(f"plotly: {plotly.__version__}")
-except:
+except Exception:
     logger.warning("Could not get plotly version")
 
 try:
     import shiny
     logger.info(f"shiny: {shiny.__version__}")
-except:
+except Exception:
     logger.warning("Could not get shiny version")
 
 # Available themes list
@@ -252,7 +435,6 @@ def validate_constants_file(constants_filename):
     try:
         # Count numbered constant lines (format: "   123   CONSTANT_NAME   value  !comment")
         # Lines start with whitespace followed by a number
-        import re
         const_count = 0
         max_const_num = 0
         
@@ -282,19 +464,20 @@ def validate_constants_file(constants_filename):
         return False, 0, f"Error reading constants file: {e}"
 
 
-# Navigation menu choices (Settings removed - now in top bar icon)
+# Navigation menu choices with icons
 NAV_CHOICES = {
-    "nav_dashboard": "Dashboard",
-    "nav_model_build": "Model Build",
-    "nav_model_control": "Model Config",
-    "nav_input_files": "Input Files",
-    "nav_parameters": "Parameters",
-    "nav_initial_conditions": "Initial Cond.",
-    "nav_model_options": "Model Options",
-    "nav_scenarios": "Scenarios",
-    "nav_plot": "Plots",
-    "nav_mass_balance": "Mass Balance",
-    "nav_observations": "Observations",
+    "nav_dashboard": ("bi-speedometer2", "Dashboard"),
+    "nav_model_build": ("bi-hammer", "Model Build"),
+    "nav_model_control": ("bi-sliders", "Model Config"),
+    "nav_input_files": ("bi-file-earmark-text", "Input Files"),
+    "nav_parameters": ("bi-gear-wide-connected", "Parameters"),
+    "nav_initial_conditions": ("bi-water", "Initial Cond."),
+    "nav_model_options": ("bi-toggles", "Model Options"),
+    "nav_scenarios": ("bi-collection", "Scenarios"),
+    "nav_plot": ("bi-graph-up", "Plots"),
+    "nav_mass_balance": ("bi-arrows-angle-expand", "Mass Balance"),
+    "nav_observations": ("bi-binoculars", "Observations"),
+    "nav_map": ("bi-globe", "Map"),
 }
 
 # Build configuration options
@@ -356,8 +539,6 @@ def find_compiler_path(compiler_name):
 
     Returns tuple: (full_path or None, version_string or None)
     """
-    import subprocess
-
     # First try PATH via 'which'
     try:
         result = subprocess.run(["which", compiler_name], capture_output=True, text=True, timeout=5)
@@ -367,10 +548,10 @@ def find_compiler_path(compiler_name):
             try:
                 ver_result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
                 version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
-            except:
+            except Exception:
                 version = None
             return path, version
-    except:
+    except Exception:
         pass
 
     # For Intel compilers, search known installation paths
@@ -382,11 +563,110 @@ def find_compiler_path(compiler_name):
                 try:
                     ver_result = subprocess.run([full_path, "--version"], capture_output=True, text=True, timeout=5)
                     version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
-                except:
+                except Exception:
                     version = None
                 return full_path, version
 
     return None, None
+
+def is_intel_executable(exe_name):
+    """Check if an executable was compiled with Intel compilers.
+    
+    Returns True if the executable name contains ifort or ifx.
+    """
+    if not exe_name:
+        return False
+    return "_ifort" in exe_name.lower() or "_ifx" in exe_name.lower()
+
+def get_intel_library_paths():
+    """Get Intel oneAPI library paths for LD_LIBRARY_PATH.
+
+    Returns a list of paths that contain Intel runtime libraries.
+    """
+    paths = []
+    # Search for Intel library directories - check for actual libimf.so presence
+    intel_lib_search = [
+        "/opt/intel/oneapi/compiler/latest/lib",
+        "/opt/intel/oneapi/compiler/2025.3/lib",
+        "/opt/intel/oneapi/compiler/2025.1/lib",
+        "/opt/intel/oneapi/compiler/2025.0/lib",
+        "/opt/intel/oneapi/compiler/2024.2/lib",
+        "/opt/intel/oneapi/compiler/2024.1/lib",
+        "/opt/intel/oneapi/compiler/2024.0/lib",
+        os.path.expanduser("~/intel/oneapi/compiler/latest/lib"),
+        os.path.expanduser("~/intel/compilers_and_libraries/linux/lib/intel64"),
+    ]
+    for path in intel_lib_search:
+        if os.path.isdir(path):
+            # Verify the path has libimf.so (Intel Math Functions library)
+            if os.path.exists(os.path.join(path, "libimf.so")):
+                paths.append(path)
+    return paths
+
+def check_intel_libs_available():
+    """Check if Intel runtime libraries are available.
+    
+    Returns a tuple: (available: bool, lib_path: str or None)
+    """
+    paths = get_intel_library_paths()
+    if paths:
+        return True, paths[0]
+    return False, None
+
+def get_run_environment():
+    """Get environment for running executables, including Intel library paths."""
+    env = os.environ.copy()
+    intel_paths = get_intel_library_paths()
+    if intel_paths:
+        existing_ld_path = env.get("LD_LIBRARY_PATH", "")
+        new_paths = ":".join(intel_paths)
+        if existing_ld_path:
+            env["LD_LIBRARY_PATH"] = f"{new_paths}:{existing_ld_path}"
+        else:
+            env["LD_LIBRARY_PATH"] = new_paths
+        logger.info(f"Set LD_LIBRARY_PATH with {len(intel_paths)} Intel paths: {new_paths[:100]}...")
+    else:
+        logger.warning("No Intel library paths found!")
+    return env
+
+
+def get_intel_setvars_path():
+    """Find the Intel oneAPI setvars.sh script.
+    
+    Returns the path to setvars.sh if found, None otherwise.
+    """
+    setvars_locations = [
+        "/opt/intel/oneapi/setvars.sh",
+        os.path.expanduser("~/intel/oneapi/setvars.sh"),
+        "/opt/intel/setvars.sh",
+    ]
+    for path in setvars_locations:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def build_intel_wrapped_command(cmd_list):
+    """Wrap a command to source Intel oneAPI environment first.
+    
+    Args:
+        cmd_list: List of command parts ['./ESTAS_II_ifx_release', 'INPUT.txt', ...]
+    
+    Returns:
+        Tuple of (shell_command: str, use_shell: bool)
+        If Intel environment is needed and available, returns a shell command that
+        sources setvars.sh first. Otherwise returns the original command.
+    """
+    setvars_path = get_intel_setvars_path()
+    if setvars_path:
+        # Build a shell command that sources Intel env and runs the executable
+        # Use 'source' in bash to load the environment
+        escaped_cmd = " ".join(shlex.quote(c) for c in cmd_list if c)
+        shell_cmd = f"source {setvars_path} --force > /dev/null 2>&1 && {escaped_cmd}"
+        return shell_cmd, True
+    else:
+        # No setvars.sh found, return original command
+        return cmd_list, False
 
 # Input file categories and metadata for display in Input Files panel
 INPUT_FILE_CATEGORIES = {
@@ -841,7 +1121,6 @@ def analyze_input_file(filepath):
             info["time_end"] = last_data_line[0]
 
             # Convert Julian days to dates (reference: 1997-01-01)
-            from datetime import timedelta
             reference_date = date(1997, 1, 1)
             try:
                 info["date_start"] = (reference_date + timedelta(days=first_data_line[0])).strftime("%Y-%m-%d")
@@ -994,7 +1273,7 @@ def get_theme_css(theme_name):
 # UI function with dynamic theme support
 def create_ui(theme_name="darkly"):
     """Create UI - theme is applied dynamically via CSS, not at creation time"""
-    # JavaScript to handle page reload
+    # JavaScript to handle page reload and clipboard operations
     reload_js = ui.tags.script("""
         Shiny.addCustomMessageHandler('reload_page', function(message) {
             console.log('Reloading page:', message);
@@ -1002,76 +1281,326 @@ def create_ui(theme_name="darkly"):
                 window.location.reload();
             }, 500);
         });
+        
+        Shiny.addCustomMessageHandler('copy_to_clipboard', function(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function() {
+                    console.log('Copying to clipboard was successful!');
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
+            } else {
+                // Fallback
+                let textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    console.log('Fallback: Copying to clipboard was successful!');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+                document.body.removeChild(textArea);
+            }
+        });
     """)
 
-    # Custom CSS for pill-style radio buttons
+    # Custom CSS for collapsible sidebar navigation (BEACH4M style)
     nav_css = ui.tags.style("""
-        /* Remove gap at top of sidebar */
-        .sidebar-content {
-            padding-top: 0.25rem !important;
+        :root {
+            --sidebar-width: 220px;
+            --sidebar-collapsed-width: 50px;
         }
-        .nav-radio-pills {
-            margin-top: 0;
-            padding-top: 0;
+        body {
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
         }
-        .nav-radio-pills .shiny-options-group {
+        .custom-sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: #2c3e50;
+            padding: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 1px;
-            margin-top: 0;
         }
-        .nav-radio-pills .radio {
-            margin: 0;
+        .custom-sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+            min-width: var(--sidebar-collapsed-width);
         }
-        .nav-radio-pills .radio label {
-            display: block;
-            padding: 7px 12px;
-            margin: 0;
-            border-radius: 5px;
-            cursor: pointer !important;
-            transition: background-color 0.15s ease;
-            user-select: none;
-            font-size: 0.9rem;
-        }
-        .nav-radio-pills .radio label span {
-            cursor: pointer !important;
-        }
-        .nav-radio-pills .radio label:hover {
-            background-color: rgba(var(--bs-primary-rgb), 0.1);
-        }
-        .nav-radio-pills .radio input[type="radio"] {
+        .custom-sidebar.collapsed .nav-link span,
+        .custom-sidebar.collapsed .sidebar-title {
             display: none;
         }
-        .nav-radio-pills .radio input[type="radio"]:checked + span {
-            color: white;
-            display: block;
-            background-color: var(--bs-primary);
-            margin: -7px -12px;
-            padding: 7px 12px;
-            border-radius: 5px;
+        .custom-sidebar.collapsed .nav-link {
+            justify-content: center;
+            padding: 0.75rem 0;
+        }
+        .custom-sidebar.collapsed .nav-link i {
+            margin-right: 0;
+        }
+        .custom-sidebar.collapsed .sidebar-header {
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+        }
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: #1a252f;
+            border-bottom: 1px solid #3498db;
+        }
+        .sidebar-title {
+            color: #ecf0f1;
             font-weight: 600;
-            cursor: pointer !important;
+            font-size: 1rem;
+        }
+        .sidebar-toggle {
+            background: transparent;
+            border: none;
+            color: #ecf0f1;
+            cursor: pointer;
+            font-size: 1.4rem;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+        .sidebar-toggle:hover {
+            color: #3498db;
+        }
+        .sidebar-nav {
+            padding: 0.5rem 0;
+            flex: 1;
+        }
+        .custom-sidebar .nav-link {
+            color: #bdc3c7;
+            padding: 0.65rem 1rem;
+            border-radius: 0;
+            border-left: 3px solid transparent;
+            margin: 0;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.15s ease;
+        }
+        .custom-sidebar .nav-link i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+        .custom-sidebar .nav-link:hover {
+            background: #34495e;
+            border-left-color: #3498db;
+            color: white;
+        }
+        .custom-sidebar .nav-link.active {
+            background: #34495e;
+            border-left-color: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        .main-content {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 1rem;
+            min-height: 100%;
+            overflow-x: auto;
+        }
+        .content-panel {
+            display: none;
+        }
+        .content-panel.active {
+            display: block;
+        }
+        .app-header {
+            background: #1a252f;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .app-header-title {
+            display: flex;
+            align-items: center;
+        }
+        .sidebar-container {
+            display: flex;
+            min-height: calc(100vh - 52px);
+            margin: 0;
+            padding: 0;
+        }
+        /* Remove any default page margins/gaps */
+        .container-fluid, .bslib-page-fill {
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 0 !important;
+        }
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Remove gaps from Shiny output containers */
+        .shiny-html-output {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Ensure app-header has no top margin */
+        .app-header {
+            margin-top: 0 !important;
+        }
+        /* Override Bootstrap card styles */
+        .card {
+            margin-bottom: 1rem;
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        }
+        .card-header {
+            font-weight: 600;
+            background: white;
+            border-bottom: 2px solid #3498db;
+        }
+        /* Compact Run Parameters card - reduce vertical spacing */
+        .run-params-compact .form-group,
+        .run-params-compact .shiny-input-container {
+            margin-bottom: 0.2rem !important;
+        }
+        .run-params-compact .form-label,
+        .run-params-compact label {
+            margin-bottom: 0.1rem !important;
+            font-size: 0.8rem;
+        }
+        .run-params-compact .form-select,
+        .run-params-compact .form-control {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.8rem;
+            height: auto;
+        }
+        .run-params-compact .form-switch {
+            margin-bottom: 0.15rem !important;
+            min-height: 1.2rem;
+        }
+        .run-params-compact hr {
+            margin: 0.3rem 0 !important;
+        }
+        .run-params-compact .card-header {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.9rem;
+        }
+        .run-params-compact .card-body {
+            padding: 0.5rem 0.75rem;
+        }
+        .run-params-compact strong.small {
+            font-size: 0.75rem;
+        }
+        .run-params-compact .btn-lg {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.9rem;
+        }
+        .run-params-compact pre {
+            padding: 0.3rem;
+            font-size: 0.7rem;
+            margin-bottom: 0.3rem;
+        }
+        /* Smaller run log text */
+        #run_log_mini {
+            font-size: 0.75rem !important;
+            line-height: 1.3 !important;
+            max-height: 600px;
+            overflow-y: auto;
         }
     """)
 
-    # === SIDEBAR: Navigation Menu + Run Log ===
-    sidebar_content = ui.sidebar(
-        nav_css,
-        ui.tags.div(
-            ui.input_radio_buttons(
-                "navigation",
-                None,
-                choices=NAV_CHOICES,
-                selected="nav_dashboard"
+    # JavaScript for sidebar toggle and navigation
+    nav_js = ui.tags.script("""
+        function initSidebar() {
+            const toggleBtn = document.getElementById('sidebar-collapse-btn');
+            const sidebar = document.getElementById('custom-sidebar');
+            const navLinks = document.querySelectorAll('.custom-sidebar .nav-link');
+            
+            // Toggle sidebar collapsed state
+            if (toggleBtn && sidebar) {
+                toggleBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('collapsed');
+                };
+            }
+            
+            // Navigation link click handler
+            navLinks.forEach(function(link) {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    // Update active states
+                    navLinks.forEach(function(l) { l.classList.remove('active'); });
+                    link.classList.add('active');
+                    
+                    // Update Shiny input value
+                    var navId = link.getAttribute('data-nav-id');
+                    Shiny.setInputValue('navigation', navId);
+                };
+            });
+        }
+        
+        // Run on load and after Shiny updates
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSidebar);
+        } else {
+            initSidebar();
+        }
+        // Also run after a short delay to catch Shiny's dynamic content
+        setTimeout(initSidebar, 500);
+    """)
+
+    # Build navigation links from NAV_CHOICES
+    nav_links = []
+    for nav_id, (icon, label) in NAV_CHOICES.items():
+        is_active = "active" if nav_id == "nav_dashboard" else ""
+        nav_links.append(
+            ui.tags.a(
+                {"class": f"nav-link {is_active}", "href": "#", "data-nav-id": nav_id},
+                ui.tags.i(class_=f"bi {icon}"),
+                ui.tags.span(label)
+            )
+        )
+
+    # === SIDEBAR: Custom Navigation Menu ===
+    sidebar_content = ui.div(
+        {"class": "custom-sidebar", "id": "custom-sidebar"},
+        # Sidebar header with title and collapse button
+        ui.div(
+            {"class": "sidebar-header"},
+            ui.tags.span("AQUABC Menu", class_="sidebar-title"),
+            ui.tags.button(
+                ui.tags.i(class_="bi bi-list"),
+                id="sidebar-collapse-btn",
+                class_="sidebar-toggle",
+                type="button",
+                title="Collapse menu",
             ),
-            class_="nav-radio-pills"
         ),
-        ui.tags.hr(),
-        ui.h6("Run Log"),
-        ui.output_text_verbatim("run_log", placeholder=True),
-        width=250,
-        open="desktop"
+        # Navigation links
+        ui.div({"class": "sidebar-nav"}, *nav_links),
     )
+
+    # Hidden input to track navigation state (for Shiny reactivity)
+    nav_input = ui.input_text("navigation", None, value="nav_dashboard")
+    nav_input_hidden = ui.tags.div(nav_input, style="display: none;")
 
     # === MAIN CONTENT PANELS ===
     # Dashboard Panel
@@ -1081,14 +1610,20 @@ def create_ui(theme_name="darkly"):
             ui.card_header("Dashboard"),
             # Run controls and timer at the top
             ui.layout_columns(
-                ui.input_action_button("quick_run", "Quick Run", class_="btn-success btn-lg w-100"),
-                ui.input_action_button("dashboard_stop", "Stop", class_="btn-danger btn-lg w-100"),
-                # Prominent timer display
+                ui.tooltip(
+                    ui.input_action_button("quick_run", "Quick Run", class_="btn-success btn-lg w-100"),
+                    "Run the model with current settings using the selected executable"
+                ),
+                ui.tooltip(
+                    ui.input_action_button("dashboard_stop", "Stop", class_="btn-danger btn-lg w-100"),
+                    "Stop the currently running model simulation"
+                ),
+                # Timer display - sized to match buttons
                 ui.div(
                     ui.output_ui("run_timer_display"),
-                    style="display: flex; align-items: center; justify-content: center;"
+                    style="display: flex; align-items: stretch; height: 100%;"
                 ),
-                col_widths=[4, 4, 4],
+                col_widths=[3, 3, 6],
                 class_="mb-3"
             ),
             ui.layout_columns(
@@ -1102,7 +1637,10 @@ def create_ui(theme_name="darkly"):
                         ),
                         fill=False
                     ),
-                    ui.input_action_button("goto_model_config", "Model Config", class_="btn-primary btn-sm w-100 mt-2"),
+                    ui.tooltip(
+                        ui.input_action_button("goto_model_config", "Model Config", class_="btn-primary btn-sm w-100 mt-2"),
+                        "Navigate to Model Control panel to configure simulation settings"
+                    ),
                 ),
                 # INPUT.txt Variables
                 ui.card(
@@ -1115,7 +1653,13 @@ def create_ui(theme_name="darkly"):
                 ),
                 # Run Log - wider
                 ui.card(
-                    ui.card_header("Run Log"),
+                    ui.card_header(
+                        ui.div(
+                            "Run Log",
+                            ui.input_action_button("btn_copy_dashboard_log", "Copy", class_="btn-sm btn-outline-secondary float-end"),
+                            class_="d-flex justify-content-between align-items-center w-100"
+                        )
+                    ),
                     ui.div(
                         ui.output_ui("dashboard_run_log"),
                         style="height: 380px; overflow-y: auto; background-color: #1e1e1e; padding: 10px; border-radius: 4px;",
@@ -1162,8 +1706,10 @@ def create_ui(theme_name="darkly"):
 
                 # Build options
                 ui.h6("Build Options"),
-                ui.input_switch("build_clean_first", "Clean before build", value=False),
-                ui.tags.small("Enable when switching compilers or build types", class_="text-muted"),
+                ui.tooltip(
+                    ui.input_switch("build_clean_first", "Clean before build", value=False),
+                    "Remove all object files and rebuild from scratch. Enable when switching compilers or build types."
+                ),
 
                 ui.tags.hr(),
 
@@ -1175,8 +1721,14 @@ def create_ui(theme_name="darkly"):
 
                 # Build actions
                 ui.layout_columns(
-                    ui.input_action_button("btn_build", "Build", class_="btn-primary w-100"),
-                    ui.input_action_button("btn_rebuild", "Rebuild All", class_="btn-warning w-100"),
+                    ui.tooltip(
+                        ui.input_action_button("btn_build", "Build", class_="btn-primary w-100"),
+                        "Compile changed source files and link the executable"
+                    ),
+                    ui.tooltip(
+                        ui.input_action_button("btn_rebuild", "Rebuild All", class_="btn-warning w-100"),
+                        "Clean and recompile all source files from scratch"
+                    ),
                     col_widths=[6, 6]
                 ),
                 ui.tags.small("Creates named executable based on compiler and build type.", class_="text-muted mt-2"),
@@ -1229,37 +1781,61 @@ def create_ui(theme_name="darkly"):
             # Tab 1: Simulation Configuration
             ui.nav_panel(
                 "Simulation Config",
-                ui.input_action_button("load_sim_config", "Load Configuration", class_="btn-secondary mb-3"),
+                ui.tooltip(
+                    ui.input_action_button("load_sim_config", "Load Configuration", class_="btn-secondary mb-3"),
+                    "Load settings from INPUT.txt file"
+                ),
                 ui.layout_columns(
                     ui.card(
                         ui.card_header("Time Period"),
-                        ui.input_numeric("sim_base_year", "Base Year:", value=1998, min=1900, max=2100),
-                        ui.input_date("sim_start_date", "Start Date:", value="2015-01-01"),
-                        ui.input_date("sim_end_date", "End Date:", value="2016-01-01"),
+                        ui.tooltip(
+                            ui.input_numeric("sim_base_year", "Base Year:", value=1998, min=1900, max=2100),
+                            "Reference year for input forcing data (e.g., meteorology files)"
+                        ),
+                        ui.tooltip(
+                            ui.input_date("sim_start_date", "Start Date:", value="2015-01-01"),
+                            "Simulation start date (converted to day of year)"
+                        ),
+                        ui.tooltip(
+                            ui.input_date("sim_end_date", "End Date:", value="2016-01-01"),
+                            "Simulation end date (converted to day of year)"
+                        ),
                         ui.output_text("sim_duration_info"),
                         fill=False
                     ),
                     ui.card(
                         ui.card_header("Time Stepping"),
-                        ui.input_select(
-                            "sim_timestep_preset",
-                            "Time Step:",
-                            choices=list(TIME_STEP_PRESETS.keys()),
-                            selected="6 minutes"
+                        ui.tooltip(
+                            ui.input_select(
+                                "sim_timestep_preset",
+                                "Time Step:",
+                                choices=list(TIME_STEP_PRESETS.keys()),
+                                selected="6 minutes"
+                            ),
+                            "Preset time step intervals. 6 minutes (240 steps/day) is recommended."
                         ),
-                        ui.input_numeric("sim_timesteps_per_day", "Steps/Day:", value=240, min=1, max=1440),
+                        ui.tooltip(
+                            ui.input_numeric("sim_timesteps_per_day", "Steps/Day:", value=240, min=1, max=1440),
+                            "Number of model time steps per day. Higher values = more precision but slower."
+                        ),
                         ui.output_text("sim_timestep_info"),
                         fill=False
                     ),
                     ui.card(
                         ui.card_header("Output Interval"),
-                        ui.input_select(
-                            "sim_output_preset",
-                            "Output Frequency:",
-                            choices=list(OUTPUT_INTERVAL_PRESETS.keys()),
-                            selected="Hourly"
+                        ui.tooltip(
+                            ui.input_select(
+                                "sim_output_preset",
+                                "Output Frequency:",
+                                choices=list(OUTPUT_INTERVAL_PRESETS.keys()),
+                                selected="Hourly"
+                            ),
+                            "How often to write output. More frequent = larger files."
                         ),
-                        ui.input_numeric("sim_print_interval", "Print Interval (steps):", value=24, min=1),
+                        ui.tooltip(
+                            ui.input_numeric("sim_print_interval", "Print Interval (steps):", value=24, min=1),
+                            "Number of time steps between output writes. 24 steps = hourly at 240 steps/day."
+                        ),
                         ui.output_text("sim_output_info"),
                         fill=False
                     ),
@@ -1269,19 +1845,28 @@ def create_ui(theme_name="darkly"):
                 ui.layout_columns(
                     ui.card(
                         ui.card_header("Model Options"),
-                        ui.input_switch("sim_model_sediments", "Enable Sediment Model", value=True),
-                        ui.input_select(
-                            "sim_resuspension",
-                            "Resuspension Option:",
-                            choices={"0": "Disabled", "1": "Fully Prescribed", "2": "Semi-Prescribed"},
-                            selected="2"
+                        ui.tooltip(
+                            ui.input_switch("sim_model_sediments", "Enable Sediment Model", value=False),
+                            "Enable bottom sediment diagenesis model. Increases computation time significantly."
+                        ),
+                        ui.tooltip(
+                            ui.input_select(
+                                "sim_resuspension",
+                                "Resuspension Option:",
+                                choices={"0": "Disabled", "1": "Fully Prescribed", "2": "Semi-Prescribed"},
+                                selected="2"
+                            ),
+                            "0=No resuspension, 1=Fully prescribed rates, 2=Semi-prescribed (recommended)"
                         ),
                         fill=False
                     ),
-                    col_widths=[6]
+                    col_widths=[6, 6]
                 ),
                 ui.layout_columns(
-                    ui.input_action_button("save_sim_config", "Save Configuration", class_="btn-success"),
+                    ui.tooltip(
+                        ui.input_action_button("save_sim_config", "Save Configuration", class_="btn-success"),
+                        "Save current settings to INPUT.txt file"
+                    ),
                     ui.output_text("sim_config_save_status"),
                     col_widths=[3, 9]
                 )
@@ -1292,22 +1877,31 @@ def create_ui(theme_name="darkly"):
                 ui.layout_columns(
                     # Left column: Run Parameters
                     ui.card(
+                        {"class": "run-params-compact"},
                         ui.card_header("Run Parameters"),
 
+                        # Build options button at top
+                        ui.tooltip(
+                            ui.input_action_button("goto_build", "Build Options", class_="btn-outline-primary btn-sm w-100 mb-2"),
+                            "Go to Model Build panel to compile with different compilers or settings"
+                        ),
+                        ui.tags.hr(class_="my-2"),
+
                         # Executable selection
-                        ui.h6("Executable"),
-                        ui.input_select(
-                            "run_executable",
-                            None,
-                            choices=["ESTAS_II"],
-                            selected="ESTAS_II"
+                        ui.tags.strong("Executable", class_="small"),
+                        ui.tooltip(
+                            ui.input_select(
+                                "run_executable",
+                                None,
+                                choices=["ESTAS_II"],
+                                selected="ESTAS_II"
+                            ),
+                            "Select which compiled executable to run"
                         ),
                         ui.output_ui("run_executable_info"),
 
-                        ui.tags.hr(),
-
                         # Input file selection (Arg 1 - required)
-                        ui.h6("Command Line Arguments"),
+                        ui.tags.strong("Command Line Arguments", class_="small mt-2"),
                         ui.tooltip(
                             ui.input_select(
                                 "cmd_input_file",
@@ -1323,10 +1917,10 @@ def create_ui(theme_name="darkly"):
                             ui.input_select(
                                 "cmd_constants_file",
                                 "Pelagic Constants File:",
-                                choices={"": "(use model defaults)"},
-                                selected=""
+                                choices={"WCONST_04.txt": "WCONST_04.txt"},
+                                selected="WCONST_04.txt"
                             ),
-                            "Override model constants. Leave empty to use compiled defaults."
+                            "Override model constants. WCONST_04.txt is recommended."
                         ),
 
                         # Binary output (Arg 3)
@@ -1347,41 +1941,109 @@ def create_ui(theme_name="darkly"):
                             ),
                         ),
 
-                        ui.tags.hr(),
-
                         # Command preview
-                        ui.h6("Command Preview"),
+                        ui.tags.strong("Command Preview", class_="small mt-2"),
                         ui.output_text_verbatim("cmd_preview", placeholder=True),
                         ui.output_ui("constants_validation_status"),
 
-                        fill=False
-                    ),
+                        ui.tags.hr(class_="my-2"),
 
-                    # Right column: Execution
-                    ui.card(
-                        ui.card_header("Execution"),
-
+                        # Run controls
                         ui.layout_columns(
-                            ui.input_action_button("run", "Run Model", class_="btn-success btn-lg w-100"),
-                            ui.input_action_button("stop_run", "Stop", class_="btn-danger btn-lg w-100"),
+                            ui.tooltip(
+                                ui.input_action_button("run", "Run Model", class_="btn-success btn-lg w-100"),
+                                "Start the model simulation with current configuration"
+                            ),
+                            ui.tooltip(
+                                ui.input_action_button("stop_run", "Stop", class_="btn-danger btn-lg w-100"),
+                                "Terminate the running model process"
+                            ),
                             col_widths=[8, 4]
                         ),
                         ui.output_ui("run_status_indicator"),
 
-                        ui.tags.hr(),
+                        fill=False
+                    ),
 
-                        ui.h6("Build Options"),
-                        ui.tags.p("To compile the model with different settings, use the Model Build panel.", class_="text-muted"),
-                        ui.input_action_button("goto_build", "Go to Model Build", class_="btn-outline-primary w-100"),
-
-                        ui.tags.hr(),
-
-                        ui.card_header("Run Log"),
+                    # Right column: Run Log
+                    ui.card(
+                        ui.card_header(
+                            ui.div(
+                                "Run Log",
+                                ui.input_action_button("btn_copy_mini_log", "Copy", class_="btn-sm btn-outline-secondary float-end"),
+                                class_="d-flex justify-content-between align-items-center w-100"
+                            )
+                        ),
                         ui.output_text_verbatim("run_log_mini", placeholder=True),
 
                         fill=False
                     ),
-                    col_widths=[6, 6]
+                    col_widths=[5, 7]
+                )
+            ),
+            # Tab 3: Output Configuration
+            ui.nav_panel(
+                "Output Config",
+                ui.layout_columns(
+                    ui.card(
+                        ui.card_header("Output Boxes"),
+                        ui.p("Select which boxes should produce output:", class_="text-muted"),
+                        ui.div(
+                            ui.input_checkbox_group(
+                                "output_boxes",
+                                None,
+                                choices={str(i): f"Box {i}" for i in range(1, 26)},
+                                selected=["5", "6", "8", "9", "14", "17", "25"]
+                            ),
+                            style="column-count: 2; column-gap: 1rem;"
+                        ),
+                        fill=False
+                    ),
+                    ui.card(
+                        ui.card_header("Output Directory"),
+                        ui.tooltip(
+                            ui.input_select(
+                                "sim_output_dir",
+                                "Output Directory:",
+                                choices={"OUTPUTS": "OUTPUTS (default)"},
+                                selected="OUTPUTS"
+                            ),
+                            "Folder where model output files will be saved (.out, .bin, .csv)"
+                        ),
+                        ui.tooltip(
+                            ui.input_action_button("refresh_sim_output_dirs", "Refresh", class_="btn-secondary btn-sm w-100 mt-2"),
+                            "Scan for available output directories"
+                        ),
+                        ui.output_text("sim_output_dir_info"),
+                        ui.tags.hr(),
+                        ui.card_header("Output Types"),
+                        ui.p("Select output types for selected boxes:", class_="text-muted small"),
+                        ui.tooltip(
+                            ui.input_checkbox_group(
+                                "output_types",
+                                None,
+                                choices={
+                                    "state_vars": "State Variables",
+                                    "process_rates": "Process Rates",
+                                    "mass_balance": "Mass Balance"
+                                },
+                                selected=["state_vars"]
+                            ),
+                            "State Variables: concentrations. Process Rates: fluxes. Mass Balance: conservation checks."
+                        ),
+                        ui.tags.hr(),
+                        ui.tooltip(
+                            ui.input_action_button("load_output_config", "Load Current", class_="btn-secondary me-2"),
+                            "Load output box selection from current configuration"
+                        ),
+                        ui.tooltip(
+                            ui.input_action_button("save_output_config", "Save Configuration", class_="btn-success"),
+                            "Save output box selection to configuration file"
+                        ),
+                        ui.output_text("output_config_status"),
+                        fill=False
+                    ),
+                    col_widths=[8, 4]
                 )
             ),
             id="model_control_tabs"
@@ -1396,16 +2058,25 @@ def create_ui(theme_name="darkly"):
             ui.card(
                 ui.card_header("File Browser"),
                 ui.layout_columns(
-                    ui.input_select(
-                        "file_category_filter",
-                        "Filter by category:",
-                        choices=["All Categories"] + get_input_file_categories(),
-                        selected="All Categories"
+                    ui.tooltip(
+                        ui.input_select(
+                            "file_category_filter",
+                            "Filter by category:",
+                            choices=["All Categories"] + get_input_file_categories(),
+                            selected="All Categories"
+                        ),
+                        "Filter files by type: Forcing, Constants, Initial Conditions, etc."
                     ),
-                    ui.input_action_button("refresh_files", "Refresh", class_="btn-sm btn-secondary mt-4"),
-                    col_widths=[10, 2]
+                    ui.tooltip(
+                        ui.input_action_button("refresh_files", "Refresh List", class_="btn-sm btn-secondary mt-4 w-100"),
+                        "Rescan input files directory"
+                    ),
+                    col_widths=[9, 3]
                 ),
-                ui.input_select("file_select", "Select file:", choices=[], size=12),
+                ui.tooltip(
+                    ui.input_select("file_select", "Select file:", choices=[], size=12),
+                    "Click to preview file contents in the right panel"
+                ),
                 ui.tags.hr(),
                 ui.card(
                     ui.card_header("File Information"),
@@ -1413,16 +2084,11 @@ def create_ui(theme_name="darkly"):
                     style="max-height: 350px; overflow-y: auto;"
                 ),
             ),
-            # Right column: File contents
+            # Right column: File contents (read-only view)
             ui.card(
                 ui.card_header(ui.output_text("file_header_text")),
-                ui.input_text_area("file_contents", "File contents:", value="", rows=25, width="100%"),
-                ui.layout_columns(
-                    ui.input_action_button("save_file", "Save File", class_="btn-warning"),
-                    ui.output_text("save_status"),
-                    col_widths=[3, 9]
-                ),
-                ui.tags.small("Timestamped backups are created automatically", class_="text-muted")
+                ui.input_text_area("file_contents", "File contents:", value="", rows=28, width="100%"),
+                ui.tags.small("Read-only preview. Edit files in Parameters, Initial Conditions, or Model Config tabs.", class_="text-muted")
             ),
             col_widths=[4, 8]
         )
@@ -1434,19 +2100,28 @@ def create_ui(theme_name="darkly"):
         ui.card(
             ui.card_header("Parameters"),
             ui.layout_columns(
-                ui.input_select(
-                    "param_category",
-                    "Category:",
-                    choices=list(PARAMETER_CATEGORIES.keys()),
-                    selected="Diatoms"
+                ui.tooltip(
+                    ui.input_select(
+                        "param_category",
+                        "Category:",
+                        choices=list(PARAMETER_CATEGORIES.keys()),
+                        selected="Diatoms"
+                    ),
+                    "Select parameter category: Diatoms, Cyanobacteria, Zooplankton, etc."
                 ),
-                ui.input_select(
-                    "param_file",
-                    "Constants file:",
-                    choices=["WCONST_04.txt"],
-                    selected="WCONST_04.txt"
+                ui.tooltip(
+                    ui.input_select(
+                        "param_file",
+                        "Constants file:",
+                        choices=["WCONST_04.txt"],
+                        selected="WCONST_04.txt"
+                    ),
+                    "WCONST_04.txt contains calibrated model parameters"
                 ),
-                ui.input_action_button("load_params", "Load", class_="btn-secondary mt-4"),
+                ui.tooltip(
+                    ui.input_action_button("load_params", "Load", class_="btn-secondary mt-4"),
+                    "Load parameters from selected file and category"
+                ),
                 col_widths=[5, 5, 2]
             ),
             ui.tags.hr(),
@@ -1464,7 +2139,10 @@ def create_ui(theme_name="darkly"):
                 col_widths=[4, 8]
             ),
             ui.layout_columns(
-                ui.input_action_button("save_params", "Save All Changes", class_="btn-success"),
+                ui.tooltip(
+                    ui.input_action_button("save_params", "Save All Changes", class_="btn-success"),
+                    "Save modified parameters to file (creates backup)"
+                ),
                 ui.output_text("param_save_status"),
                 col_widths=[3, 9]
             )
@@ -1477,19 +2155,28 @@ def create_ui(theme_name="darkly"):
         ui.card(
             ui.card_header("Initial Conditions"),
             ui.layout_columns(
-                ui.input_select(
-                    "ic_file",
-                    "IC File:",
-                    choices=["INIT_CONC_1.txt", "INIT_CONC_2.txt"],
-                    selected="INIT_CONC_1.txt"
+                ui.tooltip(
+                    ui.input_select(
+                        "ic_file",
+                        "IC File:",
+                        choices=["INIT_CONC_1.txt", "INIT_CONC_2.txt"],
+                        selected="INIT_CONC_1.txt"
+                    ),
+                    "Initial concentration file for state variables"
                 ),
-                ui.input_select(
-                    "ic_category",
-                    "Category:",
-                    choices=list(STATE_VARIABLE_CATEGORIES.keys()),
-                    selected="Nutrients"
+                ui.tooltip(
+                    ui.input_select(
+                        "ic_category",
+                        "Category:",
+                        choices=list(STATE_VARIABLE_CATEGORIES.keys()),
+                        selected="Nutrients"
+                    ),
+                    "Select variable category: Nutrients, Phytoplankton, Oxygen, etc."
                 ),
-                ui.input_action_button("load_ics", "Load", class_="btn-secondary mt-4"),
+                ui.tooltip(
+                    ui.input_action_button("load_ics", "Load", class_="btn-secondary mt-4"),
+                    "Load initial conditions from selected file"
+                ),
                 col_widths=[5, 5, 2]
             ),
             ui.tags.hr(),
@@ -1507,7 +2194,10 @@ def create_ui(theme_name="darkly"):
                 col_widths=[4, 8]
             ),
             ui.layout_columns(
-                ui.input_action_button("save_ics", "Save All Changes", class_="btn-success"),
+                ui.tooltip(
+                    ui.input_action_button("save_ics", "Save All Changes", class_="btn-success"),
+                    "Save modified initial conditions to file (creates backup)"
+                ),
                 ui.output_text("ic_save_status"),
                 col_widths=[3, 9]
             )
@@ -1520,13 +2210,19 @@ def create_ui(theme_name="darkly"):
         ui.card(
             ui.card_header("Model Options"),
             ui.layout_columns(
-                ui.input_select(
-                    "options_category",
-                    "Category:",
-                    choices=list(OPTION_CATEGORIES.keys()),
-                    selected="Cyanobacteria"
+                ui.tooltip(
+                    ui.input_select(
+                        "options_category",
+                        "Category:",
+                        choices=list(OPTION_CATEGORIES.keys()),
+                        selected="Cyanobacteria"
+                    ),
+                    "Select option category: Cyanobacteria, Zooplankton, Oxygen, etc."
                 ),
-                ui.input_action_button("load_options", "Load Options", class_="btn-secondary mt-4"),
+                ui.tooltip(
+                    ui.input_action_button("load_options", "Load Options", class_="btn-secondary mt-4"),
+                    "Load model options and switches"
+                ),
                 col_widths=[10, 2]
             ),
             ui.tags.hr(),
@@ -1544,7 +2240,10 @@ def create_ui(theme_name="darkly"):
                 col_widths=[6, 6]
             ),
             ui.layout_columns(
-                ui.input_action_button("save_options", "Save All Changes", class_="btn-success"),
+                ui.tooltip(
+                    ui.input_action_button("save_options", "Save All Changes", class_="btn-success"),
+                    "Save model switches and extra constants (creates backup)"
+                ),
                 ui.output_text("options_save_status"),
                 col_widths=[3, 9]
             )
@@ -1567,16 +2266,28 @@ def create_ui(theme_name="darkly"):
                 # Load Scenario Section
                 ui.card(
                     ui.card_header("Load Scenario"),
-                    ui.input_select(
-                        "scenario_select",
-                        "Select Scenario:",
-                        choices=[],
-                        selected=None
+                    ui.tooltip(
+                        ui.input_select(
+                            "scenario_select",
+                            "Select Scenario:",
+                            choices=[],
+                            selected=None
+                        ),
+                        "Previously saved parameter configurations"
                     ),
                     ui.layout_columns(
-                        ui.input_action_button("load_scenario", "Load", class_="btn-primary"),
-                        ui.input_action_button("delete_scenario", "Delete", class_="btn-danger"),
-                        ui.input_action_button("refresh_scenarios", "Refresh", class_="btn-secondary"),
+                        ui.tooltip(
+                            ui.input_action_button("load_scenario", "Load", class_="btn-primary"),
+                            "Apply selected scenario to current configuration"
+                        ),
+                        ui.tooltip(
+                            ui.input_action_button("delete_scenario", "Delete", class_="btn-danger"),
+                            "Permanently delete selected scenario"
+                        ),
+                        ui.tooltip(
+                            ui.input_action_button("refresh_scenarios", "Refresh", class_="btn-secondary"),
+                            "Rescan scenarios directory"
+                        ),
                         col_widths=[4, 4, 4]
                     ),
                     ui.tags.hr(),
@@ -1606,7 +2317,10 @@ def create_ui(theme_name="darkly"):
                         col_widths=[6, 6]
                     ),
                     ui.input_checkbox("scenario_include_options", "Model Options & Constants", value=True),
-                    ui.input_action_button("save_scenario", "Save as New Scenario", class_="btn-success mt-2"),
+                    ui.tooltip(
+                        ui.input_action_button("save_scenario", "Save as New Scenario", class_="btn-success mt-2"),
+                        "Save current configuration as a named scenario preset"
+                    ),
                     fill=False
                 ),
                 col_widths=[6, 6]
@@ -1622,27 +2336,116 @@ def create_ui(theme_name="darkly"):
         ui.card(
             ui.card_header("Plot & Visualization"),
             ui.navset_card_tab(
+                # Tab 0: Output Directory Selection
+                ui.nav_panel(
+                    "Output Directory",
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("Select Output Directory"),
+                            ui.tooltip(
+                                ui.input_select(
+                                    "output_dir_select",
+                                    "Output Directory:",
+                                    choices={}  # Will be populated dynamically
+                                ),
+                                "Select folder containing model output files"
+                            ),
+                            ui.tooltip(
+                                ui.input_action_button("refresh_output_dirs", "Refresh Directories", class_="btn-secondary w-100 mt-2"),
+                                "Rescan for output directories"
+                            ),
+                            ui.tooltip(
+                                ui.input_action_button("analyze_output_dir", "Analyze Directory", class_="btn-info w-100 mt-2"),
+                                "Analyze files in selected directory"
+                            ),
+                            fill=False
+                        ),
+                        col_widths=[12]
+                    ),
+                    ui.tags.hr(),
+                    ui.card(
+                        ui.card_header("Files Summary"),
+                        ui.output_ui("output_files_summary"),
+                        style="max-height: 400px; overflow-y: auto;"
+                    )
+                ),
                 # Tab 1: Model Output
                 ui.nav_panel(
                     "Model Output",
                     ui.layout_columns(
                         ui.card(
+                            ui.card_header("Data Source"),
+                            ui.tooltip(
+                                ui.input_radio_buttons(
+                                    "output_format",
+                                    "File format:",
+                                    choices={"text": "Text (.out)", "binary": "Binary (.bin)", "csv": "CSV"},
+                                    selected="text",
+                                    inline=True
+                                ),
+                                "Select output file format to read"
+                            ),
+                            ui.tooltip(
+                                ui.input_select(
+                                    "plot_output_file",
+                                    "Output file:",
+                                    choices={}  # Will be populated from selected output directory
+                                ),
+                                "Select specific output file to plot"
+                            ),
+                            ui.output_ui("plot_output_file_info"),
+                            ui.tooltip(
+                                ui.input_action_button("refresh_plot_files", "Refresh Files", class_="btn-secondary btn-sm w-100 mt-2"),
+                                "Rescan output directory for files"
+                            ),
+                            fill=False
+                        ),
+                        ui.card(
+                            ui.card_header("Selected File Preview"),
+                            ui.output_ui("output_file_preview"),
+                            fill=False
+                        ),
+                        ui.card(
                             ui.card_header("Variables"),
-                            ui.input_selectize("left_vars", "Left axis:", choices=[], multiple=True),
-                            ui.input_selectize("right_vars", "Right axis:", choices=[], multiple=True),
-                            ui.input_checkbox("log_left", "Log scale left"),
-                            ui.input_checkbox("log_right", "Log scale right"),
+                            ui.tooltip(
+                                ui.input_selectize("left_vars", "Left axis:", choices=[], multiple=True),
+                                "Variables to plot on left Y-axis"
+                            ),
+                            ui.tooltip(
+                                ui.input_selectize("right_vars", "Right axis:", choices=[], multiple=True),
+                                "Variables to plot on right Y-axis (different scale)"
+                            ),
+                            ui.tooltip(
+                                ui.input_checkbox("log_left", "Log scale left"),
+                                "Use logarithmic scale for left axis"
+                            ),
+                            ui.tooltip(
+                                ui.input_checkbox("log_right", "Log scale right"),
+                                "Use logarithmic scale for right axis"
+                            ),
                             fill=False
                         ),
                         ui.card(
                             ui.card_header("Options"),
-                            ui.input_checkbox("smooth", "Apply rolling mean"),
-                            ui.input_slider("smooth_window", "Window size:", min=MIN_SMOOTH_WINDOW, max=101, value=5, step=1),
-                            ui.input_slider("nrows", "Preview rows:", min=10, max=1000, value=200, step=10),
-                            ui.input_action_button("refresh_plot", "Refresh Plot", class_="btn-info w-100"),
+                            ui.tooltip(
+                                ui.input_checkbox("smooth", "Apply rolling mean"),
+                                "Smooth data using rolling average window"
+                            ),
+                            ui.tooltip(
+                                ui.input_slider("smooth_window", "Window size:", min=MIN_SMOOTH_WINDOW, max=101, value=5, step=1),
+                                "Number of data points for rolling mean calculation"
+                            ),
+                            ui.tooltip(
+                                ui.input_slider("nrows", "Preview rows:", min=10, max=1000, value=200, step=10),
+                                "Number of rows to load for preview (affects performance)"
+                            ),
+                            ui.tooltip(
+                                ui.input_action_button("refresh_plot", "Refresh Plot", class_="btn-info w-100"),
+                                "Update plot with current settings"
+                            ),
                             fill=False
                         ),
-                        col_widths=[6, 6]
+                        col_widths=[3, 3, 3, 3]
                     ),
                     ui.tags.hr(),
                     ui.div(
@@ -1656,18 +2459,21 @@ def create_ui(theme_name="darkly"):
                     ui.layout_columns(
                         ui.card(
                             ui.card_header("Select Data"),
-                            ui.input_select(
-                                "input_ts_file",
-                                "Timeseries file:",
-                                choices={
-                                    "TEMP_TS.txt": "Temperature",
-                                    "SALT_TS.txt": "Salinity",
-                                    "FLOW_TS.txt": "Flow",
-                                    "SOLAR_RAD_TS.txt": "Solar Radiation",
-                                    "WIND_SPEED_TS.txt": "Wind Speed",
-                                    "AIR_TEMP_TS.txt": "Air Temperature",
-                                    "SHEAR_STRESSES_TS.txt": "Shear Stress",
-                                }
+                            ui.tooltip(
+                                ui.input_select(
+                                    "input_ts_file",
+                                    "Timeseries file:",
+                                    choices={
+                                        "TEMP_TS.txt": "Temperature",
+                                        "SALT_TS.txt": "Salinity",
+                                        "FLOW_TS.txt": "Flow",
+                                        "SOLAR_RAD_TS.txt": "Solar Radiation",
+                                        "WIND_SPEED_TS.txt": "Wind Speed",
+                                        "AIR_TEMP_TS.txt": "Air Temperature",
+                                        "SHEAR_STRESSES_TS.txt": "Shear Stress",
+                                    }
+                                ),
+                                "Select forcing input timeseries file to visualize"
                             ),
                             ui.input_selectize(
                                 "input_ts_boxes",
@@ -1711,7 +2517,10 @@ def create_ui(theme_name="darkly"):
         "input.navigation === 'nav_mass_balance'",
         ui.card(
             ui.card_header("Mass Balance"),
-            ui.input_action_button("calc_mass_balance", "Calculate Mass Balance", class_="btn-primary mb-3"),
+            ui.tooltip(
+                ui.input_action_button("calc_mass_balance", "Calculate Mass Balance", class_="btn-primary mb-3"),
+                "Calculate element mass balance from model output"
+            ),
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Summary"),
@@ -1719,11 +2528,14 @@ def create_ui(theme_name="darkly"):
                 ),
                 ui.card(
                     ui.card_header("Element Details"),
-                    ui.input_select(
-                        "mb_element",
-                        "Element:",
-                        choices=["Nitrogen", "Carbon", "Phosphorus", "Silicon"],
-                        selected="Nitrogen"
+                    ui.tooltip(
+                        ui.input_select(
+                            "mb_element",
+                            "Element:",
+                            choices=["Nitrogen", "Carbon", "Phosphorus", "Silicon"],
+                            selected="Nitrogen"
+                        ),
+                        "Select element for detailed mass balance breakdown"
                     ),
                     ui.output_ui("mass_balance_details"),
                 ),
@@ -1742,18 +2554,55 @@ def create_ui(theme_name="darkly"):
         ui.card(
             ui.card_header("Model Validation - Observations"),
             ui.layout_columns(
+                # Left column: File selection
                 ui.card(
-                    ui.card_header("Load Observations"),
-                    ui.input_file("obs_file", "Upload observation CSV:", accept=[".csv"], multiple=False),
-                    ui.tags.small("CSV with TIME column + variable columns", class_="text-muted d-block mb-2"),
-                    ui.input_action_button("generate_sample_obs", "Generate Sample Data", class_="btn-outline-secondary btn-sm w-100"),
+                    ui.card_header(
+                        ui.tags.i(class_="bi bi-folder2-open me-2"),
+                        "Observation Files"
+                    ),
+                    ui.tooltip(
+                        ui.input_action_button("obs_scan_dir", "Scan OBSERVATIONS Directory", 
+                                              class_="btn-outline-primary btn-sm w-100 mb-2"),
+                        "Scan the OBSERVATIONS folder for available data files"
+                    ),
+                    ui.input_select("obs_file_select", "Select file:", choices=[], width="100%"),
+                    ui.tooltip(
+                        ui.input_action_button("obs_load_file", "Load Selected File", 
+                                              class_="btn-primary btn-sm w-100 mb-2"),
+                        "Load the selected observation file"
+                    ),
+                    ui.hr(),
+                    ui.tags.small("Or upload your own file:", class_="text-muted d-block mb-1"),
+                    ui.tooltip(
+                        ui.input_file("obs_file", "Upload CSV/Excel:", 
+                                     accept=[".csv", ".xlsx", ".dates"], multiple=False),
+                        "Upload CSV, Excel, or .dates observation file"
+                    ),
+                    ui.hr(),
+                    ui.tooltip(
+                        ui.input_action_button("generate_sample_obs", "Generate Sample Data", 
+                                              class_="btn-outline-secondary btn-sm w-100"),
+                        "Generate synthetic observation data for testing"
+                    ),
                     fill=False
                 ),
+                # Right column: File preview
+                ui.card(
+                    ui.card_header(
+                        ui.tags.i(class_="bi bi-table me-2"),
+                        "File Preview"
+                    ),
+                    ui.output_ui("obs_file_info"),
+                    ui.output_ui("obs_variables_table"),
+                ),
+                col_widths=[4, 8]
+            ),
+            ui.layout_columns(
                 ui.card(
                     ui.card_header("Comparison Summary"),
                     ui.output_table("obs_comparison_summary"),
                 ),
-                col_widths=[4, 8]
+                col_widths=[12]
             ),
             ui.layout_columns(
                 ui.card(
@@ -1770,8 +2619,84 @@ def create_ui(theme_name="darkly"):
         )
     )
 
+    # Map Panel - PyDeck Visualization
+    panel_map = ui.panel_conditional(
+        "input.navigation === 'nav_map'",
+        ui.card(
+            ui.card_header(
+                ui.tags.i(class_="bi bi-globe me-2"),
+                "Geographic Visualization"
+            ),
+            ui.layout_columns(
+                # Left column: Map controls
+                ui.card(
+                    ui.card_header("Map Settings"),
+                    ui.tooltip(
+                        ui.input_select(
+                            "map_style",
+                            "Map Style:",
+                            choices={
+                                "OpenStreetMap.Mapnik": "OpenStreetMap",
+                                "CartoDB.Positron": "Light (Carto)",
+                                "CartoDB.DarkMatter": "Dark (Carto)",
+                                "Esri.WorldImagery": "Satellite (Esri)",
+                                "OpenTopoMap": "Topographic",
+                            },
+                            selected="OpenStreetMap.Mapnik"
+                        ),
+                        "Select the base map style"
+                    ),
+                    ui.tooltip(
+                        ui.input_numeric("map_lat", "Center Latitude:", value=55.5, min=-90, max=90, step=0.1),
+                        "Map center latitude coordinate"
+                    ),
+                    ui.tooltip(
+                        ui.input_numeric("map_lon", "Center Longitude:", value=21.0, min=-180, max=180, step=0.1),
+                        "Map center longitude coordinate"
+                    ),
+                    ui.tooltip(
+                        ui.input_slider("map_zoom", "Zoom Level:", min=1, max=18, value=8, step=1),
+                        "Map zoom level (1=world, 18=street level)"
+                    ),
+                    ui.tooltip(
+                        ui.input_slider("map_pitch", "Pitch (3D tilt):", min=0, max=60, value=45, step=5),
+                        "3D perspective tilt angle"
+                    ),
+                    ui.hr(),
+                    ui.h6("Sample Data Points"),
+                    ui.tooltip(
+                        ui.input_slider("map_point_radius", "Point Radius:", min=100, max=5000, value=1000, step=100),
+                        "Radius of sample points on the map"
+                    ),
+                    ui.tooltip(
+                        ui.input_slider("map_elevation_scale", "Elevation Scale:", min=1, max=100, value=10, step=1),
+                        "Vertical exaggeration for 3D elevation"
+                    ),
+                    fill=False
+                ),
+                # Right column: Map display
+                ui.card(
+                    ui.card_header("Map View"),
+                    ui.output_ui("pydeck_map"),
+                    fill=True
+                ),
+                col_widths=[3, 9]
+            ),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header("Map Information"),
+                    ui.output_ui("map_info"),
+                    fill=False
+                ),
+                col_widths=[12]
+            )
+        )
+    )
+
     # === COMBINE ALL PANELS ===
     main_content = ui.div(
+        {"class": "main-content"},
+        nav_input_hidden,
         panel_dashboard,
         panel_model_build,
         panel_model_control,
@@ -1784,22 +2709,45 @@ def create_ui(theme_name="darkly"):
         panel_plot,
         panel_mass_balance,
         panel_observations,
+        panel_map,
     )
 
-    # Custom top bar with settings icon
-    top_bar = ui.tags.div(
-        ui.tags.div(
-            # Settings gear icon button (right side)
+    # App header bar
+    app_header = ui.div(
+        {"class": "app-header"},
+        ui.div(
+            {"class": "app-header-title"},
+            ui.tags.i(class_="bi bi-water me-2"),
+            "AQUABC - Aquatic Biogeochemical Model",
+        ),
+        # Right side buttons container (changelog + help + settings)
+        ui.div(
+            {"class": "d-flex align-items-center gap-2"},
+            # Changelog button
+            ui.tooltip(
+                ui.input_action_button(
+                    "changelog_toggle",
+                    ui.tags.i(class_="bi bi-journal-text"),
+                    class_="btn btn-link text-light p-1",
+                    title="Changelog"
+                ),
+                "View recent changes and updates"
+            ),
+            # Help button
+            ui.input_action_button(
+                "help_toggle",
+                ui.tags.i(class_="bi bi-question-circle-fill"),
+                class_="btn btn-link text-light p-1",
+                title="State Variables Help"
+            ),
+            # Settings gear icon button
             ui.input_action_button(
                 "settings_toggle",
                 ui.tags.i(class_="bi bi-gear-fill"),
                 class_="btn btn-link text-light p-1",
                 title="Settings"
             ),
-            class_="d-flex justify-content-end align-items-center px-3 py-2"
         ),
-        class_="bg-dark",
-        style="position: sticky; top: 0; z-index: 1030;"
     )
 
     # Bootstrap Icons CSS
@@ -1857,6 +2805,56 @@ def create_ui(theme_name="darkly"):
         )
     )
 
+    # Help offcanvas for state variables reference
+    help_offcanvas = ui.tags.div(
+        ui.tags.div(
+            ui.tags.div(
+                ui.tags.h5("State Variables Reference", class_="offcanvas-title"),
+                ui.tags.button(
+                    type="button",
+                    class_="btn-close btn-close-white",
+                    **{"data-bs-dismiss": "offcanvas", "aria-label": "Close"}
+                ),
+                class_="offcanvas-header bg-primary text-light"
+            ),
+            ui.tags.div(
+                ui.output_ui("help_content"),
+                class_="offcanvas-body",
+                style="overflow-y: auto; max-height: calc(100vh - 60px);"
+            ),
+            class_="offcanvas offcanvas-end",
+            tabindex="-1",
+            id="helpOffcanvas",
+            style="width: 700px;",  # Wide enough for tables
+            **{"aria-labelledby": "helpOffcanvasLabel"}
+        )
+    )
+
+    # Changelog offcanvas for displaying CHANGELOG.md
+    changelog_offcanvas = ui.tags.div(
+        ui.tags.div(
+            ui.tags.div(
+                ui.tags.h5("Changelog", class_="offcanvas-title"),
+                ui.tags.button(
+                    type="button",
+                    class_="btn-close btn-close-white",
+                    **{"data-bs-dismiss": "offcanvas", "aria-label": "Close"}
+                ),
+                class_="offcanvas-header bg-info text-light"
+            ),
+            ui.tags.div(
+                ui.output_ui("changelog_content"),
+                class_="offcanvas-body",
+                style="overflow-y: auto; max-height: calc(100vh - 60px);"
+            ),
+            class_="offcanvas offcanvas-end",
+            tabindex="-1",
+            id="changelogOffcanvas",
+            style="width: 600px;",
+            **{"aria-labelledby": "changelogOffcanvasLabel"}
+        )
+    )
+
     # JavaScript to toggle settings offcanvas
     settings_js = ui.tags.script("""
         $(document).on('click', '#settings_toggle', function() {
@@ -1865,23 +2863,49 @@ def create_ui(theme_name="darkly"):
         });
     """)
 
+    # JavaScript to toggle help offcanvas
+    help_js = ui.tags.script("""
+        $(document).on('click', '#help_toggle', function() {
+            var offcanvas = new bootstrap.Offcanvas(document.getElementById('helpOffcanvas'));
+            offcanvas.toggle();
+        });
+    """)
+
+    # JavaScript to toggle changelog offcanvas
+    changelog_js = ui.tags.script("""
+        $(document).on('click', '#changelog_toggle', function() {
+            var offcanvas = new bootstrap.Offcanvas(document.getElementById('changelogOffcanvas'));
+            offcanvas.toggle();
+        });
+    """)
+
+    # Sidebar container with navigation and main content
+    sidebar_container = ui.div(
+        {"class": "sidebar-container"},
+        sidebar_content,
+        main_content,
+    )
+
     # Build final layout - use dynamic theming via output_ui instead of static theme
     content = [
         bootstrap_icons_css,
-        reload_js if THEMES_AVAILABLE else None,
+        nav_css,
+        nav_js,
+        reload_js,
         # Dynamic theme CSS placeholder - will be filled by server
         ui.output_ui("dynamic_theme_css"),
-        top_bar,
+        app_header,
         settings_offcanvas,
         settings_js,
-        ui.layout_sidebar(
-            sidebar_content,
-            main_content
-        )
+        help_offcanvas,
+        help_js,
+        changelog_offcanvas,
+        changelog_js,
+        sidebar_container,
     ]
 
     # Return page WITHOUT static theme - theme is applied dynamically
-    return ui.page_fluid(*content, title="AQUABC")
+    return ui.page_fillable(*content, title="AQUABC")
 
 # Load saved theme preference
 def get_saved_theme():
@@ -1912,6 +2936,29 @@ def server(input, output, session):
     logger.info(f"Session ID: {session.id if hasattr(session, 'id') else 'N/A'}")
     logger.info("=" * 60)
 
+    # =================
+    # Log Copy Handlers
+    # =================
+    @reactive.effect
+    @reactive.event(input.btn_copy_dashboard_log)
+    async def copy_dashboard_log():
+        """Copy dashboard run log to clipboard via client-side JS"""
+        log_content = "".join(_log_lines)
+        if not log_content:
+            log_content = "Log is empty."
+        await session.send_custom_message("copy_to_clipboard", log_content)
+        ui.notification_show("Run log copied to clipboard!", type="message", duration=2)
+
+    @reactive.effect
+    @reactive.event(input.btn_copy_mini_log)
+    async def copy_mini_log():
+        """Copy mini run log to clipboard via client-side JS"""
+        log_content = "".join(_log_lines)
+        if not log_content:
+            log_content = "Log is empty."
+        await session.send_custom_message("copy_to_clipboard", log_content)
+        ui.notification_show("Run log copied to clipboard!", type="message", duration=2)
+
     # Dashboard status info
     @render.text
     def status_info():
@@ -1923,14 +2970,16 @@ def server(input, output, session):
         if os.path.exists(OUTPUT_CSV):
             mtime = datetime.fromtimestamp(os.path.getmtime(OUTPUT_CSV))
             status_lines.append(f"Last Run: {mtime.strftime('%Y-%m-%d %H:%M:%S')}")
-            with open(OUTPUT_CSV, 'r') as f:
-                lines = sum(1 for _ in f)
-            status_lines.append(f"Output Rows: {lines}")
+            lines = count_file_lines_fast(OUTPUT_CSV)
+            status_lines.append(f"Output Rows: {lines:,}")
         else:
             status_lines.append("Last Run: Never")
 
-        # Count input files
-        input_files_count = len([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
+        # Count input files (cached for performance)
+        try:
+            input_files_count = len([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
+        except Exception:
+            input_files_count = 0
         status_lines.append(f"Input Files: {input_files_count}")
 
         # Add separator
@@ -1942,19 +2991,19 @@ def server(input, output, session):
         # Get current model config parameters
         try:
             exe_name = input.run_executable() or "ESTAS_II"
-        except:
+        except Exception:
             exe_name = "ESTAS_II"
         status_lines.append(f"Executable: {exe_name}")
 
         try:
             input_file = input.cmd_input_file() or "INPUT.txt"
-        except:
+        except Exception:
             input_file = "INPUT.txt"
         status_lines.append(f"Input File: {input_file}")
 
         try:
             const_file = input.cmd_constants_file() or "(model defaults)"
-        except:
+        except Exception:
             const_file = "(model defaults)"
         status_lines.append(f"Constants: {const_file}")
 
@@ -1965,14 +3014,14 @@ def server(input, output, session):
                 status_lines.append(f"Binary Output: {binary_file}")
             else:
                 status_lines.append("Binary Output: Disabled")
-        except:
+        except Exception:
             status_lines.append("Binary Output: Disabled")
 
         try:
             shear_file = input.cmd_shear_stress_file()
             if shear_file:
                 status_lines.append(f"Shear Stress: {shear_file}")
-        except:
+        except Exception:
             pass
 
         # Add command line preview - build it from the values we already have
@@ -1993,14 +3042,14 @@ def server(input, output, session):
             bin_file = input.cmd_binary_filename() if bin_enabled else ""
             if bin_enabled and not bin_file:
                 bin_file = "PELAGIC_OUTPUT.bin"
-        except:
+        except Exception:
             bin_enabled = False
             bin_file = ""
 
         # Check shear file
         try:
             shear = input.cmd_shear_stress_file() or ""
-        except:
+        except Exception:
             shear = ""
 
         # If binary or shear is set, we need constants
@@ -2030,8 +3079,8 @@ def server(input, output, session):
         """Abbreviated run log for sidebar"""
         # Poll every 500ms to catch updates from background threads
         reactive.invalidate_later(0.5)
-        # Return last 10 lines from shared list
-        return ''.join(_log_lines[-10:])
+        # Return last 50 lines from shared list
+        return ''.join(_log_lines[-50:])
 
     # Shared list for thread-safe log updates (lists are thread-safe for append)
     # Define early so it's available for quick_run
@@ -2156,16 +3205,18 @@ def server(input, output, session):
     # Model Build Panel - Server Logic
     # =========================================================================
 
-    # Build log storage (separate from run log)
-    _build_log_lines = reactive.value([])
+    # Build log storage (separate from run log) - plain list for thread safety
+    _build_log_lines = []
+
+    # Reactive value to trigger executable list refresh
+    _exe_list_version = reactive.Value(0)
 
     def get_available_executables():
         """Scan for available executable files"""
         executables = []
         # Check for known executables in the project root
-        exe_patterns = ["ESTAS_II", "AQUABC*"]
+        exe_patterns = ["ESTAS_II", "ESTAS_II_*", "AQUABC*"]
         for pattern in exe_patterns:
-            import glob
             for f in glob.glob(os.path.join(ROOT, pattern)):
                 if os.path.isfile(f) and os.access(f, os.X_OK):
                     executables.append(os.path.basename(f))
@@ -2183,7 +3234,6 @@ def server(input, output, session):
         if not os.path.exists(exe_path):
             return {"exists": False}
 
-        import subprocess
         info = {
             "exists": True,
             "path": exe_path,
@@ -2197,7 +3247,7 @@ def server(input, output, session):
             info["file_type"] = result.stdout.strip()
             info["stripped"] = "stripped" in result.stdout.lower()
             info["has_debug"] = "not stripped" in result.stdout.lower()
-        except:
+        except Exception:
             info["file_type"] = "Unknown"
             info["stripped"] = None
 
@@ -2248,7 +3298,7 @@ def server(input, output, session):
         try:
             compiler = input.build_compiler()
             build_type = input.build_type()
-        except:
+        except Exception:
             return "ESTAS_II_gf_release"
 
         # Short compiler name
@@ -2272,6 +3322,8 @@ def server(input, output, session):
     @render.ui
     def executable_list():
         """Display list of available executables with info"""
+        # Depend on reactive value to trigger refresh
+        _exe_list_version.get()
         executables = get_available_executables()
         if not executables:
             return ui.div(ui.tags.em("No executables found. Build the model first.", class_="text-muted"))
@@ -2280,12 +3332,36 @@ def server(input, output, session):
         for exe in executables:
             info = get_executable_info(exe)
             if info["exists"]:
-                badge_class = "bg-success" if info.get("has_debug") else "bg-secondary"
-                badge_text = "debug" if info.get("has_debug") else "release"
+                # Determine build type from executable name
+                if "_debug" in exe or "_gf_debug" in exe:
+                    badge_class = "bg-warning"
+                    badge_text = "debug"
+                elif "_fast" in exe or "_gf_fast" in exe:
+                    badge_class = "bg-info"
+                    badge_text = "fast"
+                elif "_release" in exe or "_gf_release" in exe:
+                    badge_class = "bg-success"
+                    badge_text = "release"
+                else:
+                    # Default executable (no suffix) - treat as release
+                    badge_class = "bg-success"
+                    badge_text = "release"
+                
+                # Add Intel indicator
+                compiler_badge = None
+                if is_intel_executable(exe):
+                    intel_available, _ = check_intel_libs_available()
+                    if intel_available:
+                        compiler_badge = ui.tags.span("Intel", class_="badge bg-primary ms-1")
+                    else:
+                        compiler_badge = ui.tags.span("Intel ⚠", class_="badge bg-danger ms-1", 
+                                                      title="Intel runtime libraries not found")
+                
                 items.append(
                     ui.div(
                         ui.tags.span(exe, class_="fw-bold"),
                         ui.tags.span(badge_text, class_=f"badge {badge_class} ms-2"),
+                        compiler_badge,
                         ui.tags.br(),
                         ui.tags.small(f"Modified: {info['modified']}", class_="text-muted"),
                         ui.tags.small(f" | Size: {info['size'] / 1024:.1f} KB", class_="text-muted"),
@@ -2298,6 +3374,8 @@ def server(input, output, session):
     def executable_info():
         """Display info about the selected active executable"""
         exe_name = input.active_executable()
+        if not exe_name:
+            return ui.div(ui.tags.small("No executable selected", class_="text-muted"))
         info = get_executable_info(exe_name)
 
         if not info["exists"]:
@@ -2317,6 +3395,8 @@ def server(input, output, session):
     def run_executable_info():
         """Display info about the selected run executable"""
         exe_name = input.run_executable()
+        if not exe_name:
+            return ui.div(ui.tags.small("No executable selected", class_="text-muted"))
         info = get_executable_info(exe_name)
 
         if not info["exists"]:
@@ -2324,33 +3404,78 @@ def server(input, output, session):
                 ui.tags.small(f"✗ {exe_name} not found. Go to Model Build to compile.", class_="text-danger")
             )
 
-        debug_info = "with debug symbols" if info.get("has_debug") else "release build"
+        # Determine build type from executable name
+        if "_debug" in exe_name or "_gf_debug" in exe_name:
+            build_info = "debug build"
+        elif "_fast" in exe_name or "_gf_fast" in exe_name:
+            build_info = "fast build (optimized)"
+        elif "_release" in exe_name or "_gf_release" in exe_name:
+            build_info = "release build"
+        else:
+            build_info = "release build"
+        
+        # Check if Intel executable needs runtime libraries
+        if is_intel_executable(exe_name):
+            intel_available, intel_path = check_intel_libs_available()
+            if intel_available:
+                return ui.div(
+                    ui.tags.small(f"✓ {build_info} (Intel), {info['size'] / 1024:.1f} KB", class_="text-success"),
+                    ui.tags.br(),
+                    ui.tags.small(f"Intel libs: {intel_path[:50]}...", class_="text-muted", style="font-size: 9px;")
+                )
+            else:
+                return ui.div(
+                    ui.tags.small(f"⚠ {build_info} (Intel), {info['size'] / 1024:.1f} KB", class_="text-warning"),
+                    ui.tags.br(),
+                    ui.tags.small("⚠ Intel runtime libraries not found!", class_="text-warning"),
+                    ui.tags.br(),
+                    ui.tags.small("Run 'source /opt/intel/oneapi/setvars.sh' first, or use gfortran builds.", class_="text-muted", style="font-size: 9px;")
+                )
+        
         return ui.div(
-            ui.tags.small(f"✓ {debug_info}, {info['size'] / 1024:.1f} KB", class_="text-success")
+            ui.tags.small(f"✓ {build_info}, {info['size'] / 1024:.1f} KB", class_="text-success")
         )
 
     @render.text
     def build_log():
-        """Render the build log"""
-        lines = _build_log_lines.get()
-        if not lines:
+        """Render the build log - polls every 0.5s for updates"""
+        reactive.invalidate_later(0.5)
+        if not _build_log_lines:
             return "Build log will appear here when you start a build..."
-        return "".join(lines[-200:])  # Last 200 lines
+        return "".join(_build_log_lines[-200:])  # Last 200 lines
 
     @reactive.effect
     @reactive.event(input.btn_clear_build_log)
     def clear_build_log():
         """Clear the build log"""
-        _build_log_lines.set([])
+        _build_log_lines.clear()
 
     @reactive.effect
     @reactive.event(input.btn_refresh_executables)
     def refresh_executables():
         """Refresh the executable list"""
+        # Increment to trigger re-render of executable_list UI
+        _exe_list_version.set(_exe_list_version.get() + 1)
         executables = get_available_executables()
         choices = {e: e for e in executables} if executables else {"ESTAS_II": "ESTAS_II"}
         ui.update_select("active_executable", choices=choices)
         ui.update_select("run_executable", choices=choices)
+
+    # Initialize executable list on session start (runs once)
+    _exe_list_initialized = [False]
+
+    @reactive.effect
+    def init_executable_list():
+        """Populate executable list on startup (runs once)"""
+        if _exe_list_initialized[0]:
+            return
+        _exe_list_initialized[0] = True
+        executables = get_available_executables()
+        if executables:
+            choices = {e: e for e in executables}
+            ui.update_select("active_executable", choices=choices)
+            ui.update_select("run_executable", choices=choices)
+            logger.info(f"Initialized executable list with {len(executables)} executables: {executables}")
 
     @reactive.effect
     @reactive.event(input.goto_build)
@@ -2378,7 +3503,8 @@ def server(input, output, session):
         # Find the full path to the compiler
         compiler_path, compiler_version = find_compiler_path(compiler)
         if not compiler_path:
-            _build_log_lines.set([
+            _build_log_lines.clear()
+            _build_log_lines.extend([
                 "=" * 50 + "\n",
                 f"ERROR: Compiler '{compiler}' not found!\n",
                 "=" * 50 + "\n",
@@ -2387,7 +3513,8 @@ def server(input, output, session):
             ])
             return
 
-        _build_log_lines.set([
+        _build_log_lines.clear()
+        _build_log_lines.extend([
             "=" * 50 + "\n",
             f"Building: {exe_name}\n",
             "=" * 50 + "\n",
@@ -2396,15 +3523,20 @@ def server(input, output, session):
             f"Build Type: {build_type}\n",
         ])
 
+        # Capture variables for thread closure
+        _compiler_path = compiler_path
+        _build_type = build_type
+        _clean_first = clean_first
+        _exe_name = exe_name
+
         def _do_build():
-            import time
             start_time = time.time()
-            lines = _build_log_lines.get()
 
             try:
-                if clean_first:
-                    lines.append("\n=== Cleaning previous build ===\n")
-                    _build_log_lines.set(lines)
+                logger.info(f"Build thread started for {_exe_name}")
+
+                if _clean_first:
+                    _build_log_lines.append("\n=== Cleaning previous build ===\n")
                     p = subprocess.Popen(
                         ["make", "clean-lib"],
                         cwd=ROOT,
@@ -2413,16 +3545,16 @@ def server(input, output, session):
                         text=True
                     )
                     for line in p.stdout:
-                        lines.append(line)
-                        _build_log_lines.set(lines)
+                        _build_log_lines.append(line)
                     p.wait()
 
-                lines.append("\n=== Building library and executable ===\n")
-                _build_log_lines.set(lines)
+                _build_log_lines.append("\n=== Building library and executable ===\n")
 
                 # Use build-named target for named executables with full compiler path
+                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
+                logger.info(f"Running: {' '.join(cmd)}")
                 p = subprocess.Popen(
-                    ["make", f"FC={compiler_path}", f"BUILD_TYPE={build_type}", "build-named"],
+                    cmd,
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -2430,29 +3562,31 @@ def server(input, output, session):
                 )
 
                 for line in p.stdout:
-                    lines.append(line)
-                    _build_log_lines.set(lines)
-                    if len(lines) > 500:
-                        lines = lines[-400:]
+                    _build_log_lines.append(line)
+                    # Trim if too long
+                    if len(_build_log_lines) > 500:
+                        del _build_log_lines[:100]
 
                 p.wait()
                 elapsed = time.time() - start_time
 
-                lines.append("-" * 50 + "\n")
+                _build_log_lines.append("-" * 50 + "\n")
                 if p.returncode == 0:
-                    lines.append(f"✓ Build completed successfully!\n")
-                    lines.append(f"  Executable: {exe_name}\n")
-                    lines.append(f"  Time: {elapsed:.1f}s\n")
+                    _build_log_lines.append(f"✓ Build completed successfully!\n")
+                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
+                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
                 else:
-                    lines.append(f"✗ Build failed with return code {p.returncode}\n")
-                lines.append("=" * 50 + "\n")
+                    _build_log_lines.append(f"✗ Build failed with return code {p.returncode}\n")
+                _build_log_lines.append("=" * 50 + "\n")
 
-                _build_log_lines.set(lines)
+                logger.info(f"Build thread completed for {_exe_name}")
 
             except Exception as e:
-                lines.append(f"\nError: {e}\n")
-                _build_log_lines.set(lines)
+                logger.error(f"Build thread error: {e}\n{traceback.format_exc()}")
+                _build_log_lines.append(f"\nError: {e}\n")
+                _build_log_lines.append(traceback.format_exc())
 
+        logger.info("Starting build thread")
         threading.Thread(target=_do_build, daemon=True, name="BuildThread").start()
 
     @reactive.effect
@@ -2468,7 +3602,8 @@ def server(input, output, session):
         # Find the full path to the compiler
         compiler_path, compiler_version = find_compiler_path(compiler)
         if not compiler_path:
-            _build_log_lines.set([
+            _build_log_lines.clear()
+            _build_log_lines.extend([
                 "=" * 50 + "\n",
                 f"ERROR: Compiler '{compiler}' not found!\n",
                 "=" * 50 + "\n",
@@ -2477,7 +3612,8 @@ def server(input, output, session):
             ])
             return
 
-        _build_log_lines.set([
+        _build_log_lines.clear()
+        _build_log_lines.extend([
             "=" * 50 + "\n",
             f"Full Rebuild: {exe_name}\n",
             "=" * 50 + "\n",
@@ -2486,15 +3622,19 @@ def server(input, output, session):
             f"Build Type: {build_type}\n",
         ])
 
+        # Capture variables for thread closure
+        _compiler_path = compiler_path
+        _build_type = build_type
+        _exe_name = exe_name
+
         def _do_rebuild():
-            import time
             start_time = time.time()
-            lines = _build_log_lines.get()
 
             try:
+                logger.info(f"Rebuild thread started for {_exe_name}")
+
                 # Always clean first for rebuild
-                lines.append("\n=== Cleaning all build artifacts ===\n")
-                _build_log_lines.set(lines)
+                _build_log_lines.append("\n=== Cleaning all build artifacts ===\n")
                 p = subprocess.Popen(
                     ["make", "clean-lib"],
                     cwd=ROOT,
@@ -2503,16 +3643,16 @@ def server(input, output, session):
                     text=True
                 )
                 for line in p.stdout:
-                    lines.append(line)
-                    _build_log_lines.set(lines)
+                    _build_log_lines.append(line)
                 p.wait()
 
-                lines.append("\n=== Rebuilding library and executable ===\n")
-                _build_log_lines.set(lines)
+                _build_log_lines.append("\n=== Rebuilding library and executable ===\n")
 
                 # Use build-named target for named executables with full compiler path
+                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
+                logger.info(f"Running: {' '.join(cmd)}")
                 p = subprocess.Popen(
-                    ["make", f"FC={compiler_path}", f"BUILD_TYPE={build_type}", "build-named"],
+                    cmd,
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
@@ -2520,28 +3660,29 @@ def server(input, output, session):
                 )
 
                 for line in p.stdout:
-                    lines.append(line)
-                    _build_log_lines.set(lines)
-                    if len(lines) > 500:
-                        lines = lines[-400:]
+                    _build_log_lines.append(line)
+                    # Trim if too long
+                    if len(_build_log_lines) > 500:
+                        del _build_log_lines[:100]
 
                 p.wait()
                 elapsed = time.time() - start_time
 
-                lines.append("-" * 50 + "\n")
+                _build_log_lines.append("-" * 50 + "\n")
                 if p.returncode == 0:
-                    lines.append(f"✓ Rebuild completed successfully!\n")
-                    lines.append(f"  Executable: {exe_name}\n")
-                    lines.append(f"  Time: {elapsed:.1f}s\n")
+                    _build_log_lines.append(f"✓ Rebuild completed successfully!\n")
+                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
+                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
                 else:
-                    lines.append(f"✗ Rebuild failed with return code {p.returncode}\n")
-                lines.append("=" * 50 + "\n")
+                    _build_log_lines.append(f"✗ Rebuild failed with return code {p.returncode}\n")
+                _build_log_lines.append("=" * 50 + "\n")
 
-                _build_log_lines.set(lines)
+                logger.info(f"Rebuild thread completed for {_exe_name}")
 
             except Exception as e:
-                lines.append(f"\nError: {e}\n")
-                _build_log_lines.set(lines)
+                logger.error(f"Rebuild thread error: {e}\n{traceback.format_exc()}")
+                _build_log_lines.append(f"\nError: {e}\n")
+                _build_log_lines.append(traceback.format_exc())
 
         threading.Thread(target=_do_rebuild, daemon=True, name="RebuildThread").start()
 
@@ -2560,7 +3701,7 @@ def server(input, output, session):
             shear_file = input.cmd_shear_stress_file()
             if (binary_enabled or shear_file) and not const_file:
                 const_file = DEFAULT_CONSTANTS_FILE
-        except:
+        except Exception:
             pass
         
         if not const_file:
@@ -2619,7 +3760,7 @@ def server(input, output, session):
             # Check if executable exists
             try:
                 exe_name = input.run_executable() or "ESTAS_II"
-            except:
+            except Exception:
                 exe_name = "ESTAS_II"
 
             exe_path = os.path.join(ROOT, exe_name)
@@ -2627,6 +3768,23 @@ def server(input, output, session):
                 _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
                 _log_lines.append("Please go to Model Build to compile the model first.\n")
                 return
+
+            # Check Intel library requirements for Intel-compiled executables
+            if is_intel_executable(exe_name):
+                setvars_path = get_intel_setvars_path()
+                if setvars_path:
+                    _log_lines.append(f"ℹ️  Intel executable detected. Will source Intel environment.\n")
+                else:
+                    intel_available, intel_path = check_intel_libs_available()
+                    if intel_available:
+                        _log_lines.append(f"ℹ️  Intel executable detected. Using runtime libs from:\n")
+                        _log_lines.append(f"   {intel_path}\n")
+                    else:
+                        _log_lines.append("⚠️  WARNING: Intel-compiled executable selected but Intel runtime\n")
+                        _log_lines.append("   libraries (libimf.so) and setvars.sh not found.\n")
+                        _log_lines.append("   The model may fail to start. Consider:\n")
+                        _log_lines.append("   • Installing Intel oneAPI or using a gfortran executable\n")
+                        _log_lines.append("-" * 50 + "\n")
 
             # Validate constants file before running
             try:
@@ -2663,15 +3821,12 @@ def server(input, output, session):
             _log_lines.append("-" * 40 + "\n")
 
         except Exception as e:
-            import traceback
             _log_lines.append(f"\n❌ Error preparing quick run: {e}\n")
             _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
             logger.error(f"Error in quick_run setup: {e}\n{traceback.format_exc()}")
             return
 
         def _work():
-            import time
-            import select
             start_time = time.time()
             logger.info("Quick Run thread started")
             _log_lines.append("Starting model execution...\n")
@@ -2698,21 +3853,47 @@ def server(input, output, session):
                         with open(OUTPUT_CSV, 'rb') as f:
                             lines = sum(1 for _ in f)
                         return {"exists": True, "size_kb": size_kb, "lines": lines}
-                except:
+                except Exception:
                     pass
                 return {"exists": False, "size_kb": 0, "lines": 0}
 
             try:
+                # For Intel executables, wrap command to source Intel environment
+                use_shell = False
+                final_cmd = exec_cmd
+                run_env = os.environ.copy()  # Start with current environment
+                
+                if is_intel_executable(exe_name):
+                    setvars_path = get_intel_setvars_path()
+                    if setvars_path:
+                        # Use shell command that sources Intel environment first
+                        final_cmd, use_shell = build_intel_wrapped_command(exec_cmd)
+                        _log_lines.append(f"ℹ️  Sourcing Intel environment: {setvars_path}\n")
+                        logger.info(f"Using Intel wrapper with setvars: {setvars_path}")
+                    else:
+                        # Fall back to LD_LIBRARY_PATH approach
+                        run_env = get_run_environment()
+                        ld_path = run_env.get("LD_LIBRARY_PATH", "NOT SET")
+                        _log_lines.append(f"LD_LIBRARY_PATH: {ld_path[:200]}...\n")
+                        logger.info(f"Starting process with LD_LIBRARY_PATH: {ld_path[:100]}...")
+                else:
+                    # For non-Intel executables, use standard environment
+                    run_env = get_run_environment()
+                
+                logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
                 p = subprocess.Popen(
-                    exec_cmd,
+                    final_cmd,
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
-                    bufsize=1
+                    bufsize=1,
+                    env=run_env,
+                    shell=use_shell,
+                    executable="/bin/bash" if use_shell else None
                 )
-                _model_process.set(p)
-                _model_running.set(True)
+                _model_process[0] = p
+                _model_running[0] = True
                 _model_progress[0] = ({"elapsed": "00:00", "rows": 0, "size_kb": 0, "status": "running"})
 
                 last_progress_update = time.time()
@@ -2728,7 +3909,7 @@ def server(input, output, session):
                                     _log_lines.append(line)
                                     while len(_log_lines) > 1000:
                                         _log_lines.pop(0)
-                        except:
+                        except Exception:
                             time.sleep(0.5)
 
                     # Update progress every second
@@ -2780,8 +3961,8 @@ def server(input, output, session):
                 logger.error(f"Quick Run error: {e}")
                 _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "error"})
             finally:
-                _model_process.set(None)
-                _model_running.set(False)
+                _model_process[0] = None
+                _model_running[0] = False
 
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
 
@@ -2798,6 +3979,246 @@ def server(input, output, session):
             if css:
                 return ui.tags.style(css, id="shinyswatch-theme")
         return ui.TagList()
+
+    @render.ui
+    def help_content():
+        """Render the state variables help content from markdown file"""
+        help_file = os.path.join(os.path.dirname(__file__), "STATE_VARIABLES_HELP.md")
+        try:
+            if not os.path.exists(help_file):
+                return ui.div(
+                    ui.tags.p("Help file not found.", class_="text-danger"),
+                    ui.tags.p(f"Expected: {help_file}", class_="text-muted small")
+                )
+            
+            with open(help_file, 'r', encoding='utf-8') as f:
+                md_content = f.read()
+            
+            # Add custom CSS for better table and navigation styling
+            table_css = """
+            <style>
+                .offcanvas-body table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 1rem 0;
+                    font-size: 0.85rem;
+                }
+                .offcanvas-body th, .offcanvas-body td {
+                    border: 1px solid #dee2e6;
+                    padding: 0.5rem;
+                    text-align: left;
+                }
+                .offcanvas-body th {
+                    background-color: #f8f9fa;
+                    font-weight: 600;
+                }
+                .offcanvas-body tr:nth-child(even) {
+                    background-color: #f8f9fa;
+                }
+                .offcanvas-body code {
+                    background-color: #e9ecef;
+                    padding: 0.1rem 0.3rem;
+                    border-radius: 0.2rem;
+                    font-size: 0.85em;
+                }
+                .offcanvas-body h1 {
+                    color: #212529;
+                    font-size: 1.5rem;
+                    margin-top: 2rem;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 3px solid #0d6efd;
+                }
+                .offcanvas-body h1:first-of-type {
+                    margin-top: 0;
+                }
+                .offcanvas-body h2 {
+                    color: #0d6efd;
+                    border-bottom: 2px solid #0d6efd;
+                    padding-bottom: 0.5rem;
+                    margin-top: 1.5rem;
+                    font-size: 1.2rem;
+                }
+                .offcanvas-body h3 {
+                    color: #495057;
+                    margin-top: 1.2rem;
+                    font-size: 1rem;
+                }
+                .offcanvas-body hr {
+                    margin: 1.5rem 0;
+                    border-color: #dee2e6;
+                }
+                .offcanvas-body pre {
+                    background-color: #f8f9fa;
+                    padding: 1rem;
+                    border-radius: 0.25rem;
+                    overflow-x: auto;
+                    white-space: pre-wrap;
+                    font-size: 0.8rem;
+                }
+                /* Navigation styling */
+                .offcanvas-body .help-nav a {
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .offcanvas-body .help-nav a:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    text-decoration: none;
+                }
+                /* Formula box styling */
+                .offcanvas-body .formula-box {
+                    font-size: 1rem;
+                }
+                .offcanvas-body .formula-box strong {
+                    font-size: 1.1rem;
+                }
+                /* Anchor link styling */
+                .offcanvas-body a {
+                    color: #0d6efd;
+                    text-decoration: none;
+                }
+                .offcanvas-body a:hover {
+                    text-decoration: underline;
+                }
+                /* Details/Summary styling */
+                .offcanvas-body details {
+                    background: #f8f9fa;
+                    border-radius: 5px;
+                    padding: 0.5rem 1rem;
+                    margin: 0.5rem 0;
+                }
+                .offcanvas-body summary {
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .offcanvas-body summary::-webkit-details-marker {
+                    color: #0d6efd;
+                }
+                /* Subscript/superscript in formulas */
+                .offcanvas-body sub, .offcanvas-body sup {
+                    font-size: 0.75em;
+                }
+                /* Smooth scrolling for anchor links */
+                .offcanvas-body {
+                    scroll-behavior: smooth;
+                }
+            </style>
+            """
+            
+            if MARKDOWN_AVAILABLE:
+                # Convert markdown to HTML with table extension
+                html_content = markdown.markdown(
+                    md_content,
+                    extensions=['tables', 'fenced_code', 'toc']
+                )
+                return ui.HTML(table_css + html_content)
+            else:
+                # Fallback: display raw markdown in a pre block
+                return ui.div(
+                    ui.tags.div(
+                        ui.tags.i(class_="bi bi-exclamation-triangle me-2"),
+                        "Markdown library not installed. Showing raw content.",
+                        class_="alert alert-warning"
+                    ),
+                    ui.HTML(table_css),
+                    ui.tags.pre(md_content, style="white-space: pre-wrap; font-size: 0.85rem;")
+                )
+        except Exception as e:
+            logger.error(f"Error loading help content: {e}")
+            return ui.div(
+                ui.tags.p("Error loading help content.", class_="text-danger"),
+                ui.tags.pre(str(e), class_="text-muted small")
+            )
+
+    @render.ui
+    def changelog_content():
+        """Render the changelog from CHANGELOG.md file"""
+        changelog_file = os.path.join(ROOT, "CHANGELOG.md")
+        try:
+            if not os.path.exists(changelog_file):
+                return ui.div(
+                    ui.tags.p("Changelog file not found.", class_="text-warning"),
+                    ui.tags.p(f"Expected: {changelog_file}", class_="text-muted small")
+                )
+            
+            with open(changelog_file, 'r', encoding='utf-8') as f:
+                md_content = f.read()
+            
+            # Custom CSS for changelog styling
+            changelog_css = """
+            <style>
+                .offcanvas-body h1 {
+                    color: #17a2b8;
+                    font-size: 1.5rem;
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 2px solid #17a2b8;
+                }
+                .offcanvas-body h2 {
+                    color: #495057;
+                    font-size: 1.2rem;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                    padding: 0.5rem;
+                    background: #f8f9fa;
+                    border-left: 4px solid #17a2b8;
+                }
+                .offcanvas-body h3 {
+                    color: #28a745;
+                    font-size: 1rem;
+                    margin-top: 1rem;
+                    margin-bottom: 0.5rem;
+                }
+                .offcanvas-body h3:contains('Added') { color: #28a745; }
+                .offcanvas-body h3:contains('Changed') { color: #ffc107; }
+                .offcanvas-body h3:contains('Fixed') { color: #dc3545; }
+                .offcanvas-body h3:contains('Removed') { color: #6c757d; }
+                .offcanvas-body ul {
+                    margin: 0.5rem 0;
+                    padding-left: 1.5rem;
+                }
+                .offcanvas-body li {
+                    margin-bottom: 0.25rem;
+                    line-height: 1.4;
+                }
+                .offcanvas-body hr {
+                    margin: 1rem 0;
+                    border-color: #dee2e6;
+                }
+                .offcanvas-body code {
+                    background-color: #e9ecef;
+                    padding: 0.1rem 0.3rem;
+                    border-radius: 0.2rem;
+                    font-size: 0.85em;
+                }
+                .offcanvas-body a {
+                    color: #17a2b8;
+                }
+            </style>
+            """
+            
+            if MARKDOWN_AVAILABLE:
+                html_content = markdown.markdown(
+                    md_content,
+                    extensions=['tables', 'fenced_code']
+                )
+                return ui.HTML(changelog_css + html_content)
+            else:
+                return ui.div(
+                    ui.tags.div(
+                        ui.tags.i(class_="bi bi-exclamation-triangle me-2"),
+                        "Markdown library not installed. Showing raw content.",
+                        class_="alert alert-warning"
+                    ),
+                    ui.HTML(changelog_css),
+                    ui.tags.pre(md_content, style="white-space: pre-wrap; font-size: 0.85rem;")
+                )
+        except Exception as e:
+            logger.error(f"Error loading changelog: {e}")
+            return ui.div(
+                ui.tags.p("Error loading changelog.", class_="text-danger"),
+                ui.tags.pre(str(e), class_="text-muted small")
+            )
 
     if THEMES_AVAILABLE:
         @reactive.effect
@@ -3652,6 +5073,12 @@ def server(input, output, session):
             ui.update_switch("sim_model_sediments", value=bool(cfg.model_sediments))
             ui.update_select("sim_resuspension", selected=str(cfg.resuspension_option))
 
+            # Output directory
+            if cfg.output_folder:
+                # Remove trailing slash for matching
+                output_folder = cfg.output_folder.rstrip('/')
+                ui.update_select("sim_output_dir", selected=output_folder)
+
             logger.info(f"Loaded simulation config: {cfg.base_year}, "
                        f"days {cfg.simulation_start}-{cfg.simulation_end}")
             ui.notification_show("Configuration loaded", type="message", duration=2)
@@ -3790,6 +5217,12 @@ def server(input, output, session):
             if resuspension:
                 cfg.resuspension_option = int(resuspension)
 
+            # Output directory
+            output_dir = input.sim_output_dir()
+            if output_dir:
+                # Ensure trailing slash for folder path
+                cfg.output_folder = output_dir if output_dir.endswith('/') else output_dir + '/'
+
             # Validate
             is_valid, errors = cfg.validate()
             if not is_valid:
@@ -3820,6 +5253,112 @@ def server(input, output, session):
         return sim_config_save_msg.get()
 
     # ========== END SIMULATION CONFIGURATION ==========
+
+    # ========== OUTPUT CONFIGURATION ==========
+    output_config_msg = reactive.Value("")
+    output_config_version = reactive.Value(0)  # Incremented on save to trigger dashboard refresh
+    OUTPUT_INFO_FILE = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+
+    @reactive.effect
+    @reactive.event(input.load_output_config)
+    def load_output_config():
+        """Load current output configuration from file"""
+        try:
+            if not os.path.exists(OUTPUT_INFO_FILE):
+                output_config_msg.set("Output config file not found")
+                return
+
+            with open(OUTPUT_INFO_FILE, 'r') as f:
+                lines = f.readlines()
+
+            selected_boxes = []
+            has_state_vars = False
+            has_process_rates = False
+            has_mass_balance = False
+
+            for line in lines[1:]:  # Skip header
+                parts = line.split()
+                if len(parts) >= 4:
+                    box_num = parts[0]
+                    state_var = parts[1] == "1"
+                    process_rate = parts[2] == "1"
+                    mass_bal = parts[3] == "1"
+
+                    if state_var or process_rate or mass_bal:
+                        selected_boxes.append(box_num)
+                        if state_var:
+                            has_state_vars = True
+                        if process_rate:
+                            has_process_rates = True
+                        if mass_bal:
+                            has_mass_balance = True
+
+            # Update UI
+            ui.update_checkbox_group("output_boxes", selected=selected_boxes)
+            output_types = []
+            if has_state_vars:
+                output_types.append("state_vars")
+            if has_process_rates:
+                output_types.append("process_rates")
+            if has_mass_balance:
+                output_types.append("mass_balance")
+            ui.update_checkbox_group("output_types", selected=output_types)
+
+            output_config_msg.set(f"Loaded: {len(selected_boxes)} boxes")
+            logger.info(f"Loaded output config: {len(selected_boxes)} boxes selected")
+
+        except Exception as e:
+            logger.error(f"Error loading output config: {e}")
+            output_config_msg.set(f"Error: {e}")
+
+    @reactive.effect
+    @reactive.event(input.save_output_config)
+    def save_output_config():
+        """Save output configuration to file"""
+        try:
+            selected_boxes = set(input.output_boxes() or [])
+            output_types = set(input.output_types() or [])
+
+            state_vars_enabled = "state_vars" in output_types
+            process_rates_enabled = "process_rates" in output_types
+            mass_balance_enabled = "mass_balance" in output_types
+
+            # Build new file content
+            lines = ["#     PELAGIC BOX NO      PRODUCE_PEL_STATE_VAR_OUTPUTS     PRODUCE_PEL_PROCESS_RATE_OUTPUTS     PRODUCE_PEL_MASS_BALANCE_OUTPUTS\n"]
+
+            for box in range(1, 26):
+                box_str = str(box)
+                if box_str in selected_boxes:
+                    sv = "1" if state_vars_enabled else "0"
+                    pr = "1" if process_rates_enabled else "0"
+                    mb = "1" if mass_balance_enabled else "0"
+                else:
+                    sv = pr = mb = "0"
+
+                lines.append(f"{box:20d}{sv:>37s}{pr:>37s}{mb:>37s}\n")
+
+            # Write file
+            with open(OUTPUT_INFO_FILE, 'w') as f:
+                f.writelines(lines)
+
+            # Increment version to trigger dashboard refresh
+            output_config_version.set(output_config_version.get() + 1)
+
+            output_config_msg.set(f"Saved: {len(selected_boxes)} boxes")
+            ui.notification_show(f"Output config saved ({len(selected_boxes)} boxes)", type="message")
+            logger.info(f"Saved output config: {len(selected_boxes)} boxes")
+
+        except Exception as e:
+            logger.error(f"Error saving output config: {e}")
+            output_config_msg.set(f"Error: {e}")
+            ui.notification_show(f"Error: {e}", type="error")
+
+    @render.text
+    def output_config_status():
+        """Display output config status"""
+        return output_config_msg.get()
+
+    # ========== END OUTPUT CONFIGURATION ==========
 
     # ========== SCENARIOS ==========
     # Reactive values for scenario management
@@ -4219,6 +5758,180 @@ def server(input, output, session):
     obs_data_obj = reactive.Value(None)
     obs_comparison_obj = reactive.Value(None)
     obs_metrics_results = reactive.Value(None)
+    obs_files_list = reactive.Value([])  # List of ObservationFile objects
+    obs_loaded_file = reactive.Value(None)  # Currently loaded observation file
+    obs_file_preview = reactive.Value(None)  # Preview data for selected file
+
+    @reactive.effect
+    @reactive.event(input.obs_scan_dir)
+    def scan_observations_dir():
+        """Scan OBSERVATIONS directory for observation files"""
+        obs_dir = os.path.join(ROOT, "OBSERVATIONS")
+        logger.info(f"Scanning observations directory: {obs_dir}")
+        
+        if not os.path.isdir(obs_dir):
+            ui.notification_show(f"OBSERVATIONS directory not found: {obs_dir}", type="warning")
+            return
+        
+        files = scan_observations_directory(obs_dir)
+        obs_files_list.set(files)
+        
+        # Update file selector
+        if files:
+            choices = {f.filepath: f"{f.filename} ({f.file_type})" for f in files}
+            ui.update_select("obs_file_select", choices=choices, 
+                            selected=files[0].filepath if files else None)
+            ui.notification_show(f"Found {len(files)} observation files", type="message")
+        else:
+            ui.notification_show("No observation files found", type="warning")
+
+    @reactive.effect
+    @reactive.event(input.obs_file_select)
+    def preview_selected_file():
+        """Preview selected observation file"""
+        selected = input.obs_file_select()
+        if not selected:
+            obs_file_preview.set(None)
+            return
+        
+        # Get preview
+        preview = get_file_preview(selected)
+        obs_file_preview.set(preview)
+
+    @reactive.effect
+    @reactive.event(input.obs_load_file)
+    def load_selected_obs_file():
+        """Load the selected observation file"""
+        selected = input.obs_file_select()
+        if not selected or not os.path.exists(selected):
+            ui.notification_show("No file selected", type="warning")
+            return
+        
+        logger.info(f"Loading observation file: {selected}")
+        
+        # Load based on file type
+        loaded = load_obs_file(selected)
+        
+        if loaded:
+            obs_loaded_file.set(loaded)
+            
+            # Update variable selector with available variables
+            available = loaded.get_available_variables()
+            if available:
+                choices = {str(idx): f"{idx}: {name} ({count} pts)" 
+                          for idx, name, count in available}
+                ui.update_select("obs_variable", choices=choices,
+                               selected=str(available[0][0]) if available else None)
+            
+            ui.notification_show(
+                f"Loaded {loaded.file_info.filename}: {len(available)} variables with data",
+                type="message"
+            )
+        else:
+            ui.notification_show(f"Could not load file: {os.path.basename(selected)}", type="error")
+
+    @render.ui
+    def obs_file_info():
+        """Render file information"""
+        preview = obs_file_preview.get()
+        
+        if preview is None:
+            return ui.tags.div(
+                ui.tags.p("Click 'Scan OBSERVATIONS Directory' to discover files", 
+                         class_="text-muted text-center"),
+                class_="p-3"
+            )
+        
+        info = preview.get("info", {})
+        
+        if "error" in info:
+            return ui.tags.div(
+                ui.tags.p(f"Error: {info['error']}", class_="text-danger"),
+            )
+        
+        # File info summary
+        return ui.tags.div(
+            ui.tags.div(
+                ui.tags.div(
+                    ui.tags.small("Records", class_="text-muted"),
+                    ui.tags.br(),
+                    ui.tags.strong(f"{info.get('n_records', 'N/A')}"),
+                    class_="col-4 text-center"
+                ),
+                ui.tags.div(
+                    ui.tags.small("Variables", class_="text-muted"),
+                    ui.tags.br(),
+                    ui.tags.strong(f"{info.get('n_variables', 'N/A')}"),
+                    class_="col-4 text-center"
+                ),
+                ui.tags.div(
+                    ui.tags.small("Date Range", class_="text-muted"),
+                    ui.tags.br(),
+                    ui.tags.strong(
+                        f"{info.get('date_range', ('N/A', 'N/A'))[0] or 'N/A'} to {info.get('date_range', ('N/A', 'N/A'))[1] or 'N/A'}"
+                        if isinstance(info.get('date_range'), tuple) else "N/A"
+                    ),
+                    class_="col-4 text-center"
+                ),
+                class_="row mb-3"
+            ),
+            class_="p-2"
+        )
+
+    @render.ui
+    def obs_variables_table():
+        """Render table of available variables in selected file"""
+        preview = obs_file_preview.get()
+        
+        if preview is None or "info" not in preview:
+            return ui.tags.div()
+        
+        info = preview.get("info", {})
+        variables = info.get("variables_with_data", [])
+        
+        if not variables:
+            # Show data preview table instead
+            data = preview.get("data", [])
+            if data:
+                df = pd.DataFrame(data)
+                return ui.tags.div(
+                    ui.tags.h6("Data Preview:", class_="mb-2"),
+                    ui.tags.div(
+                        ui.HTML(df.head(5).to_html(classes="table table-sm table-striped", 
+                                                   index=False, border=0)),
+                        style="overflow-x: auto; font-size: 11px;"
+                    )
+                )
+            return ui.tags.p("No data available", class_="text-muted")
+        
+        # Create variable summary table
+        rows = []
+        for idx, name, count in variables[:20]:  # Limit to 20 variables
+            rows.append({
+                "Index": idx,
+                "Variable": name.split(" - ")[0] if " - " in name else name,
+                "Description": name.split(" - ")[1].split(" (")[0] if " - " in name else "",
+                "N": count
+            })
+        
+        if len(variables) > 20:
+            rows.append({
+                "Index": "...",
+                "Variable": f"(+{len(variables)-20} more)",
+                "Description": "",
+                "N": ""
+            })
+        
+        df = pd.DataFrame(rows)
+        
+        return ui.tags.div(
+            ui.tags.h6("Available Measurements:", class_="mb-2"),
+            ui.tags.div(
+                ui.HTML(df.to_html(classes="table table-sm table-striped table-hover", 
+                                   index=False, border=0)),
+                style="max-height: 300px; overflow-y: auto; font-size: 11px;"
+            )
+        )
 
     @reactive.effect
     @reactive.event(input.obs_file)
@@ -4430,62 +6143,129 @@ def server(input, output, session):
     # CSV caching - reactive values to cache CSV data
     csv_cache = reactive.Value(None)
     csv_cache_mtime = reactive.Value(0)
+    csv_cache_path = reactive.Value(None)
 
-    def _get_cached_csv(max_rows=None):
-        """Get cached CSV or reload if modified"""
+    def _get_cached_data(max_rows=None, file_path=None, file_format=None):
+        """Get cached output data or reload if modified.
+        
+        Args:
+            max_rows: Maximum number of rows to read
+            file_path: Path to output file
+            file_format: 'csv', 'text' (.out), or 'binary' (.bin). Auto-detect if None.
+        """
         try:
-            if not os.path.exists(OUTPUT_CSV):
-                logger.warning(f"OUTPUT.csv does not exist at {OUTPUT_CSV}")
+            target_path = file_path or OUTPUT_CSV
+            
+            if not os.path.exists(target_path):
+                logger.warning(f"Output file does not exist: {target_path}")
                 return None
 
-            current_mtime = os.path.getmtime(OUTPUT_CSV)
+            # Auto-detect format from extension if not specified
+            if file_format is None:
+                if target_path.endswith('.bin'):
+                    file_format = 'binary'
+                elif target_path.endswith('.out'):
+                    file_format = 'text'
+                else:
+                    file_format = 'csv'
+
+            current_mtime = os.path.getmtime(target_path)
             cached_mtime = csv_cache_mtime.get()
+            cached_path = csv_cache_path.get()
 
-            if cached_mtime != current_mtime or csv_cache.get() is None:
-                logger.info(f"Loading OUTPUT.csv (max_rows={max_rows}, file modified or no cache)")
-                logger.debug(f"  Cached mtime: {cached_mtime}, Current mtime: {current_mtime}")
-                import time
-                start_time = time.time()
+            # Check if cache is valid (same file, same mtime)
+            if cached_path == target_path and cached_mtime == current_mtime and csv_cache.get() is not None:
+                logger.debug("Using cached output data")
+                return csv_cache.get()
+            
+            logger.info(f"Loading {file_format} output (max_rows={max_rows}, file={os.path.basename(target_path)})")
+            start_time = time.time()
 
-                df = pd.read_csv(OUTPUT_CSV, comment='#', skip_blank_lines=True, nrows=max_rows)
-                # Strip whitespace from column names
+            if file_format == 'binary':
+                # Read Fortran binary file
+                df = read_pelagic_binary(target_path, max_rows=max_rows)
+            elif file_format == 'text':
+                # Read PELAGIC_BOX whitespace-separated file
+                df = read_pelagic_text(target_path, max_rows=max_rows)
+            else:
+                # Read CSV file
+                df = pd.read_csv(target_path, comment='#', skip_blank_lines=True, nrows=max_rows)
                 df.columns = [c.strip() for c in df.columns]
 
-                load_time = time.time() - start_time
-                logger.info(f"Loaded {len(df)} rows, {len(df.columns)} columns in {load_time:.2f}s")
+            load_time = time.time() - start_time
+            logger.info(f"Loaded {len(df)} rows, {len(df.columns)} columns in {load_time:.2f}s")
 
-                if max_rows is None:  # Only cache full reads
-                    csv_cache.set(df)
-                    csv_cache_mtime.set(current_mtime)
-                    logger.debug("CSV cached for future use")
-                return df
-            else:
-                logger.debug("Using cached CSV data")
-                return csv_cache.get()
+            if max_rows is None:  # Only cache full reads
+                csv_cache.set(df)
+                csv_cache_mtime.set(current_mtime)
+                csv_cache_path.set(target_path)
+                logger.debug("Output data cached for future use")
+            return df
         except Exception as e:
-            logger.error(f"Error reading OUTPUT.csv: {e}", exc_info=True)
+            logger.error(f"Error reading output file: {e}", exc_info=True)
             return None
 
-    # load available Y variables from OUTPUT.csv header
-    def _get_output_columns():
+    # Keep old function for compatibility
+    def _get_cached_csv(max_rows=None, file_path=None):
+        """Legacy wrapper for _get_cached_data."""
+        return _get_cached_data(max_rows=max_rows, file_path=file_path)
+
+    # load available Y variables from output file header
+    def _get_output_columns(file_path=None, file_format=None):
+        """Get column names from an output file."""
+        target_path = file_path or OUTPUT_CSV
+        
+        # Auto-detect format
+        if file_format is None:
+            if target_path.endswith('.bin'):
+                file_format = 'binary'
+            elif target_path.endswith('.out'):
+                file_format = 'text'
+            else:
+                file_format = 'csv'
+        
         try:
-            # Read only header to avoid OOM
-            df = pd.read_csv(OUTPUT_CSV, comment='#', skip_blank_lines=True, nrows=0)
-            cols = [c.strip() for c in df.columns]
-            return cols
+            if file_format == 'binary':
+                # Binary files use fixed column names
+                return PELAGIC_BOX_COLUMNS
+            elif file_format == 'text':
+                # Read header from .out file
+                df = pd.read_csv(target_path, sep=r'\s+', nrows=0)
+                return [c.strip() for c in df.columns]
+            else:
+                # Read header from CSV
+                df = pd.read_csv(target_path, comment='#', skip_blank_lines=True, nrows=0)
+                return [c.strip() for c in df.columns]
         except Exception as e:
-            logger.error(f"Error reading OUTPUT.csv header: {e}")
+            logger.error(f"Error reading output file header: {e}")
             return []
 
     @reactive.Effect
-    def _():
-        cols = _get_output_columns()
-        if cols:
-            # TIME is first column
-            y_choices = cols[1:]
-            # default select first variable on left, none on right
-            ui.update_selectize("left_vars", choices=y_choices, selected=[y_choices[0]] if y_choices else [])
-            ui.update_selectize("right_vars", choices=y_choices, selected=[])
+    @reactive.event(input.plot_output_file, input.output_format)
+    def _update_variable_choices():
+        """Update variable choices when output file or format changes"""
+        try:
+            file_format = input.output_format() if hasattr(input, 'output_format') else None
+            selected_file = get_selected_output_file_path()
+            
+            if selected_file:
+                cols = _get_output_columns(file_path=selected_file, file_format=file_format)
+            else:
+                cols = _get_output_columns()
+            
+            if cols:
+                # TIME is first column, get the rest
+                y_cols = cols[1:]
+                
+                # Create grouped choices with descriptive names
+                grouped_choices = get_grouped_variable_choices(y_cols)
+                
+                # Default select first variable on left, none on right
+                first_var = y_cols[0] if y_cols else None
+                ui.update_selectize("left_vars", choices=grouped_choices, selected=[first_var] if first_var else [])
+                ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
+        except Exception as e:
+            logger.debug(f"Variable choices update deferred: {e}")
 
     # run commands in background and capture logs
     # Note: _log_lines is defined earlier in server() for quick_run access
@@ -4496,12 +6276,12 @@ def server(input, output, session):
         Args:
             cmd: Command list to execute
             cwd: Working directory
-            env: Optional environment dict (merged with os.environ if provided)
+            env: Optional environment dict (merged with base env if provided)
         """
         logger.info(f"Running command: {cmd}")
         try:
-            # Merge environment if provided
-            run_env = os.environ.copy()
+            # Use base environment with Intel library paths
+            run_env = get_run_environment()
             if env:
                 run_env.update(env)
 
@@ -4553,7 +6333,7 @@ def server(input, output, session):
             try:
                 if input.cmd_binary_enabled() or input.cmd_shear_stress_file():
                     const_file = DEFAULT_CONSTANTS_FILE
-            except:
+            except Exception:
                 pass
 
         if const_file:
@@ -4567,7 +6347,6 @@ def server(input, output, session):
                 _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
 
         def _work():
-            import time
             start_time = time.time()
             logger.info("Build & Run thread started")
 
@@ -4617,24 +6396,60 @@ def server(input, output, session):
         threading.Thread(target=_work, daemon=True, name="BuildRunThread").start()
 
     # Track running model process for progress monitoring
-    _model_process = reactive.value(None)
-    _model_running = reactive.value(False)
-    # Use a list with dict to make it thread-safe (mutable container)
+    # Use lists as mutable containers for thread-safety (can't use reactive values from threads)
+    _model_process = [None]
+    _model_running = [False]
     _model_progress = [{"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}]
 
-    def get_output_csv_info():
-        """Get info about OUTPUT.csv file for progress tracking"""
+    def get_output_folder_from_config():
+        """Get output folder from INPUT.txt configuration"""
         try:
-            if os.path.exists(OUTPUT_CSV):
-                stat = os.stat(OUTPUT_CSV)
-                size_kb = stat.st_size / 1024
-                # Count lines (fast method)
-                with open(OUTPUT_CSV, 'rb') as f:
-                    lines = sum(1 for _ in f)
-                return {"exists": True, "size_kb": size_kb, "lines": lines}
-        except:
-            pass
-        return {"exists": False, "size_kb": 0, "lines": 0}
+            if os.path.exists(INPUT_TXT_PATH):
+                scf = SimulationConfigFile(INPUT_TXT_PATH)
+                if scf.parse():
+                    return scf.config.output_folder.rstrip('/')
+        except Exception as e:
+            logger.warning(f"Could not read output folder from INPUT.txt: {e}")
+        return "OUTPUTS"  # fallback
+
+    def get_output_files_info():
+        """Get info about output files in the configured output folder for progress tracking"""
+        try:
+            output_folder = get_output_folder_from_config()
+            output_dir = os.path.join(ROOT, output_folder)
+            
+            if not os.path.isdir(output_dir):
+                return {"exists": False, "size_kb": 0, "file_count": 0, "folder": output_folder}
+            
+            total_size = 0
+            file_count = 0
+            out_files = 0
+            bin_files = 0
+            
+            for fname in os.listdir(output_dir):
+                fpath = os.path.join(output_dir, fname)
+                if os.path.isfile(fpath):
+                    try:
+                        total_size += os.path.getsize(fpath)
+                        file_count += 1
+                        if fname.endswith('.out'):
+                            out_files += 1
+                        elif fname.endswith('.bin'):
+                            bin_files += 1
+                    except:
+                        pass
+            
+            return {
+                "exists": True,
+                "size_kb": total_size / 1024,
+                "file_count": file_count,
+                "out_files": out_files,
+                "bin_files": bin_files,
+                "folder": output_folder
+            }
+        except Exception as e:
+            logger.debug(f"Error getting output info: {e}")
+        return {"exists": False, "size_kb": 0, "file_count": 0, "folder": "OUTPUTS"}
 
     def format_elapsed(seconds):
         """Format elapsed time as HH:MM:SS"""
@@ -4664,7 +6479,7 @@ def server(input, output, session):
             # Check if executable exists
             try:
                 exe_name = input.run_executable()
-            except:
+            except Exception:
                 exe_name = "ESTAS_II"
 
             exe_path = os.path.join(ROOT, exe_name)
@@ -4689,7 +6504,7 @@ def server(input, output, session):
                 try:
                     if input.cmd_binary_enabled():
                         const_file = DEFAULT_CONSTANTS_FILE
-                except:
+                except Exception:
                     pass
 
             if const_file:
@@ -4712,17 +6527,13 @@ def server(input, output, session):
                 _log_lines.append("    Progress is tracked via OUTPUT.csv file.\n")
                 _log_lines.append("-" * 50 + "\n")
 
-            # Get initial OUTPUT.csv state
-            initial_output_info = get_output_csv_info()
         except Exception as e:
-            import traceback
             _log_lines.append(f"\n❌ Error preparing model run: {e}\n")
             _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
             logger.error(f"Error in on_run setup: {e}\n{traceback.format_exc()}")
             return
 
         def _work():
-            import time
             start_time = time.time()
             logger.info("Run thread started")
 
@@ -4730,33 +6541,53 @@ def server(input, output, session):
             exec_cmd = [c for c in estas_cmd if c]
 
             try:
+                # For Intel executables, wrap command to source Intel environment
+                use_shell = False
+                final_cmd = exec_cmd
+                run_env = os.environ.copy()  # Start with current environment
+                
+                if is_intel_executable(exe_name):
+                    setvars_path = get_intel_setvars_path()
+                    if setvars_path:
+                        # Use shell command that sources Intel environment first
+                        final_cmd, use_shell = build_intel_wrapped_command(exec_cmd)
+                        _log_lines.append(f"ℹ️  Sourcing Intel environment: {setvars_path}\n")
+                        logger.info(f"Using Intel wrapper with setvars: {setvars_path}")
+                    else:
+                        # Fall back to LD_LIBRARY_PATH approach
+                        run_env = get_run_environment()
+                else:
+                    # For non-Intel executables, use standard environment
+                    run_env = get_run_environment()
+                
                 # Start the model process
-                run_env = os.environ.copy()
+                logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
                 p = subprocess.Popen(
-                    exec_cmd,
+                    final_cmd,
                     cwd=ROOT,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
-                    bufsize=1
+                    bufsize=1,
+                    env=run_env,
+                    shell=use_shell,
+                    executable="/bin/bash" if use_shell else None
                 )
-                _model_process.set(p)
-                _model_running.set(True)
+                _model_process[0] = p
+                _model_running[0] = True
 
                 # Progress tracking variables
                 last_update = time.time()
                 spinner = ['|', '/', '-', '\\']
                 spinner_idx = 0
-                last_lines = initial_output_info.get("lines", 0)
+                last_lines = 0  # Track from start of this run
 
                 # Read output in non-blocking manner with progress updates
-                import select
                 while p.poll() is None:
                     # Check for output (with timeout)
                     if p.stdout:
                         # Use select for non-blocking read on Unix
                         try:
-                            import select
                             readable, _, _ = select.select([p.stdout], [], [], 0.5)
                             if readable:
                                 line = p.stdout.readline()
@@ -4764,7 +6595,7 @@ def server(input, output, session):
                                     _log_lines.append(line)
                                     while len(_log_lines) > 500:
                                         _log_lines.pop(0)
-                        except:
+                        except Exception:
                             # Fallback: just sleep
                             time.sleep(0.5)
 
@@ -4772,14 +6603,15 @@ def server(input, output, session):
                     now = time.time()
                     if now - last_update >= 2.0:
                         elapsed = now - start_time
-                        output_info = get_output_csv_info()
-                        current_lines = output_info.get("lines", 0)
+                        output_info = get_output_files_info()
+                        file_count = output_info.get("file_count", 0)
                         size_kb = output_info.get("size_kb", 0)
+                        out_folder = output_info.get("folder", "OUTPUTS")
 
-                        # Calculate lines written since start
-                        new_lines = current_lines - last_lines if current_lines > last_lines else 0
-                        if new_lines > 0:
-                            last_lines = current_lines
+                        # Calculate files written since start
+                        new_files = file_count - last_lines if file_count > last_lines else 0
+                        if new_files > 0:
+                            last_lines = file_count
 
                         # Update progress line (replace last progress line if exists)
                         spinner_char = spinner[spinner_idx % len(spinner)]
@@ -4788,7 +6620,7 @@ def server(input, output, session):
                         progress_msg = (
                             f"\r{spinner_char} Running... "
                             f"Elapsed: {format_elapsed(elapsed)} | "
-                            f"OUTPUT.csv: {current_lines} rows ({size_kb:.1f} KB)\n"
+                            f"{out_folder}/: {file_count} files ({size_kb:.1f} KB)\n"
                         )
 
                         # Remove old progress line and add new one
@@ -4812,14 +6644,18 @@ def server(input, output, session):
                 _log_lines.append("-" * 50 + "\n")
 
                 # Get final output info
-                final_output_info = get_output_csv_info()
-                final_lines = final_output_info.get("lines", 0)
+                final_output_info = get_output_files_info()
+                final_files = final_output_info.get("file_count", 0)
+                final_out = final_output_info.get("out_files", 0)
+                final_bin = final_output_info.get("bin_files", 0)
                 final_size = final_output_info.get("size_kb", 0)
+                out_folder = final_output_info.get("folder", "OUTPUTS")
 
                 if rc == 0:
                     _log_lines.append(f"✓ Model run completed successfully!\n")
                     _log_lines.append(f"  Total time: {format_elapsed(elapsed)}\n")
-                    _log_lines.append(f"  OUTPUT.csv: {final_lines} rows ({final_size:.1f} KB)\n")
+                    _log_lines.append(f"  Output folder: {out_folder}/\n")
+                    _log_lines.append(f"  Files: {final_files} total ({final_out} .out, {final_bin} .bin), {final_size:.1f} KB\n")
                 else:
                     _log_lines.append(f"✗ Model run failed with return code {rc}\n")
                     _log_lines.append(f"  Total time: {format_elapsed(elapsed)}\n")
@@ -4832,8 +6668,8 @@ def server(input, output, session):
                 logger.error(f"Model run error: {e}")
 
             finally:
-                _model_process.set(None)
-                _model_running.set(False)
+                _model_process[0] = None
+                _model_running[0] = False
 
         threading.Thread(target=_work, daemon=True, name="RunThread").start()
 
@@ -4844,12 +6680,7 @@ def server(input, output, session):
         # Read from shared list (thread-safe)
         return ''.join(_log_lines[-100:])  # Last 100 lines
 
-    @render.text
-    def run_log_mini():
-        """Mini run log for Model Config panel"""
-        reactive.invalidate_later(0.5)
-        # Show last 20 lines in the mini log
-        return ''.join(_log_lines[-20:])
+    # Note: run_log_mini is defined earlier in the server function
 
     @render.ui
     def run_progress_bar():
@@ -4932,34 +6763,36 @@ def server(input, output, session):
         rows = progress.get("rows", 0)
         size_kb = progress.get("size_kb", 0)
 
+        base_style = "display: flex; align-items: center; justify-content: center; height: 100%; min-height: 48px; padding: 8px 16px; border-radius: 6px; width: 100%;"
+
         if status == "running":
             return ui.div(
-                ui.tags.span("⏱ ", style="font-size: 2em; color: #ffc107;"),
-                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #ffc107; font-family: monospace;"),
-                ui.tags.span(f"  {rows:,} rows", style="font-size: 1em; color: #17a2b8; margin-left: 15px;"),
-                ui.tags.span(f" ({size_kb:.1f} KB)", style="font-size: 0.9em; color: #6c757d;"),
-                style="background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #4caf50;"
+                ui.tags.span("⏱ ", style="font-size: 1.5em; color: #ffc107;"),
+                ui.tags.span(elapsed, style="font-size: 1.8em; font-weight: bold; color: #ffc107; font-family: monospace;"),
+                ui.tags.span(f"  {rows:,} rows", style="font-size: 0.9em; color: #17a2b8; margin-left: 12px;"),
+                ui.tags.span(f" ({size_kb:.1f} KB)", style="font-size: 0.85em; color: #6c757d;"),
+                style=base_style + "background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); border: 2px solid #4caf50;"
             )
         elif status == "completed":
             return ui.div(
-                ui.tags.span("✓ ", style="font-size: 2em; color: #4caf50;"),
-                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #4caf50; font-family: monospace;"),
-                ui.tags.span(f"  {rows:,} rows", style="font-size: 1em; color: #17a2b8; margin-left: 15px;"),
-                ui.tags.span(" Done", style="font-size: 1em; color: #4caf50; margin-left: 10px;"),
-                style="background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #4caf50;"
+                ui.tags.span("✓ ", style="font-size: 1.5em; color: #4caf50;"),
+                ui.tags.span(elapsed, style="font-size: 1.8em; font-weight: bold; color: #4caf50; font-family: monospace;"),
+                ui.tags.span(f"  {rows:,} rows", style="font-size: 0.9em; color: #17a2b8; margin-left: 12px;"),
+                ui.tags.span(" Done", style="font-size: 0.9em; color: #4caf50; margin-left: 8px;"),
+                style=base_style + "background: linear-gradient(135deg, #1a3d1a 0%, #2d5a2d 100%); border: 2px solid #4caf50;"
             )
         elif status == "failed":
             return ui.div(
-                ui.tags.span("✗ ", style="font-size: 2em; color: #f44336;"),
-                ui.tags.span(elapsed, style="font-size: 2.5em; font-weight: bold; color: #f44336; font-family: monospace;"),
-                ui.tags.span(" Failed", style="font-size: 1em; color: #f44336; margin-left: 15px;"),
-                style="background: linear-gradient(135deg, #3d1a1a 0%, #5a2d2d 100%); padding: 10px 20px; border-radius: 8px; border: 2px solid #f44336;"
+                ui.tags.span("✗ ", style="font-size: 1.5em; color: #f44336;"),
+                ui.tags.span(elapsed, style="font-size: 1.8em; font-weight: bold; color: #f44336; font-family: monospace;"),
+                ui.tags.span(" Failed", style="font-size: 0.9em; color: #f44336; margin-left: 12px;"),
+                style=base_style + "background: linear-gradient(135deg, #3d1a1a 0%, #5a2d2d 100%); border: 2px solid #f44336;"
             )
         else:
             return ui.div(
-                ui.tags.span("○ ", style="font-size: 2em; color: #6c757d;"),
-                ui.tags.span("Ready", style="font-size: 1.5em; color: #6c757d; font-family: monospace;"),
-                style="background: #2d2d2d; padding: 10px 20px; border-radius: 8px; border: 2px solid #444;"
+                ui.tags.span("○ ", style="font-size: 1.5em; color: #6c757d;"),
+                ui.tags.span("Ready", style="font-size: 1.2em; color: #6c757d; font-family: monospace;"),
+                style=base_style + "background: #2d2d2d; border: 2px solid #444;"
             )
 
     @render.ui
@@ -4983,14 +6816,16 @@ def server(input, output, session):
                 class_="mb-1"
             ))
             try:
-                with open(OUTPUT_CSV, 'r') as f:
-                    lines = sum(1 for _ in f)
+                # Efficient line count using file size estimate
+                file_size = os.path.getsize(OUTPUT_CSV)
+                # Estimate lines (avg ~100 bytes per line in CSV)
+                estimated_lines = file_size // 100
                 items.append(ui.div(
                     ui.tags.strong("Output: "),
-                    ui.tags.span(f"{lines:,} rows", class_="text-success"),
+                    ui.tags.span(f"~{estimated_lines:,} rows ({file_size // 1024:,} KB)", class_="text-success"),
                     class_="mb-1"
                 ))
-            except:
+            except Exception:
                 pass
         else:
             items.append(ui.div(
@@ -5002,7 +6837,7 @@ def server(input, output, session):
         # Executable
         try:
             exe_name = input.run_executable() or "ESTAS_II"
-        except:
+        except Exception:
             exe_name = "ESTAS_II"
         exe_exists = os.path.exists(os.path.join(ROOT, exe_name))
         items.append(ui.div(
@@ -5015,7 +6850,7 @@ def server(input, output, session):
         try:
             cmd = build_estas_command()
             cmd_str = " ".join(cmd)
-        except:
+        except Exception:
             cmd_str = "(error)"
         items.append(ui.div(
             ui.tags.strong("Cmd: "),
@@ -5029,6 +6864,10 @@ def server(input, output, session):
     def input_txt_variables():
         """Display INPUT.txt variables with labels"""
         reactive.invalidate_later(5.0)  # Refresh every 5 seconds
+        # Also refresh when output config is saved
+        _ = output_config_version.get()
+        # Also refresh when simulation config is saved
+        _ = sim_config_save_msg.get()
 
         def make_row(label, value, unit=""):
             return ui.div(
@@ -5051,18 +6890,17 @@ def server(input, output, session):
                     if line.strip().startswith("# BASE_YEAR") and i + 1 < len(lines):
                         try:
                             base_year = int(lines[i+1].strip())
-                        except:
+                        except Exception:
                             pass
                         break
 
                 def julian_to_date(julian_day, base_year):
                     """Convert Julian day to actual date string"""
                     try:
-                        from datetime import date, timedelta
                         base_date = date(base_year, 1, 1)
                         actual_date = base_date + timedelta(days=int(float(julian_day)) - 1)
                         return actual_date.strftime("%d-%b-%Y")
-                    except:
+                    except Exception:
                         return str(julian_day)
 
                 # Parse key variables (skip base year display)
@@ -5104,7 +6942,7 @@ def server(input, output, session):
                     days = int(end - start)
                     items.append(ui.tags.hr(style="margin: 5px 0;"))
                     items.append(make_row("Duration", days, "days"))
-                except:
+                except Exception:
                     pass
 
                 # Read output box settings from PELAGIC_OUTPUT_INFORMATION_FILE.txt
@@ -5116,15 +6954,18 @@ def server(input, output, session):
                         output_boxes = []
                         for line in output_lines[1:]:  # Skip header
                             parts = line.split()
-                            if len(parts) >= 2:
+                            if len(parts) >= 4:
                                 box_num = parts[0]
-                                state_var = parts[1] if len(parts) > 1 else "0"
-                                if state_var == "1":
+                                # Include box if ANY output type is enabled
+                                state_var = parts[1] == "1"
+                                process_rate = parts[2] == "1"
+                                mass_balance = parts[3] == "1"
+                                if state_var or process_rate or mass_balance:
                                     output_boxes.append(box_num)
                         if output_boxes:
                             items.append(ui.tags.hr(style="margin: 5px 0;"))
                             items.append(make_row("Output Boxes", ", ".join(output_boxes)))
-                except:
+                except Exception:
                     pass
 
         except Exception as e:
@@ -5136,7 +6977,7 @@ def server(input, output, session):
     def run_status_indicator():
         """Show running status indicator"""
         reactive.invalidate_later(1.0)
-        is_running = _model_running.get()
+        is_running = _model_running[0]
 
         if is_running:
             return ui.div(
@@ -5156,10 +6997,9 @@ def server(input, output, session):
     def on_stop_run():
         """Stop the running model"""
         logger.info("User clicked Stop button")
-        process = _model_process.get()
+        process = _model_process[0]
         if process and process.poll() is None:
             try:
-                import signal
                 # Try graceful termination first
                 process.terminate()
                 _log_lines.append("\n⚠️ Stop requested - terminating model...\n")
@@ -5173,8 +7013,8 @@ def server(input, output, session):
                     process.kill()
                     _log_lines.append("Model force killed.\n")
 
-                _model_running.set(False)
-                _model_process.set(None)
+                _model_running[0] = False
+                _model_process[0] = None
             except Exception as e:
                 _log_lines.append(f"Error stopping model: {e}\n")
                 logger.error(f"Error stopping model: {e}")
@@ -5186,7 +7026,7 @@ def server(input, output, session):
     def on_dashboard_stop():
         """Stop the running model from dashboard"""
         logger.info("User clicked Dashboard Stop button")
-        process = _model_process.get()
+        process = _model_process[0]
         if process and process.poll() is None:
             try:
                 # Try graceful termination first
@@ -5202,8 +7042,8 @@ def server(input, output, session):
                     process.kill()
                     _log_lines.append("Model force killed.\n")
 
-                _model_running.set(False)
-                _model_process.set(None)
+                _model_running[0] = False
+                _model_process[0] = None
                 _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"})
             except Exception as e:
                 _log_lines.append(f"Error stopping model: {e}\n")
@@ -5225,6 +7065,515 @@ def server(input, output, session):
         except Exception as e:
             logger.error(f"Error reading OUTPUT.csv preview: {e}")
             return pd.DataFrame([["error reading OUTPUT.csv", str(e)]])
+
+    # ========== OUTPUT DIRECTORY MANAGEMENT ==========
+    def get_output_directories():
+        """Get list of output directories in the workspace"""
+        dirs = {}
+        # Add root OUTPUT.csv as option
+        if os.path.exists(OUTPUT_CSV):
+            dirs["ROOT"] = "OUTPUT.csv (root directory)"
+        
+        # Find OUTPUTS_* directories
+        for item in os.listdir(ROOT):
+            if item.startswith("OUTPUTS") and os.path.isdir(os.path.join(ROOT, item)):
+                dirs[item] = item
+        return dirs
+
+    def analyze_output_directory(dir_name):
+        """Analyze files in an output directory and return summary"""
+        if dir_name == "ROOT":
+            dir_path = ROOT
+            files_to_check = ["OUTPUT.csv"]
+        else:
+            dir_path = os.path.join(ROOT, dir_name)
+            if not os.path.isdir(dir_path):
+                return {"error": f"Directory not found: {dir_name}"}
+            files_to_check = os.listdir(dir_path)
+        
+        summary = {
+            "path": dir_path,
+            "files": [],
+            "total_size": 0,
+            "csv_files": 0,
+            "out_files": 0,
+            "mtrx_files": 0,
+            "bin_files": 0,
+        }
+        
+        for fname in files_to_check:
+            if dir_name == "ROOT":
+                fpath = os.path.join(ROOT, fname)
+            else:
+                fpath = os.path.join(dir_path, fname)
+            
+            if not os.path.isfile(fpath):
+                continue
+                
+            try:
+                stat = os.stat(fpath)
+                size = stat.st_size
+                mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                
+                file_info = {
+                    "name": fname,
+                    "size": size,
+                    "size_str": f"{size / 1024:.1f} KB" if size < 1024*1024 else f"{size / (1024*1024):.2f} MB",
+                    "modified": mtime,
+                    "type": "unknown"
+                }
+                
+                # Categorize file
+                if fname.endswith(".csv"):
+                    file_info["type"] = "csv"
+                    summary["csv_files"] += 1
+                    # Try to get row count for CSV
+                    try:
+                        with open(fpath, 'rb') as f:
+                            lines = sum(1 for _ in f)
+                        file_info["rows"] = lines
+                    except:
+                        file_info["rows"] = "?"
+                elif fname.endswith(".out"):
+                    file_info["type"] = "output"
+                    summary["out_files"] += 1
+                elif fname.endswith(".mtrx"):
+                    file_info["type"] = "matrix"
+                    summary["mtrx_files"] += 1
+                elif fname.endswith(".bin"):
+                    file_info["type"] = "binary"
+                    summary["bin_files"] += 1
+                
+                summary["files"].append(file_info)
+                summary["total_size"] += size
+            except Exception as e:
+                logger.warning(f"Error analyzing file {fname}: {e}")
+        
+        # Sort files by type then name
+        summary["files"].sort(key=lambda x: (x["type"], x["name"]))
+        summary["total_size_str"] = f"{summary['total_size'] / (1024*1024):.2f} MB"
+        return summary
+
+    @reactive.effect
+    def init_output_dirs():
+        """Initialize output directory selection on startup - uses INPUT.txt value"""
+        dirs = get_output_directories()
+        if dirs:
+            # Try to get output folder from INPUT.txt config
+            default_dir = "OUTPUTS"  # fallback
+            try:
+                if os.path.exists(INPUT_TXT_PATH):
+                    scf = SimulationConfigFile(INPUT_TXT_PATH)
+                    if scf.parse():
+                        # Get output folder from config (strip trailing slash)
+                        config_output = scf.config.output_folder.rstrip('/')
+                        if config_output in dirs:
+                            default_dir = config_output
+                            logger.info(f"Using output folder from INPUT.txt: {default_dir}")
+                        else:
+                            logger.warning(f"Output folder '{config_output}' from INPUT.txt not found, using OUTPUTS")
+            except Exception as e:
+                logger.warning(f"Could not read output folder from INPUT.txt: {e}")
+            
+            # Fall back to OUTPUTS if no config or folder not found
+            if default_dir not in dirs:
+                default_dir = "OUTPUTS" if "OUTPUTS" in dirs else list(dirs.keys())[0]
+            
+            ui.update_select("output_dir_select", choices=dirs, selected=default_dir)
+            # Also update Model Config output directory
+            ui.update_select("sim_output_dir", choices=dirs, selected=default_dir)
+
+    @reactive.effect
+    @reactive.event(input.refresh_output_dirs)
+    def refresh_output_dirs():
+        """Refresh the list of output directories"""
+        dirs = get_output_directories()
+        current = input.output_dir_select()
+        selected = current if current in dirs else (list(dirs.keys())[0] if dirs else None)
+        ui.update_select("output_dir_select", choices=dirs, selected=selected)
+
+    @reactive.effect
+    @reactive.event(input.refresh_sim_output_dirs)
+    def refresh_sim_output_dirs():
+        """Refresh the output directory list in Model Config"""
+        dirs = get_output_directories()
+        current = input.sim_output_dir()
+        selected = current if current in dirs else (list(dirs.keys())[0] if dirs else None)
+        ui.update_select("sim_output_dir", choices=dirs, selected=selected)
+
+    @render.text
+    def sim_output_dir_info():
+        """Show info about selected output directory in Model Config"""
+        dir_name = input.sim_output_dir()
+        if not dir_name:
+            return ""
+        if dir_name == "ROOT":
+            dir_path = ROOT
+        else:
+            dir_path = os.path.join(ROOT, dir_name)
+        if os.path.exists(dir_path):
+            files = [f for f in os.listdir(dir_path) if f.endswith(('.bin', '.out', '.csv'))]
+            return f"📁 {len(files)} output files"
+        return "Directory not found"
+
+    @render.ui
+    def output_file_preview():
+        """Display preview info about the selected output file"""
+        dir_name = input.output_dir_select()
+        file_name = input.plot_output_file()
+        
+        if not dir_name or not file_name:
+            return ui.div(ui.tags.em("Select a file to preview", class_="text-muted"))
+        
+        # Build file path
+        if dir_name == "ROOT":
+            file_path = os.path.join(ROOT, file_name)
+        else:
+            file_path = os.path.join(ROOT, dir_name, file_name)
+        
+        if not os.path.exists(file_path):
+            return ui.div(ui.tags.em(f"File not found: {file_name}", class_="text-danger"))
+        
+        try:
+            # Get file stats
+            stat = os.stat(file_path)
+            mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            size = stat.st_size
+            size_str = f"{size / 1024:.1f} KB" if size < 1024*1024 else f"{size / (1024*1024):.2f} MB"
+            
+            # Detect file format and read metadata
+            file_ext = os.path.splitext(file_path)[1].lower()
+            num_vars = 0
+            num_rows = 0
+            time_range = ""
+            
+            if file_ext == '.bin':
+                # Binary file - calculate from file size
+                num_cols = 37  # PELAGIC_BOX binary format
+                bytes_per_row = num_cols * 8  # float64
+                num_rows = size // bytes_per_row
+                num_vars = num_cols - 1  # Exclude TIME column
+                # Read first and last time values
+                try:
+                    import numpy as np
+                    data = np.fromfile(file_path, dtype=np.float64)
+                    if len(data) >= num_cols:
+                        first_time = data[0]
+                        last_time = data[-num_cols]
+                        from datetime import datetime as dt, timedelta
+                        ref_date = dt(1997, 1, 1)
+                        start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
+                        end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
+                        time_range = f"{start_date} to {end_date}"
+                except:
+                    pass
+            elif file_ext == '.csv':
+                # CSV file
+                df = pd.read_csv(file_path, comment='#', nrows=5)
+                num_vars = len(df.columns) - 1  # Exclude TIME
+                # Count rows
+                with open(file_path, 'rb') as f:
+                    num_rows = sum(1 for _ in f) - 1  # Subtract header
+            elif file_ext in ['.out', '.txt', '.dat']:
+                # Whitespace-delimited file
+                df = pd.read_csv(file_path, sep=r'\s+', nrows=5)
+                num_vars = len(df.columns) - 1  # Exclude TIME
+                # Count rows
+                with open(file_path, 'rb') as f:
+                    num_rows = sum(1 for _ in f) - 1  # Subtract header
+                # Try to get time range
+                try:
+                    df_full = pd.read_csv(file_path, sep=r'\s+', usecols=[0])
+                    first_time = df_full.iloc[0, 0]
+                    last_time = df_full.iloc[-1, 0]
+                    from datetime import datetime as dt, timedelta
+                    ref_date = dt(1997, 1, 1)
+                    start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
+                    end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
+                    time_range = f"{start_date} to {end_date}"
+                except:
+                    pass
+            
+            # Build preview display
+            items = [
+                ui.tags.p(ui.tags.strong("📄 File: "), file_name),
+                ui.tags.p(ui.tags.strong("📊 Variables: "), str(num_vars)),
+                ui.tags.p(ui.tags.strong("📈 Data points: "), f"{num_rows:,}"),
+                ui.tags.p(ui.tags.strong("💾 Size: "), size_str),
+            ]
+            
+            if time_range:
+                items.append(ui.tags.p(ui.tags.strong("📅 Period: "), time_range))
+            
+            items.append(ui.tags.p(ui.tags.strong("🕐 Modified: "), mtime))
+            
+            return ui.div(*items)
+            
+        except Exception as e:
+            logger.warning(f"Error previewing file {file_path}: {e}")
+            return ui.div(ui.tags.em(f"Error reading file: {str(e)}", class_="text-danger"))
+
+    @render.ui
+    @reactive.event(input.analyze_output_dir)
+    def output_files_summary():
+        """Analyze and display detailed file summary for selected directory"""
+        dir_name = input.output_dir_select()
+        if not dir_name:
+            return ui.div(ui.tags.em("Select a directory and click 'Analyze Directory'", class_="text-muted"))
+        
+        summary = analyze_output_directory(dir_name)
+        
+        if "error" in summary:
+            return ui.div(ui.tags.span(summary["error"], class_="text-danger"))
+        
+        if not summary["files"]:
+            return ui.div(ui.tags.em("No files found in directory", class_="text-muted"))
+        
+        # Build summary cards
+        stats_row = ui.layout_columns(
+            ui.value_box(
+                "Total Files",
+                str(len(summary["files"])),
+                theme="primary"
+            ),
+            ui.value_box(
+                "CSV Files",
+                str(summary["csv_files"]),
+                theme="success"
+            ),
+            ui.value_box(
+                "Output Files",
+                str(summary["out_files"]),
+                theme="info"
+            ),
+            ui.value_box(
+                "Total Size",
+                summary["total_size_str"],
+                theme="secondary"
+            ),
+            col_widths=[3, 3, 3, 3]
+        )
+        
+        # Build file table
+        table_rows = []
+        for f in summary["files"]:
+            type_badge = {
+                "csv": ("CSV", "bg-success"),
+                "output": ("OUT", "bg-info"),
+                "matrix": ("MTRX", "bg-warning"),
+                "binary": ("BIN", "bg-secondary"),
+                "unknown": ("?", "bg-light text-dark"),
+            }.get(f["type"], ("?", "bg-light"))
+            
+            row_content = [
+                ui.tags.td(ui.tags.span(type_badge[0], class_=f"badge {type_badge[1]}")),
+                ui.tags.td(f["name"]),
+                ui.tags.td(f["size_str"]),
+                ui.tags.td(f["modified"]),
+            ]
+            if "rows" in f:
+                row_content.append(ui.tags.td(str(f["rows"]) + " rows"))
+            else:
+                row_content.append(ui.tags.td("-"))
+            
+            table_rows.append(ui.tags.tr(*row_content))
+        
+        file_table = ui.tags.table(
+            ui.tags.thead(
+                ui.tags.tr(
+                    ui.tags.th("Type"),
+                    ui.tags.th("Filename"),
+                    ui.tags.th("Size"),
+                    ui.tags.th("Modified"),
+                    ui.tags.th("Info"),
+                )
+            ),
+            ui.tags.tbody(*table_rows),
+            class_="table table-sm table-striped"
+        )
+        
+        return ui.div(
+            stats_row,
+            ui.tags.hr(),
+            file_table
+        )
+
+    # ========== PLOT OUTPUT FILE SELECTION ==========
+    def get_output_files_from_dir(dir_name, file_format="text"):
+        """Get list of output files from the selected directory based on format.
+        
+        Args:
+            dir_name: Directory name (relative to ROOT) or "ROOT"
+            file_format: 'text' for .out, 'binary' for .bin, 'csv' for .csv
+            
+        Returns:
+            dict: {filename: display_name} for UI choices
+        """
+        files = {}
+        
+        if not dir_name:
+            return files
+        
+        if dir_name == "ROOT":
+            dir_path = ROOT
+        else:
+            dir_path = os.path.join(ROOT, dir_name)
+        
+        if not os.path.isdir(dir_path):
+            return files
+        
+        # Determine file extensions based on format
+        if file_format == "binary":
+            extensions = [".bin"]
+            # For binary, prefer PELAGIC_BOX files
+            for f in os.listdir(dir_path):
+                if f.endswith(".bin") and "PELAGIC_BOX" in f and "PROCESS_RATES" not in f:
+                    files[f] = f
+        elif file_format == "csv":
+            extensions = [".csv"]
+            for f in os.listdir(dir_path):
+                if f.endswith(".csv") and os.path.isfile(os.path.join(dir_path, f)):
+                    files[f] = f
+        else:  # text (.out)
+            extensions = [".out"]
+            for f in os.listdir(dir_path):
+                if f.endswith(".out") and "PELAGIC_BOX" in f and os.path.isfile(os.path.join(dir_path, f)):
+                    files[f] = f
+        
+        return files
+
+    def get_selected_output_file_path():
+        """Get full path to selected output file"""
+        dir_name = input.output_dir_select()
+        file_name = input.plot_output_file()
+        
+        if not dir_name or not file_name:
+            return None
+        
+        if dir_name == "ROOT":
+            return os.path.join(ROOT, file_name)
+        else:
+            return os.path.join(ROOT, dir_name, file_name)
+
+    @reactive.effect
+    def update_plot_output_files():
+        """Update file selection when output directory or format changes"""
+        dir_name = input.output_dir_select()
+        file_format = input.output_format() if hasattr(input, 'output_format') else "text"
+        files = get_output_files_from_dir(dir_name, file_format)
+        
+        # Select first file by default
+        selected = None
+        if "OUTPUT.csv" in files:
+            selected = "OUTPUT.csv"
+        elif files:
+            selected = list(files.keys())[0]
+        
+        ui.update_select("plot_output_file", choices=files, selected=selected)
+
+    @reactive.effect
+    @reactive.event(input.refresh_plot_files, input.output_format)
+    def refresh_plot_output_files():
+        """Refresh the list of output files when format changes"""
+        dir_name = input.output_dir_select()
+        file_format = input.output_format() if hasattr(input, 'output_format') else "text"
+        files = get_output_files_from_dir(dir_name, file_format)
+        current = input.plot_output_file()
+        selected = current if current in files else (list(files.keys())[0] if files else None)
+        ui.update_select("plot_output_file", choices=files, selected=selected)
+
+    @render.ui
+    def plot_output_file_info():
+        """Display info about selected output file"""
+        file_path = get_selected_output_file_path()
+        
+        if not file_path or not os.path.exists(file_path):
+            return ui.div(ui.tags.small("No file selected", class_="text-muted"))
+        
+        try:
+            stat = os.stat(file_path)
+            size = stat.st_size
+            mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M')
+            
+            # Count lines
+            with open(file_path, 'rb') as f:
+                lines = sum(1 for _ in f)
+            
+            size_str = f"{size / 1024:.1f} KB" if size < 1024*1024 else f"{size / (1024*1024):.2f} MB"
+            
+            return ui.div(
+                ui.tags.small(f"📄 {size_str} | {lines:,} rows | {mtime}", class_="text-muted")
+            )
+        except Exception as e:
+            return ui.div(ui.tags.small(f"Error: {e}", class_="text-danger"))
+
+    @reactive.effect
+    @reactive.event(input.plot_output_file, input.output_dir_select)
+    def update_plot_variables():
+        """Update variable choices when output file changes with descriptive names"""
+        # Explicitly read inputs to establish reactive dependency
+        dir_name = input.output_dir_select()
+        file_name = input.plot_output_file()
+        
+        if not dir_name or not file_name:
+            ui.update_selectize("left_vars", choices=[], selected=[])
+            ui.update_selectize("right_vars", choices=[], selected=[])
+            return
+            
+        if dir_name == "ROOT":
+            file_path = os.path.join(ROOT, file_name)
+        else:
+            file_path = os.path.join(ROOT, dir_name, file_name)
+        
+        if not os.path.exists(file_path):
+            ui.update_selectize("left_vars", choices=[], selected=[])
+            ui.update_selectize("right_vars", choices=[], selected=[])
+            return
+        
+        try:
+            # Detect file format from extension and use appropriate separator
+            file_ext = os.path.splitext(file_path)[1].lower()
+            
+            if file_ext == '.csv':
+                # CSV files use comma separator
+                df = pd.read_csv(file_path, comment='#', nrows=5)
+            elif file_ext in ['.out', '.txt', '.dat']:
+                # PELAGIC_BOX_*.out and similar files use whitespace separator
+                df = pd.read_csv(file_path, sep=r'\s+', comment='#', nrows=5)
+            elif file_ext == '.bin':
+                # Binary files - use predefined column names
+                cols = list(PELAGIC_BOX_COLUMNS[1:])  # Skip TIME column
+                grouped_choices = get_grouped_variable_choices(cols)
+                # Pass grouped choices directly (Shiny supports nested dicts for groups)
+                ui.update_selectize("left_vars", choices=grouped_choices, selected=[])
+                ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
+                logger.info(f"Updated variable choices from binary: {sum(len(v) for v in grouped_choices.values())} variables available")
+                return
+            else:
+                # Default: try whitespace first, then comma
+                try:
+                    df = pd.read_csv(file_path, sep=r'\s+', comment='#', nrows=5)
+                    if len(df.columns) <= 1:
+                        df = pd.read_csv(file_path, comment='#', nrows=5)
+                except:
+                    df = pd.read_csv(file_path, comment='#', nrows=5)
+            
+            df.columns = [c.strip() for c in df.columns]
+            
+            # Filter out time columns
+            cols = [c for c in df.columns if c.lower() not in ['time', 'time_days', 'date', 'datetime', 'julian_day']]
+            
+            # Create grouped choices with descriptive names
+            grouped_choices = get_grouped_variable_choices(cols)
+            
+            # Pass grouped choices directly (Shiny supports nested dicts for groups)
+            ui.update_selectize("left_vars", choices=grouped_choices, selected=[])
+            ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
+            logger.info(f"Updated variable choices: {sum(len(v) for v in grouped_choices.values())} variables available")
+        except Exception as e:
+            logger.warning(f"Error reading columns from {file_path}: {e}")
+            ui.update_selectize("left_vars", choices=[], selected=[])
+            ui.update_selectize("right_vars", choices=[], selected=[])
 
     # ========== INPUT TIMESERIES PLOTTING ==========
     @reactive.effect
@@ -5314,19 +7663,35 @@ def server(input, output, session):
             with open(filepath, 'r') as f:
                 lines = f.readlines()
 
-            # Find data start (first non-comment, non-empty line after headers)
+            # Find data start - look for the column header line "# TIME" and start after it
+            # The data format has headers with comments, then "# TIME TEMP1 TEMP2 ..." 
+            # followed by actual data rows
             data_start = 0
             for i, line in enumerate(lines):
                 stripped = line.strip()
-                if stripped and not stripped.startswith('#'):
-                    # Check if it's a data line (starts with number)
-                    try:
-                        float(stripped.split()[0])
-                        data_start = i
-                        break
-                    except (ValueError, IndexError):
-                        continue
+                # Look for the column header line that contains "TIME" as a comment
+                if stripped.startswith('#') and 'TIME' in stripped.upper():
+                    # Data starts on the next line
+                    data_start = i + 1
+                    # Don't break - keep looking for the LAST such header
+            
+            # If no TIME header found, fall back to finding first data line
+            if data_start == 0:
+                for i, line in enumerate(lines):
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('#'):
+                        parts = stripped.split()
+                        if len(parts) >= 2:
+                            try:
+                                float(parts[0])
+                                float(parts[1])
+                                data_start = i
+                                break
+                            except (ValueError, IndexError):
+                                continue
 
+            logger.debug(f"Input timeseries data starts at line {data_start}")
+            
             # Read as DataFrame
             df = pd.read_csv(filepath, skiprows=data_start, sep=r'\s+', header=None)
 
@@ -5338,7 +7703,6 @@ def server(input, output, session):
             time_col = df.iloc[:, 0]
 
             # Convert Julian days to dates
-            from datetime import timedelta
             reference_date = date(1997, 1, 1)
             dates = [reference_date + timedelta(days=float(t)) for t in time_col]
 
@@ -5397,9 +7761,18 @@ def server(input, output, session):
             logger.info("No variables selected, skipping plot")
             return None
 
-        # Use cached CSV with row limit to prevent OOM
-        logger.debug(f"Fetching CSV data (max {DEFAULT_PLOT_ROWS} rows)")
-        df = _get_cached_csv(max_rows=DEFAULT_PLOT_ROWS)
+        # Get the selected output file path and format
+        selected_file = get_selected_output_file_path()
+        if not selected_file:
+            logger.warning("No output file selected")
+            return None
+        
+        file_format = input.output_format() if hasattr(input, 'output_format') else None
+        logger.info(f"Plotting from: {selected_file} (format: {file_format})")
+
+        # Use format-aware data loading
+        logger.debug(f"Fetching data (max {DEFAULT_PLOT_ROWS} rows, format={file_format})")
+        df = _get_cached_data(max_rows=DEFAULT_PLOT_ROWS, file_path=selected_file, file_format=file_format)
         if df is None or df.empty:
             logger.warning("No data available for plotting")
             return None
@@ -5409,8 +7782,32 @@ def server(input, output, session):
         win = input.smooth_window() if apply_smooth else 1
         logger.debug(f"X-axis: {xcol}, Smoothing: {apply_smooth} (window={win})")
 
+        # Convert Julian days to actual dates for the x-axis
+        # Reference date: 1997-01-01 (used in AQUABC model)
+        from datetime import datetime, timedelta
+        reference_date = datetime(1997, 1, 1)
+        try:
+            # Create date column from Julian days
+            x_dates = [reference_date + timedelta(days=float(jd)) for jd in df[xcol]]
+            x_data = x_dates
+            x_label = 'Date'
+            x_is_date = True
+            logger.debug(f"Date conversion successful: {x_dates[0]} to {x_dates[-1]}")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Could not convert Julian days to dates: {e}")
+            x_data = df[xcol].tolist()
+            x_label = xcol
+            x_is_date = False
+
         fig = go.Figure()
         trace_count = 0
+
+        # Helper function to get just the description (no code, no units)
+        def get_var_description(var):
+            info = get_variable_info(var)
+            if info:
+                return info['description']
+            return var
 
         # left axis traces
         for var in left:
@@ -5420,7 +7817,7 @@ def server(input, output, session):
             y = df[var]
             if apply_smooth and win > 1:
                 y = y.rolling(window=win, min_periods=1).mean()
-            fig.add_trace(go.Scatter(x=df[xcol], y=y, mode='lines', name=var, yaxis='y'))
+            fig.add_trace(go.Scatter(x=x_data, y=y.tolist(), mode='lines', name=get_var_description(var), yaxis='y'))
             trace_count += 1
 
         # right axis traces
@@ -5431,19 +7828,50 @@ def server(input, output, session):
             y = df[var]
             if apply_smooth and win > 1:
                 y = y.rolling(window=win, min_periods=1).mean()
-            fig.add_trace(go.Scatter(x=df[xcol], y=y, mode='lines', name=var, yaxis='y2'))
+            fig.add_trace(go.Scatter(x=x_data, y=y.tolist(), mode='lines', name=get_var_description(var), yaxis='y2'))
             trace_count += 1
 
         logger.debug(f"Created {trace_count} traces")
 
+        # Create descriptive axis titles using just descriptions
+        left_descriptions = [get_var_description(var) for var in left]
+        right_descriptions = [get_var_description(var) for var in right]
+        left_title = ', '.join(left_descriptions) if left else 'Left axis'
+        right_title = ', '.join(right_descriptions) if right else 'Right axis'
+
+        # Plot title with variable descriptions
+        all_vars = [get_var_description(v) for v in (left + right)]
+        plot_title = f"{', '.join(all_vars)} vs {x_label}"
+
+        # Configure xaxis based on whether we have date data
+        if x_is_date:
+            xaxis_config = dict(
+                title=x_label,
+                type='date',
+                tickformat='%Y-%m-%d',
+                tickmode='auto',
+                nticks=10  # Show approximately 10 ticks
+            )
+        else:
+            xaxis_config = dict(title=x_label)
+
         layout = dict(
-            title=f"{', '.join(left + right)} vs {xcol}",
-            yaxis=dict(title='Left axis'),
-            xaxis=dict(title=xcol)
+            title=plot_title,
+            yaxis=dict(title=left_title),
+            xaxis=xaxis_config,
+            # Horizontal legend at the bottom to save space
+            legend=dict(
+                orientation='h',
+                yanchor='top',
+                y=-0.15,
+                xanchor='center',
+                x=0.5
+            ),
+            margin=dict(b=80)  # Extra bottom margin for legend
         )
 
         if right:
-            layout['yaxis2'] = dict(title='Right axis', overlaying='y', side='right')
+            layout['yaxis2'] = dict(title=right_title, overlaying='y', side='right')
 
         log_scale_info = []
         if input.log_left():
@@ -5462,6 +7890,103 @@ def server(input, output, session):
         fig.update_layout(**layout)
         logger.info(f"Plot generated successfully with {trace_count} traces")
         return go.FigureWidget(fig)
+
+    # === FOLIUM MAP RENDER ===
+    @render.ui
+    def pydeck_map():
+        """Render an interactive folium map with sample data points."""
+        # Sample data points for demonstration (Curonian Lagoon area)
+        stations = [
+            {'lat': 55.5, 'lon': 21.0, 'name': 'Station 1', 'value': 10},
+            {'lat': 55.6, 'lon': 21.1, 'name': 'Station 2', 'value': 25},
+            {'lat': 55.4, 'lon': 20.9, 'name': 'Station 3', 'value': 15},
+            {'lat': 55.55, 'lon': 21.05, 'name': 'Station 4', 'value': 30},
+            {'lat': 55.45, 'lon': 20.95, 'name': 'Station 5', 'value': 20},
+            {'lat': 55.52, 'lon': 21.08, 'name': 'Station 6', 'value': 18},
+            {'lat': 55.48, 'lon': 20.92, 'name': 'Station 7', 'value': 22},
+        ]
+
+        # Get user inputs
+        center_lat = input.map_lat() or 55.5
+        center_lon = input.map_lon() or 21.0
+        zoom = input.map_zoom() or 8
+        map_style = input.map_style() or "OpenStreetMap.Mapnik"
+        point_radius = input.map_point_radius() or 1000
+
+        # Map style to folium tile names
+        tile_map = {
+            "OpenStreetMap.Mapnik": "OpenStreetMap",
+            "CartoDB.Positron": "CartoDB positron",
+            "CartoDB.DarkMatter": "CartoDB dark_matter",
+        }
+        tiles = tile_map.get(map_style, "OpenStreetMap")
+
+        # Create folium map
+        m = folium.Map(
+            location=[center_lat, center_lon],
+            zoom_start=zoom,
+            tiles=tiles,
+            height=600,
+        )
+
+        # Add markers for each station
+        for station in stations:
+            # Color based on value (gradient from green to red)
+            value_normalized = station['value'] / 30.0
+            r = int(200 * value_normalized)
+            g = int(200 * (1 - value_normalized))
+            color = f'#{r:02x}{g:02x}50'
+
+            popup_html = f"""
+            <div style="font-family: Arial, sans-serif;">
+                <h4 style="margin: 0 0 10px 0; color: steelblue;">{station['name']}</h4>
+                <table style="width: 100%;">
+                    <tr><td><b>Value:</b></td><td>{station['value']}</td></tr>
+                    <tr><td><b>Lat:</b></td><td>{station['lat']:.4f}</td></tr>
+                    <tr><td><b>Lon:</b></td><td>{station['lon']:.4f}</td></tr>
+                </table>
+            </div>
+            """
+
+            folium.CircleMarker(
+                location=[station['lat'], station['lon']],
+                radius=point_radius / 100,
+                color=color,
+                fill=True,
+                fill_color=color,
+                fill_opacity=0.7,
+                weight=2,
+                popup=folium.Popup(popup_html, max_width=250),
+            ).add_to(m)
+
+        # Return map as HTML in an iframe
+        map_html = m._repr_html_()
+        return ui.HTML(map_html)
+
+    @render.ui
+    def map_info():
+        """Display map information and instructions."""
+        return ui.div(
+            ui.tags.p(
+                ui.tags.strong("About this map: "),
+                "This interactive map displays sample monitoring stations in the Curonian Lagoon area. ",
+                "Use the controls on the left to adjust the map view and visualization settings."
+            ),
+            ui.tags.p(
+                ui.tags.strong("Features: "),
+                ui.tags.ul(
+                    ui.tags.li("Circle markers showing station locations (color indicates value)"),
+                    ui.tags.li("Click on markers to see station details"),
+                    ui.tags.li("Use mouse to pan and scroll to zoom"),
+                    ui.tags.li("Full screen control available in top-right corner")
+                )
+            ),
+            ui.tags.p(
+                ui.tags.em("Map powered by folium with free OpenStreetMap tiles."),
+                class_="text-muted"
+            ),
+            class_="small"
+        )
 
     logger.info("=" * 60)
     logger.info("Server function initialization complete")

@@ -83,6 +83,10 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
 
     TK = T + 273.16
 
+    ! Initialize reference conditions for Stokes-Einstein scaling
+    TS = 25.0D0
+    SS = 36.1D0
+
     ! Shear viscosities
     call SED_MOD_1_CVISC(V25, SS , TS, 1.0D0)
     call SED_MOD_1_CVISC(VTK, SAL, T , 1.0D0)
@@ -147,10 +151,8 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
     !Wollast and Garrels (1971) found D(H4SiO4) at 25 deg C
     !and 36.1 ppt S., Assume that this value can be scaled by
     !the Stokes-Einstein relationship to any other temperature.
-    if (SVARNO.eq.10) then
+    if (SVARNO.eq.11) then
         MOL_DIFF = 1.0D-5
-        TS = 25.0D0
-        SS = 36.1D0
         MOL_DIFF = MOL_DIFF * (V25 / 298.16D0) * (TK / VTK)
     end if
 
