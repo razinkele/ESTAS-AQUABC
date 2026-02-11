@@ -398,6 +398,8 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
     real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
+    integer :: i
+    real(kind = DBL_PREC) :: loss, scale_loss
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
@@ -496,6 +498,20 @@ subroutine CYANOBACTERIA_BOUYANT &
 
     !Non-fixing cyanobacteria death rate
     R_CYN_DEATH = KD_CYN * FAC_HYPOX_CYN_D * CYN_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (CYN_C(i) > 0.0D0) then
+            loss = R_CYN_DEATH(i) + R_CYN_EXCR(i) + R_CYN_INT_RESP(i) + R_CYN_RESP(i)
+            if (loss > 0.5D0 * CYN_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * CYN_C(i) / TIME_STEP) / loss
+                R_CYN_DEATH(i) = R_CYN_DEATH(i) * scale_loss
+                R_CYN_EXCR(i) = R_CYN_EXCR(i) * scale_loss
+                R_CYN_INT_RESP(i) = R_CYN_INT_RESP(i) * scale_loss
+                R_CYN_RESP(i) = R_CYN_RESP(i) * scale_loss
+            end if
+        end if
+    end do
 
     call DIN_DON_PREFS &
          (PREF_DIN_DON_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_CYN, nkn)

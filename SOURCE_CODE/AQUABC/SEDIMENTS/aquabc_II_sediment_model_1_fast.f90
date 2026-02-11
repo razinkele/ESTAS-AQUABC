@@ -2313,7 +2313,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     SED_K_MIN_DON_FE_III_20 * &
                     (SED_THETA_K_MIN_DON_FE_III ** (SED_TEMPS - 2.0D1)) * &
                     LIM_FE_III_RED * PH_CORR_DON_MIN_FE_III * &
-                    (SED_DON / (SED_DOC + SED_K_HS_DON_MIN_FE_III)) * SED_DON
+                    (SED_DON / (SED_DON + SED_K_HS_DON_MIN_FE_III)) * SED_DON
 
                 R_MINER_DON_S_PLUS_6 = &
                     SED_K_MIN_DON_S_PLUS_6_20 * &
@@ -2324,7 +2324,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 R_MINER_DON_DOC = &
                     (SED_K_MIN_DON_DOC_20 * &
                      (SED_THETA_K_MIN_DON_DOC ** (SED_TEMPS - 2.0D1)) * &
-                     LIM_DOC_RED * PH_CORR_DOC_MIN_DOXY * &
+                     LIM_DOC_RED * PH_CORR_DON_MIN_DOC * &
                     (SED_DON / (SED_DON + SED_K_HS_DON_MIN_DOC)) * SED_DON)
             end if
             ! ----------------------------------------------------------------------------------------------------
@@ -2396,7 +2396,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
                 R_MINER_DOP_FE_III = &
                     SED_K_MIN_DOP_FE_III_20 * (SED_THETA_K_MIN_DOP_FE_III ** (SED_TEMPS - 2.0D1)) * &
-                    LIM_FE_III_RED * PH_CORR_DOP_MIN_FE_III * (SED_DOP / (SED_DOC + SED_K_HS_DOP_MIN_FE_III)) * &
+                    LIM_FE_III_RED * PH_CORR_DOP_MIN_FE_III * (SED_DOP / (SED_DOP + SED_K_HS_DOP_MIN_FE_III)) * &
                     SED_DOP
 
                 R_MINER_DOP_S_PLUS_6 = &
@@ -2406,7 +2406,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
                 R_MINER_DOP_DOC = &
                     (SED_K_MIN_DOP_DOC_20 * (SED_THETA_K_MIN_DOP_DOC ** (SED_TEMPS - 2.0D1)) * &
-                     LIM_DOC_RED * PH_CORR_DOC_MIN_DOXY * (SED_DOP / (SED_DOP + SED_K_HS_DOP_MIN_DOC)) * SED_DOP)
+                     LIM_DOC_RED * PH_CORR_DOP_MIN_DOC * (SED_DOP / (SED_DOP + SED_K_HS_DOP_MIN_DOC)) * SED_DOP)
 
                 ! ----------------------------------------------------------------------------------------------------
                 ! A bug fixed thanks to Elin's request for COCOA project. R_MINER_DOP is used in different places such
@@ -2809,7 +2809,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             KINETIC_DERIVS(:,:, 4)  = (-1.0D0) * R_DISS_PON(:,:)
 
             KINETIC_DERIVS(:,:, 5)  = &
-                R_MINER_DOP_DOXY  (:,:) + R_MINER_DOP_NO3N    (:,:) + R_MINER_DOP_MN_IV(:,:) - &
+                R_MINER_DOP_DOXY  (:,:) + R_MINER_DOP_NO3N    (:,:) + R_MINER_DOP_MN_IV(:,:) + &
                 R_MINER_DOP_FE_III(:,:) + R_MINER_DOP_S_PLUS_6(:,:) + R_MINER_DOP_DOC  (:,:)
 
             KINETIC_DERIVS(:,:, 6)  = R_DISS_POP(:,:) - &

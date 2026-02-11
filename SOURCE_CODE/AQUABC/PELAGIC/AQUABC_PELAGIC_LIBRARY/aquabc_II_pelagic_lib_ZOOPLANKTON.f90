@@ -357,8 +357,8 @@ subroutine ZOOPLANKTON &
 
     !Zooplankton Growth rate
     R_ZOO_GROWTH =  R_ZOO_FEEDING_DIA         + R_ZOO_FEEDING_CYN            + &
-                    R_ZOO_FEEDING_OPA         + R_ZOO_FEEDING_NOST_VEG_HET   + &
-                    R_ZOO_FEEDING_DET_PART_ORG_C
+                    R_ZOO_FEEDING_FIX_CYN     + R_ZOO_FEEDING_OPA            + &
+                    R_ZOO_FEEDING_NOST_VEG_HET + R_ZOO_FEEDING_DET_PART_ORG_C
 
     R_ZOO_RESP = R_ZOO_GROWTH * (1.0D0 - EFF_ZOO_GROWTH)
     R_ZOO_INT_RESP = KR_ZOO_20 * (THETA_KR_ZOO ** (TEMP - 2.0D1)) * ZOO_C

@@ -443,6 +443,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     real(kind = DBL_PREC), dimension(nkn) :: FIX_CYN_DEPTH
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH(nkn)
     real(kind = DBL_PREC) :: MIX_DEPTH     (nkn)
+    integer :: i
+    real(kind = DBL_PREC) :: loss, scale_loss
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &
@@ -551,7 +553,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
              FAC_HYPOX_FIX_CYN_D = THETA_HYPOX_FIX_CYN_D ** &
                   (EXPON_HYPOX_FIX_CYN_D * (DO_STR_HYPOX_FIX_CYN_D - DISS_OXYGEN))
          elsewhere
-             FAC_HYPOX_FIX_CYN_D = TIME_STEP / (5.0D-1 * KD_FIX_CYN)
+             FAC_HYPOX_FIX_CYN_D = min(TIME_STEP / (5.0D-1 * KD_FIX_CYN), &
+                                      9.0D-1 / (KD_FIX_CYN * TIME_STEP))
              R_FIX_CYN_INT_RESP = 0.0D0
              R_FIX_CYN_RESP     = 0.0D0
              R_FIX_CYN_GROWTH   = 0.0D0
@@ -563,6 +566,20 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
 
     !Nitrogen fixing cyanobacteria death rate
     R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (FIX_CYN_C(i) > 0.0D0) then
+            loss = R_FIX_CYN_DEATH(i) + R_FIX_CYN_EXCR(i) + R_FIX_CYN_INT_RESP(i) + R_FIX_CYN_RESP(i)
+            if (loss > 0.5D0 * FIX_CYN_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * FIX_CYN_C(i) / TIME_STEP) / loss
+                R_FIX_CYN_DEATH(i) = R_FIX_CYN_DEATH(i) * scale_loss
+                R_FIX_CYN_EXCR(i) = R_FIX_CYN_EXCR(i) * scale_loss
+                R_FIX_CYN_INT_RESP(i) = R_FIX_CYN_INT_RESP(i) * scale_loss
+                R_FIX_CYN_RESP(i) = R_FIX_CYN_RESP(i) * scale_loss
+            end if
+        end if
+    end do
 
     call AMMONIA_DON_PREFS&
          (PREF_NH4_DON_FIX_CYN, NH4_N, DON, &

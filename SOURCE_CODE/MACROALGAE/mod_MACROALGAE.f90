@@ -234,12 +234,12 @@ module MacroAlgae
 
             ! Baly, (1935)
             case (1)
-                PHI_LB = (I_A * exp(K_E*H)) / (K_LB_MAC_ALGAE + (I_A * exp(K_E*H)))
+                PHI_LB = (I_A * exp(-K_E*H)) / (K_LB_MAC_ALGAE + (I_A * exp(-K_E*H)))
 
             ! Smith, (1936)
             case (2)
-                PHI_LB = (I_A * exp(K_E*H)) / &
-                    (sqrt((K_LB_MAC_ALGAE*K_LB_MAC_ALGAE) + (I_A * I_A * exp(K_E*H) * exp(K_E*H))))
+                PHI_LB = (I_A * exp(-K_E*H)) / &
+                    (sqrt((K_LB_MAC_ALGAE*K_LB_MAC_ALGAE) + (I_A * I_A * exp(-K_E*H) * exp(-K_E*H))))
 
             ! Steele, (1962)
             case (3)

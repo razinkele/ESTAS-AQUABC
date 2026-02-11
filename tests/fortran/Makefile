@@ -30,7 +30,7 @@ CHLA_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CHLA.f90
 PARA_AQUA_SRCS = $(CORE_UTILS)/STRING_UTILS.f90
 SETTLING_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_SETTLING.f90
 PH_CORR_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 $(PELAGIC_LIB)/aquabc_II_pelagic_lib_PH_CORR.f90
-IP_SOLUBLE_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IP_SOLUBLE_FRACTION.f90
+IP_SOLUBLE_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 $(AQUABC_SRC)/PELAGIC/aquabc_physical_constants.f90 $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IP_SOLUBLE_FRACTION.f90
 ALLELOPATHY_SRCS = $(ALLELOPATHY_SRC)/mod_ALLELOPATHY.f90 \
     $(ALLELOPATHY_LIB)/allelopathy_INHIBITION_RATES.f90 \
     $(ALLELOPATHY_LIB)/allelopathy_SEC_METABOLITES.f90
@@ -78,6 +78,7 @@ test_ph_corr: test_ph_corr.f90 $(PH_CORR_SRCS)
 # Compile test_ip_soluble
 test_ip_soluble: test_ip_soluble.f90 $(IP_SOLUBLE_SRCS)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/PELAGIC/aquabc_physical_constants.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IP_SOLUBLE_FRACTION.f90
 	$(FC) $(FFLAGS) -o $@ test_ip_soluble.f90 *.o
 
