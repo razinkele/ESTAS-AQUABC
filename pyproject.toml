@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["shiny_app", "tests"]
+python_files = ["test_*.py"]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]

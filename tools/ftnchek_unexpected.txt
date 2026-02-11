@@ -1,2 +1,0 @@
-Unexpected ftnchek lines: 0
-No unexpected ftnchek lines found. Clean.
