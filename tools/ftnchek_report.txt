@@ -1,109 +1,139 @@
 
+Setting: columns outside limits 72 to 132: set to default 132
+
 FTNCHEK Version 3.3 November 2004
 
 File SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90:
-      1 module ALLELOPATHY
+      2 module ALLELOPATHY
         ^
-Error near line 1 col 1 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 2 col 1 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  identifier MODULEALLELOPATHY has embedded space
-      3     implicit none
+      4     implicit none
             ^
-Error near line 3 col 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 4 col 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected end of statement, expecting pointer assignment or '='
-      5     parameter(DBL_ALLEL = selected_real_kind(15, 307))
+      6     parameter(DBL_ALLEL = selected_real_kind(15, 307))
                                   ^
-Error near line 5 col 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 6 col 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  constant expression expected
                                   ^
-Warning near line 5 col 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Warning near line 6 col 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  real expr SELECTED_REAL_KIND(15,30 .. truncated to intg DBL_ALLEL
-      7     real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOFIX_CYN
+      8     real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOFIX_CYN
                  ^
-Warning near line 7 col 10 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: I
+Warning near line 8 col 10 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: I
  do not yet support KIND selectors.  All KINDs are treated as default KIND.
  Checking of type agreement may be incorrect as a result.  (This message is
  only given once.)
-     39     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_DIA
-                                             ^
-Error near line 39 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     40     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOFIX_CYN
-                                             ^
-Error near line 40 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     41     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_FIX_CYN
+     41     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_DIA
                                              ^
 Error near line 41 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     42     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOST
+     42     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_FIX_CYN
                                              ^
 Error near line 42 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     49     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_DIA
+     43     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOFIX_CYN
+                                             ^
+Error near line 43 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     44     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOST
+                                             ^
+Error near line 44 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     45     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA
+                                             ^
+Error near line 45 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     46     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_FIX_CYN
+                                             ^
+Error near line 46 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     47     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOFIX_CYN
+                                             ^
+Error near line 47 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     48     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOST
+                                             ^
+Error near line 48 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     49     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_OPA
                                              ^
 Error near line 49 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     50     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOFIX_CYN
+     50     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_ZOO
                                              ^
 Error near line 50 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     51     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_FIX_CYN
+     51     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN
                                              ^
 Error near line 51 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     52     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOST
+     52     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_DIA
                                              ^
 Error near line 52 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     54     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_DIA
+     53     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN
+                                             ^
+Error near line 53 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     54     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOST
                                              ^
 Error near line 54 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     55     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOFIX_CYN
+     55     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_OPA
                                              ^
 Error near line 55 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     56     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_FIX_CYN
+     56     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_ZOO
                                              ^
 Error near line 56 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     57     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOST
+     57     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN
                                              ^
 Error near line 57 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     59     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOFIX_CYN
+     58     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_DIA
+                                             ^
+Error near line 58 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     59     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN
                                              ^
 Error near line 59 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     60     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_FIX_CYN
+     60     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_NOST
                                              ^
 Error near line 60 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     61     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_NOST
+     61     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_OPA
                                              ^
 Error near line 61 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     62     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_OPA
+     62     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_ZOO
                                              ^
 Error near line 62 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     63     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA_ZOO
+     63     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST
                                              ^
 Error near line 63 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     65     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_DIA
+     64     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_DIA
+                                             ^
+Error near line 64 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     65     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_FIX_CYN
                                              ^
 Error near line 65 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     66     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN
+     66     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_NOFIX_CYN
                                              ^
 Error near line 66 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     67     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN
+     67     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_OPA
                                              ^
 Error near line 67 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     68     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST
+     68     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_ZOO
                                              ^
 Error near line 68 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
@@ -115,334 +145,313 @@ Error near line 69 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90:
                                              ^
 Error near line 70 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     73     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_DIA
+     71     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_DIA
+                                             ^
+Error near line 71 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     72     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_FIX_CYN
+                                             ^
+Error near line 72 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     73     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOFIX_CYN
                                              ^
 Error near line 73 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     74     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN
+     74     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_DEG_SEC_METAB_NOST
                                              ^
 Error near line 74 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     75     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_NOST
+     75     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_DIA
                                              ^
 Error near line 75 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     76     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_OPA
+     76     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_FIX_CYN
                                              ^
 Error near line 76 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     77     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOFIX_CYN_ZOO
+     77     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOFIX_CYN
                                              ^
 Error near line 77 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     79     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_DIA
+     78     real(kind = DBL_ALLEL), dimension(:), allocatable :: R_FORM_SEC_METAB_NOST
+                                             ^
+Error near line 78 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected identifier
+     79     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_DIA
                                              ^
 Error near line 79 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     80     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN
+     80     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_FIX_CYN
                                              ^
 Error near line 80 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     81     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_NOST
+     81     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOFIX_CYN
                                              ^
 Error near line 81 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     82     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_OPA
+     82     real(kind = DBL_ALLEL), dimension(:), allocatable :: SEC_METAB_NOST
                                              ^
 Error near line 82 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     83     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_FIX_CYN_ZOO
+     83     real(kind = DBL_ALLEL), dimension(:), allocatable :: WATER_TEMP
                                              ^
 Error near line 83 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     85     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_DIA
+     84     real(kind = DBL_ALLEL), dimension(:,:), allocatable :: DERIVATIVES_SEC_METAB
                                              ^
-Error near line 85 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 84 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-     86     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_FIX_CYN
-                                             ^
-Error near line 86 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     87     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_NOFIX_CYN
-                                             ^
-Error near line 87 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     88     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_OPA
-                                             ^
-Error near line 88 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     89     real(kind = DBL_ALLEL), dimension(:), allocatable :: IHBF_SEC_METAB_NOST_ZOO
-                                             ^
-Error near line 89 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     91     real(kind = DBL_ALLEL), dimension(:,:), allocatable :: DERIVATIVES_SEC_METAB
-                                             ^
-Error near line 91 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     93     real(kind = DBL_ALLEL), dimension(:), allocatable :: WATER_TEMP
-                                             ^
-Error near line 93 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     94     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_DIA
-                                             ^
-Error near line 94 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     95     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOFIX_CYN
-                                             ^
-Error near line 95 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     96     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_FIX_CYN
-                                             ^
-Error near line 96 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-     97     real(kind = DBL_ALLEL), dimension(:), allocatable :: ALLEL_R_DEATH_NOST
-                                             ^
-Error near line 97 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected identifier
-    101     subroutine ALLOC_ALLEOPATHY(nkn)
+     89     subroutine ALLOC_ALLEOPATHY(nkn)
             ^
-Error near line 101 col 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 89 col 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected end of statement, expecting pointer assignment or '='
-Error near line 101 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: missing
+Error near line 89 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: missing
  END statement inserted prior to statement
-Warning near line 101 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: Module
+Warning near line 89 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: Module
  contains no executable statements
 
 Warning in module %MAIN in file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  Variables declared but never referenced:
-    CONTAINS first occurrence at line 99 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_DEG_SEC_METAB_DIA_20 declared at line 12 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_DEG_SEC_METAB_FIX_CYN_20 declared at line 28 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    CONTAINS first occurrence at line 87 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_DEG_SEC_METAB_DIA_20 declared at line 13 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_DEG_SEC_METAB_FIX_CYN_20 declared at line 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_DEG_SEC_METAB_NOFIX_CYN_20 declared at line 20 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_DEG_SEC_METAB_NOST_20 declared at line 36 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_DIA_FIX_CYN declared at line 8 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_DIA_NOFIX_CYN declared at line 7 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_DIA_NOST declared at line 9 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_DIA_OPA declared at line 10 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_DIA_ZOO declared at line 11 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_FIX_CYN_DIA declared at line 23 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_FIX_CYN_NOFIX_CYN declared at line 24 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_FIX_CYN_NOST declared at line 25 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_FIX_CYN_OPA declared at line 26 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_FIX_CYN_ZOO declared at line 27 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_DEG_SEC_METAB_NOST_20 declared at line 34 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_DIA_FIX_CYN declared at line 9 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_DIA_NOFIX_CYN declared at line 8 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_DIA_NOST declared at line 10 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_DIA_OPA declared at line 11 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_DIA_ZOO declared at line 12 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_FIX_CYN_DIA declared at line 22 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_FIX_CYN_NOFIX_CYN declared at line 23 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_FIX_CYN_NOST declared at line 24 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_FIX_CYN_OPA declared at line 25 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_FIX_CYN_ZOO declared at line 26 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_HS_SEC_METAB_NOFIX_CYN_DIA declared at line 15 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_HS_SEC_METAB_NOFIX_CYN_FIX_CYN declared at line 16 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_HS_SEC_METAB_NOFIX_CYN_NOST declared at line 17 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_HS_SEC_METAB_NOFIX_CYN_OPA declared at line 18 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     K_HS_SEC_METAB_NOFIX_CYN_ZOO declared at line 19 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_NOST_DIA declared at line 31 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_NOST_FIX_CYN declared at line 33 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_NOST_NOFIX_CYN declared at line 32 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_NOST_OPA declared at line 34 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    K_HS_SEC_METAB_NOST_ZOO declared at line 35 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    MODULEALLELOPATHY first occurrence at line 1 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    S_SEC_METAB_TO_DIA declared at line 44 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    S_SEC_METAB_TO_FIX_CYN declared at line 46 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    S_SEC_METAB_TO_NOFIX_CYN declared at line 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    S_SEC_METAB_TO_NOST declared at line 47 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    THETA_K_DEG_SEC_METAB_DIA declared at line 13 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    THETA_K_DEG_SEC_METAB_FIX_CYN declared at line 29 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_NOST_DIA declared at line 29 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_NOST_FIX_CYN declared at line 31 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_NOST_NOFIX_CYN declared at line 30 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_NOST_OPA declared at line 32 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    K_HS_SEC_METAB_NOST_ZOO declared at line 33 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    MODULEALLELOPATHY first occurrence at line 2 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    S_SEC_METAB_TO_DIA declared at line 36 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    S_SEC_METAB_TO_FIX_CYN declared at line 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    S_SEC_METAB_TO_NOFIX_CYN declared at line 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    S_SEC_METAB_TO_NOST declared at line 39 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    THETA_K_DEG_SEC_METAB_DIA declared at line 14 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    THETA_K_DEG_SEC_METAB_FIX_CYN declared at line 28 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
     THETA_K_DEG_SEC_METAB_NOFIX_CYN declared at line 21 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    THETA_K_DEG_SEC_METAB_NOST declared at line 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    THETA_K_DEG_SEC_METAB_NOST declared at line 35 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
 
 Warning in module %MAIN in file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  Variables set but never used:
-    DBL_ALLEL set at line 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    DBL_ALLEL set at line 6 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
 
 Warning in module %MAIN in file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  Identifiers of undeclared type
-    CONTAINS first occurrence at line 99 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    MODULEALLELOPATHY first occurrence at line 1 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    SELECTED_REAL_KIND referenced at line 5 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    104         integer, intent(in) :: nkn
+    CONTAINS first occurrence at line 87 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    MODULEALLELOPATHY first occurrence at line 2 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    SELECTED_REAL_KIND referenced at line 6 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+     92         integer, intent(in) :: nkn
                                ^
-Error near line 104 col 24 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 92 col 24 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected identifier
-    106         allocate(SEC_METAB_DIA                   (nkn))
-                                                          ^
-Error near line 106 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     94         allocate(SEC_METAB_DIA(nkn))
+                                       ^
+Error near line 94 col 32 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    107         allocate(SEC_METAB_NOFIX_CYN             (nkn))
-                                                          ^
-Error near line 107 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     95         allocate(SEC_METAB_NOFIX_CYN(nkn))
+                                             ^
+Error near line 95 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    108         allocate(SEC_METAB_FIX_CYN               (nkn))
-                                                          ^
-Error near line 108 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     96         allocate(SEC_METAB_FIX_CYN(nkn))
+                                           ^
+Error near line 96 col 36 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    109         allocate(SEC_METAB_NOST                  (nkn))
-                                                          ^
-Error near line 109 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     97         allocate(SEC_METAB_NOST(nkn))
+                                        ^
+Error near line 97 col 33 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    110         allocate(R_FORM_SEC_METAB_DIA            (nkn))
-                                                          ^
-Error near line 110 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     98         allocate(R_FORM_SEC_METAB_DIA(nkn))
+                                              ^
+Error near line 98 col 39 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    111         allocate(R_FORM_SEC_METAB_NOFIX_CYN      (nkn))
-                                                          ^
-Error near line 111 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+     99         allocate(R_FORM_SEC_METAB_NOFIX_CYN(nkn))
+                                                    ^
+Error near line 99 col 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    112         allocate(R_FORM_SEC_METAB_FIX_CYN        (nkn))
+    100         allocate(R_FORM_SEC_METAB_FIX_CYN(nkn))
+                                                  ^
+Error near line 100 col 43 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    101         allocate(R_FORM_SEC_METAB_NOST(nkn))
+                                               ^
+Error near line 101 col 40 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    102         allocate(R_DEG_SEC_METAB_DIA(nkn))
+                                             ^
+Error near line 102 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    103         allocate(R_DEG_SEC_METAB_NOFIX_CYN(nkn))
+                                                   ^
+Error near line 103 col 44 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    104         allocate(R_DEG_SEC_METAB_FIX_CYN(nkn))
+                                                 ^
+Error near line 104 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    105         allocate(R_DEG_SEC_METAB_NOST(nkn))
+                                              ^
+Error near line 105 col 39 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    106         allocate(IHBF_SEC_METAB_DIA_NOFIX_CYN(nkn))
+                                                      ^
+Error near line 106 col 47 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    107         allocate(IHBF_SEC_METAB_DIA_FIX_CYN(nkn))
+                                                    ^
+Error near line 107 col 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    108         allocate(IHBF_SEC_METAB_DIA_NOST(nkn))
+                                                 ^
+Error near line 108 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    109         allocate(IHBF_SEC_METAB_DIA_OPA(nkn))
+                                                ^
+Error near line 109 col 41 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    110         allocate(IHBF_SEC_METAB_DIA_ZOO(nkn))
+                                                ^
+Error near line 110 col 41 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    111         allocate(IHBF_SEC_METAB_NOFIX_CYN_DIA(nkn))
+                                                      ^
+Error near line 111 col 47 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    112         allocate(IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN(nkn))
                                                           ^
 Error near line 112 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    113         allocate(R_FORM_SEC_METAB_NOST           (nkn))
-                                                          ^
-Error near line 113 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    113         allocate(IHBF_SEC_METAB_NOFIX_CYN_NOST(nkn))
+                                                       ^
+Error near line 113 col 48 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    114         allocate(R_DEG_SEC_METAB_DIA             (nkn))
-                                                          ^
-Error near line 114 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    114         allocate(IHBF_SEC_METAB_NOFIX_CYN_OPA(nkn))
+                                                      ^
+Error near line 114 col 47 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    115         allocate(R_DEG_SEC_METAB_NOFIX_CYN       (nkn))
-                                                          ^
-Error near line 115 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    115         allocate(IHBF_SEC_METAB_NOFIX_CYN_ZOO(nkn))
+                                                      ^
+Error near line 115 col 47 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    116         allocate(R_DEG_SEC_METAB_FIX_CYN         (nkn))
-                                                          ^
-Error near line 116 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    116         allocate(IHBF_SEC_METAB_FIX_CYN_DIA(nkn))
+                                                    ^
+Error near line 116 col 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    117         allocate(R_DEG_SEC_METAB_NOST            (nkn))
+    117         allocate(IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN(nkn))
                                                           ^
 Error near line 117 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    118         allocate(IHBF_SEC_METAB_DIA_NOFIX_CYN    (nkn))
-                                                          ^
-Error near line 118 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    118         allocate(IHBF_SEC_METAB_FIX_CYN_NOST(nkn))
+                                                     ^
+Error near line 118 col 46 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    119         allocate(IHBF_SEC_METAB_DIA_FIX_CYN      (nkn))
-                                                          ^
-Error near line 119 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    119         allocate(IHBF_SEC_METAB_FIX_CYN_OPA(nkn))
+                                                    ^
+Error near line 119 col 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    120         allocate(IHBF_SEC_METAB_DIA_NOST         (nkn))
-                                                          ^
-Error near line 120 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    120         allocate(IHBF_SEC_METAB_FIX_CYN_ZOO(nkn))
+                                                    ^
+Error near line 120 col 45 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    121         allocate(IHBF_SEC_METAB_DIA_OPA          (nkn))
-                                                          ^
-Error near line 121 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    121         allocate(IHBF_SEC_METAB_NOST_DIA(nkn))
+                                                 ^
+Error near line 121 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    122         allocate(IHBF_SEC_METAB_DIA_ZOO          (nkn))
-                                                          ^
-Error near line 122 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    122         allocate(IHBF_SEC_METAB_NOST_NOFIX_CYN(nkn))
+                                                       ^
+Error near line 122 col 48 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    123         allocate(IHBF_SEC_METAB_NOFIX_CYN_DIA    (nkn))
-                                                          ^
-Error near line 123 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    123         allocate(IHBF_SEC_METAB_NOST_FIX_CYN(nkn))
+                                                     ^
+Error near line 123 col 46 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    124         allocate(IHBF_SEC_METAB_NOFIX_CYN_FIX_CYN(nkn))
-                                                          ^
-Error near line 124 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    124         allocate(IHBF_SEC_METAB_NOST_OPA(nkn))
+                                                 ^
+Error near line 124 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    125         allocate(IHBF_SEC_METAB_NOFIX_CYN_NOST   (nkn))
-                                                          ^
-Error near line 125 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    125         allocate(IHBF_SEC_METAB_NOST_ZOO(nkn))
+                                                 ^
+Error near line 125 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    126         allocate(IHBF_SEC_METAB_NOFIX_CYN_OPA    (nkn))
-                                                          ^
-Error near line 126 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    126         allocate(IHBF_SEC_METAB_DIA(nkn))
+                                            ^
+Error near line 126 col 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    127         allocate(IHBF_SEC_METAB_NOFIX_CYN_ZOO    (nkn))
-                                                          ^
-Error near line 127 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    127         allocate(IHBF_SEC_METAB_NOFIX_CYN(nkn))
+                                                  ^
+Error near line 127 col 43 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    128         allocate(IHBF_SEC_METAB_FIX_CYN_DIA      (nkn))
-                                                          ^
-Error near line 128 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    128         allocate(IHBF_SEC_METAB_FIX_CYN(nkn))
+                                                ^
+Error near line 128 col 41 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    129         allocate(IHBF_SEC_METAB_FIX_CYN_NOFIX_CYN(nkn))
-                                                          ^
-Error near line 129 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    129         allocate(IHBF_SEC_METAB_NOST(nkn))
+                                             ^
+Error near line 129 col 38 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    130         allocate(IHBF_SEC_METAB_FIX_CYN_NOST     (nkn))
-                                                          ^
-Error near line 130 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    130         allocate(IHBF_SEC_METAB_OPA(nkn))
+                                            ^
+Error near line 130 col 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    131         allocate(IHBF_SEC_METAB_FIX_CYN_OPA      (nkn))
-                                                          ^
-Error near line 131 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    131         allocate(IHBF_SEC_METAB_ZOO(nkn))
+                                            ^
+Error near line 131 col 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    132         allocate(IHBF_SEC_METAB_FIX_CYN_ZOO      (nkn))
-                                                          ^
-Error near line 132 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    133         allocate(IHBF_SEC_METAB_NOST_DIA         (nkn))
-                                                          ^
-Error near line 133 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    134         allocate(IHBF_SEC_METAB_NOST_NOFIX_CYN   (nkn))
-                                                          ^
-Error near line 134 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    135         allocate(IHBF_SEC_METAB_NOST_FIX_CYN     (nkn))
-                                                          ^
-Error near line 135 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    136         allocate(IHBF_SEC_METAB_NOST_OPA         (nkn))
-                                                          ^
-Error near line 136 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    137         allocate(IHBF_SEC_METAB_NOST_ZOO         (nkn))
-                                                          ^
-Error near line 137 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    138         allocate(IHBF_SEC_METAB_DIA              (nkn))
-                                                          ^
-Error near line 138 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    139         allocate(IHBF_SEC_METAB_NOFIX_CYN        (nkn))
-                                                          ^
-Error near line 139 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    140         allocate(IHBF_SEC_METAB_FIX_CYN          (nkn))
-                                                          ^
-Error near line 140 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    141         allocate(IHBF_SEC_METAB_NOST             (nkn))
-                                                          ^
-Error near line 141 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    142         allocate(IHBF_SEC_METAB_OPA              (nkn))
-                                                          ^
-Error near line 142 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    143         allocate(IHBF_SEC_METAB_ZOO              (nkn))
-                                                          ^
-Error near line 143 col 51 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    145         allocate(DERIVATIVES_SEC_METAB(nkn, 4))
+    133         allocate(DERIVATIVES_SEC_METAB(nkn,4))
                                                ^
-Error near line 145 col 40 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 133 col 40 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    147         allocate(WATER_TEMP             (nkn))
+    135         allocate(WATER_TEMP(nkn))
+                                    ^
+Error near line 135 col 29 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    136         allocate(ALLEL_R_DEATH_DIA(nkn))
+                                           ^
+Error near line 136 col 36 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+ syntax error, unexpected '(', expecting ')' or ','
+    137         allocate(ALLEL_R_DEATH_NOFIX_CYN(nkn))
                                                  ^
-Error near line 147 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+Error near line 137 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    148         allocate(ALLEL_R_DEATH_DIA      (nkn))
-                                                 ^
-Error near line 148 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    138         allocate(ALLEL_R_DEATH_FIX_CYN(nkn))
+                                               ^
+Error near line 138 col 40 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    149         allocate(ALLEL_R_DEATH_NOFIX_CYN(nkn))
-                                                 ^
-Error near line 149 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
+    139         allocate(ALLEL_R_DEATH_NOST(nkn))
+                                            ^
+Error near line 139 col 37 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
  syntax error, unexpected '(', expecting ')' or ','
-    150         allocate(ALLEL_R_DEATH_FIX_CYN  (nkn))
-                                                 ^
-Error near line 150 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    151         allocate(ALLEL_R_DEATH_NOST     (nkn))
-                                                 ^
-Error near line 151 col 42 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: 
- syntax error, unexpected '(', expecting ')' or ','
-    152     end subroutine ALLOC_ALLEOPATHY
-Warning near line 152 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: Module
+    140     end subroutine ALLOC_ALLEOPATHY
+Warning near line 140 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90: Module
  contains no executable statements
 
 Warning in module ALLOC_ALLEOPATHY in file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
  : Variables declared but never referenced:
-    ALLEL_R_DEATH_DIA first occurrence at line 148 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    ALLEL_R_DEATH_FIX_CYN first occurrence at line 150 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    ALLEL_R_DEATH_NOFIX_CYN first occurrence at line 149 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    ALLEL_R_DEATH_NOST first occurrence at line 151 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
-    DERIVATIVES_SEC_METAB first occu*** buffer overflow detected ***: terminated
+    ALLEL_R_DEATH_DIA first occurrence at line 136 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    ALLEL_R_DEATH_FIX_CYN first occurrence at line 138 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    ALLEL_R_DEATH_NOFIX_CYN first occurrence at line 137 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    ALLEL_R_DEATH_NOST first occurrence at line 139 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    DERIVATIVES_SEC_METAB first occurrence at line 133 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA first occurrence at line 126 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA_FIX_CYN first occurrence at line 107 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA_NOFIX_CYN first occurrence at line 106 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA_NOST first occurrence at line 108 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA_OPA first occurrence at line 109 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_METAB_DIA_ZOO first occurrence at line 110 file SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90
+    IHBF_SEC_*** buffer overflow detected ***: terminated
 xargs: ftnchek: terminated by signal 6
