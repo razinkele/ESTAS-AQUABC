@@ -214,13 +214,13 @@ module MacroAlgae
             Q_P_MAC_ALGAE = 0.0D0
         end where
 
-        MAC_ALGAE_GROWTH_N_LIM = 1.0 - (Q_ZERO_N_MAC_ALGAE / Q_N_MAC_ALGAE)
+        MAC_ALGAE_GROWTH_N_LIM = 1.0 - (Q_ZERO_N_MAC_ALGAE / max(Q_N_MAC_ALGAE, 1.0D-20))
 
         where (MAC_ALGAE_GROWTH_N_LIM < 0.0D0)
             MAC_ALGAE_GROWTH_N_LIM = 0.0D0
         end where
 
-        MAC_ALGAE_GROWTH_P_LIM = 1.0 - (Q_ZERO_P_MAC_ALGAE / Q_P_MAC_ALGAE)
+        MAC_ALGAE_GROWTH_P_LIM = 1.0 - (Q_ZERO_P_MAC_ALGAE / max(Q_P_MAC_ALGAE, 1.0D-20))
         
         where (MAC_ALGAE_GROWTH_P_LIM < 0.0D0)
             MAC_ALGAE_GROWTH_P_LIM = 0.0D0
