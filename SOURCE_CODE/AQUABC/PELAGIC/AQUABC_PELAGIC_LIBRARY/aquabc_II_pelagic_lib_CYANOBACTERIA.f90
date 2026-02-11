@@ -66,6 +66,7 @@ subroutine CYANOBACTERIA &
             PREF_NH4N_DON_CYN)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     implicit none
 
     ! -------------------------------------------------------------------------
@@ -166,12 +167,12 @@ subroutine CYANOBACTERIA &
 
     if (smith .eq. 0) then
         !May be replaced by Smith formulation
-        ALPHA_0 = (I_A / I_S_CYN) * exp(-1.0D0 * K_E * 0.0D0)
-        ALPHA_1 = (I_A / I_S_CYN) * exp(-1.0D0 * K_E * DEPTH)
+        ALPHA_0 = (I_A / I_S_CYN) * safe_exp(-1.0D0 * K_E * 0.0D0)
+        ALPHA_1 = (I_A / I_S_CYN) * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_CYN_LIGHT = &
             (((2.718 * FDAY) / (K_E * DEPTH)) * &
-             (exp(-1.0D0 * ALPHA_1) - exp(-1.0D0 * ALPHA_0)))
+             (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
     end if
 
     if (smith .eq. 1) then
@@ -314,6 +315,7 @@ subroutine CYANOBACTERIA_BOUYANT &
             PREF_NH4N_CYN )
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
 
     implicit none
@@ -419,12 +421,12 @@ subroutine CYANOBACTERIA_BOUYANT &
 
     if (smith .eq. 0) then
         !May be replaced by Smith formulation
-        ALPHA_0 = (I_A / I_S_CYN) * exp(-1.0D0 * K_E * 0.0D0)
-        ALPHA_1 = (I_A / I_S_CYN) * exp(-1.0D0 * K_E * DEPTH)
+        ALPHA_0 = (I_A / I_S_CYN) * safe_exp(-1.0D0 * K_E * 0.0D0)
+        ALPHA_1 = (I_A / I_S_CYN) * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_CYN_LIGHT = &
             (((2.718 * FDAY) / (K_E * DEPTH)) * &
-             (exp(-1.0D0 * ALPHA_1) - exp(-1.0D0 * ALPHA_0)))
+             (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
     end if
 
     if (smith .eq. 1) then

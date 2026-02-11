@@ -106,6 +106,7 @@ module MacroAlgae
          PON_TO_WC_MALG_ATT_DETPON_DEATT         , & ! SUBMODEL_OUTPUT: Release of particulate organic nitrogen to the water column by macro algeae based attached dead POC deattachment   (gN/m^3/day)
          POP_TO_WC_MALG_ATT_DETPOP_DEATT           & ! SUBMODEL_OUTPUT: Release of particulate organic phosphorus to the water column by macro algeae based attached dead POC deattachment (gP/m^3/day)
     )
+        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
         implicit none
 
         ! -----------------------------------------------------------------------------------------
@@ -234,17 +235,17 @@ module MacroAlgae
 
             ! Baly, (1935)
             case (1)
-                PHI_LB = (I_A * exp(-K_E*H)) / (K_LB_MAC_ALGAE + (I_A * exp(-K_E*H)))
+                PHI_LB = (I_A * safe_exp(-K_E*H)) / (K_LB_MAC_ALGAE + (I_A * safe_exp(-K_E*H)))
 
             ! Smith, (1936)
             case (2)
-                PHI_LB = (I_A * exp(-K_E*H)) / &
-                    (sqrt((K_LB_MAC_ALGAE*K_LB_MAC_ALGAE) + (I_A * I_A * exp(-K_E*H) * exp(-K_E*H))))
+                PHI_LB = (I_A * safe_exp(-K_E*H)) / &
+                    (sqrt((K_LB_MAC_ALGAE*K_LB_MAC_ALGAE) + (I_A * I_A * safe_exp(-K_E*H) * safe_exp(-K_E*H))))
 
             ! Steele, (1962)
             case (3)
-                PHI_LB = (I_A * exp(-K_E * H) / K_LB_MAC_ALGAE) * &
-                    exp(1.0 + ((I_A*exp(-K_E*H))/K_LB_MAC_ALGAE))
+                PHI_LB = (I_A * safe_exp(-K_E * H) / K_LB_MAC_ALGAE) * &
+                    safe_exp(1.0 + ((I_A*safe_exp(-K_E*H))/K_LB_MAC_ALGAE))
 
             case default
                 PHI_LB = 0.0D0

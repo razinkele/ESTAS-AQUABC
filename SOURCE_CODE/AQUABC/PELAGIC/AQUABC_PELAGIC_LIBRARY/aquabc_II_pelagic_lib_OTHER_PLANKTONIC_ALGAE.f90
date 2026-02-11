@@ -63,6 +63,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
             PREF_NH4N_OPA)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     implicit none
 
     ! -------------------------------------------------------------------------
@@ -142,8 +143,8 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
 
-    ALPHA_0 = (I_A / I_S_OPA) * exp(-1.0D0 * K_E * 0.0D0)
-    ALPHA_1 = (I_A / I_S_OPA) * exp(-1.0D0 * K_E * DEPTH)
+    ALPHA_0 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * 0.0D0)
+    ALPHA_1 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * DEPTH)
 
     ! Temperature limitation for growth
     call GROWTH_AT_TEMP &
@@ -163,7 +164,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
         !May be replaced by Smith formulation
         LIM_KG_OPA_LIGHT = &
              (((2.718 * FDAY) / (K_E * DEPTH)) * &
-              (exp(-1.0D0 * ALPHA_1) - exp(-1.0D0 * ALPHA_0)))
+              (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
     end if
 
     if (smith .eq. 1) then

@@ -79,6 +79,7 @@ subroutine NOSTOCALES &
             R_MORT_AKI                        , &
             KM_DENS_VEG_HET)
 
+   use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -209,12 +210,12 @@ subroutine NOSTOCALES &
    ! Calculate the light limitation factor
    ! ------------------------------------------------------------------------------------
     if (smith .eq. 0) then
-        ALPHA_0 = (I_A / I_S_NOST_VEG_HET) * exp(-1.0D0 * K_E * 0.0D0)
-        ALPHA_1 = (I_A / I_S_NOST_VEG_HET) * exp(-1.0D0 * K_E * DEPTH)
+        ALPHA_0 = (I_A / I_S_NOST_VEG_HET) * safe_exp(-1.0D0 * K_E * 0.0D0)
+        ALPHA_1 = (I_A / I_S_NOST_VEG_HET) * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_NOST_VEG_HET_LIGHT = &
             (((2.718 * FDAY) / (K_E * DEPTH)) * &
-             (exp(-1.0D0 * ALPHA_1) - exp(-1.0D0 * ALPHA_0)))
+             (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
     end if
 
     if (smith .eq. 1) then
