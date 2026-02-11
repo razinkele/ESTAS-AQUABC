@@ -11,7 +11,7 @@
 !
 !                       Initial development 6 th of July 2016
 !
-!                                by Ali Ertürk
+!                                by Ali Ertï¿½rk
 ! -----------------------------------------------------------------------------
 subroutine IP_SOLUBLE_FRACTION &
             (FE_III, PO4P, K_A_1, K_A_2, K_A_3, PH, nkn, nlayers, DIP_OVER_IP)
@@ -53,9 +53,13 @@ subroutine IP_SOLUBLE_FRACTION &
     ! Main equation
     ! KS0 = (C_T_FE_III / COEFF_1) * (C_T_PO4 / COEFF_2)
     !   ==> C_T_PO4 = (KS0 * COEFF_1 * COEFF_2) / C_T_FE_III
-    C_T_PO4 = (KS0 * COEFF_1 * COEFF_2) / C_T_FE_III
-
-    DIP_OVER_IP = C_T_PO4 / C_T_FE_III
+    where (C_T_FE_III > 1.0D-30)
+        C_T_PO4     = (KS0 * COEFF_1 * COEFF_2) / C_T_FE_III
+        DIP_OVER_IP = C_T_PO4 / C_T_FE_III
+    elsewhere
+        ! No Fe(III) present: all phosphorus remains dissolved
+        DIP_OVER_IP = 1.0D0
+    end where
 
     where(DIP_OVER_IP > 1.0D0)
         DIP_OVER_IP = 1.0D0

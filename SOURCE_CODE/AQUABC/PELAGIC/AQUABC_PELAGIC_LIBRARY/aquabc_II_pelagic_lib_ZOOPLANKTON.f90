@@ -190,6 +190,7 @@ subroutine ZOOPLANKTON &
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_NOST
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_DET
     real(kind = DBL_PREC) :: SWITCHING_POWER
+    real(kind = DBL_PREC) :: loss, scale_loss
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
@@ -374,7 +375,8 @@ subroutine ZOOPLANKTON &
                  (EXPON_HYPOX_ZOO_D * &
                      (DO_STR_HYPOX_ZOO_D - DISS_OXYGEN))
          elsewhere
-             FAC_HYPOX_ZOO_D = TIME_STEP / (5.0D-1 * KD_ZOO)
+             FAC_HYPOX_ZOO_D = min(TIME_STEP / (5.0D-1 * KD_ZOO), &
+                                  9.0D-1 / (KD_ZOO * TIME_STEP))
              R_ZOO_FEEDING_DIA            = 0.0D0
              R_ZOO_FEEDING_CYN            = 0.0D0
              R_ZOO_FEEDING_FIX_CYN        = 0.0D0
@@ -393,4 +395,18 @@ subroutine ZOOPLANKTON &
     end if
 
     R_ZOO_DEATH = KD_ZOO * FAC_HYPOX_ZOO_D * ZOO_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (ZOO_C(i) > 0.0D0) then
+            loss = R_ZOO_DEATH(i) + R_ZOO_INT_RESP(i) + R_ZOO_RESP(i)
+            if (loss > 0.5D0 * ZOO_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * ZOO_C(i) / TIME_STEP) / loss
+                R_ZOO_DEATH(i) = R_ZOO_DEATH(i) * scale_loss
+                R_ZOO_INT_RESP(i) = R_ZOO_INT_RESP(i) * scale_loss
+                R_ZOO_RESP(i) = R_ZOO_RESP(i) * scale_loss
+            end if
+        end if
+    end do
+
 end subroutine ZOOPLANKTON

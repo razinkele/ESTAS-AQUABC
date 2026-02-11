@@ -12,7 +12,7 @@
 !
 !                       Initial development 2 nd of July 2016
 !
-!                                by Ali Ertürk
+!                                by Ali Ertï¿½rk
 ! -----------------------------------------------------------------------------
 subroutine IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_TOT)
     use AQUABC_II_GLOBAL
@@ -71,8 +71,13 @@ subroutine IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_TOT)
         ((K_1  / (K_W * K_W)) * H_PLUS * H_PLUS) + ((K_2 / K_W) * H_PLUS) + &
         ((K_3 * K_W) / H_PLUS)
 
-    ALL_FE_II(:,2) = &
-        ((H_PLUS + (2.0D0 * K_6)) / (TOT_ALK * K_6)) * (K_4 + ((K_5 * K_W) / H_PLUS))
+    where (TOT_ALK > 1.0D-30)
+        ALL_FE_II(:,2) = &
+            ((H_PLUS + (2.0D0 * K_6)) / (TOT_ALK * K_6)) * (K_4 + ((K_5 * K_W) / H_PLUS))
+    elsewhere
+        ! No alkalinity: FeCO3 solubility effectively infinite (not limiting)
+        ALL_FE_II(:,2) = huge(1.0D0)
+    end where
 
     ALL_FE_II(:,3) = 1.0D0
 
@@ -99,7 +104,7 @@ end subroutine IRON_II_DISSOLUTION
 !
 !                       Initial development 6 th of July 2016
 !
-!                                by Ali Ertürk
+!                                by Ali Ertï¿½rk
 ! -----------------------------------------------------------------------------
 subroutine IRON_II_OXIDATION(FE_II_DISS, DOXY, PH, TEMP, SALT, ELEVATION, nkn, R_FE_II_OXIDATION)
     use AQUABC_II_GLOBAL

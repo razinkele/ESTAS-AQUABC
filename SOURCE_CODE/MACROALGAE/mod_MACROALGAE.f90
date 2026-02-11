@@ -186,12 +186,14 @@ module MacroAlgae
         real(kind = DBL_PREC), dimension(nkn) :: MAC_ALGAE_ATT_DETPOC_DISS ! Process rate of attached dead organic carbon dissolution      (gC/m^2/day)
         real(kind = DBL_PREC), dimension(nkn) :: MAC_ALGAE_ATT_DETPON_DISS ! Process rate of attached dead organic nitrogen dissolution    (gN/m^2/day)
         real(kind = DBL_PREC), dimension(nkn) :: MAC_ALGAE_ATT_DETPOP_DISS ! Process rate of attached dead organic phposphorus dissolution (gN/m^2/day)
+        real(kind = DBL_PREC), dimension(nkn) :: H_SAFE                    ! Water depth clamped to avoid division by zero                 (m)
 
         ! -------------------------------------------------------------------------------
         ! END OF DECLATATIONS, CALCULATIONS START HERE
         ! -------------------------------------------------------------------------------
         
         WC_DIN = WC_NH4N + WC_NO3N
+        H_SAFE = max(H, 1.0D-20)
 
         ! -------------------------------------------------------------------------------
         ! MARCO ALGAE CARBON
@@ -203,8 +205,14 @@ module MacroAlgae
 
         ! Calculate the nutrient limitation for macro algae
         ! PHI_NB : Nutrient limitation
-        Q_N_MAC_ALGAE = MAC_ALGAE_N / MAC_ALGAE_C
-        Q_P_MAC_ALGAE = MAC_ALGAE_P / MAC_ALGAE_C
+        ! Guard against division by zero when biomass is absent
+        where (MAC_ALGAE_C > 1.0D-20)
+            Q_N_MAC_ALGAE = MAC_ALGAE_N / MAC_ALGAE_C
+            Q_P_MAC_ALGAE = MAC_ALGAE_P / MAC_ALGAE_C
+        elsewhere
+            Q_N_MAC_ALGAE = 0.0D0
+            Q_P_MAC_ALGAE = 0.0D0
+        end where
 
         MAC_ALGAE_GROWTH_N_LIM = 1.0 - (Q_ZERO_N_MAC_ALGAE / Q_N_MAC_ALGAE)
 
@@ -237,6 +245,9 @@ module MacroAlgae
             case (3)
                 PHI_LB = (I_A * exp(-K_E * H) / K_LB_MAC_ALGAE) * &
                     exp(1.0 + ((I_A*exp(-K_E*H))/K_LB_MAC_ALGAE))
+
+            case default
+                PHI_LB = 0.0D0
         end select
 
         ! Calculate the space limitation for macro algae
@@ -244,7 +255,7 @@ module MacroAlgae
         PHI_SB = 1.0D0 - (MAC_ALGAE_C/MAC_ALGAE_C_MAX)
 
         where (PHI_LB < 0.0D0)
-            PHI_SB = 0.0D0
+            PHI_LB = 0.0D0
         end where
 
         MAC_ALGAE_GROWTH = C_GB * PHI_NB * PHI_LB * PHI_SB * MAC_ALGAE_C
@@ -287,28 +298,32 @@ module MacroAlgae
 
         ! Calculate the macro algae preference to uptake ammonia nitrogen
         ! over nitrate nitrogen
-        MAC_ALGAE_NH4N_PREF = &
-            ((WC_NH4N * WC_NO3N) / &
-             ((KHS_NH4PREF_MAC_ALGAE + WC_NH4N) * (KHS_NH4PREF_MAC_ALGAE + WC_NO3N))) + &
-            ((WC_NH4N * KHS_NH4PREF_MAC_ALGAE) / (WC_DIN* (KHS_NH4PREF_MAC_ALGAE + WC_NO3N)))
+        where (WC_DIN > 1.0D-20)
+            MAC_ALGAE_NH4N_PREF = &
+                ((WC_NH4N * WC_NO3N) / &
+                 ((KHS_NH4PREF_MAC_ALGAE + WC_NH4N) * (KHS_NH4PREF_MAC_ALGAE + WC_NO3N))) + &
+                ((WC_NH4N * KHS_NH4PREF_MAC_ALGAE) / (WC_DIN * (KHS_NH4PREF_MAC_ALGAE + WC_NO3N)))
+        elsewhere
+            MAC_ALGAE_NH4N_PREF = 0.0D0
+        end where
 
         ! Effects of macro algae growth on water column nutrients and dissolved oxygen
-        DIC_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_GROWTH / H
-        NH4N_UPTAKE_FROM_WC_MALG_GROWTH = (MAC_ALGAE_NH4N_PREF * MAC_ALGAE_N_UPTAKE) / H
-        NO3N_UPTAKE_FROM_WC_MALG_GROWTH = ((1.0 - MAC_ALGAE_NH4N_PREF) * MAC_ALGAE_N_UPTAKE) / H
-        SRP_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_P_UPTAKE / H
-        DO2_TO_WC_MALG_GROWTH           = (A_O2_TO_C_MAC_ALGAE * MAC_ALGAE_GROWTH) / H
+        DIC_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_GROWTH / H_SAFE
+        NH4N_UPTAKE_FROM_WC_MALG_GROWTH = (MAC_ALGAE_NH4N_PREF * MAC_ALGAE_N_UPTAKE) / H_SAFE
+        NO3N_UPTAKE_FROM_WC_MALG_GROWTH = ((1.0 - MAC_ALGAE_NH4N_PREF) * MAC_ALGAE_N_UPTAKE) / H_SAFE
+        SRP_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_P_UPTAKE / H_SAFE
+        DO2_TO_WC_MALG_GROWTH           = (A_O2_TO_C_MAC_ALGAE * MAC_ALGAE_GROWTH) / H_SAFE
 
         ! Effects of macro algae respiration on water column nutrients and dissolved oxygen
-        DIC_TO_WC_MALG_RESP          = MAC_ALGAE_RESP                         / H
-        NH4N_TO_WC_MALG_RESP         = (MAC_ALGAE_RESP * Q_N_MAC_ALGAE)       / H
-        SRP_TO_WC_MALG_RESP          = (MAC_ALGAE_RESP * Q_P_MAC_ALGAE)       / H
-        DO2_UPTAKE_FROM_WC_MALG_RESP = (MAC_ALGAE_RESP * A_O2_TO_C_MAC_ALGAE) / H
+        DIC_TO_WC_MALG_RESP          = MAC_ALGAE_RESP                         / H_SAFE
+        NH4N_TO_WC_MALG_RESP         = (MAC_ALGAE_RESP * Q_N_MAC_ALGAE)       / H_SAFE
+        SRP_TO_WC_MALG_RESP          = (MAC_ALGAE_RESP * Q_P_MAC_ALGAE)       / H_SAFE
+        DO2_UPTAKE_FROM_WC_MALG_RESP = (MAC_ALGAE_RESP * A_O2_TO_C_MAC_ALGAE) / H_SAFE
 
         ! Effects of macro algae excretion on water column nutrients
-        DOC_TO_WC_MALG_EXCR  = MAC_ALGAE_EXCR / H
-        DON_TO_WC_MALG_EXCR  = (MAC_ALGAE_EXCR * Q_N_MAC_ALGAE) / H
-        DOP_TO_WC_MALG_EXCR  = (MAC_ALGAE_EXCR * Q_P_MAC_ALGAE) / H
+        DOC_TO_WC_MALG_EXCR  = MAC_ALGAE_EXCR / H_SAFE
+        DON_TO_WC_MALG_EXCR  = (MAC_ALGAE_EXCR * Q_N_MAC_ALGAE) / H_SAFE
+        DOP_TO_WC_MALG_EXCR  = (MAC_ALGAE_EXCR * Q_P_MAC_ALGAE) / H_SAFE
         
         ! -------------------------------------------------------------------------------
         ! END OF MACRO ALGAGE NITROGEN AND PHOSPHORUS
@@ -334,21 +349,21 @@ module MacroAlgae
         d_MALG_ATT_DETPOP_over_dt = (Q_P_MAC_ALGAE * MAC_ALGAE_DEATH) - MAC_ALGAE_ATT_DETPOP_DISS
 
         ! Effects of particulate dead organic matter dissolution on water column
-        DOC_TO_WC_MALG_ATT_DETPOC_DISS = MAC_ALGAE_ATT_DETPOC_DISS / H
-        DON_TO_WC_MALG_ATT_DETPON_DISS = MAC_ALGAE_ATT_DETPON_DISS / H
-        DOP_TO_WC_MALG_ATT_DETPOP_DISS = MAC_ALGAE_ATT_DETPOP_DISS / H
+        DOC_TO_WC_MALG_ATT_DETPOC_DISS = MAC_ALGAE_ATT_DETPOC_DISS / H_SAFE
+        DON_TO_WC_MALG_ATT_DETPON_DISS = MAC_ALGAE_ATT_DETPON_DISS / H_SAFE
+        DOP_TO_WC_MALG_ATT_DETPOP_DISS = MAC_ALGAE_ATT_DETPOP_DISS / H_SAFE
 
         ! -------------------------------------------------------------------------------
         ! END OF DEAD ORGANIC MATTER
         ! -------------------------------------------------------------------------------
 
         ! Effects of macroalgae biomass and macroalgae based attached detritus deattachment
-        POC_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * MAC_ALGAE_C)                 / H        
-        PON_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * Q_N_MAC_ALGAE * MAC_ALGAE_C) / H 
-        POP_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * Q_P_MAC_ALGAE * MAC_ALGAE_C) / H
-        POC_TO_WC_MALG_ATT_DETPOC_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPOC)        / H
-        PON_TO_WC_MALG_ATT_DETPON_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPON)        / H
-        POP_TO_WC_MALG_ATT_DETPOP_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPOP)        / H
+        POC_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * MAC_ALGAE_C)                 / H_SAFE        
+        PON_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * Q_N_MAC_ALGAE * MAC_ALGAE_C) / H_SAFE 
+        POP_TO_WC_MALG_DEATT            = (k_DEATT_MAC_ALGAGE   * Q_P_MAC_ALGAE * MAC_ALGAE_C) / H_SAFE
+        POC_TO_WC_MALG_ATT_DETPOC_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPOC)        / H_SAFE
+        PON_TO_WC_MALG_ATT_DETPON_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPON)        / H_SAFE
+        POP_TO_WC_MALG_ATT_DETPOP_DEATT = (k_DEATT_MALG_ATT_DET * MAC_ALGAE_ATT_DETPOP)        / H_SAFE
 
     end subroutine MACRO_ALGAE_KINETICS
     

@@ -124,6 +124,7 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: KG_DIA
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: ALPHA_0
     integer :: i, imax
+    real(kind = DBL_PREC) :: loss, scale_loss
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: ALPHA_1
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: LIM_KG_DIA_TEMP
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: LIM_KG_DIA_LIGHT
@@ -214,7 +215,8 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
                     (EXPON_HYPOX_DIA_D * &
                         (DO_STR_HYPOX_DIA_D - DISS_OXYGEN))
             elsewhere
-                FAC_HYPOX_DIA_D = TIME_STEP / (5.0D-1 * KD_DIA)
+                FAC_HYPOX_DIA_D = min(TIME_STEP / (5.0D-1 * KD_DIA), &
+                                      9.0D-1 / (KD_DIA * TIME_STEP))
                 R_DIA_INT_RESP = 0.0D0
                 R_DIA_RESP     = 0.0D0
                 R_DIA_GROWTH   = 0.0D0
@@ -225,6 +227,20 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     end if
 
     R_DIA_DEATH = KD_DIA * FAC_HYPOX_DIA_D * DIA_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (DIA_C(i) > 0.0D0) then
+            loss = R_DIA_DEATH(i) + R_DIA_EXCR(i) + R_DIA_INT_RESP(i) + R_DIA_RESP(i)
+            if (loss > 0.5D0 * DIA_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * DIA_C(i) / TIME_STEP) / loss
+                R_DIA_DEATH(i) = R_DIA_DEATH(i) * scale_loss
+                R_DIA_EXCR(i) = R_DIA_EXCR(i) * scale_loss
+                R_DIA_INT_RESP(i) = R_DIA_INT_RESP(i) * scale_loss
+                R_DIA_RESP(i) = R_DIA_RESP(i) * scale_loss
+            end if
+        end if
+    end do
 
     call AMMONIA_PREFS(PREF_NH4N_DIA,NH4_N, NO3_N, KHS_DIN_DIA,nkn)
 end subroutine DIATOMS

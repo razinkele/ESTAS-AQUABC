@@ -250,7 +250,8 @@ subroutine FIX_CYANOBACTERIA  &
                     THETA_HYPOX_FIX_CYN_D ** &
                       (EXPON_HYPOX_FIX_CYN_D * (DO_STR_HYPOX_FIX_CYN_D - DISS_OXYGEN))
             elsewhere
-                FAC_HYPOX_FIX_CYN_D = TIME_STEP / (5.0D-1 * KD_FIX_CYN)
+                FAC_HYPOX_FIX_CYN_D = min(TIME_STEP / (5.0D-1 * KD_FIX_CYN), &
+                                          9.0D-1 / (KD_FIX_CYN * TIME_STEP))
                 R_FIX_CYN_INT_RESP = 0.0D0
                 R_FIX_CYN_RESP     = 0.0D0
                 R_FIX_CYN_GROWTH   = 0.0D0

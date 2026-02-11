@@ -139,6 +139,8 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
+    integer :: i
+    real(kind = DBL_PREC) :: loss, scale_loss
 
     ALPHA_0 = (I_A / I_S_OPA) * exp(-1.0D0 * K_E * 0.0D0)
     ALPHA_1 = (I_A / I_S_OPA) * exp(-1.0D0 * K_E * DEPTH)
@@ -206,7 +208,8 @@ subroutine OTHER_PLANKTONIC_ALGAE &
                  (EXPON_HYPOX_OPA_D * &
                      (DO_STR_HYPOX_OPA_D - DISS_OXYGEN))
          elsewhere
-             FAC_HYPOX_OPA_D = TIME_STEP / (5.0D-1 * KD_OPA)
+             FAC_HYPOX_OPA_D = min(TIME_STEP / (5.0D-1 * KD_OPA), &
+                                  9.0D-1 / (KD_OPA * TIME_STEP))
              R_OPA_INT_RESP  = 0.0D0
              R_OPA_RESP      = 0.0D0
              R_OPA_GROWTH    = 0.0D0
@@ -218,6 +221,20 @@ subroutine OTHER_PLANKTONIC_ALGAE &
 
     !Other planktonic algae death rate
     R_OPA_DEATH = KD_OPA * FAC_HYPOX_OPA_D * OPA_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (OPA_C(i) > 0.0D0) then
+            loss = R_OPA_DEATH(i) + R_OPA_EXCR(i) + R_OPA_INT_RESP(i) + R_OPA_RESP(i)
+            if (loss > 0.5D0 * OPA_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * OPA_C(i) / TIME_STEP) / loss
+                R_OPA_DEATH(i) = R_OPA_DEATH(i) * scale_loss
+                R_OPA_EXCR(i) = R_OPA_EXCR(i) * scale_loss
+                R_OPA_INT_RESP(i) = R_OPA_INT_RESP(i) * scale_loss
+                R_OPA_RESP(i) = R_OPA_RESP(i) * scale_loss
+            end if
+        end if
+    end do
 
     !PREF_NH4N_OPA = NH4_N / (NH4_N + KHS_NH4N_PREF_OPA)
     call AMMONIA_PREFS(PREF_NH4N_OPA, NH4_N, NO3_N, KHS_DIN_OPA,nkn)

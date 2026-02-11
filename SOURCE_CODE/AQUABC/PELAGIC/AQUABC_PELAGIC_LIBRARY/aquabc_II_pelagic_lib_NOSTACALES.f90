@@ -178,6 +178,8 @@ subroutine NOSTOCALES &
    double precision NOST_LIGHT_SAT(nkn) !light saturation obtained fom lim_light, just for control
 
    integer, dimension(nkn)  :: IND_GERM ! Indicator of germination start
+   integer :: i
+   double precision :: loss, scale_loss
    ! ------------------------------------------------------------------------------------
 
 
@@ -304,7 +306,8 @@ subroutine NOSTOCALES &
              FAC_HYPOX_NOST_VEG_HET_D = THETA_HYPOX_NOST_VEG_HET_D ** &
                   (EXPON_HYPOX_NOST_VEG_HET_D * (DO_STR_HYPOX_NOST_VEG_HET_D - DISS_OXYGEN))
          elsewhere
-             FAC_HYPOX_NOST_VEG_HET_D = TIME_STEP / (5.0D-1 * RD_NOST_VEG_HET)
+             FAC_HYPOX_NOST_VEG_HET_D = min(TIME_STEP / (5.0D-1 * RD_NOST_VEG_HET), &
+                                          9.0D-1 / (RD_NOST_VEG_HET * TIME_STEP))
              R_NOST_VEG_HET_INT_RESP = 0.0D0
              R_NOST_VEG_HET_RESP     = 0.0D0
              R_NOST_VEG_HET_GROWTH   = 0.0D0
@@ -316,6 +319,22 @@ subroutine NOSTOCALES &
 
     !Vegeatative + heterocyst stage nostacles death rate
     R_NOST_VEG_HET_DEATH = RD_NOST_VEG_HET * FAC_HYPOX_NOST_VEG_HET_D * NOST_VEG_HET_C
+
+    ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
+    do i = 1, nkn
+        if (NOST_VEG_HET_C(i) > 0.0D0) then
+            loss = R_NOST_VEG_HET_DEATH(i) + R_NOST_VEG_HET_EXCR(i) + &
+                   R_NOST_VEG_HET_INT_RESP(i) + R_NOST_VEG_HET_RESP(i)
+            if (loss > 0.5D0 * NOST_VEG_HET_C(i) / TIME_STEP) then
+                scale_loss = (0.5D0 * NOST_VEG_HET_C(i) / TIME_STEP) / loss
+                R_NOST_VEG_HET_DEATH(i) = R_NOST_VEG_HET_DEATH(i) * scale_loss
+                R_NOST_VEG_HET_EXCR(i) = R_NOST_VEG_HET_EXCR(i) * scale_loss
+                R_NOST_VEG_HET_INT_RESP(i) = R_NOST_VEG_HET_INT_RESP(i) * scale_loss
+                R_NOST_VEG_HET_RESP(i) = R_NOST_VEG_HET_RESP(i) * scale_loss
+            end if
+        end if
+    end do
+
     ! ------------------------------------------------------------------------------------
     ! END OF CODE TO CALCULATE THE MORTALITY RATE OF VEGATATIVE + HETEROCYST STAGE
     ! NOSTACLE CELLS
