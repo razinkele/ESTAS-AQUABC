@@ -360,7 +360,7 @@ subroutine REDOX_AND_SPECIATION &
     end where
 
     !Mn(OH)2
-    where(FE_II_SALT_NO == 2)
+    where(MN_II_SALT_NO == 2)
         FREE_MN_II = (10.0D0 ** (11.14D0))/ (4 * OH_MINUS * OH_MINUS)
     end where
 

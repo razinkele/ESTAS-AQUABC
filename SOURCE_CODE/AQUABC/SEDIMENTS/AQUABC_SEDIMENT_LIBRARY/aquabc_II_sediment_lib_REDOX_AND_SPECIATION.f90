@@ -107,7 +107,7 @@ subroutine SED_REDOX_AND_SPECIATION &
 
     integer :: i, j
 
-    !This is done to avoid exception. This a bug, variable does not get any value in this routine. fixme
+    ! Calculate H+ concentration from pH (standard conversion: [H+] = 10^(-pH))
     H_PLUS(:,:) = 10.0D0**(-PH)
 
     LIM_DOXY_RED = DOXY  / (DOXY + K_HS_DOXY_RED_LIM)
@@ -412,7 +412,7 @@ subroutine SED_REDOX_AND_SPECIATION &
     end where
 
     !Mn(OH)2
-    where(FE_II_SALT_NO == 2)
+    where(MN_II_SALT_NO == 2)
         FREE_MN_II = (10.0D0 ** (11.14D0))/ (4 * OH_MINUS * OH_MINUS)
     end where
 

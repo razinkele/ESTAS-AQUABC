@@ -157,11 +157,11 @@ subroutine CALC_DISS_ME_CONC &
         DISS_ME_CONC_TS_AVG = ME_DISS_INIT
     end where
 
-    ! Check for saturation case where logarithms in both over and undersaturation solutions may give Nans
+    ! Check for saturation case where logarithms in both over and undersaturation solutions may give NaNs
     ! and assume that neither dissolution nor precipitation occurs.
-    ! where (isnan(DISS_ME_CONC_TS_END).or.isnan(DISS_ME_CONC_TS_AVG))
-    !     DISS_ME_CONC_TS_END = ME_DISS_INIT
-    !     DISS_ME_CONC_TS_AVG = ME_DISS_INIT
-    ! end where
+    where (isnan(DISS_ME_CONC_TS_END).or.isnan(DISS_ME_CONC_TS_AVG))
+        DISS_ME_CONC_TS_END = ME_DISS_INIT
+        DISS_ME_CONC_TS_AVG = ME_DISS_INIT
+    end where
     DISS_ME_CONC_TS_AVG = 0.5 * (ME_DISS_INIT + DISS_ME_CONC_TS_END)
 end subroutine CALC_DISS_ME_CONC

@@ -152,10 +152,11 @@ contains
     integer function CALCULATE_NUM_DAYS_IN_YEAR(YEAR) result(NUM_DAYS_IN_YEAR)
         integer, intent(in) :: YEAR
 
-        if (mod(YEAR, 4) > 0) then
-            NUM_DAYS_IN_YEAR = 365
-        else
+        if ((mod(YEAR, 4) == 0 .and. mod(YEAR, 100) /= 0) .or. &
+            (mod(YEAR, 400) == 0)) then
             NUM_DAYS_IN_YEAR = 366
+        else
+            NUM_DAYS_IN_YEAR = 365
         end if
 
     end function CALCULATE_NUM_DAYS_IN_YEAR
