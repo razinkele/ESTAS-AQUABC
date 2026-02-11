@@ -2868,7 +2868,7 @@ contains
 
             !MATLAB CODE: CAlk      = TCx.*K1F.*(H + 2.*K2F)./Denom;
             if(.not.(allocated(CAlk))) allocate(CAlk(ntps))
-            CAlk   = TCx * K1F * (H + 2.0D0 * K2F) / Denom
+            CAlk   = TCx * K1F * (H + 2.0D0 * K2F) / max(Denom, 1.0D-30)
 
             if (DEBUG .eq. 1) then
                 write(unit = *, fmt = *) 'Calk     : ', Calk
@@ -2931,7 +2931,7 @@ contains
 
             !MATLAB CODE: PAlk      = TPF.*PhosTop./PhosBot;
             if(.not.(allocated(PAlk))) allocate(PAlk(ntps))
-            PAlk   = TPF * PhosTop / PhosBot
+            PAlk   = TPF * PhosTop / max(PhosBot, 1.0D-30)
 
             if (DEBUG .eq. 1) then
                 write(unit = *, fmt = *) 'PAlk     : ', PAlk
@@ -3026,7 +3026,9 @@ contains
             if(.not.(allocated(Slope))) allocate(Slope(ntps))
 
             Slope    = ln10 * &
-                 (TCx * K1F * H * (H * H + K1F * K2F + 4.0D0 * H * K2F) / Denom / Denom + BAlk * H / (KBF + H) + OH + H)
+                 (TCx * K1F * H * (H * H + K1F * K2F + 4.0D0 * H * K2F) / &
+                  max(Denom, 1.0D-30) / max(Denom, 1.0D-30) + &
+                  BAlk * H / (KBF + H) + OH + H)
 
             if (DEBUG .eq. 1) then
                 write(unit = *, fmt = *) 'Slope    : ', Slope
@@ -3045,7 +3047,7 @@ contains
             ! this is Newton's method
             !MATLAB CODE: deltapH   = Residual./Slope; % this is Newton's method
             if(.not.(allocated(deltapH))) allocate(deltapH(ntps))
-            deltapH  = Residual / Slope
+            deltapH  = Residual / sign(max(abs(Slope), 1.0D-15), Slope)
 
             if (DEBUG .eq. 1) then
                 write(unit = *, fmt = *) 'deltapH  : ', deltapH
@@ -3400,7 +3402,7 @@ contains
         OH       = KWF / H
         PhosTop  = KP1F * KP2F * H + 2.0D0 * KP1F * KP2F * KP3F - H * H * H
         PhosBot  = H * H * H + KP1F * H * H + KP1F * KP2F * H + KP1F * KP2F * KP3F
-        PAlk     = TPF * PhosTop / PhosBot
+        PAlk     = TPF * PhosTop / max(PhosBot, 1.0D-30)
         SiAlk    = TSiF * KSiF / (KSiF + H)
 
         ! pH scale conversion factor
@@ -3643,7 +3645,7 @@ contains
             call ASSIGN_DBL_VECTOR_CONTENT(OH       , KWF / H)
             call ASSIGN_DBL_VECTOR_CONTENT(PhosTop  , KP1F * KP2F * H + 2.0D0 * KP1F * KP2F * KP3F - H * H *H)
             call ASSIGN_DBL_VECTOR_CONTENT(PhosBot  , H * H * H + KP1F * H * H + KP1F * KP2F * H + KP1F * KP2F * KP3F)
-            call ASSIGN_DBL_VECTOR_CONTENT(PAlk     , TPF * PhosTop / PhosBot)
+            call ASSIGN_DBL_VECTOR_CONTENT(PAlk     , TPF * PhosTop / max(PhosBot, 1.0D-30))
             call ASSIGN_DBL_VECTOR_CONTENT(SiAlk    , TSiF * KSiF / (KSiF + H))
 
             ! ' pH scale conversion factor
@@ -3661,7 +3663,7 @@ contains
 
             ! find Slope dTA/dpH (this is not exact, but keeps all important terms):
             call ASSIGN_DBL_VECTOR_CONTENT(Slope    , ln10 * (HCO3 + 4.0D0 * CO3 + BAlk * H / (KBF + H) + OH + H))
-            call ASSIGN_DBL_VECTOR_CONTENT(deltapH  , Residual / Slope)
+            call ASSIGN_DBL_VECTOR_CONTENT(deltapH  , Residual / sign(max(abs(Slope), 1.0D-15), Slope))
 
             ! ' to keep the jump from being too big:
             !MATLAB CODE: while any(abs(deltapH) > 1)
@@ -3878,7 +3880,7 @@ contains
         OH       = KWF / H
         PhosTop  = KP1F * KP2F * H + 2.0D0 * KP1F * KP2F * KP3F - H * H * H
         PhosBot  = H * H * H + KP1F * H * H + KP1F * KP2F * H + KP1F * KP2F * KP3F
-        PAlk     = TPF * PhosTop / PhosBot
+        PAlk     = TPF * PhosTop / max(PhosBot, 1.0D-30)
         SiAlk    = TSiF * KSiF / (KSiF + H)
 
         ! ' pH scale conversion factor
@@ -4007,7 +4009,7 @@ contains
 
         RR      = K0 * fCO2i / TCi
         Discr   = (K1 * RR) * (K1 * RR) + 4.0D0 * (1 - RR) * (K1 * K2 *RR)
-        H       = 0.5D0 * (K1 * RR + sqrt(Discr)) / (1 - RR)
+        H       = 0.5D0 * (K1 * RR + sqrt(max(Discr, 0.0D0))) / sign(max(abs(1.0D0 - RR), 1.0D-15), 1.0D0 - RR)
         pHctemp = log(H) / log(0.1D0)
 
 !    Deallocate auxilary arrays. Petras
@@ -4359,7 +4361,7 @@ contains
         OH      = KW / H
         PhosTop = KP1 * KP2 * H + 2.0D0 * KP1 * KP2 * KP3 - H * H * H
         PhosBot =  H * H * H + KP1 * H * H + KP1 * KP2 * H + KP1 * KP2 * KP3
-        PAlk    =  TP * PhosTop / PhosBot
+        PAlk    =  TP * PhosTop / max(PhosBot, 1.0D-30)
 
         ! this is good to better than .0006*TP:
         ! PAlk = TP*(-H/(KP1+H) + KP2/(KP2+H) + KP3/(KP3+H))
