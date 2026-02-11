@@ -341,6 +341,11 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::               K_MIN_PHYT_AMIN_DOC !Model constant no 316 :
     real(kind = DBL_PREC) ::               K_MIN_PHYT_AMIN_DON !Model constant no 317 :
     real(kind = DBL_PREC) ::               K_MIN_PHYT_AMIN_DOP !Model constant no 318 :
+    real(kind = DBL_PREC) ::                          BETA_DIA !Model constant no 319 : Diatoms photoinhibition parameter (dimensionless, 0=none)
+    real(kind = DBL_PREC) ::                          BETA_CYN !Model constant no 320 : Non-fixing cyanobacteria photoinhibition parameter
+    real(kind = DBL_PREC) ::                      BETA_FIX_CYN !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
+    real(kind = DBL_PREC) ::                          BETA_OPA !Model constant no 322 : OtherPhyto photoinhibition parameter
+    real(kind = DBL_PREC) ::                 BETA_NOST_VEG_HET !Model constant no 323 : Nostocales photoinhibition parameter
 
 !==========================================================================
 end module AQUABC_PELAGIC_MODEL_CONSTANTS
@@ -671,6 +676,11 @@ subroutine INIT_PELAGIC_MODEL_CONSTANTS
     call para_get_value('K_MIN_PHYT_AMIN_DOC'              ,               K_MIN_PHYT_AMIN_DOC) !Model constant no 316 :
     call para_get_value('K_MIN_PHYT_AMIN_DON'              ,               K_MIN_PHYT_AMIN_DON) !Model constant no 317 :
     call para_get_value('K_MIN_PHYT_AMIN_DOP'              ,               K_MIN_PHYT_AMIN_DOP) !Model constant no 318 :
+    call para_get_value('BETA_DIA'                         ,                          BETA_DIA) !Model constant no 319 : Diatoms photoinhibition parameter
+    call para_get_value('BETA_CYN'                         ,                          BETA_CYN) !Model constant no 320 : Non-fixing cyanobacteria photoinhibition parameter
+    call para_get_value('BETA_FIX_CYN'                     ,                      BETA_FIX_CYN) !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
+    call para_get_value('BETA_OPA'                         ,                          BETA_OPA) !Model constant no 322 : OtherPhyto photoinhibition parameter
+    call para_get_value('BETA_NOST_VEG_HET'                ,                 BETA_NOST_VEG_HET) !Model constant no 323 : Nostocales photoinhibition parameter
 
     call VALIDATE_PELAGIC_MODEL_CONSTANTS()
 
@@ -903,6 +913,35 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     call CHK_RATIO(NOST_N_TO_C,     'NOST_N_TO_C',     n_fixes)
     call CHK_RATIO(NOST_P_TO_C,     'NOST_P_TO_C',     n_fixes)
     call CHK_RATIO(NOST_O2_TO_C,    'NOST_O2_TO_C',    n_fixes)
+
+    ! ------------------------------------------------------------------
+    ! Check photoinhibition beta >= 0
+    ! ------------------------------------------------------------------
+    if (BETA_DIA < 0.0D0) then
+        write(*,*) 'WARNING: BETA_DIA < 0, setting to 0'
+        BETA_DIA = 0.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (BETA_CYN < 0.0D0) then
+        write(*,*) 'WARNING: BETA_CYN < 0, setting to 0'
+        BETA_CYN = 0.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (BETA_FIX_CYN < 0.0D0) then
+        write(*,*) 'WARNING: BETA_FIX_CYN < 0, setting to 0'
+        BETA_FIX_CYN = 0.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (BETA_OPA < 0.0D0) then
+        write(*,*) 'WARNING: BETA_OPA < 0, setting to 0'
+        BETA_OPA = 0.0D0
+        n_fixes = n_fixes + 1
+    end if
+    if (BETA_NOST_VEG_HET < 0.0D0) then
+        write(*,*) 'WARNING: BETA_NOST_VEG_HET < 0, setting to 0'
+        BETA_NOST_VEG_HET = 0.0D0
+        n_fixes = n_fixes + 1
+    end if
 
     ! ------------------------------------------------------------------
     ! Summary
@@ -1269,6 +1308,11 @@ subroutine INSERT_PELAGIC_MODEL_CONSTANTS
     call para_insert_value('K_MIN_PHYT_AMIN_DOC'              ,               K_MIN_PHYT_AMIN_DOC) !Model constant no 316 :
     call para_insert_value('K_MIN_PHYT_AMIN_DON'              ,               K_MIN_PHYT_AMIN_DON) !Model constant no 317 :
     call para_insert_value('K_MIN_PHYT_AMIN_DOP'              ,               K_MIN_PHYT_AMIN_DOP) !Model constant no 318 :
+    call para_insert_value('BETA_DIA'                         ,                          BETA_DIA) !Model constant no 319 : Diatoms photoinhibition parameter
+    call para_insert_value('BETA_CYN'                         ,                          BETA_CYN) !Model constant no 320 : Non-fixing cyanobacteria photoinhibition parameter
+    call para_insert_value('BETA_FIX_CYN'                     ,                      BETA_FIX_CYN) !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
+    call para_insert_value('BETA_OPA'                         ,                          BETA_OPA) !Model constant no 322 : OtherPhyto photoinhibition parameter
+    call para_insert_value('BETA_NOST_VEG_HET'                ,                 BETA_NOST_VEG_HET) !Model constant no 323 : Nostocales photoinhibition parameter
 
 end subroutine INSERT_PELAGIC_MODEL_CONSTANTS
 
@@ -1597,6 +1641,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                   K_MIN_PHYT_AMIN_DOC =   4.00
                   K_MIN_PHYT_AMIN_DON =   4.00
                   K_MIN_PHYT_AMIN_DOP =   4.00
+                             BETA_DIA =   0.00  !Diatoms photoinhibition (0=Steele default, >0=stronger inhibition)
+                             BETA_CYN =   0.00  !Non-fixing cyanobacteria photoinhibition
+                         BETA_FIX_CYN =   0.00  !Fixing cyanobacteria photoinhibition
+                             BETA_OPA =   0.00  !OtherPhyto photoinhibition
+                    BETA_NOST_VEG_HET =   0.00  !Nostocales photoinhibition
 
 end subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
 

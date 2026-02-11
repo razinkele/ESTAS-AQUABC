@@ -477,27 +477,35 @@ end function KAWIND
 
 !********************************************************************
 !********************************************************************
-subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn)
+subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn, BETA)
 
-    !   Dick-Smith light limitation
+    !   Depth-averaged Steele light limitation with tunable photoinhibition
     !
-    !   Version to use in ALUKAS with instanteneous light intensity and constant C to Chla ratio
-    !   Vectorized version
+    !   The base Steele (1962) depth-averaged P-I curve is extended with
+    !   a Platt-style photoinhibition parameter BETA (dimensionless, >= 0):
     !
-    !   Double precision variables
+    !     f(I) = (1+BETA) * (I/I_s) * exp(1 - (1+BETA)*I/I_s)
+    !
+    !   Depth-averaged analytically:
+    !     <f> = (e / (ke*H)) * [exp(-(1+BETA)*I_bot/I_s) - exp(-(1+BETA)*I_surf/I_s)]
+    !
+    !   When BETA=0 this reduces exactly to the original Steele formula.
+    !   When BETA>0 the optimum shifts to lower light: I_opt = I_s/(1+BETA),
+    !   and photoinhibition above I_opt is stronger.
     !
     !   Parameters:
     ! Inputs:
-    !      Ia         -   Instanteneous light intensity (langleys/day PAR), renamed to ITOT in the program
+    !      Ia         -   Instanteneous light intensity (langleys/day PAR)
     !      TCHLA      -   total chlorophyl for all phytoplankton groups, mcg/l
-    !      CCHL_RATIO -  carbon to chlorophyl ratio for the phyto group
-    !      GITMAX     - temperature corrected maximum relative growth for phytoplankton group, 1/day
-    !      H          - depth, m
-    !      ke         - light extinction coefficient accounting suspension and clear water extinction, 1/m
-    !      K_LIGHT_SAT- user defined light saturation for phytoplankton group, langleey/day PAR
+    !      CCHL_RATIO -   carbon to chlorophyl ratio for the phyto group
+    !      GITMAX     -   temperature corrected maximum relative growth rate, 1/day
+    !      H          -   depth, m
+    !      ke         -   light extinction coefficient, 1/m
+    !      K_LIGHT_SAT-   user defined light saturation, langleys/day PAR
+    !      BETA       -   photoinhibition parameter (0=Steele default, >0=stronger)
     ! Outputs:
-    !      LLIGHT     - light limitation factor
-    !      LIGHT_SAT  - saturation light intensity, returned for control
+    !      LLIGHT     -   light limitation factor [0,~1]
+    !      LIGHT_SAT  -   saturation light intensity, returned for control
 
     ! Constants:
     !      XKC    - Chlorophyll light extinction coefficient (1/m), parameter
@@ -519,6 +527,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     double precision, intent(in)  :: K_LIGHT_SAT
     double precision, intent(out) :: LLIGHT(nkn)
     double precision, intent(out) :: LIGHT_SAT(nkn)
+    double precision, intent(in)  :: BETA
 
     double precision :: KESHD(nkn)
     double precision :: SKE(nkn)
@@ -526,6 +535,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     double precision :: TEMP2(nkn)
     double precision :: TEMP3(nkn)
     double precision :: chla_pos(nkn)
+    double precision :: BETA_LOC  ! local copy of photoinhibition parameter
 
     logical VALUE_strange(nkn)
     integer STRANGERSD
@@ -534,6 +544,9 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     integer user_defined_saturation
 
     user_defined_saturation = 0
+
+    ! Set local photoinhibition parameter (0 = original Steele)
+    BETA_LOC = max(BETA, 0.0D0)
 
     if((PHIMX .le. 0.D0) .or.  (XKC .le. 0.D0) .or. all((GITMAX .le. 0.D0))) then
       user_defined_saturation = 1
@@ -615,6 +628,11 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
         write(6,*) 'CCHL_RATIO=', CCHL_RATIO
         stop
     end if
+
+    ! Photoinhibition: multiply TEMP2 (= 1/I_s) by (1+BETA) to shift
+    ! the optimum to lower light and strengthen inhibition above I_opt.
+    ! When BETA=0 this is a no-op and the formula is the original Steele.
+    TEMP2 = TEMP2 * (1.0D0 + BETA_LOC)
 
     TEMP3  = safe_exp( - TEMP1)
     LLIGHT = (EULER_E / TEMP1) * (safe_exp( -TEMP2 * Ia * TEMP3) - safe_exp( -TEMP2 * Ia))

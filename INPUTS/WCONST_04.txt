@@ -316,3 +316,8 @@
    316                K_MIN_PHYT_AMIN_DOC              4.00  ! 
    317                K_MIN_PHYT_AMIN_DON              4.00  !
    318                K_MIN_PHYT_AMIN_DOP              4.00  !
+   319                       BETA_DIA               0.0  !319   Diatoms photoinhibition (0=Steele default, >0=stronger)
+   320                       BETA_CYN               0.0  !320   Non-fixing cyanobacteria photoinhibition
+   321                   BETA_FIX_CYN               0.0  !321   Fixing cyanobacteria photoinhibition
+   322                       BETA_OPA               0.0  !322   OtherPhyto photoinhibition
+   323              BETA_NOST_VEG_HET               0.0  !323   Nostocales photoinhibition

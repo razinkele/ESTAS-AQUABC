@@ -960,7 +960,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
                  KD_DIA                  , &
                  FAC_HYPOX_DIA_D         , &
                  R_DIA_DEATH             , &
-                 PREF_NH4N_DIA)
+                 PREF_NH4N_DIA           , &
+                 BETA_DIA)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -1032,7 +1033,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
           FAC_HYPOX_CYN_D         , &
           R_CYN_DEATH             , &
           PREF_DIN_DON_CYN        , &
-          PREF_NH4N_CYN)
+          PREF_NH4N_CYN           , &
+          BETA_CYN)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -1110,7 +1112,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
                 KD_FIX_CYN                   , &
                 FAC_HYPOX_FIX_CYN_D          , &
                 R_FIX_CYN_DEATH              , &
-                PREF_NH4N_DON_FIX_CYN)
+                PREF_NH4N_DON_FIX_CYN        , &
+                BETA_FIX_CYN)
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
@@ -1190,7 +1193,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             KD_OPA                  , &
             FAC_HYPOX_OPA_D         , &
             R_OPA_DEATH             , &
-            PREF_NH4N_OPA)
+            PREF_NH4N_OPA           , &
+            BETA_OPA)
 
         R_OPA_GROWTH(:) = R_OPA_GROWTH(:) * GROWTH_INHIB_FACTOR_OPA(:)
     !******************************!
@@ -1291,7 +1295,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             R_FORM_NOST_AKI                   , &
             R_LOSS_AKI                        , &
             R_MORT_AKI                        , &
-            M_DENS_VEG_HET)
+            M_DENS_VEG_HET                    , &
+            BETA_NOST_VEG_HET)
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models

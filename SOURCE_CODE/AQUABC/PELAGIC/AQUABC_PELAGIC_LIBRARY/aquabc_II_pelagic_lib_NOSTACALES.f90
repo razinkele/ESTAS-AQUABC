@@ -77,7 +77,8 @@ subroutine NOSTOCALES &
             R_FORM_NOST_AKI                   , &
             R_LOSS_AKI                        , &
             R_MORT_AKI                        , &
-            KM_DENS_VEG_HET)
+            KM_DENS_VEG_HET                   , &
+            BETA_NOST_VEG_HET)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
    implicit none
@@ -119,6 +120,7 @@ subroutine NOSTOCALES &
    double precision, intent(in) :: K_MORT_AKI_20
    double precision, intent(in) :: THETA_K_MORT_AKI
    integer         , intent(in) :: nkn
+   double precision, intent(in) :: BETA_NOST_VEG_HET  ! Photoinhibition parameter
    double precision, dimension(nkn), intent(in) :: I_A
    double precision, dimension(nkn), intent(in) :: K_E
    double precision, dimension(nkn), intent(in) :: DEPTH
@@ -246,7 +248,7 @@ subroutine NOSTOCALES &
 
         call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, NOST_VEG_HET_DEPTH, K_E, &
                        LIM_KG_NOST_VEG_HET_LIGHT , NOST_C_TO_CHLA, I_S_NOST_VEG_HET, &
-                       NOST_LIGHT_SAT,nkn)
+                       NOST_LIGHT_SAT, nkn, BETA_NOST_VEG_HET)
     end if
    ! ------------------------------------------------------------------------------------
 

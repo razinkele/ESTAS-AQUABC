@@ -63,7 +63,8 @@ subroutine CYANOBACTERIA &
             KD_CYN                  , &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
-            PREF_NH4N_DON_CYN)
+            PREF_NH4N_DON_CYN       , &
+            BETA_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -87,6 +88,7 @@ subroutine CYANOBACTERIA &
     real(kind = DBL_PREC), intent(in) :: KHS_O2_CYN
     real(kind = DBL_PREC), intent(in) :: FRAC_CYN_EXCR
     real(kind = DBL_PREC), intent(in) :: I_S_CYN
+    real(kind = DBL_PREC), intent(in) :: BETA_CYN  ! Photoinhibition parameter
     real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_CYN_D
     real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_CYN_D
     real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_CYN_D
@@ -182,7 +184,7 @@ subroutine CYANOBACTERIA &
         write(6,*) 'CYANO CALL: DEPTH=', DEPTH(1:min(8,nkn))
         write(6,*) 'CYANO CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_CYN, DEPTH, K_E, LIM_KG_CYN_LIGHT, &
-                       CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT,nkn)
+                       CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
     end if
 
     LIM_KG_CYN_DOXY = DISS_OXYGEN / (KHS_O2_CYN + DISS_OXYGEN)
@@ -312,8 +314,9 @@ subroutine CYANOBACTERIA_BOUYANT &
             KD_CYN                  , &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
-            PREF_DIN_DON_CYN        ,&
-            PREF_NH4N_CYN )
+            PREF_DIN_DON_CYN        , &
+            PREF_NH4N_CYN           , &
+            BETA_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -339,6 +342,7 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC), intent(in) :: KHS_O2_CYN
     real(kind = DBL_PREC), intent(in) :: FRAC_CYN_EXCR
     real(kind = DBL_PREC), intent(in) :: I_S_CYN
+    real(kind = DBL_PREC), intent(in) :: BETA_CYN  ! Photoinhibition parameter
     real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_CYN_D
     real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_CYN_D
     real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_CYN_D
@@ -451,7 +455,7 @@ subroutine CYANOBACTERIA_BOUYANT &
 
         call LIM_LIGHT&
              (I_A          , CHLA, KG_CYN, CYANO_DEPTH, K_E, LIM_KG_CYN_LIGHT, &
-              CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT,nkn)
+              CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
     end if
 
 

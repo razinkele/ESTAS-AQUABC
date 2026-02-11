@@ -69,7 +69,8 @@ subroutine FIX_CYANOBACTERIA  &
             KD_FIX_CYN                   , &
             FAC_HYPOX_FIX_CYN_D          , &
             R_FIX_CYN_DEATH              , &
-            PREF_NH4N_DON_FIX_CYN)
+            PREF_NH4N_DON_FIX_CYN        , &
+            BETA_FIX_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -107,6 +108,7 @@ subroutine FIX_CYANOBACTERIA  &
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
+    real(kind = DBL_PREC), intent(in) :: BETA_FIX_CYN  ! Photoinhibition parameter
 !
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
@@ -191,7 +193,7 @@ subroutine FIX_CYANOBACTERIA  &
 
          call LIM_LIGHT &
 		      (I_A, CHLA, KG_FIX_CYN, DEPTH, K_E, LIM_KG_FIX_CYN_LIGHT, &
-			   FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT,nkn)
+			   FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
 
          LIM_KG_FIX_CYN_LIGHT = FIX_CYN_DEPTH*LIM_KG_FIX_CYN_LIGHT
     end if
@@ -360,7 +362,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             KD_FIX_CYN                   , &
             FAC_HYPOX_FIX_CYN_D          , &
             R_FIX_CYN_DEATH              , &
-            PREF_NH4_DON_FIX_CYN)
+            PREF_NH4_DON_FIX_CYN         , &
+            BETA_FIX_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -400,6 +403,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
+    real(kind = DBL_PREC), intent(in) :: BETA_FIX_CYN  ! Photoinhibition parameter
 !
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
@@ -500,7 +504,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         write(6,*) 'FIX_CYANO CALL: DEPTH=', FIX_CYN_DEPTH(1:min(8,nkn))
         write(6,*) 'FIX_CYANO CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_FIX_CYN, FIX_CYN_DEPTH, K_E, &
-             LIM_KG_FIX_CYN_LIGHT, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT,nkn)
+             LIM_KG_FIX_CYN_LIGHT, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
     end if
 
 

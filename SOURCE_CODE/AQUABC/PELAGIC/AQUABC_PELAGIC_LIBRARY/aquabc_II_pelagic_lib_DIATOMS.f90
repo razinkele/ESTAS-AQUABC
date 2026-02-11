@@ -62,7 +62,8 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
                    KD_DIA                  , &
                    FAC_HYPOX_DIA_D         , &
                    R_DIA_DEATH             , &
-                   PREF_NH4N_DIA)
+                   PREF_NH4N_DIA           , &
+                   BETA_DIA)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -115,6 +116,7 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
+    real(kind = DBL_PREC), intent(in) :: BETA_DIA  ! Photoinhibition parameter
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -178,7 +180,7 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
         write(6,*) 'DIATOMS CALL: DEPTH=', DEPTH(1:min(8,nkn))
         write(6,*) 'DIATOMS CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_DIA, DEPTH, K_E, LIM_KG_DIA_LIGHT, &
-                       DIA_C_TO_CHLA, I_S_DIA, DIA_LIGHT_SAT,nkn)
+                       DIA_C_TO_CHLA, I_S_DIA, DIA_LIGHT_SAT, nkn, BETA_DIA)
     end if
 
 
