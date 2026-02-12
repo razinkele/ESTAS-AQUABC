@@ -102,6 +102,8 @@ contains
         real(kind = DBL) :: LIGHT_EXTINCTION
         real(kind = DBL) :: SOLAR_RADIATION
 
+        SOLAR_RADIATION = 0.0D0
+
         !OTHER FORCING FUNCTIONS RELATED TO PELAGIC BOXES
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
 

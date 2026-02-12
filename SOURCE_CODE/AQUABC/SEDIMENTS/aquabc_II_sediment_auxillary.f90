@@ -66,6 +66,8 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
 
     double precision MOL_DIFF
 
+    MOL_DIFF = 0.0D0
+
     if(SVARNO .gt. 24) then
         print *,'SED_MOD_1_ALUKAS_MOLDI_C:'
         print *,'To get values correctly by Molecular diffusion'

@@ -186,6 +186,7 @@ contains
         real(kind = DBL) :: UPPER_AREA
         real(kind = DBL) :: LOWER_AREA
 
+        ELEVATION_LAYER = 1
         DISCONT_PROBLEM = 0
         DISCONT_LAYER   = 0
 
@@ -384,6 +385,7 @@ contains
         real(kind = DBL) :: QUAD_R1
         real(kind = DBL) :: QUAD_R2
 
+        ELEVATION_LAYER = 1
         LOWER_AREA = CALCULATE_SURFACE_AREA(BATHYMETRY_DATA, ELEVATION, 1)
         NUM_LAYERS = BATHYMETRY_DATA % NUM_LAYERS
         CALCULATED_VOLUME = 0.0D0
