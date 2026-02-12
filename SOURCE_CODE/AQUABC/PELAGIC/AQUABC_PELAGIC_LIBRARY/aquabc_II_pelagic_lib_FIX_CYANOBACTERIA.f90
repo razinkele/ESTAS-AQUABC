@@ -4,34 +4,9 @@
 !subroutine FIX_CYANOBACTERIA
 
 subroutine FIX_CYANOBACTERIA  &
-           (KG_FIX_CYN_OPT_TEMP          , &
-            FIX_CYN_OPT_TEMP_LR          , &
-            FIX_CYN_OPT_TEMP_UR          , &
-            EFF_FIX_CYN_GROWTH           , &
-            KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
-            KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
-            KR_FIX_CYN_20                , &
-            THETA_KR_FIX_CYN             , &
-            KD_FIX_CYN_20                , &
-            THETA_KD_FIX_CYN             , &
-            KHS_DIN_FIX_CYN              , &
-            KHS_DIP_FIX_CYN              , &
-            KHS_O2_FIX_CYN               , &
-            I_S_FIX_CYN                  , &
-            DO_STR_HYPOX_FIX_CYN_D       , &
-            THETA_HYPOX_FIX_CYN_D        , &
-            EXPON_HYPOX_FIX_CYN_D        , &
-            FIX_CYN_N_TO_C               , &
-            FIX_CYN_P_TO_C               , &
-            FIX_CYN_O2_TO_C              , &
-            FIX_CYN_C_TO_CHLA            , &
-            FIX_CYN_LIGHT_SAT            , &
-            FRAC_FIX_CYN_EXCR            , &
-            R_FIX                        , &
-            K_FIX                        , &
+           (params                          , &
             TIME_STEP                    , &
             SMITH                        , &
-            frac_avail_DON               , &
             nkn                          , &
             FDAY                         , &
             I_A                          , &
@@ -45,6 +20,7 @@ subroutine FIX_CYANOBACTERIA  &
             PO4_P                        , &
             DISS_OXYGEN                  , &
             FIX_CYN_C                    , &
+            FIX_CYN_LIGHT_SAT            , &
             ALPHA_0                      , &
             ALPHA_1                      , &
             KG_FIX_CYN                   , &
@@ -69,47 +45,28 @@ subroutine FIX_CYANOBACTERIA  &
             KD_FIX_CYN                   , &
             FAC_HYPOX_FIX_CYN_D          , &
             R_FIX_CYN_DEATH              , &
-            PREF_NH4N_DON_FIX_CYN        , &
-            BETA_FIX_CYN)
+            PREF_NH4N_DON_FIX_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params
     implicit none
 
     ! -------------------------------------------------------------------------
-    ! Ingoing variables
+    ! Derived-type parameter block (replaces 26 scalar constants)
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_FIX_CYN_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_FIX_CYN_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_FIX_CYN_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_FIX_CYN_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_FIX_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KD_FIX_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: I_S_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_C_TO_CHLA
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
-    real(kind = DBL_PREC), intent(in) :: FRAC_FIX_CYN_EXCR
-    real(kind = DBL_PREC), intent(in) :: R_FIX
-    real(kind = DBL_PREC), intent(in) :: K_FIX
+    type(t_fix_cyn_params), intent(in) :: params
 
+    ! -------------------------------------------------------------------------
+    ! Metadata / non-constant arguments
+    ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
-    real(kind = DBL_PREC), intent(in) :: BETA_FIX_CYN  ! Photoinhibition parameter
-!
+
+    ! -------------------------------------------------------------------------
+    ! Ingoing arrays
+    ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
@@ -118,11 +75,11 @@ subroutine FIX_CYANOBACTERIA  &
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
-    real(kind = DBL_PREC), intent(in) :: frac_avail_DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -158,6 +115,35 @@ subroutine FIX_CYANOBACTERIA  &
     integer :: i
     real(kind = DBL_PREC) :: loss
     real(kind = DBL_PREC) :: scale_loss
+
+    associate( &
+        KG_FIX_CYN_OPT_TEMP          => params%KG_FIX_CYN_OPT_TEMP,          &
+        FIX_CYN_OPT_TEMP_LR          => params%FIX_CYN_OPT_TEMP_LR,          &
+        FIX_CYN_OPT_TEMP_UR          => params%FIX_CYN_OPT_TEMP_UR,          &
+        EFF_FIX_CYN_GROWTH           => params%EFF_FIX_CYN_GROWTH,           &
+        KAPPA_FIX_CYN_UNDER_OPT_TEMP => params%KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
+        KAPPA_FIX_CYN_OVER_OPT_TEMP  => params%KAPPA_FIX_CYN_OVER_OPT_TEMP,  &
+        KR_FIX_CYN_20                => params%KR_FIX_CYN_20,                &
+        THETA_KR_FIX_CYN             => params%THETA_KR_FIX_CYN,             &
+        KD_FIX_CYN_20                => params%KD_FIX_CYN_20,                &
+        THETA_KD_FIX_CYN             => params%THETA_KD_FIX_CYN,             &
+        KHS_DIN_FIX_CYN              => params%KHS_DIN_FIX_CYN,              &
+        KHS_DIP_FIX_CYN              => params%KHS_DIP_FIX_CYN,              &
+        KHS_O2_FIX_CYN               => params%KHS_O2_FIX_CYN,               &
+        I_S_FIX_CYN                  => params%I_S_FIX_CYN,                  &
+        DO_STR_HYPOX_FIX_CYN_D       => params%DO_STR_HYPOX_FIX_CYN_D,       &
+        THETA_HYPOX_FIX_CYN_D        => params%THETA_HYPOX_FIX_CYN_D,        &
+        EXPON_HYPOX_FIX_CYN_D        => params%EXPON_HYPOX_FIX_CYN_D,        &
+        FIX_CYN_N_TO_C               => params%FIX_CYN_N_TO_C,               &
+        FIX_CYN_P_TO_C               => params%FIX_CYN_P_TO_C,               &
+        FIX_CYN_O2_TO_C              => params%FIX_CYN_O2_TO_C,              &
+        FIX_CYN_C_TO_CHLA            => params%FIX_CYN_C_TO_CHLA,            &
+        FRAC_FIX_CYN_EXCR            => params%FRAC_FIX_CYN_EXCR,            &
+        R_FIX                        => params%R_FIX,                        &
+        K_FIX                        => params%K_FIX,                        &
+        BETA_FIX_CYN                 => params%BETA_FIX_CYN,                 &
+        frac_avail_DON               => params%frac_avail_DON                &
+    )
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &
@@ -291,39 +277,16 @@ subroutine FIX_CYANOBACTERIA  &
     call AMMONIA_DON_PREFS &
          (PREF_NH4N_DON_FIX_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_FIX_CYN,nkn)
 
+    end associate
+
 end subroutine FIX_CYANOBACTERIA
 
 
 
 subroutine FIX_CYANOBACTERIA_BOUYANT  &
-           (KG_FIX_CYN_OPT_TEMP          , &
-            FIX_CYN_OPT_TEMP_LR          , &
-            FIX_CYN_OPT_TEMP_UR          , &
-            EFF_FIX_CYN_GROWTH           , &
-            KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
-            KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
-            KR_FIX_CYN_20                , &
-            THETA_KR_FIX_CYN             , &
-            KD_FIX_CYN_20                , &
-            THETA_KD_FIX_CYN             , &
-            KHS_DIN_FIX_CYN              , &
-            KHS_DIP_FIX_CYN              , &
-            KHS_O2_FIX_CYN               , &
-            I_S_FIX_CYN                  , &
-            DO_STR_HYPOX_FIX_CYN_D       , &
-            THETA_HYPOX_FIX_CYN_D        , &
-            EXPON_HYPOX_FIX_CYN_D        , &
-            FIX_CYN_N_TO_C               , &
-            FIX_CYN_P_TO_C               , &
-            FIX_CYN_O2_TO_C              , &
-            FIX_CYN_C_TO_CHLA            , &
-            FIX_CYN_LIGHT_SAT            , &
-            FRAC_FIX_CYN_EXCR            , &
-            R_FIX                        , &
-            K_FIX                        , &
+           (params                          , &
             TIME_STEP                    , &
             SMITH                        , &
-            frac_avail_DON               , &
             nkn                          , &
             FDAY                         , &
             I_A                          , &
@@ -338,6 +301,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             PO4_P                        , &
             DISS_OXYGEN                  , &
             FIX_CYN_C                    , &
+            FIX_CYN_LIGHT_SAT            , &
             ALPHA_0                      , &
             ALPHA_1                      , &
             KG_FIX_CYN                   , &
@@ -362,62 +326,44 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             KD_FIX_CYN                   , &
             FAC_HYPOX_FIX_CYN_D          , &
             R_FIX_CYN_DEATH              , &
-            PREF_NH4_DON_FIX_CYN         , &
-            BETA_FIX_CYN)
+            PREF_NH4_DON_FIX_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
+    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params
 
     implicit none
 
     ! -------------------------------------------------------------------------
-    ! Ingoing variables
+    ! Derived-type parameter block (replaces 26 scalar constants)
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_FIX_CYN_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_FIX_CYN_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_FIX_CYN_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_FIX_CYN_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_FIX_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KD_FIX_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: I_S_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_FIX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: FIX_CYN_C_TO_CHLA
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
-    real(kind = DBL_PREC), intent(in) :: FRAC_FIX_CYN_EXCR
-    real(kind = DBL_PREC), intent(in) :: R_FIX
-    real(kind = DBL_PREC), intent(in) :: K_FIX
+    type(t_fix_cyn_params), intent(in) :: params
 
+    ! -------------------------------------------------------------------------
+    ! Metadata / non-constant arguments
+    ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
-    real(kind = DBL_PREC), intent(in) :: BETA_FIX_CYN  ! Photoinhibition parameter
-!
+
+    ! -------------------------------------------------------------------------
+    ! Ingoing arrays
+    ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
-    real(kind = DBL_PREC), intent(in) :: frac_avail_DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -449,12 +395,40 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_NH4_DON_FIX_CYN
 
     !Auxillary variables introduced by Pzem 2019-08
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS  ! Wind speed (input parameter)
     real(kind = DBL_PREC), dimension(nkn) :: FIX_CYN_DEPTH
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH(nkn)
     real(kind = DBL_PREC) :: MIX_DEPTH     (nkn)
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
+
+    associate( &
+        KG_FIX_CYN_OPT_TEMP          => params%KG_FIX_CYN_OPT_TEMP,          &
+        FIX_CYN_OPT_TEMP_LR          => params%FIX_CYN_OPT_TEMP_LR,          &
+        FIX_CYN_OPT_TEMP_UR          => params%FIX_CYN_OPT_TEMP_UR,          &
+        EFF_FIX_CYN_GROWTH           => params%EFF_FIX_CYN_GROWTH,           &
+        KAPPA_FIX_CYN_UNDER_OPT_TEMP => params%KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
+        KAPPA_FIX_CYN_OVER_OPT_TEMP  => params%KAPPA_FIX_CYN_OVER_OPT_TEMP,  &
+        KR_FIX_CYN_20                => params%KR_FIX_CYN_20,                &
+        THETA_KR_FIX_CYN             => params%THETA_KR_FIX_CYN,             &
+        KD_FIX_CYN_20                => params%KD_FIX_CYN_20,                &
+        THETA_KD_FIX_CYN             => params%THETA_KD_FIX_CYN,             &
+        KHS_DIN_FIX_CYN              => params%KHS_DIN_FIX_CYN,              &
+        KHS_DIP_FIX_CYN              => params%KHS_DIP_FIX_CYN,              &
+        KHS_O2_FIX_CYN               => params%KHS_O2_FIX_CYN,               &
+        I_S_FIX_CYN                  => params%I_S_FIX_CYN,                  &
+        DO_STR_HYPOX_FIX_CYN_D       => params%DO_STR_HYPOX_FIX_CYN_D,       &
+        THETA_HYPOX_FIX_CYN_D        => params%THETA_HYPOX_FIX_CYN_D,        &
+        EXPON_HYPOX_FIX_CYN_D        => params%EXPON_HYPOX_FIX_CYN_D,        &
+        FIX_CYN_N_TO_C               => params%FIX_CYN_N_TO_C,               &
+        FIX_CYN_P_TO_C               => params%FIX_CYN_P_TO_C,               &
+        FIX_CYN_O2_TO_C              => params%FIX_CYN_O2_TO_C,              &
+        FIX_CYN_C_TO_CHLA            => params%FIX_CYN_C_TO_CHLA,            &
+        FRAC_FIX_CYN_EXCR            => params%FRAC_FIX_CYN_EXCR,            &
+        R_FIX                        => params%R_FIX,                        &
+        K_FIX                        => params%K_FIX,                        &
+        BETA_FIX_CYN                 => params%BETA_FIX_CYN,                 &
+        frac_avail_DON               => params%frac_avail_DON                &
+    )
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &
@@ -598,5 +572,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     call AMMONIA_DON_PREFS&
          (PREF_NH4_DON_FIX_CYN, NH4_N, DON, &
           frac_avail_DON, NO3_N, KHS_DIN_FIX_CYN,nkn)
+
+    end associate
 
 end subroutine FIX_CYANOBACTERIA_BOUYANT

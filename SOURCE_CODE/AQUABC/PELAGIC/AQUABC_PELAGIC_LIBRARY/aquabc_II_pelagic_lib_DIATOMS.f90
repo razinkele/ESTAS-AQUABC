@@ -2,31 +2,8 @@
 ! Contents:
 !subroutine DIATOMS
 
-subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
-                   DIA_OPT_TEMP_LR         , &
-                   DIA_OPT_TEMP_UR         , &
-                   EFF_DIA_GROWTH          , &
-                   KAPPA_DIA_UNDER_OPT_TEMP, &
-                   KAPPA_DIA_OVER_OPT_TEMP , &
-                   KR_DIA_20               , &
-                   THETA_KR_DIA            , &
-                   KD_DIA_20               , &
-                   THETA_KD_DIA            , &
-                   KHS_DIN_DIA             , &
-                   KHS_DIP_DIA             , &
-                   KHS_DSi_DIA             , &
-                   KHS_O2_DIA              , &
-                   FRAC_DIA_EXCR           , &
-                   I_S_DIA                 , &
-                   DO_STR_HYPOX_DIA_D      , &
-                   THETA_HYPOX_DIA_D       , &
-                   EXPON_HYPOX_DIA_D       , &
-                   DIA_N_TO_C              , &
-                   DIA_P_TO_C              , &
-                   DIA_Si_TO_C             , &
-                   DIA_O2_TO_C             , &
-                   DIA_C_TO_CHLA           , &
-                   DIA_LIGHT_SAT           , &
+subroutine DIATOMS(params                      , &
+                   DIA_LIGHT_SAT               , &
                    NH4_N                   , &
                    NO3_N                   , &
                    PO4_P                   , &
@@ -62,40 +39,17 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
                    KD_DIA                  , &
                    FAC_HYPOX_DIA_D         , &
                    R_DIA_DEATH             , &
-                   PREF_NH4N_DIA           , &
-                   BETA_DIA)
+                   PREF_NH4N_DIA)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+    use AQUABC_PELAGIC_TYPES, only: t_diatom_params
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_DIA_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: DIA_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: DIA_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_DIA_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_DIA_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_DIA_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_DIA_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_DIA
-    real(kind = DBL_PREC), intent(in) :: KD_DIA_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_DIA
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_DIA
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_DIA
-    real(kind = DBL_PREC), intent(in) :: KHS_DSi_DIA
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_DIA
-    real(kind = DBL_PREC), intent(in) :: FRAC_DIA_EXCR
-    real(kind = DBL_PREC), intent(in) :: I_S_DIA
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_DIA_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_DIA_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_DIA_D
-    real(kind = DBL_PREC), intent(in) :: DIA_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: DIA_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: DIA_Si_TO_C
-    real(kind = DBL_PREC), intent(in) :: DIA_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: DIA_C_TO_CHLA
+    type(t_diatom_params), intent(in) :: params
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
@@ -116,7 +70,6 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
-    real(kind = DBL_PREC), intent(in) :: BETA_DIA  ! Photoinhibition parameter
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -150,6 +103,34 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
+
+    associate( &
+        KG_DIA_OPT_TEMP          => params%KG_DIA_OPT_TEMP, &
+        DIA_OPT_TEMP_LR          => params%DIA_OPT_TEMP_LR, &
+        DIA_OPT_TEMP_UR          => params%DIA_OPT_TEMP_UR, &
+        EFF_DIA_GROWTH           => params%EFF_DIA_GROWTH, &
+        KAPPA_DIA_UNDER_OPT_TEMP => params%KAPPA_DIA_UNDER_OPT_TEMP, &
+        KAPPA_DIA_OVER_OPT_TEMP  => params%KAPPA_DIA_OVER_OPT_TEMP, &
+        KR_DIA_20                => params%KR_DIA_20, &
+        THETA_KR_DIA             => params%THETA_KR_DIA, &
+        KD_DIA_20                => params%KD_DIA_20, &
+        THETA_KD_DIA             => params%THETA_KD_DIA, &
+        KHS_DIN_DIA              => params%KHS_DIN_DIA, &
+        KHS_DIP_DIA              => params%KHS_DIP_DIA, &
+        KHS_DSi_DIA              => params%KHS_DSi_DIA, &
+        KHS_O2_DIA               => params%KHS_O2_DIA, &
+        FRAC_DIA_EXCR            => params%FRAC_DIA_EXCR, &
+        I_S_DIA                  => params%I_S_DIA, &
+        DO_STR_HYPOX_DIA_D       => params%DO_STR_HYPOX_DIA_D, &
+        THETA_HYPOX_DIA_D        => params%THETA_HYPOX_DIA_D, &
+        EXPON_HYPOX_DIA_D        => params%EXPON_HYPOX_DIA_D, &
+        DIA_N_TO_C               => params%DIA_N_TO_C, &
+        DIA_P_TO_C               => params%DIA_P_TO_C, &
+        DIA_Si_TO_C              => params%DIA_Si_TO_C, &
+        DIA_O2_TO_C              => params%DIA_O2_TO_C, &
+        DIA_C_TO_CHLA            => params%DIA_C_TO_CHLA, &
+        BETA_DIA                 => params%BETA_DIA)
+
      !Temperature limitation growth factor
      call GROWTH_AT_TEMP &
           (TEMP, LIM_KG_DIA_TEMP, DIA_OPT_TEMP_LR, DIA_OPT_TEMP_UR, KG_DIA_OPT_TEMP,  &
@@ -251,4 +232,6 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     end do
 
     call AMMONIA_PREFS(PREF_NH4N_DIA,NH4_N, NO3_N, KHS_DIN_DIA,nkn)
+
+    end associate
 end subroutine DIATOMS

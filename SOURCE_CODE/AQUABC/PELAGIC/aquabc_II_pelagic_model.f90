@@ -88,6 +88,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     use AQUABC_PELAGIC_INTERNAL
     use GLOBAL, only: NSTATE_CHECK => nstate, NCONST_CHECK => nconst, &
                       NDRIV_CHECK => n_driving_functions, NFLAGS_CHECK => nflags
+    use AQUABC_PELAGIC_TYPES
     use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, &
          FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
@@ -166,12 +167,26 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer :: CONSIDER_INORG_C_DERIVATIVE
     integer :: CONSIDER_CO2_REARATION
 
-
+    ! Derived-type parameter bundles (populated once in CALLED_BEFORE block)
+    type(t_diatom_params),   save :: DIA_PARAMS
+    type(t_cyn_params),      save :: CYN_PARAMS
+    type(t_fix_cyn_params),  save :: FIX_CYN_PARAMS
+    type(t_opa_params),      save :: OPA_PARAMS
+    type(t_nost_params),     save :: NOST_PARAMS
+    type(t_zoo_params),      save :: ZOO_PARAMS
 
     !If called first time
     if (CALLED_BEFORE < 1) then
         !Allocate the arrays in the module AQUABC_PELAGIC_INTERNAL
         call ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
+
+        ! Populate organism parameter types from module-level constants
+        call populate_diatom_params(DIA_PARAMS)
+        call populate_cyn_params(CYN_PARAMS)
+        call populate_fix_cyn_params(FIX_CYN_PARAMS)
+        call populate_opa_params(OPA_PARAMS)
+        call populate_nost_params(NOST_PARAMS)
+        call populate_zoo_params(ZOO_PARAMS)
 
         CALLED_BEFORE = 1
     end if
@@ -830,30 +845,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !********************
 
     !Calculations for diatom growth
-    call DIATOMS(KG_DIA_OPT_TEMP         , &
-                 DIA_OPT_TEMP_LR         , &
-                 DIA_OPT_TEMP_UR         , &
-                 EFF_DIA_GROWTH          , &
-                 KAPPA_DIA_UNDER_OPT_TEMP, &
-                 KAPPA_DIA_OVER_OPT_TEMP , &
-                 KR_DIA_20               , &
-                 THETA_KR_DIA            , &
-                 KD_DIA_20               , &
-                 THETA_KD_DIA            , &
-                 KHS_DIN_DIA             , &
-                 KHS_DIP_DIA             , &
-                 KHS_DSi_DIA             , &
-                 KHS_O2_DIA              , &
-                 FRAC_DIA_EXCR           , &
-                 I_S_DIA                 , &
-                 DO_STR_HYPOX_DIA_D      , &
-                 THETA_HYPOX_DIA_D       , &
-                 EXPON_HYPOX_DIA_D       , &
-                 DIA_N_TO_C              , &
-                 DIA_P_TO_C              , &
-                 DIA_Si_TO_C             , &
-                 DIA_O2_TO_C             , &
-                 DIA_C_TO_CHLA           , &
+    call DIATOMS(DIA_PARAMS              , &
                  DIA_LIGHT_SAT           , &
                  NH4_N                   , &
                  NO3_N                   , &
@@ -890,8 +882,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                  KD_DIA                  , &
                  FAC_HYPOX_DIA_D         , &
                  R_DIA_DEATH             , &
-                 PREF_NH4N_DIA           , &
-                 BETA_DIA)
+                 PREF_NH4N_DIA)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -903,28 +894,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     !Calculations for non-fixing cyanobacteria growth
     call CYANOBACTERIA_BOUYANT &
-         (KG_CYN_OPT_TEMP         , &
-          CYN_OPT_TEMP_LR         , &
-          CYN_OPT_TEMP_UR         , &
-          EFF_CYN_GROWTH          , &
-          KAPPA_CYN_UNDER_OPT_TEMP, &
-          KAPPA_CYN_OVER_OPT_TEMP , &
-          KR_CYN_20               , &
-          THETA_KR_CYN            , &
-          KD_CYN_20               , &
-          THETA_KD_CYN            , &
-          KHS_DIN_CYN             , &
-          KHS_DIP_CYN             , &
-          KHS_O2_CYN              , &
-          FRAC_CYN_EXCR           , &
-          I_S_CYN                 , &
-          DO_STR_HYPOX_CYN_D      , &
-          THETA_HYPOX_CYN_D       , &
-          EXPON_HYPOX_CYN_D       , &
-          CYN_N_TO_C              , &
-          CYN_P_TO_C              , &
-          CYN_O2_TO_C             , &
-          CYN_C_TO_CHLA           , &
+         (CYN_PARAMS              , &
           CYN_LIGHT_SAT           , &
           NH4_N                   , &
           NO3_N                   , &
@@ -942,7 +912,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
           FDAY                    , &
           TIME_STEP               , &
           SMITH                   , &
-          frac_avail_DON          , &
           nkn                     , &
           KG_CYN                  , &
           ALPHA_0                 , &
@@ -963,8 +932,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
           FAC_HYPOX_CYN_D         , &
           R_CYN_DEATH             , &
           PREF_DIN_DON_CYN        , &
-          PREF_NH4N_CYN           , &
-          BETA_CYN)
+          PREF_NH4N_CYN)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -976,34 +944,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !********************************
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
         call FIX_CYANOBACTERIA_BOUYANT  &
-               (KG_FIX_CYN_OPT_TEMP          , &
-                FIX_CYN_OPT_TEMP_LR          , &
-                FIX_CYN_OPT_TEMP_UR          , &
-                EFF_FIX_CYN_GROWTH           , &
-                KAPPA_FIX_CYN_UNDER_OPT_TEMP , &
-                KAPPA_FIX_CYN_OVER_OPT_TEMP  , &
-                KR_FIX_CYN_20                , &
-                THETA_KR_FIX_CYN             , &
-                KD_FIX_CYN_20                , &
-                THETA_KD_FIX_CYN             , &
-                KHS_DIN_FIX_CYN              , &
-                KHS_DIP_FIX_CYN              , &
-                KHS_O2_FIX_CYN               , &
-                I_S_FIX_CYN                  , &
-                DO_STR_HYPOX_FIX_CYN_D       , &
-                THETA_HYPOX_FIX_CYN_D        , &
-                EXPON_HYPOX_FIX_CYN_D        , &
-                FIX_CYN_N_TO_C               , &
-                FIX_CYN_P_TO_C               , &
-                FIX_CYN_O2_TO_C              , &
-                FIX_CYN_C_TO_CHLA            , &
-                FIX_CYN_LIGHT_SAT            , &
-                FRAC_FIX_CYN_EXCR            , &
-                R_FIX                        , &
-                K_FIX                        , &
+               (FIX_CYN_PARAMS               , &
                 TIME_STEP                    , &
                 SMITH                        , &
-                frac_avail_DON               , &
                 nkn                          , &
                 FDAY                         , &
                 I_A                          , &
@@ -1018,6 +961,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                 (PO4_P * DIP_OVER_IP)        , &
                 DISS_OXYGEN                  , &
                 FIX_CYN_C                    , &
+                FIX_CYN_LIGHT_SAT            , &
                 ALPHA_0                      , &
                 ALPHA_1                      , &
                 KG_FIX_CYN                   , &
@@ -1042,8 +986,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                 KD_FIX_CYN                   , &
                 FAC_HYPOX_FIX_CYN_D          , &
                 R_FIX_CYN_DEATH              , &
-                PREF_NH4N_DON_FIX_CYN        , &
-                BETA_FIX_CYN)
+                PREF_NH4N_DON_FIX_CYN)
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
@@ -1067,28 +1010,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! OTHER PLANKTONIC ALGAE     !
     !*****************************
     call OTHER_PLANKTONIC_ALGAE &
-           (KG_OPA_OPT_TEMP         , &
-            OPA_OPT_TEMP_LR         , &
-            OPA_OPT_TEMP_UR         , &
-            EFF_OPA_GROWTH          , &
-            KAPPA_OPA_UNDER_OPT_TEMP, &
-            KAPPA_OPA_OVER_OPT_TEMP , &
-            KR_OPA_20               , &
-            THETA_KR_OPA            , &
-            KD_OPA_20               , &
-            THETA_KD_OPA            , &
-            KHS_DIN_OPA             , &
-            KHS_DIP_OPA             , &
-            KHS_O2_OPA              , &
-            FRAC_OPA_EXCR           , &
-            I_S_OPA                 , &
-            DO_STR_HYPOX_OPA_D      , &
-            THETA_HYPOX_OPA_D       , &
-            EXPON_HYPOX_OPA_D       , &
-            OPA_N_TO_C              , &
-            OPA_P_TO_C              , &
-            OPA_O2_TO_C             , &
-            OPA_C_TO_CHLA           , &
+           (OPA_PARAMS              , &
             OPA_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
@@ -1123,8 +1045,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             KD_OPA                  , &
             FAC_HYPOX_OPA_D         , &
             R_OPA_DEATH             , &
-            PREF_NH4N_OPA           , &
-            BETA_OPA)
+            PREF_NH4N_OPA)
 
         R_OPA_GROWTH(:) = R_OPA_GROWTH(:) * GROWTH_INHIB_FACTOR_OPA(:)
     !******************************!
@@ -1149,40 +1070,12 @@ subroutine AQUABC_PELAGIC_KINETICS &
              (NO3_N * PREF_DIN_DON_NOST), KHS_DN_NOST_VEG_HET, nkn)
 
         call NOSTOCALES &
-           (KG_NOST_VEG_HET_OPT_TEMP          , &
-            FRAC_NOST_GROWTH                  , &
-            NOST_VEG_HET_OPT_TEMP_LR          , &
-            NOST_VEG_HET_OPT_TEMP_UR          , &
-            EFF_NOST_VEG_HET_GROWTH           , &
-            KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP , &
-            KAPPA_NOST_VEG_HET_OVER_OPT_TEMP  , &
-            KR_NOST_VEG_HET_20                , &
-            THETA_KR_NOST_VEG_HET             , &
-            KD_NOST_VEG_HET_20                , &
-            THETA_KD_NOST_VEG_HET             , &
-            KHS_DN_NOST_VEG_HET               , &
-            KHS_DP_NOST_VEG_HET               , &
-            KHS_O2_NOST_VEG_HET               , &
-            I_S_NOST_VEG_HET                  , &
-            DO_STR_HYPOX_NOST_VEG_HET_D       , &
-            THETA_HYPOX_NOST_VEG_HET_D        , &
-            EXPON_HYPOX_NOST_VEG_HET_D        , &
-            NOST_C_TO_CHLA                    , &
-            NOST_LIGHT_SAT                    , &
-            FRAC_NOST_VEG_HET_EXCR            , &
-            P_GERM_AKI                        , &
-            N_GERM_AKI                        , &
-            P_FORM_AKI                        , &
-            DAY_FORM_AKI                      , &
-            T_FORM_AKI                        , &
-            T_GERM_AKI                        , &
-            K_LOSS_AKI                        , &
-            K_MORT_AKI_20                     , &
-            THETA_K_MORT_AKI                  , &
+           (NOST_PARAMS                       , &
             TIME_STEP                         , &
             DAY_OF_YEAR                       , &
             SMITH                             , &
             nkn                               , &
+            NOST_LIGHT_SAT                    , &
             FDAY                              , &
             I_A                               , &
             K_E                               , &
@@ -1218,9 +1111,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             R_GERM_NOST_AKI                   , &
             R_FORM_NOST_AKI                   , &
             R_LOSS_AKI                        , &
-            R_MORT_AKI                        , &
-            M_DENS_VEG_HET                    , &
-            BETA_NOST_VEG_HET)
+            R_MORT_AKI)
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models
@@ -1253,43 +1144,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !******************************!
     !******************************!
     call ZOOPLANKTON &
-           (KG_ZOO_OPT_TEMP               , &
-            ZOO_OPT_TEMP_LR               , &
-            ZOO_OPT_TEMP_UR               , &
-            EFF_ZOO_GROWTH                , &
-            KAPPA_ZOO_UNDER_OPT_TEMP      , &
-            KAPPA_ZOO_OVER_OPT_TEMP       , &
-            GRAT_ZOO_DIA                  , &
-            GRAT_ZOO_CYN                  , &
-            GRAT_ZOO_OPA                  , &
-            GRAT_ZOO_FIX_CYN              , &
-            GRAT_ZOO_NOST_VEG_HET         , &
-            GRAT_ZOO_DET_PART_ORG_C       , &
-            PREF_ZOO_DIA                  , &
-            PREF_ZOO_CYN                  , &
-            PREF_ZOO_FIX_CYN              , &
-            PREF_ZOO_NOST_VEG_HET         , &
-            PREF_ZOO_OPA                  , &
-            PREF_ZOO_DET_PART_ORG_C       , &
-            KHS_DIA_C_ZOO                 , &
-            KHS_CYN_C_ZOO                 , &
-            KHS_FIX_CYN_C_ZOO             , &
-            KHS_NOST_VEG_HET_C_ZOO        , &
-            KHS_OPA_C_ZOO                 , &
-            KHS_DET_PART_ORG_C_ZOO        , &
-            FOOD_MIN_ZOO                  , &
-            KE_ZOO                        , &
-            FRAC_ZOO_EX_ORG               , &
-            KR_ZOO_20                     , &
-            THETA_KR_ZOO                  , &
-            KD_ZOO_20                     , &
-            THETA_KD_ZOO                  , &
-            DO_STR_HYPOX_ZOO_D            , &
-            THETA_HYPOX_ZOO_D             , &
-            EXPON_HYPOX_ZOO_D             , &
-            ZOO_N_TO_C                    , &
-            ZOO_P_TO_C                    , &
-            ZOO_O2_TO_C                   , &
+           (ZOO_PARAMS                       , &
             TEMP                          , &
             DISS_OXYGEN                   , &
             DIA_C                         , &

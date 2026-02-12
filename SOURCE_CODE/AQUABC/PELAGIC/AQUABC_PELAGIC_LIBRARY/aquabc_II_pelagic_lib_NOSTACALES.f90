@@ -7,40 +7,12 @@
 
 ! Submodel for the life cycle of Nostacles, a large order of (fixing) Cyanobacteria
 subroutine NOSTOCALES &
-           (KG_NOST_VEG_HET_OPT_TEMP          , &
-            FRAC_NOST_GROWTH                  , &
-            NOST_VEG_HET_OPT_TEMP_LR          , &
-            NOST_VEG_HET_OPT_TEMP_UR          , &
-            EFF_NOST_VEG_HET_GROWTH           , &
-            KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP , &
-            KAPPA_NOST_VEG_HET_OVER_OPT_TEMP  , &
-            KR_NOST_VEG_HET_20                , &
-            THETA_KR_NOST_VEG_HET             , &
-            KD_NOST_VEG_HET_20                , &
-            THETA_KD_NOST_VEG_HET             , &
-            KHS_DN_NOST_VEG_HET               , &
-            KHS_DP_NOST_VEG_HET               , &
-            KHS_O2_NOST_VEG_HET               , &
-            I_S_NOST_VEG_HET                  , &
-            DO_STR_HYPOX_NOST_VEG_HET_D       , &
-            THETA_HYPOX_NOST_VEG_HET_D        , &
-            EXPON_HYPOX_NOST_VEG_HET_D        , &
-            NOST_C_TO_CHLA                    , &
-            NOST_LIGHT_SAT                    , &
-            FRAC_NOST_VEG_HET_EXCR            , &
-            KR_GERM_AKI                       , &
-            KN_GERM_AKI                       , &
-            KR_FORM_AKI                       , &
-            DAY_FORM_AKI                      , &
-            T_FORM_AKI                        , &
-            T_GERM_AKI                        , &
-            K_LOSS_AKI                        , &
-            K_MORT_AKI_20                     , &
-            THETA_K_MORT_AKI                  , &
+           (params                                , &
             TIME_STEP                         , &
             DAY_OF_YEAR                       , &
             SMITH                             , &
             nkn                               , &
+            NOST_LIGHT_SAT                    , &
             FDAY                              , &
             I_A                               , &
             K_E                               , &
@@ -76,51 +48,21 @@ subroutine NOSTOCALES &
             R_GERM_NOST_AKI                   , &
             R_FORM_NOST_AKI                   , &
             R_LOSS_AKI                        , &
-            R_MORT_AKI                        , &
-            KM_DENS_VEG_HET                   , &
-            BETA_NOST_VEG_HET)
+            R_MORT_AKI)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+   use AQUABC_PELAGIC_TYPES, only: t_nost_params
    implicit none
 
    ! ------------------------------------------------------------------------------------
    ! INGOING VARIABLES
    ! ------------------------------------------------------------------------------------
-   double precision, intent(in) :: KG_NOST_VEG_HET_OPT_TEMP
-   double precision, intent(in) :: FRAC_NOST_GROWTH
-   double precision, intent(in) :: NOST_VEG_HET_OPT_TEMP_LR
-   double precision, intent(in) :: NOST_VEG_HET_OPT_TEMP_UR
-   double precision, intent(in) :: EFF_NOST_VEG_HET_GROWTH
-   double precision, intent(in) :: KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP
-   double precision, intent(in) :: KAPPA_NOST_VEG_HET_OVER_OPT_TEMP
-   double precision, intent(in) :: KR_NOST_VEG_HET_20
-   double precision, intent(in) :: THETA_KR_NOST_VEG_HET
-   double precision, intent(in) :: KD_NOST_VEG_HET_20
-   double precision, intent(in) :: THETA_KD_NOST_VEG_HET
-   double precision, intent(in) :: KHS_DN_NOST_VEG_HET
-   double precision, intent(in) :: KHS_DP_NOST_VEG_HET
-   double precision, intent(in) :: KHS_O2_NOST_VEG_HET
-   double precision, intent(in) :: I_S_NOST_VEG_HET
-   double precision, intent(in) :: DO_STR_HYPOX_NOST_VEG_HET_D
-   double precision, intent(in) :: THETA_HYPOX_NOST_VEG_HET_D
-   double precision, intent(in) :: EXPON_HYPOX_NOST_VEG_HET_D
-   double precision, intent(in) :: NOST_C_TO_CHLA
-   double precision, intent(in) :: FRAC_NOST_VEG_HET_EXCR
+   type(t_nost_params), intent(in) :: params
    double precision, intent(in) :: TIME_STEP
    integer         , intent(in) :: DAY_OF_YEAR
    integer         , intent(in) :: SMITH
-   double precision, dimension(nkn), intent(in) :: FDAY
-   double precision, intent(in) :: KR_GERM_AKI
-   double precision, intent(in) :: KN_GERM_AKI
-   double precision, intent(in) :: KR_FORM_AKI
-   double precision, intent(in) :: DAY_FORM_AKI
-   double precision, intent(in) :: T_FORM_AKI
-   double precision, intent(in) :: T_GERM_AKI
-   double precision, intent(in) :: K_LOSS_AKI
-   double precision, intent(in) :: K_MORT_AKI_20
-   double precision, intent(in) :: THETA_K_MORT_AKI
    integer         , intent(in) :: nkn
-   double precision, intent(in) :: BETA_NOST_VEG_HET  ! Photoinhibition parameter
+   double precision, dimension(nkn), intent(in) :: FDAY
    double precision, dimension(nkn), intent(in) :: I_A
    double precision, dimension(nkn), intent(in) :: K_E
    double precision, dimension(nkn), intent(in) :: DEPTH
@@ -164,8 +106,6 @@ subroutine NOSTOCALES &
    double precision, dimension(nkn), intent(inout) :: R_MORT_AKI
    ! ------------------------------------------------------------------------------------
 
-   double precision, intent(in) :: KM_DENS_VEG_HET
-
    ! ------------------------------------------------------------------------------------
    ! AUXILLARY VARIABLES
    ! ------------------------------------------------------------------------------------
@@ -185,6 +125,39 @@ subroutine NOSTOCALES &
    double precision :: loss, scale_loss
    ! ------------------------------------------------------------------------------------
 
+   associate( &
+       KG_NOST_VEG_HET_OPT_TEMP          => params%KG_NOST_VEG_HET_OPT_TEMP, &
+       FRAC_NOST_GROWTH                   => params%FRAC_NOST_GROWTH, &
+       NOST_VEG_HET_OPT_TEMP_LR          => params%NOST_VEG_HET_OPT_TEMP_LR, &
+       NOST_VEG_HET_OPT_TEMP_UR          => params%NOST_VEG_HET_OPT_TEMP_UR, &
+       EFF_NOST_VEG_HET_GROWTH           => params%EFF_NOST_VEG_HET_GROWTH, &
+       KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP => params%KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP, &
+       KAPPA_NOST_VEG_HET_OVER_OPT_TEMP  => params%KAPPA_NOST_VEG_HET_OVER_OPT_TEMP, &
+       KR_NOST_VEG_HET_20                => params%KR_NOST_VEG_HET_20, &
+       THETA_KR_NOST_VEG_HET             => params%THETA_KR_NOST_VEG_HET, &
+       KD_NOST_VEG_HET_20                => params%KD_NOST_VEG_HET_20, &
+       THETA_KD_NOST_VEG_HET             => params%THETA_KD_NOST_VEG_HET, &
+       KHS_DN_NOST_VEG_HET               => params%KHS_DN_NOST_VEG_HET, &
+       KHS_DP_NOST_VEG_HET               => params%KHS_DP_NOST_VEG_HET, &
+       KHS_O2_NOST_VEG_HET               => params%KHS_O2_NOST_VEG_HET, &
+       I_S_NOST_VEG_HET                  => params%I_S_NOST_VEG_HET, &
+       DO_STR_HYPOX_NOST_VEG_HET_D       => params%DO_STR_HYPOX_NOST_VEG_HET_D, &
+       THETA_HYPOX_NOST_VEG_HET_D        => params%THETA_HYPOX_NOST_VEG_HET_D, &
+       EXPON_HYPOX_NOST_VEG_HET_D        => params%EXPON_HYPOX_NOST_VEG_HET_D, &
+       NOST_C_TO_CHLA                    => params%NOST_C_TO_CHLA, &
+       FRAC_NOST_VEG_HET_EXCR            => params%FRAC_NOST_VEG_HET_EXCR, &
+       KR_GERM_AKI                       => params%KR_GERM_AKI, &
+       KN_GERM_AKI                       => params%KN_GERM_AKI, &
+       KR_FORM_AKI                       => params%KR_FORM_AKI, &
+       DAY_FORM_AKI                      => params%DAY_FORM_AKI, &
+       T_FORM_AKI                        => params%T_FORM_AKI, &
+       T_GERM_AKI                        => params%T_GERM_AKI, &
+       K_LOSS_AKI                        => params%K_LOSS_AKI, &
+       K_MORT_AKI_20                     => params%K_MORT_AKI_20, &
+       THETA_K_MORT_AKI                  => params%THETA_K_MORT_AKI, &
+       KM_DENS_VEG_HET                   => params%KM_DENS_VEG_HET, &
+       BETA_NOST_VEG_HET                 => params%BETA_NOST_VEG_HET &
+   )
 
    ! ------------------------------------------------------------------------------------
    ! CODE TO CALCULATE THE GROWTH RATE OF VEGATATIVE + HETEROCYST STAGE NOSTACLE CELLS
@@ -404,5 +377,7 @@ subroutine NOSTOCALES &
     ! ------------------------------------------------------------------------------------
     R_LOSS_AKI = K_LOSS_AKI      * NOST_AKI_C
     R_MORT_AKI = K_MORT_AKI_20 * (THETA_K_MORT_AKI**(TEMP - 20.0D0)) * NOST_AKI_C
+
+   end associate
 
 end subroutine NOSTOCALES

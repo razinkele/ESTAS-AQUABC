@@ -5,28 +5,7 @@
 !subroutine CYANOBACTERIA_BOUYANT
 
 subroutine CYANOBACTERIA &
-           (KG_CYN_OPT_TEMP         , &
-            CYN_OPT_TEMP_LR         , &
-            CYN_OPT_TEMP_UR         , &
-            EFF_CYN_GROWTH          , &
-            KAPPA_CYN_UNDER_OPT_TEMP, &
-            KAPPA_CYN_OVER_OPT_TEMP , &
-            KR_CYN_20               , &
-            THETA_KR_CYN            , &
-            KD_CYN_20               , &
-            THETA_KD_CYN            , &
-            KHS_DIN_CYN             , &
-            KHS_DIP_CYN             , &
-            KHS_O2_CYN              , &
-            FRAC_CYN_EXCR           , &
-            I_S_CYN                 , &
-            DO_STR_HYPOX_CYN_D      , &
-            THETA_HYPOX_CYN_D       , &
-            EXPON_HYPOX_CYN_D       , &
-            CYN_N_TO_C              , &
-            CYN_P_TO_C              , &
-            CYN_O2_TO_C             , &
-            CYN_C_TO_CHLA           , &
+           (params                      , &
             CYN_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
@@ -43,7 +22,6 @@ subroutine CYANOBACTERIA &
             FDAY                    , &
             TIME_STEP               , &
             SMITH                   , &
-            frac_avail_DON          , &
             nkn                     , &
             KG_CYN                  , &
             ALPHA_0                 , &
@@ -63,40 +41,18 @@ subroutine CYANOBACTERIA &
             KD_CYN                  , &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
-            PREF_NH4N_DON_CYN       , &
-            BETA_CYN)
+            PREF_NH4N_DON_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+    use AQUABC_PELAGIC_TYPES, only: t_cyn_params
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_CYN_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: CYN_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: CYN_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_CYN_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_CYN_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_CYN_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_CYN
-    real(kind = DBL_PREC), intent(in) :: KD_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_CYN
-    real(kind = DBL_PREC), intent(in) :: FRAC_CYN_EXCR
-    real(kind = DBL_PREC), intent(in) :: I_S_CYN
-    real(kind = DBL_PREC), intent(in) :: BETA_CYN  ! Photoinhibition parameter
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: CYN_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_C_TO_CHLA
-    real(kind = DBL_PREC), intent(in) :: frac_avail_DON
+    type(t_cyn_params), intent(in) :: params
+
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
@@ -153,6 +109,32 @@ subroutine CYANOBACTERIA &
     ! Local variables for mass-balance safeguard
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
+
+    associate( &
+        KG_CYN_OPT_TEMP          => params%KG_CYN_OPT_TEMP, &
+        CYN_OPT_TEMP_LR          => params%CYN_OPT_TEMP_LR, &
+        CYN_OPT_TEMP_UR          => params%CYN_OPT_TEMP_UR, &
+        EFF_CYN_GROWTH            => params%EFF_CYN_GROWTH, &
+        KAPPA_CYN_UNDER_OPT_TEMP => params%KAPPA_CYN_UNDER_OPT_TEMP, &
+        KAPPA_CYN_OVER_OPT_TEMP  => params%KAPPA_CYN_OVER_OPT_TEMP, &
+        KR_CYN_20                 => params%KR_CYN_20, &
+        THETA_KR_CYN              => params%THETA_KR_CYN, &
+        KD_CYN_20                 => params%KD_CYN_20, &
+        THETA_KD_CYN              => params%THETA_KD_CYN, &
+        KHS_DIN_CYN               => params%KHS_DIN_CYN, &
+        KHS_DIP_CYN               => params%KHS_DIP_CYN, &
+        KHS_O2_CYN                => params%KHS_O2_CYN, &
+        FRAC_CYN_EXCR             => params%FRAC_CYN_EXCR, &
+        I_S_CYN                   => params%I_S_CYN, &
+        BETA_CYN                  => params%BETA_CYN, &
+        DO_STR_HYPOX_CYN_D        => params%DO_STR_HYPOX_CYN_D, &
+        THETA_HYPOX_CYN_D         => params%THETA_HYPOX_CYN_D, &
+        EXPON_HYPOX_CYN_D         => params%EXPON_HYPOX_CYN_D, &
+        CYN_N_TO_C                => params%CYN_N_TO_C, &
+        CYN_P_TO_C                => params%CYN_P_TO_C, &
+        CYN_O2_TO_C               => params%CYN_O2_TO_C, &
+        CYN_C_TO_CHLA             => params%CYN_C_TO_CHLA, &
+        frac_avail_DON             => params%frac_avail_DON)
 
     ! Temperature growth limitation factor
     call GROWTH_AT_TEMP &
@@ -250,33 +232,13 @@ subroutine CYANOBACTERIA &
     call AMMONIA_DON_PREFS &
          (PREF_NH4N_DON_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_CYN,nkn)
 
+    end associate
 end subroutine CYANOBACTERIA
 
 
 
 subroutine CYANOBACTERIA_BOUYANT &
-           (KG_CYN_OPT_TEMP         , &
-            CYN_OPT_TEMP_LR         , &
-            CYN_OPT_TEMP_UR         , &
-            EFF_CYN_GROWTH          , &
-            KAPPA_CYN_UNDER_OPT_TEMP, &
-            KAPPA_CYN_OVER_OPT_TEMP , &
-            KR_CYN_20               , &
-            THETA_KR_CYN            , &
-            KD_CYN_20               , &
-            THETA_KD_CYN            , &
-            KHS_DIN_CYN             , &
-            KHS_DIP_CYN             , &
-            KHS_O2_CYN              , &
-            FRAC_CYN_EXCR           , &
-            I_S_CYN                 , &
-            DO_STR_HYPOX_CYN_D      , &
-            THETA_HYPOX_CYN_D       , &
-            EXPON_HYPOX_CYN_D       , &
-            CYN_N_TO_C              , &
-            CYN_P_TO_C              , &
-            CYN_O2_TO_C             , &
-            CYN_C_TO_CHLA           , &
+           (params                      , &
             CYN_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
@@ -294,7 +256,6 @@ subroutine CYANOBACTERIA_BOUYANT &
             FDAY                    , &
             TIME_STEP               , &
             SMITH                   , &
-            frac_avail_DON          , &
             nkn                     , &
             KG_CYN                  , &
             ALPHA_0                 , &
@@ -315,42 +276,20 @@ subroutine CYANOBACTERIA_BOUYANT &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
             PREF_DIN_DON_CYN        , &
-            PREF_NH4N_CYN           , &
-            BETA_CYN)
+            PREF_NH4N_CYN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
+    use AQUABC_PELAGIC_TYPES, only: t_cyn_params
 
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_CYN_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: CYN_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: CYN_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_CYN_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_CYN_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_CYN_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_CYN
-    real(kind = DBL_PREC), intent(in) :: KD_CYN_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_CYN
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_CYN
-    real(kind = DBL_PREC), intent(in) :: FRAC_CYN_EXCR
-    real(kind = DBL_PREC), intent(in) :: I_S_CYN
-    real(kind = DBL_PREC), intent(in) :: BETA_CYN  ! Photoinhibition parameter
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_CYN_D
-    real(kind = DBL_PREC), intent(in) :: CYN_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: CYN_C_TO_CHLA
-    real(kind = DBL_PREC), intent(in) :: frac_avail_DON
+    type(t_cyn_params), intent(in) :: params
+
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
@@ -410,6 +349,33 @@ subroutine CYANOBACTERIA_BOUYANT &
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
+
+    associate( &
+        KG_CYN_OPT_TEMP          => params%KG_CYN_OPT_TEMP, &
+        CYN_OPT_TEMP_LR          => params%CYN_OPT_TEMP_LR, &
+        CYN_OPT_TEMP_UR          => params%CYN_OPT_TEMP_UR, &
+        EFF_CYN_GROWTH            => params%EFF_CYN_GROWTH, &
+        KAPPA_CYN_UNDER_OPT_TEMP => params%KAPPA_CYN_UNDER_OPT_TEMP, &
+        KAPPA_CYN_OVER_OPT_TEMP  => params%KAPPA_CYN_OVER_OPT_TEMP, &
+        KR_CYN_20                 => params%KR_CYN_20, &
+        THETA_KR_CYN              => params%THETA_KR_CYN, &
+        KD_CYN_20                 => params%KD_CYN_20, &
+        THETA_KD_CYN              => params%THETA_KD_CYN, &
+        KHS_DIN_CYN               => params%KHS_DIN_CYN, &
+        KHS_DIP_CYN               => params%KHS_DIP_CYN, &
+        KHS_O2_CYN                => params%KHS_O2_CYN, &
+        FRAC_CYN_EXCR             => params%FRAC_CYN_EXCR, &
+        I_S_CYN                   => params%I_S_CYN, &
+        BETA_CYN                  => params%BETA_CYN, &
+        DO_STR_HYPOX_CYN_D        => params%DO_STR_HYPOX_CYN_D, &
+        THETA_HYPOX_CYN_D         => params%THETA_HYPOX_CYN_D, &
+        EXPON_HYPOX_CYN_D         => params%EXPON_HYPOX_CYN_D, &
+        CYN_N_TO_C                => params%CYN_N_TO_C, &
+        CYN_P_TO_C                => params%CYN_P_TO_C, &
+        CYN_O2_TO_C               => params%CYN_O2_TO_C, &
+        CYN_C_TO_CHLA             => params%CYN_C_TO_CHLA, &
+        frac_avail_DON             => params%frac_avail_DON)
+
     ! Growth limitation by temperature factor
     call GROWTH_AT_TEMP &
          (TEMP, LIM_KG_CYN_TEMP, CYN_OPT_TEMP_LR, CYN_OPT_TEMP_UR, KG_CYN_OPT_TEMP,  &
@@ -527,4 +493,5 @@ subroutine CYANOBACTERIA_BOUYANT &
     call AMMONIA_PREFS &
          (PREF_NH4N_CYN, (NH4_N * PREF_DIN_DON_CYN), (NO3_N * PREF_DIN_DON_CYN), KHS_DIN_CYN, nkn)
 
+    end associate
 end subroutine CYANOBACTERIA_BOUYANT

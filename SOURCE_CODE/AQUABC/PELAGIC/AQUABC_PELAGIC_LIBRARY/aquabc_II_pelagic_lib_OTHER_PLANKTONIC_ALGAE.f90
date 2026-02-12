@@ -4,94 +4,52 @@
 !subroutine OTHER_PLANKTONIC_ALGAE
 
 subroutine OTHER_PLANKTONIC_ALGAE &
-           (KG_OPA_OPT_TEMP         , &
-            OPA_OPT_TEMP_LR         , &
-            OPA_OPT_TEMP_UR         , &
-            EFF_OPA_GROWTH          , &
-            KAPPA_OPA_UNDER_OPT_TEMP, &
-            KAPPA_OPA_OVER_OPT_TEMP , &
-            KR_OPA_20               , &
-            THETA_KR_OPA            , &
-            KD_OPA_20               , &
-            THETA_KD_OPA            , &
-            KHS_DIN_OPA             , &
-            KHS_DIP_OPA             , &
-            KHS_O2_OPA              , &
-            FRAC_OPA_EXCR           , &
-            I_S_OPA                 , &
-            DO_STR_HYPOX_OPA_D      , &
-            THETA_HYPOX_OPA_D       , &
-            EXPON_HYPOX_OPA_D       , &
-            OPA_N_TO_C              , &
-            OPA_P_TO_C              , &
-            OPA_O2_TO_C             , &
-            OPA_C_TO_CHLA           , &
-            OPA_LIGHT_SAT           , &
-            NH4_N                   , &
-            NO3_N                   , &
-            PO4_P                   , &
-            DISS_OXYGEN             , &
-            OPA_C                   , &
-            ZOO_C                   , &
-            TEMP                    , &
-            I_A                     , &
-            K_E                     , &
-            DEPTH                   , &
-            CHLA                    , &
-            FDAY                    , &
-            TIME_STEP               , &
-            SMITH                   , &
-            nkn                     , &
-            KG_OPA                  , &
-            ALPHA_0                 , &
-            ALPHA_1                 , &
-            LIM_KG_OPA_TEMP         , &
-            LIM_KG_OPA_LIGHT        , &
-            LIM_KG_OPA_DOXY         , &
-            LIM_KG_OPA_N            , &
-            LIM_KG_OPA_P            , &
-            LIM_KG_OPA_NUTR         , &
-            LIM_KG_OPA              , &
-            R_OPA_GROWTH            , &
-            R_OPA_MET               , &
-            R_OPA_RESP              , &
-            R_OPA_EXCR              , &
-            R_OPA_INT_RESP          , &
-            KD_OPA                  , &
-            FAC_HYPOX_OPA_D         , &
-            R_OPA_DEATH             , &
-            PREF_NH4N_OPA           , &
-            BETA_OPA)
+           (params                   , &
+            OPA_LIGHT_SAT            , &
+            NH4_N                    , &
+            NO3_N                    , &
+            PO4_P                    , &
+            DISS_OXYGEN              , &
+            OPA_C                    , &
+            ZOO_C                    , &
+            TEMP                     , &
+            I_A                      , &
+            K_E                      , &
+            DEPTH                    , &
+            CHLA                     , &
+            FDAY                     , &
+            TIME_STEP                , &
+            SMITH                    , &
+            nkn                      , &
+            KG_OPA                   , &
+            ALPHA_0                  , &
+            ALPHA_1                  , &
+            LIM_KG_OPA_TEMP          , &
+            LIM_KG_OPA_LIGHT         , &
+            LIM_KG_OPA_DOXY          , &
+            LIM_KG_OPA_N             , &
+            LIM_KG_OPA_P             , &
+            LIM_KG_OPA_NUTR          , &
+            LIM_KG_OPA               , &
+            R_OPA_GROWTH             , &
+            R_OPA_MET                , &
+            R_OPA_RESP               , &
+            R_OPA_EXCR               , &
+            R_OPA_INT_RESP           , &
+            KD_OPA                   , &
+            FAC_HYPOX_OPA_D          , &
+            R_OPA_DEATH              , &
+            PREF_NH4N_OPA)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+    use AQUABC_PELAGIC_TYPES, only: t_opa_params
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_OPA_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: OPA_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: OPA_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_OPA_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_OPA_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_OPA_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KR_OPA_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_OPA
-    real(kind = DBL_PREC), intent(in) :: KD_OPA_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_OPA
-    real(kind = DBL_PREC), intent(in) :: KHS_DIN_OPA
-    real(kind = DBL_PREC), intent(in) :: KHS_DIP_OPA
-    real(kind = DBL_PREC), intent(in) :: KHS_O2_OPA
-    real(kind = DBL_PREC), intent(in) :: FRAC_OPA_EXCR
-    real(kind = DBL_PREC), intent(in) :: I_S_OPA
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_OPA_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_OPA_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_OPA_D
-    real(kind = DBL_PREC), intent(in) :: OPA_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: OPA_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: OPA_O2_TO_C
-    real(kind = DBL_PREC), intent(in) :: OPA_C_TO_CHLA
+    type(t_opa_params), intent(in) :: params
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
@@ -111,7 +69,6 @@ subroutine OTHER_PLANKTONIC_ALGAE &
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
-    real(kind = DBL_PREC), intent(in) :: BETA_OPA  ! Photoinhibition parameter
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -144,6 +101,32 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     ! -------------------------------------------------------------------------
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
+
+    associate( &
+        KG_OPA_OPT_TEMP          => params%KG_OPA_OPT_TEMP,          &
+        OPA_OPT_TEMP_LR          => params%OPA_OPT_TEMP_LR,          &
+        OPA_OPT_TEMP_UR          => params%OPA_OPT_TEMP_UR,          &
+        EFF_OPA_GROWTH           => params%EFF_OPA_GROWTH,            &
+        KAPPA_OPA_UNDER_OPT_TEMP => params%KAPPA_OPA_UNDER_OPT_TEMP, &
+        KAPPA_OPA_OVER_OPT_TEMP  => params%KAPPA_OPA_OVER_OPT_TEMP,  &
+        KR_OPA_20                => params%KR_OPA_20,                 &
+        THETA_KR_OPA             => params%THETA_KR_OPA,              &
+        KD_OPA_20                => params%KD_OPA_20,                 &
+        THETA_KD_OPA             => params%THETA_KD_OPA,              &
+        KHS_DIN_OPA              => params%KHS_DIN_OPA,               &
+        KHS_DIP_OPA              => params%KHS_DIP_OPA,               &
+        KHS_O2_OPA               => params%KHS_O2_OPA,                &
+        FRAC_OPA_EXCR            => params%FRAC_OPA_EXCR,             &
+        I_S_OPA                  => params%I_S_OPA,                   &
+        DO_STR_HYPOX_OPA_D       => params%DO_STR_HYPOX_OPA_D,       &
+        THETA_HYPOX_OPA_D        => params%THETA_HYPOX_OPA_D,        &
+        EXPON_HYPOX_OPA_D        => params%EXPON_HYPOX_OPA_D,        &
+        OPA_N_TO_C               => params%OPA_N_TO_C,                &
+        OPA_P_TO_C               => params%OPA_P_TO_C,                &
+        OPA_O2_TO_C              => params%OPA_O2_TO_C,               &
+        OPA_C_TO_CHLA            => params%OPA_C_TO_CHLA,             &
+        BETA_OPA                 => params%BETA_OPA                   &
+    )
 
     ALPHA_0 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * 0.0D0)
     ALPHA_1 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * DEPTH)
@@ -243,4 +226,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
 
     !PREF_NH4N_OPA = NH4_N / (NH4_N + KHS_NH4N_PREF_OPA)
     call AMMONIA_PREFS(PREF_NH4N_OPA, NH4_N, NO3_N, KHS_DIN_OPA,nkn)
+
+    end associate
+
 end subroutine OTHER_PLANKTONIC_ALGAE

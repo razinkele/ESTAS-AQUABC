@@ -4,43 +4,7 @@
 !subroutine ZOOPLANKTON
 
 subroutine ZOOPLANKTON &
-           (KG_ZOO_OPT_TEMP               , &
-            ZOO_OPT_TEMP_LR               , &
-            ZOO_OPT_TEMP_UR               , &
-            EFF_ZOO_GROWTH                , &
-            KAPPA_ZOO_UNDER_OPT_TEMP      , &
-            KAPPA_ZOO_OVER_OPT_TEMP       , &
-            GRAT_ZOO_DIA                  , &
-            GRAT_ZOO_CYN                  , &
-            GRAT_ZOO_OPA                  , &
-            GRAT_ZOO_FIX_CYN              , &
-            GRAT_ZOO_NOST_VEG_HET         , &
-            GRAT_ZOO_DET_PART_ORG_C       , &
-            PREF_ZOO_DIA                  , &
-            PREF_ZOO_CYN                  , &
-            PREF_ZOO_FIX_CYN              , &
-            PREF_ZOO_NOST_VEG_HET         , &
-            PREF_ZOO_OPA                  , &
-            PREF_ZOO_DET_PART_ORG_C       , &
-            KHS_DIA_C_ZOO                 , &
-            KHS_CYN_C_ZOO                 , &
-            KHS_FIX_CYN_C_ZOO             , &
-            KHS_NOST_VEG_HET_C_ZOO        , &
-            KHS_OPA_C_ZOO                 , &
-            KHS_DET_PART_ORG_C_ZOO        , &
-            FOOD_MIN_ZOO                  , &
-            KE_ZOO                        , &
-            FRAC_ZOO_EX_ORG               , &
-            KR_ZOO_20                     , &
-            THETA_KR_ZOO                  , &
-            KD_ZOO_20                     , &
-            THETA_KD_ZOO                  , &
-            DO_STR_HYPOX_ZOO_D            , &
-            THETA_HYPOX_ZOO_D             , &
-            EXPON_HYPOX_ZOO_D             , &
-            ZOO_N_TO_C                    , &
-            ZOO_P_TO_C                    , &
-            ZOO_O2_TO_C                   , &
+           (params                            , &
             TEMP                          , &
             DISS_OXYGEN                   , &
             DIA_C                         , &
@@ -84,48 +48,13 @@ subroutine ZOOPLANKTON &
             FAC_HYPOX_ZOO_D)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PELAGIC_TYPES, only: t_zoo_params
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), intent(in) :: KG_ZOO_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: ZOO_OPT_TEMP_LR
-    real(kind = DBL_PREC), intent(in) :: ZOO_OPT_TEMP_UR
-    real(kind = DBL_PREC), intent(in) :: EFF_ZOO_GROWTH
-    real(kind = DBL_PREC), intent(in) :: KAPPA_ZOO_UNDER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: KAPPA_ZOO_OVER_OPT_TEMP
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_DIA
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_CYN
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_OPA
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_NOST_VEG_HET
-    real(kind = DBL_PREC), intent(in) :: GRAT_ZOO_DET_PART_ORG_C
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_DIA
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_CYN
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_FIX_CYN
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_NOST_VEG_HET
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_OPA
-    real(kind = DBL_PREC), intent(in) :: PREF_ZOO_DET_PART_ORG_C
-    real(kind = DBL_PREC), intent(in) :: KHS_DIA_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: KHS_CYN_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: KHS_FIX_CYN_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: KHS_NOST_VEG_HET_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: KHS_OPA_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: KHS_DET_PART_ORG_C_ZOO
-    real(kind = DBL_PREC), intent(in) :: FOOD_MIN_ZOO
-    real(kind = DBL_PREC), intent(in) :: KE_ZOO
-    real(kind = DBL_PREC), intent(in) :: FRAC_ZOO_EX_ORG
-    real(kind = DBL_PREC), intent(in) :: KR_ZOO_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KR_ZOO
-    real(kind = DBL_PREC), intent(in) :: KD_ZOO_20
-    real(kind = DBL_PREC), intent(in) :: THETA_KD_ZOO
-    real(kind = DBL_PREC), intent(in) :: DO_STR_HYPOX_ZOO_D
-    real(kind = DBL_PREC), intent(in) :: THETA_HYPOX_ZOO_D
-    real(kind = DBL_PREC), intent(in) :: EXPON_HYPOX_ZOO_D
-    real(kind = DBL_PREC), intent(in) :: ZOO_N_TO_C
-    real(kind = DBL_PREC), intent(in) :: ZOO_P_TO_C
-    real(kind = DBL_PREC), intent(in) :: ZOO_O2_TO_C
+    type(t_zoo_params), intent(in) :: params
 
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: nkn
@@ -180,7 +109,7 @@ subroutine ZOOPLANKTON &
     real(kind = DBL_PREC), dimension(nkn) ::LIM_TEMP_ZOO
     integer :: i
     real(kind = DBL_PREC) :: pred_limit
-    
+
     ! Active switching model variables
     real(kind = DBL_PREC), dimension(nkn) :: TOTAL_FOOD
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_DIA
@@ -194,6 +123,46 @@ subroutine ZOOPLANKTON &
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
+
+    associate( &
+        KG_ZOO_OPT_TEMP          => params%KG_ZOO_OPT_TEMP,          &
+        ZOO_OPT_TEMP_LR          => params%ZOO_OPT_TEMP_LR,          &
+        ZOO_OPT_TEMP_UR          => params%ZOO_OPT_TEMP_UR,          &
+        EFF_ZOO_GROWTH           => params%EFF_ZOO_GROWTH,           &
+        KAPPA_ZOO_UNDER_OPT_TEMP => params%KAPPA_ZOO_UNDER_OPT_TEMP, &
+        KAPPA_ZOO_OVER_OPT_TEMP  => params%KAPPA_ZOO_OVER_OPT_TEMP,  &
+        GRAT_ZOO_DIA             => params%GRAT_ZOO_DIA,             &
+        GRAT_ZOO_CYN             => params%GRAT_ZOO_CYN,             &
+        GRAT_ZOO_OPA             => params%GRAT_ZOO_OPA,             &
+        GRAT_ZOO_FIX_CYN         => params%GRAT_ZOO_FIX_CYN,         &
+        GRAT_ZOO_NOST_VEG_HET    => params%GRAT_ZOO_NOST_VEG_HET,    &
+        GRAT_ZOO_DET_PART_ORG_C  => params%GRAT_ZOO_DET_PART_ORG_C,  &
+        PREF_ZOO_DIA             => params%PREF_ZOO_DIA,             &
+        PREF_ZOO_CYN             => params%PREF_ZOO_CYN,             &
+        PREF_ZOO_FIX_CYN         => params%PREF_ZOO_FIX_CYN,         &
+        PREF_ZOO_NOST_VEG_HET    => params%PREF_ZOO_NOST_VEG_HET,    &
+        PREF_ZOO_OPA             => params%PREF_ZOO_OPA,             &
+        PREF_ZOO_DET_PART_ORG_C  => params%PREF_ZOO_DET_PART_ORG_C,  &
+        KHS_DIA_C_ZOO            => params%KHS_DIA_C_ZOO,            &
+        KHS_CYN_C_ZOO            => params%KHS_CYN_C_ZOO,            &
+        KHS_FIX_CYN_C_ZOO        => params%KHS_FIX_CYN_C_ZOO,        &
+        KHS_NOST_VEG_HET_C_ZOO   => params%KHS_NOST_VEG_HET_C_ZOO,   &
+        KHS_OPA_C_ZOO            => params%KHS_OPA_C_ZOO,            &
+        KHS_DET_PART_ORG_C_ZOO   => params%KHS_DET_PART_ORG_C_ZOO,   &
+        FOOD_MIN_ZOO             => params%FOOD_MIN_ZOO,             &
+        KE_ZOO                   => params%KE_ZOO,                   &
+        FRAC_ZOO_EX_ORG          => params%FRAC_ZOO_EX_ORG,          &
+        KR_ZOO_20                => params%KR_ZOO_20,                &
+        THETA_KR_ZOO             => params%THETA_KR_ZOO,             &
+        KD_ZOO_20                => params%KD_ZOO_20,                &
+        THETA_KD_ZOO             => params%THETA_KD_ZOO,             &
+        DO_STR_HYPOX_ZOO_D       => params%DO_STR_HYPOX_ZOO_D,       &
+        THETA_HYPOX_ZOO_D        => params%THETA_HYPOX_ZOO_D,        &
+        EXPON_HYPOX_ZOO_D        => params%EXPON_HYPOX_ZOO_D,        &
+        ZOO_N_TO_C               => params%ZOO_N_TO_C,               &
+        ZOO_P_TO_C               => params%ZOO_P_TO_C,               &
+        ZOO_O2_TO_C              => params%ZOO_O2_TO_C               &
+    )
 
     !Zooplankton growth limitation by temperature
     call GROWTH_AT_TEMP &
@@ -215,10 +184,10 @@ subroutine ZOOPLANKTON &
     ! This creates adaptive behavior: zooplankton shift effort to abundant prey
     ! Reference: Gentleman et al. (2003), Kiorboe (2008)
     ! =========================================================================
-    
+
     ! Switching power: 1.0 = linear, 2.0 = strong switching
     SWITCHING_POWER = 1.5D0
-    
+
     ! Calculate total preference-weighted food availability
     TOTAL_FOOD = PREF_ZOO_DIA            * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) + &
                  PREF_ZOO_CYN            * max(CYN_C - FOOD_MIN_ZOO, 0.0D0) + &
@@ -226,12 +195,12 @@ subroutine ZOOPLANKTON &
                  PREF_ZOO_FIX_CYN        * max(FIX_CYN_C - FOOD_MIN_ZOO, 0.0D0) + &
                  PREF_ZOO_NOST_VEG_HET   * max(NOST_VEG_HET_C - FOOD_MIN_ZOO, 0.0D0) + &
                  PREF_ZOO_DET_PART_ORG_C * max(DET_PART_ORG_C - FOOD_MIN_ZOO, 0.0D0)
-    
+
     ! Calculate dynamic (switching) preferences for each prey type
     ! Formula: DYN_PREF_i = BASE_PREF_i * (relative_abundance_i)^(n-1)
     ! where relative_abundance_i = (PREF_i * PREY_i) / TOTAL_FOOD
     ! This makes preference increase for abundant prey
-    
+
     where (TOTAL_FOOD > 1.0D-10)
         DYN_PREF_DIA = PREF_ZOO_DIA * &
             (max(PREF_ZOO_DIA * max(DIA_C - FOOD_MIN_ZOO, 0.0D0) &
@@ -414,5 +383,7 @@ subroutine ZOOPLANKTON &
             end if
         end if
     end do
+
+    end associate
 
 end subroutine ZOOPLANKTON
