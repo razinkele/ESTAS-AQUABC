@@ -77,8 +77,8 @@ EXE_NAME_AUTO = ESTAS_II_$(FC_SHORT)_$(BUILD_TYPE)
 ifeq ($(FC_BASE),gfortran)
     COMPILER_NAME = GNU Fortran (gfortran)
     ifeq ($(BUILD_TYPE),debug)
-        FFLAGS = -g -Og -fcheck=all -fbacktrace -Wall -Wextra -pedantic -ffpe-trap=invalid,zero,overflow
-        BUILD_DESC = Debug (bounds checking, backtraces, warnings)
+        FFLAGS = -g -Og -fcheck=all -fbacktrace -Wall -Wextra -pedantic -fimplicit-none -ffpe-trap=invalid,zero,overflow
+        BUILD_DESC = Debug (bounds checking, backtraces, warnings, -fimplicit-none)
     else ifeq ($(BUILD_TYPE),fast)
         # WARNING: -ffast-math breaks IEEE 754 compliance. It enables:
         #   -fno-math-errno, -funsafe-math-optimizations, -ffinite-math-only,
@@ -86,11 +86,11 @@ ifeq ($(FC_BASE),gfortran)
         # This can produce different results for exp(), log(), and trig functions,
         # and may affect Michaelis-Menten kinetics, light limitation, and DO
         # saturation calculations. Use BUILD_TYPE=release for validated results.
-        FFLAGS = -O3 -march=native -mtune=native -funroll-loops -ffast-math -flto
-        BUILD_DESC = Fast (-O3, -ffast-math, LTO)
+        FFLAGS = -O3 -march=native -mtune=native -funroll-loops -ffast-math -flto -Wall -Wextra -fimplicit-none
+        BUILD_DESC = Fast (-O3, -ffast-math, LTO, warnings)
     else
-        FFLAGS = -O2 -march=native -mtune=native
-        BUILD_DESC = Release (-O2, native arch)
+        FFLAGS = -O2 -march=native -mtune=native -Wall -Wextra -fimplicit-none
+        BUILD_DESC = Release (-O2, native arch, warnings)
     endif
 else ifeq ($(FC_BASE),ifort)
     COMPILER_NAME = Intel Fortran Classic (ifort)
@@ -102,11 +102,11 @@ else ifeq ($(FC_BASE),ifort)
         # -no-prec-div replaces division with reciprocal multiplication (less accurate).
         # -fp-model fast=2 allows aggressive FP reordering and approximations.
         # This can affect scientific results. Use BUILD_TYPE=release for validated runs.
-        FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2
-        BUILD_DESC = Fast (-O3, IPO, fast math)
+        FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2 -warn all
+        BUILD_DESC = Fast (-O3, IPO, fast math, warnings)
     else
-        FFLAGS = -O2 -xHost
-        BUILD_DESC = Release (-O2, host arch)
+        FFLAGS = -O2 -xHost -warn all
+        BUILD_DESC = Release (-O2, host arch, warnings)
     endif
 else ifeq ($(FC_BASE),ifx)
     COMPILER_NAME = Intel Fortran LLVM (ifx)
@@ -119,11 +119,11 @@ else ifeq ($(FC_BASE),ifx)
     else ifeq ($(BUILD_TYPE),fast)
         # WARNING: -no-prec-div and -fp-model fast=2 break IEEE 754 compliance.
         # See ifort fast flags above for details.
-        FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2
-        BUILD_DESC = Fast (-O3, IPO, fast math)
+        FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2 -warn all
+        BUILD_DESC = Fast (-O3, IPO, fast math, warnings)
     else
-        FFLAGS = -O2 -xHost
-        BUILD_DESC = Release (-O2, host arch)
+        FFLAGS = -O2 -xHost -warn all
+        BUILD_DESC = Release (-O2, host arch, warnings)
     endif
 else
     # Unknown compiler - use generic flags
