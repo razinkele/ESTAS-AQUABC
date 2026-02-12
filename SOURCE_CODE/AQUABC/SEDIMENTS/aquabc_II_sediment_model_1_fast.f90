@@ -79,20 +79,13 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     use GLOBAL, only: SED_VARS_CHECK => NUM_SED_VARS, &
                       SED_CONSTS_CHECK => NUM_SED_CONSTS, &
                       SED_OUTPUTS_CHECK => NUM_SED_OUTPUTS
-    !use para_aqua
 
-    !use basin, only: ipv !0d correction
+
 
     ! Flags: 1,2,3 = 3,4,5 WC
 
 
     implicit none
-
-    !include 'param.h'
-
-
-!     integer ipv(nkndim)       !external node numbers
-!     common  /ipv/ipv
 
     !ARGUMENTS RELATED TO ARAY SIZES
 
@@ -574,12 +567,10 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     DO_ADVANCED_REDOX_SIMULATION = 0
     NUM_SIMULATED_SED_VARS       = 15
 
-    !if (present(ADVANCED_REDOX_OPTION)) then
-        if (ADVANCED_REDOX_OPTION > 0) then
-            DO_ADVANCED_REDOX_SIMULATION = 1
-            NUM_SIMULATED_SED_VARS       = 24
-        end if
-    !end if
+    if (ADVANCED_REDOX_OPTION > 0) then
+        DO_ADVANCED_REDOX_SIMULATION = 1
+        NUM_SIMULATED_SED_VARS       = 24
+    end if
 
     !Checking state and output dimensions. Change them if they are changed
     if (CHECK_NUM_SED_LAYERS == 1) then
@@ -1778,9 +1769,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 !24/06/2012: If clause Added by Ali for safer switch off
                 if (switch_burial.ne.0) then
                     ! Code for Elin process outputs
-                    !if (present(SED_BURRIAL_RATE_OUTPUTS)) then
-                        SED_BURRIAL_RATE_OUTPUTS(:,i, j) = INTERMED_RESULTS(:,i, j) * SED_BURRIALS(:,i)
-                    !end if
+                    SED_BURRIAL_RATE_OUTPUTS(:,i, j) = INTERMED_RESULTS(:,i, j) * SED_BURRIALS(:,i)
                     ! End of code for Elin process outputs
 
                     ! Bug fixed: INTERMED_RESULTS(:,i, j) * SED_BURRIALS(:,i) produces a unit of
@@ -2729,56 +2718,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
             KINETIC_DERIVS(:,:, 2)  = R_NITR(:,:) - R_DENITR(:,:)
 
-            ! if(debug_stranger) then
-            !     do i = 1, NUM_SED_LAYERS
-            !
-            !         if(STRANGERSD(KINETIC_DERIVS(:,i, 2),VALUE_strange,nkn) .eq. 1) then
-            !            nstrange = count(VALUE_strange)
-            !            allocate(STRANGERS    (nstrange))
-            !            allocate(NODES_STRANGE(nstrange))
-            !
-            !            l=1
-            !            do k=1,nkn
-            !             if(VALUE_strange(k)) then
-            !               STRANGERS    (l) = KINETIC_DERIVS(k,i,2)
-            !               NODES_STRANGE(l) = k
-            !               l=l+1
-            !             end if
-            !            end do
-            !
-            !            print *, '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-            !            print *, 'aquabc_sediment1: Layer ', i, 'Variable 2'
-            !            print *, 'Kinetic derivative is NaN'
-            !            print *, 'NODE_NUMBERS=',NODES_STRANGE
-            !            print *, 'VALUES=',STRANGERS
-            !
-            !            print *, ' '
-            !            print *, 'Other variables:'
-            !            print *, ' PH correction for nitrification:', &
-            !                     (PH_CORR_DENITR_NO3(NODES_STRANGE(k), i), k=1,nstrange)
-            !            print *, ' Denitrification rate:', &
-            !                     (R_DENITR(NODES_STRANGE(k), i),         k=1,nstrange)
-            !            print *, ' Nitrification rate:', &
-            !                     (R_NITR(NODES_STRANGE(k), i),           k=1,nstrange)
-            !            print *, ' Layer thickness:', &
-            !                     (SED_DEPTHS(NODES_STRANGE(k),i),        k=1,nstrange)
-            !            print *, ' BS temperature:', &
-            !                     (SED_TEMPS(NODES_STRANGE(k),i),         k=1,nstrange)
-            !            print *, ' BS oxygen:', &
-            !                     (SED_DOXY(NODES_STRANGE(k),i),          k=1,nstrange)
-            !            print *, ' BS NO3:', &
-            !                     (SED_NO3N(NODES_STRANGE(k),i),          k=1,nstrange)
-            !            print *, ' BS DOC:', &
-            !                     (SED_DOC(NODES_STRANGE(k),i),           k=1,nstrange)
-            !
-            !           deallocate(STRANGERS, NODES_STRANGE)
-            !           error =1
-            !         end if
-            !
-            !     end do     ! i-layers
-            !  if (error .eq. 1) stop
-            ! end if      !debug_stranger
-
             KINETIC_DERIVS(:,:, 3) = R_DISS_PON(:,:) - &
                 R_MINER_DON_DOXY  (:,:) - R_MINER_DON_NO3N    (:,:) - R_MINER_DON_MN_IV(:,:) - &
                 R_MINER_DON_FE_III(:,:) - R_MINER_DON_S_PLUS_6(:,:) - R_MINER_DON_DOC  (:,:)
@@ -3435,8 +3374,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
         ! RECALCULATION OF CONCENTRATIONS BECAUSE OF LAYERS SHIFT DUE TO DEPOSITION OR EROSION
 
-        !if (isedi .ne. 0) then
-            ! Deposition and no erosion
+        ! Deposition and no erosion
             do i = 2, NUM_SED_LAYERS ! without surfice layer
                 do j = 1, NUM_SIMULATED_SED_VARS
                     where (H_ERODEP(:) .le. 0.D0)
@@ -3476,8 +3414,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end where
             end do ! j-variables
             ! End erosion
-
-        !end if !isedi
 
         ! CHECKING FOR STRANGERS AFTER LAYERS SHIFT
         if(debug_stranger) then

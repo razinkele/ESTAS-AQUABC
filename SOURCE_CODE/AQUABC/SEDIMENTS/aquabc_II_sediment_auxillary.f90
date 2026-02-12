@@ -471,9 +471,6 @@ subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VA
     P  =  1.0D0
 
     ! Shear viscosities
-    !call SED_MOD_1_CVISC(V25, SS , TS, 1.0D0)
-    !call SED_MOD_1_CVISC(VTK, SAL, T , 1.0D0)
-
     V25 = 1.7910 - TS * (6.144D-02 - TS*(1.4510D-03 - TS*1.6826D-05)) - &
           1.5290D-04 * P + 8.3885D-08 * P * P + 2.4727D-03 * SS + &
           (6.0574D-06*P - 2.6760D-09*P*P)*TS + (TS * (4.8429D-05 - &

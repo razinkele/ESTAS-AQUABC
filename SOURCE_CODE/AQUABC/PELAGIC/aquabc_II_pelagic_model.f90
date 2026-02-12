@@ -133,17 +133,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer,                                                   intent(inout) :: CALLED_BEFORE
 
 
-    !Optional arguments that are needed for ESTAS implementation but
-    !kept optional to allow SHYFEM AQUABC compatibility
-    !integer, dimension(nkn), optional,                         intent(in)    :: SURFACE_BOXES
-    !integer                , optional,                         intent(in)    :: ZOOP_OPTION_1
-    !integer                , optional,                         intent(in)    :: ADVANCED_REDOX_OPTION
-    !real(kind = DBL_PREC)  , optional,                         intent(in)    :: USER_ENTERED_frac_avail_DON
-    !integer                , optional,                         intent(in)    :: LIGHT_EXTINCTION_OPTION
-    !integer                , optional,                         intent(in)    :: CYANO_BOUYANT_STATE_SIMULATION
-    !integer                , optional,                         intent(in)    :: CONSIDER_NON_OBLIGATORY_FIXERS
-    !integer                , optional,                         intent(in)    :: CONSIDER_NOSTOCALES
-
     integer, dimension(nkn),                          intent(in)    :: SURFACE_BOXES
 
     integer                ,                          intent(in)    :: ZOOP_OPTION_1
@@ -208,7 +197,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end do
 
     debug_stranger = .true. ! True if check for strange values
-    !debug_stranger = .false.
 
     CONSIDER_ALKALNITY_DERIVATIVE = 1
     CONSIDER_INORG_C_DERIVATIVE   = 1
@@ -231,39 +219,25 @@ subroutine AQUABC_PELAGIC_KINETICS &
     DO_NOSTOCALES                     = 1
 
 
-    !if (present(ADVANCED_REDOX_OPTION)) then
-        if (ADVANCED_REDOX_OPTION > 0) then
-            DO_ADVANCED_REDOX_SIMULATION = 1
-        else
-            DO_ADVANCED_REDOX_SIMULATION = 0
-        end if
-    !end if
+    if (ADVANCED_REDOX_OPTION > 0) then
+        DO_ADVANCED_REDOX_SIMULATION = 1
+    else
+        DO_ADVANCED_REDOX_SIMULATION = 0
+    end if
 
 
-    !if (present(CONSIDER_NON_OBLIGATORY_FIXERS)) then
-        if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
-            DO_NON_OBLIGATORY_FIXERS = 1
-        else
-            DO_NON_OBLIGATORY_FIXERS = 0
-        end if
-    !end if
+    if (CONSIDER_NON_OBLIGATORY_FIXERS > 0) then
+        DO_NON_OBLIGATORY_FIXERS = 1
+    else
+        DO_NON_OBLIGATORY_FIXERS = 0
+    end if
 
 
-    !if (present(CONSIDER_NOSTOCALES)) then
-        if (CONSIDER_NOSTOCALES > 0) then
-            DO_NOSTOCALES = 1
-        else
-            DO_NOSTOCALES = 0
-        end if
-    !end if
-
-    ! calculates value of available DON for cyanobacteria
-    ! variable name 'frac_avail_DON'
-    !if (present(USER_ENTERED_frac_avail_DON)) then
-    !    frac_avail_DON = USER_ENTERED_frac_avail_DON
-    !else
-    !    call calc_frac_avail_DON
-    !end if
+    if (CONSIDER_NOSTOCALES > 0) then
+        DO_NOSTOCALES = 1
+    else
+        DO_NOSTOCALES = 0
+    end if
 
     if(debug_stranger) then
         call DBGSTR_PEL_GEN_01(STATE_VARIABLES, nkn, nstate, node_active, error)
@@ -749,10 +723,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
         !Calculate the dissolved MN IV
         MN_IV_DISS(:) = MN_IV(:) * MULT_MN_IV_DISS(:)
 
-        ! Calculate derived variables
-        !     call derived_vars(nkn,pH,STATE_VARIABLES, nstate, &
-        !                       MODEL_CONSTANTS, nconst,WC_OUTPUTS, noutput)
-
         call IP_SOLUBLE_FRACTION &
              (FE_III     , &
               PO4_P      , &
@@ -784,8 +754,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*****************************************
     !     D I S S O L V E D  O X Y G E N     !
     !*****************************************
-    !if (present(SURFACE_BOXES)) then
-        do k=1,nkn
+    do k=1,nkn
             DISS_OXYGEN_SAT(k) = DO_SATURATION(TEMP(k), SALT(k), ELEVATION(k))
 
             if (SURFACE_BOXES(k) == 1) then !first layer
@@ -811,36 +780,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             else
                 R_AERATION(k) = 0.0D0 ! other layers
             end if
-        end do
-    !else
-        !do k=1,nkn
-        !    DISS_OXYGEN_SAT(k) = DO_SATURATION(TEMP(k), SALT(k), ELEVATION(k))
-
-        !    if (SURFACE_BOX == 1) then !first layer
-
-        !        if (K_A < 0.0D0) then
-        !            K_A_CALC(k) = KAWIND(WINDS(k), TEMP(k), AIRTEMP(k), DEPTH(k), 3.0D0)
-        !            R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k))
-        !        else
-        !            K_A_CALC(k) = K_A
-
-        !            R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k)) * &
-        !                 (THETA_K_A ** (TEMP(k) - 2.0D1))
-        !        end if
-
-        !        !----------------------------------------------------------------------
-        !        ! 2 February 2015
-        !        ! New code added to account the effect of ice cover.
-        !        !----------------------------------------------------------------------
-        !        R_AERATION(k) = (1.0D0 - ice_cover(k)) * R_AERATION(k)
-        !        !----------------------------------------------------------------------
-        !        ! End of new code added to account the effect of ice cover.
-        !        !----------------------------------------------------------------------
-        !    else
-        !        R_AERATION(k) = 0.0D0 ! other layers
-        !    end if
-        !end do
-    !end if
+    end do
 
     ! Calculate the total phytoplankton.
     PHYT_TOT_C = DIA_C + CYN_C + OPA_C + FIX_CYN_C + NOST_VEG_HET_C
@@ -861,9 +801,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! write(6,'(A,F12.4,A,ES10.3)') 'DEBUG: CHLA node1: TIME=', TIME, ' DT=', TIME_STEP
     ! write(6,'(A,5ES12.4)') '  DIA/CYN/FIX/OPA/NOST=', DIA_C(1), CYN_C(1), FIX_CYN_C(1), OPA_C(1), NOST_VEG_HET_C(1)
 
-    !if (present(LIGHT_EXTINCTION_OPTION)) then
-
-        select case (LIGHT_EXTINCTION_OPTION)
+    select case (LIGHT_EXTINCTION_OPTION)
 
             case (0)
                 call light_kd(K_B_E, K_E, CHLA, nkn)
@@ -885,10 +823,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
         ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
-
-    !else
-    !    call light_kd(K_B_E, K_E, CHLA, nkn)
-    !end if
 
 
     !********************
@@ -1202,12 +1136,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     if (DO_NOSTOCALES > 0) then
 
-        ! call to the routines that define parameters in wc_ini module should go to constants file
-        !call calc_nost_nitro_pars
-        !call calc_saturation_pars
-        !call calc_mineral_pars
-        !call calc_frac_avail_DOP
-
         ! Calls to the routines that should be incorporated to NOSTOCALES
         call DOP_DIP_PREFS(PREF_DIP_DOP_NOST, (frac_avail_DOP * DISS_ORG_P), &
               (PO4_P * DIP_OVER_IP) , KHS_DP_NOST_VEG_HET, nkn)
@@ -1422,12 +1350,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
     R_ZOO_FEEDING_DET_PART_ORG_C(:) = &
         R_ZOO_FEEDING_DET_PART_ORG_C(:) * GROWTH_INHIB_FACTOR_ZOO(:)
 
-    !if (present(ZOOP_OPTION_1)) then
-        if (ZOOP_OPTION_1 > 0) then
-            ACTUAL_ZOO_N_TO_C = ZOO_N / max(ZOO_C, MIN_CONCENTRATION)
-            ACTUAL_ZOO_P_TO_C = ZOO_P / max(ZOO_C, MIN_CONCENTRATION)
-        end if
-    !end if
+    if (ZOOP_OPTION_1 > 0) then
+        ACTUAL_ZOO_N_TO_C = ZOO_N / max(ZOO_C, MIN_CONCENTRATION)
+        ACTUAL_ZOO_P_TO_C = ZOO_P / max(ZOO_C, MIN_CONCENTRATION)
+    end if
 
     if(debug_stranger) then
         call DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
@@ -2640,11 +2566,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = 0.0
 
-        !if (present(ZOOP_OPTION_1)) then
-        if (ZOOP_OPTION_1 > 0) then
-            PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC
-            end if
-        !end if
+    if (ZOOP_OPTION_1 > 0) then
+        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC
+    end if
 
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 3) = R_ZOO_TOT_RESP
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 4) = R_ZOO_DEATH
@@ -2683,8 +2607,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !ZOOPLANKTON PHOSPHORUS
     DERIVATIVES(1:nkn,ZOO_P_INDEX) = DERIVATIVES(1:nkn,ZOO_C_INDEX) * ACTUAL_ZOO_P_TO_C
 
-    !if (present(ZOOP_OPTION_1)) then
-        if (ZOOP_OPTION_1 > 0) then
+    if (ZOOP_OPTION_1 > 0) then
 
             PROCESS_RATES(1:nkn,ZOO_N_INDEX, 1) = R_ZOO_FEEDING_DIA * DIA_N_TO_C
             PROCESS_RATES(1:nkn,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN * CYN_N_TO_C
@@ -2745,8 +2668,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                 PROCESS_RATES(1:nkn,ZOO_P_INDEX, 5)  - PROCESS_RATES(1:nkn,ZOO_P_INDEX, 6)  - &
                 PROCESS_RATES(1:nkn,ZOO_P_INDEX, 7)  - PROCESS_RATES(1:nkn,ZOO_P_INDEX, 8)  + &
                 PROCESS_RATES(1:nkn,ZOO_P_INDEX, 10)
-        end if
-    !end if
+    end if
 
     !DEAD ORGANIC CARBON PARTICLES
     PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 1) = R_DIA_DEATH

@@ -107,7 +107,6 @@ contains
         real(kind = DBL_PREC), allocatable, dimension(:) :: PHic
         real(kind = DBL_PREC), allocatable, dimension(:) :: PHic_Interface
         real(kind = DBL_PREC), allocatable, dimension(:) :: PCic
-        !real(kind = DBL_PREC), allocatable, dimension(:) :: PCic_Interface
         real(kind = DBL_PREC), allocatable, dimension(:) :: FCic
         real(kind = DBL_PREC), allocatable, dimension(:) :: FCic_Interface
 
@@ -828,7 +827,6 @@ contains
         ! MATLAB CODE : PCic = FCic./FugFac;
 
         if(.not. allocated(PCic)) allocate(PCic(ntps))
-        !call ASSIGN_DBL_VECTOR_CONTENT(PCic, FCic / FugFac)
         PCic = FCic / FugFac
 
         ! CalculateOtherParamsAtInputConditions:
@@ -1450,8 +1448,6 @@ contains
         TempK   = TempC + 273.15
         RT      = RGasConstant * TempK
 
-        !call ASSIGN_DBL_VECTOR_CONTENT(logTempK, log(TempK))
-        !if(.not. allocated(logTempK)) allocate(logTempK(ntps))
         logTempK = log(TempK)
 
         Pbar    = Pdbar / 10
@@ -1525,7 +1521,6 @@ contains
 
         ! CalculateKS:
         if (.not. allocated(pKS)) allocate(pKS (ntps))
-        !if (.not. allocated(KS)) allocate(KS  (ntps))
 
         pKS = 0.0D0
         KS  = 0.0D0
@@ -1762,7 +1757,6 @@ contains
         if(.not.(allocated(B_2)))   allocate(B_2(ntps))
         if(.not.(allocated(C_2)))   allocate(C_2(ntps))
 
-!        if(.not.(allocated(PK1_0))) allocate(PK1_0(ntps)) corrected by Petras: PK1_0 -> PK10
         if(.not.(allocated(PK10))) allocate(PK10(ntps))
         if(.not.(allocated(A1)))    allocate(A1(ntps))
         if(.not.(allocated(B1)))    allocate(B1(ntps))
@@ -3118,8 +3112,6 @@ contains
                 stop
             end if
         end do
-
-        !write(*,*)  'NUMBER OF ITERATIONS NEEDED = ', ITERATION_NO
 
         if (DEBUG .eq. 1) then
             write(unit = *, fmt = *) 'subroutine CalculatepHfromTATC : Checkpoint #4'

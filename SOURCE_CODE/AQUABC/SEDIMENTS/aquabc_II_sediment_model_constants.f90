@@ -90,11 +90,6 @@ module AQUABC_BSED_MODEL_CONSTANTS
     real(kind = DBL_PREC) :: SED_KHS_DOXY_MN_IV_RED
     !End of new model constants added in 10th of September 2015
 
-    !real(kind = DBL_PREC) SED_PH_KHS_DIA
-    !real(kind = DBL_PREC) SED_PH_KHS_CYN
-    !real(kind = DBL_PREC) SED_PH_KHS_FIX_CYN
-    !real(kind = DBL_PREC) SED_PH_KHS_OPA
-
     ! New model constats added in 28 th of January 2016
     real(kind = DBL_PREC) :: SED_K_MIN_DOC_DOXY_20
     real(kind = DBL_PREC) :: SED_K_MIN_DOC_NO3N_20
@@ -282,10 +277,6 @@ subroutine INIT_BSED_MODEL_CONSTANTS
     call para_get_value('SED_PH_NITR_NH4_MAX'   , SED_PH_NITR_NH4_MAX  ) !50!   optimum upper range for pH correction factor for nitrification
     call para_get_value('SED_PH_DENITR_NO3_MIN' , SED_PH_DENITR_NO3_MIN) !51!   optimum lower range for pH correction factor for denitrification
     call para_get_value('SED_PH_DENITR_NO3_MAX' , SED_PH_DENITR_NO3_MAX) !52!   optimum upper range for pH correction factor for denitrification
-    !call para_get_value('SED_PH_KHS_DIA'        , SED_PH_KHS_DIA       ) !53!   Half saturation for pH correction fator for diatoms
-    !call para_get_value('SED_PH_KHS_CYN'        , SED_PH_KHS_CYN       ) !54!   Half saturation for pH correction fator for cyanobacteria not fixing
-    !call para_get_value('SED_PH_KHS_FIX_CYN'    , SED_PH_KHS_FIX_CYN   ) !55!   Half saturation for pH correction fator for nitrogen fixers
-    !call para_get_value('SED_PH_KHS_OPA'        , SED_PH_KHS_OPA       ) !56!   Half saturation for pH correction fator for other algae
 
     call para_get_value('SED_k_OX_FE_II'          , SED_k_OX_FE_II         ) !Introduced 10 09M 2015   Oxidation rate for iron 2+
     call para_get_value('SED_k_RED_FE_III'        , SED_k_RED_FE_III       ) !Introduced 10 09M 2015   reduction rate for iron 3+

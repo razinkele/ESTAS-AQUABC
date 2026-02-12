@@ -193,92 +193,6 @@ contains
         ! Dummy; ensure implicit none present
     end subroutine SED_MOD_1_CVISC
 
-        
-
-    !subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS &
-    !           (TIME              , &
-    !            SED_DEPTHS        , SED_POROSITIES, SED_DENSITIES, PART_MIXING_COEFFS, &
-    !            ADVECTIVE_VELOCITY, SED_DIFFUSIONS, SURF_MIXLEN  , SED_BURRIALS      , &
-    !            SED_TEMPS         , SED_SALTS     , SED_FLAGS    , NUM_SED_FLAGS     , &
-    !            nkn               , NUM_SED_LAYERS, NUM_SED_VARS , MODEL_BENTHIC_ANIMALS)
-
-    !    use AQUABC_II_GLOBAL
-    !    use TIME_SERIES
-
-    !    implicit none
-
-    !    real(kind=DBL_PREC)                                              :: TIME               !Time
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_DEPTHS         !Sediment depths
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_POROSITIES     !Sediment porosities
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_DENSITIES      !Bulk wet density
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: PART_MIXING_COEFFS !Particle mixing coeff
-    !    real(kind=DBL_PREC)                                              :: ADVECTIVE_VELOCITY !Advective  velocity
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: SED_DIFFUSIONS     !Sediment diffusions
-    !    real(kind=DBL_PREC)                                              :: SURF_MIXLEN        !Mixing length with surface water
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_BURRIALS       !Sediment burrial rate
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_TEMPS          !Sediment temperatures
-    !    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS)               :: SED_SALTS          !Sediment salinites
-    !    integer            , dimension(NUM_SED_FLAGS)                    :: SED_FLAGS
-
-    !    integer :: nkn                   !Number of boxes
-    !    integer :: NUM_SED_LAYERS        !Number of bottom sediment layers
-    !    integer :: NUM_SED_VARS          !Number of botton sediment state variables
-    !    integer :: MODEL_BENTHIC_ANIMALS !Flag for modeling benthic animals
-    !    integer :: NUM_SED_FLAGS
-
-    !    integer :: BOX_NO, LAYER_NO, SED_STATE_VAR_NO
-
-        !Declaration for function calculating modecular diffusion coefficients
-    !    real(kind=DBL_PREC) :: SED_MOD_1_ALUKAS_MOLDI_C
-
-    !    real(kind=DBL_PREC), dimension(nkn) :: TABLE_FUNCTION_VALUES
-
-    !    if (TIME_STEP_NO == 1) then
-    !        SED_FLAGS(1) = 1
-    !    else
-    !        SED_FLAGS(1) = 0
-    !    end if
-
-    !    SED_FLAGS(2) = 2
-    !    SED_FLAGS(3) = 2
-
-    !    call SED_MOD_1_ALUKAS_MOLDI_C_VEC &
-    !         (SED_TEMPS, SED_SALTS, nkn, NUM_SED_LAYERS, NUM_SED_VARS, SED_DIFFUSIONS)
-
-    !    SED_DIFFUSIONS = (1.0D0/6.0D0) * 86400.0D0 * SED_DIFFUSIONS
-    !end subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS
-
-
-
-
-    !subroutine SEDIMENT_TRANSPORT &
-    !           (SETTLING_VELOCITIES, DISSOLVED_FRACTIONS, FRACTION_OF_DEPOSITION, &
-    !            SAVED_OUTPUTS      , nkn, nstate, n_saved_outputs, TIME)
-
-    !    use AQUABC_II_GLOBAL
-    !    implicit none
-
-    !    real(kind = DBL_PREC), dimension(nkn, nstate)          :: SETTLING_VELOCITIES
-    !    real(kind = DBL_PREC), dimension(nkn, nstate)          :: DISSOLVED_FRACTIONS
-    !    real(kind = DBL_PREC), dimension(nkn, nstate)          :: FRACTION_OF_DEPOSITION
-    !    real(kind = DBL_PREC), dimension(nkn, n_saved_outputs) :: SAVED_OUTPUTS
-
-    !    integer :: nkn
-    !    integer :: nstAte
-    !    integer :: n_saved_outputs
-    !    real(kind = DBL_PREC) :: TIME
-
-        ! Calculate settling velocities. This simple example assumes that the settling
-        ! velocities do not change in time and space units: m/day
-    !    SETTLING_VELOCITIES = SETTLING_VELOCITIES_OUTPUT
-
-        ! Calcululate dissolved fractions
-    !    DISSOLVED_FRACTIONS = EFFECTIVE_DISSLOVED_FRACTIONS
-
-        ! Calculate not deposited fluxes
-    !    FRACTION_OF_DEPOSITION = EFFECTIVE_DEPOSITION_FRACTIONS
-    !end subroutine SEDIMENT_TRANSPORT
-
     subroutine UPDATE_BOTTOM_SEDIMENT_INPUTS &
                (TIME                  , &
                 SED_DEPTHS_LOC        , SED_POROSITIES_LOC, SED_DENSITIES_LOC     , &
@@ -538,7 +452,6 @@ contains
 
         call READ_MODEL_CONSTANTS(SED_MODEL_CONSTANTS, IN_FILE + 1)
         close(IN_FILE + 1)
-        !call INIT_BS_MODEL_CONSTANTS
 
         deallocate(BSED_ARRAY)
 

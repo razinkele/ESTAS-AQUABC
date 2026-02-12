@@ -1678,7 +1678,6 @@ subroutine READ_PELAGIC_MODEL_CONSTANTS(file)
     end if
 
     nconsts = para_get_fill()
-    !write(6,*) 'nconsts = ',nconsts
 
     j = 0
     do
@@ -1686,7 +1685,6 @@ subroutine READ_PELAGIC_MODEL_CONSTANTS(file)
       if( ios < 0 ) exit
       j = j + 1
       call para_put_value(name,value)
-      !write(6,format) 'adding: ',j,i,value,trim(name)
     end do
 
     close(iu)
@@ -1730,14 +1728,12 @@ subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)
     end if
 
     nconsts = para_get_fill()
-    !write(6,*) 'nconsts = ',nconsts
 
     do i=1,nconsts
       call para_get_name(i,name)
       call para_get_value(name,value)
       rname = name(1:35)
       rname = adjustr(rname)
-      !write(6,*) rname,' | ',trim(name)
       write(iu,format) i,rname,value
     end do
 
