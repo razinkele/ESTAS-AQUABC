@@ -5,8 +5,7 @@
 
 subroutine ZOOPLANKTON &
            (params                            , &
-            TEMP                          , &
-            DISS_OXYGEN                   , &
+            env                               , &
             DIA_C                         , &
             CYN_C                         , &
             OPA_C                         , &
@@ -48,19 +47,18 @@ subroutine ZOOPLANKTON &
             FAC_HYPOX_ZOO_D)
 
     use AQUABC_II_GLOBAL
-    use AQUABC_PELAGIC_TYPES, only: t_zoo_params
+    use AQUABC_PELAGIC_TYPES, only: t_zoo_params, t_phyto_env
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
     type(t_zoo_params), intent(in) :: params
+    type(t_phyto_env),  intent(in) :: env
 
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
     integer, intent(in) :: nkn
 
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DIA_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: CYN_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: OPA_C
@@ -162,6 +160,11 @@ subroutine ZOOPLANKTON &
         ZOO_N_TO_C               => params%ZOO_N_TO_C,               &
         ZOO_P_TO_C               => params%ZOO_P_TO_C,               &
         ZOO_O2_TO_C              => params%ZOO_O2_TO_C               &
+    )
+
+    associate( &
+        TEMP        => env%TEMP,        &
+        DISS_OXYGEN => env%DISS_OXYGEN  &
     )
 
     !Zooplankton growth limitation by temperature
@@ -384,6 +387,7 @@ subroutine ZOOPLANKTON &
         end if
     end do
 
-    end associate
+    end associate ! env
+    end associate ! params
 
 end subroutine ZOOPLANKTON

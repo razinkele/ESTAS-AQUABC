@@ -214,6 +214,57 @@ module AQUABC_PELAGIC_TYPES
         real(kind = DBL_PREC) :: ZOO_O2_TO_C
     end type t_zoo_params
 
+    ! ----- REDOX HALF-SATURATION PARAMS (10 constants) ----------------------
+    ! Shared by REDOX_AND_SPECIATION and ORGANIC_CARBON_MINERALIZATION.
+    type :: t_redox_params
+        real(kind = DBL_PREC) :: K_HS_DOXY_RED_LIM
+        real(kind = DBL_PREC) :: K_HS_NO3N_RED_LIM
+        real(kind = DBL_PREC) :: K_HS_MN_IV_RED_LIM
+        real(kind = DBL_PREC) :: K_HS_FE_III_RED_LIM
+        real(kind = DBL_PREC) :: K_HS_S_PLUS_6_RED_LIM
+        real(kind = DBL_PREC) :: K_HS_DOXY_RED_INHB
+        real(kind = DBL_PREC) :: K_HS_NO3N_RED_INHB
+        real(kind = DBL_PREC) :: K_HS_MN_IV_RED_INHB
+        real(kind = DBL_PREC) :: K_HS_FE_III_RED_INHB
+        real(kind = DBL_PREC) :: K_HS_S_PLUS_6_RED_INHB
+    end type t_redox_params
+
+    ! ----- DOC MINERALIZATION PARAMS (31 constants) -------------------------
+    ! Used by ORGANIC_CARBON_MINERALIZATION only.
+    type :: t_docmin_params
+        real(kind = DBL_PREC) :: FAC_PHYT_AMIN_DOC
+        real(kind = DBL_PREC) :: K_MIN_DOC_DOXY_20
+        real(kind = DBL_PREC) :: K_MIN_DOC_NO3N_20
+        real(kind = DBL_PREC) :: K_MIN_DOC_MN_IV_20
+        real(kind = DBL_PREC) :: K_MIN_DOC_FE_III_20
+        real(kind = DBL_PREC) :: K_MIN_DOC_S_PLUS_6_20
+        real(kind = DBL_PREC) :: K_MIN_DOC_DOC_20
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_DOXY
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_NO3N
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_MN_IV
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_FE_III
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_S_PLUS_6
+        real(kind = DBL_PREC) :: THETA_K_MIN_DOC_DOC
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_DOXY
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_NO3N
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_MN_IV
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_FE_III
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_S_PLUS_6
+        real(kind = DBL_PREC) :: K_HS_DOC_MIN_DOC
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_DOXY
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_NO3N
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_MN_IV
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_FE_III
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_S_PLUS_6
+        real(kind = DBL_PREC) :: PH_MIN_DOC_MIN_DOC
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_DOXY
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_NO3N
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_MN_IV
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_FE_III
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_S_PLUS_6
+        real(kind = DBL_PREC) :: PH_MAX_DOC_MIN_DOC
+    end type t_docmin_params
+
 contains
 
     ! =========================================================================
@@ -417,5 +468,56 @@ contains
         p%ZOO_P_TO_C              = ZOO_P_TO_C
         p%ZOO_O2_TO_C             = ZOO_O2_TO_C
     end subroutine populate_zoo_params
+
+    subroutine populate_redox_params(p)
+        use AQUABC_PELAGIC_MODEL_CONSTANTS
+        type(t_redox_params), intent(out) :: p
+        p%K_HS_DOXY_RED_LIM      = K_HS_DOXY_RED_LIM
+        p%K_HS_NO3N_RED_LIM      = K_HS_NO3N_RED_LIM
+        p%K_HS_MN_IV_RED_LIM     = K_HS_MN_IV_RED_LIM
+        p%K_HS_FE_III_RED_LIM    = K_HS_FE_III_RED_LIM
+        p%K_HS_S_PLUS_6_RED_LIM  = K_HS_S_PLUS_6_RED_LIM
+        p%K_HS_DOXY_RED_INHB     = K_HS_DOXY_RED_INHB
+        p%K_HS_NO3N_RED_INHB     = K_HS_NO3N_RED_INHB
+        p%K_HS_MN_IV_RED_INHB    = K_HS_MN_IV_RED_INHB
+        p%K_HS_FE_III_RED_INHB   = K_HS_FE_III_RED_INHB
+        p%K_HS_S_PLUS_6_RED_INHB = K_HS_S_PLUS_6_RED_INHB
+    end subroutine populate_redox_params
+
+    subroutine populate_docmin_params(p)
+        use AQUABC_PELAGIC_MODEL_CONSTANTS
+        type(t_docmin_params), intent(out) :: p
+        p%FAC_PHYT_AMIN_DOC          = FAC_PHYT_AMIN_DOC
+        p%K_MIN_DOC_DOXY_20          = K_MIN_DOC_DOXY_20
+        p%K_MIN_DOC_NO3N_20          = K_MIN_DOC_NO3N_20
+        p%K_MIN_DOC_MN_IV_20         = K_MIN_DOC_MN_IV_20
+        p%K_MIN_DOC_FE_III_20        = K_MIN_DOC_FE_III_20
+        p%K_MIN_DOC_S_PLUS_6_20      = K_MIN_DOC_S_PLUS_6_20
+        p%K_MIN_DOC_DOC_20           = K_MIN_DOC_DOC_20
+        p%THETA_K_MIN_DOC_DOXY       = THETA_K_MIN_DOC_DOXY
+        p%THETA_K_MIN_DOC_NO3N       = THETA_K_MIN_DOC_NO3N
+        p%THETA_K_MIN_DOC_MN_IV      = THETA_K_MIN_DOC_MN_IV
+        p%THETA_K_MIN_DOC_FE_III     = THETA_K_MIN_DOC_FE_III
+        p%THETA_K_MIN_DOC_S_PLUS_6   = THETA_K_MIN_DOC_S_PLUS_6
+        p%THETA_K_MIN_DOC_DOC        = THETA_K_MIN_DOC_DOC
+        p%K_HS_DOC_MIN_DOXY          = K_HS_DOC_MIN_DOXY
+        p%K_HS_DOC_MIN_NO3N          = K_HS_DOC_MIN_NO3N
+        p%K_HS_DOC_MIN_MN_IV         = K_HS_DOC_MIN_MN_IV
+        p%K_HS_DOC_MIN_FE_III        = K_HS_DOC_MIN_FE_III
+        p%K_HS_DOC_MIN_S_PLUS_6      = K_HS_DOC_MIN_S_PLUS_6
+        p%K_HS_DOC_MIN_DOC           = K_HS_DOC_MIN_DOC
+        p%PH_MIN_DOC_MIN_DOXY        = PH_MIN_DOC_MIN_DOXY
+        p%PH_MIN_DOC_MIN_NO3N        = PH_MIN_DOC_MIN_NO3N
+        p%PH_MIN_DOC_MIN_MN_IV       = PH_MIN_DOC_MIN_MN_IV
+        p%PH_MIN_DOC_MIN_FE_III      = PH_MIN_DOC_MIN_FE_III
+        p%PH_MIN_DOC_MIN_S_PLUS_6    = PH_MIN_DOC_MIN_S_PLUS_6
+        p%PH_MIN_DOC_MIN_DOC         = PH_MIN_DOC_MIN_DOC
+        p%PH_MAX_DOC_MIN_DOXY        = PH_MAX_DOC_MIN_DOXY
+        p%PH_MAX_DOC_MIN_NO3N        = PH_MAX_DOC_MIN_NO3N
+        p%PH_MAX_DOC_MIN_MN_IV       = PH_MAX_DOC_MIN_MN_IV
+        p%PH_MAX_DOC_MIN_FE_III      = PH_MAX_DOC_MIN_FE_III
+        p%PH_MAX_DOC_MIN_S_PLUS_6    = PH_MAX_DOC_MIN_S_PLUS_6
+        p%PH_MAX_DOC_MIN_DOC         = PH_MAX_DOC_MIN_DOC
+    end subroutine populate_docmin_params
 
 end module AQUABC_PELAGIC_TYPES

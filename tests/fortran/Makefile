@@ -40,8 +40,11 @@ IRON_II_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 \
     $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IRON_II.f90
 DISS_ME_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 \
     $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DISS_ME.f90
+PELAGIC_TYPES_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_types.f90
+PELAGIC_MODEL_CONSTANTS_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_model_constants.f90
 ORGANIC_CARBON_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 \
     $(PELAGIC_LIB)/aquabc_II_pelagic_lib_PH_CORR.f90 \
+    $(PELAGIC_TYPES_SRC) \
     $(PELAGIC_LIB)/aquabc_II_pelagic_lib_ORGANIC_CARBON.f90
 GROWTH_TEMP_SRCS = $(PELAGIC_AUX)
 NUTRIENT_PREFS_SRCS = $(PELAGIC_AUX)
@@ -111,6 +114,9 @@ test_diss_me: test_diss_me.f90 $(DISS_ME_SRCS)
 test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
+	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
+	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_PH_CORR.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_ORGANIC_CARBON.f90
 	$(FC) $(FFLAGS) -o $@ test_organic_carbon.f90 *.o

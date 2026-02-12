@@ -46,47 +46,8 @@ end subroutine ORGANIC_CARBON_DISSOLUTION
 
 
 subroutine ORGANIC_CARBON_MINERALIZATION &
-           (FAC_PHYT_AMIN_DOC           , &
-            K_MIN_DOC_DOXY_20           , &
-            K_MIN_DOC_NO3N_20           , &
-            K_MIN_DOC_MN_IV_20          , &
-            K_MIN_DOC_FE_III_20         , &
-            K_MIN_DOC_S_PLUS_6_20       , &
-            K_MIN_DOC_DOC_20            , &
-            THETA_K_MIN_DOC_DOXY        , &
-            THETA_K_MIN_DOC_NO3N        , &
-            THETA_K_MIN_DOC_MN_IV       , &
-            THETA_K_MIN_DOC_FE_III      , &
-            THETA_K_MIN_DOC_S_PLUS_6    , &
-            THETA_K_MIN_DOC_DOC         , &
-            K_HS_DOC_MIN_DOXY           , &
-            K_HS_DOC_MIN_NO3N           , &
-            K_HS_DOC_MIN_MN_IV          , &
-            K_HS_DOC_MIN_FE_III         , &
-            K_HS_DOC_MIN_S_PLUS_6       , &
-            K_HS_DOC_MIN_DOC            , &
-            K_HS_DOXY_RED_LIM           , &
-            K_HS_NO3N_RED_LIM           , &
-            K_HS_MN_IV_RED_LIM          , &
-            K_HS_FE_III_RED_LIM         , &
-            K_HS_S_PLUS_6_RED_LIM       , &
-            K_HS_DOXY_RED_INHB          , &
-            K_HS_NO3N_RED_INHB          , &
-            K_HS_MN_IV_RED_INHB         , &
-            K_HS_FE_III_RED_INHB        , &
-            K_HS_S_PLUS_6_RED_INHB      , &
-            PH_MIN_DOC_MIN_DOXY         , &  !Min. pH for the optimum pH range for DOC mineralization with DOXY     as final electron acceptor (subroutine input)
-            PH_MIN_DOC_MIN_NO3N         , &  !Min. pH for the optimum pH range for DOC mineralization with NO3N     as final electron acceptor (subroutine input)
-            PH_MIN_DOC_MIN_MN_IV        , &  !Min. pH for the optimum pH range for DOC mineralization with MN_IV    as final electron acceptor (subroutine input)
-            PH_MIN_DOC_MIN_FE_III       , &  !Min. pH for the optimum pH range for DOC mineralization with FE_III   as final electron acceptor (subroutine input)
-            PH_MIN_DOC_MIN_S_PLUS_6     , &  !Min. pH for the optimum pH range for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine input)
-            PH_MIN_DOC_MIN_DOC          , &  !Min. pH for the optimum pH range for DOC mineralization with DOC      as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_DOXY         , &  !Max. pH for the optimum pH range for DOC mineralization with DOXY     as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_NO3N         , &  !Max. pH for the optimum pH range for DOC mineralization with NO3N     as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_MN_IV        , &  !Max. pH for the optimum pH range for DOC mineralization with MN_IV    as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_FE_III       , &  !Max. pH for the optimum pH range for DOC mineralization with FE_III   as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_S_PLUS_6     , &  !Max. pH for the optimum pH range for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine input)
-            PH_MAX_DOC_MIN_DOC          , &  !Max. pH for the optimum pH range for DOC mineralization with DOC      as final electron acceptor (subroutine input)
+           (docmin_params               , &
+            redox_params                , &
             nkn                         , &
             TEMP                        , &
             DISS_ORG_C                  , &
@@ -127,50 +88,11 @@ subroutine ORGANIC_CARBON_MINERALIZATION &
     ! This subroutine is almost completely rewritten to be compitable with the redox sequences
     ! ----------------------------------------------------------------------------------------
     use AQUABC_II_GLOBAL
+    use AQUABC_PELAGIC_TYPES, only: t_docmin_params, t_redox_params
     implicit none
 
-    real(kind = DBL_PREC), intent(in) :: FAC_PHYT_AMIN_DOC
-
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_DOXY_20
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_NO3N_20
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_MN_IV_20
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_FE_III_20
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_S_PLUS_6_20
-    real(kind = DBL_PREC), intent(in) :: K_MIN_DOC_DOC_20
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_DOXY
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_NO3N
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_MN_IV
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_FE_III
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_S_PLUS_6
-    real(kind = DBL_PREC), intent(in) :: THETA_K_MIN_DOC_DOC
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_DOXY
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_NO3N
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_MN_IV
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_FE_III
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_S_PLUS_6
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOC_MIN_DOC
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOXY_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_NO3N_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_MN_IV_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_FE_III_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_S_PLUS_6_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOXY_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_NO3N_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_MN_IV_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_FE_III_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_S_PLUS_6_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_DOXY
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_NO3N
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_MN_IV
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_FE_III
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_S_PLUS_6
-    real(kind = DBL_PREC), intent(in) :: PH_MIN_DOC_MIN_DOC
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_DOXY
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_NO3N
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_MN_IV
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_FE_III
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_S_PLUS_6
-    real(kind = DBL_PREC), intent(in) :: PH_MAX_DOC_MIN_DOC
+    type(t_docmin_params), intent(in) :: docmin_params
+    type(t_redox_params),  intent(in) :: redox_params
 
     integer, intent(in) :: nkn
 
@@ -209,6 +131,52 @@ subroutine ORGANIC_CARBON_MINERALIZATION &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: K_S_PLUS_6_RED
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: K_DOC_RED
 
+    associate( &
+        FAC_PHYT_AMIN_DOC        => docmin_params%FAC_PHYT_AMIN_DOC,        &
+        K_MIN_DOC_DOXY_20        => docmin_params%K_MIN_DOC_DOXY_20,        &
+        K_MIN_DOC_NO3N_20        => docmin_params%K_MIN_DOC_NO3N_20,        &
+        K_MIN_DOC_MN_IV_20       => docmin_params%K_MIN_DOC_MN_IV_20,       &
+        K_MIN_DOC_FE_III_20      => docmin_params%K_MIN_DOC_FE_III_20,      &
+        K_MIN_DOC_S_PLUS_6_20    => docmin_params%K_MIN_DOC_S_PLUS_6_20,    &
+        K_MIN_DOC_DOC_20         => docmin_params%K_MIN_DOC_DOC_20,         &
+        THETA_K_MIN_DOC_DOXY     => docmin_params%THETA_K_MIN_DOC_DOXY,     &
+        THETA_K_MIN_DOC_NO3N     => docmin_params%THETA_K_MIN_DOC_NO3N,     &
+        THETA_K_MIN_DOC_MN_IV    => docmin_params%THETA_K_MIN_DOC_MN_IV,    &
+        THETA_K_MIN_DOC_FE_III   => docmin_params%THETA_K_MIN_DOC_FE_III,   &
+        THETA_K_MIN_DOC_S_PLUS_6 => docmin_params%THETA_K_MIN_DOC_S_PLUS_6, &
+        THETA_K_MIN_DOC_DOC      => docmin_params%THETA_K_MIN_DOC_DOC,      &
+        K_HS_DOC_MIN_DOXY        => docmin_params%K_HS_DOC_MIN_DOXY,        &
+        K_HS_DOC_MIN_NO3N        => docmin_params%K_HS_DOC_MIN_NO3N,        &
+        K_HS_DOC_MIN_MN_IV       => docmin_params%K_HS_DOC_MIN_MN_IV,       &
+        K_HS_DOC_MIN_FE_III      => docmin_params%K_HS_DOC_MIN_FE_III,      &
+        K_HS_DOC_MIN_S_PLUS_6    => docmin_params%K_HS_DOC_MIN_S_PLUS_6,    &
+        K_HS_DOC_MIN_DOC         => docmin_params%K_HS_DOC_MIN_DOC,         &
+        PH_MIN_DOC_MIN_DOXY      => docmin_params%PH_MIN_DOC_MIN_DOXY,      &
+        PH_MIN_DOC_MIN_NO3N      => docmin_params%PH_MIN_DOC_MIN_NO3N,      &
+        PH_MIN_DOC_MIN_MN_IV     => docmin_params%PH_MIN_DOC_MIN_MN_IV,     &
+        PH_MIN_DOC_MIN_FE_III    => docmin_params%PH_MIN_DOC_MIN_FE_III,    &
+        PH_MIN_DOC_MIN_S_PLUS_6  => docmin_params%PH_MIN_DOC_MIN_S_PLUS_6,  &
+        PH_MIN_DOC_MIN_DOC       => docmin_params%PH_MIN_DOC_MIN_DOC,       &
+        PH_MAX_DOC_MIN_DOXY      => docmin_params%PH_MAX_DOC_MIN_DOXY,      &
+        PH_MAX_DOC_MIN_NO3N      => docmin_params%PH_MAX_DOC_MIN_NO3N,      &
+        PH_MAX_DOC_MIN_MN_IV     => docmin_params%PH_MAX_DOC_MIN_MN_IV,     &
+        PH_MAX_DOC_MIN_FE_III    => docmin_params%PH_MAX_DOC_MIN_FE_III,    &
+        PH_MAX_DOC_MIN_S_PLUS_6  => docmin_params%PH_MAX_DOC_MIN_S_PLUS_6,  &
+        PH_MAX_DOC_MIN_DOC       => docmin_params%PH_MAX_DOC_MIN_DOC        &
+    )
+
+    associate( &
+        K_HS_DOXY_RED_LIM      => redox_params%K_HS_DOXY_RED_LIM,      &
+        K_HS_NO3N_RED_LIM      => redox_params%K_HS_NO3N_RED_LIM,      &
+        K_HS_MN_IV_RED_LIM     => redox_params%K_HS_MN_IV_RED_LIM,     &
+        K_HS_FE_III_RED_LIM    => redox_params%K_HS_FE_III_RED_LIM,    &
+        K_HS_S_PLUS_6_RED_LIM  => redox_params%K_HS_S_PLUS_6_RED_LIM,  &
+        K_HS_DOXY_RED_INHB     => redox_params%K_HS_DOXY_RED_INHB,     &
+        K_HS_NO3N_RED_INHB     => redox_params%K_HS_NO3N_RED_INHB,     &
+        K_HS_MN_IV_RED_INHB    => redox_params%K_HS_MN_IV_RED_INHB,    &
+        K_HS_FE_III_RED_INHB   => redox_params%K_HS_FE_III_RED_INHB,   &
+        K_HS_S_PLUS_6_RED_INHB => redox_params%K_HS_S_PLUS_6_RED_INHB  &
+    )
 
     LIM_PHYT_AMIN_DOC = FAC_PHYT_AMIN_DOC * PHYT_TOT_C
 
@@ -247,5 +215,8 @@ subroutine ORGANIC_CARBON_MINERALIZATION &
     R_ABIOTIC_DOC_MIN_DOC = &
         (K_MIN_DOC_DOC_20  * (THETA_K_MIN_DOC_DOC ** (TEMP - 2.0D1)) * &
          LIM_DOC_RED * PH_CORR_DOC_MIN_DOC * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_DOC)) * DISS_ORG_C)
+
+    end associate ! redox_params
+    end associate ! docmin_params
 
 end subroutine ORGANIC_CARBON_MINERALIZATION

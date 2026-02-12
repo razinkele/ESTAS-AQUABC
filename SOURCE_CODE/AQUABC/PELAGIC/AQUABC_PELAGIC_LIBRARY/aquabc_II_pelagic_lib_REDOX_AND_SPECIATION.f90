@@ -4,7 +4,8 @@
 !subroutine REDOX_AND_SPECIATION
 
 subroutine REDOX_AND_SPECIATION &
-           (DOXY                  , &
+           (redox_params          , &
+            DOXY                  , &
             NO3N                  , &
             MN_IV                 , &
             FE_III                , &
@@ -19,16 +20,6 @@ subroutine REDOX_AND_SPECIATION &
             SALT                  , &
             PH                    , &
             ELEVATION             , &
-            K_HS_DOXY_RED_LIM     , &
-            K_HS_NO3N_RED_LIM     , &
-            K_HS_MN_IV_RED_LIM    , &
-            K_HS_FE_III_RED_LIM   , &
-            K_HS_S_PLUS_6_RED_LIM , &
-            K_HS_DOXY_RED_INHB    , &
-            K_HS_NO3N_RED_INHB    , &
-            K_HS_MN_IV_RED_INHB   , &
-            K_HS_FE_III_RED_INHB  , &
-            K_HS_S_PLUS_6_RED_INHB, &
             nkn                   , &
             LIM_DOXY_RED          , &
             LIM_NO3N_RED          , &
@@ -42,9 +33,12 @@ subroutine REDOX_AND_SPECIATION &
             MN_II_DISS)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_PELAGIC_TYPES, only: t_redox_params
     use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, MN_MOLAR_MASS_MG, S_MOLAR_MASS_MG
     use, intrinsic :: IEEE_ARITHMETIC
     implicit none
+
+    type(t_redox_params), intent(in) :: redox_params
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DOXY          ! Dissolved oxygen (mg/L)
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3N          ! Nitrate nitrogen (mg/L)
@@ -64,17 +58,6 @@ subroutine REDOX_AND_SPECIATION &
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ELEVATION
 
     integer, intent(in) :: nkn
-
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOXY_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_NO3N_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_MN_IV_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_FE_III_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_S_PLUS_6_RED_LIM
-    real(kind = DBL_PREC), intent(in) :: K_HS_DOXY_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_NO3N_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_MN_IV_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_FE_III_RED_INHB
-    real(kind = DBL_PREC), intent(in) :: K_HS_S_PLUS_6_RED_INHB
 
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: LIM_DOXY_RED
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: LIM_NO3N_RED
@@ -130,6 +113,19 @@ subroutine REDOX_AND_SPECIATION &
     real(kind = DBL_PREC) :: BETA_4_FE_OH_3
     real(kind = DBL_PREC) :: BETA_2_2_FE_OH_3
     real(kind = DBL_PREC) :: BETA_4_3_FE_OH_3
+
+    associate( &
+        K_HS_DOXY_RED_LIM      => redox_params%K_HS_DOXY_RED_LIM,      &
+        K_HS_NO3N_RED_LIM      => redox_params%K_HS_NO3N_RED_LIM,      &
+        K_HS_MN_IV_RED_LIM     => redox_params%K_HS_MN_IV_RED_LIM,     &
+        K_HS_FE_III_RED_LIM    => redox_params%K_HS_FE_III_RED_LIM,    &
+        K_HS_S_PLUS_6_RED_LIM  => redox_params%K_HS_S_PLUS_6_RED_LIM,  &
+        K_HS_DOXY_RED_INHB     => redox_params%K_HS_DOXY_RED_INHB,     &
+        K_HS_NO3N_RED_INHB     => redox_params%K_HS_NO3N_RED_INHB,     &
+        K_HS_MN_IV_RED_INHB    => redox_params%K_HS_MN_IV_RED_INHB,    &
+        K_HS_FE_III_RED_INHB   => redox_params%K_HS_FE_III_RED_INHB,   &
+        K_HS_S_PLUS_6_RED_INHB => redox_params%K_HS_S_PLUS_6_RED_INHB  &
+    )
 
     H_PLUS       = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
     LIM_DOXY_RED = DOXY  / (DOXY + K_HS_DOXY_RED_LIM)
@@ -382,4 +378,7 @@ subroutine REDOX_AND_SPECIATION &
     ! -------------------------------------------------------------------------
     ! END OF MN_IV Species
     ! -------------------------------------------------------------------------
+
+    end associate ! redox_params
+
 end subroutine REDOX_AND_SPECIATION

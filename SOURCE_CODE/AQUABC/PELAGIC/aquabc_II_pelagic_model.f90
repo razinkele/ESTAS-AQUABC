@@ -174,6 +174,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
     type(t_opa_params),      save :: OPA_PARAMS
     type(t_nost_params),     save :: NOST_PARAMS
     type(t_zoo_params),      save :: ZOO_PARAMS
+    type(t_redox_params),    save :: REDOX_PARAMS
+    type(t_docmin_params),   save :: DOCMIN_PARAMS
 
     ! Environmental input bundle (pointer-populated each timestep)
     type(t_phyto_env) :: PHYTO_ENV
@@ -190,6 +192,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
         call populate_opa_params(OPA_PARAMS)
         call populate_nost_params(NOST_PARAMS)
         call populate_zoo_params(ZOO_PARAMS)
+        call populate_redox_params(REDOX_PARAMS)
+        call populate_docmin_params(DOCMIN_PARAMS)
 
         CALLED_BEFORE = 1
     end if
@@ -408,13 +412,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
             call REDOX_AND_SPECIATION &
-            (DISS_OXYGEN, NO3_N, MN_IV, FE_III, S_PLUS_6, DISS_ORG_C, &
+            (REDOX_PARAMS, &
+             DISS_OXYGEN, NO3_N, MN_IV, FE_III, S_PLUS_6, DISS_ORG_C, &
              S_MINUS_2 , MN_II, FE_II , HCO3, CO3, &
-             TEMP, SALT, PH, ELEVATION, &
-             K_HS_DOXY_RED_LIM   , K_HS_NO3N_RED_LIM , K_HS_MN_IV_RED_LIM , &
-             K_HS_FE_III_RED_LIM , K_HS_S_PLUS_6_RED_LIM, &
-             K_HS_DOXY_RED_INHB  , K_HS_NO3N_RED_INHB, K_HS_MN_IV_RED_INHB, &
-             K_HS_FE_III_RED_INHB, K_HS_S_PLUS_6_RED_INHB, nkn, &
+             TEMP, SALT, PH, ELEVATION, nkn, &
              LIM_DOXY_RED        , LIM_NO3N_RED          , LIM_MN_IV_RED  , &
              LIM_FE_III_RED      , LIM_S_PLUS_6_RED      , LIM_DOC_RED, &
              PE, FE_II_DISS_EQ   , FE_III_DISS_EQ, MN_II_DISS)
@@ -1124,8 +1125,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !******************************!
     call ZOOPLANKTON &
            (ZOO_PARAMS                       , &
-            TEMP                          , &
-            DISS_OXYGEN                   , &
+            PHYTO_ENV                        , &
             DIA_C                         , &
             CYN_C                         , &
             OPA_C                         , &
@@ -1274,47 +1274,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
         call ORGANIC_CARBON_MINERALIZATION &
-                (FAC_PHYT_AMIN_DOC           , &
-                 K_MIN_DOC_DOXY_20           , &
-                 K_MIN_DOC_NO3N_20           , &
-                 K_MIN_DOC_MN_IV_20          , &
-                 K_MIN_DOC_FE_III_20         , &
-                 K_MIN_DOC_S_PLUS_6_20       , &
-                 K_MIN_DOC_DOC_20            , &
-                 THETA_K_MIN_DOC_DOXY        , &
-                 THETA_K_MIN_DOC_NO3N        , &
-                 THETA_K_MIN_DOC_MN_IV       , &
-                 THETA_K_MIN_DOC_FE_III      , &
-                 THETA_K_MIN_DOC_S_PLUS_6    , &
-                 THETA_K_MIN_DOC_DOC         , &
-                 K_HS_DOC_MIN_DOXY           , &
-                 K_HS_DOC_MIN_NO3N           , &
-                 K_HS_DOC_MIN_MN_IV          , &
-                 K_HS_DOC_MIN_FE_III         , &
-                 K_HS_DOC_MIN_S_PLUS_6       , &
-                 K_HS_DOC_MIN_DOC            , &
-                 K_HS_DOXY_RED_LIM           , &
-                 K_HS_NO3N_RED_LIM           , &
-                 K_HS_MN_IV_RED_LIM          , &
-                 K_HS_FE_III_RED_LIM         , &
-                 K_HS_S_PLUS_6_RED_LIM       , &
-                 K_HS_DOXY_RED_INHB          , &
-                 K_HS_NO3N_RED_INHB          , &
-                 K_HS_MN_IV_RED_INHB         , &
-                 K_HS_FE_III_RED_INHB        , &
-                 K_HS_S_PLUS_6_RED_INHB      , &
-                 PH_MIN_DOC_MIN_DOXY         , &  !Min. pH for the optimum pH range for DOC mineralization with DOXY     as final electron acceptor (subroutine input)
-                 PH_MIN_DOC_MIN_NO3N         , &  !Min. pH for the optimum pH range for DOC mineralization with NO3N     as final electron acceptor (subroutine input)
-                 PH_MIN_DOC_MIN_MN_IV        , &  !Min. pH for the optimum pH range for DOC mineralization with MN_IV    as final electron acceptor (subroutine input)
-                 PH_MIN_DOC_MIN_FE_III       , &  !Min. pH for the optimum pH range for DOC mineralization with FE_III   as final electron acceptor (subroutine input)
-                 PH_MIN_DOC_MIN_S_PLUS_6     , &  !Min. pH for the optimum pH range for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine input)
-                 PH_MIN_DOC_MIN_DOC          , &  !Min. pH for the optimum pH range for DOC mineralization with DOC      as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_DOXY         , &  !Max. pH for the optimum pH range for DOC mineralization with DOXY     as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_NO3N         , &  !Max. pH for the optimum pH range for DOC mineralization with NO3N     as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_MN_IV        , &  !Max. pH for the optimum pH range for DOC mineralization with MN_IV    as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_FE_III       , &  !Max. pH for the optimum pH range for DOC mineralization with FE_III   as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_S_PLUS_6     , &  !Max. pH for the optimum pH range for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine input)
-                 PH_MAX_DOC_MIN_DOC          , &  !Max. pH for the optimum pH range for DOC mineralization with DOC      as final electron acceptor (subroutine input)
+                (DOCMIN_PARAMS               , &
+                 REDOX_PARAMS                , &
                  nkn                         , &
                  TEMP                        , &
                  DISS_ORG_C                  , &
