@@ -174,12 +174,12 @@ subroutine SED_DOC_MINERALIZATION &
               SED_PH_MAX_DOC_MIN_FE_III, nkn, NUM_SED_LAYERS)
 
     call CALCULATE_PH_CORR_SED &
-	     (PH_CORR_DOC_MIN_S_PLUS_6   , PH , SED_PH_MIN_DOC_MIN_S_PLUS_6, &
-		  SED_PH_MAX_DOC_MIN_S_PLUS_6, nkn, NUM_SED_LAYERS)
+             (PH_CORR_DOC_MIN_S_PLUS_6   , PH , SED_PH_MIN_DOC_MIN_S_PLUS_6, &
+                  SED_PH_MAX_DOC_MIN_S_PLUS_6, nkn, NUM_SED_LAYERS)
 
     call CALCULATE_PH_CORR_SED &
-	     (PH_CORR_DOC_MIN_DOC        , PH, SED_PH_MIN_DOC_MIN_DOC      , &
-		  SED_PH_MAX_DOC_MIN_DOC     , nkn, NUM_SED_LAYERS)
+             (PH_CORR_DOC_MIN_DOC        , PH, SED_PH_MIN_DOC_MIN_DOC      , &
+                  SED_PH_MAX_DOC_MIN_DOC     , nkn, NUM_SED_LAYERS)
 
     LIM_DOXY_RED = SED_DOXY  / (SED_DOXY + SED_K_HS_DOXY_RED_LIM)
 

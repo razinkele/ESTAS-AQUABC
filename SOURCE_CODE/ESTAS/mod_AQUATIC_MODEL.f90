@@ -410,7 +410,7 @@ contains
                     !Open the resuspension model input file
                     open(unit   = IN_FILE + 2, &
                          file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-			                      trim(adjustl(FILE_NAME)), &
+                                              trim(adjustl(FILE_NAME)), &
                          status = 'OLD')
 
                     !Read the resuspension model inputs
@@ -428,7 +428,7 @@ contains
                     !Open the resuspension model input file
                     open(unit   = IN_FILE + 2, &
                          file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-			                      trim(adjustl(FILE_NAME)), &
+                                              trim(adjustl(FILE_NAME)), &
                          status = 'OLD')
 
                     call READ_RESUSPENSION_FILE_OPTION_2(IN_FILE + 2)

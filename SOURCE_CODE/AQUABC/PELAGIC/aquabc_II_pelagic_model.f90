@@ -412,10 +412,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! promissed 30th November 2015
     ! -------------------------------------------------------------------------
 
-	! CO2SYS_OUT_DATA(:, 21), CO2SYS_OUT_DATA(:, 22)can not be used because deallocated
+        ! CO2SYS_OUT_DATA(:, 21), CO2SYS_OUT_DATA(:, 22)can not be used because deallocated
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-	    call REDOX_AND_SPECIATION &
+            call REDOX_AND_SPECIATION &
             (DISS_OXYGEN, NO3_N, MN_IV, FE_III, S_PLUS_6, DISS_ORG_C, &
              S_MINUS_2 , MN_II, FE_II , HCO3, CO3, &
              TEMP, SALT, PH, ELEVATION, &
@@ -2307,7 +2307,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     DERIVATIVES(1:nkn,CYN_C_INDEX) = &
         PROCESS_RATES(1:nkn,CYN_C_INDEX, 1) - PROCESS_RATES(1:nkn,CYN_C_INDEX, 2) - &
         PROCESS_RATES(1:nkn,CYN_C_INDEX, 3) - PROCESS_RATES(1:nkn,CYN_C_INDEX, 4) - &
-		PROCESS_RATES(1:nkn,CYN_C_INDEX, 5)
+                PROCESS_RATES(1:nkn,CYN_C_INDEX, 5)
 
     ! Debug: print derivatives for CYN_C node1 (commented to reduce log noise)
     ! write(6,'(A,ES14.6)') 'DEBUG: DERIV CYN node1=', DERIVATIVES(1,CYN_C_INDEX)
@@ -2322,7 +2322,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1)  = R_FIX_CYN_GROWTH
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2)  = R_FIX_CYN_TOT_RESP
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = R_FIX_CYN_EXCR
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = R_FIX_CYN_EXCR
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4)  = R_FIX_CYN_DEATH
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)  = R_ZOO_FEEDING_FIX_CYN
 
@@ -2357,7 +2357,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         DERIVATIVES(1:nkn,FIX_CYN_C_INDEX) = &
             PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1) - PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2) - &
             PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3) - PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4) - &
-	    	PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)
+                PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)
 
         ! Diagnostic check: if applying derivative over TIME_STEP would make concentration negative, dump context and stop
         do i = 1, nkn
@@ -2478,7 +2478,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     else
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1)  = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2)  = 0.0D0
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = 0.0D0
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4)  = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)  = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 6)  = 0.0D0
@@ -2491,8 +2491,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 13) = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 14) = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 15) = 0.0D0
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = 0.0D0
-	    PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = 0.0D0
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = 0.0D0
+            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = 0.0D0
         PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 18) = 0.0D0
 
         DERIVATIVES  (1:nkn,FIX_CYN_C_INDEX)     = 0.0D0
@@ -2506,7 +2506,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! -------------------------------------------------------------------------------
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1) = R_NOST_VEG_HET_GROWTH
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 2) = R_NOST_VEG_HET_TOT_RESP
-	    PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = R_NOST_VEG_HET_EXCR
+            PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = R_NOST_VEG_HET_EXCR
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 4) = R_NOST_VEG_HET_DEATH
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 5) = R_ZOO_FEEDING_NOST_VEG_HET
 
@@ -2591,7 +2591,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! -------------------------------------------------------------------------------
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1) = 0.0D0
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 2) = 0.0D0
-	    PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = 0.0D0
+            PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = 0.0D0
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 4) = 0.0D0
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 5) = 0.0D0
         PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 6) = 0.0D0
@@ -2618,7 +2618,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !OTHER PLANKTONIC ALGAE CARBON
     PROCESS_RATES(1:nkn,OPA_C_INDEX, 1) = R_OPA_GROWTH
     PROCESS_RATES(1:nkn,OPA_C_INDEX, 2) = R_OPA_TOT_RESP
-	PROCESS_RATES(1:nkn,OPA_C_INDEX, 3) = R_OPA_EXCR
+        PROCESS_RATES(1:nkn,OPA_C_INDEX, 3) = R_OPA_EXCR
     PROCESS_RATES(1:nkn,OPA_C_INDEX, 4) = R_OPA_DEATH
     PROCESS_RATES(1:nkn,OPA_C_INDEX, 5) = R_ZOO_FEEDING_OPA
 
@@ -2633,18 +2633,18 @@ subroutine AQUABC_PELAGIC_KINETICS &
     DERIVATIVES(1:nkn,OPA_C_INDEX) = &
         PROCESS_RATES(1:nkn,OPA_C_INDEX, 1) - PROCESS_RATES(1:nkn,OPA_C_INDEX, 2) - &
         PROCESS_RATES(1:nkn,OPA_C_INDEX, 3) - PROCESS_RATES(1:nkn,OPA_C_INDEX, 4) - &
-		PROCESS_RATES(1:nkn,OPA_C_INDEX, 5)
+                PROCESS_RATES(1:nkn,OPA_C_INDEX, 5)
 
     !ZOOPLANKTON CARBON
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 1) = R_ZOO_GROWTH
 
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = 0.0
 
-	!if (present(ZOOP_OPTION_1)) then
+        !if (present(ZOOP_OPTION_1)) then
         if (ZOOP_OPTION_1 > 0) then
             PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC
-	    end if
-	!end if
+            end if
+        !end if
 
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 3) = R_ZOO_TOT_RESP
     PROCESS_RATES(1:nkn,ZOO_C_INDEX, 4) = R_ZOO_DEATH

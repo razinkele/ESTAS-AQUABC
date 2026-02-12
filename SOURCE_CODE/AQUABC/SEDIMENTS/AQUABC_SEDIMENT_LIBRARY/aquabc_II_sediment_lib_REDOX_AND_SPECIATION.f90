@@ -156,8 +156,8 @@ subroutine SED_REDOX_AND_SPECIATION &
     ! Mn IV is reduced
     where (REDUCED_AGENT_NO == 3)
         PE = &
-		    20.8D0 - &
-			log10(((MN_II/MN_MOLAR_MASS_MG) ** 0.5D0) / (((MN_IV/MN_MOLAR_MASS_MG) ** 0.5D0)*(H_PLUS**2.0D0)))
+                    20.8D0 - &
+                        log10(((MN_II/MN_MOLAR_MASS_MG) ** 0.5D0) / (((MN_IV/MN_MOLAR_MASS_MG) ** 0.5D0)*(H_PLUS**2.0D0)))
     end where
 
     ! FE III is reduced
@@ -171,8 +171,8 @@ subroutine SED_REDOX_AND_SPECIATION &
             ((H_PLUS * 8.9D-8)  / ((H_PLUS * H_PLUS) + (H_PLUS * 8.9D-8) + (8.9D-8 * 1.2D-13)))
 
         PE = &
-		    4.25D0 - &
-			log((HS_MOLAR**0.125D0) / (((S_PLUS_6 / S_MOLAR_MASS_MG) **0.125D0) * (H_PLUS**1.125D0)))
+                    4.25D0 - &
+                        log((HS_MOLAR**0.125D0) / (((S_PLUS_6 / S_MOLAR_MASS_MG) **0.125D0) * (H_PLUS**1.125D0)))
     end where
 
     ! Methanogenesis

@@ -78,7 +78,7 @@ module AQUABC_PELAGIC_INTERNAL
     integer :: INIT_OPTION_OF_FE_III_DISS
     ! End of flags
 
-	real(kind = DBL_PREC), allocatable, dimension(:) :: K_A_CALC   !calculated aeration reactLr specific coefficient
+        real(kind = DBL_PREC), allocatable, dimension(:) :: K_A_CALC   !calculated aeration reactLr specific coefficient
 
     !Main process rates
     ! New kinetic rates added 9 September 2015
@@ -745,7 +745,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(WINDS                         (nkn))
     allocate(K_B_E                         (nkn))
     allocate(ice_cover                     (nkn))
-	allocate(K_A_CALC                      (nkn))   !calculated aeration reactLr specific coefficient
+        allocate(K_A_CALC                      (nkn))   !calculated aeration reactLr specific coefficient
 
     !Main process rates
     allocate(R_FE_II_OXIDATION             (nkn), stat=ierr)
@@ -1246,7 +1246,7 @@ subroutine DEALLOC_AQUABC_PELAGIC_INTERNAL
     deallocate(WINDS                         )
     deallocate(K_B_E                         )
     deallocate(ice_cover                     )
-	deallocate(K_A_CALC                      )   !calculated aeration reactLr specific coefficient
+        deallocate(K_A_CALC                      )   !calculated aeration reactLr specific coefficient
 
     !Main process rates
     deallocate(R_FE_II_OXIDATION             )

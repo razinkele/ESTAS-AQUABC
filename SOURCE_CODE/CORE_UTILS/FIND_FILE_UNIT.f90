@@ -16,27 +16,27 @@ subroutine find_unit(iunit)
     iu = iunit
 
     if (iu .le. 0) then
-	    iu = 20                 !set standard unit
-	end if
+            iu = 20                 !set standard unit
+        end if
 
-	iunit = 0
+        iunit = 0
 
     do
-	    !safeguard units 5 and 6
+            !safeguard units 5 and 6
         if ( iu .eq. 5 ) then 
-		    iu = 7
+                    iu = 7
         end if
-		
-		if( iu > iumax ) then
+                
+                if( iu > iumax ) then
             write(6,*) 'no unit available to open file: ',iu
             return
         end if
 
         inquire(iu,opened=opened)
         
-		if( .not. opened )then 
+                if( .not. opened )then 
             exit
-	    end if
+            end if
 
         iu = iu + 1
     end do

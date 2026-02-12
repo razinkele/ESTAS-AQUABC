@@ -1486,16 +1486,16 @@ contains
         ! All other cases
         where ((WhichKs/=6 .and. WhichKs /= 7 .and. WhichKs/=8) .and. &
                (WhoseKSO4==1 .or. WhoseKSO4==2))    !If user opted for Uppstrom's values
-	        ! Uppstrom, L., Deep-Sea Research 21:161-162, 1974:
-	        ! this is .000416.*Sali./35. = .0000119.*Sali
-	        TB =  0.0004157D0 * (Sal/35.0D0) ! in mol/kg-SW
+                ! Uppstrom, L., Deep-Sea Research 21:161-162, 1974:
+                ! this is .000416.*Sali./35. = .0000119.*Sali
+                TB =  0.0004157D0 * (Sal/35.0D0) ! in mol/kg-SW
         end where
 
         where ((WhichKs/=6 .and. WhichKs /= 7 .and. WhichKs/=8) .and. &
                (WhoseKSO4==3 .or. WhoseKSO4==4))    !If user opted for the new Lee values
-		    ! Lee, Kim, Byrne, Millero, Feely, Yong-Ming Liu. 2010.
-	 	    ! Geochimica Et Cosmochimica Acta 74 (6): 1801–1811.
-		    TB =  0.0004326D0 * (Sal/35.0D0) ! in mol/kg-SW
+                    ! Lee, Kim, Byrne, Millero, Feely, Yong-Ming Liu. 2010.
+                    ! Geochimica Et Cosmochimica Acta 74 (6): 1801–1811.
+                    TB =  0.0004326D0 * (Sal/35.0D0) ! in mol/kg-SW
         end where
         ! End of calculate TB - Total Borate
 
@@ -1543,7 +1543,7 @@ contains
                       ( 35474.0D0 / TempK - 771.54D0 + 114.723D0 *logTempK) * IonS + &
                        (-2698.0D0 / TempK) * sqrt(IonS) * IonS + (1776 / TempK) * IonS * IonS
 
-	        KS = exp(lnKS) * (1.0D0 - (0.001005D0 * Sal))
+                KS = exp(lnKS) * (1.0D0 - (0.001005D0 * Sal))
         end where
 
         where(WhoseKSO4==1 .or. WhoseKSO4==3)
@@ -1864,7 +1864,7 @@ contains
             ! Mehrbach et al gave results on the NBS scale.
             ! The 2s precision in pK1 is .011, or 2.6% in K1.
             ! The 2s precision in pK2 is .020, or 4.6% in K2.
-	        ! Valid for salinity 20-40.
+                ! Valid for salinity 20-40.
 
             ! This is in Table 4 on p. 1739.
             pK1 = (3670.7 / TempK) - 62.008 + (9.7944 * logTempK) - &
@@ -1892,7 +1892,7 @@ contains
             ! should be pK2* =, not pK1* =.
             ! The 2s precision in pK1 is .017, or 4% in K1.
             ! The 2s precision in pK2 is .026, or 6% in K2.
-	        ! Valid for salinity 20-40.
+                ! Valid for salinity 20-40.
 
             ! This is in Table 5 on p. 1740.
             pK1 = (845.0D0 / TempK) + 3.248D0 - (0.0098D0 * Sal) + (0.000087D0 * Sal * Sal)
@@ -1910,7 +1910,7 @@ contains
         where((WhichKs==6) .or. (WhichKs==7))
             ! GEOSECS and Peng et al use K1, K2 from Mehrbach et al,
             ! Limnology and Oceanography, 18(6):897-907, 1973.
-	        ! I.e., these are the original Mehrbach dissociation constants.
+                ! I.e., these are the original Mehrbach dissociation constants.
             ! The 2s precision in pK1 is .005, or 1.2% in K1.
             ! The 2s precision in pK2 is .008, or 2% in K2.
             pK1 = - 13.7201D0 + (0.031334D0 * TempK) + (3235.76D0 / TempK) + &
@@ -1932,13 +1932,13 @@ contains
 
 
         where(WhichKs==8)
-	        ! PURE WATER CASE
+                ! PURE WATER CASE
             ! Millero, F. J., Geochemica et Cosmochemica Acta 43:1651-1661, 1979:
             ! K1 from refit data from Harned and Davis,
             ! J American Chemical Society, 65:2030-2037, 1943.
             ! K2 from refit data from Harned and Scholes,
             ! J American Chemical Society, 43:1706-1709, 1941.
-	        ! This is only to be used for Sal=0 water (note the absence of S in the below formulations)
+                ! This is only to be used for Sal=0 water (note the absence of S in the below formulations)
             ! These are the thermodynamic Constants:
             lnK1 = 290.9097D0 - (14554.21D0 / TempK) - (45.0575D0 * logTempK)
             K1 = exp(lnK1)
@@ -1949,25 +1949,25 @@ contains
 
         where(WhichKs==9)
             ! From Cai and Wang 1998, for estuarine use.
-	        ! Data used in this work is from:
-	        ! K1: Merhback (1973) for S>15, for S<15: Mook and Keone (1975)
-	        ! K2: Merhback (1973) for S>20, for S<20: Edmond and Gieskes (1970)
-	        ! Sigma of residuals between fits and above data: Â±0.015, +0.040 for K1 and K2, respectively.
-	        ! Sal 0-40, Temp 0.2-30
+                ! Data used in this work is from:
+                ! K1: Merhback (1973) for S>15, for S<15: Mook and Keone (1975)
+                ! K2: Merhback (1973) for S>20, for S<20: Edmond and Gieskes (1970)
+                ! Sigma of residuals between fits and above data: Â±0.015, +0.040 for K1 and K2, respectively.
+                ! Sal 0-40, Temp 0.2-30
             ! Limnol. Oceanogr. 43(4) (1998) 657-668
-	        ! On the NBS scale
-	        ! Their check values for F1 don't work out, not sure if this was correctly published...
-	        F1 = (200.1D0 / TempK) + 0.3220
+                ! On the NBS scale
+                ! Their check values for F1 don't work out, not sure if this was correctly published...
+                F1 = (200.1D0 / TempK) + 0.3220
 
-	        pK1 = (3404.71D0 /TempK) + (0.032786D0 * TempK) - 14.8435D0 - &
+                pK1 = (3404.71D0 /TempK) + (0.032786D0 * TempK) - 14.8435D0 - &
                   (0.071692D0 * F1 * (Sal**0.5D0)) + (0.0021487D0 * Sal)
 
             ! this is on the NBS scale, convert to SWS scale (uncertain at low Sal due to junction potential)
             K1  = (10.0D0**(-pK1)) / fH
 
-	        F2 = (-129.24D0 / TempK) + 1.4381D0
+                F2 = (-129.24D0 / TempK) + 1.4381D0
 
-	        pK2 = (2902.39D0 / TempK) + (0.02379D0 * TempK) - 6.4980D0 - &
+                pK2 = (2902.39D0 / TempK) + (0.02379D0 * TempK) - 6.4980D0 - &
                   (0.3191D0 * F2 * (Sal**0.5D0)) + (0.0198D0 * Sal)
 
             ! this is on the NBS scale, convert to SWS scale (uncertain at low Sal due to junction potential)
@@ -1976,7 +1976,7 @@ contains
 
         where(WhichKs==10)
             ! From Lueker, Dickson, Keeling, 2000
-        	! This is Mehrbach's data refit after conversion to the total scale, for comparison with their equilibrator work.
+                ! This is Mehrbach's data refit after conversion to the total scale, for comparison with their equilibrator work.
             ! Mar. Chem. 70 (2000) 105-119
 
             ! Total scale and kg-sw
@@ -1984,20 +1984,20 @@ contains
                 (0.011555D0 * Sal) + (0.0001152D0 * Sal * Sal)
 
             ! this is on the total pH scale in mol/kg-SW, convert to SWS pH scale
-	        K1  = (10.0D0 ** (-pK1)) / SWStoTOT
+                K1  = (10.0D0 ** (-pK1)) / SWStoTOT
 
             pK2 = (471.78D0 / TempK) + 25.929D0 -(3.16967D0 * log(TempK)) - &
                 (0.01781D0 * Sal) + (0.0001122D0 * Sal * Sal)
 
             ! this is on the total pH scale in mol/kg-SW, convert to SWS pH scale
-	        K2  = (10.0D0 ** (-pK2)) /SWStoTOT
+                K2  = (10.0D0 ** (-pK2)) /SWStoTOT
         end where
 
         where(WhichKs==11)
-	        ! Mojica Prieto and Millero 2002. Geochim. et Cosmochim. Acta. 66(14) 2529-2540.
-  	        ! sigma for pK1 is reported to be 0.0056
-	        ! sigma for pK2 is reported to be 0.010
-	        ! This is from the abstract and pages 2536-2537
+                ! Mojica Prieto and Millero 2002. Geochim. et Cosmochim. Acta. 66(14) 2529-2540.
+                ! sigma for pK1 is reported to be 0.0056
+                ! sigma for pK2 is reported to be 0.010
+                ! This is from the abstract and pages 2536-2537
             pK1 = -43.6977D0 - (0.0129037D0 * Sal) + (1.364D-4 * Sal * Sal) + &
                 (2885.378D0 / TempK) + (7.045159D0 * log(TempK))
 
@@ -2007,44 +2007,44 @@ contains
                 (1.967035D0 * Sal *log(TempK))
 
             ! this is on the SWS pH scale in mol/kg-SW
-	        K1 = 10.0D0 ** (-pK1)
+                K1 = 10.0D0 ** (-pK1)
 
             ! this is on the SWS pH scale in mol/kg-SW
-	        K2 = 10.0D0 ** (-pK2)
+                K2 = 10.0D0 ** (-pK2)
         end where
 
         where(WhichKs==12)
-   	        ! Millero et al., 2002. Deep-Sea Res. I (49) 1705-1723.
-	        ! Calculated from overdetermined WOCE-era field measurements
-	        ! sigma for pK1 is reported to be 0.005
-	        ! sigma for pK2 is reported to be 0.008
-	        ! This is from page 1715
+                ! Millero et al., 2002. Deep-Sea Res. I (49) 1705-1723.
+                ! Calculated from overdetermined WOCE-era field measurements
+                ! sigma for pK1 is reported to be 0.005
+                ! sigma for pK2 is reported to be 0.008
+                ! This is from page 1715
             pK1 =  6.359D0 - (0.00664D0 * Sal) - (0.01322D0 * TempC) + (4.989D-5 * TempC * TempC)
             pK2 =  9.867D0 - (0.01314D0 * Sal) - (0.01904D0 * TempC) + (2.448D-5 * TempC * TempC)
 
             ! this is on the SWS pH scale in mol/kg-SW
-	        K1 = 10.0D0**(-pK1)
+                K1 = 10.0D0**(-pK1)
 
             ! this is on the SWS pH scale in mol/kg-SW
-	        K2 = 10.0D0**(-pK2)
+                K2 = 10.0D0**(-pK2)
         end where
 
         where(WhichKs==13)
             ! From Millero 2006 work on pK1 and pK2 from titrations
-	        ! Millero, Graham, Huang, Bustos-Serrano, Pierrot. Mar.Chem. 100 (2006) 80-94.
+                ! Millero, Graham, Huang, Bustos-Serrano, Pierrot. Mar.Chem. 100 (2006) 80-94.
             ! S=1 to 50, T=0 to 50. On seawater scale (SWS). From titrations in Gulf Stream seawater.
-	        pK1_0 = -126.34048D0 + (6320.813D0 / TempK) + (19.568224D0 * log(TempK))
-	        A_1   = (13.4191D0 * (Sal**0.5D0)) + (0.0331D0 * Sal) - (5.33D-5 * Sal * Sal)
-	        B_1   = (-530.123D0 * (Sal ** 0.5D0)) - (6.103D0 * Sal)
-	        C_1   = -2.06950D0 * (Sal ** 0.5D0)
+                pK1_0 = -126.34048D0 + (6320.813D0 / TempK) + (19.568224D0 * log(TempK))
+                A_1   = (13.4191D0 * (Sal**0.5D0)) + (0.0331D0 * Sal) - (5.33D-5 * Sal * Sal)
+                B_1   = (-530.123D0 * (Sal ** 0.5D0)) - (6.103D0 * Sal)
+                C_1   = -2.06950D0 * (Sal ** 0.5D0)
 
             ! pK1 sigma = 0.0054
-	        pK1 = A_1 + (B_1 /TempK) + (C_1 * log(TempK)) + pK1_0
+                pK1 = A_1 + (B_1 /TempK) + (C_1 * log(TempK)) + pK1_0
 
-	        K1 = 10.0D0**(-pK1)
+                K1 = 10.0D0**(-pK1)
 
-	        pK2_0 = -90.18333D0 + (5143.692D0 / TempK) + (14.613358D0 * log(TempK))
-	        A_2   = (21.0894D0 * (Sal ** 0.5D0)) + (0.1248D0 * Sal) - (3.687D-4 * Sal * Sal)
+                pK2_0 = -90.18333D0 + (5143.692D0 / TempK) + (14.613358D0 * log(TempK))
+                A_2   = (21.0894D0 * (Sal ** 0.5D0)) + (0.1248D0 * Sal) - (3.687D-4 * Sal * Sal)
             B_2   = (-772.483D0 * (Sal ** 0.5D0)) - (20.051D0 *Sal)
             C_2   = (-3.3336D0 * (Sal ** 0.5D0))
 
@@ -2206,7 +2206,7 @@ contains
             Kappa   = (-3.08D0 + 0.0877D0 * TempC) / 1000.0D0
             !                 'Kappa = Kappa  - .578.*(Sali - 34.8)/1000.; % Millero, 1979
 
- 	        lnK1fac = (-deltaV + 0.5D0 * Kappa * Pbar) * Pbar / RT
+                lnK1fac = (-deltaV + 0.5D0 * Kappa * Pbar) * Pbar / RT
             !               The fits given in Millero, 1983 are somewhat different.
 
             !***PressureEffectsOnK2:
@@ -2256,7 +2256,7 @@ contains
             !               This is from Millero, 1983.
             deltaV  =  -25.6D0 + 0.2324D0 * TempC - 0.0036246D0 * TempC * TempC
             Kappa   = (-7.33D0 + 0.1368D0 * TempC - 0.001233D0  * TempC * TempC) / 1000.0D0
- 	        lnKWfac = (-deltaV + 0.5D0 *Kappa * Pbar) * Pbar / RT
+                lnKWfac = (-deltaV + 0.5D0 *Kappa * Pbar) * Pbar / RT
 
             !               NOTE the temperature dependence of KappaK1 and KappaKW
             !               for fresh water in Millero, 1983 are the same.

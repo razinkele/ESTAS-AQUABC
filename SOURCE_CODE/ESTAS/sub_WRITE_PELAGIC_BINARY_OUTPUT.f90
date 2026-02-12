@@ -161,7 +161,7 @@ subroutine WRITE_PELAGIC_BINARY_OUTPUT &
                         trim(adjustl(BINARY_PELAGIC_OUTPUT_FILE_NAME)) // "_" &
             // trim(adjustl(PELAGIC_BOX_MODEL_DATA % &
                                         PELAGIC_STATE_VAR_NAMES(i))) // '.bin', &
-		    status = 'UNKNOWN', position = 'APPEND', access = 'STREAM')
+                    status = 'UNKNOWN', position = 'APPEND', access = 'STREAM')
 
             ! If the desired output is in g/m^2 than convert the out concentration
             ! from g/m^3 to g/m^2
@@ -188,7 +188,7 @@ subroutine WRITE_PELAGIC_BINARY_OUTPUT &
                         trim(adjustl(BINARY_PELAGIC_OUTPUT_FILE_NAME)) // "_" &
             // trim(adjustl(PELAGIC_BOX_MODEL_DATA % &
                                         SAVED_OUTPUT_NAMES(i))) // '.bin', &
-			status = 'UNKNOWN', position = 'APPEND', access = 'STREAM')
+                        status = 'UNKNOWN', position = 'APPEND', access = 'STREAM')
 
             write(unit = RES_OUTPUT_UNIT) TIME, &
                   (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(j) % &

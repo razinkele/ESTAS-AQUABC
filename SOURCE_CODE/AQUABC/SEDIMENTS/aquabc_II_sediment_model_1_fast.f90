@@ -91,7 +91,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     !include 'param.h'
 
 
-!     integer ipv(nkndim)	!external node numbers
+!     integer ipv(nkndim)       !external node numbers
 !     common  /ipv/ipv
 
     !ARGUMENTS RELATED TO ARAY SIZES
@@ -1415,7 +1415,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do
             end do
 
-	    	if(error .eq. 1) stop
+                if(error .eq. 1) stop
         end if !debug_stranger
 
         SED_SAVED_OUTPUTS(:,:,1) = DISS_FE_II_CONC_TS_END  / FE_II
@@ -1526,7 +1526,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do
             end do
 
-			if(error .eq. 1) stop
+                        if(error .eq. 1) stop
         end if !debug_stranger
 
         !++++++++++++++++++++++++++PREPARATION FOR CALCULATION DERIVATIVES++++++++++++++++++++++++++++++++++
@@ -3260,7 +3260,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-			if (error .eq. 1) stop
+                        if (error .eq. 1) stop
         end if      ! debug_stranger
 
 
@@ -3302,7 +3302,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-			if (error .eq. 1) stop
+                        if (error .eq. 1) stop
         end if      !debug_stranger
 
 
@@ -3348,7 +3348,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         do i = 1, NUM_SED_LAYERS
             do j = 1, NUM_SIMULATED_SED_VARS
 
-			    ! fixed: transport dervatives were in concentration units
+                            ! fixed: transport dervatives were in concentration units
                 DERIVS(:,i, j) = TRANSPORT_DERIVS(:,i, j) * SED_DEPTHS(:,i) + &
                     KINETIC_DERIVS(:,i, j) +  SETTLING_DERIVS (:,i, j)
 
@@ -3361,7 +3361,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 PROCESSES_sed(:,i,j, 21) =  SETTLING_DERIVS   (:,i, j)
                 PROCESSES_sed(:,i,j, 22) =  DERIVS            (:,i, j)
 
-				if(i .eq. 1) then
+                                if(i .eq. 1) then
                     PROCESSES_sed(:,i,j, 23) =  FLUXES_TO_SEDIMENTS(:,j)
                 else
                     PROCESSES_sed(:,i,j, 23) = 0.D0
@@ -3400,7 +3400,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
                         l=1
 
-				        do k=1,nkn
+                                        do k=1,nkn
                             if(VALUE_strange(k)) then
                                 STRANGERS    (l) = INTERMED_RESULTS(k,i,j)
                                 STRANGERS1   (l) = UNIT_AREA_MASSES(k,i, j)
@@ -3420,7 +3420,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         print *, 'UNIT_AREA_MASSES=',STRANGERS1
                         print *, 'SED_DEPTHS=',      STRANGERS2
 
-					    deallocate(STRANGERS, NODES_STRANGE)
+                                            deallocate(STRANGERS, NODES_STRANGE)
                         deallocate(STRANGERS1,STRANGERS2)
 
                         error = 1
@@ -3428,9 +3428,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-		    if (error .eq. 1) stop
+                    if (error .eq. 1) stop
 
-	    end if !debug_stranger
+            end if !debug_stranger
 
 
         ! RECALCULATION OF CONCENTRATIONS BECAUSE OF LAYERS SHIFT DUE TO DEPOSITION OR EROSION
@@ -3477,7 +3477,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             end do ! j-variables
             ! End erosion
 
-    	!end if !isedi
+        !end if !isedi
 
         ! CHECKING FOR STRANGERS AFTER LAYERS SHIFT
         if(debug_stranger) then
@@ -3492,7 +3492,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
                         l=1
 
-    					do k=1,nkn
+                                        do k=1,nkn
                             if(VALUE_strange(k)) then
                                 STRANGERS    (l) = INTERMED_RESULTS_(k,i,j)
                                 STRANGERS1   (l) = UNIT_AREA_MASSES(k,i, j)
@@ -3505,7 +3505,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         print *, 'aquabc_sediment1: Layer ', i, 'Variable ',j
                         print *, 'Intermediate result after layers shift is NaN'
                         print *, 'NODE_NUMBERS=',NODES_STRANGE
-					    print *, 'VALUES=',STRANGERS
+                                            print *, 'VALUES=',STRANGERS
 
                         print *, 'Component variables:'
                         print *, 'H_ERODEP=', (H_ERODEP(NODES_STRANGE(k)),k=1,nstrange)
@@ -3545,7 +3545,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
                 l=1
 
-				do k=1,nkn
+                                do k=1,nkn
                     if(VALUE_strange(k)) then
                         STRANGERS    (l) = INTERMED_RESULTS(k,i,j)
                         NODES_STRANGE(l) = k
@@ -3563,7 +3563,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             end do !j - variables
         end do !i - layers
 
-		if (error .eq. 1) stop
+                if (error .eq. 1) stop
     end if  !  debug_stranger
 
 
@@ -3574,10 +3574,10 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     !Calculation solute concentrations per pore water from total (solid +solutes)  concentration per sed. vol.:
     !Dissolved  NH4N
     SED_OUTPUTS(:,:, NUM_SED_VARS + 1) = &
-	    SOLUTE_FRACTIONS(:,:, 1) * INTERMED_RESULTS(:,:, 1)/SED_POROSITIES(:,:)
+            SOLUTE_FRACTIONS(:,:, 1) * INTERMED_RESULTS(:,:, 1)/SED_POROSITIES(:,:)
 
     !Dissolved  PO4P
     SED_OUTPUTS(:,:, NUM_SED_VARS + 2) = &
-	    SOLUTE_FRACTIONS(:,:, 5) * INTERMED_RESULTS(:,:, 5)/SED_POROSITIES(:,:)
+            SOLUTE_FRACTIONS(:,:, 5) * INTERMED_RESULTS(:,:, 5)/SED_POROSITIES(:,:)
     !========================END FINAL CHEKS AND ASIGNMENTS==============================================
 end subroutine AQUABC_SEDIMENT_MODEL_1! end of sediment routine

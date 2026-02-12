@@ -860,20 +860,20 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
             DRIVING_FUNCTIONS             , NUM_DRIV                , &
             SETTLING_VELOCITIES           , DISSOLVED_FRACTIONS     , &
             BOTTOM_FACTOR                 , &
-			CELLNO                        , PSTIME                  , &
+                        CELLNO                        , PSTIME                  , &
             SETTLING_RATES                , FLUXES, NUM_FLUXES      , &
             SEDIMENT_TYPE                 , FRACTION_OF_DEPOSITION  , &
             NOT_DEPOSITED_FLUXES          , NUM_NOT_DEPOSITED_FLUXES, &
             CONSIDER_NON_OBLIGATORY_FIXERS, CONSIDER_NOSTOCALES)
 
     ! Outputs :
-	!
+        !
     !  SETTLING_RATES       - potential flux by settling, g/m2/day
-	!
+        !
     !  FLUXES               - after substraction of not deposited fluxes
-	!                         for each BS state variable in g/m2/day
+        !                         for each BS state variable in g/m2/day
     !
-	!  NOT_DEPOSITED_FLUXES - for each WC state variable, g/m2/day
+        !  NOT_DEPOSITED_FLUXES - for each WC state variable, g/m2/day
 
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
@@ -942,12 +942,12 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
         stop
     end if
 
-	! Added by PZem 2019-07-23
+        ! Added by PZem 2019-07-23
     call chlorophyl_a(state_variables, num_vars, chla, &
      CONSIDER_NON_OBLIGATORY_FIXERS, CONSIDER_NOSTOCALES)
 
     ! to account impact of high concentrations of phytoplankton to
-	! settling velocity
+        ! settling velocity
     call settling_suppres_factor(chla, settlsup_factor)
 
     do i = 1, NUM_VARS
@@ -967,11 +967,11 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
     end do
 
     FLUXES_FROM_WC(1:NUM_VARS) = &
-	    STATE_VARIABLES(1:NUM_VARS) * SETTLING_FACTORS(1:NUM_VARS)
+            STATE_VARIABLES(1:NUM_VARS) * SETTLING_FACTORS(1:NUM_VARS)
 
     !NOT DEPOSITED FLUXES
     NOT_DEPOSITED_FLUXES(1:NUM_VARS) = &
-	    FLUXES_FROM_WC(1:NUM_VARS) * (1.0D0 - FRACTION_OF_DEPOSITION(1:NUM_VARS))
+            FLUXES_FROM_WC(1:NUM_VARS) * (1.0D0 - FRACTION_OF_DEPOSITION(1:NUM_VARS))
 
     ! FLUXES FROM WC TO BS FOR BS VARIABLES
     if(NUM_FLUXES .ne. NUM_FLUXES_TO_SEDIMENTS) then
@@ -1112,7 +1112,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
-	use AQUABC_PEL_STATE_VAR_INDEXES
+        use AQUABC_PEL_STATE_VAR_INDEXES
     use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS
 
     implicit none

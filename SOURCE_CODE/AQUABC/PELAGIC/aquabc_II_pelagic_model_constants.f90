@@ -8,10 +8,10 @@
 !
 ! module PELAGIC_MODEL_CONSTANTS
 !
-! subroutine INIT_PELAGIC_MODEL_CONSTANTS	!inits constants from array
-! subroutine INSERT_PELAGIC_MODEL_CONSTANTS	!inserts constants into array
-! subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS	!sets default constants
-! subroutine READ_PELAGIC_MODEL_CONSTANTS(file)	!reads constants from file
+! subroutine INIT_PELAGIC_MODEL_CONSTANTS       !inits constants from array
+! subroutine INSERT_PELAGIC_MODEL_CONSTANTS     !inserts constants into array
+! subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS    !sets default constants
+! subroutine READ_PELAGIC_MODEL_CONSTANTS(file) !reads constants from file
 ! subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)!writes constants to file
 
 !==========================================================================
@@ -329,7 +329,7 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                     K_MORT_AKI_20 !Model constant no 304 : Decompositon rate constant of akinetes at 20 degrees celcisus
     real(kind = DBL_PREC) ::                  THETA_K_MORT_AKI !Model constant no 305 : Arhenius temperature correction factor for akinete decomposition rate constant
     real(kind = DBL_PREC) ::                        T_GERM_AKI !Model constant no 306 : Temperature to trigger germination when DIN is also low
-    real(kind = DBL_PREC) :: 				KHS_POC_DISS_SAT !Model constant no 307 :
+    real(kind = DBL_PREC) ::                            KHS_POC_DISS_SAT !Model constant no 307 :
     real(kind = DBL_PREC) ::                  KHS_PON_DISS_SAT !Model constant no 308 :
     real(kind = DBL_PREC) ::                  KHS_POP_DISS_SAT !Model constant no 309 :
     real(kind = DBL_PREC) ::                    frac_avail_DON !Model constant no 310 :
@@ -1673,8 +1673,8 @@ subroutine READ_PELAGIC_MODEL_CONSTANTS(file)
 
     open(iu,file=file,status='old',form='formatted',iostat=ios)
     if( ios /= 0 ) then
-	write(6,*) 'cannot open file ',trim(file)
-	stop 'error stop READ_PELAGIC_MODEL_CONSTANTS: no such file'
+        write(6,*) 'cannot open file ',trim(file)
+        stop 'error stop READ_PELAGIC_MODEL_CONSTANTS: no such file'
     end if
 
     nconsts = para_get_fill()
@@ -1725,8 +1725,8 @@ subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)
 
     open(iu,file=file,status='unknown',form='formatted',iostat=ios)
     if( ios /= 0 ) then
-	write(6,*) 'cannot open file ',trim(file)
-	stop 'error stop WRITE_PELAGIC_MODEL_CONSTANTS: cannot open file'
+        write(6,*) 'cannot open file ',trim(file)
+        stop 'error stop WRITE_PELAGIC_MODEL_CONSTANTS: cannot open file'
     end if
 
     nconsts = para_get_fill()

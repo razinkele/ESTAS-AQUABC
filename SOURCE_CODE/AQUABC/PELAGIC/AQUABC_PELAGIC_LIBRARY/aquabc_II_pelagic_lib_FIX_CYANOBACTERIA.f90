@@ -162,8 +162,8 @@ subroutine FIX_CYANOBACTERIA  &
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
     call GROWTH_AT_TEMP &
          (TEMP, LIM_KG_FIX_CYN_TEMP, FIX_CYN_OPT_TEMP_LR, FIX_CYN_OPT_TEMP_UR, &
-		  KG_FIX_CYN_OPT_TEMP,  KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
-		  KAPPA_FIX_CYN_OVER_OPT_TEMP,nkn)
+                  KG_FIX_CYN_OPT_TEMP,  KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
+                  KAPPA_FIX_CYN_OVER_OPT_TEMP,nkn)
 
     !if( KG_FIX_CYN_OPT_TEMP .ne.  0.D0) then
         !LIM_KG_FIX_CYN_TEMP = KG_FIX_CYN / KG_FIX_CYN_OPT_TEMP
@@ -186,14 +186,14 @@ subroutine FIX_CYANOBACTERIA  &
 
     if (smith .eq. 1) then
 
-	     !1.2 is assumed that all fixers are in the layer of this depth
-		 ! (Introduced 2013 working with Ali)
-		 ! Changed to 1 by Petras 2014 10 13
+             !1.2 is assumed that all fixers are in the layer of this depth
+                 ! (Introduced 2013 working with Ali)
+                 ! Changed to 1 by Petras 2014 10 13
          FIX_CYN_DEPTH = 1.0
 
          call LIM_LIGHT &
-		      (I_A, CHLA, KG_FIX_CYN, DEPTH, K_E, LIM_KG_FIX_CYN_LIGHT, &
-			   FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
+                      (I_A, CHLA, KG_FIX_CYN, DEPTH, K_E, LIM_KG_FIX_CYN_LIGHT, &
+                           FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
 
          LIM_KG_FIX_CYN_LIGHT = FIX_CYN_DEPTH*LIM_KG_FIX_CYN_LIGHT
     end if

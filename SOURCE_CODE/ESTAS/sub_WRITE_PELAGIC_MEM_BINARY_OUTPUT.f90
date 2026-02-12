@@ -92,7 +92,7 @@ subroutine WRITE_PELAGIC_MEM_BINARY_OUTPUT &
             open(unit   = RES_OUTPUT_UNIT, &
                  file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // &
                           trim(adjustl(BINARY_PELAGIC_OUTPUT_FILE_NAME)) // "_" // &
-          	              trim(adjustl('PELAGIC_BOX_' // BOX_NO_STRING // &
+                              trim(adjustl('PELAGIC_BOX_' // BOX_NO_STRING // &
                          '_PROCESS_RATES.bin')), status = 'UNKNOWN', access = 'STREAM')
 
             do LINE_NO = 1, NUM_LINES

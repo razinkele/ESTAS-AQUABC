@@ -7,26 +7,26 @@
 !
 ! callable routines:
 !
-!   subroutine aquabc_init	            ( &
-!			nkn                 , & ! number of boxes
-!			nstate              , & ! number of state vars (32)
-!			n_driving_functions , & ! number of forcings (10)
-!			SURFACE_BOXES       )   ! is surface box?
+!   subroutine aquabc_init                  ( &
+!                       nkn                 , & ! number of boxes
+!                       nstate              , & ! number of state vars (32)
+!                       n_driving_functions , & ! number of forcings (10)
+!                       SURFACE_BOXES       )   ! is surface box?
 !
 !   subroutine aquabc_init_flags            ( &
-!   			nflags              , & ! number of flags (must be 12)
-!   			flags               )	! flags for model
+!                       nflags              , & ! number of flags (must be 12)
+!                       flags               )   ! flags for model
 !
 !   subroutine aquabc_run                   ( &
-!                       time                , &	! simulation time [days]
+!                       time                , & ! simulation time [days]
 !                       time_step           , & ! time step [days]
-!			STATE_VARIABLES     , & ! state variables [mg/L]
-!			PH                  , & ! ph [1-14]
-!			DRIVING_FUNCTIONS   , & ! forcings (see documentation)
-!			SEDIMENT_FLUXES     )  	! sediment fluxes [??]
+!                       STATE_VARIABLES     , & ! state variables [mg/L]
+!                       PH                  , & ! ph [1-14]
+!                       DRIVING_FUNCTIONS   , & ! forcings (see documentation)
+!                       SEDIMENT_FLUXES     )   ! sediment fluxes [??]
 !
-!   subroutine aquabc_read_constants(file)	! reads constants file
-!   subroutine aquabc_write_constants(file)	! writes constants file
+!   subroutine aquabc_read_constants(file)      ! reads constants file
+!   subroutine aquabc_write_constants(file)     ! writes constants file
 !
 ! -----------------------------------------------------------------------------
 
@@ -58,13 +58,13 @@ module aquabc_II_pelagic_interface
     integer, save :: nconst              = 318
     integer, save :: n_driving_functions = 10
     integer, save :: nflags              = 12
-    integer, save :: n_saved_outputs     = 5	! was 4 -> bug (ggu)
+    integer, save :: n_saved_outputs     = 5    ! was 4 -> bug (ggu)
     integer, save :: NDIAGVAR            = 30
 
     logical, save :: binitialized = .false.
     logical, save :: bfirstcall = .true.
     integer, save :: CALLED_BEFORE = 0
-    double precision, save :: TIME_FIRST = -1.	! first time of call
+    double precision, save :: TIME_FIRST = -1.  ! first time of call
 
     integer, save :: FLAGS(12)
 
@@ -87,11 +87,11 @@ end module aquabc_II_pelagic_interface
 
 !==================================================================
 
-subroutine aquabc_init		              ( &
-			nkn_g                 , & ! number of boxes
-			nstate_g              , & ! number of state vars (32)
-			n_driving_functions_g , & ! number of forcings (10)
-			SURFACE_BOXES_g       )   ! is surface box?
+subroutine aquabc_init                        ( &
+                        nkn_g                 , & ! number of boxes
+                        nstate_g              , & ! number of state vars (32)
+                        n_driving_functions_g , & ! number of forcings (10)
+                        SURFACE_BOXES_g       )   ! is surface box?
 
 ! initialize system - must be called first
 !
@@ -113,15 +113,15 @@ subroutine aquabc_init		              ( &
     nkn = nkn_g
 
     if( nstate_g /= nstate ) then
-	write(6,*) 'nstate given is ',nstate_g
-	write(6,*) 'nstate must be  ',nstate
-	stop 'error stop: nstate_g /= nstate'
+        write(6,*) 'nstate given is ',nstate_g
+        write(6,*) 'nstate must be  ',nstate
+        stop 'error stop: nstate_g /= nstate'
     end if
 
     if( n_driving_functions_g /= n_driving_functions ) then
-	write(6,*) 'n_driving_functions given is ',n_driving_functions_g
-	write(6,*) 'n_driving_functions must be  ',n_driving_functions
-	stop 'error stop: n_driving_functions_g /= n_driving_functions'
+        write(6,*) 'n_driving_functions given is ',n_driving_functions_g
+        write(6,*) 'n_driving_functions must be  ',n_driving_functions
+        stop 'error stop: n_driving_functions_g /= n_driving_functions'
     end if
 
     binitialized = .true.
@@ -138,11 +138,11 @@ subroutine aquabc_init		              ( &
     CONSIDER_NOSTOCALES            = 0  !Consider nostocales
     USER_ENTERED_frac_avail_DON    = 0.15 !(probably not important)
 
-    FLAGS(1)  = 1	! safe mode - not used
-    FLAGS(2)  = 1	! not used
-    FLAGS(3)  = 1	! first time called?
-    FLAGS(4)  = 1	! use initial conditions Fe2+
-    FLAGS(5)  = 1	! use initial conditions Fe3+
+    FLAGS(1)  = 1       ! safe mode - not used
+    FLAGS(2)  = 1       ! not used
+    FLAGS(3)  = 1       ! first time called?
+    FLAGS(4)  = 1       ! use initial conditions Fe2+
+    FLAGS(5)  = 1       ! use initial conditions Fe3+
     FLAGS(6)  = ZOOP_OPTION_1
     FLAGS(7)  = ADVANCED_REDOX_SIMULATION
     FLAGS(8)  = LIGHT_EXTINCTION_OPTION
@@ -168,18 +168,18 @@ subroutine aquabc_init		              ( &
     PROCESS_RATES     = 0.0D0
     SAVED_OUTPUTS     = 0.0D0
 
-    SURFACE_BOXES(:) = SURFACE_BOXES_g(:)	!store for later
+    SURFACE_BOXES(:) = SURFACE_BOXES_g(:)       !store for later
 
-    call DEFAULT_PELAGIC_MODEL_CONSTANTS	!sets vars with default values
-    call INSERT_PELAGIC_MODEL_CONSTANTS		!insert vars into array
+    call DEFAULT_PELAGIC_MODEL_CONSTANTS        !sets vars with default values
+    call INSERT_PELAGIC_MODEL_CONSTANTS         !insert vars into array
 
 end subroutine
 
 !==================================================================
 
-subroutine aquabc_init_flags		    ( &
-				nflags_g    , & ! number of flags (must be 12)
-				flags_g     )	! flags for model
+subroutine aquabc_init_flags                ( &
+                                nflags_g    , & ! number of flags (must be 12)
+                                flags_g     )   ! flags for model
 
     use aquabc_II_pelagic_interface
 
@@ -197,9 +197,9 @@ subroutine aquabc_init_flags		    ( &
     integer, parameter :: nflags_l = 12
 
     if( nflags_g /= nflags_l ) then
-	write(6,*) 'nflags given is ',nflags_g
-	write(6,*) 'nflags must be  ',nflags_l
-	stop 'error stop: nflags_g /= nflags_l'
+        write(6,*) 'nflags given is ',nflags_g
+        write(6,*) 'nflags must be  ',nflags_l
+        stop 'error stop: nflags_g /= nflags_l'
     end if
 
     if( .not. binitialized ) then
@@ -225,12 +225,12 @@ end subroutine
 !==================================================================
 
 subroutine aquabc_run                       ( &
-                        time                , &	! simulation time [days]
+                        time                , & ! simulation time [days]
                         time_step           , & ! time step [days]
-			STATE_VARIABLES     , & ! state variables [mg/L]
-			PH                  , & ! ph [1-14]
-			DRIVING_FUNCTIONS   , & ! forcings (see below)
-			SEDIMENT_FLUXES     )  	! sediment fluxes [??]
+                        STATE_VARIABLES     , & ! state variables [mg/L]
+                        PH                  , & ! ph [1-14]
+                        DRIVING_FUNCTIONS   , & ! forcings (see below)
+                        SEDIMENT_FLUXES     )   ! sediment fluxes [??]
 
 ! runs the ACQUABC model
 !
@@ -247,49 +247,49 @@ subroutine aquabc_run                       ( &
     double precision :: DRIVING_FUNCTIONS    (nkn,n_driving_functions)
     double precision :: SEDIMENT_FLUXES      (nkn,nstate)
 
-    integer :: DAY_OF_YEAR		! julian day
+    integer :: DAY_OF_YEAR              ! julian day
 
-	if( .not. binitialized ) then
-	    write(6,*) 'AQUABC is not initialized'
-	    write(6,*) 'must call aquabc_init first'
-	    stop 'error stop aquabc_run: AQUABC not initialized'
-	end if
+        if( .not. binitialized ) then
+            write(6,*) 'AQUABC is not initialized'
+            write(6,*) 'must call aquabc_init first'
+            stop 'error stop aquabc_run: AQUABC not initialized'
+        end if
 
         DAY_OF_YEAR   = 1 + mod(int(TIME)-1,365)
 
-	if( bfirstcall ) then
-	  bfirstcall = .false.
-	  TIME_FIRST = TIME
-	end if
-	if( CALLED_BEFORE == 0 .and. abs(TIME - TIME_FIRST) > 0.0D0 ) then
+        if( bfirstcall ) then
+          bfirstcall = .false.
+          TIME_FIRST = TIME
+        end if
+        if( CALLED_BEFORE == 0 .and. abs(TIME - TIME_FIRST) > 0.0D0 ) then
           CALLED_BEFORE = 1
           FLAGS(3)      = 0
-	end if
+        end if
 
         call AQUABC_PELAGIC_KINETICS &
-            (node_active                   , & 	! debug variable, not used
-             nkn                           , &	! number of boxes
+            (node_active                   , &  ! debug variable, not used
+             nkn                           , &  ! number of boxes
              STATE_VARIABLES               , &  ! state_variables [mg/L]
-             DERIVATIVES                   , &	! state_variables/time (out)
-             nstate                        , &	! total number of state vars
+             DERIVATIVES                   , &  ! state_variables/time (out)
+             nstate                        , &  ! total number of state vars
              MODEL_CONSTANTS               , &  ! process constants, not used
-             nconst                        , &	! total number of constants
-             DRIVING_FUNCTIONS             , &	! external forcings
-             n_driving_functions           , &	! total number of ext forc
-             FLAGS                         , &	! flags (see above)
-             nflags                        , &	! total number of flags
-             PROCESS_RATES                 , &	! process rates for STV (out)
-             NDIAGVAR                      , &	! total number of process rates
-             SAVED_OUTPUTS                 , &	! values for next call (in/out)
-             n_saved_outputs               , &	! total values needed next call
-             PH                            , &	! [1-14] (in/out)
-             TIME                          , &	! [days]
-             TIME_STEP                     , &	! [days]
-             DAY_OF_YEAR                   , &	! [julian day]
-             SEDIMENT_FLUXES               , &	! imposed sedim fluxes [??]
-             CALLED_BEFORE                 , &	! has been called before?
-             SURFACE_BOXES                 , &	! box is on surface?
-             ZOOP_OPTION_1                 , &	! next are options
+             nconst                        , &  ! total number of constants
+             DRIVING_FUNCTIONS             , &  ! external forcings
+             n_driving_functions           , &  ! total number of ext forc
+             FLAGS                         , &  ! flags (see above)
+             nflags                        , &  ! total number of flags
+             PROCESS_RATES                 , &  ! process rates for STV (out)
+             NDIAGVAR                      , &  ! total number of process rates
+             SAVED_OUTPUTS                 , &  ! values for next call (in/out)
+             n_saved_outputs               , &  ! total values needed next call
+             PH                            , &  ! [1-14] (in/out)
+             TIME                          , &  ! [days]
+             TIME_STEP                     , &  ! [days]
+             DAY_OF_YEAR                   , &  ! [julian day]
+             SEDIMENT_FLUXES               , &  ! imposed sedim fluxes [??]
+             CALLED_BEFORE                 , &  ! has been called before?
+             SURFACE_BOXES                 , &  ! box is on surface?
+             ZOOP_OPTION_1                 , &  ! next are options
              ADVANCED_REDOX_SIMULATION     , &
              USER_ENTERED_frac_avail_DON   , &
              LIGHT_EXTINCTION_OPTION       , &
@@ -309,7 +309,7 @@ subroutine aquabc_read_constants(file)
 
     implicit none
 
-    character*(*) file	! file containing constants
+    character*(*) file  ! file containing constants
 
     if( .not. binitialized ) then
       write(6,*) 'model has not been initialized.'
@@ -317,8 +317,8 @@ subroutine aquabc_read_constants(file)
       stop 'error stop aquabc_read_constants: not initialized'
     end if
 
-    call READ_PELAGIC_MODEL_CONSTANTS(file)	!reads from file into array
-    call INIT_PELAGIC_MODEL_CONSTANTS		!initializes vars from array
+    call READ_PELAGIC_MODEL_CONSTANTS(file)     !reads from file into array
+    call INIT_PELAGIC_MODEL_CONSTANTS           !initializes vars from array
 
 end subroutine
 
@@ -330,7 +330,7 @@ subroutine aquabc_write_constants(file)
 
     implicit none
 
-    character*(*) file	! file containing constants
+    character*(*) file  ! file containing constants
 
     if( .not. binitialized ) then
       write(6,*) 'model has not been initialized.'
