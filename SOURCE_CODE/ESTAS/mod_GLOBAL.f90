@@ -2,9 +2,8 @@
 module GLOBAL
     use TIME_SERIES
     use aquabc_pel_state_var_indexes
+    use precision_kinds, only: DBL
     implicit none
-
-    integer, parameter :: DBL = selected_real_kind(15, 307)
 
     ! -------------------------------------------------------------------------
     ! AQUABC Model dimensions

@@ -1,9 +1,7 @@
 
 module ALLELOPATHY
-
+    use precision_kinds, only: DBL_ALLEL
     implicit none
-    integer :: DBL_ALLEL
-    parameter(DBL_ALLEL = selected_real_kind(15, 307))
 
     real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_NOFIX_CYN
     real(kind = DBL_ALLEL) :: K_HS_SEC_METAB_DIA_FIX_CYN

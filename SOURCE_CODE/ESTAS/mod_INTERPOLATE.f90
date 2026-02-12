@@ -2,8 +2,8 @@
 ! Interpolasyon mod�l�
 ! -----------------------------------------------------------------------------
 module INTERPOLATE
+    use precision_kinds, only: DBL_PRECISION
     implicit none
-    integer, parameter :: DBL_PRECISION = selected_real_kind(15, 307)
 contains
 
     function LDPS_INTERPOLATE(X_VALUE, X1, Y1, X2, Y2) result(Y_VALUE)
