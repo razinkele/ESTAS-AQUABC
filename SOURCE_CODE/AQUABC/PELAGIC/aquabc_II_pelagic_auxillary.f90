@@ -290,7 +290,7 @@ end function DO_SATURATION
 !Borrowed from EUTRO5, Ambrose et al., 1993
 double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
 
-    use AQUABC_PHYSICAL_CONSTANTS, only: VON_KARMAN, SECONDS_PER_DAY, EULER_E, safe_exp
+    use AQUABC_PHYSICAL_CONSTANTS, only: VON_KARMAN, SECONDS_PER_DAY, safe_exp
     implicit none
 
     !WS         wind speed, m/s
@@ -684,7 +684,7 @@ end subroutine light_kd
 !********************************************************************
 subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
 
-    use AQUABC_PHYSICAL_CONSTANTS, only: PI, EULER_E, safe_exp
+    use AQUABC_PHYSICAL_CONSTANTS, only: EULER_E, safe_exp
 
     implicit none
 
@@ -1312,7 +1312,6 @@ integer function STRANGERSD(VALUE, VALUE_strange, nkn)
     ! Checks for NaN and Inf in 1D array with nkn elements
     ! Input is double precision
       use, intrinsic :: IEEE_ARITHMETIC
-      use AQUABC_PHYSICAL_CONSTANTS, only: STRANGER_THRESHOLD
 
       implicit none
 

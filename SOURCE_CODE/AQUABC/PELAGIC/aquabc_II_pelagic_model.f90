@@ -177,8 +177,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer :: CONSIDER_INORG_C_DERIVATIVE
     integer :: CONSIDER_CO2_REARATION
 
-    integer :: NUM_SCREEN_OUTPUT_NODES
-    parameter (NUM_SCREEN_OUTPUT_NODES = 0)
 
 
     !If called first time

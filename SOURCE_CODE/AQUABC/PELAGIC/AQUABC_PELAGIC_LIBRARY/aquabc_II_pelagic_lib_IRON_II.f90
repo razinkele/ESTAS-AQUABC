@@ -16,7 +16,6 @@
 ! -----------------------------------------------------------------------------
 subroutine IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_TOT)
     use AQUABC_II_GLOBAL
-    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG
     implicit none
 
     integer, intent(in) ::  nkn
