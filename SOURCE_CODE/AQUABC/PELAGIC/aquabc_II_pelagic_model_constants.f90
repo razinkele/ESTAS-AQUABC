@@ -1735,7 +1735,7 @@ subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)
     do i=1,nconsts
       call para_get_name(i,name)
       call para_get_value(name,value)
-      rname = name
+      rname = name(1:35)
       rname = adjustr(rname)
       !write(6,*) rname,' | ',trim(name)
       write(iu,format) i,rname,value
