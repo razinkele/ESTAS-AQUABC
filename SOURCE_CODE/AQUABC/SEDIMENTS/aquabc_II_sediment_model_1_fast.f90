@@ -76,6 +76,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     use AQUABC_II_GLOBAL
     use AQUABC_BSED_MODEL_CONSTANTS
     use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG
+    use GLOBAL, only: SED_VARS_CHECK => NUM_SED_VARS, &
+                      SED_CONSTS_CHECK => NUM_SED_CONSTS, &
+                      SED_OUTPUTS_CHECK => NUM_SED_OUTPUTS
     !use para_aqua
 
     !use basin, only: ipv !0d correction
@@ -617,13 +620,15 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         end if
     end if
 
-    if(NUM_SED_VARS .ne. 24) then
-        print *, 'SEDIMENT_MODEL_1: Wrong number of state variables'
+    if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
+        print *, 'SEDIMENT_MODEL_1: Wrong number of state variables', NUM_SED_VARS
+        print *, 'Expected: ', SED_VARS_CHECK
         stop
     end if
 
-    if(NUM_SED_OUTPUTS .ne. 26) then
-        print *, 'SEDIMENT_MODEL_1: Wrong number of outputs'
+    if(NUM_SED_OUTPUTS .ne. SED_OUTPUTS_CHECK) then
+        print *, 'SEDIMENT_MODEL_1: Wrong number of outputs', NUM_SED_OUTPUTS
+        print *, 'Expected: ', SED_OUTPUTS_CHECK
         stop
     end if
 
@@ -750,8 +755,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     !1 : SOLID
     !2 : ALL SEDIMENTS
 
-    if(NUM_SED_VARS .ne. 24) then
+    if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
         print *, 'SEDIMENT_MODEL: Number of state variables is wrong', NUM_SED_VARS
+        print *, 'Expected: ', SED_VARS_CHECK
         stop
     end if
 
@@ -832,8 +838,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
     if (error .eq. 1) stop
 
-    if(NUM_SED_VARS .ne. 24) then
+    if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
         print *, 'SEDIMENT_MODEL: Number of state variables is wrong', NUM_SED_VARS
+        print *, 'Expected: ', SED_VARS_CHECK
         stop
     end if
 
@@ -865,8 +872,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
 
     !INITIALIZE SEDIMENT MODEL COEFFICIENTS
-    if(NUM_SED_CONSTS .ne. 171) then
-        print *, 'SEDIMENT_MODEL_1: Wrong number of constants'
+    if(NUM_SED_CONSTS .ne. SED_CONSTS_CHECK) then
+        print *, 'SEDIMENT_MODEL_1: Wrong number of constants', NUM_SED_CONSTS
+        print *, 'Expected: ', SED_CONSTS_CHECK
     end if
 
 

@@ -42,12 +42,6 @@ module AQUABC_PHYSICAL_CONSTANTS
     ! Minimum concentration floor (used to prevent negative/zero concentrations)
     double precision, parameter :: MIN_CONCENTRATION = 1.0D-10
 
-    ! Expected number of pelagic state variables
-    integer, parameter :: NSTATE_EXPECTED = 32
-
-    ! Expected number of fluxes to sediments (= number of sediment state variables)
-    integer, parameter :: NUM_FLUXES_TO_SED_EXPECTED = 24
-
 contains
 
     elemental double precision function safe_exp(x)

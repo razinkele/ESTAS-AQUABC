@@ -51,6 +51,9 @@ module aquabc_II_pelagic_interface
 
     integer, save :: nkn
 
+    ! These values must match the parameters in mod_GLOBAL.f90, except nflags
+    ! which is 12 at the interface level (GLOBAL has nflags = 5 for kinetics only;
+    ! the interface packs additional options into flags 6-12).
     integer, save :: nstate              = 32
     integer, save :: nconst              = 318
     integer, save :: n_driving_functions = 10

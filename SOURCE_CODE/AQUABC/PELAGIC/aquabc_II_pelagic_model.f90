@@ -86,7 +86,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
          CLAMP_WARNED, CLAMP_COUNT, CLAMP_PROC_COUNT
     use AQUABC_PEL_STATE_VAR_INDEXES
     use AQUABC_PELAGIC_INTERNAL
-    use AQUABC_PHYSICAL_CONSTANTS, only: NSTATE_EXPECTED, CELSIUS_TO_KELVIN, &
+    use GLOBAL, only: NSTATE_CHECK => nstate, NCONST_CHECK => nconst, &
+                      NDRIV_CHECK => n_driving_functions, NFLAGS_CHECK => nflags
+    use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, &
          FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
 
@@ -274,9 +276,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end if
 
     !INITIALIZE STATE VARIABLES
-    if (nstate .ne. NSTATE_EXPECTED) then
+    if (nstate .ne. NSTATE_CHECK) then
         write(*,*) 'PELAGIC_KINETICS: Number of state variables is wrong : ', nstate
-        write(*,*) 'Expected: ', NSTATE_EXPECTED
+        write(*,*) 'Expected: ', NSTATE_CHECK
         stop
     end if
 
@@ -314,9 +316,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     NOST_AKI_C      (:)      = STATE_VARIABLES(:,NOST_AKI_C_INDEX    )     ! Nostacales cells in akinete state
 
     !INITIALIZE DRIVING_FUNCTIONS
-    if(n_driving_functions.ne.10) then
+    if(n_driving_functions .ne. NDRIV_CHECK) then
        write(*,*) 'PELAGIC_KINETICS: Number of elements in DRIVING_FUNCTIONS is wrong', n_driving_functions
-       write(*,*) '10 driving functions are needed to run the pelagic kinetics model'
+       write(*,*) 'Expected: ', NDRIV_CHECK
        stop
     end if
 
@@ -336,9 +338,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ice_cover(1:nkn) = DRIVING_FUNCTIONS(1:nkn,10)
 
     !INITIALIZE FLAGS
-    if(nflags.ne.5) then
+    if(nflags .ne. NFLAGS_CHECK) then
        write(*,*) 'PELAGIC_KINETICS: Number of elements in FLAGS is wrong', nflags
-       write(*,*) '5 flags are needed to run the pelagic kinetics model'
+       write(*,*) 'Expected: ', NFLAGS_CHECK
        stop
     end if
 
@@ -349,9 +351,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     INIT_OPTION_OF_FE_III_DISS = FLAGS(5)
 
     !INITIALIZE MODEL CONSTANTS
-    if (nconst.ne.318) then
+    if (nconst .ne. NCONST_CHECK) then
         write(*,*) 'PELAGIC_KINETICS: Number of elements in MODEL_CONSTANTS is wrong', nconst
-        write(*,*) '318 model constants are needed to run the pelagic kinetics model'
+        write(*,*) 'Expected: ', NCONST_CHECK
         stop
     end if
 

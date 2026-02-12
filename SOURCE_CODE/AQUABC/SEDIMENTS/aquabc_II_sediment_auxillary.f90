@@ -267,7 +267,7 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II &
     if(NUM_FLUXES_TO_ALUKAS .ne. 30) then
         print *,'FLX_SED_MOD_1_TO_ALUKAS_II:'
         print *,'To get values correctly by FLUXES_TO_ALUKAS'
-        print *,'num. of statevars should be 33 but is', NUM_FLUXES_TO_ALUKAS
+        print *,'num. of statevars should be 30 but is', NUM_FLUXES_TO_ALUKAS
         stop
     end if
 
@@ -358,6 +358,7 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
     ! Note: routine does not take into account particulate material resuspension
     ! as a flux yet. Everytthing what is resuspended is added to the same fluxes. fixme
 
+    use GLOBAL, only: NSTATE_CHECK => nstate
     implicit none
 
     integer :: nkn
@@ -367,10 +368,10 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
     double precision :: FLUXES_FROM_SEDIMENT(nkn, NUM_FLUXES_FROM_SEDIMENT)
     double precision :: FLUXES_TO_ALUKAS    (nkn, NUM_FLUXES_TO_ALUKAS)
 
-    if(NUM_FLUXES_TO_ALUKAS .ne. 32) then
-        print *,'FLX_SED_MOD_1_TO_ALUKAS_II:'
+    if(NUM_FLUXES_TO_ALUKAS .ne. NSTATE_CHECK) then
+        print *,'FLX_SED_MOD_1_TO_ALUKAS_II_VEC:'
         print *,'To get values correctly by FLUXES_TO_ALUKAS'
-        print *,'num. of statevars should be 30 but is', NUM_FLUXES_TO_ALUKAS
+        print *,'num. of statevars should be', NSTATE_CHECK, 'but is', NUM_FLUXES_TO_ALUKAS
         stop
     end if
 
@@ -434,6 +435,7 @@ end subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC
 !TO PROGRAM THE EQUATIONS WHICH GIVE THE MOLECULAR DIFFUSION COEFFICIENTS
 !OF STATE VARIABLES IN WATER AS A FUNCTION OF TEMPERATURE AND SALINITY
 subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VARS, MOL_DIFF)
+    use GLOBAL, only: SED_VARS_CHECK => NUM_SED_VARS
     implicit none
     !INPUTS:
     !SVARNO : State variable no
@@ -457,10 +459,10 @@ subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VA
     double precision VTK(nkn, NUM_SED_LAYERS)
     double precision TK(nkn, NUM_SED_LAYERS)
 
-    if(NUM_SED_VARS .ne. 24) then
-        print *,'SED_MOD_1_ALUKAS_MOLDI_C:'
+    if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
+        print *,'SED_MOD_1_ALUKAS_MOLDI_C_VEC:'
         print *,'To get values correctly by Molecular diffusion'
-        print *,'BS statevars No should not gt than 24 but is', NUM_SED_VARS
+        print *,'BS statevars No should be', SED_VARS_CHECK, 'but is', NUM_SED_VARS
         stop
     end if
 
