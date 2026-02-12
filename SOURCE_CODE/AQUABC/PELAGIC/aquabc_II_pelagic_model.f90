@@ -175,6 +175,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     type(t_nost_params),     save :: NOST_PARAMS
     type(t_zoo_params),      save :: ZOO_PARAMS
 
+    ! Environmental input bundle (pointer-populated each timestep)
+    type(t_phyto_env) :: PHYTO_ENV
+
     !If called first time
     if (CALLED_BEFORE < 1) then
         !Allocate the arrays in the module AQUABC_PELAGIC_INTERNAL
@@ -839,6 +842,15 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
         ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
 
+    ! Populate phytoplankton environmental input bundle (zero-copy pointer assignment)
+    PHYTO_ENV%TEMP         => TEMP
+    PHYTO_ENV%I_A          => I_A
+    PHYTO_ENV%K_E          => K_E
+    PHYTO_ENV%DEPTH        => DEPTH
+    PHYTO_ENV%CHLA         => CHLA
+    PHYTO_ENV%FDAY         => FDAY
+    PHYTO_ENV%DISS_OXYGEN  => DISS_OXYGEN
+    PHYTO_ENV%WINDS        => WINDS
 
     !********************
     !      DIATOMS      !
@@ -846,20 +858,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     !Calculations for diatom growth
     call DIATOMS(DIA_PARAMS              , &
+                 PHYTO_ENV               , &
                  DIA_LIGHT_SAT           , &
                  NH4_N                   , &
                  NO3_N                   , &
                  (PO4_P * DIP_OVER_IP)   , & ! Change, 6 July 2016, original call was PO4P
-                 DISS_OXYGEN             , &
                  DIA_C                   , &
                  ZOO_C                   , &
                  DISS_Si                 , &
-                 TEMP                    , &
-                 I_A                     , &
-                 K_E                     , &
-                 DEPTH                   , &
-                 CHLA                    , &
-                 FDAY                    , &
                  TIME_STEP               , &
                  SMITH                   , &
                  nkn                     , &
@@ -895,21 +901,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !Calculations for non-fixing cyanobacteria growth
     call CYANOBACTERIA_BOUYANT &
          (CYN_PARAMS              , &
+          PHYTO_ENV               , &
           CYN_LIGHT_SAT           , &
           NH4_N                   , &
           NO3_N                   , &
           DISS_ORG_N              , &
           (PO4_P * DIP_OVER_IP)   , &
-          DISS_OXYGEN             , &
           CYN_C                   , &
           ZOO_C                   , &
-          TEMP                    , &
-          WINDS                   , &
-          I_A                     , &
-          K_E                     , &
-          DEPTH                   , &
-          CHLA                    , &
-          FDAY                    , &
           TIME_STEP               , &
           SMITH                   , &
           nkn                     , &
@@ -945,21 +944,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
         call FIX_CYANOBACTERIA_BOUYANT  &
                (FIX_CYN_PARAMS               , &
+                PHYTO_ENV                    , &
                 TIME_STEP                    , &
                 SMITH                        , &
                 nkn                          , &
-                FDAY                         , &
-                I_A                          , &
-                K_E                          , &
-                DEPTH                        , &
-                CHLA                         , &
-                TEMP                         , &
-                WINDS                        , &
                 NH4_N                        , &
                 NO3_N                        , &
                 DISS_ORG_N                   , &
                 (PO4_P * DIP_OVER_IP)        , &
-                DISS_OXYGEN                  , &
                 FIX_CYN_C                    , &
                 FIX_CYN_LIGHT_SAT            , &
                 ALPHA_0                      , &
@@ -1011,19 +1003,13 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*****************************
     call OTHER_PLANKTONIC_ALGAE &
            (OPA_PARAMS              , &
+            PHYTO_ENV               , &
             OPA_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
             (PO4_P * DIP_OVER_IP)   , & ! Change, 6 July 2016, original call was PO4P
-            DISS_OXYGEN             , &
             OPA_C                   , &
             ZOO_C                   , &
-            TEMP                    , &
-            I_A                     , &
-            K_E                     , &
-            DEPTH                   , &
-            CHLA                    , &
-            FDAY                    , &
             TIME_STEP               , &
             SMITH                   , &
             nkn                     , &
@@ -1071,22 +1057,15 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         call NOSTOCALES &
            (NOST_PARAMS                       , &
+            PHYTO_ENV                         , &
             TIME_STEP                         , &
             DAY_OF_YEAR                       , &
             SMITH                             , &
             nkn                               , &
             NOST_LIGHT_SAT                    , &
-            FDAY                              , &
-            I_A                               , &
-            K_E                               , &
-            DEPTH                             , &
-            CHLA                              , &
-            TEMP                              , &
-            WINDS                             , &
             (NH4_N + NO3_N)                   , &
             frac_avail_DON_NOST * DISS_ORG_N  , &
             (PO4_P * DIP_OVER_IP + frac_avail_DOP * DISS_ORG_P) , &
-            DISS_OXYGEN                       , &
             NOST_VEG_HET_C                    , &
             NOST_AKI_C                        , &
             KG_NOST_VEG_HET                   , &

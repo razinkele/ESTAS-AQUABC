@@ -158,6 +158,21 @@ module AQUABC_PELAGIC_TYPES
         real(kind = DBL_PREC) :: BETA_NOST_VEG_HET
     end type t_nost_params
 
+    ! ----- PHYTOPLANKTON ENVIRONMENTAL INPUTS (shared by 5 phyto subroutines) -
+    ! Pointer components allow zero-copy population via pointer assignment.
+    ! WINDS is used by CYANOBACTERIA, FIX_CYANOBACTERIA, NOSTOCALES only;
+    ! remains null for DIATOMS and OTHER_PLANKTONIC_ALGAE (never accessed).
+    type :: t_phyto_env
+        real(kind = DBL_PREC), pointer :: TEMP(:)         => null()
+        real(kind = DBL_PREC), pointer :: I_A(:)          => null()
+        real(kind = DBL_PREC), pointer :: K_E(:)          => null()
+        real(kind = DBL_PREC), pointer :: DEPTH(:)        => null()
+        real(kind = DBL_PREC), pointer :: CHLA(:)         => null()
+        real(kind = DBL_PREC), pointer :: FDAY(:)         => null()
+        real(kind = DBL_PREC), pointer :: DISS_OXYGEN(:)  => null()
+        real(kind = DBL_PREC), pointer :: WINDS(:)        => null()
+    end type t_phyto_env
+
     ! ----- ZOOPLANKTON (37 constants) ----------------------------------------
     type :: t_zoo_params
         real(kind = DBL_PREC) :: KG_ZOO_OPT_TEMP

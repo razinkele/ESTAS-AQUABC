@@ -6,20 +6,14 @@
 
 subroutine CYANOBACTERIA &
            (params                      , &
+            env                         , &
             CYN_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
             DON                     , &
             PO4_P                   , &
-            DISS_OXYGEN             , &
             CYN_C                   , &
             ZOO_C                   , &
-            TEMP                    , &
-            I_A                     , &
-            K_E                     , &
-            DEPTH                   , &
-            CHLA                    , &
-            FDAY                    , &
             TIME_STEP               , &
             SMITH                   , &
             nkn                     , &
@@ -45,34 +39,24 @@ subroutine CYANOBACTERIA &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-    use AQUABC_PELAGIC_TYPES, only: t_cyn_params
+    use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    type(t_cyn_params), intent(in) :: params
+    type(t_cyn_params),  intent(in) :: params
+    type(t_phyto_env),   intent(in) :: env
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: CYN_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ZOO_C
 
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-
-
-
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY(nkn)
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
-
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
@@ -135,6 +119,16 @@ subroutine CYANOBACTERIA &
         CYN_O2_TO_C               => params%CYN_O2_TO_C, &
         CYN_C_TO_CHLA             => params%CYN_C_TO_CHLA, &
         frac_avail_DON             => params%frac_avail_DON)
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN   &
+    )
 
     ! Temperature growth limitation factor
     call GROWTH_AT_TEMP &
@@ -232,28 +226,22 @@ subroutine CYANOBACTERIA &
     call AMMONIA_DON_PREFS &
          (PREF_NH4N_DON_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_CYN,nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 end subroutine CYANOBACTERIA
 
 
 
 subroutine CYANOBACTERIA_BOUYANT &
            (params                      , &
+            env                         , &
             CYN_LIGHT_SAT           , &
             NH4_N                   , &
             NO3_N                   , &
             DON                     , &
             PO4_P                   , &
-            DISS_OXYGEN             , &
             CYN_C                   , &
             ZOO_C                   , &
-            TEMP                    , &
-            WINDS                   , &
-            I_A                     , &
-            K_E                     , &
-            DEPTH                   , &
-            CHLA                    , &
-            FDAY                    , &
             TIME_STEP               , &
             SMITH                   , &
             nkn                     , &
@@ -281,32 +269,25 @@ subroutine CYANOBACTERIA_BOUYANT &
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
-    use AQUABC_PELAGIC_TYPES, only: t_cyn_params
+    use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
 
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    type(t_cyn_params), intent(in) :: params
+    type(t_cyn_params),  intent(in) :: params
+    type(t_phyto_env),   intent(in) :: env
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: CYN_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ZOO_C
 
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY(nkn)
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
-
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
@@ -338,9 +319,6 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_DIN_DON_CYN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_NH4N_CYN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
-
-    ! Pzem 2019-08
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS  ! Wind speed (input parameter)
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
     real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
@@ -375,6 +353,17 @@ subroutine CYANOBACTERIA_BOUYANT &
         CYN_O2_TO_C               => params%CYN_O2_TO_C, &
         CYN_C_TO_CHLA             => params%CYN_C_TO_CHLA, &
         frac_avail_DON             => params%frac_avail_DON)
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN,  &
+        WINDS        => env%WINDS         &
+    )
 
     ! Growth limitation by temperature factor
     call GROWTH_AT_TEMP &
@@ -493,5 +482,6 @@ subroutine CYANOBACTERIA_BOUYANT &
     call AMMONIA_PREFS &
          (PREF_NH4N_CYN, (NH4_N * PREF_DIN_DON_CYN), (NO3_N * PREF_DIN_DON_CYN), KHS_DIN_CYN, nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 end subroutine CYANOBACTERIA_BOUYANT

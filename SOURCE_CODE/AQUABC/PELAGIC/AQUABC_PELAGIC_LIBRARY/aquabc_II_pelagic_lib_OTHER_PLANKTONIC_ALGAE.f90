@@ -5,19 +5,13 @@
 
 subroutine OTHER_PLANKTONIC_ALGAE &
            (params                   , &
+            env                      , &
             OPA_LIGHT_SAT            , &
             NH4_N                    , &
             NO3_N                    , &
             PO4_P                    , &
-            DISS_OXYGEN              , &
             OPA_C                    , &
             ZOO_C                    , &
-            TEMP                     , &
-            I_A                      , &
-            K_E                      , &
-            DEPTH                    , &
-            CHLA                     , &
-            FDAY                     , &
             TIME_STEP                , &
             SMITH                    , &
             nkn                      , &
@@ -43,28 +37,21 @@ subroutine OTHER_PLANKTONIC_ALGAE &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-    use AQUABC_PELAGIC_TYPES, only: t_opa_params
+    use AQUABC_PELAGIC_TYPES, only: t_opa_params, t_phyto_env
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
-    type(t_opa_params), intent(in) :: params
+    type(t_opa_params),  intent(in) :: params
+    type(t_phyto_env),   intent(in) :: env
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: OPA_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ZOO_C
 
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY(nkn)
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
 
     integer, intent(in) :: SMITH
@@ -126,6 +113,16 @@ subroutine OTHER_PLANKTONIC_ALGAE &
         OPA_O2_TO_C              => params%OPA_O2_TO_C,               &
         OPA_C_TO_CHLA            => params%OPA_C_TO_CHLA,             &
         BETA_OPA                 => params%BETA_OPA                   &
+    )
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN   &
     )
 
     ALPHA_0 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * 0.0D0)
@@ -227,6 +224,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     !PREF_NH4N_OPA = NH4_N / (NH4_N + KHS_NH4N_PREF_OPA)
     call AMMONIA_PREFS(PREF_NH4N_OPA, NH4_N, NO3_N, KHS_DIN_OPA,nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 
 end subroutine OTHER_PLANKTONIC_ALGAE

@@ -3,20 +3,14 @@
 !subroutine DIATOMS
 
 subroutine DIATOMS(params                      , &
+                   env                         , &
                    DIA_LIGHT_SAT               , &
                    NH4_N                   , &
                    NO3_N                   , &
                    PO4_P                   , &
-                   DISS_OXYGEN             , &
                    DIA_C                   , &
                    ZOO_C                   , &
                    DISS_Si                 , &
-                   TEMP                    , &
-                   I_A                     , &
-                   K_E                     , &
-                   DEPTH                   , &
-                   CHLA                    , &
-                   FDAY                    , &
                    TIME_STEP               , &
                    SMITH                   , &
                    nkn                     , &
@@ -43,29 +37,22 @@ subroutine DIATOMS(params                      , &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-    use AQUABC_PELAGIC_TYPES, only: t_diatom_params
+    use AQUABC_PELAGIC_TYPES, only: t_diatom_params, t_phyto_env
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Ingoing variables
     ! -------------------------------------------------------------------------
     type(t_diatom_params), intent(in) :: params
+    type(t_phyto_env),     intent(in) :: env
 
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DIA_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ZOO_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_Si
 
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY(nkn)
     real(kind = DBL_PREC), intent(in) :: TIME_STEP
 
     integer, intent(in) :: SMITH
@@ -130,6 +117,16 @@ subroutine DIATOMS(params                      , &
         DIA_O2_TO_C              => params%DIA_O2_TO_C, &
         DIA_C_TO_CHLA            => params%DIA_C_TO_CHLA, &
         BETA_DIA                 => params%BETA_DIA)
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN   &
+    )
 
      !Temperature limitation growth factor
      call GROWTH_AT_TEMP &
@@ -233,5 +230,6 @@ subroutine DIATOMS(params                      , &
 
     call AMMONIA_PREFS(PREF_NH4N_DIA,NH4_N, NO3_N, KHS_DIN_DIA,nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 end subroutine DIATOMS

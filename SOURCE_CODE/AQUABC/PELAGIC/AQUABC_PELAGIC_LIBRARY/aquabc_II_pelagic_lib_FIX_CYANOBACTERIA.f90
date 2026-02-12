@@ -5,20 +5,14 @@
 
 subroutine FIX_CYANOBACTERIA  &
            (params                          , &
+            env                             , &
             TIME_STEP                    , &
             SMITH                        , &
             nkn                          , &
-            FDAY                         , &
-            I_A                          , &
-            K_E                          , &
-            DEPTH                        , &
-            CHLA                         , &
-            TEMP                         , &
             NH4_N                        , &
             NO3_N                        , &
             DON                          , &
             PO4_P                        , &
-            DISS_OXYGEN                  , &
             FIX_CYN_C                    , &
             FIX_CYN_LIGHT_SAT            , &
             ALPHA_0                      , &
@@ -49,13 +43,14 @@ subroutine FIX_CYANOBACTERIA  &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params
+    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params, t_phyto_env
     implicit none
 
     ! -------------------------------------------------------------------------
     ! Derived-type parameter block (replaces 26 scalar constants)
     ! -------------------------------------------------------------------------
     type(t_fix_cyn_params), intent(in) :: params
+    type(t_phyto_env),      intent(in) :: env
 
     ! -------------------------------------------------------------------------
     ! Metadata / non-constant arguments
@@ -67,17 +62,10 @@ subroutine FIX_CYANOBACTERIA  &
     ! -------------------------------------------------------------------------
     ! Ingoing arrays
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
     ! -------------------------------------------------------------------------
@@ -143,6 +131,16 @@ subroutine FIX_CYANOBACTERIA  &
         K_FIX                        => params%K_FIX,                        &
         BETA_FIX_CYN                 => params%BETA_FIX_CYN,                 &
         frac_avail_DON               => params%frac_avail_DON                &
+    )
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN   &
     )
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
@@ -277,7 +275,8 @@ subroutine FIX_CYANOBACTERIA  &
     call AMMONIA_DON_PREFS &
          (PREF_NH4N_DON_FIX_CYN, NH4_N, DON, frac_avail_DON, NO3_N, KHS_DIN_FIX_CYN,nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 
 end subroutine FIX_CYANOBACTERIA
 
@@ -285,21 +284,14 @@ end subroutine FIX_CYANOBACTERIA
 
 subroutine FIX_CYANOBACTERIA_BOUYANT  &
            (params                          , &
+            env                             , &
             TIME_STEP                    , &
             SMITH                        , &
             nkn                          , &
-            FDAY                         , &
-            I_A                          , &
-            K_E                          , &
-            DEPTH                        , &
-            CHLA                         , &
-            TEMP                         , &
-            WINDS                        , &
             NH4_N                        , &
             NO3_N                        , &
             DON                          , &
             PO4_P                        , &
-            DISS_OXYGEN                  , &
             FIX_CYN_C                    , &
             FIX_CYN_LIGHT_SAT            , &
             ALPHA_0                      , &
@@ -331,7 +323,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
-    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params
+    use AQUABC_PELAGIC_TYPES, only: t_fix_cyn_params, t_phyto_env
 
     implicit none
 
@@ -339,6 +331,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     ! Derived-type parameter block (replaces 26 scalar constants)
     ! -------------------------------------------------------------------------
     type(t_fix_cyn_params), intent(in) :: params
+    type(t_phyto_env),      intent(in) :: env
 
     ! -------------------------------------------------------------------------
     ! Metadata / non-constant arguments
@@ -350,18 +343,10 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     ! -------------------------------------------------------------------------
     ! Ingoing arrays
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FDAY
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: I_A
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: K_E
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DEPTH
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CHLA
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: TEMP
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: WINDS
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NH4_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NO3_N
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: DISS_OXYGEN
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
     ! -------------------------------------------------------------------------
@@ -428,6 +413,17 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         K_FIX                        => params%K_FIX,                        &
         BETA_FIX_CYN                 => params%BETA_FIX_CYN,                 &
         frac_avail_DON               => params%frac_avail_DON                &
+    )
+
+    associate( &
+        TEMP         => env%TEMP,         &
+        I_A          => env%I_A,          &
+        K_E          => env%K_E,          &
+        DEPTH        => env%DEPTH,        &
+        CHLA         => env%CHLA,         &
+        FDAY         => env%FDAY,         &
+        DISS_OXYGEN  => env%DISS_OXYGEN,  &
+        WINDS        => env%WINDS         &
     )
 
     !Caculations for nitrogen fixing cyanobacteria growth limitation by temperature
@@ -573,6 +569,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
          (PREF_NH4_DON_FIX_CYN, NH4_N, DON, &
           frac_avail_DON, NO3_N, KHS_DIN_FIX_CYN,nkn)
 
-    end associate
+    end associate ! env
+    end associate ! params
 
 end subroutine FIX_CYANOBACTERIA_BOUYANT

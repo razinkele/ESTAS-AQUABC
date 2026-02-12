@@ -8,22 +8,15 @@
 ! Submodel for the life cycle of Nostacles, a large order of (fixing) Cyanobacteria
 subroutine NOSTOCALES &
            (params                                , &
+            env                                   , &
             TIME_STEP                         , &
             DAY_OF_YEAR                       , &
             SMITH                             , &
             nkn                               , &
             NOST_LIGHT_SAT                    , &
-            FDAY                              , &
-            I_A                               , &
-            K_E                               , &
-            DEPTH                             , &
-            CHLA                              , &
-            TEMP                              , &
-            WINDS                             , &
             DIN                               , &   ! bioavailable DIN
             DON                               , &   ! bioavailable DON
             DP                                , &
-            DISS_OXYGEN                       , &
             NOST_VEG_HET_C                    , &
             NOST_AKI_C                        , &
             KG_NOST_VEG_HET                   , &
@@ -51,28 +44,21 @@ subroutine NOSTOCALES &
             R_MORT_AKI)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-   use AQUABC_PELAGIC_TYPES, only: t_nost_params
+   use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    implicit none
 
    ! ------------------------------------------------------------------------------------
    ! INGOING VARIABLES
    ! ------------------------------------------------------------------------------------
    type(t_nost_params), intent(in) :: params
+   type(t_phyto_env),   intent(in) :: env
    double precision, intent(in) :: TIME_STEP
    integer         , intent(in) :: DAY_OF_YEAR
    integer         , intent(in) :: SMITH
    integer         , intent(in) :: nkn
-   double precision, dimension(nkn), intent(in) :: FDAY
-   double precision, dimension(nkn), intent(in) :: I_A
-   double precision, dimension(nkn), intent(in) :: K_E
-   double precision, dimension(nkn), intent(in) :: DEPTH
-   double precision, dimension(nkn), intent(in) :: CHLA
-   double precision, dimension(nkn), intent(in) :: TEMP
-   double precision, dimension(nkn), intent(in) :: WINDS
    double precision, dimension(nkn), intent(in) :: DIN
    double precision, dimension(nkn), intent(in) :: DON
    double precision, dimension(nkn), intent(in) :: DP
-   double precision, dimension(nkn), intent(in) :: DISS_OXYGEN
    double precision, dimension(nkn), intent(in) :: NOST_VEG_HET_C
    double precision, dimension(nkn), intent(in) :: NOST_AKI_C
    ! ------------------------------------------------------------------------------------
@@ -157,6 +143,17 @@ subroutine NOSTOCALES &
        THETA_K_MORT_AKI                  => params%THETA_K_MORT_AKI, &
        KM_DENS_VEG_HET                   => params%KM_DENS_VEG_HET, &
        BETA_NOST_VEG_HET                 => params%BETA_NOST_VEG_HET &
+   )
+
+   associate( &
+       TEMP         => env%TEMP,         &
+       I_A          => env%I_A,          &
+       K_E          => env%K_E,          &
+       DEPTH        => env%DEPTH,        &
+       CHLA         => env%CHLA,         &
+       FDAY         => env%FDAY,         &
+       DISS_OXYGEN  => env%DISS_OXYGEN,  &
+       WINDS        => env%WINDS         &
    )
 
    ! ------------------------------------------------------------------------------------
@@ -378,6 +375,7 @@ subroutine NOSTOCALES &
     R_LOSS_AKI = K_LOSS_AKI      * NOST_AKI_C
     R_MORT_AKI = K_MORT_AKI_20 * (THETA_K_MORT_AKI**(TEMP - 20.0D0)) * NOST_AKI_C
 
-   end associate
+   end associate ! env
+   end associate ! params
 
 end subroutine NOSTOCALES

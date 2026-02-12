@@ -13,7 +13,7 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: NH4_N
     real(kind = DBL_PREC), allocatable, dimension(:) :: NO3_N
     real(kind = DBL_PREC), allocatable, dimension(:) :: PO4_P
-    real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_OXYGEN
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: DISS_OXYGEN
     real(kind = DBL_PREC), allocatable, dimension(:) :: DIA_C
     real(kind = DBL_PREC), allocatable, dimension(:) :: ZOO_C
     real(kind = DBL_PREC), allocatable, dimension(:) :: ZOO_N
@@ -57,14 +57,14 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: PHYT_TOT_C
 
     !Driving functions
-    real(kind = DBL_PREC), allocatable, dimension(:) :: TEMP
-    real(kind = DBL_PREC), allocatable, dimension(:) :: FDAY
-    real(kind = DBL_PREC), allocatable, dimension(:) :: DEPTH
-    real(kind = DBL_PREC), allocatable, dimension(:) :: I_A
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: TEMP
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: FDAY
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: DEPTH
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: I_A
     real(kind = DBL_PREC), allocatable, dimension(:) :: SALT
     real(kind = DBL_PREC), allocatable, dimension(:) :: ELEVATION
     real(kind = DBL_PREC), allocatable, dimension(:) :: AIRTEMP
-    real(kind = DBL_PREC), allocatable, dimension(:) :: WINDS
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: WINDS
     real(kind = DBL_PREC), allocatable, dimension(:) :: K_B_E
     real(kind = DBL_PREC), allocatable, dimension(:) :: ice_cover
 
@@ -219,8 +219,8 @@ module AQUABC_PELAGIC_INTERNAL
 
     !Auxillary variables
     real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_OXYGEN_SAT
-    real(kind = DBL_PREC), allocatable, dimension(:) :: CHLA
-    real(kind = DBL_PREC), allocatable, dimension(:) :: K_E
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: CHLA
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: K_E
     real(kind = DBL_PREC), allocatable, dimension(:) :: KG_DIA
     real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_KG_DIA
     real(kind = DBL_PREC), allocatable, dimension(:) :: FAC_HYPOX_DIA_D
