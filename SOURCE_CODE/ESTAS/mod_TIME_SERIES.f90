@@ -280,8 +280,6 @@ contains
 
         integer :: DATA_SIZE, i
 
-        real(kind = DBL_PRECISION) :: PREVIOUS_TIME, NEXT_TIME, PREVIOUS_VALUE, NEXT_VALUE
-
         TIME_INDEX = 0
 
         if (TIME_FUNCTION % ALLOCATED == 0) then 

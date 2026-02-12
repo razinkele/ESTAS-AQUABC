@@ -92,28 +92,22 @@ subroutine REDOX_AND_SPECIATION &
     real(kind = DBL_PREC), dimension(nkn, 6) :: REDUCER_LIM_FACTORS
 
     real(kind = DBL_PREC), dimension(nkn) :: &
-        CS, H_PLUS, SO4_MOLAR, HS_MOLAR, S_MINUS_2_MOLAR
+        CS, H_PLUS, HS_MOLAR, S_MINUS_2_MOLAR
 
     real(kind = DBL_PREC), dimension(nkn) :: FE_CO3_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn) :: FE_OH_2_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn) :: FE_S_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn) :: FE_S_2_OVER_FE_II
 
-    real(kind = DBL_PREC), dimension(nkn) :: FE_3_O_4_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn) :: FE_2_O_3_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn) :: FE_OOH_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn) :: FE_OH_3_OVER_FE_II
 
     real(kind = DBL_PREC), dimension(nkn) :: MN_CO3_OVER_MN_II
     real(kind = DBL_PREC), dimension(nkn) :: MN_OH_2_OVER_MN_II
     real(kind = DBL_PREC), dimension(nkn) :: MN_S_OVER_MN_II
 
     real(kind = DBL_PREC), dimension(nkn, 4) :: FE_II_ACTIVITY_RATIOS
-    real(kind = DBL_PREC), dimension(nkn, 3) :: FE_III_ACTIVITY_RATIOS
     real(kind = DBL_PREC), dimension(nkn, 3) :: MN_II_ACTIVITY_RATIOS
 
     integer, dimension(nkn) :: FE_II_SALT_NO
-    integer, dimension(nkn) :: FE_III_SALT_NO
     integer, dimension(nkn) :: MN_II_SALT_NO
 
     real(kind = DBL_PREC), dimension(nkn) :: FREE_FE_II

@@ -328,7 +328,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     integer, allocatable, dimension (:) :: CO2SYS_KSO4CONSTANTS
     real(kind = DBL_PREC),allocatable, dimension (:,:) :: CO2SYS_OUT_DATA
     character(len=34), allocatable, dimension (:) :: CO2SYS_NICEHEADERS
-    integer :: CO2SYS_NUM_SAMPLES
     integer :: RUN_CO2SYS
     parameter(RUN_CO2SYS = 1)
     integer :: CO2SYS_ntps
@@ -356,29 +355,15 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: TOTAL_DIC_KINETIC_SOURCES
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: TOTAL_DIC_KINETIC_SINKS
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: T_A
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_K_H
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: K_H
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: POWER
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_CO2
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: CO2_SAT
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: K_A_CALC_CO2
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: CO2_ATM_EXHANGE
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: DIC_KINETIC_DERIVATIVE
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_0
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_1
 
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PKH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: FRAC_NH3
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: FRAC_NH4
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_CHEM_AUT_BAC_TOT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_AER_HET_BAC_INT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_FAC_AN_HET_BAC_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_DIA_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_CYN_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_OPA_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_FIX_CYN_TOT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_AER_HET_BAC_N_OX
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_FAC_AN_HET_BAC_N_OX
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_ZOO_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_ABIOTIC_DON_MIN
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_GAINED_BY_AMMONIUM_GEN
@@ -387,9 +372,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_CYN_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_OPA_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_NON_FIX_CYN_GROWTH
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_AER_HET_BAC_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_GAINED_BY_NITRATE_CONS
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_CHEM_AUT_BAC_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_LOST_BY_AMMONIUM_CONS
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_NITRIFICATION_NH4
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: N_NITRIFICATION_NH3
@@ -408,25 +391,17 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_LOST_BY_PHOSPHATE_GEN
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_KINETIC_DERIVATIVE
 
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_CHEM_AUT_BAC_TOT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_AER_HET_BAC_INT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_FAC_AN_HET_BAC_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_DIA_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_CYN_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_OPA_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_FIX_CYN_TOT_RESP
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_AER_HET_BAC_N_OX
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_FAC_AN_HET_BAC_N_OX
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_ZOO_TOT_RESP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_ABIOTIC_DON_MIN
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_DENITRIFICATION
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_DIA_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_CYN_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_OPA_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_NON_FIX_CYN_GROWTH
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_AER_HET_BAC_GROWTH
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_AER_HET_BAC_P_OX
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_FAC_AN_HET_BAC_P_OX
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: P_CHEM_AUT_BAC_GROWTH
 
     integer :: CONSIDER_ALKALNITY_DERIVATIVE
@@ -437,11 +412,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     double precision getpar    !function to getn isedi value
     integer isedi  !indicator if sediment transport model is used
 
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_DOC_MIN
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_DON_MIN
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_DOP_MIN
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_NITR_NH4
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PH_CORR_DENITR_NO3
 
     ! -------------------------------------------------------------------------
     ! Variables added 30 November 2015 for dissolved and particulate species
@@ -497,9 +468,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: HS_MINUS
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: S_MINUS_TWO
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_II_DISS
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_II_PART
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_III_DISS
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_III_PART
     ! -------------------------------------------------------------------------
     ! End of variables added 25 January 2016 for a simple version of equlibrium
     ! based aquatic chemistry calculations for Fe2+ and Fe3+

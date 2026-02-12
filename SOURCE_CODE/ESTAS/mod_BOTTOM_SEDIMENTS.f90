@@ -346,12 +346,6 @@ contains
         integer :: MODEL_BENTHIC_ANIMALS_LOC !Flag for modeling benthic animals
         integer :: NUM_SED_FLAGS_LOC
 
-        integer :: BOX_NO, LAYER_NO, SED_STATE_VAR_NO
-
-        !Declaration for function calculating modecular diffusion coefficients
-        real(kind=DBL_PREC) :: SED_MOD_1_ALUKAS_MOLDI_C
-
-        real(kind=DBL_PREC), dimension(nkn_loc) :: TABLE_FUNCTION_VALUES
 
         if (TIME_STEP_NO == 1) then
             SED_FLAGS_LOC(1) = 1
@@ -404,7 +398,7 @@ contains
         implicit none
         integer, intent(in) :: IN_FILE
 
-        integer :: i, j, LAYER_NO
+        integer :: i, LAYER_NO
         integer :: BOX_NO, SED_LAYER_NO, SED_VAR_NO
 
         real(kind = DBL) :: AUX_DOUBLE

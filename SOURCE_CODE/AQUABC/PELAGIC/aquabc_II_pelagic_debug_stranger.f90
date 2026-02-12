@@ -66,7 +66,6 @@ subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node
     integer              , dimension(nkn)        , intent(in)    :: node_active
     integer                                      , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -118,7 +117,6 @@ subroutine DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
     integer              , dimension(nkn)        , intent(in)    :: node_active
     integer                                      , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -184,7 +182,6 @@ subroutine DBGSTR_PEL_R_ZOO_RESP_01(TIME, nkn, nstate, node_active, error)
     integer              , dimension(nkn) , intent(in)    :: node_active
     integer                               , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -244,7 +241,6 @@ subroutine DBGSTR_PEL_NH4N_01(PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDI
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -336,7 +332,6 @@ subroutine DBGSTR_PEL_PO4P_01(PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDI
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -410,7 +405,6 @@ subroutine DBGSTR_PEL_DOXY_01(PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nsta
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -540,10 +534,6 @@ subroutine DBGSTR_PEL_CYNC_01 &
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
-    integer :: j
-    integer :: k
-
     integer :: STRANGERSD
 
     if (STRANGERSD(DERIVATIVES(1:nkn,CYN_C_INDEX),VALUE_strange,nkn).eq.1) then
@@ -597,10 +587,6 @@ subroutine DBGSTR_PEL_ZOOC_01 &
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
-    integer :: j
-    integer :: k
-
     integer :: STRANGERSD
 
     if (STRANGERSD(DERIVATIVES(1:nkn,ZOO_C_INDEX),VALUE_strange,nkn).eq.1) then
@@ -651,10 +637,6 @@ subroutine DBGSTR_PEL_DET_PART_ORG_C_01 &
     integer                                                , intent(in)    :: NDIAGVAR
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
-
-    integer :: i
-    integer :: j
-    integer :: k
 
     integer :: STRANGERSD
 
@@ -708,7 +690,6 @@ subroutine DBGSTR_PEL_DET_DISS_ORG_N_01 &
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -793,7 +774,6 @@ subroutine DBGSTR_PEL_DET_CH4_C_01 &
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 
@@ -857,7 +837,6 @@ subroutine DBGSTR_PEL_DET_TOT_ALK_01 &
     integer              , dimension(nkn)                  , intent(in)    :: node_active
     integer                                                , intent(inout) :: error
 
-    integer :: i
     integer :: j
     integer :: k
 

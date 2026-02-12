@@ -42,7 +42,6 @@ contains
         implicit none
 	logical para_exists_name
         character*(*) name
-	integer i
 	if( para_index_value(name) == 0 ) then
 	  para_exists_name = .false.
 	else

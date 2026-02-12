@@ -86,7 +86,6 @@ contains
         double precision, intent(in) :: DAY_OF_SIMULATION
         integer         , intent(in) :: BASE_YEAR
 
-        integer :: i
         integer :: YEAR
         integer :: NUM_DAYS_IN_BASE_YEAR
         integer :: NUM_DAYS_IN_YEAR

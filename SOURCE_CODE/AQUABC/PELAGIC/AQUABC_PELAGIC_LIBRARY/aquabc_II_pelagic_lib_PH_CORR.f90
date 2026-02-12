@@ -28,7 +28,7 @@
 ! ---------------------------------------------------------------------------- !
 !                    Development date : 31st August 2015                       !
 !                                                                              !
-!                            Developer : Ali Ertürk                            !
+!                            Developer : Ali Ertï¿½rk                            !
 ! ---------------------------------------------------------------------------- !
 subroutine CALCULATE_PH_CORR(PH_CORR, PH, PH_MIN, PH_MAX, nkn)
 
@@ -44,7 +44,7 @@ subroutine CALCULATE_PH_CORR(PH_CORR, PH, PH_MIN, PH_MAX, nkn)
     ! Outgoing variables
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PH_CORR
 
-    integer i,j,error
+    integer i,error
 
     error   = 0
     PH_CORR = 1

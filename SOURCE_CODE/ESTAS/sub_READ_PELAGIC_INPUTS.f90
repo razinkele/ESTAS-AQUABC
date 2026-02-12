@@ -54,7 +54,6 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     integer :: MIXING_TS_NO
 
     real(kind = SELECTED_REAL_KIND(15,307)) :: MIXING_LENGTH
-    real(kind = SELECTED_REAL_KIND(15,307)) :: VOLUME
     real(kind = SELECTED_REAL_KIND(15,307)) :: SURFACE_ELEVATION
     real(kind = SELECTED_REAL_KIND(15,307)) :: BOTTOM_ELEVATION
     real(kind = SELECTED_REAL_KIND(15,307)) :: DISSOLVED_FRACTION
@@ -83,8 +82,8 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     character(len = 5)  :: INTEGER_STRING
     character(len = 5)  :: BOX_NO_STRING
 
-    integer          :: AUX_INTEGER_1, AUX_INTEGER_2, AUX_INTEGER_3, AUX_INTEGER_4
-    real(kind = DBL) :: AUX_DOUBLE_1 , AUX_DOUBLE_2 , AUX_DOUBLE_3 , AUX_DOUBLE_4
+    integer          :: AUX_INTEGER_1, AUX_INTEGER_2
+    real(kind = DBL) :: AUX_DOUBLE_1
 
     real(kind = DBL) :: TIME
 

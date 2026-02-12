@@ -55,9 +55,6 @@ contains
             intent(inout) :: DEPOSITION_AREA_RATIOS
 
 
-        real(kind = DBL), dimension(nkn) :: CHLA
-        real(kind = DBL), dimension(nkn) :: SETTLING_VELOCITY_FACTORS
-
         real(kind = DBL), dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &
              PRESCRIBED_SEDIMENT_FLUXES
 
@@ -712,7 +709,6 @@ contains
         integer :: FIRST_BOX_NO
         integer :: SECOND_BOX_NO
         integer :: O_BOX
-        integer :: U_BOX
         integer :: MASS_LOAD_NO
         integer :: MASS_WITHDRAWAL_NO
         integer :: BOX_NO
@@ -727,16 +723,9 @@ contains
         real(kind = DBL) :: MIXING_LENGTH
 
         real(kind = DBL), &
-            dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS) :: CONCENTRATIONS
-
-        real(kind = DBL), &
             dimension(PELAGIC_BOX_MODEL_DATA % NUM_MODEL_CONSTANTS)    :: MODEL_CONSTANTS
 
-        real(kind = DBL), &
-            dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS) :: KINETIC_DERIVS
-
         integer, dimension(PELAGIC_BOX_MODEL_DATA % NUM_FLAGS) :: FLAGS
-        integer :: PELAGIC_ECOLOGY_CALLED_BEFORE
 
         !SEDIMENT DIAGENESIS MODEL REALETED DECLARATIONS
         integer :: PROCESS_RATE_BEGIN_NO
@@ -756,7 +745,6 @@ contains
 
         real(kind = DBL) :: SHEAR_STRESS
 
-        real(kind = DBL), dimension(nkn) :: CHLA
         real(kind = DBL), dimension(nkn) :: SETTLING_VELOCITY_FACTORS
 
         real(kind = DBL), dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &

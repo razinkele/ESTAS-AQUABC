@@ -12,7 +12,6 @@ program ESTAS_II
     character(len = 2048)  :: INPUT_FILE_NAME
     type(AQUATIC_MODEL_DS) :: AQUATIC_MODEL_DATA
 
-    integer :: i, j
 
     USE_PELAGIC_CONSTANTS_FILE_NAME    = 0
     PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT = 0

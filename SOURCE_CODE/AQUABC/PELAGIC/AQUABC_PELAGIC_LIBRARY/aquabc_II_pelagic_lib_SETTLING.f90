@@ -20,7 +20,6 @@ subroutine settling_suppres_factor_vec(chla, nkn, factor)
     double precision, dimension(nkn) :: factor_chla
     double precision, dimension(nkn) :: factor_chlamax
 
-    double precision, dimension(nkn) :: setl_vel
     double precision, dimension(nkn) :: chlamin
     double precision, dimension(nkn) :: chlamax
     double precision, dimension(nkn) :: settl_max

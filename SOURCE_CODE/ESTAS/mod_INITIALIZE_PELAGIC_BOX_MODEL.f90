@@ -18,20 +18,14 @@ contains
         integer :: i
         integer :: j
         integer :: PELAGIC_INIT_COND_SET_NO
-        integer :: NUM_BOXES
         integer :: MAXIMUM_VALUE
 
-        real(kind = DBL) :: PELAGIC_CONCENTRATION 
-
-        character(len = 20) :: FORMAT_STRING
-        character(len = 5)  :: INTEGER_STRING
-        character(len = 5)  :: BOX_NO_STRING
+        real(kind = DBL) :: PELAGIC_CONCENTRATION
 
         integer :: BOX_NO
         integer :: OVERLAYING_BOX_NO
         integer :: UNDERLAYING_BOX_NO
         integer :: NUM_PELAGIC_BOXES
-        integer :: NUM_PELAGIC_STATE_VARS
         integer :: FORCING_TS_NO
 
         integer, dimension(PELAGIC_BOX_MODEL_DATA % NUM_FORCING_TS) :: NUM_FORCING_VARIABLES

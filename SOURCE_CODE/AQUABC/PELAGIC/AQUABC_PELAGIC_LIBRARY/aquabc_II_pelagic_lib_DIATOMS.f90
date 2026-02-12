@@ -126,7 +126,7 @@ subroutine DIATOMS(KG_DIA_OPT_TEMP         , &
     ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: KG_DIA
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: ALPHA_0
-    integer :: i, imax
+    integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: ALPHA_1
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: LIM_KG_DIA_TEMP

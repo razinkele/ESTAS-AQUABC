@@ -611,7 +611,6 @@ contains
         type(AQUATIC_MODEL_DS), intent(inout) :: AQUATIC_MODEL_DATA
         real(kind = DBL), intent(in) :: TIME
 
-        integer :: i
 
         !INITIALIZE THE PELAGIC BOX MODEL
         call INIT_PELAGIC_BOX_MODEL(AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA, TIME)

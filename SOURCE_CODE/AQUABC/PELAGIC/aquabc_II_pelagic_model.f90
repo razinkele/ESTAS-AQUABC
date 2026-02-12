@@ -105,7 +105,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer                                                                  :: nflags
     integer                                                                  :: n_saved_outputs
     integer                                                                  :: NDIAGVAR
-    integer                                                                  :: STRANGERSD
+
     integer                                                                  :: error
 
     !internal numbers (specific for this routine) of nodes, used for diagnostics
@@ -113,7 +113,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer                                                                      :: dump_node
     real(kind = DBL_PREC)                                                       :: total_removal, allowed_rate, scale
     real(kind = DBL_PREC)                                                       :: allowed_rate_local, old_rate, sum_removals
-    integer                                                                      :: kk
+
 
     real(kind = DBL_PREC), dimension(nkn,nstate),              intent(in)    :: STATE_VARIABLES
     real(kind = DBL_PREC), dimension(nkn,nstate),              intent(out)   :: DERIVATIVES
@@ -157,7 +157,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
 
-    integer :: i,j,k
+    integer :: i,k
     !*********************************************'
     !*                                           *'
     !* PELAGIC ECOLOGY KINETICS
@@ -180,10 +180,6 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer :: NUM_SCREEN_OUTPUT_NODES
     parameter (NUM_SCREEN_OUTPUT_NODES = 0)
 
-    integer, dimension(NUM_SCREEN_OUTPUT_NODES) :: SCREEN_OUTPUT_NODES
-    integer, dimension(nstate)                  :: DERIVS_FOR_SCREEN_OUTPUTS
-
-    real(kind = DBL_PREC) :: LEFT_DAYS
 
     !If called first time
     if (CALLED_BEFORE < 1) then

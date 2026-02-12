@@ -22,7 +22,6 @@ contains
 
         integer :: i
         integer :: j
-        integer :: k
         integer :: REPEAT_NO
         integer :: AUX_OUTPUT_UNIT
         integer :: PRINT_INTERVAL
@@ -59,13 +58,10 @@ contains
 
         real(kind = DBL), &
             dimension(AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_EXERGY_COMPONENTS) :: &
-            PELAGIC_EXERGY_COMPONENTS, AVG_SUM_PELAGIC_EXERGIES, AVG_TOTAL_PELAGIC_EXERGIES
+            PELAGIC_EXERGY_COMPONENTS, AVG_TOTAL_PELAGIC_EXERGIES
 
         real(kind = DBL) :: TOTAL_VOLUME_EX
 
-        integer :: NUM_PELAGIC_EXERGY_COMPONENTS
-        character(len = 20) :: FORMAT_STRING
-        character(len = 5)  :: INTEGER_STRING
 
         !Cost function related
         real(kind = DBL) :: MEASURED_VALUE

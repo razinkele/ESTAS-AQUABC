@@ -531,12 +531,10 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     double precision, intent(out) :: LIGHT_SAT(nkn)
     double precision, intent(in)  :: BETA
 
-    double precision :: KESHD(nkn)
     double precision :: SKE(nkn)
     double precision :: TEMP1(nkn)
     double precision :: TEMP2(nkn)
     double precision :: TEMP3(nkn)
-    double precision :: chla_pos(nkn)
     double precision :: BETA_LOC  ! local copy of photoinhibition parameter
 
     logical VALUE_strange(nkn)
@@ -721,7 +719,6 @@ subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
     double precision, intent(out) :: LLIGHT
     double precision, intent(out) :: CCHLX
 
-    double precision :: PHOTO
     double precision :: XKC
     double precision :: PHIMX
 
@@ -733,14 +730,9 @@ subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
     double precision :: TEMP1
     double precision :: TEMP2
     double precision :: TEMP3
-    double precision :: IMAX
-    double precision :: SUM
-    double precision :: DTDAY
-    double precision :: I0
     double precision :: RLIGHT
     double precision :: IAV
     double precision :: IAVSG
-    integer :: I
 
     ! Chloroph. extinction, ( mcg Chla/l/m)
     ! 0.04 is approximatelly the value that corresponds to the angle of curve given in Chapra
@@ -912,7 +904,6 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
     double precision, intent(in) :: DRIVING_FUNCTIONS(NUM_DRIV)
 
     integer, intent(in) :: CELLNO
-    integer :: LAYER
 
     double precision, intent(in) :: PSTIME
     double precision, intent(in) :: BOTTOM_FACTOR
@@ -1152,7 +1143,6 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
     double precision, intent(in) :: DRIVING_FUNCTIONS(nkn, NUM_DRIV)
 
     integer, intent(in) :: CELLNO
-    integer :: LAYER
 
     double precision, intent(in) :: PSTIME
     double precision, intent(in) :: BOTTOM_FACTOR
@@ -1163,8 +1153,6 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
     double precision, intent(out) :: NOT_DEPOSITED_FLUXES(nkn, NUM_NOT_DEPOSITED_FLUXES)
 
     double precision :: SETTLING_FACTORS(nkn, NUM_VARS)
-
-    integer I
 
     DO_NON_OBLIGATORY_FIXERS          = 0
     DO_NOSTOCALES                     = 1
@@ -1436,7 +1424,7 @@ subroutine settling_suppres_factor(chla, factor)
     implicit none
     double precision, intent(in)  :: chla
     double precision, intent(out) :: factor
-    double precision :: setl_vel, chlamin, chlamax, settl_max
+    double precision :: chlamin, chlamax, settl_max
 
     ! observed interval endpoints for chla impacting settling velocity
     ! We do not know what happens outside of this interval and assume

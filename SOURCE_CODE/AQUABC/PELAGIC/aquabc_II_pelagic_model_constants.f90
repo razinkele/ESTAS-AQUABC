@@ -1713,7 +1713,7 @@ subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)
 
     character*(*) file
 
-    integer iu,i,j,ios,nconsts
+    integer iu,i,ios,nconsts
     character*80 name,format
     character*35 rname
     double precision value

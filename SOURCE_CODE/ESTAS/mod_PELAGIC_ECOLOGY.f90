@@ -19,12 +19,10 @@ contains
 
         integer :: i
 
-        integer :: NUM_MODEL_CONSTANTS
         integer :: NUM_DRIVING_FUNCTIONS
         integer :: NUM_FLAGS
         integer :: NUM_PROCESS_RATES
         integer :: NUM_SAVED_OUTPUTS
-        integer :: NUM_STATE_VARIABLES
 
         NUM_DRIVING_FUNCTIONS = 10
         NUM_FLAGS             = 5
@@ -285,8 +283,6 @@ contains
 
         integer, intent(in) :: BOX_NO
 
-        integer :: i
-
         real(kind = DBL) :: NH4_N
         real(kind = DBL) :: NO3_N
         real(kind = DBL) :: PO4_P
@@ -304,8 +300,6 @@ contains
         real(kind = DBL) :: DISS_ORG_C
         real(kind = DBL) :: DISS_ORG_N
         real(kind = DBL) :: DISS_ORG_P
-        real(kind = DBL) :: ALKALINITY
-        real(kind = DBL) :: INORG_C
 
         real(kind = DBL) :: DIA_N_TO_C
         real(kind = DBL) :: DIA_P_TO_C
@@ -1281,7 +1275,7 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
     real(kind = DBL), dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
         intent(inout) :: SETTLING_VELOCITY_FACTORS
 
-    integer :: i, nd
+    integer :: nd
 
     ! ---------------------------------------------------------------------------
     ! Calculate chlorophyl-a
@@ -1357,8 +1351,6 @@ subroutine PELAGIC_KINETICS &
     real(kind = DBL), dimension(nkn, nstate, NDIAGVAR) :: AQUABC_PROCESS_RATES
 
     real(kind = DBL), dimension(nkn, NUM_ALLOLOPATHY_STATE_VARS) :: SEC_MET_DERIVATIVES
-    integer :: i
-    real(kind = DBL) :: fix_cyn
 
     AQUABC_STATE_VARIABLES(:,:)   = STATE_VARIABLES(:, 1:nstate)
     AQUABC_DERIVATIVES    (:,:)   = 0.0D0

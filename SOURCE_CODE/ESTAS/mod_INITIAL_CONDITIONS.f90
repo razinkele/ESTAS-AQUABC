@@ -49,7 +49,6 @@ contains
         integer, intent(in) :: IN_FILE
 
         integer :: i
-        integer :: j
         integer :: PELAGIC_STATE_VAR_NO
 
         real(kind = DBL) :: PELAGIC_CONCENTRATION

@@ -58,10 +58,7 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
     double precision TS
     double precision SS
     double precision V25
-    double precision ONE
     double precision VTK
-    double precision ZERO
-    double precision D
     double precision TK
 
     double precision MOL_DIFF

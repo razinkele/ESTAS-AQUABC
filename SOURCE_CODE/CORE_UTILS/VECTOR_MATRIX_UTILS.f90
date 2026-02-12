@@ -91,7 +91,6 @@ contains
         implicit none
         logical, intent(in)   , dimension(:)              :: LOGICAL_VECTOR
         integer, intent(inout), allocatable, dimension(:) :: INT_VECTOR
-        integer :: i
         integer :: ierr
 
         if(size(LOGICAL_VECTOR) > 0) then

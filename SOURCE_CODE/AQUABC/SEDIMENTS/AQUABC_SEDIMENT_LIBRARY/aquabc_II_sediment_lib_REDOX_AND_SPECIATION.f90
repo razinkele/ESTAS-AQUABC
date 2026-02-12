@@ -62,32 +62,25 @@ subroutine SED_REDOX_AND_SPECIATION &
     integer, dimension(nkn, NUM_SED_LAYERS) :: REDUCED_AGENT_NO
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS, 6) :: REDUCER_LIM_FACTORS
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: CS, H_PLUS, SO4_MOLAR, HS_MOLAR, S_MINUS_2_MOLAR
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: CS, H_PLUS, HS_MOLAR, S_MINUS_2_MOLAR
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_CO3_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_OH_2_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_S_OVER_FE_II
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_S_2_OVER_FE_II
 
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_3_O_4_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_2_O_3_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_OOH_OVER_FE_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_OH_3_OVER_FE_II
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MN_CO3_OVER_MN_II
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MN_OH_2_OVER_MN_II
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MN_S_OVER_MN_II
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS, 4) :: FE_II_ACTIVITY_RATIOS
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS, 3) :: FE_III_ACTIVITY_RATIOS
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS, 3) :: MN_II_ACTIVITY_RATIOS
 
     integer, dimension(nkn, NUM_SED_LAYERS) :: FE_II_SALT_NO
-    integer, dimension(nkn, NUM_SED_LAYERS) :: FE_III_SALT_NO
     integer, dimension(nkn, NUM_SED_LAYERS) :: MN_II_SALT_NO
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FREE_FE_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FREE_FE_III
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FREE_MN_II
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: TEMP_K
