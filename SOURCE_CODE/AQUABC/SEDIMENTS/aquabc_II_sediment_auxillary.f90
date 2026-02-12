@@ -13,6 +13,7 @@
 INTEGER FUNCTION STRANGER(VALUE)
     ! Checks for NaN, Inf, and out-of-range values
     use, intrinsic :: IEEE_ARITHMETIC
+    implicit none
 
     DOUBLE PRECISION, intent(in) :: VALUE
     DOUBLE PRECISION :: LLIMIT, ULIMIT

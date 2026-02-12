@@ -46,6 +46,7 @@ contains
 
     integer function STRANGER(SUSPECTED_VALUE)
         use, intrinsic :: IEEE_ARITHMETIC
+        implicit none
         ! Checks for NaN and Inf
         real(kind = DBL), intent(in) :: SUSPECTED_VALUE
 
@@ -58,6 +59,7 @@ contains
 
     integer function STRANGERSD(SUSPECTED_VALUE)
         use, intrinsic :: IEEE_ARITHMETIC
+        implicit none
         ! Checks for NaN and Inf
         ! Input is real(kind = DBL)
         real(kind = DBL), intent(in) :: SUSPECTED_VALUE
@@ -70,6 +72,7 @@ contains
 
 
     character function INTEGER_TO_STRING(I_VALUE)
+        implicit none
         integer, intent(in) :: I_VALUE
         character(len = 2048) :: INTERNAL_FILE
         write(INTERNAL_FILE, *) I_VALUE
@@ -78,6 +81,7 @@ contains
 
 
     integer function CALCULATE_DAY_OF_YEAR(DAY_OF_SIMULATION, BASE_YEAR) result (DAY_OF_YEAR)
+        implicit none
 
         double precision, intent(in) :: DAY_OF_SIMULATION
         integer         , intent(in) :: BASE_YEAR
@@ -111,6 +115,7 @@ contains
 
 
     integer function CALCULATE_NUM_DAYS_IN_YEAR(YEAR) result(NUM_DAYS_IN_YEAR)
+        implicit none
         integer, intent(in) :: YEAR
 
         if ((mod(YEAR, 4) == 0 .and. mod(YEAR, 100) /= 0) .or. &

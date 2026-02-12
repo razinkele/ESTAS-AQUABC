@@ -215,6 +215,7 @@ double precision function DO_SATURATION(T, S, H)
 
     use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, METERS_TO_FEET, &
                                          STD_PRESSURE_MMHG, safe_exp
+    implicit none
 
     !Water temperature (in Celcius)
     double precision, intent(in) :: T
@@ -290,6 +291,7 @@ end function DO_SATURATION
 double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
 
     use AQUABC_PHYSICAL_CONSTANTS, only: VON_KARMAN, SECONDS_PER_DAY, EULER_E, safe_exp
+    implicit none
 
     !WS         wind speed, m/s
     !TW         water temperature C
@@ -1456,6 +1458,7 @@ subroutine settling_suppres_factor(chla, factor)
 contains
 
     double precision function settl_vel(chla)
+        implicit none
         double precision, intent(in) :: chla
         settl_vel = -(0.0061D0 * chla) + 1.0383
     end function settl_vel

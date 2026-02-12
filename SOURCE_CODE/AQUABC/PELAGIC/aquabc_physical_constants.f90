@@ -53,6 +53,7 @@ contains
     elemental double precision function safe_exp(x)
         ! Clamps the argument to [SAFE_EXP_MIN, SAFE_EXP_MAX] before calling exp()
         ! to prevent overflow/underflow in exponential calculations.
+        implicit none
         double precision, intent(in) :: x
         double precision :: x_clamped
 

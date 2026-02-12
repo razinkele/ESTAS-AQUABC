@@ -956,6 +956,7 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
 contains
 
     subroutine CHK_POS(val, name, nfix)
+        implicit none
         real(kind = DBL_PREC), intent(inout) :: val
         character(len=*), intent(in) :: name
         integer, intent(inout) :: nfix
@@ -968,6 +969,7 @@ contains
     end subroutine CHK_POS
 
     subroutine CHK_RATIO(val, name, nfix)
+        implicit none
         real(kind = DBL_PREC), intent(inout) :: val
         character(len=*), intent(in) :: name
         integer, intent(inout) :: nfix
