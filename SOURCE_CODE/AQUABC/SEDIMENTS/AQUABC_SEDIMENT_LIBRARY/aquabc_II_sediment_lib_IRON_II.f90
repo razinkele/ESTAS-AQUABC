@@ -8,7 +8,7 @@
 !
 !                       Initial development 2nf of July 2016
 !
-!                                by Ali Ertürk
+!                                by Ali Ertï¿½rk
 ! -----------------------------------------------------------------------------
 subroutine SED_IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, NUM_SED_LAYERS, FE_II_TOT)
     use AQUABC_II_GLOBAL
@@ -94,15 +94,15 @@ subroutine SED_IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, NUM_SED_LAYERS, FE
     K_10_B = 1.3D-13
     K_W    = 1.0D-14
 
-    H_PLUS   = 10.0D0 ** (-PH)
+    H_PLUS   = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
     OH_MINUS = K_W / H_PLUS
 
     ALL_FE_II(:,:,1) = &
         ((K_1  / (K_W * K_W)) * H_PLUS * H_PLUS) + ((K_2 / K_W) * H_PLUS) + &
-        ((K_3 * K_W) / H_PLUS)
+        ((K_3 * K_W) / max(H_PLUS, 1.0D-20))
 
     ALL_FE_II(:,:,2) = &
-        ((H_PLUS + (2.0D0 * K_6)) / (TOT_ALK * K_6)) * (K_4 + ((K_5 * K_W) / H_PLUS))
+        ((H_PLUS + (2.0D0 * K_6)) / max(TOT_ALK * K_6, 1.0D-20)) * (K_4 + ((K_5 * K_W) / max(H_PLUS, 1.0D-20)))
 
     ALL_FE_II(:,:,3) = 1.0D0
 

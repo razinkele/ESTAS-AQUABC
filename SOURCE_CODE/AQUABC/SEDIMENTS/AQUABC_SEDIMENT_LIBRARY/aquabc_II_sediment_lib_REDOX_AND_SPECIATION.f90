@@ -145,19 +145,20 @@ subroutine SED_REDOX_AND_SPECIATION &
 
     ! Dissolved oxygen is reduced
     where (REDUCED_AGENT_NO == 1)
-        PE = 20.75D0 - log10(1.0D0 / (((0.21D0 * (DOXY/CS))**0.25D0) * H_PLUS))
+        PE = 20.75D0 - log10(1.0D0 / (((0.21D0 * (DOXY/max(CS, 1.0D-20)))**0.25D0) * H_PLUS))
     end where
 
     ! Nitrate is reduced
     where (REDUCED_AGENT_NO == 2)
-        PE = 21.05 - log10(1.0D0 / ((NO3N/14000.0D0)*(H_PLUS**1.2D0)))
+        PE = 21.05 - log10(1.0D0 / (max(NO3N/14000.0D0, 1.0D-20)*(H_PLUS**1.2D0)))
     end where
 
     ! Mn IV is reduced
     where (REDUCED_AGENT_NO == 3)
         PE = &
                     20.8D0 - &
-                        log10(((MN_II/MN_MOLAR_MASS_MG) ** 0.5D0) / (((MN_IV/MN_MOLAR_MASS_MG) ** 0.5D0)*(H_PLUS**2.0D0)))
+                        log10(((max(MN_II, 1.0D-20)/MN_MOLAR_MASS_MG) ** 0.5D0) / &
+                        (((max(MN_IV, 1.0D-20)/MN_MOLAR_MASS_MG) ** 0.5D0)*(H_PLUS**2.0D0)))
     end where
 
     ! FE III is reduced
@@ -172,12 +173,13 @@ subroutine SED_REDOX_AND_SPECIATION &
 
         PE = &
                     4.25D0 - &
-                        log((HS_MOLAR**0.125D0) / (((S_PLUS_6 / S_MOLAR_MASS_MG) **0.125D0) * (H_PLUS**1.125D0)))
+                        log((max(HS_MOLAR, 1.0D-20)**0.125D0) / &
+                        (((max(S_PLUS_6, 1.0D-20) / S_MOLAR_MASS_MG) **0.125D0) * (H_PLUS**1.125D0)))
     end where
 
     ! Methanogenesis
     where (REDUCED_AGENT_NO == 6)
-        PE = -0.2D0 - log10(1.0D0 / ((DISS_ORG_C / 12000D0)**0.25D0) * H_PLUS)
+        PE = -0.2D0 - log10(1.0D0 / ((max(DISS_ORG_C, 1.0D-20) / 12000D0)**0.25D0) * H_PLUS)
     end where
 
     ! Since PE is known, let's have a look in FE_II and FE_III solids following
@@ -408,7 +410,7 @@ subroutine SED_REDOX_AND_SPECIATION &
 
     !Mn(OH)2
     where(MN_II_SALT_NO == 2)
-        FREE_MN_II = (10.0D0 ** (11.14D0))/ (4 * OH_MINUS * OH_MINUS)
+        FREE_MN_II = (10.0D0 ** (11.14D0))/ max(4.0D0 * OH_MINUS * OH_MINUS, 1.0D-20)
     end where
 
     !MnS

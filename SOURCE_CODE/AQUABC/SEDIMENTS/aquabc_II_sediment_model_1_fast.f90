@@ -1030,7 +1030,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         !$OMP END PARALLEL
     end if
 
-    H_PLUS(:,:) = 10.0D0 ** (-PH)
+    H_PLUS(:,:) = 10.0D0 ** (-max(4.0D0, min(11.0D0, PH)))
 
     ! Introduced 3 rd of July 2016
     ELEVATION = 0.0D0
@@ -1584,7 +1584,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                     ADV_ENTERING_CONC(:) =  &
                                         (INTERMED_RESULTS(:,i + 1, j) * &
                                          SOLUTE_FRACTIONS(:,i + 1, j)) / &
-                                    SED_POROSITIES(:,i+1)
+                                    max(SED_POROSITIES(:,i+1), 1.0D-20)
 
                                 end if ! for the last layer
                             end if !ADVECTIVE_VELOCITY <= 0.0D0
@@ -1594,7 +1594,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         !24/06/2012: If clause Added by Ali for safer switch off
                         if (switch_diffusion.ne.0) then
                             NEIGHBOUR_CONC(:) = &
-                                INTERMED_RESULTS(:,i - 1, j) * SOLUTE_FRACTIONS(:,i - 1, j)/SED_POROSITIES(:,i-1)
+                                INTERMED_RESULTS(:,i - 1, j) * SOLUTE_FRACTIONS(:,i - 1, j)/max(SED_POROSITIES(:,i-1), 1.0D-20)
                                                              ! division by porosity to have concentration per pore water
 
                             SED_MIXLEN(:)     = 0.5D0 * (SED_DEPTHS(:,i - 1) + SED_DEPTHS(:,i))
@@ -1608,7 +1608,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                             ADV_ENTERING_CONC(:) * dabs(ADVECTIVE_VELOCITY)
 
                         SED_OUT_ADVEC_RATES(:,i, j) = INTERMED_RESULTS(:,i, j) * &
-                            SOLUTE_FRACTIONS(:,i, j)/SED_POROSITIES(:,i) * DABS(ADVECTIVE_VELOCITY)
+                            SOLUTE_FRACTIONS(:,i, j)/max(SED_POROSITIES(:,i), 1.0D-20) * DABS(ADVECTIVE_VELOCITY)
                                                  ! division by porosity to have concentration per pore water
                     end if
 
@@ -1616,7 +1616,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     !24/06/2012: If clause Added by Ali for safer switch off
                     if (switch_diffusion.ne.0) then
                         UPPER_CONC_GRADIENT(:) = (INTERMED_RESULTS(:,i, j) * &
-                               SOLUTE_FRACTIONS(:,i, j)/SED_POROSITIES(:,i)) - NEIGHBOUR_CONC(:)
+                               SOLUTE_FRACTIONS(:,i, j)/max(SED_POROSITIES(:,i), 1.0D-20)) - NEIGHBOUR_CONC(:)
                                                   ! division by porosity to have concentration per pore water
                         if(debug_stranger) then
                             do k= 1,nkn
@@ -1639,7 +1639,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                             (1.0D0 + (3.0D0 * (1.0D0 - SED_POROSITIES(:,i))))
 
                         SED_DIFFUSION_RATES(:,i, j) = DIFF_CORRECTION_FACTOR(:) * &
-                            (UPPER_CONC_GRADIENT(:) * SED_DIFFUSIONS(:,i, j)) / SED_MIXLEN(:)
+                            (UPPER_CONC_GRADIENT(:) * SED_DIFFUSIONS(:,i, j)) / max(SED_MIXLEN(:), 1.0D-20)
 
                         ! Increasing diffusion rates from first layer
                         if (i .eq. 1 ) then
@@ -1719,7 +1719,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                 end if !debug_stranger
 
                                 PART_MIXING_RATES(:,i, j) = &
-                                    (UPPER_CONC_GRADIENT * PART_MIXING_COEFFS(:,i, j)) / SED_MIXLEN
+                                    (UPPER_CONC_GRADIENT * PART_MIXING_COEFFS(:,i, j)) / max(SED_MIXLEN, 1.0D-20)
                                      !Result is in concentration per total sediment unit volume
                             end if !switch_partmixing.ne.0
                         end if  ! i >1
@@ -1760,7 +1760,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                             end if
 
                             PART_MIXING_RATES(:,i, j) = &
-                                  (UPPER_CONC_GRADIENT(:) * PART_MIXING_COEFFS(:,i, j)) / SED_MIXLEN(:)
+                                  (UPPER_CONC_GRADIENT(:) * PART_MIXING_COEFFS(:,i, j)) / max(SED_MIXLEN(:), 1.0D-20)
                                   !Result is in concentration per total sediment unit volume
                         end if !switch_partmixing
                     end if ! i > 1
@@ -1777,7 +1777,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     ! in units of g/m^3/day
 
                     SED_BURRIAL_RATES(:,i, j) = & !Result is in concentration per total sediment unit volume
-                        (INTERMED_RESULTS(:,i, j) * SED_BURRIALS(:,i)) / (SED_DEPTHS(:, i))
+                        (INTERMED_RESULTS(:,i, j) * SED_BURRIALS(:,i)) / max(SED_DEPTHS(:, i), 1.0D-20)
                 end if
             end do !j = 1, NUM_SED_VARS
         end do     !i=1,NUM_SED_LAYERS
@@ -3379,8 +3379,8 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 do j = 1, NUM_SIMULATED_SED_VARS
                     where (H_ERODEP(:) .le. 0.D0)
                         INTERMED_RESULTS_(:,i, j) = &
-                            INTERMED_RESULTS(:,i-1, j)*abs(H_ERODEP(:))/SED_DEPTHS(:,i) + &
-                            INTERMED_RESULTS(:,i, j)*(SED_DEPTHS(:,i) - abs(H_ERODEP(:)))/SED_DEPTHS(:,i)
+                            INTERMED_RESULTS(:,i-1, j)*abs(H_ERODEP(:))/max(SED_DEPTHS(:,i), 1.0D-20) + &
+                            INTERMED_RESULTS(:,i, j)*(SED_DEPTHS(:,i) - abs(H_ERODEP(:)))/max(SED_DEPTHS(:,i), 1.0D-20)
                     end where
                 end do ! j-variables
             end do     ! i-layers
@@ -3389,8 +3389,8 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             do j = 1, NUM_SED_VARS
                 where (H_ERODEP(:) .le. 0.D0)
                     INTERMED_RESULTS_(:,1, j) = &
-                        DEPOSIT_CONC(:, j)*(abs(H_ERODEP(:))/SED_DEPTHS(:,1)) + &
-                        INTERMED_RESULTS(:,1, j)*(SED_DEPTHS(:,1) - abs(H_ERODEP(:)))/SED_DEPTHS(:,1)
+                        DEPOSIT_CONC(:, j)*(abs(H_ERODEP(:))/max(SED_DEPTHS(:,1), 1.0D-20)) + &
+                        INTERMED_RESULTS(:,1, j)*(SED_DEPTHS(:,1) - abs(H_ERODEP(:)))/max(SED_DEPTHS(:,1), 1.0D-20)
                 end where
             end do ! j-variables
             ! End deposition and no erosion
@@ -3400,8 +3400,8 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 do j = 1, NUM_SED_VARS
                     where (H_ERODEP(:) .gt. 0.D0)
                         INTERMED_RESULTS_(:,i, j) = &
-                            INTERMED_RESULTS(:,i, j)*(SED_DEPTHS(:,i) - H_ERODEP(:))/SED_DEPTHS(:,i) + &
-                            INTERMED_RESULTS(:,i+1, j)*H_ERODEP(:)/SED_DEPTHS(:,i)
+                            INTERMED_RESULTS(:,i, j)*(SED_DEPTHS(:,i) - H_ERODEP(:))/max(SED_DEPTHS(:,i), 1.0D-20) + &
+                            INTERMED_RESULTS(:,i+1, j)*H_ERODEP(:)/max(SED_DEPTHS(:,i), 1.0D-20)
                     end where
                 end do ! j-variables
             end do     ! i-layers
@@ -3510,10 +3510,10 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     !Calculation solute concentrations per pore water from total (solid +solutes)  concentration per sed. vol.:
     !Dissolved  NH4N
     SED_OUTPUTS(:,:, NUM_SED_VARS + 1) = &
-            SOLUTE_FRACTIONS(:,:, 1) * INTERMED_RESULTS(:,:, 1)/SED_POROSITIES(:,:)
+            SOLUTE_FRACTIONS(:,:, 1) * INTERMED_RESULTS(:,:, 1)/max(SED_POROSITIES(:,:), 1.0D-20)
 
     !Dissolved  PO4P
     SED_OUTPUTS(:,:, NUM_SED_VARS + 2) = &
-            SOLUTE_FRACTIONS(:,:, 5) * INTERMED_RESULTS(:,:, 5)/SED_POROSITIES(:,:)
+            SOLUTE_FRACTIONS(:,:, 5) * INTERMED_RESULTS(:,:, 5)/max(SED_POROSITIES(:,:), 1.0D-20)
     !========================END FINAL CHEKS AND ASIGNMENTS==============================================
 end subroutine AQUABC_SEDIMENT_MODEL_1! end of sediment routine
