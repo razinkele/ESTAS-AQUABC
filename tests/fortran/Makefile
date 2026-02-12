@@ -23,6 +23,7 @@ TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_c
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
+PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
 
 # Source dependencies for each test
 DO_SAT_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DO_SATURATION.f90
@@ -69,14 +70,16 @@ test_settling: test_settling.f90 $(SETTLING_SRCS)
 	$(FC) $(FFLAGS) -o $@ $^
 
 # Compile test_ph_corr
-# Need to compile the global module first
+# Need to compile precision_kinds and the global module first
 test_ph_corr: test_ph_corr.f90 $(PH_CORR_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_PH_CORR.f90
 	$(FC) $(FFLAGS) -o $@ test_ph_corr.f90 *.o
 
 # Compile test_ip_soluble
 test_ip_soluble: test_ip_soluble.f90 $(IP_SOLUBLE_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/PELAGIC/aquabc_physical_constants.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IP_SOLUBLE_FRACTION.f90
@@ -91,6 +94,7 @@ test_allelopathy: test_allelopathy.f90 $(ALLELOPATHY_SRCS)
 
 # Compile test_iron_ii
 test_iron_ii: test_iron_ii.f90 $(IRON_II_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DO_SATURATION.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_IRON_II.f90
@@ -98,12 +102,14 @@ test_iron_ii: test_iron_ii.f90 $(IRON_II_SRCS)
 
 # Compile test_diss_me
 test_diss_me: test_diss_me.f90 $(DISS_ME_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DISS_ME.f90
 	$(FC) $(FFLAGS) -o $@ test_diss_me.f90 *.o
 
 # Compile test_organic_carbon
 test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_PH_CORR.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_ORGANIC_CARBON.f90
@@ -119,6 +125,7 @@ test_nutrient_prefs: test_nutrient_prefs.f90
 
 # Compile test_vector_utils
 test_vector_utils: test_vector_utils.f90 $(VECTOR_UTILS_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90
 	$(FC) $(FFLAGS) -o $@ test_vector_utils.f90 *.o
