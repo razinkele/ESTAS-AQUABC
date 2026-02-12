@@ -97,7 +97,7 @@ contains
         NUM_DAYS_IN_BASE_YEAR = CALCULATE_NUM_DAYS_IN_YEAR(BASE_YEAR)
 
         if (SIM_DAY .le. NUM_DAYS_IN_BASE_YEAR) then
-            DAY_OF_YEAR = DAY_OF_SIMULATION
+            DAY_OF_YEAR = int(DAY_OF_SIMULATION)
         else
             YEAR    = BASE_YEAR + 1
             SIM_DAY = SIM_DAY - NUM_DAYS_IN_BASE_YEAR

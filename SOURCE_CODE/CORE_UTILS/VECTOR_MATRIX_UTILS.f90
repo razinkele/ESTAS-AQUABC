@@ -15,7 +15,7 @@ contains
 
         !INGOING VARIABLES
         implicit none
-        real(kind = DBL_PREC), intent(in), dimension(:) :: VECTOR
+        integer, intent(in), dimension(:) :: VECTOR
         !END OF INGOING VARIABLES
 
         !RETURNED VARIABLE
@@ -23,7 +23,7 @@ contains
         !END OF RETURNED VARIABLE
 
         ! AUXILLARY VARIABLES
-        real(kind = DBL_PREC) :: FIRST_ELEMENTS_VALUE
+        integer :: FIRST_ELEMENTS_VALUE
         integer :: i
         ! END OF AUXILLARY VARIABLES
 
@@ -31,7 +31,7 @@ contains
         FIRST_ELEMENTS_VALUE = VECTOR(1)
 
         do i = 1, size(VECTOR)
-            if (VECTOR(i).ne.FIRST_ELEMENTS_VALUE) then
+            if (VECTOR(i) .ne. FIRST_ELEMENTS_VALUE) then
                 UNIQUE = 0
                 return
             end if

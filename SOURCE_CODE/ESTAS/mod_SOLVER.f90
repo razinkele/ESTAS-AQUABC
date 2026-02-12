@@ -662,6 +662,7 @@ contains
                 DEPOSITION_AREA_RATIOS        , &
                 nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
 
+        use, intrinsic :: IEEE_ARITHMETIC, only: IEEE_IS_NAN
         implicit none
 
         type(PELAGIC_BOX_MODEL_DS)         , intent(inout) :: PELAGIC_BOX_MODEL_DATA
@@ -1344,7 +1345,7 @@ contains
 
         do i = 1, nkn
             do j = 1, nstate
-                if (STATE_VARIABLES(i,j) /= STATE_VARIABLES(i,j)) then
+                if (IEEE_IS_NAN(STATE_VARIABLES(i,j))) then
                     open (unit = 88, file = 'ERROR_LOG.txt', status = 'UNKNOWN')
 
                     write(unit = 88, fmt = *) 'A Nan is detected'

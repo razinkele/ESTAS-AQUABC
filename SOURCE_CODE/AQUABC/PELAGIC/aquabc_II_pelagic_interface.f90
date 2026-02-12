@@ -261,7 +261,7 @@ subroutine aquabc_run                       ( &
 	  bfirstcall = .false.
 	  TIME_FIRST = TIME
 	end if
-	if( CALLED_BEFORE == 0 .and. TIME /= TIME_FIRST ) then
+	if( CALLED_BEFORE == 0 .and. abs(TIME - TIME_FIRST) > 0.0D0 ) then
           CALLED_BEFORE = 1
           FLAGS(3)      = 0
 	end if

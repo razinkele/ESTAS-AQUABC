@@ -91,7 +91,7 @@ contains
         integer :: ERROR
 
         ! AUXILLARY VARIABLES
-        real(kind = DBL_PREC), dimension(1:14) :: VECLENGTHS
+        integer, dimension(1:14) :: VECLENGTHS
 
         real(kind = DBL_PREC), allocatable, dimension(:) :: TA    ! Talk
         real(kind = DBL_PREC), allocatable, dimension(:) :: TC    ! DIC
