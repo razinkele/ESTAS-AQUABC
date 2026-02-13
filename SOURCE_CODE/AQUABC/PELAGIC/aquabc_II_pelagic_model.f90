@@ -92,6 +92,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, &
          FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
+    !$ use omp_lib
 
     implicit none
 
@@ -148,6 +149,17 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------------------------------------------------------
 
     integer :: i,k
+    real(kind = DBL_PREC) :: loss, scale_loss
+
+    ! OpenMP thread chunk variables (serial defaults: ns=1, ne=nkn)
+    integer :: ns, ne, nkn_local, nthreads, tid, chunk_size
+
+    ! Thread-local derived type bundles (private copies for each thread)
+    type(t_phyto_env)      :: ENV_CHUNK
+    type(t_redox_state)    :: REDOX_STATE_CHUNK
+    type(t_redox_lim)      :: REDOX_LIM_CHUNK
+    type(t_docmin_outputs) :: DOCMIN_CHUNK
+
     !*********************************************'
     !*                                           *'
     !* PELAGIC ECOLOGY KINETICS
@@ -179,6 +191,15 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Environmental input bundle (pointer-populated each timestep)
     type(t_phyto_env) :: PHYTO_ENV
+
+    ! Redox state variables bundle (pointer-populated each timestep)
+    type(t_redox_state) :: REDOX_STATE
+
+    ! Redox limitation factors bundle (pointer-populated each timestep)
+    type(t_redox_lim) :: REDOX_LIM
+
+    ! DOC mineralization outputs bundle (pointer-populated each timestep)
+    type(t_docmin_outputs) :: DOCMIN_OUTPUTS
 
     !If called first time
     if (CALLED_BEFORE < 1) then
@@ -411,14 +432,31 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! CO2SYS_OUT_DATA(:, 21), CO2SYS_OUT_DATA(:, 22)can not be used because deallocated
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+        ! Populate redox state bundle (zero-copy pointer assignment)
+        REDOX_STATE%DOXY       => DISS_OXYGEN
+        REDOX_STATE%NO3N       => NO3_N
+        REDOX_STATE%MN_IV      => MN_IV
+        REDOX_STATE%FE_III     => FE_III
+        REDOX_STATE%S_PLUS_6   => S_PLUS_6
+        REDOX_STATE%DISS_ORG_C => DISS_ORG_C
+        REDOX_STATE%S_MINUS_2  => S_MINUS_2
+        REDOX_STATE%MN_II      => MN_II
+        REDOX_STATE%FE_II      => FE_II
+        REDOX_STATE%HCO3       => HCO3
+        REDOX_STATE%CO3        => CO3
+
+        ! Populate redox limitation bundle (zero-copy pointer assignment)
+        REDOX_LIM%LIM_DOXY_RED     => LIM_DOXY_RED
+        REDOX_LIM%LIM_NO3N_RED     => LIM_NO3N_RED
+        REDOX_LIM%LIM_MN_IV_RED    => LIM_MN_IV_RED
+        REDOX_LIM%LIM_FE_III_RED   => LIM_FE_III_RED
+        REDOX_LIM%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED
+        REDOX_LIM%LIM_DOC_RED      => LIM_DOC_RED
+
             call REDOX_AND_SPECIATION &
-            (REDOX_PARAMS, &
-             DISS_OXYGEN, NO3_N, MN_IV, FE_III, S_PLUS_6, DISS_ORG_C, &
-             S_MINUS_2 , MN_II, FE_II , HCO3, CO3, &
-             TEMP, SALT, PH, ELEVATION, nkn, &
-             LIM_DOXY_RED        , LIM_NO3N_RED          , LIM_MN_IV_RED  , &
-             LIM_FE_III_RED      , LIM_S_PLUS_6_RED      , LIM_DOC_RED, &
-             PE, FE_II_DISS_EQ   , FE_III_DISS_EQ, MN_II_DISS)
+            (nkn, TEMP, SALT, PH, ELEVATION, &
+             REDOX_PARAMS, REDOX_STATE, REDOX_LIM, &
+             PE, FE_II_DISS_EQ, FE_III_DISS_EQ, MN_II_DISS)
 
         FE_III_DISS_EQ = FE_III_DISS_EQ * FE_MOLAR_MASS_MG
         PROCESS_RATES(1:nkn,FE_III_INDEX, 4) = FE_III_DISS_EQ
@@ -770,10 +808,41 @@ subroutine AQUABC_PELAGIC_KINETICS &
         SAVED_OUTPUTS(:,4) = 0.0D0
         SAVED_OUTPUTS(:,5) = 1.0D0
     end if
+
+    ! =========================================================================
+    ! BEGIN OpenMP PARALLEL REGION
+    ! Each thread processes a contiguous chunk of nodes [ns:ne].
+    ! When compiled without -fopenmp, !$ sentinel lines are comments and
+    ! the serial defaults (ns=1, ne=nkn) give identical sequential behaviour.
+    ! =========================================================================
+
+    ! Serial defaults (overridden inside parallel region)
+    ns = 1
+    ne = nkn
+    nkn_local = nkn
+
+    !$omp parallel default(shared) &
+    !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size) &
+    !$omp& private(ENV_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK, DOCMIN_CHUNK) &
+    !$omp& private(i, k, loss, scale_loss, total_removal, allowed_rate, scale) &
+    !$omp& private(allowed_rate_local, old_rate, sum_removals)
+
+    ! Compute per-thread chunk bounds
+    nthreads = 1
+    tid = 0
+    !$ nthreads = omp_get_num_threads()
+    !$ tid = omp_get_thread_num()
+    chunk_size = (nkn + nthreads - 1) / nthreads
+    ns = tid * chunk_size + 1
+    ne = min(ns + chunk_size - 1, nkn)
+    nkn_local = ne - ns + 1
+
+    if (nkn_local > 0) then
+
     !*****************************************
     !     D I S S O L V E D  O X Y G E N     !
     !*****************************************
-    do k=1,nkn
+    do k=ns,ne
             DISS_OXYGEN_SAT(k) = DO_SATURATION(TEMP(k), SALT(k), ELEVATION(k))
 
             if (SURFACE_BOXES(k) == 1) then !first layer
@@ -1273,43 +1342,31 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !Algal dependent mineralisation rate
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+        ! Populate DOC mineralization outputs bundle (zero-copy pointer assignment)
+        DOCMIN_OUTPUTS%LIM_PHYT_AMIN_DOC          => LIM_PHYT_AMIN_DOC
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_DOXY     => R_ABIOTIC_DOC_MIN_DOXY
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_NO3N     => R_ABIOTIC_DOC_MIN_NO3N
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_MN_IV    => R_ABIOTIC_DOC_MIN_MN_IV
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_FE_III   => R_ABIOTIC_DOC_MIN_FE_III
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_S_PLUS_6 => R_ABIOTIC_DOC_MIN_S_PLUS_6
+        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_DOC      => R_ABIOTIC_DOC_MIN_DOC
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_DOXY       => PH_CORR_DOC_MIN_DOXY
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_NO3N       => PH_CORR_DOC_MIN_NO3N
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_MN_IV      => PH_CORR_DOC_MIN_MN_IV
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_FE_III     => PH_CORR_DOC_MIN_FE_III
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_S_PLUS_6   => PH_CORR_DOC_MIN_S_PLUS_6
+        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_DOC        => PH_CORR_DOC_MIN_DOC
+
         call ORGANIC_CARBON_MINERALIZATION &
-                (DOCMIN_PARAMS               , &
-                 REDOX_PARAMS                , &
-                 nkn                         , &
+                (nkn                         , &
                  TEMP                        , &
-                 DISS_ORG_C                  , &
-                 PHYT_TOT_C                  , &
-                 DISS_OXYGEN                 , &
-                 NO3_N                       , &
-                 MN_IV                       , &
-                 FE_III                      , &
-                 S_PLUS_6                    , &
                  PH                          , &
-                 LIM_DOXY_RED                , &
-                 LIM_NO3N_RED                , &
-                 LIM_MN_IV_RED               , &
-                 LIM_FE_III_RED              , &
-                 LIM_S_PLUS_6_RED            , &
-                 LIM_DOC_RED                 , &
-                 LIM_PHYT_AMIN_DOC           , &
-                 PH_CORR_DOC_MIN_DOXY        , &  !pH correction for DOC mineralization with DOXY     as final electron acceptor (subroutine output)
-                 PH_CORR_DOC_MIN_NO3N        , &  !pH correction for DOC mineralization with NO3N     as final electron acceptor (subroutine output)
-                 PH_CORR_DOC_MIN_MN_IV       , &  !pH correction for DOC mineralization with MN_IV    as final electron acceptor (subroutine output)
-                 PH_CORR_DOC_MIN_FE_III      , &  !pH correction for DOC mineralization with FE_III   as final electron acceptor (subroutine output)
-                 PH_CORR_DOC_MIN_S_PLUS_6    , &  !pH correction for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine output)
-                 PH_CORR_DOC_MIN_DOC         , &  !pH correction for DOC mineralization with DOC      as final electron acceptor (subroutine output)
-                 K_NO3_RED                   , &
-                 K_MN_IV_RED                 , &
-                 K_FE_III_RED                , &
-                 K_S_PLUS_6_RED              , &
-                 K_DOC_RED                   , &
-                 R_ABIOTIC_DOC_MIN_DOXY      , &  !Process rate  for DOC mineralization with DOXY     as final electron acceptor (subroutine output)
-                 R_ABIOTIC_DOC_MIN_NO3N      , &  !Process rate  for DOC mineralization with NO3N     as final electron acceptor (subroutine output)
-                 R_ABIOTIC_DOC_MIN_MN_IV     , &  !Process rate  for DOC mineralization with MN_IV    as final electron acceptor (subroutine output)
-                 R_ABIOTIC_DOC_MIN_FE_III    , &  !Process rate  for DOC mineralization with FE_III   as final electron acceptor (subroutine output)
-                 R_ABIOTIC_DOC_MIN_S_PLUS_6  , &  !Process rate  for DOC mineralization with S_PLUS_6 as final electron acceptor (subroutine output)
-                 R_ABIOTIC_DOC_MIN_DOC)           !Process rate  for DOC mineralization with DOC      as final electron acceptor (subroutine output)
+                 PHYT_TOT_C                  , &
+                 DOCMIN_PARAMS               , &
+                 REDOX_PARAMS                , &
+                 REDOX_STATE                 , &
+                 REDOX_LIM                   , &
+                 DOCMIN_OUTPUTS)
     else
         where (PHYT_TOT_C .gt. K_MIN_PHYT_AMIN_DOC)
             LIM_PHYT_AMIN_DOC = FAC_PHYT_AMIN_DOC * (PHYT_TOT_C - K_MIN_PHYT_AMIN_DOC)
@@ -3447,6 +3504,13 @@ subroutine AQUABC_PELAGIC_KINETICS &
             end do
         end if
     end if
+
+    end if  ! nkn_local > 0
+    !$omp end parallel
+    ! =========================================================================
+    ! END OpenMP PARALLEL REGION
+    ! =========================================================================
+
     !*********************************************'
     !*                                           *'
     !*          END OF ECOLOGY KINETICS          *'
