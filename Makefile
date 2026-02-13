@@ -1,4 +1,4 @@
-.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler
+.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint
 
 # =============================================================================
 # Compiler Configuration
@@ -315,3 +315,31 @@ list-executables:
 			fi; \
 		fi; \
 	done
+
+# =============================================================================
+# Developer Convenience Targets
+# =============================================================================
+
+PYTHON ?= /opt/micromamba/envs/shiny/bin/python
+
+# Run all tests (Fortran + Python + lint)
+test-all: test-fortran test-python lint
+	@echo ""
+	@echo "========================================"
+	@echo "All tests and lint checks passed!"
+	@echo "========================================"
+
+# Run Fortran unit tests
+test-fortran:
+	@echo "Running Fortran unit tests..."
+	$(MAKE) -C tests/fortran test
+
+# Run Python unit tests (excludes slow integration tests)
+test-python:
+	@echo "Running Python unit tests..."
+	$(PYTHON) -m pytest tests/python/ -v --ignore=tests/python/test_app_playwright.py --ignore=tests/python/test_app_selenium.py
+
+# Run Python linter
+lint:
+	@echo "Running ruff lint..."
+	$(PYTHON) -m ruff check tests/python/ shiny_app/

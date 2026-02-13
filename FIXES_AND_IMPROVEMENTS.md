@@ -39,12 +39,8 @@ This document summarizes fixes and improvements identified by scanning the repos
 
 ## Low priority (Improvements / docs / ops) 📝
 
-1) Documentation and developer onboarding
-   - Files: `README.md`, `PARAMETER_REFERENCE.md`, `FORTRAN_IMPLEMENTATION_PLAN.md`
-   - Suggestions:
-     - Add a `CONTRIBUTING.md` outlining run/build/test steps, branch/PR policy, and how to add Fortran fixes safely.
-     - Document how to run the Shiny app (venv, requirements), and how to run unit/regression tests locally.
-   - Estimated effort: 0.5 day.
+1) ~~Documentation and developer onboarding~~ **RESOLVED**
+   - **Status:** `CONTRIBUTING.md` created with build/test/PR workflow, Shiny app instructions, and coding guidelines.
 
 2) Dependency security & maintenance
    - Files: `requirements.txt`
@@ -52,9 +48,8 @@ This document summarizes fixes and improvements identified by scanning the repos
      - Consider adding Dependabot or GitHub Actions job to check package security (e.g., `safety`), and optionally a `requirements-dev.txt` for test/dev tools.
    - Estimated effort: 0.25 day.
 
-3) Add `pre-commit` hooks and basic `Makefile` commands for developer checks
-   - E.g. `make lint`, `make pytests`, `make fmt`.
-   - Estimated effort: 0.25 day.
+3) ~~Add `Makefile` commands for developer checks~~ **RESOLVED**
+   - **Status:** Added `make test-all`, `make test-python`, `make test-fortran`, `make lint` targets.
 
 ---
 
@@ -94,8 +89,9 @@ The following major improvements have been implemented:
 2. ~~**Subprocess hardening**~~ — **RESOLVED** (timeouts + bounded buffers added)
 3. ~~**Python linting**~~ — **RESOLVED** (ruff config in `pyproject.toml`, CI lints test files)
 4. ~~**Python unit tests**~~ — **RESOLVED** (46 tests in `tests/python/`, CI runs pytest)
-5. **Shiny app lint cleanup** — fix ~653 ruff warnings in `shiny_app/*.py` incrementally
-6. **CONTRIBUTING.md** — document build/test/PR workflow for contributors
+5. ~~**Shiny app lint cleanup**~~ — **RESOLVED** (all 653 ruff warnings fixed, 0 errors remain)
+6. ~~**CONTRIBUTING.md**~~ — **RESOLVED** (developer onboarding guide created)
+7. ~~**Integration tests**~~ — **RESOLVED** (19 Playwright + 9 Selenium tests)
 
 ---
 

@@ -30,7 +30,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added (Developer Tooling)
 - `pyproject.toml` with ruff linter configuration (E, F, W, I, UP, B, S rules)
 - 46 Python unit tests for parsers (`parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`) and `safe_resolve`
+- 19 Playwright integration tests covering app startup, navigation, and all major panels
+- 9 Selenium integration tests (gracefully skip without chromedriver)
 - CI `python-lint-test` job running ruff and pytest in parallel with Fortran build
+- `CONTRIBUTING.md` with build/test/PR workflow documentation
+- Makefile convenience targets: `make test-all`, `make test-python`, `make test-fortran`, `make lint`
+- Fixed all 653 ruff lint warnings across `shiny_app/*.py` (whitespace, imports, type annotations, bare excepts)
 
 ### Fixed
 - Guarded ~25 division-by-zero risks in sediment model (porosity, depth, mixing length, pH-to-H+ conversions)
