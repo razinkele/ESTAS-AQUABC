@@ -871,7 +871,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     end do
 
     ! Calculate the total phytoplankton.
-    PHYT_TOT_C = DIA_C + CYN_C + OPA_C + FIX_CYN_C + NOST_VEG_HET_C
+    PHYT_TOT_C(ns:ne) = DIA_C(ns:ne) + CYN_C(ns:ne) + OPA_C(ns:ne) + FIX_CYN_C(ns:ne) + NOST_VEG_HET_C(ns:ne)
 
     !**********************************!
     !**********************************!
@@ -880,9 +880,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !**********************************!
 
     ! total chlorophyl in micrograms
-    CHLA = ((DIA_C          / DIA_C_TO_CHLA    ) + (CYN_C / CYN_C_TO_CHLA) + &
-            (FIX_CYN_C      / FIX_CYN_C_TO_CHLA) + (OPA_C / OPA_C_TO_CHLA) + &
-            (NOST_VEG_HET_C / NOST_C_TO_CHLA)) * 1.0D3
+    CHLA(ns:ne) = ((DIA_C(ns:ne)          / DIA_C_TO_CHLA    ) + (CYN_C(ns:ne) / CYN_C_TO_CHLA) + &
+            (FIX_CYN_C(ns:ne)      / FIX_CYN_C_TO_CHLA) + (OPA_C(ns:ne) / OPA_C_TO_CHLA) + &
+            (NOST_VEG_HET_C(ns:ne) / NOST_C_TO_CHLA)) * 1.0D3
 
     ! Debug: print CHLA components for node 1 to find negative values (include time/context)
     ! Note: Commented out to reduce log noise - uncomment for detailed CHLA debugging
@@ -892,35 +892,37 @@ subroutine AQUABC_PELAGIC_KINETICS &
     select case (LIGHT_EXTINCTION_OPTION)
 
             case (0)
-                call light_kd(K_B_E, K_E, CHLA, nkn)
+                call light_kd(K_B_E(ns:ne), K_E(ns:ne), CHLA(ns:ne), nkn_local)
 
             case (1)
                 ! Defensive guard: ensure CHLA is non-negative before fractional exponent
-                do i = 1, nkn
+                do i = ns, ne
                     if (CHLA(i) < 0.0D0) then
+                        !$omp critical
                         write(6,'(A,I4,A,ES12.4)') 'WARN: negative CHLA at node ', i, ' value=', CHLA(i)
+                        !$omp end critical
                     end if
                 end do
-                chla_pos = CHLA
-                where (chla_pos .lt. 0.0D0)
-                    chla_pos = 0.0D0
+                chla_pos(ns:ne) = CHLA(ns:ne)
+                where (chla_pos(ns:ne) .lt. 0.0D0)
+                    chla_pos(ns:ne) = 0.0D0
                 end where
-                K_E = K_B_E + (8.8D-3 * chla_pos) + (5.4D-2 * (chla_pos ** (2.0D0 / 3.0D0)))
+                K_E(ns:ne) = K_B_E(ns:ne) + (8.8D-3 * chla_pos(ns:ne)) + (5.4D-2 * (chla_pos(ns:ne) ** (2.0D0 / 3.0D0)))
 
         end select
 
         ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
         ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
 
-    ! Populate phytoplankton environmental input bundle (zero-copy pointer assignment)
-    PHYTO_ENV%TEMP         => TEMP
-    PHYTO_ENV%I_A          => I_A
-    PHYTO_ENV%K_E          => K_E
-    PHYTO_ENV%DEPTH        => DEPTH
-    PHYTO_ENV%CHLA         => CHLA
-    PHYTO_ENV%FDAY         => FDAY
-    PHYTO_ENV%DISS_OXYGEN  => DISS_OXYGEN
-    PHYTO_ENV%WINDS        => WINDS
+    ! Populate per-thread phytoplankton environmental input bundle
+    ENV_CHUNK%TEMP         => TEMP(ns:ne)
+    ENV_CHUNK%I_A          => I_A(ns:ne)
+    ENV_CHUNK%K_E          => K_E(ns:ne)
+    ENV_CHUNK%DEPTH        => DEPTH(ns:ne)
+    ENV_CHUNK%CHLA         => CHLA(ns:ne)
+    ENV_CHUNK%FDAY         => FDAY(ns:ne)
+    ENV_CHUNK%DISS_OXYGEN  => DISS_OXYGEN(ns:ne)
+    ENV_CHUNK%WINDS        => WINDS(ns:ne)
 
     !********************
     !      DIATOMS      !
@@ -928,41 +930,41 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     !Calculations for diatom growth
     call DIATOMS(DIA_PARAMS              , &
-                 PHYTO_ENV               , &
-                 DIA_LIGHT_SAT           , &
-                 NH4_N                   , &
-                 NO3_N                   , &
-                 (PO4_P * DIP_OVER_IP)   , & ! Change, 6 July 2016, original call was PO4P
-                 DIA_C                   , &
-                 ZOO_C                   , &
-                 DISS_Si                 , &
+                 ENV_CHUNK               , &
+                 DIA_LIGHT_SAT(ns:ne)           , &
+                 NH4_N(ns:ne)                   , &
+                 NO3_N(ns:ne)                   , &
+                 (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
+                 DIA_C(ns:ne)                   , &
+                 ZOO_C(ns:ne)                   , &
+                 DISS_Si(ns:ne)                 , &
                  TIME_STEP               , &
                  SMITH                   , &
-                 nkn                     , &
-                 KG_DIA                  , &
-                 ALPHA_0                 , &
-                 ALPHA_1                 , &
-                 LIM_KG_DIA_TEMP         , &
-                 LIM_KG_DIA_LIGHT        , &
-                 LIM_KG_DIA_DOXY         , &
-                 LIM_KG_DIA_N            , &
-                 LIM_KG_DIA_P            , &
-                 LIM_KG_DIA_DISS_Si      , &
-                 LIM_KG_DIA_NUTR         , &
-                 LIM_KG_DIA              , &
-                 R_DIA_GROWTH            , &
-                 R_DIA_MET               , &
-                 R_DIA_RESP              , &
-                 R_DIA_EXCR              , &
-                 R_DIA_INT_RESP          , &
-                 KD_DIA                  , &
-                 FAC_HYPOX_DIA_D         , &
-                 R_DIA_DEATH             , &
-                 PREF_NH4N_DIA)
+                 nkn_local                     , &
+                 KG_DIA(ns:ne)                  , &
+                 ALPHA_0(ns:ne)                 , &
+                 ALPHA_1(ns:ne)                 , &
+                 LIM_KG_DIA_TEMP(ns:ne)         , &
+                 LIM_KG_DIA_LIGHT(ns:ne)        , &
+                 LIM_KG_DIA_DOXY(ns:ne)         , &
+                 LIM_KG_DIA_N(ns:ne)            , &
+                 LIM_KG_DIA_P(ns:ne)            , &
+                 LIM_KG_DIA_DISS_Si(ns:ne)      , &
+                 LIM_KG_DIA_NUTR(ns:ne)         , &
+                 LIM_KG_DIA(ns:ne)              , &
+                 R_DIA_GROWTH(ns:ne)            , &
+                 R_DIA_MET(ns:ne)               , &
+                 R_DIA_RESP(ns:ne)              , &
+                 R_DIA_EXCR(ns:ne)              , &
+                 R_DIA_INT_RESP(ns:ne)          , &
+                 KD_DIA(ns:ne)                  , &
+                 FAC_HYPOX_DIA_D(ns:ne)         , &
+                 R_DIA_DEATH(ns:ne)             , &
+                 PREF_NH4N_DIA(ns:ne))
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
-    R_DIA_GROWTH(:) = R_DIA_GROWTH(:) * GROWTH_INHIB_FACTOR_DIA(:)
+    R_DIA_GROWTH(ns:ne) = R_DIA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_DIA(ns:ne)
 
     !**************************************
     ! NON-NITROGEN FIXING CYANOBACTERIA   !
@@ -971,41 +973,41 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !Calculations for non-fixing cyanobacteria growth
     call CYANOBACTERIA_BOUYANT &
          (CYN_PARAMS              , &
-          PHYTO_ENV               , &
-          CYN_LIGHT_SAT           , &
-          NH4_N                   , &
-          NO3_N                   , &
-          DISS_ORG_N              , &
-          (PO4_P * DIP_OVER_IP)   , &
-          CYN_C                   , &
-          ZOO_C                   , &
+          ENV_CHUNK               , &
+          CYN_LIGHT_SAT(ns:ne)           , &
+          NH4_N(ns:ne)                   , &
+          NO3_N(ns:ne)                   , &
+          DISS_ORG_N(ns:ne)              , &
+          (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , &
+          CYN_C(ns:ne)                   , &
+          ZOO_C(ns:ne)                   , &
           TIME_STEP               , &
           SMITH                   , &
-          nkn                     , &
-          KG_CYN                  , &
-          ALPHA_0                 , &
-          ALPHA_1                 , &
-          LIM_KG_CYN_TEMP         , &
-          LIM_KG_CYN_LIGHT        , &
-          LIM_KG_CYN_DOXY         , &
-          LIM_KG_CYN_N            , &
-          LIM_KG_CYN_P            , &
-          LIM_KG_CYN_NUTR         , &
-          LIM_KG_CYN              , &
-          R_CYN_GROWTH            , &
-          R_CYN_MET               , &
-          R_CYN_RESP              , &
-          R_CYN_EXCR              , &
-          R_CYN_INT_RESP          , &
-          KD_CYN                  , &
-          FAC_HYPOX_CYN_D         , &
-          R_CYN_DEATH             , &
-          PREF_DIN_DON_CYN        , &
-          PREF_NH4N_CYN)
+          nkn_local                     , &
+          KG_CYN(ns:ne)                  , &
+          ALPHA_0(ns:ne)                 , &
+          ALPHA_1(ns:ne)                 , &
+          LIM_KG_CYN_TEMP(ns:ne)         , &
+          LIM_KG_CYN_LIGHT(ns:ne)        , &
+          LIM_KG_CYN_DOXY(ns:ne)         , &
+          LIM_KG_CYN_N(ns:ne)            , &
+          LIM_KG_CYN_P(ns:ne)            , &
+          LIM_KG_CYN_NUTR(ns:ne)         , &
+          LIM_KG_CYN(ns:ne)              , &
+          R_CYN_GROWTH(ns:ne)            , &
+          R_CYN_MET(ns:ne)               , &
+          R_CYN_RESP(ns:ne)              , &
+          R_CYN_EXCR(ns:ne)              , &
+          R_CYN_INT_RESP(ns:ne)          , &
+          KD_CYN(ns:ne)                  , &
+          FAC_HYPOX_CYN_D(ns:ne)         , &
+          R_CYN_DEATH(ns:ne)             , &
+          PREF_DIN_DON_CYN(ns:ne)        , &
+          PREF_NH4N_CYN(ns:ne))
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
-    R_CYN_GROWTH(:) = R_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_CYN(:)
+    R_CYN_GROWTH(ns:ne) = R_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_CYN(ns:ne)
 
 
     !********************************
@@ -1014,57 +1016,57 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
         call FIX_CYANOBACTERIA_BOUYANT  &
                (FIX_CYN_PARAMS               , &
-                PHYTO_ENV                    , &
+                ENV_CHUNK                    , &
                 TIME_STEP                    , &
                 SMITH                        , &
-                nkn                          , &
-                NH4_N                        , &
-                NO3_N                        , &
-                DISS_ORG_N                   , &
-                (PO4_P * DIP_OVER_IP)        , &
-                FIX_CYN_C                    , &
-                FIX_CYN_LIGHT_SAT            , &
-                ALPHA_0                      , &
-                ALPHA_1                      , &
-                KG_FIX_CYN                   , &
-                LIM_KG_FIX_CYN_LIGHT         , &
-                LIM_KG_FIX_CYN_TEMP          , &
-                LIM_KG_FIX_CYN_DOXY          , &
-                LIM_KG_NON_FIX_CYN_N         , &
-                LIM_KG_NON_FIX_CYN_P         , &
-                LIM_KG_NON_FIX_CYN_NUTR      , &
-                LIM_KG_FIX_FIX_CYN_N         , &
-                LIM_KG_FIX_FIX_CYN_P         , &
-                LIM_KG_FIX_FIX_CYN_NUTR      , &
-                LIM_KG_NON_FIX_CYN           , &
-                LIM_KG_FIX_FIX_CYN           , &
-                R_NON_FIX_CYN_GROWTH         , &
-                R_FIX_FIX_CYN_GROWTH         , &
-                R_FIX_CYN_GROWTH             , &
-                R_FIX_CYN_MET                , &
-                R_FIX_CYN_RESP               , &
-                R_FIX_CYN_EXCR               , &
-                R_FIX_CYN_INT_RESP           , &
-                KD_FIX_CYN                   , &
-                FAC_HYPOX_FIX_CYN_D          , &
-                R_FIX_CYN_DEATH              , &
-                PREF_NH4N_DON_FIX_CYN)
+                nkn_local                          , &
+                NH4_N(ns:ne)                        , &
+                NO3_N(ns:ne)                        , &
+                DISS_ORG_N(ns:ne)                   , &
+                (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))        , &
+                FIX_CYN_C(ns:ne)                    , &
+                FIX_CYN_LIGHT_SAT(ns:ne)            , &
+                ALPHA_0(ns:ne)                      , &
+                ALPHA_1(ns:ne)                      , &
+                KG_FIX_CYN(ns:ne)                   , &
+                LIM_KG_FIX_CYN_LIGHT(ns:ne)         , &
+                LIM_KG_FIX_CYN_TEMP(ns:ne)          , &
+                LIM_KG_FIX_CYN_DOXY(ns:ne)          , &
+                LIM_KG_NON_FIX_CYN_N(ns:ne)         , &
+                LIM_KG_NON_FIX_CYN_P(ns:ne)         , &
+                LIM_KG_NON_FIX_CYN_NUTR(ns:ne)      , &
+                LIM_KG_FIX_FIX_CYN_N(ns:ne)         , &
+                LIM_KG_FIX_FIX_CYN_P(ns:ne)         , &
+                LIM_KG_FIX_FIX_CYN_NUTR(ns:ne)      , &
+                LIM_KG_NON_FIX_CYN(ns:ne)           , &
+                LIM_KG_FIX_FIX_CYN(ns:ne)           , &
+                R_NON_FIX_CYN_GROWTH(ns:ne)         , &
+                R_FIX_FIX_CYN_GROWTH(ns:ne)         , &
+                R_FIX_CYN_GROWTH(ns:ne)             , &
+                R_FIX_CYN_MET(ns:ne)                , &
+                R_FIX_CYN_RESP(ns:ne)               , &
+                R_FIX_CYN_EXCR(ns:ne)               , &
+                R_FIX_CYN_INT_RESP(ns:ne)           , &
+                KD_FIX_CYN(ns:ne)                   , &
+                FAC_HYPOX_FIX_CYN_D(ns:ne)          , &
+                R_FIX_CYN_DEATH(ns:ne)              , &
+                PREF_NH4N_DON_FIX_CYN(ns:ne))
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
-        R_FIX_CYN_GROWTH(:)     = R_FIX_CYN_GROWTH    (:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-        R_NON_FIX_CYN_GROWTH(:) = R_NON_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
-        R_FIX_FIX_CYN_GROWTH(:) = R_FIX_FIX_CYN_GROWTH(:) * GROWTH_INHIB_FACTOR_FIX_CYN(:)
+        R_FIX_CYN_GROWTH(ns:ne)     = R_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
+        R_NON_FIX_CYN_GROWTH(ns:ne) = R_NON_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
+        R_FIX_FIX_CYN_GROWTH(ns:ne) = R_FIX_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
     else
-        FIX_CYN_C           (:) = 0.0D0
-        R_NON_FIX_CYN_GROWTH(:) = 0.0D0
-        R_FIX_FIX_CYN_GROWTH(:) = 0.0D0
-        R_FIX_CYN_GROWTH    (:) = 0.0D0
-        R_FIX_CYN_MET       (:) = 0.0D0
-        R_FIX_CYN_RESP      (:) = 0.0D0
-        R_FIX_CYN_EXCR      (:) = 0.0D0
-        R_FIX_CYN_INT_RESP  (:) = 0.0D0
-        R_FIX_CYN_DEATH     (:) = 0.0D0
+        FIX_CYN_C(ns:ne) = 0.0D0
+        R_NON_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_CYN_MET(ns:ne) = 0.0D0
+        R_FIX_CYN_RESP(ns:ne) = 0.0D0
+        R_FIX_CYN_EXCR(ns:ne) = 0.0D0
+        R_FIX_CYN_INT_RESP(ns:ne) = 0.0D0
+        R_FIX_CYN_DEATH(ns:ne) = 0.0D0
     end if
 
 
@@ -1073,37 +1075,37 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*****************************
     call OTHER_PLANKTONIC_ALGAE &
            (OPA_PARAMS              , &
-            PHYTO_ENV               , &
-            OPA_LIGHT_SAT           , &
-            NH4_N                   , &
-            NO3_N                   , &
-            (PO4_P * DIP_OVER_IP)   , & ! Change, 6 July 2016, original call was PO4P
-            OPA_C                   , &
-            ZOO_C                   , &
+            ENV_CHUNK               , &
+            OPA_LIGHT_SAT(ns:ne)           , &
+            NH4_N(ns:ne)                   , &
+            NO3_N(ns:ne)                   , &
+            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
+            OPA_C(ns:ne)                   , &
+            ZOO_C(ns:ne)                   , &
             TIME_STEP               , &
             SMITH                   , &
-            nkn                     , &
-            KG_OPA                  , &
-            ALPHA_0                 , &
-            ALPHA_1                 , &
-            LIM_KG_OPA_TEMP         , &
-            LIM_KG_OPA_LIGHT        , &
-            LIM_KG_OPA_DOXY         , &
-            LIM_KG_OPA_N            , &
-            LIM_KG_OPA_P            , &
-            LIM_KG_OPA_NUTR         , &
-            LIM_KG_OPA              , &
-            R_OPA_GROWTH            , &
-            R_OPA_MET               , &
-            R_OPA_RESP              , &
-            R_OPA_EXCR              , &
-            R_OPA_INT_RESP          , &
-            KD_OPA                  , &
-            FAC_HYPOX_OPA_D         , &
-            R_OPA_DEATH             , &
-            PREF_NH4N_OPA)
+            nkn_local                     , &
+            KG_OPA(ns:ne)                  , &
+            ALPHA_0(ns:ne)                 , &
+            ALPHA_1(ns:ne)                 , &
+            LIM_KG_OPA_TEMP(ns:ne)         , &
+            LIM_KG_OPA_LIGHT(ns:ne)        , &
+            LIM_KG_OPA_DOXY(ns:ne)         , &
+            LIM_KG_OPA_N(ns:ne)            , &
+            LIM_KG_OPA_P(ns:ne)            , &
+            LIM_KG_OPA_NUTR(ns:ne)         , &
+            LIM_KG_OPA(ns:ne)              , &
+            R_OPA_GROWTH(ns:ne)            , &
+            R_OPA_MET(ns:ne)               , &
+            R_OPA_RESP(ns:ne)              , &
+            R_OPA_EXCR(ns:ne)              , &
+            R_OPA_INT_RESP(ns:ne)          , &
+            KD_OPA(ns:ne)                  , &
+            FAC_HYPOX_OPA_D(ns:ne)         , &
+            R_OPA_DEATH(ns:ne)             , &
+            PREF_NH4N_OPA(ns:ne))
 
-        R_OPA_GROWTH(:) = R_OPA_GROWTH(:) * GROWTH_INHIB_FACTOR_OPA(:)
+        R_OPA_GROWTH(ns:ne) = R_OPA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_OPA(ns:ne)
     !******************************!
     !******************************!
     !          NOSTOCALES          !
@@ -1114,76 +1116,76 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (DO_NOSTOCALES > 0) then
 
         ! Calls to the routines that should be incorporated to NOSTOCALES
-        call DOP_DIP_PREFS(PREF_DIP_DOP_NOST, (frac_avail_DOP * DISS_ORG_P), &
-              (PO4_P * DIP_OVER_IP) , KHS_DP_NOST_VEG_HET, nkn)
+        call DOP_DIP_PREFS(PREF_DIP_DOP_NOST(ns:ne), (frac_avail_DOP * DISS_ORG_P(ns:ne)), &
+              (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne)) , KHS_DP_NOST_VEG_HET, nkn_local)
 
         call DIN_DON_PREFS &
-             (PREF_DIN_DON_NOST, NH4_N, DISS_ORG_N, &
-              frac_avail_DON_NOST, NO3_N, KHS_DN_NOST_VEG_HET, nkn)
+             (PREF_DIN_DON_NOST(ns:ne), NH4_N(ns:ne), DISS_ORG_N(ns:ne), &
+              frac_avail_DON_NOST, NO3_N(ns:ne), KHS_DN_NOST_VEG_HET, nkn_local)
 
         call AMMONIA_PREFS &
-            (PREF_NH4N_NOST, (NH4_N * PREF_DIN_DON_NOST), &
-             (NO3_N * PREF_DIN_DON_NOST), KHS_DN_NOST_VEG_HET, nkn)
+            (PREF_NH4N_NOST(ns:ne), (NH4_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), &
+             (NO3_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), KHS_DN_NOST_VEG_HET, nkn_local)
 
         call NOSTOCALES &
            (NOST_PARAMS                       , &
-            PHYTO_ENV                         , &
+            ENV_CHUNK                         , &
             TIME_STEP                         , &
             DAY_OF_YEAR                       , &
             SMITH                             , &
-            nkn                               , &
-            NOST_LIGHT_SAT                    , &
-            (NH4_N + NO3_N)                   , &
-            frac_avail_DON_NOST * DISS_ORG_N  , &
-            (PO4_P * DIP_OVER_IP + frac_avail_DOP * DISS_ORG_P) , &
-            NOST_VEG_HET_C                    , &
-            NOST_AKI_C                        , &
-            KG_NOST_VEG_HET                   , &
-            LIM_KG_NOST_VEG_HET_LIGHT         , &
-            LIM_KG_NOST_VEG_HET_TEMP          , &
-            LIM_KG_NOST_VEG_HET_DOXY          , &
-            LIM_KG_NOST_VEG_HET_N             , &
-            LIM_KG_NOST_VEG_HET_P             , &
-            LIM_KG_NOST_VEG_HET_FIX           , &
-            LIM_KG_NOST_VEG_HET_NON_FIX       , &
-            R_NOST_VEG_HET_GROWTH             , &
-            R_NOST_VEG_HET_FIX_GROWTH         , &
-            R_NOST_VEG_HET_NON_FIX_GROWTH     , &
-            R_NOST_VEG_HET_MET                , &
-            R_NOST_VEG_HET_RESP               , &
-            R_NOST_VEG_HET_EXCR               , &
-            R_NOST_VEG_HET_INT_RESP           , &
-            KD_NOST_VEG_HET                   , &
-            FAC_HYPOX_NOST_VEG_HET_D          , &
-            R_NOST_VEG_HET_DEATH              , &
-            R_DENS_MORT_NOST_VEG_HET          , &
-            R_GERM_NOST_AKI                   , &
-            R_FORM_NOST_AKI                   , &
-            R_LOSS_AKI                        , &
-            R_MORT_AKI)
+            nkn_local                               , &
+            NOST_LIGHT_SAT(ns:ne)                    , &
+            (NH4_N(ns:ne) + NO3_N(ns:ne))                   , &
+            frac_avail_DON_NOST * DISS_ORG_N(ns:ne)  , &
+            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne) + frac_avail_DOP * DISS_ORG_P(ns:ne)) , &
+            NOST_VEG_HET_C(ns:ne)                    , &
+            NOST_AKI_C(ns:ne)                        , &
+            KG_NOST_VEG_HET(ns:ne)                   , &
+            LIM_KG_NOST_VEG_HET_LIGHT(ns:ne)         , &
+            LIM_KG_NOST_VEG_HET_TEMP(ns:ne)          , &
+            LIM_KG_NOST_VEG_HET_DOXY(ns:ne)          , &
+            LIM_KG_NOST_VEG_HET_N(ns:ne)             , &
+            LIM_KG_NOST_VEG_HET_P(ns:ne)             , &
+            LIM_KG_NOST_VEG_HET_FIX(ns:ne)           , &
+            LIM_KG_NOST_VEG_HET_NON_FIX(ns:ne)       , &
+            R_NOST_VEG_HET_GROWTH(ns:ne)             , &
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne)         , &
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne)     , &
+            R_NOST_VEG_HET_MET(ns:ne)                , &
+            R_NOST_VEG_HET_RESP(ns:ne)               , &
+            R_NOST_VEG_HET_EXCR(ns:ne)               , &
+            R_NOST_VEG_HET_INT_RESP(ns:ne)           , &
+            KD_NOST_VEG_HET(ns:ne)                   , &
+            FAC_HYPOX_NOST_VEG_HET_D(ns:ne)          , &
+            R_NOST_VEG_HET_DEATH(ns:ne)              , &
+            R_DENS_MORT_NOST_VEG_HET(ns:ne)          , &
+            R_GERM_NOST_AKI(ns:ne)                   , &
+            R_FORM_NOST_AKI(ns:ne)                   , &
+            R_LOSS_AKI(ns:ne)                        , &
+            R_MORT_AKI(ns:ne))
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models
-            R_NOST_VEG_HET_GROWTH        (:) = &
-                R_NOST_VEG_HET_GROWTH        (:) * GROWTH_INHIB_FACTOR_NOST(:)
+            R_NOST_VEG_HET_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
 
-            R_NOST_VEG_HET_NON_FIX_GROWTH(:) = &
-                R_NOST_VEG_HET_NON_FIX_GROWTH(:) * GROWTH_INHIB_FACTOR_NOST(:)
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
 
-            R_NOST_VEG_HET_FIX_GROWTH    (:) = &
-                R_NOST_VEG_HET_FIX_GROWTH    (:) * GROWTH_INHIB_FACTOR_NOST(:)
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
     else
-        R_NOST_VEG_HET_GROWTH    = 0.0D0
-        R_NOST_VEG_HET_MET       = 0.0D0
-        R_NOST_VEG_HET_RESP      = 0.0D0
-        R_NOST_VEG_HET_EXCR      = 0.0D0
-        R_NOST_VEG_HET_INT_RESP  = 0.0D0
-        R_NOST_VEG_HET_DEATH     = 0.0D0
-        R_DENS_MORT_NOST_VEG_HET = 0.0D0
-        R_GERM_NOST_AKI          = 0.0D0
-        R_FORM_NOST_AKI          = 0.0D0
-        R_LOSS_AKI               = 0.0D0
-        R_MORT_AKI               = 0.0D0
+        R_NOST_VEG_HET_GROWTH(ns:ne)    = 0.0D0
+        R_NOST_VEG_HET_MET(ns:ne)       = 0.0D0
+        R_NOST_VEG_HET_RESP(ns:ne)      = 0.0D0
+        R_NOST_VEG_HET_EXCR(ns:ne)      = 0.0D0
+        R_NOST_VEG_HET_INT_RESP(ns:ne)  = 0.0D0
+        R_NOST_VEG_HET_DEATH(ns:ne)     = 0.0D0
+        R_DENS_MORT_NOST_VEG_HET(ns:ne) = 0.0D0
+        R_GERM_NOST_AKI(ns:ne)          = 0.0D0
+        R_FORM_NOST_AKI(ns:ne)          = 0.0D0
+        R_LOSS_AKI(ns:ne)               = 0.0D0
+        R_MORT_AKI(ns:ne)               = 0.0D0
     end if
 
 
@@ -1194,77 +1196,85 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !******************************!
     call ZOOPLANKTON &
            (ZOO_PARAMS                       , &
-            PHYTO_ENV                        , &
-            DIA_C                         , &
-            CYN_C                         , &
-            OPA_C                         , &
-            FIX_CYN_C                     , &
-            NOST_VEG_HET_C                , &
-            DET_PART_ORG_C                , &
-            ZOO_C                         , &
+            ENV_CHUNK                        , &
+            DIA_C(ns:ne)                         , &
+            CYN_C(ns:ne)                         , &
+            OPA_C(ns:ne)                         , &
+            FIX_CYN_C(ns:ne)                     , &
+            NOST_VEG_HET_C(ns:ne)                , &
+            DET_PART_ORG_C(ns:ne)                , &
+            ZOO_C(ns:ne)                         , &
             TIME_STEP                     , &
-            nkn                           , &
-            KG_ZOO                        , &
-            KG_ZOO_DIA                    , &
-            KG_ZOO_CYN                    , &
-            KG_ZOO_OPA                    , &
-            KG_ZOO_FIX_CYN                , &
-            KG_ZOO_NOST_VEG_HET           , &
-            KG_ZOO_DET_PART_ORG_C         , &
-            KD_ZOO                        , &
-            FOOD_FACTOR_ZOO_DIA           , &
-            FOOD_FACTOR_ZOO_CYN           , &
-            FOOD_FACTOR_ZOO_OPA           , &
-            FOOD_FACTOR_ZOO_FIX_CYN       , &
-            FOOD_FACTOR_ZOO_NOST_VEG_HET  , &
-            FOOD_FACTOR_ZOO_DET_PART_ORG_C, &
-            R_ZOO_FEEDING_DIA             , &
-            R_ZOO_FEEDING_CYN             , &
-            R_ZOO_FEEDING_FIX_CYN         , &
-            R_ZOO_FEEDING_NOST_VEG_HET    , &
-            R_ZOO_FEEDING_OPA             , &
-            R_ZOO_FEEDING_DET_PART_ORG_C  , &
-            R_ZOO_INT_RESP                , &
-            R_ZOO_RESP                    , &
-            R_ZOO_EX_DON                  , &
-            R_ZOO_EX_DOP                  , &
-            R_ZOO_EX_DOC                  , &
-            R_ZOO_DEATH                   , &
-            ACTUAL_ZOO_N_TO_C             , &
-            ACTUAL_ZOO_P_TO_C             , &
-            R_ZOO_GROWTH                  , &
-            FAC_HYPOX_ZOO_D)
+            nkn_local                           , &
+            KG_ZOO(ns:ne)                        , &
+            KG_ZOO_DIA(ns:ne)                    , &
+            KG_ZOO_CYN(ns:ne)                    , &
+            KG_ZOO_OPA(ns:ne)                    , &
+            KG_ZOO_FIX_CYN(ns:ne)                , &
+            KG_ZOO_NOST_VEG_HET(ns:ne)           , &
+            KG_ZOO_DET_PART_ORG_C(ns:ne)         , &
+            KD_ZOO(ns:ne)                        , &
+            FOOD_FACTOR_ZOO_DIA(ns:ne)           , &
+            FOOD_FACTOR_ZOO_CYN(ns:ne)           , &
+            FOOD_FACTOR_ZOO_OPA(ns:ne)           , &
+            FOOD_FACTOR_ZOO_FIX_CYN(ns:ne)       , &
+            FOOD_FACTOR_ZOO_NOST_VEG_HET(ns:ne)  , &
+            FOOD_FACTOR_ZOO_DET_PART_ORG_C(ns:ne), &
+            R_ZOO_FEEDING_DIA(ns:ne)             , &
+            R_ZOO_FEEDING_CYN(ns:ne)             , &
+            R_ZOO_FEEDING_FIX_CYN(ns:ne)         , &
+            R_ZOO_FEEDING_NOST_VEG_HET(ns:ne)    , &
+            R_ZOO_FEEDING_OPA(ns:ne)             , &
+            R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne)  , &
+            R_ZOO_INT_RESP(ns:ne)                , &
+            R_ZOO_RESP(ns:ne)                    , &
+            R_ZOO_EX_DON(ns:ne)                  , &
+            R_ZOO_EX_DOP(ns:ne)                  , &
+            R_ZOO_EX_DOC(ns:ne)                  , &
+            R_ZOO_DEATH(ns:ne)                   , &
+            ACTUAL_ZOO_N_TO_C(ns:ne)             , &
+            ACTUAL_ZOO_P_TO_C(ns:ne)             , &
+            R_ZOO_GROWTH(ns:ne)                  , &
+            FAC_HYPOX_ZOO_D(ns:ne))
 
-    R_ZOO_FEEDING_DIA           (:) = &
-        R_ZOO_FEEDING_DIA           (:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_DIA(ns:ne) = &
+        R_ZOO_FEEDING_DIA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
-    R_ZOO_FEEDING_CYN           (:) = &
-        R_ZOO_FEEDING_CYN           (:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_CYN(ns:ne) = &
+        R_ZOO_FEEDING_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
-    R_ZOO_FEEDING_FIX_CYN       (:) = &
-        R_ZOO_FEEDING_FIX_CYN       (:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_FIX_CYN(ns:ne) = &
+        R_ZOO_FEEDING_FIX_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
-    R_ZOO_FEEDING_NOST_VEG_HET  (:) = &
-        R_ZOO_FEEDING_NOST_VEG_HET  (:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) = &
+        R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
-    R_ZOO_FEEDING_OPA           (:) = &
-        R_ZOO_FEEDING_OPA           (:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_OPA(ns:ne) = &
+        R_ZOO_FEEDING_OPA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
-    R_ZOO_FEEDING_DET_PART_ORG_C(:) = &
-        R_ZOO_FEEDING_DET_PART_ORG_C(:) * GROWTH_INHIB_FACTOR_ZOO(:)
+    R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) = &
+        R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
     if (ZOOP_OPTION_1 > 0) then
-        ACTUAL_ZOO_N_TO_C = ZOO_N / max(ZOO_C, MIN_CONCENTRATION)
-        ACTUAL_ZOO_P_TO_C = ZOO_P / max(ZOO_C, MIN_CONCENTRATION)
+        ACTUAL_ZOO_N_TO_C(ns:ne) = ZOO_N(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION)
+        ACTUAL_ZOO_P_TO_C(ns:ne) = ZOO_P(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION)
     end if
 
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_R_ZOO_RESP_01(TIME, nkn, nstate, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
 
     !*********************************************************************!
@@ -1276,53 +1286,53 @@ subroutine AQUABC_PELAGIC_KINETICS &
             KDISS_DET_PART_ORG_C_20     , &
             THETA_KDISS_DET_PART_ORG_C  , &
             KHS_POC_DISS_SAT            , &
-            nkn                         , &
-            TEMP                        , &
-            DET_PART_ORG_C              , &
-            PHYT_TOT_C                  , &
-            LIM_PHYT_DISS_DET_PART_ORG_C, &
-            R_DET_PART_ORG_C_DISSOLUTION)
+            nkn_local                         , &
+            TEMP(ns:ne)                        , &
+            DET_PART_ORG_C(ns:ne)              , &
+            PHYT_TOT_C(ns:ne)                  , &
+            LIM_PHYT_DISS_DET_PART_ORG_C(ns:ne), &
+            R_DET_PART_ORG_C_DISSOLUTION(ns:ne))
 
-    ACTUAL_DET_N_TO_C = DET_PART_ORG_N / max(DET_PART_ORG_C, MIN_CONCENTRATION)
-    ACTUAL_DET_P_TO_C = DET_PART_ORG_P / max(DET_PART_ORG_C, MIN_CONCENTRATION)
+    ACTUAL_DET_N_TO_C(ns:ne) = DET_PART_ORG_N(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
+    ACTUAL_DET_P_TO_C(ns:ne) = DET_PART_ORG_P(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
 
     ! Nitrogen dissolution
 
     ! Accerelation of hydrolysis when DIN is scarce
-    LIM_N_DISS_DET_PART_ORG_N = KHS_DISS_N / (KHS_DISS_N + (NH4_N + NO3_N))
-    LIM_PHY_N_DISS_DET_PART_ORG_N = LIM_N_DISS_DET_PART_ORG_N * FAC_PHYT_DET_PART_ORG_N * PHYT_TOT_C
+    LIM_N_DISS_DET_PART_ORG_N(ns:ne) = KHS_DISS_N / (KHS_DISS_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
+    LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne) = LIM_N_DISS_DET_PART_ORG_N(ns:ne) * FAC_PHYT_DET_PART_ORG_N * PHYT_TOT_C(ns:ne)
 
-    R_DET_PART_ORG_N_DISSOLUTION = (KDISS_DET_PART_ORG_N_20 + LIM_PHY_N_DISS_DET_PART_ORG_N) * &
-       (THETA_KDISS_DET_PART_ORG_N ** (TEMP - 2.0D1)) * DET_PART_ORG_N * &
-       (KHS_PON_DISS_SAT/(DET_PART_ORG_N + KHS_PON_DISS_SAT))
+    R_DET_PART_ORG_N_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_N_20 + LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne)) * &
+       (THETA_KDISS_DET_PART_ORG_N ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_N(ns:ne) * &
+       (KHS_PON_DISS_SAT/(DET_PART_ORG_N(ns:ne) + KHS_PON_DISS_SAT))
 
     ! Phosphorus dissolution
 
     ! Accerelation of hydrolysis when DIP is scarce
-    LIM_P_DISS_DET_PART_ORG_P = KHS_DISS_P / (KHS_DISS_P + DIP_OVER_IP*PO4_P)
-    LIM_PHY_P_DISS_DET_PART_ORG_P = LIM_P_DISS_DET_PART_ORG_P * FAC_PHYT_DET_PART_ORG_P * PHYT_TOT_C
+    LIM_P_DISS_DET_PART_ORG_P(ns:ne) = KHS_DISS_P / (KHS_DISS_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
+    LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne) = LIM_P_DISS_DET_PART_ORG_P(ns:ne) * FAC_PHYT_DET_PART_ORG_P * PHYT_TOT_C(ns:ne)
 
-    R_DET_PART_ORG_P_DISSOLUTION = (KDISS_DET_PART_ORG_P_20 + LIM_PHY_P_DISS_DET_PART_ORG_P) * &
-       (THETA_KDISS_DET_PART_ORG_P ** (TEMP - 2.0D1)) * DET_PART_ORG_P * &
-       (KHS_POP_DISS_SAT/(DET_PART_ORG_P + KHS_POP_DISS_SAT))
+    R_DET_PART_ORG_P_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_P_20 + LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne)) * &
+       (THETA_KDISS_DET_PART_ORG_P ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_P(ns:ne) * &
+       (KHS_POP_DISS_SAT/(DET_PART_ORG_P(ns:ne) + KHS_POP_DISS_SAT))
 
     !Diatom total respiration rate
-    R_DIA_TOT_RESP               = R_DIA_RESP                + R_DIA_INT_RESP
+    R_DIA_TOT_RESP(ns:ne)               = R_DIA_RESP(ns:ne)                + R_DIA_INT_RESP(ns:ne)
 
     !Non-fixing cyanobacteria total respiration rate
-    R_CYN_TOT_RESP               = R_CYN_RESP                + R_CYN_INT_RESP
+    R_CYN_TOT_RESP(ns:ne)               = R_CYN_RESP(ns:ne)                + R_CYN_INT_RESP(ns:ne)
 
     !Other planktonic algae total respiration rate
-    R_OPA_TOT_RESP               = R_OPA_RESP                + R_OPA_INT_RESP
+    R_OPA_TOT_RESP(ns:ne)               = R_OPA_RESP(ns:ne)                + R_OPA_INT_RESP(ns:ne)
 
     !Nitrogen fixing cyanobacteria total respiration rate
-    R_FIX_CYN_TOT_RESP           = R_FIX_CYN_RESP            + R_FIX_CYN_INT_RESP
+    R_FIX_CYN_TOT_RESP(ns:ne)           = R_FIX_CYN_RESP(ns:ne)            + R_FIX_CYN_INT_RESP(ns:ne)
 
     !Nostacles
-    R_NOST_VEG_HET_TOT_RESP      = R_NOST_VEG_HET_RESP       + R_NOST_VEG_HET_INT_RESP
+    R_NOST_VEG_HET_TOT_RESP(ns:ne)      = R_NOST_VEG_HET_RESP(ns:ne)       + R_NOST_VEG_HET_INT_RESP(ns:ne)
 
     !Zooplankton total respiration rate
-    R_ZOO_TOT_RESP               = R_ZOO_INT_RESP            + R_ZOO_RESP
+    R_ZOO_TOT_RESP(ns:ne)               = R_ZOO_INT_RESP(ns:ne)            + R_ZOO_RESP(ns:ne)
 
 
     !*********************************************************************!
@@ -1330,8 +1340,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*********************************************************************!
 
     !Dissolution rate of biogenic silicon
-    R_PART_Si_DISS = KDISS_PART_SI_20 * &
-            (THETA_KDISS_PART_SI ** (TEMP - 2.0D1)) * PART_SI
+    R_PART_Si_DISS(ns:ne) = KDISS_PART_SI_20 * &
+            (THETA_KDISS_PART_SI ** (TEMP(ns:ne) - 2.0D1)) * PART_SI(ns:ne)
 
 
     !*********************************************************************!
@@ -1342,68 +1352,88 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !Algal dependent mineralisation rate
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        ! Populate DOC mineralization outputs bundle (zero-copy pointer assignment)
-        DOCMIN_OUTPUTS%LIM_PHYT_AMIN_DOC          => LIM_PHYT_AMIN_DOC
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_DOXY     => R_ABIOTIC_DOC_MIN_DOXY
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_NO3N     => R_ABIOTIC_DOC_MIN_NO3N
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_MN_IV    => R_ABIOTIC_DOC_MIN_MN_IV
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_FE_III   => R_ABIOTIC_DOC_MIN_FE_III
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_S_PLUS_6 => R_ABIOTIC_DOC_MIN_S_PLUS_6
-        DOCMIN_OUTPUTS%R_ABIOTIC_DOC_MIN_DOC      => R_ABIOTIC_DOC_MIN_DOC
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_DOXY       => PH_CORR_DOC_MIN_DOXY
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_NO3N       => PH_CORR_DOC_MIN_NO3N
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_MN_IV      => PH_CORR_DOC_MIN_MN_IV
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_FE_III     => PH_CORR_DOC_MIN_FE_III
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_S_PLUS_6   => PH_CORR_DOC_MIN_S_PLUS_6
-        DOCMIN_OUTPUTS%PH_CORR_DOC_MIN_DOC        => PH_CORR_DOC_MIN_DOC
+        ! Populate per-thread DOC mineralization outputs bundle
+        DOCMIN_CHUNK%LIM_PHYT_AMIN_DOC          => LIM_PHYT_AMIN_DOC(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOXY     => R_ABIOTIC_DOC_MIN_DOXY(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_NO3N     => R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_MN_IV    => R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_FE_III   => R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_S_PLUS_6 => R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOC      => R_ABIOTIC_DOC_MIN_DOC(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOXY       => PH_CORR_DOC_MIN_DOXY(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_NO3N       => PH_CORR_DOC_MIN_NO3N(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_MN_IV      => PH_CORR_DOC_MIN_MN_IV(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_FE_III     => PH_CORR_DOC_MIN_FE_III(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_S_PLUS_6   => PH_CORR_DOC_MIN_S_PLUS_6(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOC        => PH_CORR_DOC_MIN_DOC(ns:ne)
+
+        ! Populate per-thread redox state and limitation bundles
+        REDOX_STATE_CHUNK%DOXY       => DISS_OXYGEN(ns:ne)
+        REDOX_STATE_CHUNK%NO3N       => NO3_N(ns:ne)
+        REDOX_STATE_CHUNK%MN_IV      => MN_IV(ns:ne)
+        REDOX_STATE_CHUNK%FE_III     => FE_III(ns:ne)
+        REDOX_STATE_CHUNK%S_PLUS_6   => S_PLUS_6(ns:ne)
+        REDOX_STATE_CHUNK%DISS_ORG_C => DISS_ORG_C(ns:ne)
+        REDOX_STATE_CHUNK%S_MINUS_2  => S_MINUS_2(ns:ne)
+        REDOX_STATE_CHUNK%MN_II      => MN_II(ns:ne)
+        REDOX_STATE_CHUNK%FE_II      => FE_II(ns:ne)
+        REDOX_STATE_CHUNK%HCO3       => HCO3(ns:ne)
+        REDOX_STATE_CHUNK%CO3        => CO3(ns:ne)
+
+        REDOX_LIM_CHUNK%LIM_DOXY_RED     => LIM_DOXY_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_NO3N_RED     => LIM_NO3N_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_MN_IV_RED    => LIM_MN_IV_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_FE_III_RED   => LIM_FE_III_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_DOC_RED      => LIM_DOC_RED(ns:ne)
 
         call ORGANIC_CARBON_MINERALIZATION &
-                (nkn                         , &
-                 TEMP                        , &
-                 PH                          , &
-                 PHYT_TOT_C                  , &
+                (nkn_local                   , &
+                 TEMP(ns:ne)                        , &
+                 PH(ns:ne)                          , &
+                 PHYT_TOT_C(ns:ne)                  , &
                  DOCMIN_PARAMS               , &
                  REDOX_PARAMS                , &
-                 REDOX_STATE                 , &
-                 REDOX_LIM                   , &
-                 DOCMIN_OUTPUTS)
+                 REDOX_STATE_CHUNK           , &
+                 REDOX_LIM_CHUNK             , &
+                 DOCMIN_CHUNK)
     else
-        where (PHYT_TOT_C .gt. K_MIN_PHYT_AMIN_DOC)
-            LIM_PHYT_AMIN_DOC = FAC_PHYT_AMIN_DOC * (PHYT_TOT_C - K_MIN_PHYT_AMIN_DOC)
+        where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOC)
+            LIM_PHYT_AMIN_DOC(ns:ne) = FAC_PHYT_AMIN_DOC * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOC)
         elsewhere
-            LIM_PHYT_AMIN_DOC = 0.D0
+            LIM_PHYT_AMIN_DOC(ns:ne) = 0.D0
         end where
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DOC_MIN_DOXY, PH, PH_MIN_DOC_MIN_DOXY, PH_MAX_DOC_MIN_DOXY, nkn)
+             (PH_CORR_DOC_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_DOXY, PH_MAX_DOC_MIN_DOXY, nkn_local)
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DOC_MIN_NO3N, PH, PH_MIN_DOC_MIN_NO3N, PH_MAX_DOC_MIN_NO3N, nkn)
+             (PH_CORR_DOC_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_NO3N, PH_MAX_DOC_MIN_NO3N, nkn_local)
 
-        R_ABIOTIC_DOC_MIN_DOXY = &
-            (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC) * &
-            (THETA_K_MIN_DOC_DOXY ** (TEMP - 2.0D1)) * LIM_DOXY_RED * &
-            PH_CORR_DOC_MIN_DOXY * &
-            (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_DOXY)) * DISS_ORG_C
+        R_ABIOTIC_DOC_MIN_DOXY(ns:ne) = &
+            (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC(ns:ne)) * &
+            (THETA_K_MIN_DOC_DOXY ** (TEMP(ns:ne) - 2.0D1)) * LIM_DOXY_RED(ns:ne) * &
+            PH_CORR_DOC_MIN_DOXY(ns:ne) * &
+            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_DOXY)) * DISS_ORG_C(ns:ne)
 
-        R_ABIOTIC_DOC_MIN_NO3N = &
-            K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP - 2.0D1)) * &
-            LIM_NO3N_RED * PH_CORR_DOC_MIN_NO3N * &
-            (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_NO3N)) * DISS_ORG_C
+        R_ABIOTIC_DOC_MIN_NO3N(ns:ne) = &
+            K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_NO3N_RED(ns:ne) * PH_CORR_DOC_MIN_NO3N(ns:ne) * &
+            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_NO3N)) * DISS_ORG_C(ns:ne)
 
-        R_ABIOTIC_DOC_MIN_MN_IV    = 0.0D0
-        R_ABIOTIC_DOC_MIN_FE_III   = 0.0D0
-        R_ABIOTIC_DOC_MIN_S_PLUS_6 = 0.0D0
-        R_ABIOTIC_DOC_MIN_DOC      = 0.0D0
+        R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)    = 0.0D0
+        R_ABIOTIC_DOC_MIN_FE_III(ns:ne)   = 0.0D0
+        R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne) = 0.0D0
+        R_ABIOTIC_DOC_MIN_DOC(ns:ne)      = 0.0D0
     end if
 
     ! Accerelation of mineralisation when DIN is scarce
-    LIM_N_AMIN_DON = KHS_AMIN_N / (KHS_AMIN_N + (NH4_N + NO3_N))
+    LIM_N_AMIN_DON(ns:ne) = KHS_AMIN_N / (KHS_AMIN_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
 
-    where (PHYT_TOT_C .gt. K_MIN_PHYT_AMIN_DON)
-        LIM_PHY_N_AMIN_DON = LIM_N_AMIN_DON * FAC_PHYT_AMIN_DON * (PHYT_TOT_C - K_MIN_PHYT_AMIN_DON)
+    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DON)
+        LIM_PHY_N_AMIN_DON(ns:ne) = LIM_N_AMIN_DON(ns:ne) * FAC_PHYT_AMIN_DON * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DON)
     elsewhere
-        LIM_PHY_N_AMIN_DON = 0.D0
+        LIM_PHY_N_AMIN_DON(ns:ne) = 0.D0
     end where
 
     ! -------------------------------------------------------------------------
@@ -1417,73 +1447,73 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !frac_avail_DON - fraction available for cyanobacteria
 
     call CALCULATE_PH_CORR &
-         (PH_CORR_DON_MIN_DOXY, PH, PH_MIN_DON_MIN_DOXY, PH_MAX_DON_MIN_DOXY, nkn)
+         (PH_CORR_DON_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_DOXY, PH_MAX_DON_MIN_DOXY, nkn_local)
 
     call CALCULATE_PH_CORR &
-         (PH_CORR_DON_MIN_NO3N, PH, PH_MIN_DON_MIN_NO3N, PH_MAX_DON_MIN_NO3N, nkn)
+         (PH_CORR_DON_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_NO3N, PH_MAX_DON_MIN_NO3N, nkn_local)
 
-    where(DISS_ORG_N .le. 0.D0)
-        LIM_DON_DON = 0.D0
+    where(DISS_ORG_N(ns:ne) .le. 0.D0)
+        LIM_DON_DON(ns:ne) = 0.D0
     elsewhere
-        LIM_DON_DON = DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_DOXY)
+        LIM_DON_DON(ns:ne) = DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOXY)
     end where
 
-    R_ABIOTIC_DON_MIN_DOXY = &
-        (K_MIN_DON_DOXY_20 + LIM_PHY_N_AMIN_DON) * &
-        (THETA_K_MIN_DON_DOXY ** (TEMP - 2.0D1)) * &
-        LIM_DOXY_RED * PH_CORR_DON_MIN_DOXY * &
-        LIM_DON_DON * &
-        DISS_ORG_N !(1.0D0 - frac_avail_DON)
+    R_ABIOTIC_DON_MIN_DOXY(ns:ne) = &
+        (K_MIN_DON_DOXY_20 + LIM_PHY_N_AMIN_DON(ns:ne)) * &
+        (THETA_K_MIN_DON_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_DOXY_RED(ns:ne) * PH_CORR_DON_MIN_DOXY(ns:ne) * &
+        LIM_DON_DON(ns:ne) * &
+        DISS_ORG_N(ns:ne) !(1.0D0 - frac_avail_DON)
 
     ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
     ! rate calculation differs
-    R_ABIOTIC_DON_MIN_NO3N = &
-        K_MIN_DON_NO3N_20  * (THETA_K_MIN_DON_NO3N ** (TEMP - 2.0D1)) * &
-        LIM_NO3N_RED * PH_CORR_DON_MIN_NO3N * &
-        (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_NO3N)) * DISS_ORG_N
+    R_ABIOTIC_DON_MIN_NO3N(ns:ne) = &
+        K_MIN_DON_NO3N_20  * (THETA_K_MIN_DON_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_NO3N_RED(ns:ne) * PH_CORR_DON_MIN_NO3N(ns:ne) * &
+        (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_NO3N)) * DISS_ORG_N(ns:ne)
 
-    R_ABIOTIC_DON_MIN_MN_IV    = 0.0D0
-    R_ABIOTIC_DON_MIN_FE_III   = 0.0D0
-    R_ABIOTIC_DON_MIN_S_PLUS_6 = 0.0D0
-    R_ABIOTIC_DON_MIN_DOC      = 0.0D0
+    R_ABIOTIC_DON_MIN_MN_IV(ns:ne)    = 0.0D0
+    R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = 0.0D0
+    R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = 0.0D0
+    R_ABIOTIC_DON_MIN_DOC(ns:ne)      = 0.0D0
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_MN_IV   , PH, PH_MIN_DON_MIN_MN_IV   , &
-              PH_MAX_DON_MIN_MN_IV   , nkn)
+             (PH_CORR_DON_MIN_MN_IV(ns:ne)   , PH(ns:ne), PH_MIN_DON_MIN_MN_IV   , &
+              PH_MAX_DON_MIN_MN_IV   , nkn_local)
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_FE_III  , PH, PH_MIN_DON_MIN_FE_III  , &
-              PH_MAX_DON_MIN_FE_III  , nkn)
+             (PH_CORR_DON_MIN_FE_III(ns:ne)  , PH(ns:ne), PH_MIN_DON_MIN_FE_III  , &
+              PH_MAX_DON_MIN_FE_III  , nkn_local)
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_S_PLUS_6, PH, PH_MIN_DON_MIN_S_PLUS_6, &
-              PH_MAX_DON_MIN_S_PLUS_6, nkn)
+             (PH_CORR_DON_MIN_S_PLUS_6(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_S_PLUS_6, &
+              PH_MAX_DON_MIN_S_PLUS_6, nkn_local)
 
         call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_DOC     , PH, PH_MIN_DON_MIN_DOC     , &
-              PH_MAX_DON_MIN_DOC     , nkn)
+             (PH_CORR_DON_MIN_DOC(ns:ne)     , PH(ns:ne), PH_MIN_DON_MIN_DOC     , &
+              PH_MAX_DON_MIN_DOC     , nkn_local)
 
-        R_ABIOTIC_DON_MIN_MN_IV   = &
-            K_MIN_DON_MN_IV_20     * (THETA_K_MIN_DON_MN_IV    ** (TEMP - 2.0D1)) * &
-            LIM_MN_IV_RED * PH_CORR_DON_MIN_MN_IV * &
-            (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_MN_IV)) * DISS_ORG_N
+        R_ABIOTIC_DON_MIN_MN_IV(ns:ne)   = &
+            K_MIN_DON_MN_IV_20     * (THETA_K_MIN_DON_MN_IV    ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_MN_IV_RED(ns:ne) * PH_CORR_DON_MIN_MN_IV(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_MN_IV)) * DISS_ORG_N(ns:ne)
 
-        R_ABIOTIC_DON_MIN_FE_III   = &
-            K_MIN_DON_FE_III_20    * (THETA_K_MIN_DON_FE_III   ** (TEMP - 2.0D1)) * &
-            LIM_FE_III_RED * PH_CORR_DON_MIN_FE_III * &
-            (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_FE_III)) * DISS_ORG_N
+        R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = &
+            K_MIN_DON_FE_III_20    * (THETA_K_MIN_DON_FE_III   ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_FE_III_RED(ns:ne) * PH_CORR_DON_MIN_FE_III(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_FE_III)) * DISS_ORG_N(ns:ne)
 
-        R_ABIOTIC_DON_MIN_S_PLUS_6 = &
-            K_MIN_DON_S_PLUS_6_20  * (THETA_K_MIN_DON_S_PLUS_6 ** (TEMP - 2.0D1)) * &
-            LIM_S_PLUS_6_RED * PH_CORR_DON_MIN_S_PLUS_6 * &
-            (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_S_PLUS_6)) * DISS_ORG_N
+        R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = &
+            K_MIN_DON_S_PLUS_6_20  * (THETA_K_MIN_DON_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DON_MIN_S_PLUS_6(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_S_PLUS_6)) * DISS_ORG_N(ns:ne)
 
-        R_ABIOTIC_DON_MIN_DOC      = &
-            (K_MIN_DON_DOC_20      * (THETA_K_MIN_DON_DOC      ** (TEMP - 2.0D1)) * &
-            LIM_DOC_RED * PH_CORR_DON_MIN_DOC * &
-            (DISS_ORG_N / (DISS_ORG_N + K_HS_DON_MIN_DOC)) * DISS_ORG_N)
+        R_ABIOTIC_DON_MIN_DOC(ns:ne)      = &
+            (K_MIN_DON_DOC_20      * (THETA_K_MIN_DON_DOC      ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_DOC_RED(ns:ne) * PH_CORR_DON_MIN_DOC(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOC)) * DISS_ORG_N(ns:ne))
     end if
 
 
@@ -1492,77 +1522,83 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------
 
     ! Accerelation of mineralisation when DIP is scarce
-    LIM_P_AMIN_DOP = KHS_AMIN_P / (KHS_AMIN_P + DIP_OVER_IP*PO4_P)
+    LIM_P_AMIN_DOP(ns:ne) = KHS_AMIN_P / (KHS_AMIN_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
 
 
 
-    where (PHYT_TOT_C .gt. K_MIN_PHYT_AMIN_DOP)
-        LIM_PHY_P_AMIN_DOP = LIM_P_AMIN_DOP * FAC_PHYT_AMIN_DOP * (PHYT_TOT_C - K_MIN_PHYT_AMIN_DOP)
+    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOP)
+        LIM_PHY_P_AMIN_DOP(ns:ne) = LIM_P_AMIN_DOP(ns:ne) * FAC_PHYT_AMIN_DOP * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOP)
     elsewhere
-        LIM_PHY_P_AMIN_DOP = 0.D0
+        LIM_PHY_P_AMIN_DOP(ns:ne) = 0.D0
     end where
 
     ! -------------------------------------------------------------------------
     ! DOP mineralization compatible with redox cycle
     ! -------------------------------------------------------------------------
 
-    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOXY    , PH, PH_MIN_DOP_MIN_DOXY    , PH_MAX_DOP_MIN_DOXY    , nkn)
-    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_NO3N    , PH, PH_MIN_DOP_MIN_NO3N    , PH_MAX_DOP_MIN_NO3N    , nkn)
+    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_DOXY, PH_MAX_DOP_MIN_DOXY, nkn_local)
+    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_NO3N, PH_MAX_DOP_MIN_NO3N, nkn_local)
 
-    where (DISS_ORG_P .le. 0.D0 .and. K_HS_DOP_MIN_DOXY .le. 0.D0)
-        LIM_DISS_ORG_P = 1.D0
+    where (DISS_ORG_P(ns:ne) .le. 0.D0 .and. K_HS_DOP_MIN_DOXY .le. 0.D0)
+        LIM_DISS_ORG_P(ns:ne) = 1.D0
     elsewhere
-        LIM_DISS_ORG_P = (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_DOXY))
+        LIM_DISS_ORG_P(ns:ne) = (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOXY))
     end where
 
-    if(any(DISS_ORG_P .le. 0.D0)) then
+    !$omp critical
+    if(any(DISS_ORG_P(ns:ne) .le. 0.D0)) then
      print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
      print *, 'PELAGIC MODEL: Warning, some DISS_ORG_P <= 0'
      print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
     end if
+    !$omp end critical
 
-    R_ABIOTIC_DOP_MIN_DOXY = &
-        (K_MIN_DOP_DOXY_20 + LIM_PHY_P_AMIN_DOP) * (THETA_K_MIN_DOP_DOXY ** (TEMP - 2.0D1)) * &
-        LIM_DOXY_RED * PH_CORR_DOP_MIN_DOXY * LIM_DISS_ORG_P * &
-        DISS_ORG_P
+    R_ABIOTIC_DOP_MIN_DOXY(ns:ne) = &
+        (K_MIN_DOP_DOXY_20 + LIM_PHY_P_AMIN_DOP(ns:ne)) * (THETA_K_MIN_DOP_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_DOXY_RED(ns:ne) * PH_CORR_DOP_MIN_DOXY(ns:ne) * LIM_DISS_ORG_P(ns:ne) * &
+        DISS_ORG_P(ns:ne)
 
     ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
     ! rate calculation differs
-    R_ABIOTIC_DOP_MIN_NO3N = &
-        K_MIN_DOP_NO3N_20  * (THETA_K_MIN_DOP_NO3N ** (TEMP - 2.0D1)) * &
-        LIM_NO3N_RED * PH_CORR_DOP_MIN_NO3N * (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_NO3N)) * &
-        DISS_ORG_P
+    R_ABIOTIC_DOP_MIN_NO3N(ns:ne) = &
+        K_MIN_DOP_NO3N_20  * (THETA_K_MIN_DOP_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_NO3N_RED(ns:ne) * PH_CORR_DOP_MIN_NO3N(ns:ne) * (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_NO3N)) * &
+        DISS_ORG_P(ns:ne)
 
-    R_ABIOTIC_DOP_MIN_MN_IV    = 0.0D0
-    R_ABIOTIC_DOP_MIN_FE_III   = 0.0D0
-    R_ABIOTIC_DOP_MIN_S_PLUS_6 = 0.0D0
-    R_ABIOTIC_DOP_MIN_DOC      = 0.0D0
+    R_ABIOTIC_DOP_MIN_MN_IV(ns:ne)    = 0.0D0
+    R_ABIOTIC_DOP_MIN_FE_III(ns:ne)   = 0.0D0
+    R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = 0.0D0
+    R_ABIOTIC_DOP_MIN_DOC(ns:ne)      = 0.0D0
 
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_MN_IV   , PH, PH_MIN_DOP_MIN_MN_IV   , PH_MAX_DOP_MIN_MN_IV   , nkn)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_FE_III  , PH, PH_MIN_DOP_MIN_FE_III  , PH_MAX_DOP_MIN_FE_III  , nkn)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_S_PLUS_6, PH, PH_MIN_DOP_MIN_S_PLUS_6, PH_MAX_DOP_MIN_S_PLUS_6, nkn)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOC     , PH, PH_MIN_DOP_MIN_DOC     , PH_MAX_DOP_MIN_DOC     , nkn)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_MN_IV(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_MN_IV, PH_MAX_DOP_MIN_MN_IV, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_FE_III(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_FE_III, PH_MAX_DOP_MIN_FE_III, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_S_PLUS_6(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_S_PLUS_6, PH_MAX_DOP_MIN_S_PLUS_6, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOC(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_DOC, PH_MAX_DOP_MIN_DOC, nkn_local)
 
-        R_ABIOTIC_DOP_MIN_MN_IV = &
-            K_MIN_DOP_MN_IV_20  * (THETA_K_MIN_DOP_MN_IV ** (TEMP - 2.0D1)) * &
-            LIM_MN_IV_RED * PH_CORR_DOP_MIN_MN_IV * &
-            (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_MN_IV)) * DISS_ORG_P
+        R_ABIOTIC_DOP_MIN_MN_IV(ns:ne) = &
+            K_MIN_DOP_MN_IV_20  * (THETA_K_MIN_DOP_MN_IV ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_MN_IV_RED(ns:ne) * PH_CORR_DOP_MIN_MN_IV(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_MN_IV)) * DISS_ORG_P(ns:ne)
 
-        R_ABIOTIC_DOP_MIN_FE_III = &
-            K_MIN_DOP_FE_III_20  * (THETA_K_MIN_DOP_FE_III ** (TEMP - 2.0D1)) * &
-            LIM_FE_III_RED * PH_CORR_DOP_MIN_FE_III * &
-            (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_FE_III)) * DISS_ORG_P
+        R_ABIOTIC_DOP_MIN_FE_III(ns:ne) = &
+            K_MIN_DOP_FE_III_20  * (THETA_K_MIN_DOP_FE_III ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_FE_III_RED(ns:ne) * PH_CORR_DOP_MIN_FE_III(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_FE_III)) * DISS_ORG_P(ns:ne)
 
-        R_ABIOTIC_DOP_MIN_S_PLUS_6 = &
-            K_MIN_DOP_S_PLUS_6_20  * (THETA_K_MIN_DOP_S_PLUS_6 ** (TEMP - 2.0D1)) * &
-            LIM_S_PLUS_6_RED * PH_CORR_DOP_MIN_S_PLUS_6 * &
-            (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_S_PLUS_6)) * DISS_ORG_P
+        R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = &
+            K_MIN_DOP_S_PLUS_6_20  * (THETA_K_MIN_DOP_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DOP_MIN_S_PLUS_6(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_S_PLUS_6)) * DISS_ORG_P(ns:ne)
 
-        R_ABIOTIC_DOP_MIN_DOC = &
-            (K_MIN_DOP_DOC_20  * (THETA_K_MIN_DOP_DOC ** (TEMP - 2.0D1)) * &
-             LIM_DOC_RED * PH_CORR_DOP_MIN_DOC * &
-            (DISS_ORG_P / (DISS_ORG_P + K_HS_DOP_MIN_DOC)) * DISS_ORG_P)
+        R_ABIOTIC_DOP_MIN_DOC(ns:ne) = &
+            (K_MIN_DOP_DOC_20  * (THETA_K_MIN_DOP_DOC ** (TEMP(ns:ne) - 2.0D1)) * &
+             LIM_DOC_RED(ns:ne) * PH_CORR_DOP_MIN_DOC(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOC)) * DISS_ORG_P(ns:ne))
     end if
     ! -------------------------------------------------------------------------
     ! End of DOP mineralization compatible with redox cycle
@@ -1572,13 +1608,13 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !     Nitrification of ammonia by bacteria are not modelled.
     !     Called abiotic in the sense of modelling method
     !*******************************************************************************************!
-    LIM_NITR_OXY = DISS_OXYGEN / (KHS_NITR_OXY + DISS_OXYGEN)
-    LIM_NITR_NH4_N = NH4_N / (KHS_NITR_NH4_N + NH4_N)
+    LIM_NITR_OXY(ns:ne) = DISS_OXYGEN(ns:ne) / (KHS_NITR_OXY + DISS_OXYGEN(ns:ne))
+    LIM_NITR_NH4_N(ns:ne) = NH4_N(ns:ne) / (KHS_NITR_NH4_N + NH4_N(ns:ne))
 
-    call CALCULATE_PH_CORR(PH_CORR_NITR_NH4, PH, PH_NITR_NH4_MIN, PH_NITR_NH4_MAX, nkn)
+    call CALCULATE_PH_CORR(PH_CORR_NITR_NH4(ns:ne), PH(ns:ne), PH_NITR_NH4_MIN, PH_NITR_NH4_MAX, nkn_local)
 
-    R_ABIOTIC_NITR = K_NITR_20 * LIM_NITR_OXY * LIM_NITR_NH4_N * &
-                     PH_CORR_NITR_NH4 * (THETA_K_NITR ** (TEMP - 2.0D1)) * NH4_N
+    R_ABIOTIC_NITR(ns:ne) = K_NITR_20 * LIM_NITR_OXY(ns:ne) * LIM_NITR_NH4_N(ns:ne) * &
+                     PH_CORR_NITR_NH4(ns:ne) * (THETA_K_NITR ** (TEMP(ns:ne) - 2.0D1)) * NH4_N(ns:ne)
 
     ! -------------------------------------------------------------------------
     ! DENITRIFICATION
@@ -1594,7 +1630,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !  - 14/(12 * 1.25) = 0.93 grams of NO3N is converted to N2
     !  - 1 gram of carbondioxide carbon is produced
 
-    R_DENITRIFICATION = 0.93D0 * R_ABIOTIC_DOC_MIN_NO3N
+    R_DENITRIFICATION(ns:ne) = 0.93D0 * R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
     ! -------------------------------------------------------------------------
     ! END OF DENITRIFICATION
     ! -------------------------------------------------------------------------
@@ -1614,7 +1650,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !  - (2*52)/12 = 8.66 grams of manganese IV is reduced to manganese II
     !  - 1 gram of carbondioxide carbon is produced
 
-    R_MN_IV_REDUCTION = 8.66D0 * R_ABIOTIC_DOC_MIN_MN_IV
+    R_MN_IV_REDUCTION(ns:ne) = 8.66D0 * R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
     ! -------------------------------------------------------------------------
     ! END OF MANGANESE REDUCTION
     ! -------------------------------------------------------------------------
@@ -1633,7 +1669,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !  - (4*56)/12 = 18.66 grams of iron III is reduced to iron II
     !  - 1 gram of carbondioxide carbon is produced
 
-    R_FE_III_REDUCTION = 18.66D0 * R_ABIOTIC_DOC_MIN_FE_III
+    R_FE_III_REDUCTION(ns:ne) = 18.66D0 * R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
     ! -------------------------------------------------------------------------
     ! END OF IRON REDUCTION
     ! -------------------------------------------------------------------------
@@ -1652,7 +1688,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !  - (32/2)/12 = 1.33 grams of S_PLUS_6 is converted to S_MINUS_2
     !  - 1 gram of carbondioxide is produced
 
-    R_SULPHATE_REDUCTION = 1.33D0 * R_ABIOTIC_DOC_MIN_S_PLUS_6
+    R_SULPHATE_REDUCTION(ns:ne) = 1.33D0 * R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
     ! -------------------------------------------------------------------------
     ! END OF SULPHATE REDUCTION
     ! -------------------------------------------------------------------------
@@ -1671,7 +1707,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !  - 0.5 grams of methane carbon is produced from DON
     !  - 0.5 grams of carbondioxide carbon is produced
 
-    R_METHANOGENESIS = 0.5D0 * R_ABIOTIC_DOC_MIN_DOC
+    R_METHANOGENESIS(ns:ne) = 0.5D0 * R_ABIOTIC_DOC_MIN_DOC(ns:ne)
     ! -------------------------------------------------------------------------
     ! END OF METHANOGENESIS
     ! -------------------------------------------------------------------------
@@ -1679,16 +1715,16 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*********************************************************************!
     !     VOLATILIZATION OF UNIONIZED AMMONI.
     !*********************************************************************!
-    call AMMONIA_VOLATILIZATION(R_AMMONIA_VOLATIL, NH4_N, pH, TEMP, K_A_CALC,nkn)
+    call AMMONIA_VOLATILIZATION(R_AMMONIA_VOLATIL(ns:ne), NH4_N(ns:ne), pH(ns:ne), TEMP(ns:ne), K_A_CALC(ns:ne), nkn_local)
 
     !----------------------------------------------------------------------
     ! 2 February 2015
     ! New code added to account the effect of ice cover.
     !----------------------------------------------------------------------
-    R_AMMONIA_VOLATIL = R_AMMONIA_VOLATIL * (1.0D0 - ice_cover)
+    R_AMMONIA_VOLATIL(ns:ne) = R_AMMONIA_VOLATIL(ns:ne) * (1.0D0 - ice_cover(ns:ne))
 
-    where (R_AMMONIA_VOLATIL < 0.0D0)
-        R_AMMONIA_VOLATIL = 0.0D0
+    where (R_AMMONIA_VOLATIL(ns:ne) < 0.0D0)
+        R_AMMONIA_VOLATIL(ns:ne) = 0.0D0
     end where
 
     !----------------------------------------------------------------------
@@ -1711,17 +1747,19 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! Iron
         if(iron_oxidation .eq. 0) then
             !simple formulation, k_OX_FE_II is calibration parameter
-            where (DISS_OXYGEN < 1)
-                R_FE_II_OXIDATION  = k_OX_FE_II * DISS_OXYGEN * (10.0D0 ** (PH - 7.0D0)) * FE_II
+            where (DISS_OXYGEN(ns:ne) < 1)
+                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
             elsewhere
-                R_FE_II_OXIDATION  = k_OX_FE_II * (10.0D0 ** (PH - 7.0D0)) * FE_II
+                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
             end where
         end if
 
         if(iron_oxidation .eq. 1) then
             ! In the future include several options for heavy metal oxidation and possibly reduction
             ! Morgen and Lahav (2007) formulation. No calibration
-            call IRON_II_OXIDATION(FE_II_DISS, DISS_OXYGEN, PH, TEMP, SALT, ELEVATION, nkn, R_FE_II_OXIDATION)
+            call IRON_II_OXIDATION(FE_II_DISS(ns:ne), DISS_OXYGEN(ns:ne), &
+                 PH(ns:ne), TEMP(ns:ne), SALT(ns:ne), ELEVATION(ns:ne), &
+                 nkn_local, R_FE_II_OXIDATION(ns:ne))
             ! ---------------------------------------------------------------------
             ! End of changes by Ali Ert�rk, 6 th of July 2016
             ! ---------------------------------------------------------------------
@@ -1732,10 +1770,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! by Van Chappen and Wang 2015 and Katsev papers are now included.
 
         ! Manganese
-        where (DISS_OXYGEN < 1)
-            R_MN_II_OXIDATION  = k_OX_MN_II * DISS_OXYGEN * (10.0D0 ** (PH - 7.0D0))* MN_II
+        where (DISS_OXYGEN(ns:ne) < 1)
+            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0))* MN_II(ns:ne)
         elsewhere
-            R_MN_II_OXIDATION  = k_OX_MN_II * (10.0D0 ** (PH - 7.0D0)) * MN_II
+            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * MN_II(ns:ne)
         end where
 
         ! 29 January 2016
@@ -1748,26 +1786,26 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! -------------------------------------------------------------------------------
         ! 29 January 2016 KINETICS OF NEW STATE VARIABLES
         ! -------------------------------------------------------------------------------
-        K_A_CH4 = K_A_CALC * 1.188D0
-        K_A_H2S = K_A_CALC * 0.984D0
-        CH4_SAT = 0.0D0 ! Assume that no methane is present in the atmosphere
-        H2S_SAT = 0.0D0 ! Assume that no H2S is present in the atmosphere
+        K_A_CH4(ns:ne) = K_A_CALC(ns:ne) * 1.188D0
+        K_A_H2S(ns:ne) = K_A_CALC(ns:ne) * 0.984D0
+        CH4_SAT(ns:ne) = 0.0D0 ! Assume that no methane is present in the atmosphere
+        H2S_SAT(ns:ne) = 0.0D0 ! Assume that no H2S(ns:ne) is present in the atmosphere
 
-        CH4_ATM_EXCHANGE = K_A_CH4 * (CH4_SAT - CH4_C)
-        H2S_ATM_EXCHANGE = K_A_H2S * (H2S_SAT - (H2S * 32000.D0))
+        CH4_ATM_EXCHANGE(ns:ne) = K_A_CH4(ns:ne) * (CH4_SAT(ns:ne) - CH4_C(ns:ne))
+        H2S_ATM_EXCHANGE(ns:ne) = K_A_H2S(ns:ne) * (H2S_SAT(ns:ne) - (H2S(ns:ne) * 32000.D0))
 
-        R_METHANE_OXIDATION = &
-            k_OX_CH4 * (THETA_k_OX_CH4 ** (TEMP - 20.0D0)) * CH4_C * &
-            (DISS_OXYGEN / (k_HS_OX_CH4_DOXY + DISS_OXYGEN))
+        R_METHANE_OXIDATION(ns:ne) = &
+            k_OX_CH4 * (THETA_k_OX_CH4 ** (TEMP(ns:ne) - 20.0D0)) * CH4_C(ns:ne) * &
+            (DISS_OXYGEN(ns:ne) / (k_HS_OX_CH4_DOXY + DISS_OXYGEN(ns:ne)))
 
-        R_SULPHIDE_OXIDATION = &
-            k_OX_H2S * (THETA_k_OX_H2S ** (TEMP - 20.0D0)) * S_MINUS_2 * &
-            (DISS_OXYGEN / (k_HS_OX_H2S_DOXY + DISS_OXYGEN))
+        R_SULPHIDE_OXIDATION(ns:ne) = &
+            k_OX_H2S * (THETA_k_OX_H2S ** (TEMP(ns:ne) - 20.0D0)) * S_MINUS_2(ns:ne) * &
+            (DISS_OXYGEN(ns:ne) / (k_HS_OX_H2S_DOXY + DISS_OXYGEN(ns:ne)))
     else
-        R_FE_II_OXIDATION    = 0.0D0
-        R_MN_II_OXIDATION    = 0.0D0
-        R_SULPHIDE_OXIDATION = 0.0D0
-        R_METHANE_OXIDATION  = 0.0D0
+        R_FE_II_OXIDATION(ns:ne)    = 0.0D0
+        R_MN_II_OXIDATION(ns:ne)    = 0.0D0
+        R_SULPHIDE_OXIDATION(ns:ne) = 0.0D0
+        R_METHANE_OXIDATION(ns:ne)  = 0.0D0
     end if
     ! -------------------------------------------------------------------------
     ! END OF KINETICS OF NEW STATE VARIABLES
@@ -1778,175 +1816,183 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !------------------------------------------------------------------------------------------------
 
     !AMMONIA NITROGEN
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 1) = R_DIA_TOT_RESP * DIA_N_TO_C
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 2) = R_CYN_TOT_RESP * CYN_N_TO_C
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 3) = R_OPA_TOT_RESP * OPA_N_TO_C
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 1) = R_DIA_TOT_RESP(ns:ne) * DIA_N_TO_C
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne) * CYN_N_TO_C
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 3) = R_OPA_TOT_RESP(ns:ne) * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 4) = R_FIX_CYN_TOT_RESP * FIX_CYN_N_TO_C
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 4) = R_FIX_CYN_TOT_RESP(ns:ne) * FIX_CYN_N_TO_C
     else
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 4) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 5) = R_ZOO_TOT_RESP * ACTUAL_ZOO_N_TO_C
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 6) = R_DIA_GROWTH   * PREF_NH4N_DIA * DIA_N_TO_C
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 5) = R_ZOO_TOT_RESP(ns:ne) * ACTUAL_ZOO_N_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 6) = R_DIA_GROWTH(ns:ne)   * PREF_NH4N_DIA(ns:ne) * DIA_N_TO_C
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 7) = R_CYN_GROWTH * CYN_N_TO_C * PREF_DIN_DON_CYN * PREF_NH4N_CYN
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 7) = R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * PREF_NH4N_CYN(ns:ne)
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 8) = R_OPA_GROWTH * PREF_NH4N_OPA * OPA_N_TO_C
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 8) = R_OPA_GROWTH(ns:ne) * PREF_NH4N_OPA(ns:ne) * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 9) = &
-            R_NON_FIX_CYN_GROWTH * PREF_NH4N_DON_FIX_CYN * FIX_CYN_N_TO_C * &
-            (NH4_N / max(NH4_N + (DISS_ORG_N * frac_avail_DON), 1.0D-10))
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 9) = &
+            R_NON_FIX_CYN_GROWTH(ns:ne) * PREF_NH4N_DON_FIX_CYN(ns:ne) * FIX_CYN_N_TO_C * &
+            (NH4_N(ns:ne) / max(NH4_N(ns:ne) + (DISS_ORG_N(ns:ne) * frac_avail_DON), 1.0D-10))
     else
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 9)  = 0.0D0
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 9)  = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 23) = &
-            R_NOST_VEG_HET_NON_FIX_GROWTH * NOST_N_TO_C * PREF_DIN_DON_NOST * PREF_NH4N_NOST
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 23) = &
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * NOST_N_TO_C * PREF_DIN_DON_NOST(ns:ne) * PREF_NH4N_NOST(ns:ne)
 
         !NH4 production during N-fixation
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 22) = &
-            R_NOST_VEG_HET_FIX_GROWTH * NOST_N_TO_C * &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 22) = &
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * NOST_N_TO_C * &
             ((1.D0 - FRAC_FIX_N_FOR_GR_VEG_HET)/FRAC_FIX_N_FOR_GR_VEG_HET)
     else
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 22) = 0.0D0
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 23) = 0.0D0
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 22) = 0.0D0
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 23) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 10) = R_ABIOTIC_NITR
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 10) = R_ABIOTIC_NITR(ns:ne)
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 11) = &
-        R_ABIOTIC_DON_MIN_DOXY   + R_ABIOTIC_DON_MIN_NO3N     + R_ABIOTIC_DON_MIN_MN_IV + &
-        R_ABIOTIC_DON_MIN_FE_III + R_ABIOTIC_DON_MIN_S_PLUS_6 + R_ABIOTIC_DON_MIN_DOC
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 11) = &
+        R_ABIOTIC_DON_MIN_DOXY(ns:ne)   + R_ABIOTIC_DON_MIN_NO3N(ns:ne)     + R_ABIOTIC_DON_MIN_MN_IV(ns:ne) + &
+        R_ABIOTIC_DON_MIN_FE_III(ns:ne) + R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DON_MIN_DOC(ns:ne)
 
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 12) = R_AMMONIA_VOLATIL
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 12) = R_AMMONIA_VOLATIL(ns:ne)
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 13) = PREF_NH4N_DIA
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 14) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 15) = PREF_NH4N_OPA
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 16) = PREF_NH4N_DON_FIX_CYN
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 18) = PREF_NH4N_CYN
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 19) = PREF_DIN_DON_CYN
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 20) = PREF_NH4N_NOST
-    PROCESS_RATES(1:nkn,NH4_N_INDEX, 21) = PREF_DIN_DON_NOST
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 13) = PREF_NH4N_DIA(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 14) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 15) = PREF_NH4N_OPA(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 16) = PREF_NH4N_DON_FIX_CYN(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 18) = PREF_NH4N_CYN(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 19) = PREF_DIN_DON_CYN(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 20) = PREF_NH4N_NOST(ns:ne)
+    PROCESS_RATES(ns:ne,NH4_N_INDEX, 21) = PREF_DIN_DON_NOST(ns:ne)
 
     ! New process information incorporated 10 September 2019
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 17) = R_NOST_VEG_HET_TOT_RESP * NOST_N_TO_C
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 17) = R_NOST_VEG_HET_TOT_RESP(ns:ne) * NOST_N_TO_C
     else
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 17) = 0.0D0
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 17) = 0.0D0
     end if
     ! End of new process information incorporated 10 September 2019
 
-    DERIVATIVES(1:nkn,NH4_N_INDEX) = &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 1)  + PROCESS_RATES(1:nkn,NH4_N_INDEX, 2)  + &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 3)  + PROCESS_RATES(1:nkn,NH4_N_INDEX, 4)  + &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 5)  - PROCESS_RATES(1:nkn,NH4_N_INDEX, 6)  - &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 7)  - PROCESS_RATES(1:nkn,NH4_N_INDEX, 8)  - &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 9)  - PROCESS_RATES(1:nkn,NH4_N_INDEX, 10) + &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 11) - PROCESS_RATES(1:nkn,NH4_N_INDEX, 12) + &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 17) + PROCESS_RATES(1:nkn,NH4_N_INDEX, 22) - &
-        PROCESS_RATES(1:nkn,NH4_N_INDEX, 23)
+    DERIVATIVES(ns:ne,NH4_N_INDEX) = &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 1)  + PROCESS_RATES(ns:ne,NH4_N_INDEX, 2)  + &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 3)  + PROCESS_RATES(ns:ne,NH4_N_INDEX, 4)  + &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 5)  - PROCESS_RATES(ns:ne,NH4_N_INDEX, 6)  - &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 7)  - PROCESS_RATES(ns:ne,NH4_N_INDEX, 8)  - &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 9)  - PROCESS_RATES(ns:ne,NH4_N_INDEX, 10) + &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 11) - PROCESS_RATES(ns:ne,NH4_N_INDEX, 12) + &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 17) + PROCESS_RATES(ns:ne,NH4_N_INDEX, 22) - &
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 23)
 
     ! Code to debug NH4N
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_NH4N_01&
              (PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !NITRATE NITROGEN
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 1) = R_ABIOTIC_NITR
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 2) = R_DENITRIFICATION
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 1) = R_ABIOTIC_NITR(ns:ne)
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 2) = R_DENITRIFICATION(ns:ne)
 
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 3) = &
-        R_DIA_GROWTH * (1.0D0 - PREF_NH4N_DIA) * DIA_N_TO_C
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 3) = &
+        R_DIA_GROWTH(ns:ne) * (1.0D0 - PREF_NH4N_DIA(ns:ne)) * DIA_N_TO_C
 
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 4) = &
-        R_CYN_GROWTH * CYN_N_TO_C * PREF_DIN_DON_CYN * (1.0D0 - PREF_NH4N_CYN)
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 4) = &
+        R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * (1.0D0 - PREF_NH4N_CYN(ns:ne))
 
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 5) = R_OPA_GROWTH         * (1.0D0 - PREF_NH4N_OPA)         * OPA_N_TO_C
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 5) = R_OPA_GROWTH(ns:ne)         * (1.0D0 - PREF_NH4N_OPA(ns:ne))         * OPA_N_TO_C
 
     if (DO_NOSTOCALES > 0) then
-      PROCESS_RATES(1:nkn,NO3_N_INDEX, 6) = &
-          R_NOST_VEG_HET_NON_FIX_GROWTH * NOST_N_TO_C * PREF_DIN_DON_NOST * (1-PREF_NH4N_NOST)
+      PROCESS_RATES(ns:ne,NO3_N_INDEX, 6) = &
+          R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * NOST_N_TO_C * PREF_DIN_DON_NOST(ns:ne) * (1-PREF_NH4N_NOST(ns:ne))
     else
-      PROCESS_RATES(1:nkn,NO3_N_INDEX, 6) = &
-          R_NON_FIX_CYN_GROWTH * (1.0D0 - PREF_NH4N_DON_FIX_CYN) * FIX_CYN_N_TO_C
+      PROCESS_RATES(ns:ne,NO3_N_INDEX, 6) = &
+          R_NON_FIX_CYN_GROWTH(ns:ne) * (1.0D0 - PREF_NH4N_DON_FIX_CYN(ns:ne)) * FIX_CYN_N_TO_C
     end if
 
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 7) = PREF_NH4N_DIA
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 8) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
-    PROCESS_RATES(1:nkn,NO3_N_INDEX, 9) = PREF_NH4N_OPA
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 7) = PREF_NH4N_DIA(ns:ne)
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 8) = 0.0D0  ! Old PREF_NH4N_DON_CYN deprecated
+    PROCESS_RATES(ns:ne,NO3_N_INDEX, 9) = PREF_NH4N_OPA(ns:ne)
 
-    DERIVATIVES(1:nkn,NO3_N_INDEX) = &
-        PROCESS_RATES(1:nkn,NO3_N_INDEX, 1) - PROCESS_RATES(1:nkn,NO3_N_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,NO3_N_INDEX, 3) - PROCESS_RATES(1:nkn,NO3_N_INDEX, 4) - &
-        PROCESS_RATES(1:nkn,NO3_N_INDEX, 5) - PROCESS_RATES(1:nkn,NO3_N_INDEX, 6)
+    DERIVATIVES(ns:ne,NO3_N_INDEX) = &
+        PROCESS_RATES(ns:ne,NO3_N_INDEX, 1) - PROCESS_RATES(ns:ne,NO3_N_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,NO3_N_INDEX, 3) - PROCESS_RATES(ns:ne,NO3_N_INDEX, 4) - &
+        PROCESS_RATES(ns:ne,NO3_N_INDEX, 5) - PROCESS_RATES(ns:ne,NO3_N_INDEX, 6)
 
     !PHOSPHATE PHOSPHORUS
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 1) = R_DIA_TOT_RESP * DIA_P_TO_C
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 2) = R_CYN_TOT_RESP * CYN_P_TO_C
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 3) = R_OPA_TOT_RESP * OPA_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 1) = R_DIA_TOT_RESP(ns:ne) * DIA_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 2) = R_CYN_TOT_RESP(ns:ne) * CYN_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 3) = R_OPA_TOT_RESP(ns:ne) * OPA_P_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 4) = R_FIX_CYN_TOT_RESP * FIX_CYN_P_TO_C
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 4) = R_FIX_CYN_TOT_RESP(ns:ne) * FIX_CYN_P_TO_C
     else
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 4) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 5) = R_ZOO_TOT_RESP * ACTUAL_ZOO_P_TO_C
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 6) = R_DIA_GROWTH   * DIA_P_TO_C
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 7) = R_CYN_GROWTH   * CYN_P_TO_C
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 8) = R_OPA_GROWTH   * OPA_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 5) = R_ZOO_TOT_RESP(ns:ne) * ACTUAL_ZOO_P_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 6) = R_DIA_GROWTH(ns:ne)   * DIA_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 7) = R_CYN_GROWTH(ns:ne)   * CYN_P_TO_C
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 8) = R_OPA_GROWTH(ns:ne)   * OPA_P_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 9) = R_FIX_CYN_GROWTH * FIX_CYN_P_TO_C
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 9) = R_FIX_CYN_GROWTH(ns:ne) * FIX_CYN_P_TO_C
     else
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 9) = 0.0D0
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 9) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 10) = &
-        R_ABIOTIC_DOP_MIN_DOXY   + R_ABIOTIC_DOP_MIN_NO3N     + R_ABIOTIC_DOP_MIN_MN_IV + &
-        R_ABIOTIC_DOP_MIN_FE_III + R_ABIOTIC_DOP_MIN_S_PLUS_6 + R_ABIOTIC_DOP_MIN_DOC
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 10) = &
+        R_ABIOTIC_DOP_MIN_DOXY(ns:ne)   + R_ABIOTIC_DOP_MIN_NO3N(ns:ne)     + R_ABIOTIC_DOP_MIN_MN_IV(ns:ne) + &
+        R_ABIOTIC_DOP_MIN_FE_III(ns:ne) + R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DOP_MIN_DOC(ns:ne)
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 11) = TEMP
-    PROCESS_RATES(1:nkn,PO4_P_INDEX, 12) = DISS_ORG_P
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 11) = TEMP(ns:ne)
+    PROCESS_RATES(ns:ne,PO4_P_INDEX, 12) = DISS_ORG_P(ns:ne)
 
     ! New process information incorporated 10 September 2019
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 13) = R_NOST_VEG_HET_TOT_RESP * NOST_P_TO_C
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 13) = R_NOST_VEG_HET_TOT_RESP(ns:ne) * NOST_P_TO_C
 
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 14) = &
-            R_NOST_VEG_HET_GROWTH   * NOST_P_TO_C * PREF_DIP_DOP_NOST
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 14) = &
+            R_NOST_VEG_HET_GROWTH(ns:ne)   * NOST_P_TO_C * PREF_DIP_DOP_NOST(ns:ne)
     else
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 13) = 0.0D0
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 14) = 0.0D0
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 13) = 0.0D0
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 14) = 0.0D0
     end if
     ! End of new process information incorporated 10 September 2019
 
-    DERIVATIVES(1:nkn,PO4_P_INDEX) = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 1 ) + PROCESS_RATES(1:nkn,PO4_P_INDEX, 2 ) + &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 3 ) + PROCESS_RATES(1:nkn,PO4_P_INDEX, 4 ) + &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 5 ) - PROCESS_RATES(1:nkn,PO4_P_INDEX, 6 ) - &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 7 ) - PROCESS_RATES(1:nkn,PO4_P_INDEX, 8 ) - &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 9 ) + PROCESS_RATES(1:nkn,PO4_P_INDEX, 10) + &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 13) - PROCESS_RATES(1:nkn,PO4_P_INDEX, 14)
+    DERIVATIVES(ns:ne,PO4_P_INDEX) = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 1 ) + PROCESS_RATES(ns:ne,PO4_P_INDEX, 2 ) + &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 3 ) + PROCESS_RATES(ns:ne,PO4_P_INDEX, 4 ) + &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 5 ) - PROCESS_RATES(ns:ne,PO4_P_INDEX, 6 ) - &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 7 ) - PROCESS_RATES(ns:ne,PO4_P_INDEX, 8 ) - &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 9 ) + PROCESS_RATES(ns:ne,PO4_P_INDEX, 10) + &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 13) - PROCESS_RATES(ns:ne,PO4_P_INDEX, 14)
 
     ! Debug for PO4P
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_PO4P_01&
              (PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !DISSOLVED SILICA SILICON
-    PROCESS_RATES(1:nkn,DISS_Si_INDEX, 1) = R_PART_Si_DISS
+    PROCESS_RATES(ns:ne,DISS_Si_INDEX, 1) = R_PART_Si_DISS(ns:ne)
 
     !Should it come from respiration? Silica is in shell.
 
@@ -1954,198 +2000,208 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !So in order to keep the model mass conserving, respiration should set stochimetrically
     !correct amount of silicon in dissolved form free. Because of the same reason, excrtion
     !t
-    PROCESS_RATES(1:nkn,DISS_Si_INDEX, 2) = R_DIA_TOT_RESP * DIA_SI_TO_C
+    PROCESS_RATES(ns:ne,DISS_Si_INDEX, 2) = R_DIA_TOT_RESP(ns:ne) * DIA_SI_TO_C
 
 
-    PROCESS_RATES(1:nkn,DISS_Si_INDEX, 3) = R_DIA_EXCR * DIA_SI_TO_C
+    PROCESS_RATES(ns:ne,DISS_Si_INDEX, 3) = R_DIA_EXCR(ns:ne) * DIA_SI_TO_C
 
-    PROCESS_RATES(1:nkn,DISS_Si_INDEX, 4) = R_DIA_GROWTH   * DIA_SI_TO_C
+    PROCESS_RATES(ns:ne,DISS_Si_INDEX, 4) = R_DIA_GROWTH(ns:ne)   * DIA_SI_TO_C
 
-    DERIVATIVES(1:nkn,DISS_Si_INDEX) = &
-        PROCESS_RATES(1:nkn,DISS_Si_INDEX, 1) + PROCESS_RATES(1:nkn,DISS_Si_INDEX, 2) + &
-        PROCESS_RATES(1:nkn,DISS_Si_INDEX, 3) - PROCESS_RATES(1:nkn,DISS_Si_INDEX, 4)
+    DERIVATIVES(ns:ne,DISS_Si_INDEX) = &
+        PROCESS_RATES(ns:ne,DISS_Si_INDEX, 1) + PROCESS_RATES(ns:ne,DISS_Si_INDEX, 2) + &
+        PROCESS_RATES(ns:ne,DISS_Si_INDEX, 3) - PROCESS_RATES(ns:ne,DISS_Si_INDEX, 4)
 
     !DISSOLVED OXYGEN
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 1)  = R_AERATION
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 1)  = R_AERATION(ns:ne)
 
     ! formulation from EFDC
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 2)  = &
-        R_DIA_GROWTH * (1.3D0 - 0.3D0*PREF_NH4N_DIA)    * DIA_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 2)  = &
+        R_DIA_GROWTH(ns:ne) * (1.3D0 - 0.3D0*PREF_NH4N_DIA(ns:ne))    * DIA_O2_TO_C
 
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 3)  = &
-        R_CYN_GROWTH * (1.3D0 - 0.3D0 * PREF_NH4N_CYN * PREF_DIN_DON_CYN) * CYN_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 3)  = &
+        R_CYN_GROWTH(ns:ne) * (1.3D0 - 0.3D0 * PREF_NH4N_CYN(ns:ne) * PREF_DIN_DON_CYN(ns:ne)) * CYN_O2_TO_C
 
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 4) = &
-        R_OPA_GROWTH  * (1.3D0 - 0.3D0*PREF_NH4N_OPA) * OPA_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 4) = &
+        R_OPA_GROWTH(ns:ne)  * (1.3D0 - 0.3D0*PREF_NH4N_OPA(ns:ne)) * OPA_O2_TO_C
 
     if(DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 5)= &
-            R_NOST_VEG_HET_GROWTH * &
-            NOST_O2_TO_C * (1.3D0 - 0.3D0*PREF_NH4N_NOST*PREF_DIN_DON_NOST)
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 5)= &
+            R_NOST_VEG_HET_GROWTH(ns:ne) * &
+            NOST_O2_TO_C * (1.3D0 - 0.3D0*PREF_NH4N_NOST(ns:ne)*PREF_DIN_DON_NOST(ns:ne))
     else
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 5)  = &
-            R_FIX_CYN_GROWTH   * (1.3D0 - 0.3D0*PREF_NH4N_DON_FIX_CYN)* FIX_CYN_O2_TO_C
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 5)  = &
+            R_FIX_CYN_GROWTH(ns:ne)   * (1.3D0 - 0.3D0*PREF_NH4N_DON_FIX_CYN(ns:ne))* FIX_CYN_O2_TO_C
     endif
 
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 6)  = R_DIA_TOT_RESP * DIA_O2_TO_C
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 7)  = R_CYN_TOT_RESP * CYN_O2_TO_C
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 8)  = R_OPA_TOT_RESP * OPA_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 6)  = R_DIA_TOT_RESP(ns:ne) * DIA_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 7)  = R_CYN_TOT_RESP(ns:ne) * CYN_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 8)  = R_OPA_TOT_RESP(ns:ne) * OPA_O2_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 9) = R_FIX_CYN_TOT_RESP * FIX_CYN_O2_TO_C
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 9) = R_FIX_CYN_TOT_RESP(ns:ne) * FIX_CYN_O2_TO_C
     else
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 9) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 9) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 10) = R_ZOO_TOT_RESP * ZOO_O2_TO_C
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 11) = R_ABIOTIC_NITR * 4.57D0
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 12) = 2.66D0 * R_ABIOTIC_DOC_MIN_DOXY
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 13) = 0.43D0 * R_FE_II_OXIDATION
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 14) = 0.88D0 * R_MN_II_OXIDATION
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 15) = 2.00D0 * R_SULPHIDE_OXIDATION
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 16) = 5.33D0 * R_METHANE_OXIDATION
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 10) = R_ZOO_TOT_RESP(ns:ne) * ZOO_O2_TO_C
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 11) = R_ABIOTIC_NITR(ns:ne) * 4.57D0
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 12) = 2.66D0 * R_ABIOTIC_DOC_MIN_DOXY(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 13) = 0.43D0 * R_FE_II_OXIDATION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 14) = 0.88D0 * R_MN_II_OXIDATION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 15) = 2.00D0 * R_SULPHIDE_OXIDATION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 16) = 5.33D0 * R_METHANE_OXIDATION(ns:ne)
 
     ! Nostocales O2 production is already accounted in index 5 (EFDC-corrected).
     ! Index 19 is reserved for diagnostic/auxiliary use only — do NOT add to derivative.
     ! Nostocales respiration O2 is accounted via index 20 (only sink, not in index 8/9).
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 19) = 0.0D0
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 20) = R_NOST_VEG_HET_TOT_RESP * NOST_O2_TO_C
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 20) = R_NOST_VEG_HET_TOT_RESP(ns:ne) * NOST_O2_TO_C
     else
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 19) = 0.0D0
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 20) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 20) = 0.0D0
     end if
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 17) = K_A_CALC
-    PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 18) = DISS_OXYGEN_SAT
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 17) = K_A_CALC(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 18) = DISS_OXYGEN_SAT(ns:ne)
 
-    DERIVATIVES(1:nkn,DISS_OXYGEN_INDEX) = &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 1)  + &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 2)  + &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 3)  + &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 4)  + &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 5)  - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 6)  - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 7)  - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 8)  - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 9)  - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 10) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 11) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 12) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 13) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 14) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 15) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 16) + &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 19) - &
-        PROCESS_RATES(1:nkn,DISS_OXYGEN_INDEX, 20)
+    DERIVATIVES(ns:ne,DISS_OXYGEN_INDEX) = &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 1)  + &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 2)  + &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 3)  + &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 4)  + &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 5)  - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 6)  - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 7)  - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 8)  - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 9)  - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 10) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 11) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 12) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 13) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 14) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 15) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 16) + &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) - &
+        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 20)
 
     !Debug code for dissolved oxygen
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_DOXY_01&
              (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !DIATOMS CARBON
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 1)  = R_DIA_GROWTH
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 2)  = R_DIA_TOT_RESP
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 3)  = R_DIA_EXCR
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 4)  = R_DIA_DEATH
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 5)  = R_ZOO_FEEDING_DIA
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 1)  = R_DIA_GROWTH(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 2)  = R_DIA_TOT_RESP(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 3)  = R_DIA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 4)  = R_DIA_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 5)  = R_ZOO_FEEDING_DIA(ns:ne)
     ! Auxiliary
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 6)  = LIM_KG_DIA_TEMP
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 7)  = LIM_KG_DIA_DOXY
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 8)  = LIM_KG_DIA_N
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 9)  = LIM_KG_DIA_P
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 10) = LIM_KG_DIA_DISS_Si
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 11) = LIM_KG_DIA_LIGHT
-    PROCESS_RATES(1:nkn,DIA_C_INDEX, 12) = DIA_LIGHT_SAT
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 6)  = LIM_KG_DIA_TEMP(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 7)  = LIM_KG_DIA_DOXY(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 8)  = LIM_KG_DIA_N(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 9)  = LIM_KG_DIA_P(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 10) = LIM_KG_DIA_DISS_Si(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 11) = LIM_KG_DIA_LIGHT(ns:ne)
+    PROCESS_RATES(ns:ne,DIA_C_INDEX, 12) = DIA_LIGHT_SAT(ns:ne)
 
-    DERIVATIVES(1:nkn,DIA_C_INDEX) = &
-        PROCESS_RATES(1:nkn,DIA_C_INDEX, 1) - PROCESS_RATES(1:nkn,DIA_C_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,DIA_C_INDEX, 3) - PROCESS_RATES(1:nkn,DIA_C_INDEX, 4) - &
-        PROCESS_RATES(1:nkn,DIA_C_INDEX, 5)
+    DERIVATIVES(ns:ne,DIA_C_INDEX) = &
+        PROCESS_RATES(ns:ne,DIA_C_INDEX, 1) - PROCESS_RATES(ns:ne,DIA_C_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,DIA_C_INDEX, 3) - PROCESS_RATES(ns:ne,DIA_C_INDEX, 4) - &
+        PROCESS_RATES(ns:ne,DIA_C_INDEX, 5)
 
     !NON-NITROGEN FIXING CYANOBACTERIA CARBON
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 1)  = R_CYN_GROWTH
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 2)  = R_CYN_TOT_RESP
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 3)  = R_CYN_EXCR
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 4)  = R_CYN_DEATH
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 5)  = R_ZOO_FEEDING_CYN
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 1)  = R_CYN_GROWTH(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 2)  = R_CYN_TOT_RESP(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 3)  = R_CYN_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 4)  = R_CYN_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 5)  = R_ZOO_FEEDING_CYN(ns:ne)
     ! Auxiliary
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 6)  = LIM_KG_CYN_TEMP
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 7)  = LIM_KG_CYN_DOXY
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 8)  = LIM_KG_CYN_N
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 9)  = LIM_KG_CYN_P
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 10) = LIM_KG_CYN_LIGHT
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 11) = I_A             !light langlays
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 12) = CYN_LIGHT_SAT
-    PROCESS_RATES(1:nkn,CYN_C_INDEX, 13) = TEMP
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 6)  = LIM_KG_CYN_TEMP(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 7)  = LIM_KG_CYN_DOXY(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 8)  = LIM_KG_CYN_N(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 9)  = LIM_KG_CYN_P(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 10) = LIM_KG_CYN_LIGHT(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 11) = I_A(ns:ne)             !light langlays
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 12) = CYN_LIGHT_SAT(ns:ne)
+    PROCESS_RATES(ns:ne,CYN_C_INDEX, 13) = TEMP(ns:ne)
 
-    DERIVATIVES(1:nkn,CYN_C_INDEX) = &
-        PROCESS_RATES(1:nkn,CYN_C_INDEX, 1) - PROCESS_RATES(1:nkn,CYN_C_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,CYN_C_INDEX, 3) - PROCESS_RATES(1:nkn,CYN_C_INDEX, 4) - &
-                PROCESS_RATES(1:nkn,CYN_C_INDEX, 5)
+    DERIVATIVES(ns:ne,CYN_C_INDEX) = &
+        PROCESS_RATES(ns:ne,CYN_C_INDEX, 1) - PROCESS_RATES(ns:ne,CYN_C_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,CYN_C_INDEX, 3) - PROCESS_RATES(ns:ne,CYN_C_INDEX, 4) - &
+                PROCESS_RATES(ns:ne,CYN_C_INDEX, 5)
 
     ! Debug: print derivatives for CYN_C node1 (commented to reduce log noise)
     ! write(6,'(A,ES14.6)') 'DEBUG: DERIV CYN node1=', DERIVATIVES(1,CYN_C_INDEX)
 
     ! Debug code for CYN_C
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_CYNC_01 &
              (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !NITROGEN FIXING CYANOBACTERIA CARBON
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1)  = R_FIX_CYN_GROWTH
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2)  = R_FIX_CYN_TOT_RESP
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = R_FIX_CYN_EXCR
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4)  = R_FIX_CYN_DEATH
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)  = R_ZOO_FEEDING_FIX_CYN
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 1)  = R_FIX_CYN_GROWTH(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 2)  = R_FIX_CYN_TOT_RESP(ns:ne)
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 3)  = R_FIX_CYN_EXCR(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 4)  = R_FIX_CYN_DEATH(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 5)  = R_ZOO_FEEDING_FIX_CYN(ns:ne)
 
         ! Auxiliary
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 6)  = R_NON_FIX_CYN_GROWTH
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 7)  = R_FIX_FIX_CYN_GROWTH
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 6)  = R_NON_FIX_CYN_GROWTH(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 7)  = R_FIX_FIX_CYN_GROWTH(ns:ne)
 
         !Nitrogen fixation
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 8)  = &
-            (R_FIX_FIX_CYN_GROWTH  * FIX_CYN_N_TO_C)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 8)  = &
+            (R_FIX_FIX_CYN_GROWTH(ns:ne)  * FIX_CYN_N_TO_C)
 
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 9)  = LIM_KG_FIX_CYN_TEMP
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 10) = LIM_KG_FIX_CYN_DOXY
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 11) = LIM_KG_FIX_FIX_CYN_N
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 12) = LIM_KG_FIX_FIX_CYN_P
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 13) = LIM_KG_NON_FIX_CYN_N
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 14) = LIM_KG_NON_FIX_CYN_P
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 15) = LIM_KG_FIX_CYN_LIGHT
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9)  = LIM_KG_FIX_CYN_TEMP(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 10) = LIM_KG_FIX_CYN_DOXY(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 11) = LIM_KG_FIX_FIX_CYN_N(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 12) = LIM_KG_FIX_FIX_CYN_P(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 13) = LIM_KG_NON_FIX_CYN_N(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 14) = LIM_KG_NON_FIX_CYN_P(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 15) = LIM_KG_FIX_CYN_LIGHT(ns:ne)
 
         ! NP molar ratio calculation with guard against division by zero
         ! When phosphorus is depleted, set ratio to very high value indicating P limitation
-        where (DIP_OVER_IP * PO4_P .lt. 1.0D-10)
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = 999.0D0  ! Extreme N:P indicates P limitation
+        where (DIP_OVER_IP(ns:ne) * PO4_P(ns:ne) .lt. 1.0D-10)
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 16) = 999.0D0  ! Extreme N:P indicates P limitation
         elsewhere
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = &
-                ((NH4_N + NO3_N)/14.D0)/(DIP_OVER_IP*PO4_P/31.D0)
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 16) = &
+                ((NH4_N(ns:ne) + NO3_N(ns:ne))/14.D0)/(DIP_OVER_IP(ns:ne)*PO4_P(ns:ne)/31.D0)
         end where
 
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = NH4_N + NO3_N
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 18) = FIX_CYN_LIGHT_SAT
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 17) = NH4_N(ns:ne) + NO3_N(ns:ne)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 18) = FIX_CYN_LIGHT_SAT(ns:ne)
 
-        DERIVATIVES(1:nkn,FIX_CYN_C_INDEX) = &
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1) - PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2) - &
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3) - PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4) - &
-                PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)
+        DERIVATIVES(ns:ne,FIX_CYN_C_INDEX) = &
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 1) - PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 2) - &
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 3) - PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 4) - &
+                PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 5)
 
         ! Diagnostic check: if applying derivative over TIME_STEP would make concentration negative, dump context and stop
-        do i = 1, nkn
+        do i = ns, ne
             if (FIX_CYN_C(i) + DERIVATIVES(i,FIX_CYN_C_INDEX) * TIME_STEP < 0.0D0) then
+                !$omp critical
                 write(6,'(A,F12.4,A,ES12.4,A,I4)') &
                     'ERROR: PREDICTED NEGATIVE FIX_CYN_C: TIME=', TIME, ' DT=', TIME_STEP, ' BOX=', i
                 write(6,'(A,ES14.6,A,ES14.6)') &
                     '  FIX_CYN_C=', FIX_CYN_C(i), '  DERIV=', DERIVATIVES(i,FIX_CYN_C_INDEX)
                 write(6,'(A,6ES12.4)') '  PROCESS_RATES(1:6)=', PROCESS_RATES(i,FIX_CYN_C_INDEX,1:6)
                 write(6,'(A,3ES14.6)') '  NH4_N/NO3_N/PO4_P=', NH4_N(i), NO3_N(i), PO4_P(i)
+                !$omp end critical
                 stop
             end if
 
@@ -2154,6 +2210,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
             if (FIX_CYN_C(i) > 1.0D-12) then
                 do k = 1, 5  ! Only check actual process rates, not diagnostic values
                     if (dabs(PROCESS_RATES(i,FIX_CYN_C_INDEX,k)) * TIME_STEP > 0.2D0 * FIX_CYN_C(i)) then
+                        !$omp critical
                         write(6,'(A,F12.4,A,ES12.4,A,I4)') &
                             'DEBUG: LARGE PROCESS ON FIX_CYN: TIME=', TIME, ' DT=', TIME_STEP, ' BOX=', i
                         write(6,'(A,ES14.6,A,I3,A,ES14.6)') &
@@ -2162,12 +2219,15 @@ subroutine AQUABC_PELAGIC_KINETICS &
                             '  DERIV_FIX=', DERIVATIVES(i,FIX_CYN_C_INDEX), '  DERIV_CYN=', DERIVATIVES(i,CYN_C_INDEX)
                         write(6,'(A,3ES14.6)') &
                             '  NH4_N/NO3_N/PO4_P=', NH4_N(i), NO3_N(i), PO4_P(i)
+                        !$omp end critical
 
                         ! Safety clamp for single large process (only for actual rates 2-5)
                         if (k >= 2) then
                             allowed_rate_local = FIX_CYN_C(i) / max(TIME_STEP, 1.0D-12)
                             if (dabs(PROCESS_RATES(i,FIX_CYN_C_INDEX,k)) > allowed_rate_local) then
+                                !$omp critical
                                 write(6,'(A)') '  Applying removal-limiter scaling...'
+                                !$omp end critical
                                 old_rate = PROCESS_RATES(i,FIX_CYN_C_INDEX,k)
                                 PROCESS_RATES(i,FIX_CYN_C_INDEX,k) = sign(allowed_rate_local, PROCESS_RATES(i,FIX_CYN_C_INDEX,k))
 
@@ -2179,16 +2239,20 @@ subroutine AQUABC_PELAGIC_KINETICS &
                                 DERIVATIVES(i,FIX_CYN_C_INDEX) = PROCESS_RATES(i,FIX_CYN_C_INDEX,1) - sum_removals
 
                                 ! Increment compact per-node and per-process clamp counters (summary printed once later)
+                                !$omp critical
                                 if (.not. allocated(CLAMP_COUNT)) then
                                     allocate(CLAMP_COUNT(nkn))
                                     CLAMP_COUNT = 0
                                 end if
+                                !$omp end critical
                                 CLAMP_COUNT(i) = CLAMP_COUNT(i) + 1
                                 if (NDIAGVAR > 0) then
+                                    !$omp critical
                                     if (.not. allocated(CLAMP_PROC_COUNT)) then
                                         allocate(CLAMP_PROC_COUNT(nkn, NDIAGVAR))
                                         CLAMP_PROC_COUNT = 0
                                     end if
+                                    !$omp end critical
                                     CLAMP_PROC_COUNT(i,k) = CLAMP_PROC_COUNT(i,k) + 1
                                 end if
                             end if
@@ -2206,12 +2270,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
                 ! Log when total removal is a significant fraction of allowed rate to aid debugging
                 if (total_removal > 0.1D0 * allowed_rate) then
+                    !$omp critical
                     write(6,'(A,F12.4,A,I4)') 'DEBUG: REMOVAL LIMITER CHECK: TIME=', TIME, ' BOX=', i
                     write(6,'(A,ES12.4,A,ES12.4,A,ES12.4)') &
                         '  TOT_REM=', total_removal, ' ALLOW=', allowed_rate, ' FIX_CYN_C=', FIX_CYN_C(i)
                     write(6,'(A,5ES11.3)') '  RESP/INT/EXCR/DEATH/GRAZ=', &
                         R_FIX_CYN_RESP(i), R_FIX_CYN_INT_RESP(i), R_FIX_CYN_EXCR(i), &
                         R_FIX_CYN_DEATH(i), R_ZOO_FEEDING_FIX_CYN(i)
+                    !$omp end critical
                 end if
 
                 if (total_removal > allowed_rate) then
@@ -2246,34 +2312,36 @@ subroutine AQUABC_PELAGIC_KINETICS &
                         PROCESS_RATES(i,FIX_CYN_C_INDEX,2) - PROCESS_RATES(i,FIX_CYN_C_INDEX,3) - &
                         PROCESS_RATES(i,FIX_CYN_C_INDEX,4) - PROCESS_RATES(i,FIX_CYN_C_INDEX,5)
 
+                    !$omp critical
                     write(6,'(A,F12.4,A,I4,A,ES10.3)') &
                         'WARN: Scaled FIX_CYN removal: TIME=', TIME, ' BOX=', i, ' SCALE=', scale
                     write(6,'(A,ES12.4,A,ES12.4)') &
                         '  TOT_REM_BEFORE=', total_removal, ' FIX_CYN_C=', FIX_CYN_C(i)
+                    !$omp end critical
                 end if
             end if
         end do
     else
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 1)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 2)  = 0.0D0
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 3)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 4)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 5)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 6)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 7)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 8)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 9)  = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 10) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 11) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 12) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 13) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 14) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 15) = 0.0D0
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 16) = 0.0D0
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 17) = 0.0D0
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 18) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 1)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 2)  = 0.0D0
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 3)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 4)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 5)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 6)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 7)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 8)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9)  = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 11) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 12) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 13) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 14) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 15) = 0.0D0
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 16) = 0.0D0
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 17) = 0.0D0
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 18) = 0.0D0
 
-        DERIVATIVES  (1:nkn,FIX_CYN_C_INDEX)     = 0.0D0
+        DERIVATIVES  (ns:ne,FIX_CYN_C_INDEX)     = 0.0D0
     end if
 
     ! Process rates for the new state variables incorporated 10 September 2019
@@ -2282,11 +2350,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! -------------------------------------------------------------------------------
         ! Nostaocacles in vegetative + heterocyst staged form
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1) = R_NOST_VEG_HET_GROWTH
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 2) = R_NOST_VEG_HET_TOT_RESP
-            PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = R_NOST_VEG_HET_EXCR
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 4) = R_NOST_VEG_HET_DEATH
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 5) = R_ZOO_FEEDING_NOST_VEG_HET
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 1) = R_NOST_VEG_HET_GROWTH(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 2) = R_NOST_VEG_HET_TOT_RESP(ns:ne)
+            PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 3) = R_NOST_VEG_HET_EXCR(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 4) = R_NOST_VEG_HET_DEATH(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 5) = R_ZOO_FEEDING_NOST_VEG_HET(ns:ne)
 
         ! -------------------------------------------------------------------------------
         ! Akinetes before germination are located in the mud but internally still in
@@ -2294,46 +2362,46 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! In case of 3d they should rise with negative settling velocity
         ! to the WC nearbottom layer and next layers up, fixme
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 6) = R_GERM_NOST_AKI                                                                            !
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 6) = R_GERM_NOST_AKI(ns:ne)                                                                            !
         ! -------------------------------------------------------------------------------
 
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 7) = R_FORM_NOST_AKI
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 8) = R_DENS_MORT_NOST_VEG_HET
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 7) = R_FORM_NOST_AKI(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 8) = R_DENS_MORT_NOST_VEG_HET(ns:ne)
 
 
         ! Nitrogen fixation by nostacales only
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 9) = &
-            R_NOST_VEG_HET_FIX_GROWTH * NOST_N_TO_C * (1.D0/FRAC_FIX_N_FOR_GR_VEG_HET)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 9) = &
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * NOST_N_TO_C * (1.D0/FRAC_FIX_N_FOR_GR_VEG_HET)
 
         ! Update the total nitrogen fixation
-        PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 9) = &
-            PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX, 9) + &
-            PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 9)
+        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9) = &
+            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9) + &
+            PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 9)
 
         ! Auxilaries
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 10) = NOST_LIGHT_SAT
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 10) = NOST_LIGHT_SAT(ns:ne)
 
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,11) = LIM_KG_NOST_VEG_HET_LIGHT
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,12) = LIM_KG_NOST_VEG_HET_TEMP
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,13) = LIM_KG_NOST_VEG_HET_DOXY
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,14) = LIM_KG_NOST_VEG_HET_P
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,11) = LIM_KG_NOST_VEG_HET_LIGHT(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,12) = LIM_KG_NOST_VEG_HET_TEMP(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,13) = LIM_KG_NOST_VEG_HET_DOXY(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,14) = LIM_KG_NOST_VEG_HET_P(ns:ne)
 
         ! What is this????
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,15) = &
-            R_NOST_VEG_HET_GROWTH + R_CYN_GROWTH + R_OPA_GROWTH + R_DIA_GROWTH
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,15) = &
+            R_NOST_VEG_HET_GROWTH(ns:ne) + R_CYN_GROWTH(ns:ne) + R_OPA_GROWTH(ns:ne) + R_DIA_GROWTH(ns:ne)
 
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX,16) = LIM_KG_NOST_VEG_HET_N
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX,16) = LIM_KG_NOST_VEG_HET_N(ns:ne)
 
 
-        DERIVATIVES(1:nkn,NOST_VEG_HET_C_INDEX) = &
-             PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 2)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 4)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 5)  &
-           + PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 6)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 7)  &
-           - PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 8)
+        DERIVATIVES(ns:ne,NOST_VEG_HET_C_INDEX) = &
+             PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 1)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 2)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 3)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 4)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 5)  &
+           + PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 6)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 7)  &
+           - PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 8)
         ! -------------------------------------------------------------------------------
 
         ! -------------------------------------------------------------------------------
@@ -2343,487 +2411,501 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! Assummed formed akinetes immediatelly go to the bottom but still
         ! in units gC/m^3 bu goes to the output as gC/m^2
         ! They should settle trough the layers to the bottom, fixme
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 1) = R_FORM_NOST_AKI
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 1) = R_FORM_NOST_AKI(ns:ne)
 
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 2) = R_GERM_NOST_AKI
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 3) = R_LOSS_AKI
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 2) = R_GERM_NOST_AKI(ns:ne)
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 3) = R_LOSS_AKI(ns:ne)
 
         ! -------------------------------------------------------------------------------
         ! Keep it zero. Mortality of akinetes is negligible
         ! Before germination they sit in mud, not in WC
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 4) = R_MORT_AKI
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 4) = R_MORT_AKI(ns:ne)
         ! -------------------------------------------------------------------------------
 
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 5) = DEPTH
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 5) = DEPTH(ns:ne)
 
-        DERIVATIVES(1:nkn,NOST_AKI_C_INDEX) = &
-            PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 1) - &
-            PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 2) - &
-            PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 3) - &
-            PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 4)
+        DERIVATIVES(ns:ne,NOST_AKI_C_INDEX) = &
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 1) - &
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 2) - &
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 3) - &
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 4)
         ! -------------------------------------------------------------------------------
     else
         ! -------------------------------------------------------------------------------
         ! Nostaocacles in vegetative + heterocyst staged form
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 2) = 0.0D0
-            PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 3) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 4) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 5) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 6) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 7) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 8) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 9) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 1) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 2) = 0.0D0
+            PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 3) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 5) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 6) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 7) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 8) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 9) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 10) = 0.0D0
 
-        DERIVATIVES  (1:nkn,NOST_VEG_HET_C_INDEX)     = 0.0D0
+        DERIVATIVES  (ns:ne,NOST_VEG_HET_C_INDEX)     = 0.0D0
 
         ! -------------------------------------------------------------------------------
         ! Nostaocacles akinets
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 1) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 2) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 3) = 0.0D0
-        PROCESS_RATES(1:nkn,NOST_AKI_C_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 1) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 2) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 3) = 0.0D0
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 4) = 0.0D0
 
-        DERIVATIVES  (1:nkn,NOST_AKI_C_INDEX)    = 0.0D0
+        DERIVATIVES  (ns:ne,NOST_AKI_C_INDEX)    = 0.0D0
         ! -------------------------------------------------------------------------------
     end if
     ! End of process rates for the new state variables incorporated 10 September 2019
 
     !OTHER PLANKTONIC ALGAE CARBON
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 1) = R_OPA_GROWTH
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 2) = R_OPA_TOT_RESP
-        PROCESS_RATES(1:nkn,OPA_C_INDEX, 3) = R_OPA_EXCR
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 4) = R_OPA_DEATH
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 5) = R_ZOO_FEEDING_OPA
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 1) = R_OPA_GROWTH(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 2) = R_OPA_TOT_RESP(ns:ne)
+        PROCESS_RATES(ns:ne,OPA_C_INDEX, 3) = R_OPA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 4) = R_OPA_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 5) = R_ZOO_FEEDING_OPA(ns:ne)
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 6 ) = LIM_KG_OPA_TEMP
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 7 ) = LIM_KG_OPA_DOXY
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 8 ) = LIM_KG_OPA_N
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 9 ) = LIM_KG_OPA_P
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 10) = LIM_KG_OPA_LIGHT
-    PROCESS_RATES(1:nkn,OPA_C_INDEX, 11) = OPA_LIGHT_SAT
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 6 ) = LIM_KG_OPA_TEMP(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 7 ) = LIM_KG_OPA_DOXY(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 8 ) = LIM_KG_OPA_N(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 9 ) = LIM_KG_OPA_P(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 10) = LIM_KG_OPA_LIGHT(ns:ne)
+    PROCESS_RATES(ns:ne,OPA_C_INDEX, 11) = OPA_LIGHT_SAT(ns:ne)
 
-    DERIVATIVES(1:nkn,OPA_C_INDEX) = &
-        PROCESS_RATES(1:nkn,OPA_C_INDEX, 1) - PROCESS_RATES(1:nkn,OPA_C_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,OPA_C_INDEX, 3) - PROCESS_RATES(1:nkn,OPA_C_INDEX, 4) - &
-                PROCESS_RATES(1:nkn,OPA_C_INDEX, 5)
+    DERIVATIVES(ns:ne,OPA_C_INDEX) = &
+        PROCESS_RATES(ns:ne,OPA_C_INDEX, 1) - PROCESS_RATES(ns:ne,OPA_C_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,OPA_C_INDEX, 3) - PROCESS_RATES(ns:ne,OPA_C_INDEX, 4) - &
+                PROCESS_RATES(ns:ne,OPA_C_INDEX, 5)
 
     !ZOOPLANKTON CARBON
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 1) = R_ZOO_GROWTH
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 1) = R_ZOO_GROWTH(ns:ne)
 
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = 0.0
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) = 0.0
 
     if (ZOOP_OPTION_1 > 0) then
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC(ns:ne)
     end if
 
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 3) = R_ZOO_TOT_RESP
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 4) = R_ZOO_DEATH
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 3) = R_ZOO_TOT_RESP(ns:ne)
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 4) = R_ZOO_DEATH(ns:ne)
 
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 5) = R_ZOO_FEEDING_DIA
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 6) = R_ZOO_FEEDING_CYN
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 7) = R_ZOO_FEEDING_OPA
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 5) = R_ZOO_FEEDING_DIA(ns:ne)
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 6) = R_ZOO_FEEDING_CYN(ns:ne)
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 7) = R_ZOO_FEEDING_OPA(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 8) = R_ZOO_FEEDING_FIX_CYN
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 8) = R_ZOO_FEEDING_FIX_CYN(ns:ne)
     else
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 8) = 0.0D0
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 8) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,ZOO_C_INDEX, 9) = R_ZOO_FEEDING_DET_PART_ORG_C
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 9) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne)
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET(ns:ne)
     else
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 10) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,ZOO_C_INDEX) = &
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 1) - PROCESS_RATES(1:nkn,ZOO_C_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,ZOO_C_INDEX, 3) - PROCESS_RATES(1:nkn,ZOO_C_INDEX, 4)
+    DERIVATIVES(ns:ne,ZOO_C_INDEX) = &
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 1) - PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,ZOO_C_INDEX, 3) - PROCESS_RATES(ns:ne,ZOO_C_INDEX, 4)
 
     ! Debug code for ZOO_C
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_ZOOC_01 &
              (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !ZOOPLANKTON NITROGEN
-    DERIVATIVES(1:nkn,ZOO_N_INDEX) = DERIVATIVES(1:nkn,ZOO_C_INDEX) * ACTUAL_ZOO_N_TO_C
+    DERIVATIVES(ns:ne,ZOO_N_INDEX) = DERIVATIVES(ns:ne,ZOO_C_INDEX) * ACTUAL_ZOO_N_TO_C(ns:ne)
 
     !ZOOPLANKTON PHOSPHORUS
-    DERIVATIVES(1:nkn,ZOO_P_INDEX) = DERIVATIVES(1:nkn,ZOO_C_INDEX) * ACTUAL_ZOO_P_TO_C
+    DERIVATIVES(ns:ne,ZOO_P_INDEX) = DERIVATIVES(ns:ne,ZOO_C_INDEX) * ACTUAL_ZOO_P_TO_C(ns:ne)
 
     if (ZOOP_OPTION_1 > 0) then
 
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 1) = R_ZOO_FEEDING_DIA * DIA_N_TO_C
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN * CYN_N_TO_C
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 3) = R_ZOO_FEEDING_OPA * OPA_N_TO_C
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 1) = R_ZOO_FEEDING_DIA(ns:ne) * DIA_N_TO_C
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN(ns:ne) * CYN_N_TO_C
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 3) = R_ZOO_FEEDING_OPA(ns:ne) * OPA_N_TO_C
 
             if (DO_NON_OBLIGATORY_FIXERS > 0) then
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 4) = R_ZOO_FEEDING_FIX_CYN * FIX_CYN_N_TO_C
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 4) = R_ZOO_FEEDING_FIX_CYN(ns:ne) * FIX_CYN_N_TO_C
             else
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 4) = 0.0D0
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 4) = 0.0D0
             end if
 
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 5) = R_ZOO_FEEDING_DET_PART_ORG_C * ACTUAL_DET_N_TO_C
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 6) = R_ZOO_EX_DON
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 7) = R_ZOO_TOT_RESP               * ACTUAL_ZOO_N_TO_C
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 8) = R_ZOO_DEATH                  * ACTUAL_ZOO_N_TO_C
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 5) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * ACTUAL_DET_N_TO_C(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 6) = R_ZOO_EX_DON(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 7) = R_ZOO_TOT_RESP(ns:ne)               * ACTUAL_ZOO_N_TO_C(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 8) = R_ZOO_DEATH(ns:ne)                  * ACTUAL_ZOO_N_TO_C(ns:ne)
 
-            PROCESS_RATES(1:nkn,ZOO_N_INDEX, 9) = ACTUAL_ZOO_N_TO_C
+            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 9) = ACTUAL_ZOO_N_TO_C(ns:ne)
 
             if (DO_NOSTOCALES > 0) then
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET * NOST_N_TO_C
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) * NOST_N_TO_C
             else
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 10) = 0.0D0
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 10) = 0.0D0
             end if
 
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 1) = R_ZOO_FEEDING_DIA            * DIA_P_TO_C
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 2) = R_ZOO_FEEDING_CYN            * CYN_P_TO_C
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 3) = R_ZOO_FEEDING_OPA            * OPA_P_TO_C
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 1) = R_ZOO_FEEDING_DIA(ns:ne)            * DIA_P_TO_C
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 2) = R_ZOO_FEEDING_CYN(ns:ne)            * CYN_P_TO_C
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 3) = R_ZOO_FEEDING_OPA(ns:ne)            * OPA_P_TO_C
 
             if (DO_NON_OBLIGATORY_FIXERS > 0) then
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 4) = R_ZOO_FEEDING_FIX_CYN * FIX_CYN_P_TO_C
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 4) = R_ZOO_FEEDING_FIX_CYN(ns:ne) * FIX_CYN_P_TO_C
             else
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 4) = 0.0D0
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 4) = 0.0D0
             end if
 
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 5) = R_ZOO_FEEDING_DET_PART_ORG_C * ACTUAL_DET_P_TO_C
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 6) = R_ZOO_EX_DOP
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 7) = R_ZOO_TOT_RESP               * ACTUAL_ZOO_P_TO_C
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 8) = R_ZOO_DEATH                  * ACTUAL_ZOO_P_TO_C
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 5) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * ACTUAL_DET_P_TO_C(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 6) = R_ZOO_EX_DOP(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 7) = R_ZOO_TOT_RESP(ns:ne)               * ACTUAL_ZOO_P_TO_C(ns:ne)
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 8) = R_ZOO_DEATH(ns:ne)                  * ACTUAL_ZOO_P_TO_C(ns:ne)
 
-            PROCESS_RATES(1:nkn,ZOO_P_INDEX, 9) = ACTUAL_ZOO_P_TO_C
+            PROCESS_RATES(ns:ne,ZOO_P_INDEX, 9) = ACTUAL_ZOO_P_TO_C(ns:ne)
 
             if (DO_NOSTOCALES > 0) then
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET * NOST_P_TO_C
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 10) = R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) * NOST_P_TO_C
             else
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 10) = 0.0D0
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 10) = 0.0D0
             end if
 
-            DERIVATIVES(1:nkn,ZOO_N_INDEX) = &
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 1)  + PROCESS_RATES(1:nkn,ZOO_N_INDEX, 2)  + &
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 3)  + PROCESS_RATES(1:nkn,ZOO_N_INDEX, 4)  + &
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 5)  - PROCESS_RATES(1:nkn,ZOO_N_INDEX, 6)  - &
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 7)  - PROCESS_RATES(1:nkn,ZOO_N_INDEX, 8)  + &
-                PROCESS_RATES(1:nkn,ZOO_N_INDEX, 10)
+            DERIVATIVES(ns:ne,ZOO_N_INDEX) = &
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 1)  + PROCESS_RATES(ns:ne,ZOO_N_INDEX, 2)  + &
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 3)  + PROCESS_RATES(ns:ne,ZOO_N_INDEX, 4)  + &
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 5)  - PROCESS_RATES(ns:ne,ZOO_N_INDEX, 6)  - &
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 7)  - PROCESS_RATES(ns:ne,ZOO_N_INDEX, 8)  + &
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 10)
 
-            DERIVATIVES(1:nkn,ZOO_P_INDEX) = &
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 1)  + PROCESS_RATES(1:nkn,ZOO_P_INDEX, 2)  + &
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 3)  + PROCESS_RATES(1:nkn,ZOO_P_INDEX, 4)  + &
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 5)  - PROCESS_RATES(1:nkn,ZOO_P_INDEX, 6)  - &
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 7)  - PROCESS_RATES(1:nkn,ZOO_P_INDEX, 8)  + &
-                PROCESS_RATES(1:nkn,ZOO_P_INDEX, 10)
+            DERIVATIVES(ns:ne,ZOO_P_INDEX) = &
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 1)  + PROCESS_RATES(ns:ne,ZOO_P_INDEX, 2)  + &
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 3)  + PROCESS_RATES(ns:ne,ZOO_P_INDEX, 4)  + &
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 5)  - PROCESS_RATES(ns:ne,ZOO_P_INDEX, 6)  - &
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 7)  - PROCESS_RATES(ns:ne,ZOO_P_INDEX, 8)  + &
+                PROCESS_RATES(ns:ne,ZOO_P_INDEX, 10)
     end if
 
     !DEAD ORGANIC CARBON PARTICLES
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 1) = R_DIA_DEATH
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 2) = R_CYN_DEATH
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 3) = R_OPA_DEATH
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 1) = R_DIA_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 2) = R_CYN_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 3) = R_OPA_DEATH(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 4) = R_FIX_CYN_DEATH
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 4) = R_FIX_CYN_DEATH(ns:ne)
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 4) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 5) = R_ZOO_DEATH
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 7) = R_DET_PART_ORG_C_DISSOLUTION
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 5) = R_ZOO_DEATH(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 7) = R_DET_PART_ORG_C_DISSOLUTION(ns:ne)
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 8) = R_NOST_VEG_HET_DEATH
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 9) = R_DENS_MORT_NOST_VEG_HET
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 8) = R_NOST_VEG_HET_DEATH(ns:ne)
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 9) = R_DENS_MORT_NOST_VEG_HET(ns:ne)
 
         ! Keep it zero. Mortality of akinetes is negligible
         ! Before germination they sit in mud, not in WC
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX,10) = R_MORT_AKI
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX,10) = R_MORT_AKI(ns:ne)
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 8)  = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 9)  = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 8)  = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 9)  = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 10) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,DET_PART_ORG_C_INDEX) = &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 1) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 2) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 3) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 4) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 5) - &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 6) - &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 7) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 8) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 9) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_C_INDEX, 10)
+    DERIVATIVES(ns:ne,DET_PART_ORG_C_INDEX) = &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 1) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 2) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 3) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 4) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 5) - &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 6) - &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 7) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 8) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 9) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_C_INDEX, 10)
 
     ! Debug code for DET_PART_ORG_C
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_DET_PART_ORG_C_01 &
              (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     !DEAD ORGANIC NITROGEN PARTICLES
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 1) = R_DIA_DEATH * DIA_N_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 2) = R_CYN_DEATH * CYN_N_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 3) = R_OPA_DEATH * OPA_N_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 1) = R_DIA_DEATH(ns:ne) * DIA_N_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 2) = R_CYN_DEATH(ns:ne) * CYN_N_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 3) = R_OPA_DEATH(ns:ne) * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 4) = R_FIX_CYN_DEATH * FIX_CYN_N_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 4) = R_FIX_CYN_DEATH(ns:ne) * FIX_CYN_N_TO_C
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 4) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 5) = R_ZOO_DEATH                  * ACTUAL_ZOO_N_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C * ACTUAL_DET_N_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 7) = R_DET_PART_ORG_N_DISSOLUTION
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 5) = R_ZOO_DEATH(ns:ne)                  * ACTUAL_ZOO_N_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * ACTUAL_DET_N_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 7) = R_DET_PART_ORG_N_DISSOLUTION(ns:ne)
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 8) = ACTUAL_DET_N_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 8) = ACTUAL_DET_N_TO_C(ns:ne)
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 9 ) = R_NOST_VEG_HET_DEATH * NOST_N_TO_C
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 10) = R_DENS_MORT_NOST_VEG_HET * NOST_N_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 9 ) = R_NOST_VEG_HET_DEATH(ns:ne) * NOST_N_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 10) = R_DENS_MORT_NOST_VEG_HET(ns:ne) * NOST_N_TO_C
 
         ! Keep it zero. Mortality of akinetes is negligible
         ! Before germination they st in mud, not in WC
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 11) = R_MORT_AKI * NOST_N_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 11) = R_MORT_AKI(ns:ne) * NOST_N_TO_C
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX,  9) = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 10) = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 11) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX,  9) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 11) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,DET_PART_ORG_N_INDEX) = &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 1)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 2)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 3)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 4)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 5)  - &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 6)  - &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 7)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 9)  + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 10) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_N_INDEX, 11)
+    DERIVATIVES(ns:ne,DET_PART_ORG_N_INDEX) = &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 1)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 2)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 3)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 4)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 5)  - &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 6)  - &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 7)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 9)  + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 10) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 11)
 
     !DEAD ORGANIC PHOSPHORUS PARTICLES
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 1) = R_DIA_DEATH * DIA_P_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 2) = R_CYN_DEATH * CYN_P_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 3) = R_OPA_DEATH * OPA_P_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 1) = R_DIA_DEATH(ns:ne) * DIA_P_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 2) = R_CYN_DEATH(ns:ne) * CYN_P_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 3) = R_OPA_DEATH(ns:ne) * OPA_P_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 4) = R_FIX_CYN_DEATH * FIX_CYN_P_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 4) = R_FIX_CYN_DEATH(ns:ne) * FIX_CYN_P_TO_C
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 4) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 4) = 0.0D0
     end if
 
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 5) = R_ZOO_DEATH                  * ACTUAL_ZOO_P_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C * ACTUAL_DET_P_TO_C
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 7) = R_DET_PART_ORG_P_DISSOLUTION
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 5) = R_ZOO_DEATH(ns:ne)                  * ACTUAL_ZOO_P_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 6) = R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * ACTUAL_DET_P_TO_C(ns:ne)
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 7) = R_DET_PART_ORG_P_DISSOLUTION(ns:ne)
 
     ! Auxiliary
-    PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 8) = ACTUAL_DET_P_TO_C
+    PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 8) = ACTUAL_DET_P_TO_C(ns:ne)
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 9)  = R_NOST_VEG_HET_DEATH * NOST_P_TO_C
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 10) = R_DENS_MORT_NOST_VEG_HET * NOST_P_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 9)  = R_NOST_VEG_HET_DEATH(ns:ne) * NOST_P_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 10) = R_DENS_MORT_NOST_VEG_HET(ns:ne) * NOST_P_TO_C
 
         ! Keep it zero. Mortality of akinetes is negligible
         ! Before germination they sit in mud, not in WC
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 11) = R_MORT_AKI * NOST_P_TO_C
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 11) = R_MORT_AKI(ns:ne) * NOST_P_TO_C
     else
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX,  9) = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 10) = 0.0D0
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 11) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX,  9) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 11) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,DET_PART_ORG_P_INDEX) = &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 1)  + PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 2) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 3)  + PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 4) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 5)  - PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 6) - &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 7)  + PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 9) + &
-        PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 10) + PROCESS_RATES(1:nkn,DET_PART_ORG_P_INDEX, 11)
+    DERIVATIVES(ns:ne,DET_PART_ORG_P_INDEX) = &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 1)  + PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 2) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 3)  + PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 4) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 5)  - PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 6) - &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 7)  + PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 9) + &
+        PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 10) + PROCESS_RATES(ns:ne,DET_PART_ORG_P_INDEX, 11)
 
     !PARTICULATE SILICA
-    PROCESS_RATES(1:nkn,PART_Si_INDEX, 1) = R_DIA_DEATH * DIA_Si_TO_C
-    PROCESS_RATES(1:nkn,PART_Si_INDEX, 2) = R_ZOO_FEEDING_DIA * DIA_Si_TO_C
-    PROCESS_RATES(1:nkn,PART_Si_INDEX, 3) = R_PART_Si_DISS
+    PROCESS_RATES(ns:ne,PART_Si_INDEX, 1) = R_DIA_DEATH(ns:ne) * DIA_Si_TO_C
+    PROCESS_RATES(ns:ne,PART_Si_INDEX, 2) = R_ZOO_FEEDING_DIA(ns:ne) * DIA_Si_TO_C
+    PROCESS_RATES(ns:ne,PART_Si_INDEX, 3) = R_PART_Si_DISS(ns:ne)
 
-    DERIVATIVES(1:nkn,PART_Si_INDEX) = &
-        PROCESS_RATES(1:nkn,PART_Si_INDEX, 1) + PROCESS_RATES(1:nkn,PART_Si_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,PART_Si_INDEX, 3)
+    DERIVATIVES(ns:ne,PART_Si_INDEX) = &
+        PROCESS_RATES(ns:ne,PART_Si_INDEX, 1) + PROCESS_RATES(ns:ne,PART_Si_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,PART_Si_INDEX, 3)
 
     !DISSOLVED ORGANIC CARBON
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 1) = R_DET_PART_ORG_C_DISSOLUTION
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 2) = R_ZOO_EX_DOC
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 1) = R_DET_PART_ORG_C_DISSOLUTION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 2) = R_ZOO_EX_DOC(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 3)  = &
-        R_ABIOTIC_DOC_MIN_DOXY   + R_ABIOTIC_DOC_MIN_NO3N     + R_ABIOTIC_DOC_MIN_MN_IV + &
-        R_ABIOTIC_DOC_MIN_FE_III + R_ABIOTIC_DOC_MIN_S_PLUS_6 + R_ABIOTIC_DOC_MIN_DOC
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 3)  = &
+        R_ABIOTIC_DOC_MIN_DOXY(ns:ne)   + R_ABIOTIC_DOC_MIN_NO3N(ns:ne)     + R_ABIOTIC_DOC_MIN_MN_IV(ns:ne) + &
+        R_ABIOTIC_DOC_MIN_FE_III(ns:ne) + R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DOC_MIN_DOC(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4) = R_DIA_EXCR + R_CYN_EXCR + R_OPA_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 5) = R_DIA_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 6) = R_CYN_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 7) = R_OPA_EXCR
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4) = R_DIA_EXCR(ns:ne) + R_CYN_EXCR(ns:ne) + R_OPA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 5) = R_DIA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 6) = R_CYN_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 7) = R_OPA_EXCR(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4) + R_FIX_CYN_EXCR
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4) + R_FIX_CYN_EXCR(ns:ne)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 8) = R_FIX_CYN_EXCR
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 8) = R_FIX_CYN_EXCR(ns:ne)
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 8) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 8) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4) + R_NOST_VEG_HET_EXCR
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4) + R_NOST_VEG_HET_EXCR(ns:ne)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 9) = R_NOST_VEG_HET_EXCR
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 9) = R_NOST_VEG_HET_EXCR(ns:ne)
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 9) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 9) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,DISS_ORG_C_INDEX) = &
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 1) + PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 3) + PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX, 4)
+    DERIVATIVES(ns:ne,DISS_ORG_C_INDEX) = &
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 1) + PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 3) + PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX, 4)
 
     !DISSOLVED ORGANIC NITROGEN
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 1) = R_DET_PART_ORG_N_DISSOLUTION
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 2) = R_ZOO_EX_DON
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 1) = R_DET_PART_ORG_N_DISSOLUTION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 2) = R_ZOO_EX_DON(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 3)  = &
-        R_ABIOTIC_DON_MIN_DOXY   + R_ABIOTIC_DON_MIN_NO3N     + R_ABIOTIC_DON_MIN_MN_IV + &
-        R_ABIOTIC_DON_MIN_FE_III + R_ABIOTIC_DON_MIN_S_PLUS_6 + R_ABIOTIC_DON_MIN_DOC
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 3)  = &
+        R_ABIOTIC_DON_MIN_DOXY(ns:ne)   + R_ABIOTIC_DON_MIN_NO3N(ns:ne)     + R_ABIOTIC_DON_MIN_MN_IV(ns:ne) + &
+        R_ABIOTIC_DON_MIN_FE_III(ns:ne) + R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DON_MIN_DOC(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) = &
-        (R_DIA_EXCR * DIA_N_TO_C) + (R_CYN_EXCR * CYN_N_TO_C) + (R_OPA_EXCR * OPA_N_TO_C)
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
+        (R_DIA_EXCR(ns:ne) * DIA_N_TO_C) + (R_CYN_EXCR(ns:ne) * CYN_N_TO_C) + (R_OPA_EXCR(ns:ne) * OPA_N_TO_C)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) = &
-        R_CYN_GROWTH * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN)
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
+        R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne))
 
     if(DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 6) = &
-            R_NOST_VEG_HET_NON_FIX_GROWTH * NOST_N_TO_C * (1.D0 - PREF_DIN_DON_NOST)
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6) = &
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * NOST_N_TO_C * (1.D0 - PREF_DIN_DON_NOST(ns:ne))
     else
-       PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 6) = &
-           R_NON_FIX_CYN_GROWTH * PREF_NH4N_DON_FIX_CYN * CYN_N_TO_C * &
-           ((DISS_ORG_N * frac_avail_DON) / max(NH4_N + (DISS_ORG_N * frac_avail_DON), 1.0D-10))
+       PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6) = &
+           R_NON_FIX_CYN_GROWTH(ns:ne) * PREF_NH4N_DON_FIX_CYN(ns:ne) * CYN_N_TO_C * &
+           ((DISS_ORG_N(ns:ne) * frac_avail_DON) / max(NH4_N(ns:ne) + (DISS_ORG_N(ns:ne) * frac_avail_DON), 1.0D-10))
     end if
 
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 7) = R_DIA_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 8) = R_CYN_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 9) = R_OPA_EXCR
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 7) = R_DIA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 8) = R_CYN_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 9) = R_OPA_EXCR(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) + (R_FIX_CYN_EXCR * FIX_CYN_N_TO_C)
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) + (R_FIX_CYN_EXCR(ns:ne) * FIX_CYN_N_TO_C)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 10) = R_FIX_CYN_EXCR * FIX_CYN_N_TO_C
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 10) = R_FIX_CYN_EXCR(ns:ne) * FIX_CYN_N_TO_C
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 10) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) + (R_NOST_VEG_HET_EXCR * NOST_N_TO_C)
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) + (R_NOST_VEG_HET_EXCR(ns:ne) * NOST_N_TO_C)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 11) = R_NOST_VEG_HET_EXCR * NOST_N_TO_C
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 11) = R_NOST_VEG_HET_EXCR(ns:ne) * NOST_N_TO_C
 
-         PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) = &
-        (R_CYN_GROWTH * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN))
+         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
+        (R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne)))
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 11) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 11) = 0.0D0
     end if
-    PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 12) = PHYT_TOT_C
+    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 12) = PHYT_TOT_C(ns:ne)
 
-    DERIVATIVES(1:nkn,DISS_ORG_N_INDEX) = &
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 1) + PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 3) + PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 4) - &
-        PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 5) - PROCESS_RATES(1:nkn,DISS_ORG_N_INDEX, 6)
+    DERIVATIVES(ns:ne,DISS_ORG_N_INDEX) = &
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 1) + PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 3) + PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) - &
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) - PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6)
 
      ! Debug code for  DISS_ORG_N
+    !$omp barrier
+    !$omp master
      if(debug_stranger) then
          call DBGSTR_PEL_DET_DISS_ORG_N_01 &
               (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
 
     !DISSOLVED ORGANIC PHOSPHORUS
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 1) = R_DET_PART_ORG_P_DISSOLUTION
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 2) = R_ZOO_EX_DOP
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 1) = R_DET_PART_ORG_P_DISSOLUTION(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 2) = R_ZOO_EX_DOP(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 3) =  &
-        R_ABIOTIC_DOP_MIN_DOXY   + R_ABIOTIC_DOP_MIN_NO3N     + R_ABIOTIC_DOP_MIN_MN_IV + &
-        R_ABIOTIC_DOP_MIN_FE_III + R_ABIOTIC_DOP_MIN_S_PLUS_6 + R_ABIOTIC_DOP_MIN_DOC
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 3) =  &
+        R_ABIOTIC_DOP_MIN_DOXY(ns:ne)   + R_ABIOTIC_DOP_MIN_NO3N(ns:ne)     + R_ABIOTIC_DOP_MIN_MN_IV(ns:ne) + &
+        R_ABIOTIC_DOP_MIN_FE_III(ns:ne) + R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DOP_MIN_DOC(ns:ne)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) = &
-        (R_DIA_EXCR * DIA_P_TO_C) + (R_CYN_EXCR * CYN_P_TO_C) + (R_OPA_EXCR * OPA_P_TO_C)
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) = &
+        (R_DIA_EXCR(ns:ne) * DIA_P_TO_C) + (R_CYN_EXCR(ns:ne) * CYN_P_TO_C) + (R_OPA_EXCR(ns:ne) * OPA_P_TO_C)
 
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 5) = R_DIA_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 6) = R_CYN_EXCR
-    PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 7) = R_OPA_EXCR
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 5) = R_DIA_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 6) = R_CYN_EXCR(ns:ne)
+    PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 7) = R_OPA_EXCR(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) + (R_FIX_CYN_EXCR * FIX_CYN_P_TO_C)
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) + (R_FIX_CYN_EXCR(ns:ne) * FIX_CYN_P_TO_C)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 8) = R_FIX_CYN_EXCR * FIX_CYN_P_TO_C
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 8) = R_FIX_CYN_EXCR(ns:ne) * FIX_CYN_P_TO_C
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 8) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 8) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) = &
-            PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) + (R_NOST_VEG_HET_EXCR * NOST_P_TO_C)
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) = &
+            PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) + (R_NOST_VEG_HET_EXCR(ns:ne) * NOST_P_TO_C)
 
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 9) = R_NOST_VEG_HET_EXCR * NOST_P_TO_C
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 9) = R_NOST_VEG_HET_EXCR(ns:ne) * NOST_P_TO_C
 
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 10) = &
-        (R_NOST_VEG_HET_GROWTH * NOST_P_TO_C * (1.D0 - PREF_DIP_DOP_NOST))
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 10) = &
+        (R_NOST_VEG_HET_GROWTH(ns:ne) * NOST_P_TO_C * (1.D0 - PREF_DIP_DOP_NOST(ns:ne)))
     else
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 9)  = 0.0D0
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 10) = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 9)  = 0.0D0
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 10) = 0.0D0
     end if
 
-    DERIVATIVES(1:nkn,DISS_ORG_P_INDEX) = &
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 1) + PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 2) - &
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 3) + PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 4) - &
-        PROCESS_RATES(1:nkn,DISS_ORG_P_INDEX, 10)
+    DERIVATIVES(ns:ne,DISS_ORG_P_INDEX) = &
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 1) + PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 2) - &
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 3) + PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 4) - &
+        PROCESS_RATES(ns:ne,DISS_ORG_P_INDEX, 10)
 
     ! Kinetic sub model for dissolved inorganic carbon
 
     ! Sources
-    R_DIA_TOT_RESP          = PROCESS_RATES(1:nkn,DIA_C_INDEX          , 2)
-    R_CYN_TOT_RESP          = PROCESS_RATES(1:nkn,CYN_C_INDEX          , 2)
-    R_FIX_CYN_TOT_RESP      = PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX      , 2)
-    R_OPA_TOT_RESP          = PROCESS_RATES(1:nkn,OPA_C_INDEX          , 2)
-    R_ZOO_RESP              = PROCESS_RATES(1:nkn,ZOO_C_INDEX          , 3)
-    R_ABIOTIC_DOC_MIN       = PROCESS_RATES(1:nkn,DISS_ORG_C_INDEX     , 3)
-    R_NOST_VEG_HET_TOT_RESP = PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX , 2)
+    R_DIA_TOT_RESP(ns:ne)          = PROCESS_RATES(ns:ne,DIA_C_INDEX          , 2)
+    R_CYN_TOT_RESP(ns:ne)          = PROCESS_RATES(ns:ne,CYN_C_INDEX          , 2)
+    R_FIX_CYN_TOT_RESP(ns:ne)      = PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX      , 2)
+    R_OPA_TOT_RESP(ns:ne)          = PROCESS_RATES(ns:ne,OPA_C_INDEX          , 2)
+    R_ZOO_RESP(ns:ne)              = PROCESS_RATES(ns:ne,ZOO_C_INDEX          , 3)
+    R_ABIOTIC_DOC_MIN(ns:ne)       = PROCESS_RATES(ns:ne,DISS_ORG_C_INDEX     , 3)
+    R_NOST_VEG_HET_TOT_RESP(ns:ne) = PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX , 2)
 
-    TOTAL_DIC_KINETIC_SOURCES = &
-        R_DIA_TOT_RESP             + R_CYN_TOT_RESP             + &
-        R_OPA_TOT_RESP             + R_ZOO_RESP                 + &
-        R_ABIOTIC_DOC_MIN_DOXY     + R_ABIOTIC_DOC_MIN_NO3N     + &
-        R_ABIOTIC_DOC_MIN_MN_IV    + R_ABIOTIC_DOC_MIN_FE_III   + &
-        R_ABIOTIC_DOC_MIN_S_PLUS_6 + R_METHANOGENESIS + &
-        R_METHANE_OXIDATION
+    TOTAL_DIC_KINETIC_SOURCES(ns:ne) = &
+        R_DIA_TOT_RESP(ns:ne)             + R_CYN_TOT_RESP(ns:ne)             + &
+        R_OPA_TOT_RESP(ns:ne)             + R_ZOO_RESP(ns:ne)                 + &
+        R_ABIOTIC_DOC_MIN_DOXY(ns:ne)     + R_ABIOTIC_DOC_MIN_NO3N(ns:ne)     + &
+        R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)    + R_ABIOTIC_DOC_MIN_FE_III(ns:ne)   + &
+        R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne) + R_METHANOGENESIS(ns:ne) + &
+        R_METHANE_OXIDATION(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        TOTAL_DIC_KINETIC_SOURCES = TOTAL_DIC_KINETIC_SOURCES + R_FIX_CYN_TOT_RESP
+        TOTAL_DIC_KINETIC_SOURCES(ns:ne) = TOTAL_DIC_KINETIC_SOURCES(ns:ne) + R_FIX_CYN_TOT_RESP(ns:ne)
     end if
 
     if (DO_NOSTOCALES > 0) then
-        TOTAL_DIC_KINETIC_SOURCES = TOTAL_DIC_KINETIC_SOURCES + R_NOST_VEG_HET_TOT_RESP
+        TOTAL_DIC_KINETIC_SOURCES(ns:ne) = TOTAL_DIC_KINETIC_SOURCES(ns:ne) + R_NOST_VEG_HET_TOT_RESP(ns:ne)
     end if
 
     ! One-shot CHLA negative dump: if computed CHLA went negative in CHLA routine, print full local context once
+    !$omp barrier
+    !$omp master
     if (CHLA_NEG_FLAG .and. (.not. CHLA_DUMP_DONE)) then
         dump_node = CHLA_NEG_NODE
         write(6,'(A,F12.4,A,I4,A,ES12.4)') &
@@ -2835,44 +2917,46 @@ subroutine AQUABC_PELAGIC_KINETICS &
         write(6,'(A,3ES12.4)') '  NH4_N/NO3_N/PO4_P=', NH4_N(dump_node), NO3_N(dump_node), PO4_P(dump_node)
         CHLA_DUMP_DONE = .true.
     end if
+    !$omp end master
+    !$omp barrier
 
     ! Sinks
-    R_DIA_GROWTH          = PROCESS_RATES(1:nkn,DIA_C_INDEX         , 1)
-    R_CYN_GROWTH          = PROCESS_RATES(1:nkn,CYN_C_INDEX         , 1)
-    R_FIX_CYN_GROWTH      = PROCESS_RATES(1:nkn,FIX_CYN_C_INDEX     , 1)
-    R_OPA_GROWTH          = PROCESS_RATES(1:nkn,OPA_C_INDEX         , 1)
-    R_NOST_VEG_HET_GROWTH = PROCESS_RATES(1:nkn,NOST_VEG_HET_C_INDEX, 1)
+    R_DIA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,DIA_C_INDEX         , 1)
+    R_CYN_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,CYN_C_INDEX         , 1)
+    R_FIX_CYN_GROWTH(ns:ne)      = PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX     , 1)
+    R_OPA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,OPA_C_INDEX         , 1)
+    R_NOST_VEG_HET_GROWTH(ns:ne) = PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 1)
 
-    TOTAL_DIC_KINETIC_SINKS = R_DIA_GROWTH + R_CYN_GROWTH + R_OPA_GROWTH
+    TOTAL_DIC_KINETIC_SINKS(ns:ne) = R_DIA_GROWTH(ns:ne) + R_CYN_GROWTH(ns:ne) + R_OPA_GROWTH(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        TOTAL_DIC_KINETIC_SINKS = TOTAL_DIC_KINETIC_SINKS + R_FIX_CYN_GROWTH
+        TOTAL_DIC_KINETIC_SINKS(ns:ne) = TOTAL_DIC_KINETIC_SINKS(ns:ne) + R_FIX_CYN_GROWTH(ns:ne)
     end if
 
     if (DO_NOSTOCALES > 0) then
-        TOTAL_DIC_KINETIC_SINKS = TOTAL_DIC_KINETIC_SINKS + R_NOST_VEG_HET_GROWTH
+        TOTAL_DIC_KINETIC_SINKS(ns:ne) = TOTAL_DIC_KINETIC_SINKS(ns:ne) + R_NOST_VEG_HET_GROWTH(ns:ne)
     end if
 
     ! Atmospheric exchange
-    T_A = TEMP + CELSIUS_TO_KELVIN
+    T_A(ns:ne) = TEMP(ns:ne) + CELSIUS_TO_KELVIN
 
     ! Calculate the saturaion concentration of CO2 in water
-    P_K_H   = -(2385.73D0 / T_A) - (0.0152642D0 * T_A) + 14.0184D0
-    K_H     = 10.0D0 ** (-P_K_H)
-    P_CO2   = 10.0D0 ** (-3.416D0)
-    CO2_SAT = K_H * P_CO2         !In moles
+    P_K_H(ns:ne)   = -(2385.73D0 / T_A(ns:ne)) - (0.0152642D0 * T_A(ns:ne)) + 14.0184D0
+    K_H(ns:ne)     = 10.0D0 ** (-P_K_H(ns:ne))
+    P_CO2(ns:ne)   = 10.0D0 ** (-3.416D0)
+    CO2_SAT(ns:ne) = K_H(ns:ne) * P_CO2(ns:ne)         !In moles
 
     ! Calculate the rearation rate constant for CO2
-    K_A_CALC_CO2 = K_A_CALC * 0.923D0
+    K_A_CALC_CO2(ns:ne) = K_A_CALC(ns:ne) * 0.923D0
 
     ! Finally calculate the atmospheric exchange rate
-    CO2_ATM_EXHANGE = K_A_CALC_CO2 * (CO2_SAT - (H2CO3/1.0D6))
+    CO2_ATM_EXHANGE(ns:ne) = K_A_CALC_CO2(ns:ne) * (CO2_SAT(ns:ne) - (H2CO3(ns:ne)/1.0D6))
 
     !----------------------------------------------------------------------
     ! 2 February 2015
     ! New code added to account the effect of ice cover.
     !----------------------------------------------------------------------
-    CO2_ATM_EXHANGE = CO2_ATM_EXHANGE * (1.0D0 - ice_cover)
+    CO2_ATM_EXHANGE(ns:ne) = CO2_ATM_EXHANGE(ns:ne) * (1.0D0 - ice_cover(ns:ne))
     !----------------------------------------------------------------------
     ! End of new code added to account the effect of ice cover.
     !----------------------------------------------------------------------
@@ -2881,63 +2965,63 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Calculate the total derivative and convert it to moles
     if (CONSIDER_INORG_C_DERIVATIVE > 0) then
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 1) = TOTAL_DIC_KINETIC_SOURCES / 12000.0D0
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 2) = TOTAL_DIC_KINETIC_SINKS   / 12000.0D0
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 1) = TOTAL_DIC_KINETIC_SOURCES(ns:ne) / 12000.0D0
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 2) = TOTAL_DIC_KINETIC_SINKS(ns:ne)   / 12000.0D0
 
         if (CONSIDER_CO2_REARATION > 0) then
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 3) = CO2_ATM_EXHANGE
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 3) = CO2_ATM_EXHANGE(ns:ne)
         else
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 3) = 0.0D0
-            CO2_ATM_EXHANGE = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 3) = 0.0D0
+            CO2_ATM_EXHANGE(ns:ne) = 0.0D0
         end if
 
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 4)  = R_DIA_TOT_RESP
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 5)  = R_CYN_TOT_RESP
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 4)  = R_DIA_TOT_RESP(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 5)  = R_CYN_TOT_RESP(ns:ne)
 
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 7)  = R_OPA_TOT_RESP
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 8)  = R_ZOO_RESP
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 9)  = R_ABIOTIC_DOC_MIN
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 10) = R_DIA_GROWTH
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 11) = R_CYN_GROWTH
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 13) = R_OPA_GROWTH
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 7)  = R_OPA_TOT_RESP(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 8)  = R_ZOO_RESP(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 9)  = R_ABIOTIC_DOC_MIN(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 10) = R_DIA_GROWTH(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 11) = R_CYN_GROWTH(ns:ne)
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 13) = R_OPA_GROWTH(ns:ne)
 
         if (DO_NON_OBLIGATORY_FIXERS > 0) then
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 6)  = R_FIX_CYN_TOT_RESP
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 12) = R_FIX_CYN_GROWTH
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 6)  = R_FIX_CYN_TOT_RESP(ns:ne)
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 12) = R_FIX_CYN_GROWTH(ns:ne)
         else
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 6)  = 0.0D0
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 12) = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 6)  = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 12) = 0.0D0
         end if
 
         if (DO_NOSTOCALES > 0) then
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 14) = R_NOST_VEG_HET_TOT_RESP
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 15) = R_NOST_VEG_HET_GROWTH
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 14) = R_NOST_VEG_HET_TOT_RESP(ns:ne)
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 15) = R_NOST_VEG_HET_GROWTH(ns:ne)
         else
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 14) = 0.0D0
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 15) = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 14) = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 15) = 0.0D0
         end if
 
-        DIC_KINETIC_DERIVATIVE = CO2_ATM_EXHANGE + &
-            ((TOTAL_DIC_KINETIC_SOURCES - TOTAL_DIC_KINETIC_SINKS) / 12000.0D0)
+        DIC_KINETIC_DERIVATIVE(ns:ne) = CO2_ATM_EXHANGE(ns:ne) + &
+            ((TOTAL_DIC_KINETIC_SOURCES(ns:ne) - TOTAL_DIC_KINETIC_SINKS(ns:ne)) / 12000.0D0)
 
-        DERIVATIVES(1:nkn,INORG_C_INDEX) = DIC_KINETIC_DERIVATIVE
+        DERIVATIVES(ns:ne,INORG_C_INDEX) = DIC_KINETIC_DERIVATIVE(ns:ne)
     else
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 1) = 0.0D0
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 2) = 0.0D0
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 1) = 0.0D0
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 2) = 0.0D0
 
         if (CONSIDER_CO2_REARATION > 0) then
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 3) = CO2_ATM_EXHANGE
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 3) = CO2_ATM_EXHANGE(ns:ne)
         else
-            PROCESS_RATES(1:nkn,INORG_C_INDEX, 3) = 0.0D0
-            CO2_ATM_EXHANGE = 0.0D0
+            PROCESS_RATES(ns:ne,INORG_C_INDEX, 3) = 0.0D0
+            CO2_ATM_EXHANGE(ns:ne) = 0.0D0
         end if
 
-        PROCESS_RATES(1:nkn,INORG_C_INDEX, 4:15) = 0.0D0
+        PROCESS_RATES(ns:ne,INORG_C_INDEX, 4:15) = 0.0D0
 
         if (CONSIDER_CO2_REARATION > 0) then
-            DERIVATIVES(1:nkn,INORG_C_INDEX) = CO2_ATM_EXHANGE
+            DERIVATIVES(ns:ne,INORG_C_INDEX) = CO2_ATM_EXHANGE(ns:ne)
         else
-            DERIVATIVES(1:nkn,INORG_C_INDEX) = 0.0D0
+            DERIVATIVES(ns:ne,INORG_C_INDEX) = 0.0D0
         end if
     end if
 
@@ -2947,44 +3031,48 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (DO_ADVANCED_REDOX_SIMULATION > 0) then
 
         ! Calcium
-        DERIVATIVES(1:nkn,CA_INDEX) = 0.0D0
+        DERIVATIVES(ns:ne,CA_INDEX) = 0.0D0
 
         ! Magnesium
-        DERIVATIVES(1:nkn,MG_INDEX) = 0.0D0
+        DERIVATIVES(ns:ne,MG_INDEX) = 0.0D0
 
         ! Suphate sulphur
-        PROCESS_RATES(1:nkn, S_PLUS_6_INDEX, 1) = R_SULPHIDE_OXIDATION
-        PROCESS_RATES(1:nkn, S_PLUS_6_INDEX, 2) = R_SULPHATE_REDUCTION
+        PROCESS_RATES(ns:ne, S_PLUS_6_INDEX, 1) = R_SULPHIDE_OXIDATION(ns:ne)
+        PROCESS_RATES(ns:ne, S_PLUS_6_INDEX, 2) = R_SULPHATE_REDUCTION(ns:ne)
 
-        DERIVATIVES(1:nkn,S_PLUS_6_INDEX) = &
-            PROCESS_RATES(1:nkn, S_PLUS_6_INDEX, 1) - &
-            PROCESS_RATES(1:nkn, S_PLUS_6_INDEX, 2)
+        DERIVATIVES(ns:ne,S_PLUS_6_INDEX) = &
+            PROCESS_RATES(ns:ne, S_PLUS_6_INDEX, 1) - &
+            PROCESS_RATES(ns:ne, S_PLUS_6_INDEX, 2)
 
         ! Sulphide sulphur
-        PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 1) = H2S_ATM_EXCHANGE
-        PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 2) = R_SULPHATE_REDUCTION
-        PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 3) = R_SULPHIDE_OXIDATION
+        PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 1) = H2S_ATM_EXCHANGE(ns:ne)
+        PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 2) = R_SULPHATE_REDUCTION(ns:ne)
+        PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 3) = R_SULPHIDE_OXIDATION(ns:ne)
 
-        DERIVATIVES(1:nkn,S_MINUS_2_INDEX) = &
-            PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 1) + &
-            PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 2) - &
-            PROCESS_RATES(1:nkn, S_MINUS_2_INDEX, 3)
+        DERIVATIVES(ns:ne,S_MINUS_2_INDEX) = &
+            PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 1) + &
+            PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 2) - &
+            PROCESS_RATES(ns:ne, S_MINUS_2_INDEX, 3)
 
         ! Methane carbon
-        PROCESS_RATES(1:nkn, CH4_C_INDEX, 1) = CH4_ATM_EXCHANGE
-        PROCESS_RATES(1:nkn, CH4_C_INDEX, 2) = R_METHANOGENESIS
-        PROCESS_RATES(1:nkn, CH4_C_INDEX, 3) = R_METHANE_OXIDATION
+        PROCESS_RATES(ns:ne, CH4_C_INDEX, 1) = CH4_ATM_EXCHANGE(ns:ne)
+        PROCESS_RATES(ns:ne, CH4_C_INDEX, 2) = R_METHANOGENESIS(ns:ne)
+        PROCESS_RATES(ns:ne, CH4_C_INDEX, 3) = R_METHANE_OXIDATION(ns:ne)
 
-        DERIVATIVES(1:nkn,CH4_C_INDEX) = &
-            PROCESS_RATES(1:nkn, CH4_C_INDEX, 1) + PROCESS_RATES(1:nkn, CH4_C_INDEX, 2) - &
-            PROCESS_RATES(1:nkn, CH4_C_INDEX, 3)
+        DERIVATIVES(ns:ne,CH4_C_INDEX) = &
+            PROCESS_RATES(ns:ne, CH4_C_INDEX, 1) + PROCESS_RATES(ns:ne, CH4_C_INDEX, 2) - &
+            PROCESS_RATES(ns:ne, CH4_C_INDEX, 3)
     end if
 
     ! Debug code for Methane
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_DET_CH4_C_01 &
              (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     ! -------------------------------------------------------------------------
     ! END OF 29 JANUARY 2016, KINETIC DERIVATIVES FOR THE NEW STATE VARIABLES
@@ -3013,10 +3101,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------
     ! Calculate the NH4 and NH3 fractions in ammonia
     ! -------------------------------------------------------------------------
-    T_A      = TEMP + CELSIUS_TO_KELVIN
-    pKH      = 9.018D-2 + (2.72992D3 / T_A)
-    FRAC_NH3 = 1.0D0 / (1.0D0 + (10.0D0 ** (pKH - PH)))
-    FRAC_NH4 = 1.0D0 - FRAC_NH3
+    T_A(ns:ne)      = TEMP(ns:ne) + CELSIUS_TO_KELVIN
+    pKH(ns:ne)      = 9.018D-2 + (2.72992D3 / T_A(ns:ne))
+    FRAC_NH3(ns:ne) = 1.0D0 / (1.0D0 + (10.0D0 ** (pKH(ns:ne) - PH(ns:ne))))
+    FRAC_NH4(ns:ne) = 1.0D0 - FRAC_NH3(ns:ne)
     ! -------------------------------------------------------------------------
     ! End of calculate NH4 and NH3 fractions in ammonia
     ! -------------------------------------------------------------------------
@@ -3024,24 +3112,24 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------
     ! Calculate the NH4N in fluxes and out fluxes from fluxes
     ! -------------------------------------------------------------------------
-    where(SEDIMENT_FLUXES(1:nkn, NH4_N_INDEX) .ge. 0.0D0)
-        NH4N_SEDIMENT_INFLUX  = SEDIMENT_FLUXES(1:nkn, NH4_N_INDEX)* FRAC_NH4
-        NH4N_SEDIMENT_OUTFLUX = 0.0D0
+    where(SEDIMENT_FLUXES(ns:ne, NH4_N_INDEX) .ge. 0.0D0)
+        NH4N_SEDIMENT_INFLUX(ns:ne)  = SEDIMENT_FLUXES(ns:ne, NH4_N_INDEX)* FRAC_NH4(ns:ne)
+        NH4N_SEDIMENT_OUTFLUX(ns:ne) = 0.0D0
     else where
-        NH4N_SEDIMENT_INFLUX  = 0.0D0
-        NH4N_SEDIMENT_OUTFLUX = (-SEDIMENT_FLUXES(1:nkn, NH4_N_INDEX))*FRAC_NH4
+        NH4N_SEDIMENT_INFLUX(ns:ne)  = 0.0D0
+        NH4N_SEDIMENT_OUTFLUX(ns:ne) = (-SEDIMENT_FLUXES(ns:ne, NH4_N_INDEX))*FRAC_NH4(ns:ne)
     end where
     ! -------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
     ! Calculate the NO3N in fluxes and out fluxes from fluxes
     ! -------------------------------------------------------------------------
-    where(SEDIMENT_FLUXES(1:nkn, NH4_N_INDEX) .ge. 0.0D0)
-        NO3N_SEDIMENT_INFLUX  = SEDIMENT_FLUXES(1:nkn, NO3_N_INDEX)
-        NO3N_SEDIMENT_OUTFLUX = 0.0D0
+    where(SEDIMENT_FLUXES(ns:ne, NH4_N_INDEX) .ge. 0.0D0)
+        NO3N_SEDIMENT_INFLUX(ns:ne)  = SEDIMENT_FLUXES(ns:ne, NO3_N_INDEX)
+        NO3N_SEDIMENT_OUTFLUX(ns:ne) = 0.0D0
     else where
-        NO3N_SEDIMENT_INFLUX  = 0.0D0
-        NO3N_SEDIMENT_OUTFLUX = (-SEDIMENT_FLUXES(1:nkn, NO3_N_INDEX))
+        NO3N_SEDIMENT_INFLUX(ns:ne)  = 0.0D0
+        NO3N_SEDIMENT_OUTFLUX(ns:ne) = (-SEDIMENT_FLUXES(ns:ne, NO3_N_INDEX))
     end where
 
     ! -------------------------------------------------------------------------
@@ -3057,32 +3145,32 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! Calculate the alkalinity gain by ammonium generation
     ! (1 eq alk for each ammonium generated since one positive ion is gained)
     ! -------------------------------------------------------------------------
-    N_DIA_TOT_RESP            = PROCESS_RATES(1:nkn,NH4_N_INDEX, 1)  * FRAC_NH4
-    N_CYN_TOT_RESP            = PROCESS_RATES(1:nkn,NH4_N_INDEX, 2)  * FRAC_NH4
-    N_OPA_TOT_RESP            = PROCESS_RATES(1:nkn,NH4_N_INDEX, 3)  * FRAC_NH4
-    N_ZOO_TOT_RESP            = PROCESS_RATES(1:nkn,NH4_N_INDEX, 5)  * FRAC_NH4
-    N_ABIOTIC_DON_MIN         = PROCESS_RATES(1:nkn,NH4_N_INDEX, 11) * FRAC_NH4
+    N_DIA_TOT_RESP(ns:ne)            = PROCESS_RATES(ns:ne,NH4_N_INDEX, 1)  * FRAC_NH4(ns:ne)
+    N_CYN_TOT_RESP(ns:ne)            = PROCESS_RATES(ns:ne,NH4_N_INDEX, 2)  * FRAC_NH4(ns:ne)
+    N_OPA_TOT_RESP(ns:ne)            = PROCESS_RATES(ns:ne,NH4_N_INDEX, 3)  * FRAC_NH4(ns:ne)
+    N_ZOO_TOT_RESP(ns:ne)            = PROCESS_RATES(ns:ne,NH4_N_INDEX, 5)  * FRAC_NH4(ns:ne)
+    N_ABIOTIC_DON_MIN(ns:ne)         = PROCESS_RATES(ns:ne,NH4_N_INDEX, 11) * FRAC_NH4(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        N_FIX_CYN_TOT_RESP = PROCESS_RATES(1:nkn,NH4_N_INDEX, 4)  * FRAC_NH4
+        N_FIX_CYN_TOT_RESP(ns:ne) = PROCESS_RATES(ns:ne,NH4_N_INDEX, 4)  * FRAC_NH4(ns:ne)
     else
-        N_FIX_CYN_TOT_RESP = 0.0D0
+        N_FIX_CYN_TOT_RESP(ns:ne) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        N_NOST_VEG_HET_TOT_RESP    = PROCESS_RATES(1:nkn,NH4_N_INDEX, 17) * FRAC_NH4
-        N_NOST_VEG_HET_NH4_RELEASE = PROCESS_RATES(1:nkn,NH4_N_INDEX, 22) * FRAC_NH4
+        N_NOST_VEG_HET_TOT_RESP(ns:ne)    = PROCESS_RATES(ns:ne,NH4_N_INDEX, 17) * FRAC_NH4(ns:ne)
+        N_NOST_VEG_HET_NH4_RELEASE(ns:ne) = PROCESS_RATES(ns:ne,NH4_N_INDEX, 22) * FRAC_NH4(ns:ne)
     else
-        N_NOST_VEG_HET_TOT_RESP    = 0.0D0
-        N_NOST_VEG_HET_NH4_RELEASE = 0.0D0
+        N_NOST_VEG_HET_TOT_RESP(ns:ne)    = 0.0D0
+        N_NOST_VEG_HET_NH4_RELEASE(ns:ne) = 0.0D0
     end if
 
-    ALK_GAINED_BY_AMMONIUM_GEN = &
-        (N_DIA_TOT_RESP            + N_CYN_TOT_RESP             + &
-         N_OPA_TOT_RESP            + N_FIX_CYN_TOT_RESP         + &
-         N_NOST_VEG_HET_TOT_RESP   + N_ZOO_TOT_RESP             + &
-         N_ABIOTIC_DON_MIN         + N_NOST_VEG_HET_NH4_RELEASE + &
-         NH4N_SEDIMENT_INFLUX) / 14007.0D0
+    ALK_GAINED_BY_AMMONIUM_GEN(ns:ne) = &
+        (N_DIA_TOT_RESP(ns:ne)            + N_CYN_TOT_RESP(ns:ne)             + &
+         N_OPA_TOT_RESP(ns:ne)            + N_FIX_CYN_TOT_RESP(ns:ne)         + &
+         N_NOST_VEG_HET_TOT_RESP(ns:ne)   + N_ZOO_TOT_RESP(ns:ne)             + &
+         N_ABIOTIC_DON_MIN(ns:ne)         + N_NOST_VEG_HET_NH4_RELEASE(ns:ne) + &
+         NH4N_SEDIMENT_INFLUX(ns:ne)) / 14007.0D0
     ! -------------------------------------------------------------------------
     ! End of calculate the alkalinity gain by ammonium generation
     ! -------------------------------------------------------------------------
@@ -3091,29 +3179,29 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! Calculate the alkality gain by nitrate consumption
     ! 1 eq alk for each nitrate consumed since one negative ion is lost
     ! -------------------------------------------------------------------------
-    N_DENITRIFICATION     = PROCESS_RATES(1:nkn,NO3_N_INDEX, 2)
-    N_DIA_GROWTH          = PROCESS_RATES(1:nkn,NO3_N_INDEX, 3)
-    N_CYN_GROWTH          = PROCESS_RATES(1:nkn,NO3_N_INDEX, 4)
-    N_OPA_GROWTH          = PROCESS_RATES(1:nkn,NO3_N_INDEX, 5)
+    N_DENITRIFICATION(ns:ne)     = PROCESS_RATES(ns:ne,NO3_N_INDEX, 2)
+    N_DIA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NO3_N_INDEX, 3)
+    N_CYN_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NO3_N_INDEX, 4)
+    N_OPA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NO3_N_INDEX, 5)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        N_NON_FIX_CYN_GROWTH = PROCESS_RATES(1:nkn,NO3_N_INDEX, 6)
+        N_NON_FIX_CYN_GROWTH(ns:ne) = PROCESS_RATES(ns:ne,NO3_N_INDEX, 6)
     else
-        N_NON_FIX_CYN_GROWTH = 0.0D0
+        N_NON_FIX_CYN_GROWTH(ns:ne) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        NO3N_NOST_VEG_HET_GROWTH = PROCESS_RATES(1:nkn,NO3_N_INDEX, 6)
+        NO3N_NOST_VEG_HET_GROWTH(ns:ne) = PROCESS_RATES(ns:ne,NO3_N_INDEX, 6)
     else
-        NO3N_NOST_VEG_HET_GROWTH = 0.0D0
+        NO3N_NOST_VEG_HET_GROWTH(ns:ne) = 0.0D0
     end if
 
     ! Nothing for nostocales since they are fixers
 
-    ALK_GAINED_BY_NITRATE_CONS = &
-        (N_DENITRIFICATION        + N_DIA_GROWTH + N_CYN_GROWTH + &
-         N_OPA_GROWTH             + N_NON_FIX_CYN_GROWTH        + &
-         NO3N_NOST_VEG_HET_GROWTH + NO3N_SEDIMENT_OUTFLUX) / 14007.0D0
+    ALK_GAINED_BY_NITRATE_CONS(ns:ne) = &
+        (N_DENITRIFICATION(ns:ne)        + N_DIA_GROWTH(ns:ne) + N_CYN_GROWTH(ns:ne) + &
+         N_OPA_GROWTH(ns:ne)             + N_NON_FIX_CYN_GROWTH(ns:ne)        + &
+         NO3N_NOST_VEG_HET_GROWTH(ns:ne) + NO3N_SEDIMENT_OUTFLUX(ns:ne)) / 14007.0D0
     ! -------------------------------------------------------------------------
     ! End of calculate the alkality gain by denitrification
     ! -------------------------------------------------------------------------
@@ -3131,28 +3219,28 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! Calculate the alkalinity loss by ammonium consumption
     ! 1 eq alk for each ammonium consumed since one positive ion is lost
     ! -------------------------------------------------------------------------
-    N_DIA_GROWTH          = PROCESS_RATES(1:nkn,NH4_N_INDEX, 6) * FRAC_NH4
-    N_CYN_GROWTH          = PROCESS_RATES(1:nkn,NH4_N_INDEX, 7) * FRAC_NH4
-    N_OPA_GROWTH          = PROCESS_RATES(1:nkn,NH4_N_INDEX, 8) * FRAC_NH4
+    N_DIA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NH4_N_INDEX, 6) * FRAC_NH4(ns:ne)
+    N_CYN_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NH4_N_INDEX, 7) * FRAC_NH4(ns:ne)
+    N_OPA_GROWTH(ns:ne)          = PROCESS_RATES(ns:ne,NH4_N_INDEX, 8) * FRAC_NH4(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        N_NON_FIX_CYN_GROWTH  = PROCESS_RATES(1:nkn,NH4_N_INDEX, 9) * FRAC_NH4
+        N_NON_FIX_CYN_GROWTH(ns:ne)  = PROCESS_RATES(ns:ne,NH4_N_INDEX, 9) * FRAC_NH4(ns:ne)
     else
-        N_NON_FIX_CYN_GROWTH = 0.0D0
+        N_NON_FIX_CYN_GROWTH(ns:ne) = 0.0D0
     end if
 
 
     if (DO_NOSTOCALES > 0) then
         !growth supported by water ammonia (not fixed)
-        NH4N_NOST_VEG_HET_GROWTH = PROCESS_RATES(1:nkn,NH4_N_INDEX, 23) * FRAC_NH4
+        NH4N_NOST_VEG_HET_GROWTH(ns:ne) = PROCESS_RATES(ns:ne,NH4_N_INDEX, 23) * FRAC_NH4(ns:ne)
     else
-        NH4N_NOST_VEG_HET_GROWTH = 0.0D0
+        NH4N_NOST_VEG_HET_GROWTH(ns:ne) = 0.0D0
     end if
 
-    ALK_LOST_BY_AMMONIUM_CONS = &
-        (N_DIA_GROWTH             + N_CYN_GROWTH         + &
-         N_OPA_GROWTH             + N_NON_FIX_CYN_GROWTH + &
-         NH4N_NOST_VEG_HET_GROWTH + NH4N_SEDIMENT_OUTFLUX) / 14007.0D0
+    ALK_LOST_BY_AMMONIUM_CONS(ns:ne) = &
+        (N_DIA_GROWTH(ns:ne)             + N_CYN_GROWTH(ns:ne)         + &
+         N_OPA_GROWTH(ns:ne)             + N_NON_FIX_CYN_GROWTH(ns:ne) + &
+         NH4N_NOST_VEG_HET_GROWTH(ns:ne) + NH4N_SEDIMENT_OUTFLUX(ns:ne)) / 14007.0D0
     ! -------------------------------------------------------------------------
     ! End of calculate the alkalinity loss by ammonium consumption
     ! -------------------------------------------------------------------------
@@ -3165,11 +3253,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! - 1 eq alk for each NH3 nitrified since one uncharged nitrogen is lost and
     !   one negative ion is gained
     ! -------------------------------------------------------------------------
-    N_NITRIFICATION_NH4 = PROCESS_RATES(1:nkn,NH4_N_INDEX,10) * FRAC_NH4
-    N_NITRIFICATION_NH3 = PROCESS_RATES(1:nkn,NH4_N_INDEX,10) * FRAC_NH3
+    N_NITRIFICATION_NH4(ns:ne) = PROCESS_RATES(ns:ne,NH4_N_INDEX,10) * FRAC_NH4(ns:ne)
+    N_NITRIFICATION_NH3(ns:ne) = PROCESS_RATES(ns:ne,NH4_N_INDEX,10) * FRAC_NH3(ns:ne)
 
-    ALK_LOST_BY_NITRIFICATION = &
-        ((2.0D0 * N_NITRIFICATION_NH4) + N_NITRIFICATION_NH3) / 14007.0D0
+    ALK_LOST_BY_NITRIFICATION(ns:ne) = &
+        ((2.0D0 * N_NITRIFICATION_NH4(ns:ne)) + N_NITRIFICATION_NH3(ns:ne)) / 14007.0D0
     ! -------------------------------------------------------------------------
     ! END OF NITROGEN BASED SINKS
     ! -------------------------------------------------------------------------
@@ -3185,7 +3273,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     KP_OPTION = 1
 
-    do i =1, nkn
+    do i = ns, ne
         if (SALT(i) .lt. 0.d0) then
             if (SALT(i) .gt. -1.d-5) then
                 SALT(i) = 0.d0
@@ -3200,9 +3288,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
         ! Option 0 : Use fixed values from the general chemistry book
         case (0)
-            K_ONE_TIP   = 10.0D0 ** (-2.15D0)
-            K_TWO_TIP   = 10.0D0 ** (-7.20D0)
-            K_THREE_TIP = 10.0D0 ** (-2.15D0)
+            K_ONE_TIP(ns:ne)   = 10.0D0 ** (-2.15D0)
+            K_TWO_TIP(ns:ne)   = 10.0D0 ** (-7.20D0)
+            K_THREE_TIP(ns:ne) = 10.0D0 ** (-2.15D0)
 
         ! Option 1 : Use values calculated by CO2SYS
         case (1)
@@ -3218,9 +3306,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
             C_1 = -0.01844D0
             C_2 = -0.6543D0
 
-            K_ONE_TIP   = exp(A_1 + (A_2 / TEMP) + (A_3 * log(TEMP))   + &
-                              ((B_1 + (B_2 / TEMP)) * (SALT ** 0.5D0)) + &
-                              ((C_1 + (C_2 / TEMP)) * SALT))
+            K_ONE_TIP(ns:ne)   = exp(A_1 + (A_2 / TEMP(ns:ne)) + (A_3 * log(TEMP(ns:ne)))   + &
+                              ((B_1 + (B_2 / TEMP(ns:ne))) * (SALT(ns:ne) ** 0.5D0)) + &
+                              ((C_1 + (C_2 / TEMP(ns:ne))) * SALT(ns:ne)))
 
             A_1 = 172.0883D0
             A_2 = -8814.715D0
@@ -3230,9 +3318,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
             C_1 = -0.05778D0
             C_2 = -0.37335D0
 
-            K_TWO_TIP   = exp(A_1 + (A_2 / TEMP) + (A_3 * log(TEMP))   + &
-                              ((B_1 + (B_2 / TEMP)) * (SALT ** 0.5D0)) + &
-                              ((C_1 + (C_2 / TEMP)) * SALT))
+            K_TWO_TIP(ns:ne)   = exp(A_1 + (A_2 / TEMP(ns:ne)) + (A_3 * log(TEMP(ns:ne)))   + &
+                              ((B_1 + (B_2 / TEMP(ns:ne))) * (SALT(ns:ne) ** 0.5D0)) + &
+                              ((C_1 + (C_2 / TEMP(ns:ne))) * SALT(ns:ne)))
 
             A_1 = -18.141D0
             A_2 = -3070.75D0
@@ -3242,21 +3330,21 @@ subroutine AQUABC_PELAGIC_KINETICS &
             C_1 = -0.09984D0
             C_2 = -44.99486D0
 
-            K_THREE_TIP = exp(A_1 + (A_2 / TEMP) + (A_3 * log(TEMP))   + &
-                              ((B_1 + (B_2 / TEMP)) * (SALT ** 0.5D0)) + &
-                              ((C_1 + (C_2 / TEMP)) * SALT))
+            K_THREE_TIP(ns:ne) = exp(A_1 + (A_2 / TEMP(ns:ne)) + (A_3 * log(TEMP(ns:ne)))   + &
+                              ((B_1 + (B_2 / TEMP(ns:ne))) * (SALT(ns:ne) ** 0.5D0)) + &
+                              ((C_1 + (C_2 / TEMP(ns:ne))) * SALT(ns:ne)))
     end select
 
-    FRACTION_DIVISOR_TIP = &
-        (H_PLUS * H_PLUS * H_PLUS) + (K_ONE_TIP * H_PLUS * H_PLUS) + &
-        (K_ONE_TIP * K_TWO_TIP * H_PLUS) + (K_ONE_TIP * K_TWO_TIP * K_THREE_TIP)
+    FRACTION_DIVISOR_TIP(ns:ne) = &
+        (H_PLUS(ns:ne) * H_PLUS(ns:ne) * H_PLUS(ns:ne)) + (K_ONE_TIP(ns:ne) * H_PLUS(ns:ne) * H_PLUS(ns:ne)) + &
+        (K_ONE_TIP(ns:ne) * K_TWO_TIP(ns:ne) * H_PLUS(ns:ne)) + (K_ONE_TIP(ns:ne) * K_TWO_TIP(ns:ne) * K_THREE_TIP(ns:ne))
 
-    ALPHA_H2PO4 = (K_ONE_TIP * H_PLUS    * H_PLUS)      / FRACTION_DIVISOR_TIP
-    ALPHA_HPO4  = (K_ONE_TIP * K_TWO_TIP * H_PLUS)      / FRACTION_DIVISOR_TIP
-    ALPHA_PO4   = (K_ONE_TIP * K_TWO_TIP * K_THREE_TIP) / FRACTION_DIVISOR_TIP
+    ALPHA_H2PO4(ns:ne) = (K_ONE_TIP(ns:ne) * H_PLUS(ns:ne)    * H_PLUS(ns:ne))      / FRACTION_DIVISOR_TIP(ns:ne)
+    ALPHA_HPO4(ns:ne)  = (K_ONE_TIP(ns:ne) * K_TWO_TIP(ns:ne) * H_PLUS(ns:ne))      / FRACTION_DIVISOR_TIP(ns:ne)
+    ALPHA_PO4(ns:ne)   = (K_ONE_TIP(ns:ne) * K_TWO_TIP(ns:ne) * K_THREE_TIP(ns:ne)) / FRACTION_DIVISOR_TIP(ns:ne)
 
-    PHOSPHATE_EQ_CONSTANT = &
-        ALPHA_H2PO4 + (2.0D0 * ALPHA_HPO4) + (3.0D0 * ALPHA_PO4)
+    PHOSPHATE_EQ_CONSTANT(ns:ne) = &
+        ALPHA_H2PO4(ns:ne) + (2.0D0 * ALPHA_HPO4(ns:ne)) + (3.0D0 * ALPHA_PO4(ns:ne))
     end do
     ! -------------------------------------------------------------------------
     ! End of calculate the dissociation constants of H2PO3
@@ -3265,17 +3353,17 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! -------------------------------------------------------------------------
     ! Calculate the NH4N in fluxes and out fluxes from fluxes
     ! -------------------------------------------------------------------------
-    where(SEDIMENT_FLUXES(1:nkn, PO4_P_INDEX) .ge. 0.0D0)
+    where(SEDIMENT_FLUXES(ns:ne, PO4_P_INDEX) .ge. 0.0D0)
 
-        PO4P_SEDIMENT_INFLUX  = &
-            SEDIMENT_FLUXES(1:nkn, PO4_P_INDEX)    * PHOSPHATE_EQ_CONSTANT
+        PO4P_SEDIMENT_INFLUX(ns:ne)  = &
+            SEDIMENT_FLUXES(ns:ne, PO4_P_INDEX)    * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-        PO4P_SEDIMENT_OUTFLUX = 0.0D0
+        PO4P_SEDIMENT_OUTFLUX(ns:ne) = 0.0D0
     else where
-        PO4P_SEDIMENT_INFLUX  = 0.0D0
+        PO4P_SEDIMENT_INFLUX(ns:ne)  = 0.0D0
 
-        PO4P_SEDIMENT_OUTFLUX = &
-            (-SEDIMENT_FLUXES(1:nkn, PO4_P_INDEX)) * PHOSPHATE_EQ_CONSTANT
+        PO4P_SEDIMENT_OUTFLUX(ns:ne) = &
+            (-SEDIMENT_FLUXES(ns:ne, PO4_P_INDEX)) * PHOSPHATE_EQ_CONSTANT(ns:ne)
     end where
     ! -------------------------------------------------------------------------
 
@@ -3294,32 +3382,32 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! 2 eq alk for each HPO4 consumed since two negative ion charges are lost
     ! 3 eq alk for each PO4 consumed since three negative ion charges are lost
     ! -------------------------------------------------------------------------
-    P_DIA_GROWTH          = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 6) * PHOSPHATE_EQ_CONSTANT
+    P_DIA_GROWTH(ns:ne)          = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 6) * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_CYN_GROWTH          = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 7) * PHOSPHATE_EQ_CONSTANT
+    P_CYN_GROWTH(ns:ne)          = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 7) * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_OPA_GROWTH          = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 8) * PHOSPHATE_EQ_CONSTANT
+    P_OPA_GROWTH(ns:ne)          = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 8) * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        P_FIX_CYN_GROWTH = &
-            PROCESS_RATES(1:nkn,PO4_P_INDEX, 9) * PHOSPHATE_EQ_CONSTANT
+        P_FIX_CYN_GROWTH(ns:ne) = &
+            PROCESS_RATES(ns:ne,PO4_P_INDEX, 9) * PHOSPHATE_EQ_CONSTANT(ns:ne)
     else
-        P_FIX_CYN_GROWTH = 0.0D0
+        P_FIX_CYN_GROWTH(ns:ne) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        P_NOST_VEG_HET_GROWTH = &
-            PROCESS_RATES(1:nkn,PO4_P_INDEX, 14) * PHOSPHATE_EQ_CONSTANT
+        P_NOST_VEG_HET_GROWTH(ns:ne) = &
+            PROCESS_RATES(ns:ne,PO4_P_INDEX, 14) * PHOSPHATE_EQ_CONSTANT(ns:ne)
     else
-        P_NOST_VEG_HET_GROWTH = 0.0D0
+        P_NOST_VEG_HET_GROWTH(ns:ne) = 0.0D0
     end if
 
-    ALK_GAINED_BY_PHOSPHATE_CONS = &
-        (P_DIA_GROWTH     + P_CYN_GROWTH          + P_OPA_GROWTH         + &
-         P_FIX_CYN_GROWTH + P_NOST_VEG_HET_GROWTH + PO4P_SEDIMENT_OUTFLUX) / &
+    ALK_GAINED_BY_PHOSPHATE_CONS(ns:ne) = &
+        (P_DIA_GROWTH(ns:ne)     + P_CYN_GROWTH(ns:ne)          + P_OPA_GROWTH(ns:ne)         + &
+         P_FIX_CYN_GROWTH(ns:ne) + P_NOST_VEG_HET_GROWTH(ns:ne) + PO4P_SEDIMENT_OUTFLUX(ns:ne)) / &
         30974.0D0
     ! -------------------------------------------------------------------------
     ! End of calculate the alkality gain by phosphate consumption
@@ -3340,39 +3428,39 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! 2 eq alk for each HPO4 consumed since two negative ion charges are lost
     ! 3 eq alk for each PO4 consumed since three negative ion charges are lost
     ! -------------------------------------------------------------------------
-    P_DIA_TOT_RESP     = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 1)  * PHOSPHATE_EQ_CONSTANT
+    P_DIA_TOT_RESP(ns:ne)     = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 1)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_CYN_TOT_RESP     = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 2)  * PHOSPHATE_EQ_CONSTANT
+    P_CYN_TOT_RESP(ns:ne)     = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 2)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_OPA_TOT_RESP     = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 3)  * PHOSPHATE_EQ_CONSTANT
+    P_OPA_TOT_RESP(ns:ne)     = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 3)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_ZOO_TOT_RESP     = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 5)  * PHOSPHATE_EQ_CONSTANT
+    P_ZOO_TOT_RESP(ns:ne)     = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 5)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
-    P_ABIOTIC_DOP_MIN  = &
-        PROCESS_RATES(1:nkn,PO4_P_INDEX, 10) * PHOSPHATE_EQ_CONSTANT
+    P_ABIOTIC_DOP_MIN(ns:ne)  = &
+        PROCESS_RATES(ns:ne,PO4_P_INDEX, 10) * PHOSPHATE_EQ_CONSTANT(ns:ne)
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        P_FIX_CYN_TOT_RESP = &
-            PROCESS_RATES(1:nkn,PO4_P_INDEX, 4)  * PHOSPHATE_EQ_CONSTANT
+        P_FIX_CYN_TOT_RESP(ns:ne) = &
+            PROCESS_RATES(ns:ne,PO4_P_INDEX, 4)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
     else
-        P_FIX_CYN_TOT_RESP = 0.0D0
+        P_FIX_CYN_TOT_RESP(ns:ne) = 0.0D0
     end if
 
     if (DO_NOSTOCALES > 0) then
-        P_NOST_VEG_HET_TOT_RESP = &
-            PROCESS_RATES(1:nkn,PO4_P_INDEX, 13)  * PHOSPHATE_EQ_CONSTANT
+        P_NOST_VEG_HET_TOT_RESP(ns:ne) = &
+            PROCESS_RATES(ns:ne,PO4_P_INDEX, 13)  * PHOSPHATE_EQ_CONSTANT(ns:ne)
     else
-        P_NOST_VEG_HET_TOT_RESP = 0.0D0
+        P_NOST_VEG_HET_TOT_RESP(ns:ne) = 0.0D0
     end if
 
-    ALK_LOST_BY_PHOSPHATE_GEN = &
-        (P_DIA_TOT_RESP          + P_CYN_TOT_RESP + P_OPA_TOT_RESP    + &
-         P_FIX_CYN_TOT_RESP      + P_ZOO_TOT_RESP + P_ABIOTIC_DOP_MIN + &
-         P_NOST_VEG_HET_TOT_RESP + PO4P_SEDIMENT_INFLUX) / 30974.0D0
+    ALK_LOST_BY_PHOSPHATE_GEN(ns:ne) = &
+        (P_DIA_TOT_RESP(ns:ne)          + P_CYN_TOT_RESP(ns:ne) + P_OPA_TOT_RESP(ns:ne)    + &
+         P_FIX_CYN_TOT_RESP(ns:ne)      + P_ZOO_TOT_RESP(ns:ne) + P_ABIOTIC_DOP_MIN(ns:ne) + &
+         P_NOST_VEG_HET_TOT_RESP(ns:ne) + PO4P_SEDIMENT_INFLUX(ns:ne)) / 30974.0D0
     ! -------------------------------------------------------------------------
     ! End of calculate the alkality loss by phosphate generation
     ! -------------------------------------------------------------------------
@@ -3393,41 +3481,45 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Calculate the total derivative and convert in moles
     if (CONSIDER_ALKALNITY_DERIVATIVE > 0) then
-        ALK_KINETIC_DERIVATIVE = &
-            ALK_GAINED_BY_AMMONIUM_GEN         + &
-            ALK_GAINED_BY_NITRATE_CONS         + &
-            ALK_GAINED_BY_PHOSPHATE_CONS       - &
-            ALK_LOST_BY_AMMONIUM_CONS          - &
-            ALK_LOST_BY_NITRIFICATION          - &
-            (NO3N_SEDIMENT_INFLUX / 14007.0D0) - & ! Alkal�nity lost by NO3N influx
-            ALK_LOST_BY_PHOSPHATE_GEN
+        ALK_KINETIC_DERIVATIVE(ns:ne) = &
+            ALK_GAINED_BY_AMMONIUM_GEN(ns:ne)         + &
+            ALK_GAINED_BY_NITRATE_CONS(ns:ne)         + &
+            ALK_GAINED_BY_PHOSPHATE_CONS(ns:ne)       - &
+            ALK_LOST_BY_AMMONIUM_CONS(ns:ne)          - &
+            ALK_LOST_BY_NITRIFICATION(ns:ne)          - &
+            (NO3N_SEDIMENT_INFLUX(ns:ne) / 14007.0D0) - & ! Alkal�nity lost by NO3N influx
+            ALK_LOST_BY_PHOSPHATE_GEN(ns:ne)
     else
-        ALK_KINETIC_DERIVATIVE       = 0.0D0
-        ALK_GAINED_BY_AMMONIUM_GEN   = 0.0D0
-        ALK_GAINED_BY_NITRATE_CONS   = 0.0D0
-        ALK_GAINED_BY_PHOSPHATE_CONS = 0.0D0
-        ALK_LOST_BY_AMMONIUM_CONS    = 0.0D0
-        ALK_LOST_BY_NITRIFICATION    = 0.0D0
-        ALK_LOST_BY_PHOSPHATE_GEN    = 0.0D0
+        ALK_KINETIC_DERIVATIVE(ns:ne)       = 0.0D0
+        ALK_GAINED_BY_AMMONIUM_GEN(ns:ne)   = 0.0D0
+        ALK_GAINED_BY_NITRATE_CONS(ns:ne)   = 0.0D0
+        ALK_GAINED_BY_PHOSPHATE_CONS(ns:ne) = 0.0D0
+        ALK_LOST_BY_AMMONIUM_CONS(ns:ne)    = 0.0D0
+        ALK_LOST_BY_NITRIFICATION(ns:ne)    = 0.0D0
+        ALK_LOST_BY_PHOSPHATE_GEN(ns:ne)    = 0.0D0
     end if
     ! -------------------------------------------------------------------------
     ! END OF KINETIC SUBMODEL FOR ALKALINITY
     ! -------------------------------------------------------------------------
 
-    DERIVATIVES(1:nkn,TOT_ALK_INDEX) = ALK_KINETIC_DERIVATIVE
+    DERIVATIVES(ns:ne,TOT_ALK_INDEX) = ALK_KINETIC_DERIVATIVE(ns:ne)
 
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 1) = ALK_GAINED_BY_AMMONIUM_GEN
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 2) = ALK_GAINED_BY_NITRATE_CONS
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 3) = ALK_GAINED_BY_PHOSPHATE_CONS
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 4) = ALK_LOST_BY_AMMONIUM_CONS
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 5) = ALK_LOST_BY_NITRIFICATION
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 6) = ALK_LOST_BY_PHOSPHATE_GEN
-    PROCESS_RATES(1:nkn,TOT_ALK_INDEX, 7) = pH(1:nkn)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 1) = ALK_GAINED_BY_AMMONIUM_GEN(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 2) = ALK_GAINED_BY_NITRATE_CONS(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 3) = ALK_GAINED_BY_PHOSPHATE_CONS(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 4) = ALK_LOST_BY_AMMONIUM_CONS(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 5) = ALK_LOST_BY_NITRIFICATION(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 6) = ALK_LOST_BY_PHOSPHATE_GEN(ns:ne)
+    PROCESS_RATES(ns:ne,TOT_ALK_INDEX, 7) = pH(ns:ne)
 
+    !$omp barrier
+    !$omp master
     if(debug_stranger) then
         call DBGSTR_PEL_DET_TOT_ALK_01 &
              (PROCESS_RATES, DERIVATIVES, PH, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
     end if
+    !$omp end master
+    !$omp barrier
 
     ! New kinetic derivatives calculations added 9 September 2015
 
@@ -3440,39 +3532,39 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
 
         ! FE_II
-        PROCESS_RATES(1:nkn,FE_II_INDEX, 1) = R_FE_III_REDUCTION
-        PROCESS_RATES(1:nkn,FE_II_INDEX, 2) = R_FE_II_OXIDATION
+        PROCESS_RATES(ns:ne,FE_II_INDEX, 1) = R_FE_III_REDUCTION(ns:ne)
+        PROCESS_RATES(ns:ne,FE_II_INDEX, 2) = R_FE_II_OXIDATION(ns:ne)
 
         ! Diagnostics:
-        PROCESS_RATES(1:nkn,FE_II_INDEX, 3) = FE_II_DISS
-        PROCESS_RATES(1:nkn,FE_II_INDEX, 4) = FE_II_DISS/FE_MOLAR_MASS_MG
+        PROCESS_RATES(ns:ne,FE_II_INDEX, 3) = FE_II_DISS(ns:ne)
+        PROCESS_RATES(ns:ne,FE_II_INDEX, 4) = FE_II_DISS(ns:ne)/FE_MOLAR_MASS_MG
 
-        DERIVATIVES(1:nkn,FE_II_INDEX) = &
-            PROCESS_RATES(1:nkn,FE_II_INDEX, 1) - PROCESS_RATES(1:nkn,FE_II_INDEX, 2)
+        DERIVATIVES(ns:ne,FE_II_INDEX) = &
+            PROCESS_RATES(ns:ne,FE_II_INDEX, 1) - PROCESS_RATES(ns:ne,FE_II_INDEX, 2)
 
         ! FE_III
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 1) = R_FE_II_OXIDATION
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 2) = R_FE_III_REDUCTION
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 3) = FE_III_DISS_EQ
+        PROCESS_RATES(ns:ne,FE_III_INDEX, 1) = R_FE_II_OXIDATION(ns:ne)
+        PROCESS_RATES(ns:ne,FE_III_INDEX, 2) = R_FE_III_REDUCTION(ns:ne)
+        PROCESS_RATES(ns:ne,FE_III_INDEX, 3) = FE_III_DISS_EQ(ns:ne)
 
-        DERIVATIVES(1:nkn,FE_III_INDEX) = &
-            PROCESS_RATES(1:nkn,FE_III_INDEX, 1) - PROCESS_RATES(1:nkn,FE_III_INDEX, 2)
+        DERIVATIVES(ns:ne,FE_III_INDEX) = &
+            PROCESS_RATES(ns:ne,FE_III_INDEX, 1) - PROCESS_RATES(ns:ne,FE_III_INDEX, 2)
 
 
         ! MN_II
-        PROCESS_RATES(1:nkn,MN_II_INDEX, 1) = R_MN_IV_REDUCTION
-        PROCESS_RATES(1:nkn,MN_II_INDEX, 2) = R_MN_II_OXIDATION
+        PROCESS_RATES(ns:ne,MN_II_INDEX, 1) = R_MN_IV_REDUCTION(ns:ne)
+        PROCESS_RATES(ns:ne,MN_II_INDEX, 2) = R_MN_II_OXIDATION(ns:ne)
 
-        DERIVATIVES(1:nkn,MN_II_INDEX) = &
-            PROCESS_RATES(1:nkn,MN_II_INDEX, 1) - PROCESS_RATES(1:nkn,MN_II_INDEX, 2)
+        DERIVATIVES(ns:ne,MN_II_INDEX) = &
+            PROCESS_RATES(ns:ne,MN_II_INDEX, 1) - PROCESS_RATES(ns:ne,MN_II_INDEX, 2)
 
 
         ! MN_IV
-        PROCESS_RATES(1:nkn,MN_IV_INDEX, 1) = R_MN_II_OXIDATION
-        PROCESS_RATES(1:nkn,MN_IV_INDEX, 2) = R_MN_IV_REDUCTION
+        PROCESS_RATES(ns:ne,MN_IV_INDEX, 1) = R_MN_II_OXIDATION(ns:ne)
+        PROCESS_RATES(ns:ne,MN_IV_INDEX, 2) = R_MN_IV_REDUCTION(ns:ne)
 
-        DERIVATIVES(1:nkn,MN_IV_INDEX) = &
-            PROCESS_RATES(1:nkn,MN_IV_INDEX, 1) - PROCESS_RATES(1:nkn,MN_IV_INDEX, 2)
+        DERIVATIVES(ns:ne,MN_IV_INDEX) = &
+            PROCESS_RATES(ns:ne,MN_IV_INDEX, 1) - PROCESS_RATES(ns:ne,MN_IV_INDEX, 2)
         ! End of new kinetic derivatives calculations added 9 September 2015
 
         ! -------------------------------------------------------------------------
@@ -3481,15 +3573,20 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
 
         ! Checking all derivatives
+    !$omp barrier
+    !$omp master
         if(debug_stranger) then
             call DBGSTR_PEL_GEN_02 &
                  (PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstate, nflags, NDIAGVAR, node_active, error)
         end if
+    !$omp end master
+    !$omp barrier
 
         ! Compact per-node/process clamp summary: one-shot, prints counts and sets CLAMP_WARNED
         if (allocated(CLAMP_COUNT)) then
-            do i=1,nkn
+            do i = ns, ne
                 if (CLAMP_COUNT(i) > 0 .and. .not. CLAMP_WARNED(i)) then
+                    !$omp critical
                     write(6,'(A,F12.4,A,I4,A,I6)') &
                         'WARN SUMMARY: TIME=', TIME, ' BOX=', i, ' CLAMPS=', CLAMP_COUNT(i)
                     if (NDIAGVAR > 0 .and. allocated(CLAMP_PROC_COUNT)) then
@@ -3499,6 +3596,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                             end if
                         end do
                     end if
+                    !$omp end critical
                     CLAMP_WARNED(i) = .true.
                 end if
             end do
