@@ -7,6 +7,7 @@ from starlette.routing import Route
 # Import the Shiny App object from the app module
 from shiny_app.app import app as pyshiny_app
 
+
 async def _health(request):
     return PlainTextResponse("ok")
 
@@ -55,7 +56,8 @@ class ExceptionLoggingASGI:
             return await self.inner_app(scope, receive, send)
         except Exception as e:
             # log debug info to a temporary file for post-mortem
-            import traceback, json, time
+            import json
+            import time
             info = {
                 'time': time.time(),
                 'scope': {k: v for k, v in scope.items() if k != 'app'},

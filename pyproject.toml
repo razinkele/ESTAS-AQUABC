@@ -21,6 +21,7 @@ select = [
 ignore = [
     "E501",   # line length — too many violations to fix at once
     "E741",   # ambiguous variable names (common in scientific code: l, I, O)
+    "S110",   # try-except-pass — intentional in UI code to avoid display crashes
     "S603",   # subprocess call with shell= — we validate this carefully
     "S607",   # starting process with partial path — make calls are intentional
     "S101",   # assert usage — fine in tests
@@ -30,8 +31,10 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "shiny_app/app.py" = [
+    "F401",   # unused imports — false positives from try/except import fallback pattern
     "F841",   # local variable assigned but never used (reactive side-effects)
     "B023",   # function uses loop variable — common in Shiny reactive patterns
+    "E402",   # imports not at top — necessary for sys.path manipulation
     "S602",   # subprocess shell=True — necessary for Intel oneAPI source
     "S605",   # starting process with shell — necessary for Intel wrapper
 ]

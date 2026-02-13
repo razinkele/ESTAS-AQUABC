@@ -5,12 +5,12 @@ Compares model output with observed/measured data.
 Calculates statistical metrics for model validation.
 """
 
-import os
 import logging
-import pandas as pd
-import numpy as np
+import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger("AQUABC.obs")
 
@@ -64,14 +64,14 @@ class ComparisonMetrics:
 class ObservationData:
     """Container for observation data"""
 
-    def __init__(self, filepath: Optional[str] = None):
+    def __init__(self, filepath: str | None = None):
         self.filepath = filepath
-        self.df: Optional[pd.DataFrame] = None
+        self.df: pd.DataFrame | None = None
         self.time_column: str = "TIME"
-        self.variables: List[str] = []
+        self.variables: list[str] = []
         self._loaded = False
 
-    def load_csv(self, filepath: str) -> Tuple[bool, str]:
+    def load_csv(self, filepath: str) -> tuple[bool, str]:
         """
         Load observation data from CSV file.
         Expected format: TIME column + variable columns
@@ -104,7 +104,7 @@ class ObservationData:
             logger.error(f"Error loading observation file: {e}")
             return False, f"Error: {e}"
 
-    def load_from_dataframe(self, df: pd.DataFrame, time_column: str = "TIME") -> Tuple[bool, str]:
+    def load_from_dataframe(self, df: pd.DataFrame, time_column: str = "TIME") -> tuple[bool, str]:
         """Load observation data from pandas DataFrame"""
         try:
             self.df = df.copy()
@@ -116,14 +116,14 @@ class ObservationData:
         except Exception as e:
             return False, f"Error: {e}"
 
-    def get_time_range(self) -> Tuple[float, float]:
+    def get_time_range(self) -> tuple[float, float]:
         """Get time range of observations"""
         if not self._loaded or self.df is None:
             return (0, 0)
         time_col = self.df[self.time_column]
         return (time_col.min(), time_col.max())
 
-    def get_variable_data(self, variable: str) -> Optional[pd.DataFrame]:
+    def get_variable_data(self, variable: str) -> pd.DataFrame | None:
         """Get time and variable data as DataFrame"""
         if not self._loaded or self.df is None:
             return None
@@ -138,7 +138,7 @@ class ModelObservationComparison:
     def __init__(self, model_csv: str, obs_data: ObservationData):
         self.model_csv = model_csv
         self.obs_data = obs_data
-        self.model_df: Optional[pd.DataFrame] = None
+        self.model_df: pd.DataFrame | None = None
         self._loaded = False
 
     def load_model_data(self) -> bool:
@@ -161,7 +161,7 @@ class ModelObservationComparison:
             logger.error(f"Error loading model output: {e}")
             return False
 
-    def get_matching_variables(self) -> List[str]:
+    def get_matching_variables(self) -> list[str]:
         """Get variables that exist in both model and observations"""
         if not self._loaded or self.model_df is None:
             return []
@@ -205,7 +205,7 @@ class ModelObservationComparison:
 
         return pd.Series(interpolated, index=obs_times.index)
 
-    def calculate_metrics(self, variable: str) -> Optional[ComparisonMetrics]:
+    def calculate_metrics(self, variable: str) -> ComparisonMetrics | None:
         """Calculate comparison metrics for a variable"""
         if not self._loaded:
             self.load_model_data()
@@ -301,7 +301,7 @@ class ModelObservationComparison:
             skill_score=skill_score
         )
 
-    def calculate_all_metrics(self) -> Dict[str, ComparisonMetrics]:
+    def calculate_all_metrics(self) -> dict[str, ComparisonMetrics]:
         """Calculate metrics for all matching variables"""
         results = {}
         matching = self.get_matching_variables()
@@ -318,7 +318,7 @@ class ModelObservationComparison:
 
         return results
 
-    def get_comparison_data(self, variable: str) -> Optional[pd.DataFrame]:
+    def get_comparison_data(self, variable: str) -> pd.DataFrame | None:
         """Get paired observation-model data for plotting"""
         if not self._loaded:
             self.load_model_data()

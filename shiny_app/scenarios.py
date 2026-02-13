@@ -11,12 +11,12 @@ Author: Claude
 Date: 2026-01-17
 """
 
-import os
 import json
 import logging
+import os
+from dataclasses import dataclass, field
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
 logger = logging.getLogger("AQUABC.Scenarios")
 
@@ -31,10 +31,10 @@ class Scenario:
     version: str = "1.0"
 
     # Configuration data
-    parameters: Dict[str, float] = field(default_factory=dict)  # param_id (as str) -> value
-    initial_conditions: Dict[str, float] = field(default_factory=dict)  # var_id (as str) -> value
-    model_options: Dict[str, Any] = field(default_factory=dict)  # option_name -> value
-    extra_constants: Dict[str, float] = field(default_factory=dict)  # constant_name -> value
+    parameters: dict[str, float] = field(default_factory=dict)  # param_id (as str) -> value
+    initial_conditions: dict[str, float] = field(default_factory=dict)  # var_id (as str) -> value
+    model_options: dict[str, Any] = field(default_factory=dict)  # option_name -> value
+    extra_constants: dict[str, float] = field(default_factory=dict)  # constant_name -> value
 
     # Metadata
     ic_file: str = "INIT_CONC_1.txt"  # Which IC file this applies to
@@ -48,7 +48,7 @@ class Scenario:
         if not self.modified:
             self.modified = now
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""
         return {
             "name": self.name,
@@ -65,7 +65,7 @@ class Scenario:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict) -> 'Scenario':
+    def from_dict(cls, data: dict) -> 'Scenario':
         """Create Scenario from dictionary"""
         return cls(
             name=data.get("name", "Unnamed"),
@@ -108,7 +108,7 @@ class ScenarioManager:
         """
         self.scenarios_dir = scenarios_dir
         self.inputs_dir = inputs_dir
-        self._scenarios: Dict[str, Scenario] = {}
+        self._scenarios: dict[str, Scenario] = {}
         self._ensure_dir_exists()
         self._load_all_scenarios()
 
@@ -130,7 +130,7 @@ class ScenarioManager:
             if filename.endswith('.json'):
                 filepath = os.path.join(self.scenarios_dir, filename)
                 try:
-                    with open(filepath, 'r') as f:
+                    with open(filepath) as f:
                         data = json.load(f)
                     scenario = Scenario.from_dict(data)
                     self._scenarios[scenario.name] = scenario
@@ -144,22 +144,22 @@ class ScenarioManager:
         """Reload all scenarios from disk"""
         self._load_all_scenarios()
 
-    def list_scenarios(self) -> List[Scenario]:
+    def list_scenarios(self) -> list[Scenario]:
         """Get list of all available scenarios"""
         # Sort: built-ins first, then alphabetically
         scenarios = list(self._scenarios.values())
         scenarios.sort(key=lambda s: (not s.is_builtin, s.name.lower()))
         return scenarios
 
-    def get_scenario_names(self) -> List[str]:
+    def get_scenario_names(self) -> list[str]:
         """Get list of scenario names"""
         return [s.name for s in self.list_scenarios()]
 
-    def get_scenario(self, name: str) -> Optional[Scenario]:
+    def get_scenario(self, name: str) -> Scenario | None:
         """Get a specific scenario by name"""
         return self._scenarios.get(name)
 
-    def save_scenario(self, scenario: Scenario) -> Tuple[bool, str]:
+    def save_scenario(self, scenario: Scenario) -> tuple[bool, str]:
         """
         Save a scenario to file
 
@@ -193,7 +193,7 @@ class ScenarioManager:
             logger.error(f"Failed to save scenario {scenario.name}: {e}")
             return False, f"Failed to save: {e}"
 
-    def delete_scenario(self, name: str) -> Tuple[bool, str]:
+    def delete_scenario(self, name: str) -> tuple[bool, str]:
         """
         Delete a scenario
 
@@ -237,7 +237,7 @@ class ScenarioManager:
         include_ics: bool = True,
         include_options: bool = True,
         ic_file: str = "INIT_CONC_1.txt"
-    ) -> Tuple[Optional[Scenario], str]:
+    ) -> tuple[Scenario | None, str]:
         """
         Capture current model configuration as a new scenario
 
@@ -252,9 +252,9 @@ class ScenarioManager:
         Returns:
             Tuple of (Scenario or None, message)
         """
-        from parameter_parser import ParameterFile
         from ic_parser import ICFile
-        from options_parser import ModelOptionsFile, ExtraConstantsFile
+        from options_parser import ExtraConstantsFile, ModelOptionsFile
+        from parameter_parser import ParameterFile
 
         scenario = Scenario(
             name=name,
@@ -318,7 +318,7 @@ class ScenarioManager:
 
         return scenario, "Configuration captured successfully"
 
-    def apply_scenario(self, scenario: Scenario) -> Tuple[bool, str]:
+    def apply_scenario(self, scenario: Scenario) -> tuple[bool, str]:
         """
         Apply a scenario to model input files
 
@@ -328,9 +328,9 @@ class ScenarioManager:
         Returns:
             Tuple of (success, message)
         """
-        from parameter_parser import ParameterFile
         from ic_parser import ICFile
-        from options_parser import ModelOptionsFile, ExtraConstantsFile
+        from options_parser import ExtraConstantsFile, ModelOptionsFile
+        from parameter_parser import ParameterFile
 
         results = []
         errors = []

@@ -6,12 +6,11 @@ Parses and manages AQUABC model options files:
 - EXTRA_WCONST.txt: Additional model constants
 """
 
+import logging
 import os
 import shutil
-import logging
-from datetime import datetime
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple, Union
+from datetime import datetime
 
 logger = logging.getLogger("AQUABC.options")
 
@@ -123,7 +122,7 @@ OPTION_CATEGORIES = {
 class ModelOption:
     """Individual model option with metadata"""
     name: str
-    value: Union[int, float, str]
+    value: int | float | str
     description: str
     help_text: str
     option_type: str  # 'bool', 'float', 'string'
@@ -131,9 +130,9 @@ class ModelOption:
     original_line: str
 
     # Validation bounds (for numeric types)
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
-    default_value: Union[int, float, str, None] = None
+    min_value: float | None = None
+    max_value: float | None = None
+    default_value: int | float | str | None = None
 
     def is_boolean(self) -> bool:
         return self.option_type == "bool"
@@ -141,7 +140,7 @@ class ModelOption:
     def is_numeric(self) -> bool:
         return self.option_type in ("bool", "float")
 
-    def validate(self, new_value) -> Tuple[bool, str]:
+    def validate(self, new_value) -> tuple[bool, str]:
         """Validate a new value"""
         if self.option_type == "bool":
             if new_value not in (0, 1, True, False):
@@ -176,8 +175,8 @@ class ModelOptionsFile:
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.options: Dict[str, ModelOption] = {}
-        self.raw_lines: List[str] = []
+        self.options: dict[str, ModelOption] = {}
+        self.raw_lines: list[str] = []
         self._parsed = False
 
     def parse(self) -> bool:
@@ -187,7 +186,7 @@ class ModelOptionsFile:
             return False
 
         try:
-            with open(self.filepath, 'r') as f:
+            with open(self.filepath) as f:
                 self.raw_lines = f.readlines()
 
             self.options = {}
@@ -273,19 +272,19 @@ class ModelOptionsFile:
             logger.error(f"Error parsing options file: {e}")
             return False
 
-    def get_option(self, name: str) -> Optional[ModelOption]:
+    def get_option(self, name: str) -> ModelOption | None:
         """Get a specific option"""
         if not self._parsed:
             self.parse()
         return self.options.get(name)
 
-    def get_all_options(self) -> List[ModelOption]:
+    def get_all_options(self) -> list[ModelOption]:
         """Get all options"""
         if not self._parsed:
             self.parse()
         return list(self.options.values())
 
-    def update_option(self, name: str, new_value) -> Tuple[bool, str]:
+    def update_option(self, name: str, new_value) -> tuple[bool, str]:
         """Update an option value"""
         if name not in self.options:
             return False, f"Option '{name}' not found"
@@ -312,7 +311,7 @@ class ModelOptionsFile:
         logger.info(f"Updated {name}: {old_value} -> {new_value}")
         return True, f"Updated {name}"
 
-    def save(self, backup: bool = True) -> Tuple[bool, str]:
+    def save(self, backup: bool = True) -> tuple[bool, str]:
         """Save the options file"""
         try:
             if backup and os.path.exists(self.filepath):
@@ -353,8 +352,8 @@ class ExtraConstantsFile:
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.constants: Dict[str, ModelOption] = {}
-        self.raw_lines: List[str] = []
+        self.constants: dict[str, ModelOption] = {}
+        self.raw_lines: list[str] = []
         self._parsed = False
 
     def parse(self) -> bool:
@@ -364,7 +363,7 @@ class ExtraConstantsFile:
             return False
 
         try:
-            with open(self.filepath, 'r') as f:
+            with open(self.filepath) as f:
                 self.raw_lines = f.readlines()
 
             self.constants = {}
@@ -417,19 +416,19 @@ class ExtraConstantsFile:
             logger.error(f"Error parsing extra constants file: {e}")
             return False
 
-    def get_constant(self, name: str) -> Optional[ModelOption]:
+    def get_constant(self, name: str) -> ModelOption | None:
         """Get a specific constant"""
         if not self._parsed:
             self.parse()
         return self.constants.get(name)
 
-    def get_all_constants(self) -> List[ModelOption]:
+    def get_all_constants(self) -> list[ModelOption]:
         """Get all constants"""
         if not self._parsed:
             self.parse()
         return list(self.constants.values())
 
-    def update_constant(self, name: str, new_value: float) -> Tuple[bool, str]:
+    def update_constant(self, name: str, new_value: float) -> tuple[bool, str]:
         """Update a constant value"""
         if name not in self.constants:
             return False, f"Constant '{name}' not found"
@@ -450,7 +449,7 @@ class ExtraConstantsFile:
         logger.info(f"Updated {name}: {old_value} -> {new_value}")
         return True, f"Updated {name}"
 
-    def save(self, backup: bool = True) -> Tuple[bool, str]:
+    def save(self, backup: bool = True) -> tuple[bool, str]:
         """Save the constants file"""
         try:
             if backup and os.path.exists(self.filepath):
@@ -487,7 +486,6 @@ def load_extra_constants(filepath: str) -> ExtraConstantsFile:
 # Test function
 def test_options_parser():
     """Test the options parser"""
-    import sys
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)

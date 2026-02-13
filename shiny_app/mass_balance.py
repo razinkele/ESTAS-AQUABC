@@ -8,12 +8,11 @@ Calculates and tracks mass balance for key elements:
 - Silicon (Si)
 """
 
-import os
 import logging
-import pandas as pd
-import numpy as np
+import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+
+import pandas as pd
 
 logger = logging.getLogger("AQUABC.massbal")
 
@@ -79,7 +78,7 @@ class MassBalanceResult:
     absolute_change: float
     percent_change: float
     time_series: pd.Series
-    pool_breakdown: Dict[str, pd.Series]
+    pool_breakdown: dict[str, pd.Series]
 
     def is_conserved(self, tolerance: float = 1.0) -> bool:
         """Check if mass is conserved within tolerance (percent)"""
@@ -103,13 +102,13 @@ class MassBalanceResult:
 class MassBalanceCalculator:
     """Calculate mass balance for AQUABC model output"""
 
-    def __init__(self, output_csv: str, stoichiometry: Optional[Dict[str, float]] = None):
+    def __init__(self, output_csv: str, stoichiometry: dict[str, float] | None = None):
         self.output_csv = output_csv
         self.stoichiometry = stoichiometry or DEFAULT_STOICHIOMETRY.copy()
-        self.df: Optional[pd.DataFrame] = None
+        self.df: pd.DataFrame | None = None
         self._loaded = False
 
-    def load_data(self, max_rows: Optional[int] = None) -> bool:
+    def load_data(self, max_rows: int | None = None) -> bool:
         """Load OUTPUT.csv data"""
         if not os.path.exists(self.output_csv):
             logger.error(f"Output file not found: {self.output_csv}")
@@ -299,7 +298,7 @@ class MassBalanceCalculator:
         return self._create_result("Silicon", total_si, pools)
 
     def _create_result(self, element: str, total_series: pd.Series,
-                       pools: Dict[str, pd.Series]) -> MassBalanceResult:
+                       pools: dict[str, pd.Series]) -> MassBalanceResult:
         """Create MassBalanceResult from calculated series"""
         initial = total_series.iloc[0] if len(total_series) > 0 else 0
         final = total_series.iloc[-1] if len(total_series) > 0 else 0
@@ -320,7 +319,7 @@ class MassBalanceCalculator:
             pool_breakdown=pools
         )
 
-    def calculate_all(self) -> Dict[str, MassBalanceResult]:
+    def calculate_all(self) -> dict[str, MassBalanceResult]:
         """Calculate mass balance for all elements"""
         if not self._loaded:
             self.load_data()
@@ -357,7 +356,7 @@ class MassBalanceCalculator:
         return pd.DataFrame(data)
 
 
-def load_stoichiometry_from_params(param_file: str) -> Dict[str, float]:
+def load_stoichiometry_from_params(param_file: str) -> dict[str, float]:
     """Load stoichiometric ratios from parameter file"""
     stoich = DEFAULT_STOICHIOMETRY.copy()
 
@@ -366,7 +365,7 @@ def load_stoichiometry_from_params(param_file: str) -> Dict[str, float]:
         return stoich
 
     try:
-        with open(param_file, 'r') as f:
+        with open(param_file) as f:
             for line in f:
                 # Look for ratio parameters
                 for key in stoich.keys():
@@ -387,7 +386,6 @@ def load_stoichiometry_from_params(param_file: str) -> Dict[str, float]:
 # Test function
 def test_mass_balance():
     """Test mass balance calculations"""
-    import sys
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)

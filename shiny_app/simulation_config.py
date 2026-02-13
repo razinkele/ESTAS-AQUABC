@@ -11,13 +11,12 @@ Author: Claude
 Date: 2026-01-17
 """
 
+import logging
 import os
 import re
 import shutil
-import logging
-from datetime import datetime, date, timedelta
 from dataclasses import dataclass, field
-from typing import Optional, Tuple, List, Dict, Any
+from datetime import date, datetime, timedelta
 
 logger = logging.getLogger("AQUABC.SimConfig")
 
@@ -26,7 +25,7 @@ logger = logging.getLogger("AQUABC.SimConfig")
 class SimulationConfig:
     """Represents simulation configuration from INPUT.txt"""
     # Description lines (5 lines)
-    description: List[str] = field(default_factory=lambda: [""] * 5)
+    description: list[str] = field(default_factory=lambda: [""] * 5)
 
     # Time configuration
     base_year: int = 1998
@@ -45,7 +44,7 @@ class SimulationConfig:
     resuspension_option: int = 0
     model_sediments: int = 1
     num_sediment_flux_sets: int = 2
-    sediment_flux_files: List[str] = field(default_factory=list)
+    sediment_flux_files: list[str] = field(default_factory=list)
 
     def get_start_date(self) -> date:
         """Convert simulation_start (days) to actual date"""
@@ -91,7 +90,7 @@ class SimulationConfig:
         """Get time step in minutes"""
         return 1440.0 / self.time_steps_per_day
 
-    def validate(self) -> Tuple[bool, List[str]]:
+    def validate(self) -> tuple[bool, list[str]]:
         """Validate configuration, return (is_valid, error_messages)"""
         errors = []
 
@@ -122,7 +121,7 @@ class SimulationConfigFile:
     def __init__(self, filepath: str):
         self.filepath = filepath
         self.config = SimulationConfig()
-        self.raw_lines: List[str] = []
+        self.raw_lines: list[str] = []
         self._parsed = False
 
     def parse(self) -> bool:
@@ -132,7 +131,7 @@ class SimulationConfigFile:
             return False
 
         try:
-            with open(self.filepath, 'r') as f:
+            with open(self.filepath) as f:
                 self.raw_lines = f.readlines()
 
             logger.info(f"Parsing {self.filepath} ({len(self.raw_lines)} lines)")
@@ -308,7 +307,7 @@ class SimulationConfigFile:
             logger.error(f"Error parsing {self.filepath}: {e}", exc_info=True)
             return False
 
-    def save(self, backup: bool = True) -> Tuple[bool, str]:
+    def save(self, backup: bool = True) -> tuple[bool, str]:
         """Save configuration back to INPUT.txt"""
         if not self._parsed:
             return False, "Configuration not loaded"
@@ -351,7 +350,7 @@ class SimulationConfigFile:
         lines.append(f"         {self.config.simulation_start:.1f}")
 
         # SIMULATION_END
-        lines.append(f"# SIMULATION_END")
+        lines.append("# SIMULATION_END")
         lines.append(f"         {self.config.simulation_end:.1f}")
 
         # NUM_REPEATS
@@ -359,7 +358,7 @@ class SimulationConfigFile:
         lines.append(f"              {self.config.num_repeats}")
 
         # TIME_STEPS_PER_DAY
-        lines.append(f"# TIME_STEPS_PER_DAY")
+        lines.append("# TIME_STEPS_PER_DAY")
         lines.append(f"            {self.config.time_steps_per_day}")
 
         # PRINT_INTERVAL
@@ -379,7 +378,7 @@ class SimulationConfigFile:
         lines.append(self.config.output_folder)
 
         # RESUSPENSION_OPTION
-        lines.append(f"# RESUSPENSION_OPTION")
+        lines.append("# RESUSPENSION_OPTION")
         lines.append(f"          {self.config.resuspension_option}")
 
         # MODEL_SEDIMENTS
@@ -401,7 +400,7 @@ class SimulationConfigFile:
 
         return "\n".join(lines)
 
-    def update_config(self, **kwargs) -> Tuple[int, List[str]]:
+    def update_config(self, **kwargs) -> tuple[int, list[str]]:
         """
         Update multiple config values at once.
         Returns (success_count, error_messages)
@@ -425,7 +424,7 @@ class SimulationConfigFile:
 
 
 # Convenience function to load simulation config
-def load_simulation_config(filepath: str) -> Optional[SimulationConfigFile]:
+def load_simulation_config(filepath: str) -> SimulationConfigFile | None:
     """Load and parse simulation configuration file"""
     scf = SimulationConfigFile(filepath)
     if scf.parse():

@@ -14,16 +14,14 @@ The module provides:
   - Mapping to AQUABC model state variables
 """
 
-import os
-import re
 import logging
-from datetime import datetime, timedelta
+import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
-from pathlib import Path
+from datetime import datetime
+from typing import Any
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger("AQUABC.obs_loader")
 
@@ -102,10 +100,10 @@ class ObservationFile:
     station: str = ""
     description: str = ""
     n_records: int = 0
-    date_range: Tuple[Optional[str], Optional[str]] = (None, None)
-    variables: List[int] = field(default_factory=list)  # Variable indices
-    variable_names: List[str] = field(default_factory=list)
-    has_data: Dict[int, int] = field(default_factory=dict)  # var_index -> count of valid values
+    date_range: tuple[str | None, str | None] = (None, None)
+    variables: list[int] = field(default_factory=list)  # Variable indices
+    variable_names: list[str] = field(default_factory=list)
+    has_data: dict[int, int] = field(default_factory=dict)  # var_index -> count of valid values
 
 
 @dataclass
@@ -115,8 +113,8 @@ class LoadedObservations:
     df: pd.DataFrame
     time_column: str = "datetime"
     julian_day_column: str = "julian_day"
-    
-    def get_available_variables(self) -> List[Tuple[int, str, int]]:
+
+    def get_available_variables(self) -> list[tuple[int, str, int]]:
         """Return list of (index, name, count) for variables with data."""
         result = []
         for var_idx, count in self.file_info.has_data.items():
@@ -124,13 +122,13 @@ class LoadedObservations:
                 name = get_variable_description(var_idx)
                 result.append((var_idx, name, count))
         return sorted(result, key=lambda x: x[0])
-    
-    def get_variable_data(self, var_index: int) -> Optional[pd.DataFrame]:
+
+    def get_variable_data(self, var_index: int) -> pd.DataFrame | None:
         """Get time series for a specific variable."""
         col_name = str(var_index)
         if col_name not in self.df.columns:
             return None
-        
+
         subset = self.df[[self.julian_day_column, col_name]].copy()
         subset = subset[subset[col_name] != -1]  # -1 = missing value
         subset = subset.dropna()
@@ -138,29 +136,29 @@ class LoadedObservations:
         return subset
 
 
-def parse_dates_datetime(date_str: str, time_str: str = "000000") -> Optional[datetime]:
+def parse_dates_datetime(date_str: str, time_str: str = "000000") -> datetime | None:
     """Parse date and time strings from .dates file format.
-    
+
     Args:
         date_str: Date in YYYYMMDD format
         time_str: Time in HHMMSS format (default midnight)
-    
+
     Returns:
         datetime object or None if parsing fails
     """
     try:
         date_str = str(date_str).strip()
         time_str = str(time_str).strip() if time_str else "000000"
-        
+
         if len(date_str) == 8:
             year = int(date_str[0:4])
             month = int(date_str[4:6])
             day = int(date_str[6:8])
-            
+
             hour = int(time_str[0:2]) if len(time_str) >= 2 else 0
             minute = int(time_str[2:4]) if len(time_str) >= 4 else 0
             second = int(time_str[4:6]) if len(time_str) >= 6 else 0
-            
+
             return datetime(year, month, day, hour, minute, second)
     except (ValueError, IndexError) as e:
         logger.debug(f"Failed to parse date '{date_str}' time '{time_str}': {e}")
@@ -174,47 +172,47 @@ def datetime_to_julian_day(dt: datetime, reference_year: int = 2015) -> float:
     return delta.total_seconds() / 86400.0
 
 
-def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
+def load_dates_file(filepath: str) -> LoadedObservations | None:
     """
     Load a .dates observation file.
-    
+
     Format:
       - First line: Header with #date time followed by variable indices
       - Data lines: YYYYMMDD HHMMSS followed by whitespace-separated values
       - Missing values are represented as -1
-    
+
     Args:
         filepath: Path to .dates file
-        
+
     Returns:
         LoadedObservations object or None on failure
     """
     if not os.path.exists(filepath):
         logger.error(f"File not found: {filepath}")
         return None
-    
+
     try:
         filename = os.path.basename(filepath)
-        
+
         # Extract station name from filename (e.g., sta1ND.dates -> sta1ND)
         station = os.path.splitext(filename)[0]
-        
+
         # Read file content
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             lines = f.readlines()
-        
+
         if not lines:
             logger.error(f"Empty file: {filepath}")
             return None
-        
+
         # Parse header line
         header_line = lines[0].strip()
         if header_line.startswith('#'):
             header_line = header_line[1:].strip()
-        
+
         # Split header - first two are date/time, rest are variable indices
         header_parts = header_line.split()
-        
+
         # Find where variable indices start (after 'date' and 'time')
         var_indices = []
         for i, part in enumerate(header_parts):
@@ -225,30 +223,30 @@ def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
                 var_indices.append(idx)
             except ValueError:
                 continue
-        
+
         logger.info(f"Found {len(var_indices)} variable columns in {filename}")
-        
+
         # Parse data lines
         data_rows = []
         for line in lines[1:]:
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
-            
+
             parts = line.split()
             if len(parts) < 2:
                 continue
-            
+
             date_str = parts[0]
             time_str = parts[1] if len(parts) > 1 else "000000"
-            
+
             dt = parse_dates_datetime(date_str, time_str)
             if dt is None:
                 continue
-            
+
             # Parse values
             values = []
-            for i, idx in enumerate(var_indices):
+            for i, _idx in enumerate(var_indices):
                 val_idx = i + 2  # Skip date, time
                 if val_idx < len(parts):
                     try:
@@ -258,21 +256,21 @@ def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
                         values.append(-1.0)  # Missing
                 else:
                     values.append(-1.0)
-            
+
             julian_day = datetime_to_julian_day(dt)
             data_rows.append({
                 "datetime": dt,
                 "julian_day": julian_day,
                 **{str(var_indices[i]): values[i] for i in range(len(var_indices))}
             })
-        
+
         if not data_rows:
             logger.warning(f"No valid data rows in {filepath}")
             return None
-        
+
         # Create DataFrame
         df = pd.DataFrame(data_rows)
-        
+
         # Count valid values per variable
         has_data = {}
         for var_idx in var_indices:
@@ -281,11 +279,11 @@ def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
                 valid_count = (df[col] != -1).sum()
                 if valid_count > 0:
                     has_data[var_idx] = int(valid_count)
-        
+
         # Date range
         date_min = df["datetime"].min().strftime("%Y-%m-%d") if len(df) > 0 else None
         date_max = df["datetime"].max().strftime("%Y-%m-%d") if len(df) > 0 else None
-        
+
         # Create file info
         file_info = ObservationFile(
             filepath=filepath,
@@ -299,12 +297,12 @@ def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
             variable_names=[get_variable_name(i) for i in var_indices],
             has_data=has_data,
         )
-        
+
         return LoadedObservations(
             file_info=file_info,
             df=df,
         )
-        
+
     except Exception as e:
         logger.error(f"Error loading {filepath}: {e}")
         import traceback
@@ -312,42 +310,42 @@ def load_dates_file(filepath: str) -> Optional[LoadedObservations]:
         return None
 
 
-def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[LoadedObservations]:
+def load_xlsx_file(filepath: str, sheet_name: str | None = None) -> LoadedObservations | None:
     """
     Load an Excel observation file.
-    
+
     Attempts to auto-detect the format:
       - Looks for date/time column
       - Identifies variable columns
-    
+
     Args:
         filepath: Path to .xlsx file
         sheet_name: Optional specific sheet to read
-        
+
     Returns:
         LoadedObservations object or None on failure
     """
     if not os.path.exists(filepath):
         logger.error(f"File not found: {filepath}")
         return None
-    
+
     try:
         filename = os.path.basename(filepath)
-        
+
         # Read Excel file
         if sheet_name:
             df = pd.read_excel(filepath, sheet_name=sheet_name)
         else:
             # Try to read first sheet
             df = pd.read_excel(filepath)
-        
+
         if df.empty:
             logger.warning(f"Empty Excel file: {filepath}")
             return None
-        
+
         # Clean column names
         df.columns = [str(c).strip() for c in df.columns]
-        
+
         # Find date/time column
         time_col = None
         date_patterns = ['date', 'time', 'datetime', 'timestamp', 'day', 'julian']
@@ -355,19 +353,19 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
             if any(p in col.lower() for p in date_patterns):
                 time_col = col
                 break
-        
+
         if time_col is None:
             # Use first column
             time_col = df.columns[0]
             logger.warning(f"No date column found in {filename}, using '{time_col}'")
-        
+
         # Convert time column to datetime if needed
         if not pd.api.types.is_datetime64_any_dtype(df[time_col]):
             try:
                 df[time_col] = pd.to_datetime(df[time_col])
             except Exception:
                 logger.warning(f"Could not convert {time_col} to datetime")
-        
+
         # Create julian day column
         if pd.api.types.is_datetime64_any_dtype(df[time_col]):
             reference_date = pd.Timestamp(year=2015, month=1, day=1)
@@ -377,11 +375,11 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
             # Assume column is already julian day
             df["julian_day"] = pd.to_numeric(df[time_col], errors='coerce')
             df["datetime"] = pd.to_datetime('2015-01-01') + pd.to_timedelta(df["julian_day"], unit='D')
-        
+
         # Identify numeric variable columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         var_cols = [c for c in numeric_cols if c not in ['julian_day', time_col]]
-        
+
         # Map column names to variable indices (best effort)
         var_indices = []
         has_data = {}
@@ -389,7 +387,7 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
             # Try to match column name to known variables
             matched_idx = None
             col_lower = col.lower().replace(' ', '_').replace('-', '_')
-            
+
             for idx, info in STATE_VARIABLE_INDEX.items():
                 if info['name'].lower() == col_lower:
                     matched_idx = idx
@@ -397,7 +395,7 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
                 if col_lower in info['description'].lower():
                     matched_idx = idx
                     break
-            
+
             if matched_idx:
                 var_indices.append(matched_idx)
                 valid_count = df[col].notna().sum()
@@ -418,11 +416,11 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
                 if valid_count > 0:
                     has_data[new_idx] = int(valid_count)
                 df.rename(columns={col: str(new_idx)}, inplace=True)
-        
+
         # Date range
         date_min = df["datetime"].min().strftime("%Y-%m-%d") if len(df) > 0 and pd.notna(df["datetime"].min()) else None
         date_max = df["datetime"].max().strftime("%Y-%m-%d") if len(df) > 0 and pd.notna(df["datetime"].max()) else None
-        
+
         # Create file info
         file_info = ObservationFile(
             filepath=filepath,
@@ -436,12 +434,12 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
             variable_names=[get_variable_name(i) for i in var_indices],
             has_data=has_data,
         )
-        
+
         return LoadedObservations(
             file_info=file_info,
             df=df,
         )
-        
+
     except Exception as e:
         logger.error(f"Error loading Excel file {filepath}: {e}")
         import traceback
@@ -449,30 +447,30 @@ def load_xlsx_file(filepath: str, sheet_name: Optional[str] = None) -> Optional[
         return None
 
 
-def scan_observations_directory(obs_dir: str) -> List[ObservationFile]:
+def scan_observations_directory(obs_dir: str) -> list[ObservationFile]:
     """
     Scan OBSERVATIONS directory for observation files.
-    
+
     Args:
         obs_dir: Path to OBSERVATIONS directory
-        
+
     Returns:
         List of ObservationFile objects with metadata
     """
     files = []
-    
+
     if not os.path.isdir(obs_dir):
         logger.warning(f"Observations directory not found: {obs_dir}")
         return files
-    
+
     for filename in sorted(os.listdir(obs_dir)):
         filepath = os.path.join(obs_dir, filename)
-        
+
         if not os.path.isfile(filepath):
             continue
-        
+
         ext = os.path.splitext(filename)[1].lower()
-        
+
         if ext == '.dates':
             # Load and extract metadata
             loaded = load_dates_file(filepath)
@@ -487,13 +485,13 @@ def scan_observations_directory(obs_dir: str) -> List[ObservationFile]:
                     station=os.path.splitext(filename)[0],
                     description="Could not parse file",
                 ))
-        
+
         elif ext == '.xlsx':
             # Try to get sheet names for metadata
             try:
                 xl = pd.ExcelFile(filepath)
                 sheet_names = xl.sheet_names
-                
+
                 files.append(ObservationFile(
                     filepath=filepath,
                     filename=filename,
@@ -510,7 +508,7 @@ def scan_observations_directory(obs_dir: str) -> List[ObservationFile]:
                     station=os.path.splitext(filename)[0],
                     description="Excel file",
                 ))
-        
+
         elif ext == '.csv':
             files.append(ObservationFile(
                 filepath=filepath,
@@ -519,7 +517,7 @@ def scan_observations_directory(obs_dir: str) -> List[ObservationFile]:
                 station=os.path.splitext(filename)[0],
                 description="CSV observation file",
             ))
-        
+
         elif ext == '.txt' and 'readme' not in filename.lower():
             files.append(ObservationFile(
                 filepath=filepath,
@@ -528,48 +526,48 @@ def scan_observations_directory(obs_dir: str) -> List[ObservationFile]:
                 station=os.path.splitext(filename)[0],
                 description="Text observation file",
             ))
-    
+
     return files
 
 
-def get_file_preview(filepath: str, max_rows: int = 10) -> Dict[str, Any]:
+def get_file_preview(filepath: str, max_rows: int = 10) -> dict[str, Any]:
     """
     Get a preview of observation file contents.
-    
+
     Args:
         filepath: Path to observation file
         max_rows: Maximum rows to include in preview
-        
+
     Returns:
         Dict with 'columns', 'data', 'info' keys
     """
     ext = os.path.splitext(filepath)[1].lower()
-    
+
     try:
         if ext == '.dates':
             loaded = load_dates_file(filepath)
             if loaded:
                 preview_df = loaded.df.head(max_rows).copy()
-                
+
                 # Format columns for display
                 cols = ["datetime", "julian_day"]
                 for var_idx in sorted(loaded.file_info.has_data.keys())[:20]:  # Limit columns
                     cols.append(str(var_idx))
-                
+
                 cols = [c for c in cols if c in preview_df.columns]
                 preview_df = preview_df[cols]
-                
+
                 # Format datetime
                 if "datetime" in preview_df.columns:
                     preview_df["datetime"] = preview_df["datetime"].dt.strftime("%Y-%m-%d %H:%M")
-                
+
                 # Round numeric columns
                 for col in preview_df.select_dtypes(include=[np.number]).columns:
                     preview_df[col] = preview_df[col].round(4)
-                
+
                 # Replace -1 with NaN for display
                 preview_df = preview_df.replace(-1, np.nan)
-                
+
                 return {
                     "columns": cols,
                     "data": preview_df.to_dict('records'),
@@ -583,23 +581,23 @@ def get_file_preview(filepath: str, max_rows: int = 10) -> Dict[str, Any]:
                         ]
                     }
                 }
-        
+
         elif ext == '.xlsx':
             loaded = load_xlsx_file(filepath)
             if loaded:
                 preview_df = loaded.df.head(max_rows).copy()
-                
+
                 # Format datetime
                 if "datetime" in preview_df.columns:
                     preview_df["datetime"] = preview_df["datetime"].dt.strftime("%Y-%m-%d")
-                
+
                 cols = list(preview_df.columns)[:15]  # Limit columns
                 preview_df = preview_df[cols]
-                
+
                 # Round numeric columns
                 for col in preview_df.select_dtypes(include=[np.number]).columns:
                     preview_df[col] = preview_df[col].round(4)
-                
+
                 return {
                     "columns": cols,
                     "data": preview_df.to_dict('records'),
@@ -613,7 +611,7 @@ def get_file_preview(filepath: str, max_rows: int = 10) -> Dict[str, Any]:
                         ]
                     }
                 }
-        
+
         elif ext == '.csv':
             df = pd.read_csv(filepath, nrows=max_rows)
             return {
@@ -624,10 +622,10 @@ def get_file_preview(filepath: str, max_rows: int = 10) -> Dict[str, Any]:
                     "n_variables": len(df.columns) - 1,
                 }
             }
-    
+
     except Exception as e:
         logger.error(f"Error previewing {filepath}: {e}")
-    
+
     return {
         "columns": [],
         "data": [],
@@ -635,18 +633,18 @@ def get_file_preview(filepath: str, max_rows: int = 10) -> Dict[str, Any]:
     }
 
 
-def load_observation_file(filepath: str) -> Optional[LoadedObservations]:
+def load_observation_file(filepath: str) -> LoadedObservations | None:
     """
     Load observation file based on extension.
-    
+
     Args:
         filepath: Path to observation file
-        
+
     Returns:
         LoadedObservations object or None
     """
     ext = os.path.splitext(filepath)[1].lower()
-    
+
     if ext == '.dates':
         return load_dates_file(filepath)
     elif ext == '.xlsx':

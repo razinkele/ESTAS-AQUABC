@@ -5,13 +5,12 @@ Parses and manages AQUABC model parameter files (WCONST_04.txt, EXTRA_WCONST.txt
 Provides structured access to 318+ model parameters organized by category.
 """
 
+import logging
 import os
 import re
 import shutil
-import logging
+from dataclasses import dataclass
 from datetime import datetime
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
 
 logger = logging.getLogger("AQUABC.params")
 
@@ -66,8 +65,8 @@ class Parameter:
     category: str = ""
 
     # Validation info
-    min_value: Optional[float] = None
-    max_value: Optional[float] = None
+    min_value: float | None = None
+    max_value: float | None = None
     units: str = ""
 
     def __post_init__(self):
@@ -98,7 +97,7 @@ class Parameter:
                 self.max_value = max_val
                 break
 
-    def validate(self, new_value: float) -> Tuple[bool, str]:
+    def validate(self, new_value: float) -> tuple[bool, str]:
         """
         Validate a new value for this parameter.
         Returns (is_valid, message)
@@ -134,8 +133,8 @@ class ParameterFile:
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.parameters: Dict[int, Parameter] = {}  # id -> Parameter
-        self.raw_lines: List[str] = []  # Original file lines
+        self.parameters: dict[int, Parameter] = {}  # id -> Parameter
+        self.raw_lines: list[str] = []  # Original file lines
         self._parsed = False
 
     def parse(self) -> bool:
@@ -148,7 +147,7 @@ class ParameterFile:
             return False
 
         try:
-            with open(self.filepath, 'r') as f:
+            with open(self.filepath) as f:
                 self.raw_lines = f.readlines()
 
             self.parameters = {}
@@ -168,7 +167,7 @@ class ParameterFile:
             logger.error(f"Error parsing parameter file: {e}")
             return False
 
-    def _parse_line(self, line: str, line_num: int) -> Optional[Parameter]:
+    def _parse_line(self, line: str, line_num: int) -> Parameter | None:
         """
         Parse a single line of the parameter file.
         Format: "    ID    NAME    VALUE  ! ID   Comment"
@@ -220,20 +219,20 @@ class ParameterFile:
                 return category
         return "Other"
 
-    def get_parameters_by_category(self, category: str) -> List[Parameter]:
+    def get_parameters_by_category(self, category: str) -> list[Parameter]:
         """Get all parameters in a category"""
         if not self._parsed:
             self.parse()
 
         return [p for p in self.parameters.values() if p.category == category]
 
-    def get_parameter(self, param_id: int) -> Optional[Parameter]:
+    def get_parameter(self, param_id: int) -> Parameter | None:
         """Get a specific parameter by ID"""
         if not self._parsed:
             self.parse()
         return self.parameters.get(param_id)
 
-    def get_parameter_by_name(self, name: str) -> Optional[Parameter]:
+    def get_parameter_by_name(self, name: str) -> Parameter | None:
         """Get a specific parameter by name"""
         if not self._parsed:
             self.parse()
@@ -242,7 +241,7 @@ class ParameterFile:
                 return param
         return None
 
-    def update_parameter(self, param_id: int, new_value: float) -> Tuple[bool, str]:
+    def update_parameter(self, param_id: int, new_value: float) -> tuple[bool, str]:
         """
         Update a parameter value.
         Returns (success, message)
@@ -269,7 +268,7 @@ class ParameterFile:
         logger.info(f"Updated {param.name}: {old_value} -> {new_value}")
         return True, f"Updated {param.name}"
 
-    def update_parameters(self, updates: Dict[int, float]) -> Tuple[int, int, List[str]]:
+    def update_parameters(self, updates: dict[int, float]) -> tuple[int, int, list[str]]:
         """
         Update multiple parameters.
         Returns (success_count, fail_count, messages)
@@ -288,7 +287,7 @@ class ParameterFile:
 
         return success_count, fail_count, messages
 
-    def save(self, backup: bool = True) -> Tuple[bool, str]:
+    def save(self, backup: bool = True) -> tuple[bool, str]:
         """
         Save the parameter file.
         Returns (success, message)
@@ -306,13 +305,13 @@ class ParameterFile:
                 f.writelines(self.raw_lines)
 
             logger.info(f"Saved parameter file: {self.filepath}")
-            return True, f"Saved successfully"
+            return True, "Saved successfully"
 
         except Exception as e:
             logger.error(f"Error saving parameter file: {e}")
             return False, f"Save failed: {e}"
 
-    def get_all_categories(self) -> List[str]:
+    def get_all_categories(self) -> list[str]:
         """Get list of all category names"""
         return list(PARAMETER_CATEGORIES.keys())
 
@@ -323,7 +322,7 @@ class ParameterFile:
             return end - start + 1
         return 0
 
-    def search(self, query: str) -> List[Parameter]:
+    def search(self, query: str) -> list[Parameter]:
         """Search parameters by name or comment"""
         if not self._parsed:
             self.parse()
@@ -375,7 +374,6 @@ def load_parameters(filepath: str) -> ParameterFile:
 # Test function
 def test_parser():
     """Test the parameter parser"""
-    import sys
 
     # Get the INPUTS directory relative to this file
     script_dir = os.path.dirname(os.path.realpath(__file__))

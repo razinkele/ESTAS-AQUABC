@@ -5,13 +5,12 @@ Parses and manages AQUABC initial conditions files (INIT_CONC_*.txt).
 Provides structured access to 36+ state variable initial concentrations.
 """
 
+import logging
 import os
 import re
 import shutil
-import logging
-from datetime import datetime
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Tuple
+from datetime import datetime
 
 logger = logging.getLogger("AQUABC.ic")
 
@@ -95,16 +94,16 @@ for idx, info in STATE_VARIABLES.items():
 
 def get_variable_display_name(csv_column: str) -> str:
     """Get a human-readable display name for a CSV column.
-    
+
     Args:
         csv_column: Column name from OUTPUT.csv (e.g., 'NH4N', 'DIAC')
-        
+
     Returns:
         Descriptive name like 'NH4N - Ammonium Nitrogen (mg N/L)'
     """
     col_clean = csv_column.strip()
     info = CSV_COLUMN_INFO.get(col_clean) or CSV_COLUMN_INFO.get(col_clean.lower())
-    
+
     if info:
         return f"{col_clean} - {info['description']} ({info['units']})"
     else:
@@ -112,12 +111,12 @@ def get_variable_display_name(csv_column: str) -> str:
         return col_clean
 
 
-def get_variable_info(csv_column: str) -> Optional[Dict]:
+def get_variable_info(csv_column: str) -> dict | None:
     """Get full info dict for a CSV column name.
-    
+
     Args:
         csv_column: Column name from OUTPUT.csv
-        
+
     Returns:
         Dict with index, name, description, units, category or None
     """
@@ -125,24 +124,24 @@ def get_variable_info(csv_column: str) -> Optional[Dict]:
     return CSV_COLUMN_INFO.get(col_clean) or CSV_COLUMN_INFO.get(col_clean.lower())
 
 
-def get_grouped_variable_choices(columns: List[str]) -> Dict[str, Dict[str, str]]:
+def get_grouped_variable_choices(columns: list[str]) -> dict[str, dict[str, str]]:
     """Create grouped choices for selectize input from CSV columns.
-    
+
     Args:
         columns: List of column names from CSV header
-        
+
     Returns:
         Dict of {category: {csv_name: display_name}} for grouped selectize
     """
     # Group columns by category
     grouped = {}
     unknown = {}
-    
+
     for col in columns:
         col_clean = col.strip()
         if col_clean.lower() in ['time', 'time_days', 'date', 'datetime', 'julian_day']:
             continue
-            
+
         info = get_variable_info(col_clean)
         if info:
             category = info['category']
@@ -152,11 +151,11 @@ def get_grouped_variable_choices(columns: List[str]) -> Dict[str, Dict[str, str]
             grouped[category][col_clean] = info['description']
         else:
             unknown[col_clean] = col_clean
-    
+
     # Add unknown columns at the end
     if unknown:
         grouped["Other"] = unknown
-    
+
     return grouped
 
 
@@ -211,9 +210,9 @@ class ICFile:
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-        self.conditions: Dict[int, InitialCondition] = {}  # var_id -> IC
-        self.raw_lines: List[str] = []
-        self.header_lines: List[str] = []  # Comment lines at top
+        self.conditions: dict[int, InitialCondition] = {}  # var_id -> IC
+        self.raw_lines: list[str] = []
+        self.header_lines: list[str] = []  # Comment lines at top
         self._parsed = False
 
     def parse(self) -> bool:
@@ -226,7 +225,7 @@ class ICFile:
             return False
 
         try:
-            with open(self.filepath, 'r') as f:
+            with open(self.filepath) as f:
                 self.raw_lines = f.readlines()
 
             self.conditions = {}
@@ -250,7 +249,7 @@ class ICFile:
             logger.error(f"Error parsing IC file: {e}")
             return False
 
-    def _parse_line(self, line: str, line_num: int) -> Optional[InitialCondition]:
+    def _parse_line(self, line: str, line_num: int) -> InitialCondition | None:
         """
         Parse a single line of the IC file.
         Format: "                         ID          VALUE             ! COMMENT"
@@ -290,13 +289,13 @@ class ICFile:
             original_line=line
         )
 
-    def get_condition(self, var_id: int) -> Optional[InitialCondition]:
+    def get_condition(self, var_id: int) -> InitialCondition | None:
         """Get a specific IC by variable ID"""
         if not self._parsed:
             self.parse()
         return self.conditions.get(var_id)
 
-    def get_conditions_by_category(self, category: str) -> List[InitialCondition]:
+    def get_conditions_by_category(self, category: str) -> list[InitialCondition]:
         """Get all ICs in a category"""
         if not self._parsed:
             self.parse()
@@ -307,13 +306,13 @@ class ICFile:
         var_ids = STATE_VARIABLE_CATEGORIES[category]
         return [self.conditions[vid] for vid in var_ids if vid in self.conditions]
 
-    def get_all_conditions(self) -> List[InitialCondition]:
+    def get_all_conditions(self) -> list[InitialCondition]:
         """Get all ICs sorted by variable ID"""
         if not self._parsed:
             self.parse()
         return sorted(self.conditions.values(), key=lambda x: x.var_id)
 
-    def update_condition(self, var_id: int, new_value: float) -> Tuple[bool, str]:
+    def update_condition(self, var_id: int, new_value: float) -> tuple[bool, str]:
         """
         Update an IC value.
         Returns (success, message)
@@ -332,7 +331,7 @@ class ICFile:
         logger.info(f"Updated {ic.name}: {old_value} -> {new_value}")
         return True, f"Updated {ic.name}"
 
-    def update_conditions(self, updates: Dict[int, float]) -> Tuple[int, int, List[str]]:
+    def update_conditions(self, updates: dict[int, float]) -> tuple[int, int, list[str]]:
         """
         Update multiple ICs.
         Returns (success_count, fail_count, messages)
@@ -351,7 +350,7 @@ class ICFile:
 
         return success_count, fail_count, messages
 
-    def save(self, backup: bool = True) -> Tuple[bool, str]:
+    def save(self, backup: bool = True) -> tuple[bool, str]:
         """
         Save the IC file.
         Returns (success, message)
@@ -393,7 +392,7 @@ class ICFile:
         }
 
 
-def get_available_ic_files(inputs_dir: str) -> List[str]:
+def get_available_ic_files(inputs_dir: str) -> list[str]:
     """Get list of available IC files"""
     ic_files = []
     if os.path.exists(inputs_dir):
@@ -413,7 +412,6 @@ def load_ic_file(filepath: str) -> ICFile:
 # Test function
 def test_ic_parser():
     """Test the IC parser"""
-    import sys
 
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
