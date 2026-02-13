@@ -159,6 +159,23 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
+
+def safe_resolve(base_dir: str, filename: str) -> str:
+    """Resolve filename under base_dir, rejecting path traversal.
+
+    Raises ValueError if the resolved path escapes base_dir.
+    """
+    if not filename or not filename.strip():
+        raise ValueError("Empty filename")
+    # Reject obvious traversal attempts before joining
+    if os.path.isabs(filename) or '..' in filename.split(os.sep):
+        raise ValueError(f"Invalid filename: {filename}")
+    resolved = os.path.realpath(os.path.join(base_dir, filename))
+    base = os.path.realpath(base_dir)
+    if not resolved.startswith(base + os.sep) and resolved != base:
+        raise ValueError(f"Path escapes base directory: {filename}")
+    return resolved
+
 # Standard column names for PELAGIC_BOX output files (binary and text)
 PELAGIC_BOX_COLUMNS = [
     "TIME_DAYS", "NH4_N", "NO3_N", "PO4_P", "DISS_OXYGEN", "DIA_C",
@@ -423,11 +440,11 @@ def validate_constants_file(constants_filename):
     if not constants_filename:
         return True, 0, None  # No constants file specified, model uses defaults
     
-    # Build full path if not already absolute
-    if os.path.isabs(constants_filename):
-        filepath = constants_filename
-    else:
-        filepath = os.path.join(INPUTS_DIR, constants_filename)
+    # Build full path, rejecting traversal attempts
+    try:
+        filepath = safe_resolve(INPUTS_DIR, constants_filename)
+    except ValueError:
+        return False, 0, f"Invalid constants file path: {constants_filename}"
     
     if not os.path.exists(filepath):
         return False, 0, f"Constants file not found: {filepath}"
@@ -4295,7 +4312,12 @@ def server(input, output, session):
             logger.debug("load_file called but no file selected")
             return
         logger.info(f"Loading file: {f}")
-        path = os.path.join(INPUTS_DIR, f)
+        try:
+            path = safe_resolve(INPUTS_DIR, f)
+        except ValueError as e:
+            logger.error(f"Invalid file path: {e}")
+            ui.update_text_area("file_contents", value=f"Error: invalid filename")
+            return
 
         try:
             with open(path, 'r') as fh:
@@ -4325,7 +4347,10 @@ def server(input, output, session):
             )
 
         # Analyze the file
-        path = os.path.join(INPUTS_DIR, f)
+        try:
+            path = safe_resolve(INPUTS_DIR, f)
+        except ValueError:
+            return ui.tags.div(ui.tags.p("Invalid file path", class_="text-danger"), class_="p-2")
         analysis = analyze_input_file(path)
 
         # Build info rows
@@ -4433,7 +4458,12 @@ def server(input, output, session):
             return
 
         logger.info(f"Saving file: {f}")
-        path = os.path.join(INPUTS_DIR, f)
+        try:
+            path = safe_resolve(INPUTS_DIR, f)
+        except ValueError as e:
+            logger.error(f"Invalid file path for save: {e}")
+            save_status_msg.set(f"✗ Invalid filename: {e}")
+            return
         content_length = len(input.file_contents())
         logger.debug(f"Content length: {content_length} characters")
 
@@ -5793,9 +5823,17 @@ def server(input, output, session):
         if not selected:
             obs_file_preview.set(None)
             return
-        
+
+        # Validate path stays within OBSERVATIONS directory
+        obs_dir = os.path.join(ROOT, "OBSERVATIONS")
+        try:
+            selected_safe = safe_resolve(obs_dir, os.path.relpath(selected, obs_dir))
+        except ValueError:
+            obs_file_preview.set(None)
+            return
+
         # Get preview
-        preview = get_file_preview(selected)
+        preview = get_file_preview(selected_safe)
         obs_file_preview.set(preview)
 
     @reactive.effect
@@ -5803,10 +5841,21 @@ def server(input, output, session):
     def load_selected_obs_file():
         """Load the selected observation file"""
         selected = input.obs_file_select()
-        if not selected or not os.path.exists(selected):
+        if not selected:
             ui.notification_show("No file selected", type="warning")
             return
-        
+
+        # Validate path stays within OBSERVATIONS directory
+        obs_dir = os.path.join(ROOT, "OBSERVATIONS")
+        try:
+            selected = safe_resolve(obs_dir, os.path.relpath(selected, obs_dir))
+        except ValueError:
+            ui.notification_show("Invalid observation file path", type="error")
+            return
+        if not os.path.exists(selected):
+            ui.notification_show("No file selected", type="warning")
+            return
+
         logger.info(f"Loading observation file: {selected}")
         
         # Load based on file type
