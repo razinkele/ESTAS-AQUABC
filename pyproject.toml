@@ -1,20 +1,51 @@
-[tool.black]
-line-length = 120
+[project]
+name = "aquabc"
+version = "0.2.2-dev"
+requires-python = ">=3.10"
 
-[tool.isort]
-profile = "black"
-line_length = 120
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+include = ["shiny_app/**/*.py", "tests/python/**/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "E501",   # line length — too many violations to fix at once
+    "E741",   # ambiguous variable names (common in scientific code: l, I, O)
+    "S603",   # subprocess call with shell= — we validate this carefully
+    "S607",   # starting process with partial path — make calls are intentional
+    "S101",   # assert usage — fine in tests
+    "S108",   # hardcoded tmp paths — fine in tests
+    "B905",   # zip strict — not critical
+]
+
+[tool.ruff.lint.per-file-ignores]
+"shiny_app/app.py" = [
+    "F841",   # local variable assigned but never used (reactive side-effects)
+    "B023",   # function uses loop variable — common in Shiny reactive patterns
+    "S602",   # subprocess shell=True — necessary for Intel oneAPI source
+    "S605",   # starting process with shell — necessary for Intel wrapper
+]
+"tests/**/*.py" = ["S"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shiny_app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+pythonpath = ["."]
 
 [tool.mypy]
 python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
-
-[tool.pytest.ini_options]
-testpaths = ["shiny_app", "tests"]
-python_files = ["test_*.py"]
-
-[tool.flake8]
-max-line-length = 120
-extend-ignore = ["E203", "W503"]

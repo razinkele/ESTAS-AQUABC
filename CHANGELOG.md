@@ -8,6 +8,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- Cardinal Temperature Model with Inflection (CTMI, Rosso et al. 1993) replacing piecewise-exponential temperature response for phytoplankton growth
+- Synthesizing Unit nutrient colimitation (Saito et al. 2008) replacing Liebig's Law of the Minimum for all phytoplankton groups
+- Tunable Platt-style photoinhibition (BETA parameter) for light limitation in all phytoplankton groups
+- Unified precision type definitions via `precision_kinds` module
+- Compiler warning flags (`-Wall -Wextra`) for release and fast builds
+- Comprehensive AQUABC model equations reference document (`AQUABC_Model_Equations.md`)
+
+### Changed
+- Bundled scalar constant arguments into derived types (`t_diatom_params`, `t_cyn_params`, `t_opa_params`, etc.) for 6 kinetics subroutines
+- Bundled environmental input arrays into `t_phyto_env` derived type in 7 phytoplankton subroutines
+- Replaced hardcoded dimension magic numbers with named constants throughout
+- Replaced tabs with spaces in 15 source files for consistent formatting
+
+### Security
+- Added `safe_resolve()` path traversal protection to all Shiny app file operations (`load_file`, `save_file`, `file_info_panel`, `validate_constants_file`, observation handlers)
+- Added subprocess timeouts (120s clean, 600s build) with `kill()` on timeout to prevent hung processes
+- Added bounded output buffers to all subprocess stdout readers
+
+### Added (Developer Tooling)
+- `pyproject.toml` with ruff linter configuration (E, F, W, I, UP, B, S rules)
+- 46 Python unit tests for parsers (`parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`) and `safe_resolve`
+- CI `python-lint-test` job running ruff and pytest in parallel with Fortran build
+
+### Fixed
+- Guarded ~25 division-by-zero risks in sediment model (porosity, depth, mixing length, pH-to-H+ conversions)
+- Guarded REDOX speciation divisions against zero/negative values in pelagic model
+- Guarded CO2SYS critical divisions and discriminant
+- Guarded macroalgae quota divisions against zero biomass
+- Guarded state variable ratio divisions in pelagic model (Fe/Mn dissolved fractions)
+- Added pH, temperature, and salinity clamping at model entry points
+- Replaced raw `exp()` with `safe_exp()` in light limitation calculations to prevent overflow
+- Numerical hardening: zooplankton switching, parameter validation, cyanobacteria cleanup
+- Fixed 13 critical ecological model bugs across pelagic, sediment, and macroalgae
+- Fixed Mn speciation, leap year, bathymetry initialization, and NaN guards
+- Fixed settling suppression bug, allocation error checks, and getpar precision
+- Added `implicit none` to all remaining subroutines and functions
+- Removed 138 unused variable declarations across 25 source files
+- Removed 5 unused parameter imports and declarations
+- Resolved compare-reals and real-to-integer conversion warnings
+- Initialized variables that may be used uninitialized
+- Resolved character truncation warning in WRITE_PELAGIC_MODEL_CONSTANTS
+- Fixed missing `precision_kinds` dependency in 6 test targets
+- Removed ~250 lines of dead/commented-out code across 9 source files
+
 ---
 
 ## [0.2.1] - 2026-01-22

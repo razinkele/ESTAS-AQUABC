@@ -4,7 +4,7 @@
 
 This document presents findings from a comprehensive code review of the AQUABC pelagic water quality model, focusing on identifying potential sources of numerical instability and mathematical implementation inconsistencies.
 
-**Status: HIGH-PRIORITY FIXES IMPLEMENTED** ✅
+**Status: ALL IDENTIFIED DIVISION-BY-ZERO ISSUES RESOLVED** (pelagic + sediment)
 
 ---
 
@@ -286,13 +286,52 @@ DERIVATIVES(1:nkn,ZOO_P_INDEX) = DERIVATIVES(1:nkn,ZOO_C_INDEX) * ACTUAL_ZOO_P_T
 
 ---
 
+## 7. Sediment Model Division-by-Zero Guards (Feb 2026)
+
+**Commit:** `6e00ec5` — fix: guard ~25 division-by-zero risks in sediment model
+
+### 7.1 Sediment Model Main File
+
+**File:** `aquabc_II_sediment_model_1_fast.f90`
+
+**Fixes applied:**
+- pH clamp: `H_PLUS = 10^(-max(4.0, min(11.0, PH)))` matching pelagic convention
+- 6 porosity divisions: `max(SED_POROSITIES, 1.0D-20)`
+- 7 depth divisions: `max(SED_DEPTHS, 1.0D-20)` in burial and erosion/deposition
+- 3 mixing-length divisions: `max(SED_MIXLEN, 1.0D-20)` in diffusion and particle mixing
+
+### 7.2 Sediment Iron II
+
+**File:** `aquabc_II_sediment_lib_IRON_II.f90`
+
+**Fixes applied:**
+- pH clamp matching pelagic convention
+- H_PLUS divisions guarded with `max(H_PLUS, 1.0D-20)`
+- TOT_ALK * K_6 division guarded with `max(TOT_ALK * K_6, 1.0D-20)`
+
+### 7.3 Sediment REDOX and Speciation
+
+**File:** `aquabc_II_sediment_lib_REDOX_AND_SPECIATION.f90`
+
+**Fixes applied (inside `where` blocks for PE calculation):**
+- CS guard in dissolved oxygen PE: `max(CS, 1.0D-20)`
+- NO3N guard in nitrate PE: `max(NO3N/14000, 1.0D-20)`
+- MN_II/MN_IV guards in manganese PE: `max(MN_II, 1.0D-20)`, `max(MN_IV, 1.0D-20)`
+- HS_MOLAR/S_PLUS_6 guards in sulphate PE: `max(HS_MOLAR, 1.0D-20)`, `max(S_PLUS_6, 1.0D-20)`
+- DISS_ORG_C guard in methanogenesis PE: `max(DISS_ORG_C, 1.0D-20)`
+- OH_MINUS guard in Mn(OH)2 speciation: `max(4.0 * OH_MINUS^2, 1.0D-20)`
+
+---
+
 ## Document Information
 
-- **Review Date:** Generated during code review session
-- **Files Reviewed:** 
+- **Review Date:** Initial review Jan 2026, updated Feb 2026
+- **Files Reviewed:**
   - `aquabc_II_pelagic_model.f90` (3910 lines)
   - `aquabc_II_pelagic_auxillary.f90` (1468 lines)
   - `aquabc_II_pelagic_lib_DIATOMS.f90`
   - `aquabc_II_pelagic_lib_ZOOPLANKTON.f90`
-  - Sediment library files
+  - `aquabc_II_sediment_model_1_fast.f90`
+  - `aquabc_II_sediment_lib_IRON_II.f90`
+  - `aquabc_II_sediment_lib_REDOX_AND_SPECIATION.f90`
 - **Model Version:** AQUABCv0.2

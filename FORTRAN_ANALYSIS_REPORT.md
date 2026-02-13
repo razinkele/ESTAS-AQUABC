@@ -1,7 +1,22 @@
 # Fortran Code Analysis & Recommendations
 
+**Last updated:** 2026-02-12
+
 ## Overview
 The AQUABC codebase is a Fortran 90/95 based aquatic chemistry and biology model. It uses a procedural approach, processing multiple spatial nodes (`nkn`) in vector operations. The core logic resides in `AQUABC_PELAGIC_KINETICS` which orchestrates various biological and chemical processes.
+
+## Current Status Summary
+
+| Area | Status |
+|------|--------|
+| `implicit none` coverage | 100% (all subroutines) |
+| Precision unification | Complete (`precision_kinds` module) |
+| Dead code cleanup | ~250 lines removed |
+| Unused variables | 138 declarations removed |
+| Compiler warnings | Zero on release builds |
+| Division-by-zero guards | Comprehensive (pelagic + sediment) |
+| Derived types refactoring | In progress (6 kinetics + 7 phyto subroutines done) |
+| Named constants | Dimension magic numbers replaced |
 
 ## Key Findings
 
@@ -9,71 +24,35 @@ The AQUABC codebase is a Fortran 90/95 based aquatic chemistry and biology model
 *   **Current State**: The code relies heavily on a module `AQUABC_PELAGIC_INTERNAL` which acts as a global singleton state container. It holds allocatable arrays for state variables, driving functions, and intermediate rates.
 *   **Issue**: This design limits the model to a single instance. It is not thread-safe and makes it difficult to run multiple independent simulations (e.g., in an ensemble) within the same executable without complex management.
 *   **Recommendation**: Refactor `AQUABC_PELAGIC_INTERNAL` into a **Derived Type** (Class). This context object should be instantiated once and passed to the kinetics routines. This enables object-oriented patterns, thread safety, and better memory lifecycle management.
+*   **Progress**: Derived types have been introduced for phytoplankton parameters (`t_diatom_params`, `t_cyn_params`, `t_opa_params`, etc.) and environmental inputs (`t_phyto_env`). The pattern has been applied to 6 kinetics subroutines and 7 phytoplankton subroutines, using `associate` blocks for zero-change variable mapping at call sites.
 
 ### 2. Performance Constraints
-*   **Allocation Overhead**: 
-    *   In `AQUABC_PELAGIC_KINETICS`, there is a block of code related to definitions for `CO2SYS` where arrays (e.g., `CO2SYS_PAR1`, `CO2SYS_OUT_DATA`) are seemingly allocated and deallocated on *every subroutine call*. 
+*   **Allocation Overhead**:
+    *   In `AQUABC_PELAGIC_KINETICS`, there is a block of code related to definitions for `CO2SYS` where arrays (e.g., `CO2SYS_PAR1`, `CO2SYS_OUT_DATA`) are seemingly allocated and deallocated on *every subroutine call*.
     *   Dynamic memory allocation is expensive. Doing this inside the main time-stepping loop significantly degrades performance.
-*   **Data Copying**:
-    *   At the start of `AQUABC_PELAGIC_KINETICS`, data is copied from the input `STATE_VARIABLES` array to local module arrays (e.g., `NH4_N(:) = STATE_VARIABLES(:,NH4_N_INDEX)`).
-    *   This copying is redundant.
 *   **Recommendation**:
     *   Pre-allocate working arrays (like those for `CO2SYS`) during initialization (in the proposed Derived Type) and reuse them.
-    *   Use **Pointer Association** (`=>`) or pass array slices to subroutines to avoid data copying.
 
 ### 3. Code Maintainability & Quality
-*   **Dead Code**: The files contain significant amounts of commented-out code, legacy optional arguments (checking for presence then converting to integer flags), and unused variables.
-*   **Hardcoded Constants**: Several constants (e.g., `K_EQ_S_1`, `K_SP_FES`) are defined inside the execution loop.
-*   **Implicit Handling**: While `implicit none` is generally used (which is good), the extensive argument lists in subroutines make the code brittle.
-*   **Recommendation**:
-    *   Clean up unused code and arguments.
-    *   Move physical and chemical constants to a dedicated `CONSTANTS` module or load them from a configuration file.
-    *   Use explicit `intent(in/out/inout)` for all dummy arguments.
+*   **Dead Code**: ~~The files contain significant amounts of commented-out code, legacy optional arguments, and unused variables.~~ **RESOLVED** - ~250 lines of dead code and 138 unused variables removed.
+*   **Hardcoded Constants**: ~~Several constants are defined inside the execution loop.~~ **PARTIALLY RESOLVED** - Dimension magic numbers replaced with named constants. Physical constants consolidated in `aquabc_physical_constants.f90`.
+*   **Implicit Handling**: ~~While `implicit none` is generally used, some subroutines lack it.~~ **RESOLVED** - 100% coverage.
+*   **Remaining work**:
+    *   Continue derived type migration for remaining subroutines
+    *   Use explicit `intent(in/out/inout)` for all dummy arguments
 
 ### 4. Modularization
-*   **Library Structure**: The `AQUABC_PELAGIC_LIBRARY` folder shows a good attempt at modularizing processes (e.g., `REDOX_AND_SPECIATION`, `ZOOPLANKTON`).
-*   **Integration**: However, the integration in the main loop is still quite monolithic.
-*   **Recommendation**: Continue this pattern. Each biological process should ideally be its own module/class with `init`, `compute_rates`, and `update` methods.
+*   **Library Structure**: The `AQUABC_PELAGIC_LIBRARY` folder shows good modularization (e.g., `REDOX_AND_SPECIATION`, `ZOOPLANKTON`).
+*   **Integration**: The integration in the main loop is still monolithic.
+*   **Recommendation**: Continue the derived types pattern. Each biological process should ideally accept structured parameter types and return structured rate types.
 
-## Proposed New Structure (Example)
+### 5. Numerical Safety (NEW)
+*   **Comprehensive guards**: Division-by-zero protection applied across all model compartments using `max(divisor, 1.0D-20)` convention.
+*   **pH clamping**: All pH-to-H+ conversions clamped to [4, 11] in both pelagic and sediment models.
+*   **Safe exponential**: `safe_exp()` function clamps input to [-700, 700] before calling `exp()`.
+*   **Input validation**: Temperature, salinity, and pH clamped at model entry points.
 
-```fortran
-module AQUABC_PELAGIC_CLASS
-    use AQUABC_PELAGIC_CONSTANTS
-    implicit none
-
-    type, public :: AquabcPelagicModel
-        ! State variables managed internally or via pointers
-        real(kind=8), allocatable :: nh4_n(:)
-        ! ... other state variables
-        
-        ! Working arrays (pre-allocated)
-        real(kind=8), allocatable :: co2sys_buffer(:)
-
-    contains
-        procedure :: init
-        procedure :: run_step
-        procedure :: cleanup
-    end type AquabcPelagicModel
-
-contains
-
-    subroutine init(self, nkn)
-        class(AquabcPelagicModel), intent(inout) :: self
-        integer, intent(in) :: nkn
-        allocate(self%nh4_n(nkn))
-        allocate(self%co2sys_buffer(nkn))
-    end subroutine init
-
-    subroutine run_step(self, dt, inputs, outputs)
-        class(AquabcPelagicModel), intent(inout) :: self
-        ! ...
-        ! Use self%co2sys_buffer instead of allocating
-    end subroutine run_step
-end module AQUABC_PELAGIC_CLASS
-```
-
-## Immediate Next Steps
-1.  **Stop Allocation in Loops**: Move the `CO2SYS` array allocation out of `AQUABC_PELAGIC_KINETICS`.
-2.  **Clean Arguments**: Remove unused optional arguments that clutter the interface.
-3.  **Refactor**: Begin defining the `AquabcContext` derived type.
+## Remaining Next Steps
+1.  **Continue derived types**: Extend parameter bundling to remaining subroutines (zooplankton, organic carbon, sediment).
+2.  **Pre-allocate CO2SYS buffers**: Move allocation out of the time-stepping loop.
+3.  **Global state reduction**: Progressively replace module-level arrays with type-bound data.

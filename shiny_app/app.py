@@ -3563,7 +3563,15 @@ def server(input, output, session):
                     )
                     for line in p.stdout:
                         _build_log_lines.append(line)
-                    p.wait()
+                        if len(_build_log_lines) > 500:
+                            del _build_log_lines[:100]
+                    try:
+                        p.wait(timeout=120)
+                    except subprocess.TimeoutExpired:
+                        logger.error("Clean timed out after 120s, killing")
+                        p.kill()
+                        p.wait()
+                        _build_log_lines.append("✗ Clean timed out after 120s\n")
 
                 _build_log_lines.append("\n=== Building library and executable ===\n")
 
@@ -3584,7 +3592,13 @@ def server(input, output, session):
                     if len(_build_log_lines) > 500:
                         del _build_log_lines[:100]
 
-                p.wait()
+                try:
+                    p.wait(timeout=600)
+                except subprocess.TimeoutExpired:
+                    logger.error("Build timed out after 600s, killing")
+                    p.kill()
+                    p.wait()
+                    _build_log_lines.append("✗ Build timed out after 600s\n")
                 elapsed = time.time() - start_time
 
                 _build_log_lines.append("-" * 50 + "\n")
@@ -3661,7 +3675,15 @@ def server(input, output, session):
                 )
                 for line in p.stdout:
                     _build_log_lines.append(line)
-                p.wait()
+                    if len(_build_log_lines) > 500:
+                        del _build_log_lines[:100]
+                try:
+                    p.wait(timeout=120)
+                except subprocess.TimeoutExpired:
+                    logger.error("Clean timed out after 120s, killing")
+                    p.kill()
+                    p.wait()
+                    _build_log_lines.append("✗ Clean timed out after 120s\n")
 
                 _build_log_lines.append("\n=== Rebuilding library and executable ===\n")
 
@@ -3682,7 +3704,13 @@ def server(input, output, session):
                     if len(_build_log_lines) > 500:
                         del _build_log_lines[:100]
 
-                p.wait()
+                try:
+                    p.wait(timeout=600)
+                except subprocess.TimeoutExpired:
+                    logger.error("Rebuild timed out after 600s, killing")
+                    p.kill()
+                    p.wait()
+                    _build_log_lines.append("✗ Rebuild timed out after 600s\n")
                 elapsed = time.time() - start_time
 
                 _build_log_lines.append("-" * 50 + "\n")
@@ -6347,8 +6375,14 @@ def server(input, output, session):
                     while len(_log_lines) > 500:
                         _log_lines.pop(0)
 
-            p.wait()
+            p.wait(timeout=600)
             return p.returncode
+        except subprocess.TimeoutExpired:
+            logger.error("Command timed out after 600s, killing process")
+            p.kill()
+            p.wait()
+            _log_lines.append("Error: command timed out after 600 seconds\n")
+            return -1
         except Exception as e:
             logger.error(f"Command execution failed: {e}")
             _log_lines.append(f"Error: {e}\n")

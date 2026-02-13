@@ -1,62 +1,39 @@
-# Fixes and Improvements — AQUABC v0.2 🔧
+# Fixes and Improvements — AQUABC v0.2
 
-## Executive summary ✨
+## Executive summary
 
-This document summarizes the highest-impact fixes and improvements I found by scanning the repository. It groups items by priority, gives short technical descriptions, points to affected files, and suggests concrete fixes, tests, and CI changes.
+This document summarizes fixes and improvements identified by scanning the repository. Items are grouped by priority with current status.
+
+**Last updated:** 2026-02-12
 
 ---
 
-## High priority (Critical / must fix) ✅
+## High priority (Critical / must fix)
 
-1) Fortran: Missing `implicit none` in many routines (silent bugs)
-   - Files / evidence: See `missing_implicit_none.txt` (e.g. `SOURCE_CODE/ESTAS/mod_BOTTOM_SEDIMENTS.f90`, `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90`, etc.).
-   - Impact: Undeclared variables can lead to silent miscomputed values and subtle runtime bugs.
-   - Suggested fix:
-     - Add `implicit none` to all modules/subroutines/functions listed in `missing_implicit_none.txt`.
-     - Add a CI lint step that checks for missing `implicit none` (or integrates the existing patch in `fortran_implicit_none_patch/`).
-     - Add unit/regression tests that fail when unexpected NaNs or silently incorrect values appear (see `FORTRAN_IMPLEMENTATION_PLAN.md` and existing 0D tests).
-   - Estimated effort: 1–3 days (depending on regression test coverage).
+1) ~~Fortran: Missing `implicit none` in many routines (silent bugs)~~ **RESOLVED**
+   - **Status:** Fixed in commit `39bb8c3` — `implicit none` added to all remaining subroutines and functions.
+   - **Verification:** Build with `-fimplicit-none` flag succeeds. All tests pass.
 
-2) Save/load file path handling in `shiny_app/app.py` (path traversal / lack of sanitization)
-   - Files: `shiny_app/app.py` (`load_file`, `save_file` and other file operations using `input.file_select()`)
-   - Impact: Potential for writing/reading unintended paths if filenames contain `../` or absolute paths. Should ensure all paths are restricted to `INPUTS/`.
-   - Suggested fix:
-     - Sanitize and normalize selected filenames before using (e.g. `norm = os.path.normpath(path); ensure norm.startswith(INPUTS_DIR)`).
-     - Validate `file_select()` values and reject suspicious names; log and show safe error to users.
-     - Add tests that simulate malicious filenames and assert rejection.
-   - Estimated effort: 0.5–1 day.
+2) ~~Save/load file path handling in `shiny_app/app.py` (path traversal / lack of sanitization)~~ **RESOLVED**
+   - **Status:** Fixed in commit `ece21d1` — `safe_resolve()` helper added to validate all user-supplied file paths against base directories. Applied to `load_file`, `save_file`, `file_info_panel`, `validate_constants_file`, and observation file handlers.
+   - **Verification:** Traversal attempts (`../`, absolute paths) are rejected with `ValueError`.
 
-3) Add CI step to run `make test` and Fortran regression tests
-   - File: `.github/workflows/ci.yml`
-   - Impact: CI currently builds and runs minimal example; adding regression tests increases confidence and prevents regressions.
-   - Suggested fix:
-     - Extend `ci.yml` to run `make test` (or explicit test scripts under `tests/`) and fail the workflow on regressions.
-   - Estimated effort: 0.5 day.
+3) ~~Add CI step to run `make test` and Fortran regression tests~~ **RESOLVED**
+   - **Status:** CI now runs Fortran unit tests via `make test` in the test suite. See `.github/workflows/ci.yml`.
 
 ---
 
 ## Medium priority (Quality / maintainability) ⚙️
 
-1) Python linting and formatting
-   - Files: `shiny_app/*.py` and other Python modules
-   - Suggestions:
-     - Add `pyproject.toml` with `ruff`/`black` configuration (or `pre-commit` hooks). Run `ruff`/`black` in CI.
-     - Add type-checking with `mypy` incrementally (start with key modules: parsers, simulation config).
-   - Estimated effort: 0.5–1 day (initial setup), more for fixing violations.
+1) ~~Python linting and formatting~~ **RESOLVED**
+   - **Status:** `pyproject.toml` updated with ruff configuration (E, F, W, I, UP, B, S rule sets). CI `python-lint-test` job runs `ruff check` on test files. Existing shiny_app code has ~653 lint warnings to address incrementally.
 
-2) Add Python unit tests and CI workflow for the Shiny app code
-   - Files: `shiny_app/` modules such as `parameter_parser.py`, `ic_parser.py`, `options_parser.py`, `simulation_config.py`.
-   - Suggestions:
-     - Add unit tests (pytest) for parser classes and file IO (use tmpdir fixtures).
-     - Add a GitHub Actions job to run Python tests (in parallel with Fortran build job).
-   - Estimated effort: 1–2 days.
+2) ~~Add Python unit tests and CI workflow for the Shiny app code~~ **RESOLVED**
+   - **Status:** 46 pytest tests added in `tests/python/` covering `parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`, and `safe_resolve`. CI job runs tests in parallel with Fortran build.
 
-3) Hardening subprocess usage and long-running build/run actions
-   - Files: `shiny_app/app.py` (calls to `subprocess.run` / `Popen`) and Makefile commands invoked by the UI
-   - Suggestions:
-     - Ensure all `subprocess` calls use list args (no `shell=True`). Use timeouts and well-handled stdout/stderr logging.
-     - Provide bounded buffer reads and timeouts for long-running processes started in threads.
-   - Estimated effort: 0.5 day.
+3) ~~Hardening subprocess usage and long-running build/run actions~~ **RESOLVED**
+   - **Status:** Fixed — all `subprocess.Popen` calls now have bounded output buffers and `p.wait(timeout=...)` with `TimeoutExpired` handling that kills hung processes. Clean operations: 120s timeout. Build operations: 600s timeout. Helper `run_command`: 600s timeout with kill-on-timeout. Model execution intentionally has no timeout (user-controlled via stop button).
+   - **Note:** `shell=True` is used only for Intel oneAPI wrapper (necessary to source `setvars.sh`) with `shlex.quote()` escaping. All other calls use list args.
 
 ---
 
@@ -81,44 +58,47 @@ This document summarizes the highest-impact fixes and improvements I found by sc
 
 ---
 
-## Suggested immediate action plan (ordered)
-1. Add `implicit none` consistently to the Fortran subroutines listed in `missing_implicit_none.txt`. Run Fortran test suite and CI.
-2. Add sanitization for `save_file` and `load_file` in `shiny_app/app.py`. Add unit tests covering malicious filenames.
-3. Add a CI step to run `make test` (Fortran regression tests) and add a Python test job.
-4. Add linting/formatting (`ruff`/`black`) and add pre-commit to save developer time.
-5. Document contributors' guide and add instructions to run tests locally.
+## Recently completed improvements (since v0.2.1)
+
+The following major improvements have been implemented:
+
+### Numerical Safety
+- **Division-by-zero guards**: ~50+ guarded divisions across pelagic, sediment, macroalgae, CO2SYS, and REDOX models using `max(divisor, 1.0D-20)` convention
+- **pH clamping**: All pH-to-H+ conversions clamped to [4, 11] across all model compartments
+- **Safe exponential**: `safe_exp()` function prevents overflow/underflow in light limitation
+- **Input clamping**: Temperature [0, 45], salinity >= 0, pH [4, 11] at model entry points
+
+### Ecological Model Enhancements
+- **CTMI temperature response** (Rosso et al. 1993) replacing piecewise-exponential
+- **Synthesizing Unit colimitation** (Saito et al. 2008) replacing Liebig minimum
+- **Platt-style photoinhibition** with tunable BETA parameter per phytoplankton group
+
+### Code Quality
+- `implicit none` in all subroutines/functions (commit `39bb8c3`)
+- Unified precision via `precision_kinds` module (commit `83b8c04`)
+- Named constants replacing magic numbers (commit `a72d39d`)
+- 138 unused variables removed (commit `7e295ec`)
+- ~250 lines of dead code removed (commit `742209c`)
+- Compiler warnings `-Wall -Wextra` enforced on release builds (commit `17b185d`)
+
+### Refactoring
+- Derived types for phytoplankton parameters (`t_diatom_params`, `t_cyn_params`, etc.)
+- Environmental input bundled into `t_phyto_env` derived type
+- Consistent tab-to-space formatting across 15 source files
 
 ---
 
-## Example code notes & snippets (quick wins)
-- Sanitize path example (Python):
+## Remaining action items (prioritized)
 
-```python
-# safe join + check
-requested = input.file_select()
-path = os.path.normpath(os.path.join(INPUTS_DIR, requested))
-if not path.startswith(os.path.abspath(INPUTS_DIR) + os.sep):
-    raise ValueError("Invalid file selection")
-```
-
-- Fortran: always add at top of subroutine/function:
-
-```fortran
-subroutine FOO(...)
-  implicit none
-  ! declarations...
-```
-
-- Add to CI (`.github/workflows/ci.yml`): after `Run example and capture log` step add `make test` or `make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test`.
+1. ~~**Shiny app path sanitization**~~ — **RESOLVED** (commit `ece21d1`)
+2. ~~**Subprocess hardening**~~ — **RESOLVED** (timeouts + bounded buffers added)
+3. ~~**Python linting**~~ — **RESOLVED** (ruff config in `pyproject.toml`, CI lints test files)
+4. ~~**Python unit tests**~~ — **RESOLVED** (46 tests in `tests/python/`, CI runs pytest)
+5. **Shiny app lint cleanup** — fix ~653 ruff warnings in `shiny_app/*.py` incrementally
+6. **CONTRIBUTING.md** — document build/test/PR workflow for contributors
 
 ---
 
-## Notes and references 📚
-- `missing_implicit_none.txt` — exact Fortran routines missing `implicit none`.
-- `fortran_implicit_none_patch/` — partially prepared fixes; consider merging with mainline after review and tests.
+## Notes and references
 - `shiny_app/app.py` — main UI where load/save and run/build actions are implemented.
-- `FORTRAN_IMPLEMENTATION_PLAN.md` — contains useful guidance on testing strategy and build matrix.
-
----
-
-If you'd like, I can implement the high-priority fixes now (Fortran implicit-none patches, `shiny_app` path sanitization, and CI change) and open a PR with tests and CI updates. Which items should I start with first? 🚀
+- `FORTRAN_IMPLEMENTATION_PLAN.md` — contains guidance on testing strategy and build matrix.

@@ -40,7 +40,7 @@ AQUABC v0.2 is a comprehensive aquatic biogeochemical model that simulates coupl
 |-----------|------|
 | Pelagic kinetics | `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` |
 | Phytoplankton libraries | `SOURCE_CODE/AQUABC/PELAGIC/AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_*.f90` |
-| Sediment model | `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model.f90` |
+| Sediment model | `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model_1_fast.f90` |
 | Macroalgae | `SOURCE_CODE/MACROALGAE/mod_MACROALGAE.f90` |
 | CO2SYS | `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90` |
 | Allelopathy | `SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90` |
@@ -139,54 +139,97 @@ d[PHY_C]/dt = R_GROWTH - R_TOT_RESP - R_EXCR - R_DEATH - R_ZOO_FEEDING
 
 where each term is described below.
 
-#### 4.1.1 Temperature Limitation
+#### 4.1.1 Temperature Limitation (CTMI)
 
 File: `aquabc_II_pelagic_auxillary.f90`, subroutine `GROWTH_AT_TEMP`
 
-```
-if T <= T_lower:
-    LIM_TEMP = exp(-kappa_under * |T_lower - T|)
-if T_lower < T < T_upper:
-    LIM_TEMP = 1.0
-if T >= T_upper:
-    LIM_TEMP = exp(-kappa_over * |T_upper - T|)
+Uses the **Cardinal Temperature Model with Inflection** (Rosso et al. 1993, J. Theor. Biol. 162:447-463):
 
-KG = KG_OPT_TEMP * LIM_TEMP
+```
+phi(T) = (T - T_max) * (T - T_min)^2 / ((T_opt - T_min) * D)
+
+where D = (T_opt - T_min) * (T - T_opt) - (T_opt - T_max) * (T_opt + T_min - 2*T)
 ```
 
-Organisms have an optimal temperature range [T_lower, T_upper] with exponential decay outside it.
+- phi = 0 outside [T_min, T_max]
+- phi = 1.0 at T = T_opt (peak growth)
+- Clamped to [0, 1] for numerical safety
+
+**Parameter mapping** (legacy signature preserved for call-site compatibility):
+
+| Parameter name | CTMI meaning |
+|---|---|
+| Lower_TEMP | T_min (minimum cardinal temperature, zero growth) |
+| Upper_TEMP | T_opt (optimal temperature, maximum growth) |
+| KAPPA_OVER_OPT_TEMP | T_max (maximum cardinal temperature, zero growth) |
+
+```
+KG = KG_OPT_TEMP * phi(T)
+```
+
+The CTMI provides a smooth, bell-shaped temperature response with three cardinal temperatures, replacing the earlier piecewise-exponential formulation.
 
 #### 4.1.2 Light Limitation
 
 Two selectable formulations via the SMITH_FORMULATION flag:
 
-**Steele integral (SMITH_FORMULATION = 0):**
+**Steele integral with tunable photoinhibition (SMITH_FORMULATION = 0):**
+
+The base Steele (1962) depth-averaged P-I curve is extended with a Platt-style photoinhibition parameter BETA (dimensionless, >= 0):
 
 ```
-alpha_0 = I_A / I_S                               (surface)
-alpha_1 = (I_A / I_S) * exp(-K_E * DEPTH)         (bottom)
-
-LIM_LIGHT = (e * FDAY) / (K_E * DEPTH) * [exp(-alpha_1) - exp(-alpha_0)]
+f(I) = (1 + BETA) * (I/I_S) * exp(1 - (1 + BETA)*I/I_S)
 ```
 
-where I_S is the light saturation intensity, K_E is the light extinction coefficient, and e = 2.718...
+Depth-averaged analytically:
+```
+<f> = (e / (K_E * H)) * [exp(-(1+BETA)*I_bot/I_S) - exp(-(1+BETA)*I_surf/I_S)]
+```
+
+where:
+- I_S is the light saturation intensity, K_E is the light extinction coefficient
+- I_bot = I_A * exp(-K_E * DEPTH) (bottom irradiance)
+- I_surf = I_A (surface irradiance)
+- BETA = 0 reduces to the original Steele formula
+- BETA > 0 shifts the optimum to lower light: I_opt = I_S/(1+BETA), with stronger photoinhibition above I_opt
+
+Each phytoplankton group has its own BETA parameter (BETA_DIA, BETA_CYN, BETA_FIX_CYN, BETA_OPA, BETA_NOST_VEG_HET), all defaulting to 0.
 
 **Smith formulation (SMITH_FORMULATION = 1):**
 
 ```
 call LIM_LIGHT(I_A, CHLA, KG, DEPTH, K_E, LIM_LIGHT_OUT,
-               C_TO_CHLA, I_S, LIGHT_SAT, nkn)
+               C_TO_CHLA, I_S, LIGHT_SAT, nkn, BETA)
 ```
 
-Hyperbolic tangent-like formulation with depth integration.
+Hyperbolic tangent-like formulation with depth integration, also supporting the BETA photoinhibition parameter.
 
-#### 4.1.3 Nutrient Limitation (Monod Kinetics)
+#### 4.1.3 Nutrient Limitation (Synthesizing Unit Colimitation)
+
+Individual nutrients follow Monod kinetics:
 
 ```
 LIM_N = [DIN] / (K_HS_DIN + [DIN])
 LIM_P = [PO4] / (K_HS_DIP + [PO4])
-LIM_NUTR = min(LIM_N, LIM_P)                      (Liebig's Law of the Minimum)
 ```
+
+Combined limitation uses the **Synthesizing Unit** model (Saito et al. 2008), which lies between the Liebig minimum (upper bound) and multiplicative colimitation (lower bound):
+
+```
+SU(a, b) = (a * b) / max(a + b - a*b, 1e-20)
+```
+
+For diatoms (which also require silica):
+```
+LIM_NUTR = SU(SU(LIM_N, LIM_P), LIM_Si)
+```
+
+For non-silica groups:
+```
+LIM_NUTR = SU(LIM_N, LIM_P)
+```
+
+The SU formulation captures the interaction between co-limiting nutrients more realistically than Liebig's minimum while remaining computationally efficient.
 
 #### 4.1.4 Dissolved Oxygen Limitation
 
@@ -246,7 +289,7 @@ File: `aquabc_II_pelagic_lib_DIATOMS.f90`
 
 **Unique features:**
 - Silicon limitation: `LIM_Si = [Si] / (K_HS_Si + [Si])`
-- Combined: `LIM_NUTR = min(LIM_N, LIM_P, LIM_Si)`
+- Combined via two-stage Synthesizing Unit: `LIM_NUTR = SU(SU(LIM_N, LIM_P), LIM_Si)`
 - No DON utilization
 - No buoyancy regulation
 
@@ -780,9 +823,11 @@ Supports 13 sets of K1/K2 constants (Roy 1993, Goyet & Poisson 1989, Lueker 2000
 
 ## 13. Sediment Diagenesis Model
 
+File: `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model_1_fast.f90`
+
 ### 13.1 Structure
 
-The sediment model has the same redox sequence as the pelagic model, applied to sediment porewater. It tracks 24 state variables per sediment layer.
+The sediment model has the same redox sequence as the pelagic model, applied to sediment porewater. It tracks 24 state variables per sediment layer. A multi-layer vertical discretization simulates advection, diffusion, particle mixing, and burial.
 
 ### 13.2 Particulate Organic Matter Dissolution
 
@@ -798,7 +843,54 @@ Anoxic conditions:
 
 Identical 6-pathway redox sequence as pelagic model with sediment-specific rate constants (SED_K_MIN_DOC_*_20).
 
-### 13.4 Sediment-Specific pH Correction
+### 13.4 Sediment Transport Processes
+
+Four transport mechanisms operate on each sediment layer for solute species:
+
+**Advection** (porewater flow between layers):
+```
+R_ADV_IN  = C_entering / max(porosity, 1e-20) * |v_adv|
+R_ADV_OUT = C_current * solute_frac / max(porosity, 1e-20) * |v_adv|
+```
+
+**Diffusion** (concentration gradient-driven, with tortuosity correction):
+```
+DIFF_CORR = 1 / (1 + 3*(1 - porosity))                (Archie's law approximation)
+R_DIFF = DIFF_CORR * (delta_C * D_eff) / max(MIXLEN, 1e-20)
+```
+
+where MIXLEN = 0.5 * (depth_upper + depth_current) is the mixing length between adjacent layers.
+
+**Particle mixing** (bioturbation of solid-phase species):
+```
+R_PART_MIX = (delta_C_solid * K_mix) / max(MIXLEN, 1e-20)
+```
+
+**Burial** (permanent removal to deep sediment):
+```
+R_BURIAL = (C * burial_rate) / max(depth, 1e-20)
+```
+
+**Combined transport derivative:**
+```
+dC/dt_transport = R_DIFF * porosity + R_BURIAL + R_PART_MIX + R_ADV_IN - R_ADV_OUT
+```
+
+### 13.5 Erosion and Deposition
+
+Layer concentrations are adjusted for sediment-water interface movement:
+
+**Deposition** (H_ERODEP <= 0):
+```
+C'(i) = C(i-1) * |H_dep|/max(depth_i, 1e-20) + C(i) * (depth_i - |H_dep|)/max(depth_i, 1e-20)
+```
+
+**Erosion** (H_ERODEP > 0):
+```
+C'(i) = C(i) * (depth_i - H_ero)/max(depth_i, 1e-20) + C(i+1) * H_ero/max(depth_i, 1e-20)
+```
+
+### 13.6 Sediment-Specific pH Correction
 
 Gaussian formulation (different from pelagic exponential):
 ```
@@ -808,7 +900,7 @@ where PH_OPT_MID = (PH_MIN + PH_MAX) / 2
       PH_SIGMA   = (PH_MAX - PH_MIN) / 4
 ```
 
-### 13.5 Sediment-Water Fluxes
+### 13.7 Sediment-Water Fluxes
 
 24 fluxes exchanged at the sediment-water interface:
 ```
@@ -820,6 +912,10 @@ FLUXES(15) = ALK,  FLUXES(16-24) = metals/S/CH4
 ```
 
 Positive flux = release from sediment to water.
+
+### 13.8 Numerical Safety in Sediment Model
+
+All division operations in the sediment model are guarded with `max(divisor, 1.0D-20)` floors to prevent NaN/Inf from degenerate inputs (zero porosity, zero depth, zero mixing length). pH-to-H+ conversion is clamped to pH [4, 11] matching the pelagic redox convention.
 
 ---
 
@@ -1065,10 +1161,12 @@ end function
 
 ### 18.4 pH Clamping
 
-All pH-dependent calculations clamp pH to [4, 11]:
+All pH-dependent calculations across both pelagic and sediment models clamp pH to [4, 11]:
 ```
 H_PLUS = 10^(-max(4.0, min(11.0, pH)))
 ```
+
+Applied in: `SED_REDOX_AND_SPECIATION`, `SED_IRON_II_DISSOLUTION`, `AQUABC_SEDIMENT_MODEL_1`, and all pelagic redox routines.
 
 ---
 
@@ -1122,8 +1220,8 @@ For each of 6 electron acceptor pathways: K_MIN_20, THETA, KHS (substrate half-s
 
 ## Key Assumptions and Limitations
 
-1. **Temperature response**: Q10/Arrhenius-type exponential (theta^(T-20))
-2. **Nutrient limitation**: Monod half-saturation kinetics with Liebig's Law of the Minimum
+1. **Temperature response**: CTMI (Rosso et al. 1993) for phytoplankton growth; Arrhenius-type theta^(T-20) for other processes (respiration, mortality, mineralization)
+2. **Nutrient limitation**: Monod half-saturation kinetics combined via Synthesizing Unit colimitation (Saito et al. 2008)
 3. **Perfect mixing**: Complete mixing within each computational box
 4. **Quasi-equilibrium speciation**: Fe/Mn solubility at instantaneous chemical equilibrium
 5. **Hierarchical redox**: Strict thermodynamic priority for electron acceptors
@@ -1136,6 +1234,9 @@ For each of 6 electron acceptor pathways: K_MIN_20, THETA, KHS (substrate half-s
 
 ## References
 
+- Rosso, L., Lobry, J.R., and Flandrois, J.P. (1993). An unexpected correlation between cardinal temperatures of microbial growth highlighted by a new model. J. Theor. Biol. 162:447-463.
+- Saito, M.A., Goepfert, T.J., and Ritt, J.T. (2008). Some thoughts on the concept of colimitation: three definitions and the importance of bioavailability. Limnol. Oceanogr. 53:276-290.
+- Platt, T., Gallegos, C.L., and Harrison, W.G. (1980). Photoinhibition of photosynthesis in natural assemblages of marine phytoplankton. J. Mar. Res. 38:687-701.
 - Stumm, W. and Morgan, J.J. (1996). Aquatic Chemistry. Wiley.
 - Stumm, W. and Lee, G.F. (1960). Oxygenation of ferrous iron. Industrial & Engineering Chemistry.
 - Morgan, B. and Lahav, O. (2007). The effect of pH on the kinetics of spontaneous Fe(II) oxidation. Chemosphere.
@@ -1145,5 +1246,6 @@ For each of 6 electron acceptor pathways: K_MIN_20, THETA, KHS (substrate half-s
 - Baly, E.C.C. (1935). The kinetics of photosynthesis. Proceedings of the Royal Society B.
 - Nagy, S.A. et al. (2006). Mixing model for buoyant cyanobacteria.
 - Droop, M.R. (1968). Vitamin B12 and marine ecology. Journal of the Marine Biological Association.
+- Gentleman, W., Leising, A., Frost, B., Strom, S., and Murray, J. (2003). Functional responses for zooplankton feeding on multiple resources. J. Plankton Res. 25:1215-1234.
 - EPA-829-R-14-007. AQUATOX Technical Documentation.
 - CDIAC CO2SYS program documentation.
