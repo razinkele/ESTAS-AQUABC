@@ -471,12 +471,12 @@ export OMP_PLACES=cores
 - [x] 1.3 SAVE variable thread safety audit — **Documented** (22 vars in pelagic_interface + 3 in STRING_UTILS; no active race under current OpenMP usage)
 - [x] 2.2 Bare except blocks — **Fixed** (5 blocks replaced with specific exception types in app.py)
 
-### Sprint 2 — Numerical Safety & CI (2–3 days)
-- [ ] 1.4 CO2SYS safe_exp
+### Sprint 2 — Numerical Safety & CI (2–3 days) --- COMPLETED 2026-02-14
+- [x] 1.4 CO2SYS safe_exp — **Fixed** (8 vulnerable exp() calls wrapped with safe_exp in co2sys.f90)
 - [x] 1.5 Remaining division-by-zero audit — **Audit complete** (2026-02-14). All ~80 divisions in pelagic_model.f90 confirmed safe: iron/Mn use conditional guards, zoo/det use max(), Monod kinetics are mathematically safe, CHLA divides by constants only. One missing Fe3+ first-timestep guard added.
-- [ ] 3.3 Python code coverage
-- [ ] 3.4 Pin GitHub Actions to SHA
-- [ ] 3.5 CI dependency caching
+- [x] 3.3 Python code coverage — **Added** (pytest-cov with CI reporting, 10% baseline)
+- [x] 3.4 Pin GitHub Actions to SHA — **Done** (5 action references pinned)
+- [x] 3.5 CI dependency caching — **Done** (pip cache enabled)
 
 ### Sprint 3 — Code Quality (3–5 days)
 - [ ] 2.3 Deduplicate build/rebuild logic
