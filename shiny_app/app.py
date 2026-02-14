@@ -3367,6 +3367,98 @@ def server(input, output, session):
         """Navigate to the Model Config panel from dashboard"""
         ui.update_radio_buttons("navigation", selected="nav_model_control")
 
+    def _execute_build_process(compiler_path, build_type, exe_name,
+                               clean_first, action_name):
+        """Shared build/rebuild subprocess logic run inside a background thread.
+
+        Parameters
+        ----------
+        compiler_path : str
+            Full path to the Fortran compiler.
+        build_type : str
+            Build configuration (e.g. "release", "debug").
+        exe_name : str
+            Target executable name.
+        clean_first : bool
+            Whether to run ``make clean-lib`` before building.
+        action_name : str
+            Display label used in log messages ("Build" or "Rebuild").
+        """
+        start_time = time.time()
+
+        try:
+            logger.info(f"{action_name} thread started for {exe_name}")
+
+            if clean_first:
+                clean_msg = (
+                    "Cleaning all build artifacts"
+                    if action_name == "Rebuild"
+                    else "Cleaning previous build"
+                )
+                _build_log_lines.append(f"\n=== {clean_msg} ===\n")
+                p = subprocess.Popen(
+                    ["make", "clean-lib"],
+                    cwd=ROOT,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                for line in p.stdout:
+                    _build_log_lines.append(line)
+                p.wait()
+
+            build_verb = "Rebuilding" if action_name == "Rebuild" else "Building"
+            _build_log_lines.append(
+                f"\n=== {build_verb} library and executable ===\n"
+            )
+
+            cmd = [
+                "make",
+                f"FC={compiler_path}",
+                f"BUILD_TYPE={build_type}",
+                "build-named",
+            ]
+            logger.info(f"Running: {' '.join(cmd)}")
+            p = subprocess.Popen(
+                cmd,
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+            for line in p.stdout:
+                _build_log_lines.append(line)
+                # Trim if too long
+                if len(_build_log_lines) > 500:
+                    del _build_log_lines[:100]
+
+            p.wait()
+            elapsed = time.time() - start_time
+
+            _build_log_lines.append("-" * 50 + "\n")
+            if p.returncode == 0:
+                _build_log_lines.append(
+                    f"\u2713 {action_name} completed successfully!\n"
+                )
+                _build_log_lines.append(f"  Executable: {exe_name}\n")
+                _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
+            else:
+                _build_log_lines.append(
+                    f"\u2717 {action_name} failed with return code "
+                    f"{p.returncode}\n"
+                )
+            _build_log_lines.append("=" * 50 + "\n")
+
+            logger.info(f"{action_name} thread completed for {exe_name}")
+
+        except Exception as e:
+            logger.error(
+                f"{action_name} thread error: {e}\n{traceback.format_exc()}"
+            )
+            _build_log_lines.append(f"\nError: {e}\n")
+            _build_log_lines.append(traceback.format_exc())
+
     @reactive.effect
     @reactive.event(input.btn_build)
     def on_build():
@@ -3408,61 +3500,13 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_build():
-            start_time = time.time()
-
-            try:
-                logger.info(f"Build thread started for {_exe_name}")
-
-                if _clean_first:
-                    _build_log_lines.append("\n=== Cleaning previous build ===\n")
-                    p = subprocess.Popen(
-                        ["make", "clean-lib"],
-                        cwd=ROOT,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True
-                    )
-                    for line in p.stdout:
-                        _build_log_lines.append(line)
-                    p.wait()
-
-                _build_log_lines.append("\n=== Building library and executable ===\n")
-
-                # Use build-named target for named executables with full compiler path
-                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
-                logger.info(f"Running: {' '.join(cmd)}")
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                    # Trim if too long
-                    if len(_build_log_lines) > 500:
-                        del _build_log_lines[:100]
-
-                p.wait()
-                elapsed = time.time() - start_time
-
-                _build_log_lines.append("-" * 50 + "\n")
-                if p.returncode == 0:
-                    _build_log_lines.append(f"✓ Build completed successfully!\n")
-                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
-                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
-                else:
-                    _build_log_lines.append(f"✗ Build failed with return code {p.returncode}\n")
-                _build_log_lines.append("=" * 50 + "\n")
-
-                logger.info(f"Build thread completed for {_exe_name}")
-
-            except Exception as e:
-                logger.error(f"Build thread error: {e}\n{traceback.format_exc()}")
-                _build_log_lines.append(f"\nError: {e}\n")
-                _build_log_lines.append(traceback.format_exc())
+            _execute_build_process(
+                compiler_path=_compiler_path,
+                build_type=_build_type,
+                exe_name=_exe_name,
+                clean_first=_clean_first,
+                action_name="Build",
+            )
 
         logger.info("Starting build thread")
         threading.Thread(target=_do_build, daemon=True, name="BuildThread").start()
@@ -3506,61 +3550,13 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_rebuild():
-            start_time = time.time()
-
-            try:
-                logger.info(f"Rebuild thread started for {_exe_name}")
-
-                # Always clean first for rebuild
-                _build_log_lines.append("\n=== Cleaning all build artifacts ===\n")
-                p = subprocess.Popen(
-                    ["make", "clean-lib"],
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                p.wait()
-
-                _build_log_lines.append("\n=== Rebuilding library and executable ===\n")
-
-                # Use build-named target for named executables with full compiler path
-                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
-                logger.info(f"Running: {' '.join(cmd)}")
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                    # Trim if too long
-                    if len(_build_log_lines) > 500:
-                        del _build_log_lines[:100]
-
-                p.wait()
-                elapsed = time.time() - start_time
-
-                _build_log_lines.append("-" * 50 + "\n")
-                if p.returncode == 0:
-                    _build_log_lines.append(f"✓ Rebuild completed successfully!\n")
-                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
-                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
-                else:
-                    _build_log_lines.append(f"✗ Rebuild failed with return code {p.returncode}\n")
-                _build_log_lines.append("=" * 50 + "\n")
-
-                logger.info(f"Rebuild thread completed for {_exe_name}")
-
-            except Exception as e:
-                logger.error(f"Rebuild thread error: {e}\n{traceback.format_exc()}")
-                _build_log_lines.append(f"\nError: {e}\n")
-                _build_log_lines.append(traceback.format_exc())
+            _execute_build_process(
+                compiler_path=_compiler_path,
+                build_type=_build_type,
+                exe_name=_exe_name,
+                clean_first=True,
+                action_name="Rebuild",
+            )
 
         threading.Thread(target=_do_rebuild, daemon=True, name="RebuildThread").start()
 
