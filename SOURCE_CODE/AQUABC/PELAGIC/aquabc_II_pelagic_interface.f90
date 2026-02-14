@@ -49,6 +49,23 @@ module aquabc_II_pelagic_interface
 
     implicit none
 
+    ! -----------------------------------------------------------------------
+    ! THREAD-SAFETY NOTE (2026-02-14):
+    ! All SAVE variables below are module-level persistent state. They are
+    ! initialized in aquabc_init() and read (never written) during the
+    ! OpenMP parallel region in AQUABC_PELAGIC_KINETICS. This is safe
+    ! because:
+    !   1. aquabc_init() runs BEFORE any parallel region
+    !   2. The parallel region only READS these variables (never writes)
+    !   3. The allocatable arrays (DERIVATIVES, PROCESS_RATES, etc.) are
+    !      written only via array-section indexing [ns:ne] where each
+    !      thread owns a disjoint chunk
+    !
+    ! WARNING: Do NOT call aquabc_init() or aquabc_set_flags() from
+    ! within an OpenMP parallel region. Do NOT write to any of these
+    ! variables from parallel code without synchronization.
+    ! -----------------------------------------------------------------------
+
     integer, save :: nkn
 
     ! These values must match the parameters in mod_GLOBAL.f90, except nflags

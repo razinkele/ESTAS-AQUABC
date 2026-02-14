@@ -10,6 +10,10 @@ module para_aqua
 
      integer, parameter     :: ndim = 1000
 
+     ! THREAD-SAFETY NOTE: nfill, values, and names have SAVE attribute.
+     ! These are only used during sequential initialization (parameter loading).
+     ! Do NOT call para_add_value or para_get_value from OpenMP parallel regions.
+
      integer, save          :: nfill = 0
      double precision, save :: values(ndim)
      character*80, save     :: names(ndim)
