@@ -65,6 +65,21 @@ make -C tests/fortran test_do_saturation    # Individual test
 make lint        # Ruff check on all Python code
 ```
 
+### Pre-commit Hooks (Recommended)
+
+Install pre-commit hooks to automatically lint before each commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This runs ruff and basic file checks on every `git commit`. To run manually on all files:
+
+```bash
+pre-commit run --all-files
+```
+
 ## Project Structure
 
 ```

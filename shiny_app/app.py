@@ -106,6 +106,18 @@ except ImportError:
         Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir
     )
 
+# Import utility functions (extracted for testability)
+try:
+    from shiny_app.utils import (
+        count_file_lines_fast, read_pelagic_binary, read_pelagic_text,
+        validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
+    )
+except ImportError:
+    from utils import (
+        count_file_lines_fast, read_pelagic_binary, read_pelagic_text,
+        validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
+    )
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -130,47 +142,17 @@ logger.info("=" * 60)
 MAX_LOG_LENGTH = 1000000  # 1MB buffer for run log
 MIN_SMOOTH_WINDOW = 2
 DEFAULT_PLOT_ROWS = 10000  # Max rows to read for plotting to avoid OOM
-REQUIRED_MODEL_CONSTANTS = 318  # Model requires exactly 318 constants
+# REQUIRED_MODEL_CONSTANTS imported from shiny_app.utils
 
 
-def count_file_lines_fast(filepath, sample_size=8192):
-    """Efficiently count lines in a file using buffered reading.
-    
-    For large files, uses sampling to estimate. For small files, counts exactly.
-    """
-    try:
-        file_size = os.path.getsize(filepath)
-        if file_size < 1024 * 1024:  # < 1MB: count exactly
-            with open(filepath, 'rb') as f:
-                return sum(1 for _ in f)
-        else:
-            # Sample first chunk to estimate bytes per line
-            with open(filepath, 'rb') as f:
-                sample = f.read(sample_size)
-                lines_in_sample = sample.count(b'\n')
-                if lines_in_sample > 0:
-                    bytes_per_line = sample_size / lines_in_sample
-                    return int(file_size / bytes_per_line)
-            return file_size // 100  # Fallback estimate
-    except Exception:
-        return 0
+# count_file_lines_fast imported from shiny_app.utils
 
 # Fix ROOT path when running via symlink
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
-# Standard column names for PELAGIC_BOX output files (binary and text)
-PELAGIC_BOX_COLUMNS = [
-    "TIME_DAYS", "NH4_N", "NO3_N", "PO4_P", "DISS_OXYGEN", "DIA_C",
-    "ZOO_C", "ZOO_N", "ZOO_P", "DET_PART_ORG_C", "DET_PART_ORG_N",
-    "DET_PART_ORG_P", "DISS_ORG_C", "DISS_ORG_N", "DISS_ORG_P",
-    "CYN_C", "OPA_C", "DISS_Si", "PART_Si", "FIX_CYN_C",
-    "INORG_C", "TOT_ALK", "FE_II", "FE_III", "MN_II", "MN_IV",
-    "CA", "MG", "S_PLUS_6", "S_MINUS_2", "CH4_C",
-    "NOST_VEG_HET_C", "AKI_C", "SEC_METAB_DIA",
-    "SEC_METAB_NOFIX_CYN", "SEC_METAB_FIX_CYN", "SEC_METAB_NOST"
-]
+# PELAGIC_BOX_COLUMNS imported from shiny_app.utils
 
 def get_output_folder():
     """Get the output folder from INPUT.txt or use default."""
@@ -232,58 +214,7 @@ def find_pelagic_box_file(output_folder=None, file_type='text'):
         return files[0]
     return None
 
-def read_pelagic_binary(bin_file, max_rows=None):
-    """Read Fortran binary PELAGIC_BOX output file.
-    
-    Binary format (from Fortran stream I/O):
-    - Each row: TIME (float64) + 36 state variables (float64)
-    - Total 37 columns, all double precision (8 bytes)
-    - No record markers (Fortran ACCESS='STREAM')
-    
-    Args:
-        bin_file: Path to .bin file
-        max_rows: Maximum rows to read (None for all)
-        
-    Returns:
-        DataFrame with TIME_DAYS and state variable columns
-    """
-    import numpy as np
-    
-    ncols = len(PELAGIC_BOX_COLUMNS)  # 37
-    
-    with open(bin_file, 'rb') as f:
-        data = np.fromfile(f, dtype=np.float64)
-    
-    nrows = len(data) // ncols
-    remainder = len(data) % ncols
-    
-    if remainder != 0:
-        logger.warning(f"Binary file has {remainder} extra bytes, truncating")
-        data = data[:nrows * ncols]
-    
-    data = data.reshape(nrows, ncols)
-    
-    if max_rows is not None and nrows > max_rows:
-        data = data[:max_rows]
-    
-    df = pd.DataFrame(data, columns=PELAGIC_BOX_COLUMNS)
-    logger.info(f"Read binary file: {len(df)} rows x {ncols} cols")
-    return df
-
-def read_pelagic_text(text_file, max_rows=None):
-    """Read PELAGIC_BOX text output file (whitespace-separated).
-    
-    Args:
-        text_file: Path to .out file
-        max_rows: Maximum rows to read (None for all)
-        
-    Returns:
-        DataFrame with state variable columns
-    """
-    df = pd.read_csv(text_file, sep=r'\s+', nrows=max_rows)
-    df.columns = [c.strip() for c in df.columns]
-    logger.info(f"Read text file: {len(df)} rows x {len(df.columns)} cols")
-    return df
+# read_pelagic_binary and read_pelagic_text imported from shiny_app.utils
 
 # Startup diagnostics
 logger.info("=== Path Configuration ===")
@@ -412,57 +343,7 @@ logger.info("Startup diagnostics complete. Building UI...")
 logger.info("=" * 60)
 
 
-def validate_constants_file(constants_filename):
-    """Validate that a WCONST file has the required number of constants.
-    
-    Args:
-        constants_filename: The filename (e.g., 'WCONST_01.txt') or full path
-        
-    Returns:
-        tuple: (is_valid: bool, actual_count: int, error_message: str or None)
-    """
-    if not constants_filename:
-        return True, 0, None  # No constants file specified, model uses defaults
-    
-    # Build full path if not already absolute
-    if os.path.isabs(constants_filename):
-        filepath = constants_filename
-    else:
-        filepath = os.path.join(INPUTS_DIR, constants_filename)
-    
-    if not os.path.exists(filepath):
-        return False, 0, f"Constants file not found: {filepath}"
-    
-    try:
-        # Count numbered constant lines (format: "   123   CONSTANT_NAME   value  !comment")
-        # Lines start with whitespace followed by a number
-        const_count = 0
-        max_const_num = 0
-        
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-                # Match lines starting with a number (the constant index)
-                match = re.match(r'^(\d+)\s+\w+', line)
-                if match:
-                    const_num = int(match.group(1))
-                    max_const_num = max(max_const_num, const_num)
-                    const_count += 1
-        
-        if max_const_num < REQUIRED_MODEL_CONSTANTS:
-            return False, max_const_num, (
-                f"Constants file '{os.path.basename(filepath)}' has only {max_const_num} constants, "
-                f"but the model requires {REQUIRED_MODEL_CONSTANTS}.\n"
-                f"Missing constants: {max_const_num + 1} to {REQUIRED_MODEL_CONSTANTS}\n"
-                f"Try using WCONST_04.txt which has all required constants."
-            )
-        
-        return True, max_const_num, None
-        
-    except Exception as e:
-        return False, 0, f"Error reading constants file: {e}"
+# validate_constants_file imported from shiny_app.utils
 
 
 # Navigation menu choices with icons
@@ -3486,6 +3367,98 @@ def server(input, output, session):
         """Navigate to the Model Config panel from dashboard"""
         ui.update_radio_buttons("navigation", selected="nav_model_control")
 
+    def _execute_build_process(compiler_path, build_type, exe_name,
+                               clean_first, action_name):
+        """Shared build/rebuild subprocess logic run inside a background thread.
+
+        Parameters
+        ----------
+        compiler_path : str
+            Full path to the Fortran compiler.
+        build_type : str
+            Build configuration (e.g. "release", "debug").
+        exe_name : str
+            Target executable name.
+        clean_first : bool
+            Whether to run ``make clean-lib`` before building.
+        action_name : str
+            Display label used in log messages ("Build" or "Rebuild").
+        """
+        start_time = time.time()
+
+        try:
+            logger.info(f"{action_name} thread started for {exe_name}")
+
+            if clean_first:
+                clean_msg = (
+                    "Cleaning all build artifacts"
+                    if action_name == "Rebuild"
+                    else "Cleaning previous build"
+                )
+                _build_log_lines.append(f"\n=== {clean_msg} ===\n")
+                p = subprocess.Popen(
+                    ["make", "clean-lib"],
+                    cwd=ROOT,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                for line in p.stdout:
+                    _build_log_lines.append(line)
+                p.wait()
+
+            build_verb = "Rebuilding" if action_name == "Rebuild" else "Building"
+            _build_log_lines.append(
+                f"\n=== {build_verb} library and executable ===\n"
+            )
+
+            cmd = [
+                "make",
+                f"FC={compiler_path}",
+                f"BUILD_TYPE={build_type}",
+                "build-named",
+            ]
+            logger.info(f"Running: {' '.join(cmd)}")
+            p = subprocess.Popen(
+                cmd,
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+            for line in p.stdout:
+                _build_log_lines.append(line)
+                # Trim if too long
+                if len(_build_log_lines) > 500:
+                    del _build_log_lines[:100]
+
+            p.wait()
+            elapsed = time.time() - start_time
+
+            _build_log_lines.append("-" * 50 + "\n")
+            if p.returncode == 0:
+                _build_log_lines.append(
+                    f"\u2713 {action_name} completed successfully!\n"
+                )
+                _build_log_lines.append(f"  Executable: {exe_name}\n")
+                _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
+            else:
+                _build_log_lines.append(
+                    f"\u2717 {action_name} failed with return code "
+                    f"{p.returncode}\n"
+                )
+            _build_log_lines.append("=" * 50 + "\n")
+
+            logger.info(f"{action_name} thread completed for {exe_name}")
+
+        except Exception as e:
+            logger.error(
+                f"{action_name} thread error: {e}\n{traceback.format_exc()}"
+            )
+            _build_log_lines.append(f"\nError: {e}\n")
+            _build_log_lines.append(traceback.format_exc())
+
     @reactive.effect
     @reactive.event(input.btn_build)
     def on_build():
@@ -3527,61 +3500,13 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_build():
-            start_time = time.time()
-
-            try:
-                logger.info(f"Build thread started for {_exe_name}")
-
-                if _clean_first:
-                    _build_log_lines.append("\n=== Cleaning previous build ===\n")
-                    p = subprocess.Popen(
-                        ["make", "clean-lib"],
-                        cwd=ROOT,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.STDOUT,
-                        text=True
-                    )
-                    for line in p.stdout:
-                        _build_log_lines.append(line)
-                    p.wait()
-
-                _build_log_lines.append("\n=== Building library and executable ===\n")
-
-                # Use build-named target for named executables with full compiler path
-                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
-                logger.info(f"Running: {' '.join(cmd)}")
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                    # Trim if too long
-                    if len(_build_log_lines) > 500:
-                        del _build_log_lines[:100]
-
-                p.wait()
-                elapsed = time.time() - start_time
-
-                _build_log_lines.append("-" * 50 + "\n")
-                if p.returncode == 0:
-                    _build_log_lines.append(f"✓ Build completed successfully!\n")
-                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
-                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
-                else:
-                    _build_log_lines.append(f"✗ Build failed with return code {p.returncode}\n")
-                _build_log_lines.append("=" * 50 + "\n")
-
-                logger.info(f"Build thread completed for {_exe_name}")
-
-            except Exception as e:
-                logger.error(f"Build thread error: {e}\n{traceback.format_exc()}")
-                _build_log_lines.append(f"\nError: {e}\n")
-                _build_log_lines.append(traceback.format_exc())
+            _execute_build_process(
+                compiler_path=_compiler_path,
+                build_type=_build_type,
+                exe_name=_exe_name,
+                clean_first=_clean_first,
+                action_name="Build",
+            )
 
         logger.info("Starting build thread")
         threading.Thread(target=_do_build, daemon=True, name="BuildThread").start()
@@ -3625,61 +3550,13 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_rebuild():
-            start_time = time.time()
-
-            try:
-                logger.info(f"Rebuild thread started for {_exe_name}")
-
-                # Always clean first for rebuild
-                _build_log_lines.append("\n=== Cleaning all build artifacts ===\n")
-                p = subprocess.Popen(
-                    ["make", "clean-lib"],
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                p.wait()
-
-                _build_log_lines.append("\n=== Rebuilding library and executable ===\n")
-
-                # Use build-named target for named executables with full compiler path
-                cmd = ["make", f"FC={_compiler_path}", f"BUILD_TYPE={_build_type}", "build-named"]
-                logger.info(f"Running: {' '.join(cmd)}")
-                p = subprocess.Popen(
-                    cmd,
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True
-                )
-
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                    # Trim if too long
-                    if len(_build_log_lines) > 500:
-                        del _build_log_lines[:100]
-
-                p.wait()
-                elapsed = time.time() - start_time
-
-                _build_log_lines.append("-" * 50 + "\n")
-                if p.returncode == 0:
-                    _build_log_lines.append(f"✓ Rebuild completed successfully!\n")
-                    _build_log_lines.append(f"  Executable: {_exe_name}\n")
-                    _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
-                else:
-                    _build_log_lines.append(f"✗ Rebuild failed with return code {p.returncode}\n")
-                _build_log_lines.append("=" * 50 + "\n")
-
-                logger.info(f"Rebuild thread completed for {_exe_name}")
-
-            except Exception as e:
-                logger.error(f"Rebuild thread error: {e}\n{traceback.format_exc()}")
-                _build_log_lines.append(f"\nError: {e}\n")
-                _build_log_lines.append(traceback.format_exc())
+            _execute_build_process(
+                compiler_path=_compiler_path,
+                build_type=_build_type,
+                exe_name=_exe_name,
+                clean_first=True,
+                action_name="Rebuild",
+            )
 
         threading.Thread(target=_do_rebuild, daemon=True, name="RebuildThread").start()
 
