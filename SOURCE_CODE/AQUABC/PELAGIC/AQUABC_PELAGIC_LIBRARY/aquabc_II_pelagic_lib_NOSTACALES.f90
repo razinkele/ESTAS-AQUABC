@@ -192,7 +192,7 @@ subroutine NOSTOCALES &
 
     if (smith .eq. 1) then
 
-        EUPHOTIC_DEPTH(:) = 4.61D0 / K_E(:)
+        EUPHOTIC_DEPTH(:) = 4.61D0 / max(K_E(:), 1.0D-20)
 
         write(6,*) 'NOST CALL: I_A=', I_A(1:min(8,nkn))
         write(6,*) 'NOST CALL: CHLA=', CHLA(1:min(8,nkn))

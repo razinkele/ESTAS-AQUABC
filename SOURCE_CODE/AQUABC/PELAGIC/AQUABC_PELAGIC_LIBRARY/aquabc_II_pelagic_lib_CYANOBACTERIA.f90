@@ -395,7 +395,7 @@ subroutine CYANOBACTERIA_BOUYANT &
         ! The same for fixers. This fix is valid only for 2d. fixme
         ! Nothing is done to increase selfshading. Concentration is
         ! still evenly distributed to the whole depth. fixme
-        EUPHOTIC_DEPTH(:) = 4.61D0 / K_E(:)
+        EUPHOTIC_DEPTH(:) = 4.61D0 / max(K_E(:), 1.0D-20)
 
         !Nagy et al. 2006
         MIX_DEPTH(:) = 0.8121D0 * WINDS(:) + 0.7006D0
