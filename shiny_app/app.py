@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-import glob
-import logging
 import os
-import re
-import select
-import shlex
-import shutil
 import subprocess
-import sys
 import threading
+import logging
+import sys
+import shutil
 import time
+import select
+import signal
 import traceback
-from datetime import date, datetime, timedelta
+import re
+import glob
+import shlex
+from datetime import datetime, date, timedelta
 
 # Try to import markdown for help rendering
 try:
@@ -29,94 +30,81 @@ if _script_dir not in sys.path:
 if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
-import folium
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
-from shiny import App, reactive, render, ui
+import ipyleaflet as L
+from ipywidgets import HTML
+
+from shiny import App, ui, reactive, render, req
 from shinywidgets import output_widget, render_widget
 
 # Import parameter parser (try both absolute and relative imports)
 try:
+    from shiny_app.parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
     from shiny_app.ic_parser import (
-        CSV_COLUMN_INFO,
-        STATE_VARIABLE_CATEGORIES,
-        STATE_VARIABLES,
-        ICFile,
-        get_available_ic_files,
-        get_grouped_variable_choices,
-        get_variable_display_name,
-        get_variable_info,
+        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
+        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
+    )
+    from shiny_app.options_parser import (
+        ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
+        load_model_options, load_extra_constants
     )
     from shiny_app.mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
-    from shiny_app.options_parser import (
-        EXTRA_CONSTANTS,
-        MODEL_OPTIONS,
-        OPTION_CATEGORIES,
-        ExtraConstantsFile,
-        ModelOptionsFile,
-        load_extra_constants,
-        load_model_options,
-    )
-    from shiny_app.parameter_parser import PARAMETER_CATEGORIES, ParameterFile, load_parameters
     from shiny_app.simulation_config import (
-        OUTPUT_INTERVAL_PRESETS,
-        TIME_STEP_PRESETS,
-        SimulationConfig,
-        SimulationConfigFile,
-        date_to_days,
-        days_to_date,
-        load_simulation_config,
+        SimulationConfigFile, SimulationConfig, load_simulation_config,
+        TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
     )
 except ImportError:
     # Fallback for when running from within shiny_app directory
+    from parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
     from ic_parser import (
-        STATE_VARIABLE_CATEGORIES,
-        ICFile,
-        get_grouped_variable_choices,
-        get_variable_info,
+        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
+        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
+    )
+    from options_parser import (
+        ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
+        load_model_options, load_extra_constants
     )
     from mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
-    from options_parser import (
-        OPTION_CATEGORIES,
-        ExtraConstantsFile,
-        ModelOptionsFile,
-    )
-    from parameter_parser import PARAMETER_CATEGORIES, ParameterFile
     from simulation_config import (
-        OUTPUT_INTERVAL_PRESETS,
-        TIME_STEP_PRESETS,
-        SimulationConfigFile,
+        SimulationConfigFile, SimulationConfig, load_simulation_config,
+        TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
     )
 
 # Import observation comparison (try both paths)
 try:
-    from shiny_app.observation_compare import ModelObservationComparison, ObservationData, create_sample_observations
+    from shiny_app.observation_compare import (
+        ObservationData, ModelObservationComparison, create_sample_observations
+    )
 except ImportError:
-    from observation_compare import ModelObservationComparison, ObservationData, create_sample_observations
+    from observation_compare import (
+        ObservationData, ModelObservationComparison, create_sample_observations
+    )
 
 # Import observation file loader (try both paths)
 try:
     from shiny_app.obs_loader import (
-        STATE_VARIABLE_INDEX,
-        LoadedObservations,
-        ObservationFile,
-        get_file_preview,
-        get_variable_description,
-        scan_observations_directory,
+        scan_observations_directory, load_observation_file as load_obs_file,
+        get_file_preview, ObservationFile, LoadedObservations, 
+        get_variable_description, STATE_VARIABLE_INDEX
     )
-    from shiny_app.obs_loader import load_observation_file as load_obs_file
 except ImportError:
     from obs_loader import (
-        get_file_preview,
-        scan_observations_directory,
+        scan_observations_directory, load_observation_file as load_obs_file,
+        get_file_preview, ObservationFile, LoadedObservations,
+        get_variable_description, STATE_VARIABLE_INDEX
     )
-    from obs_loader import load_observation_file as load_obs_file
 
 # Import scenario manager (try both paths)
 try:
-    from shiny_app.scenarios import Scenario, ScenarioManager, get_scenarios_dir, load_scenario_manager
+    from shiny_app.scenarios import (
+        Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir
+    )
 except ImportError:
-    from scenarios import load_scenario_manager
+    from scenarios import (
+        Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir
+    )
 
 # Configure logging
 logging.basicConfig(
@@ -147,7 +135,7 @@ REQUIRED_MODEL_CONSTANTS = 318  # Model requires exactly 318 constants
 
 def count_file_lines_fast(filepath, sample_size=8192):
     """Efficiently count lines in a file using buffered reading.
-
+    
     For large files, uses sampling to estimate. For small files, counts exactly.
     """
     try:
@@ -172,23 +160,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
-
-def safe_resolve(base_dir: str, filename: str) -> str:
-    """Resolve filename under base_dir, rejecting path traversal.
-
-    Raises ValueError if the resolved path escapes base_dir.
-    """
-    if not filename or not filename.strip():
-        raise ValueError("Empty filename")
-    # Reject obvious traversal attempts before joining
-    if os.path.isabs(filename) or '..' in filename.split(os.sep):
-        raise ValueError(f"Invalid filename: {filename}")
-    resolved = os.path.realpath(os.path.join(base_dir, filename))
-    base = os.path.realpath(base_dir)
-    if not resolved.startswith(base + os.sep) and resolved != base:
-        raise ValueError(f"Path escapes base directory: {filename}")
-    return resolved
-
 # Standard column names for PELAGIC_BOX output files (binary and text)
 PELAGIC_BOX_COLUMNS = [
     "TIME_DAYS", "NH4_N", "NO3_N", "PO4_P", "DISS_OXYGEN", "DIA_C",
@@ -206,7 +177,7 @@ def get_output_folder():
     input_file = os.path.join(ROOT, 'INPUT.txt')
     try:
         if os.path.exists(input_file):
-            with open(input_file) as f:
+            with open(input_file, 'r') as f:
                 lines = f.readlines()
             # Line 22 (1-indexed) contains OUTPUT folder
             if len(lines) >= 22:
@@ -219,22 +190,22 @@ def get_output_folder():
 
 def find_pelagic_box_file(output_folder=None, file_type='text'):
     """Find a PELAGIC_BOX output file in the output folder.
-
+    
     Args:
         output_folder: Output folder path (defaults to get_output_folder())
         file_type: 'text' for .out files, 'binary' for .bin files
-
+        
     Returns:
         Path to first matching file, or None if not found
     """
     if output_folder is None:
         output_folder = get_output_folder()
-
+    
     if not output_folder or not os.path.isdir(output_folder):
         return None
-
+    
     import glob
-
+    
     if file_type == 'binary':
         # Binary files: patterns like __PELAGIC_BOX_00005.bin
         patterns = [
@@ -246,66 +217,66 @@ def find_pelagic_box_file(output_folder=None, file_type='text'):
         patterns = [
             os.path.join(output_folder, "PELAGIC_BOX_*.out"),
         ]
-
+    
     files = []
     for pattern in patterns:
         matches = glob.glob(pattern)
         # Exclude PROCESS_RATES files
         matches = [f for f in matches if "PROCESS_RATES" not in f]
         files.extend(matches)
-
+    
     # Sort and deduplicate
     files = sorted(set(files))
-
+    
     if files:
         return files[0]
     return None
 
 def read_pelagic_binary(bin_file, max_rows=None):
     """Read Fortran binary PELAGIC_BOX output file.
-
+    
     Binary format (from Fortran stream I/O):
     - Each row: TIME (float64) + 36 state variables (float64)
     - Total 37 columns, all double precision (8 bytes)
     - No record markers (Fortran ACCESS='STREAM')
-
+    
     Args:
         bin_file: Path to .bin file
         max_rows: Maximum rows to read (None for all)
-
+        
     Returns:
         DataFrame with TIME_DAYS and state variable columns
     """
     import numpy as np
-
+    
     ncols = len(PELAGIC_BOX_COLUMNS)  # 37
-
+    
     with open(bin_file, 'rb') as f:
         data = np.fromfile(f, dtype=np.float64)
-
+    
     nrows = len(data) // ncols
     remainder = len(data) % ncols
-
+    
     if remainder != 0:
         logger.warning(f"Binary file has {remainder} extra bytes, truncating")
         data = data[:nrows * ncols]
-
+    
     data = data.reshape(nrows, ncols)
-
+    
     if max_rows is not None and nrows > max_rows:
         data = data[:max_rows]
-
+    
     df = pd.DataFrame(data, columns=PELAGIC_BOX_COLUMNS)
     logger.info(f"Read binary file: {len(df)} rows x {ncols} cols")
     return df
 
 def read_pelagic_text(text_file, max_rows=None):
     """Read PELAGIC_BOX text output file (whitespace-separated).
-
+    
     Args:
         text_file: Path to .out file
         max_rows: Maximum rows to read (None for all)
-
+        
     Returns:
         DataFrame with state variable columns
     """
@@ -323,14 +294,14 @@ logger.info(f"OUTPUT_CSV: {OUTPUT_CSV}")
 
 logger.info("=== Directory Checks ===")
 if os.path.exists(ROOT):
-    logger.info("✓ ROOT directory exists")
+    logger.info(f"✓ ROOT directory exists")
     logger.info(f"  ROOT is readable: {os.access(ROOT, os.R_OK)}")
     logger.info(f"  ROOT is writable: {os.access(ROOT, os.W_OK)}")
 else:
     logger.error(f"✗ ROOT directory does NOT exist: {ROOT}")
 
 if os.path.exists(INPUTS_DIR):
-    logger.info("✓ INPUTS directory exists")
+    logger.info(f"✓ INPUTS directory exists")
     logger.info(f"  INPUTS is readable: {os.access(INPUTS_DIR, os.R_OK)}")
     logger.info(f"  INPUTS is writable: {os.access(INPUTS_DIR, os.W_OK)}")
     try:
@@ -345,14 +316,14 @@ else:
 
 logger.info("=== Output File Checks ===")
 if os.path.exists(OUTPUT_CSV):
-    logger.info("✓ OUTPUT.csv exists")
+    logger.info(f"✓ OUTPUT.csv exists")
     file_size = os.path.getsize(OUTPUT_CSV)
     logger.info(f"  File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
     logger.info(f"  File is readable: {os.access(OUTPUT_CSV, os.R_OK)}")
     logger.info(f"  Last modified: {datetime.fromtimestamp(os.path.getmtime(OUTPUT_CSV)).strftime('%Y-%m-%d %H:%M:%S')}")
     try:
         # Try to read header
-        with open(OUTPUT_CSV) as f:
+        with open(OUTPUT_CSV, 'r') as f:
             first_line = f.readline().strip()
             logger.info(f"  Header preview: {first_line[:100]}")
         # Count lines (quick estimate)
@@ -367,7 +338,7 @@ if os.path.exists(OUTPUT_CSV):
         logger.warning(f"  Could not read OUTPUT.csv header: {e}")
 else:
     logger.warning(f"⚠ OUTPUT.csv does NOT exist yet: {OUTPUT_CSV}")
-    logger.info("  This is normal if the model hasn't been run yet")
+    logger.info(f"  This is normal if the model hasn't been run yet")
 
 logger.info("=== Environment ===")
 logger.info(f"Python version: {sys.version}")
@@ -431,7 +402,7 @@ logger.info(f"DEFAULT_PLOT_ROWS: {DEFAULT_PLOT_ROWS}")
 logger.info("=== Theme Configuration ===")
 if THEMES_AVAILABLE:
     logger.info(f"✓ Themes enabled with {len(AVAILABLE_THEMES)} available themes")
-    logger.info("  Default theme: darkly")
+    logger.info(f"  Default theme: darkly")
 else:
     logger.info("⚠ Themes not available (shinyswatch not installed)")
     logger.info("  Install with: pip install shinyswatch")
@@ -443,32 +414,32 @@ logger.info("=" * 60)
 
 def validate_constants_file(constants_filename):
     """Validate that a WCONST file has the required number of constants.
-
+    
     Args:
         constants_filename: The filename (e.g., 'WCONST_01.txt') or full path
-
+        
     Returns:
         tuple: (is_valid: bool, actual_count: int, error_message: str or None)
     """
     if not constants_filename:
         return True, 0, None  # No constants file specified, model uses defaults
-
-    # Build full path, rejecting traversal attempts
-    try:
-        filepath = safe_resolve(INPUTS_DIR, constants_filename)
-    except ValueError:
-        return False, 0, f"Invalid constants file path: {constants_filename}"
-
+    
+    # Build full path if not already absolute
+    if os.path.isabs(constants_filename):
+        filepath = constants_filename
+    else:
+        filepath = os.path.join(INPUTS_DIR, constants_filename)
+    
     if not os.path.exists(filepath):
         return False, 0, f"Constants file not found: {filepath}"
-
+    
     try:
         # Count numbered constant lines (format: "   123   CONSTANT_NAME   value  !comment")
         # Lines start with whitespace followed by a number
         const_count = 0
         max_const_num = 0
-
-        with open(filepath, encoding='utf-8', errors='ignore') as f:
+        
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith('#'):
@@ -479,7 +450,7 @@ def validate_constants_file(constants_filename):
                     const_num = int(match.group(1))
                     max_const_num = max(max_const_num, const_num)
                     const_count += 1
-
+        
         if max_const_num < REQUIRED_MODEL_CONSTANTS:
             return False, max_const_num, (
                 f"Constants file '{os.path.basename(filepath)}' has only {max_const_num} constants, "
@@ -487,9 +458,9 @@ def validate_constants_file(constants_filename):
                 f"Missing constants: {max_const_num + 1} to {REQUIRED_MODEL_CONSTANTS}\n"
                 f"Try using WCONST_04.txt which has all required constants."
             )
-
+        
         return True, max_const_num, None
-
+        
     except Exception as e:
         return False, 0, f"Error reading constants file: {e}"
 
@@ -601,7 +572,7 @@ def find_compiler_path(compiler_name):
 
 def is_intel_executable(exe_name):
     """Check if an executable was compiled with Intel compilers.
-
+    
     Returns True if the executable name contains ifort or ifx.
     """
     if not exe_name:
@@ -635,7 +606,7 @@ def get_intel_library_paths():
 
 def check_intel_libs_available():
     """Check if Intel runtime libraries are available.
-
+    
     Returns a tuple: (available: bool, lib_path: str or None)
     """
     paths = get_intel_library_paths()
@@ -662,7 +633,7 @@ def get_run_environment():
 
 def get_intel_setvars_path():
     """Find the Intel oneAPI setvars.sh script.
-
+    
     Returns the path to setvars.sh if found, None otherwise.
     """
     setvars_locations = [
@@ -678,10 +649,10 @@ def get_intel_setvars_path():
 
 def build_intel_wrapped_command(cmd_list):
     """Wrap a command to source Intel oneAPI environment first.
-
+    
     Args:
         cmd_list: List of command parts ['./ESTAS_II_ifx_release', 'INPUT.txt', ...]
-
+    
     Returns:
         Tuple of (shell_command: str, use_shell: bool)
         If Intel environment is needed and available, returns a shell command that
@@ -1079,7 +1050,7 @@ def analyze_input_file(filepath):
         return info
 
     try:
-        with open(filepath, encoding='utf-8', errors='ignore') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()
 
         info["num_lines"] = len(lines)
@@ -1269,7 +1240,7 @@ def get_timeseries_variables(filename):
 
     variables = []
     try:
-        with open(filepath, encoding='utf-8', errors='ignore') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 # Look for header line with variable names (after # and before data)
@@ -1311,7 +1282,7 @@ def create_ui(theme_name="darkly"):
                 window.location.reload();
             }, 500);
         });
-
+        
         Shiny.addCustomMessageHandler('copy_to_clipboard', function(text) {
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(text).then(function() {
@@ -1563,7 +1534,7 @@ def create_ui(theme_name="darkly"):
             const toggleBtn = document.getElementById('sidebar-collapse-btn');
             const sidebar = document.getElementById('custom-sidebar');
             const navLinks = document.querySelectorAll('.custom-sidebar .nav-link');
-
+            
             // Toggle sidebar collapsed state
             if (toggleBtn && sidebar) {
                 toggleBtn.onclick = function(e) {
@@ -1571,7 +1542,7 @@ def create_ui(theme_name="darkly"):
                     sidebar.classList.toggle('collapsed');
                 };
             }
-
+            
             // Navigation link click handler
             navLinks.forEach(function(link) {
                 link.onclick = function(e) {
@@ -1579,14 +1550,14 @@ def create_ui(theme_name="darkly"):
                     // Update active states
                     navLinks.forEach(function(l) { l.classList.remove('active'); });
                     link.classList.add('active');
-
+                    
                     // Update Shiny input value
                     var navId = link.getAttribute('data-nav-id');
                     Shiny.setInputValue('navigation', navId);
                 };
             });
         }
-
+        
         // Run on load and after Shiny updates
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initSidebar);
@@ -2591,26 +2562,26 @@ def create_ui(theme_name="darkly"):
                         "Observation Files"
                     ),
                     ui.tooltip(
-                        ui.input_action_button("obs_scan_dir", "Scan OBSERVATIONS Directory",
+                        ui.input_action_button("obs_scan_dir", "Scan OBSERVATIONS Directory", 
                                               class_="btn-outline-primary btn-sm w-100 mb-2"),
                         "Scan the OBSERVATIONS folder for available data files"
                     ),
                     ui.input_select("obs_file_select", "Select file:", choices=[], width="100%"),
                     ui.tooltip(
-                        ui.input_action_button("obs_load_file", "Load Selected File",
+                        ui.input_action_button("obs_load_file", "Load Selected File", 
                                               class_="btn-primary btn-sm w-100 mb-2"),
                         "Load the selected observation file"
                     ),
                     ui.hr(),
                     ui.tags.small("Or upload your own file:", class_="text-muted d-block mb-1"),
                     ui.tooltip(
-                        ui.input_file("obs_file", "Upload CSV/Excel:",
+                        ui.input_file("obs_file", "Upload CSV/Excel:", 
                                      accept=[".csv", ".xlsx", ".dates"], multiple=False),
                         "Upload CSV, Excel, or .dates observation file"
                     ),
                     ui.hr(),
                     ui.tooltip(
-                        ui.input_action_button("generate_sample_obs", "Generate Sample Data",
+                        ui.input_action_button("generate_sample_obs", "Generate Sample Data", 
                                               class_="btn-outline-secondary btn-sm w-100"),
                         "Generate synthetic observation data for testing"
                     ),
@@ -2707,7 +2678,7 @@ def create_ui(theme_name="darkly"):
                 # Right column: Map display
                 ui.card(
                     ui.card_header("Map View"),
-                    ui.output_ui("pydeck_map"),
+                    output_widget("pydeck_map"),
                     fill=True
                 ),
                 col_widths=[3, 9]
@@ -2943,7 +2914,7 @@ def get_saved_theme():
     theme_file = os.path.join(ROOT, '.aquabc_theme')
     try:
         if os.path.exists(theme_file):
-            with open(theme_file) as f:
+            with open(theme_file, 'r') as f:
                 theme = f.read().strip()
                 if theme in AVAILABLE_THEMES:
                     logger.info(f"Loaded saved theme preference: {theme}")
@@ -3119,7 +3090,7 @@ def server(input, output, session):
     # =========================================================================
     # ESTAS_II Command Line Parameter Controls
     # =========================================================================
-
+    
     @reactive.effect
     def init_cmd_dropdowns():
         """Initialize command line parameter dropdown choices"""
@@ -3129,7 +3100,7 @@ def server(input, output, session):
             if f.startswith("INPUT") and f.endswith(".txt") and f != "INPUT.txt":
                 input_files[f] = f
         ui.update_select("cmd_input_file", choices=input_files)
-
+        
         # Get available WCONST*.txt files for constants override (Arg 2)
         # Note: Fortran code prepends PELAGIC_INPUT_FOLDER, so just use filename
         const_files = {"": "(not used - use defaults)"}
@@ -3137,7 +3108,7 @@ def server(input, output, session):
             if f.startswith("WCONST") and f.endswith(".txt"):
                 const_files[f] = f  # Just filename, not path
         ui.update_select("cmd_constants_file", choices=const_files)
-
+        
         # Get available shear stress files (Arg 4)
         # Note: Fortran code uses this path directly
         shear_files = {"": "(not used)"}
@@ -3376,7 +3347,7 @@ def server(input, output, session):
                     # Default executable (no suffix) - treat as release
                     badge_class = "bg-success"
                     badge_text = "release"
-
+                
                 # Add Intel indicator
                 compiler_badge = None
                 if is_intel_executable(exe):
@@ -3384,9 +3355,9 @@ def server(input, output, session):
                     if intel_available:
                         compiler_badge = ui.tags.span("Intel", class_="badge bg-primary ms-1")
                     else:
-                        compiler_badge = ui.tags.span("Intel ⚠", class_="badge bg-danger ms-1",
+                        compiler_badge = ui.tags.span("Intel ⚠", class_="badge bg-danger ms-1", 
                                                       title="Intel runtime libraries not found")
-
+                
                 items.append(
                     ui.div(
                         ui.tags.span(exe, class_="fw-bold"),
@@ -3404,8 +3375,6 @@ def server(input, output, session):
     def executable_info():
         """Display info about the selected active executable"""
         exe_name = input.active_executable()
-        if not exe_name:
-            return ui.div(ui.tags.small("No executable selected", class_="text-muted"))
         info = get_executable_info(exe_name)
 
         if not info["exists"]:
@@ -3416,7 +3385,7 @@ def server(input, output, session):
             )
 
         return ui.div(
-            ui.tags.small("✓ Ready to run", class_="text-success"),
+            ui.tags.small(f"✓ Ready to run", class_="text-success"),
             ui.tags.br(),
             ui.tags.small(f"Last built: {info['modified']}", class_="text-muted")
         )
@@ -3425,8 +3394,6 @@ def server(input, output, session):
     def run_executable_info():
         """Display info about the selected run executable"""
         exe_name = input.run_executable()
-        if not exe_name:
-            return ui.div(ui.tags.small("No executable selected", class_="text-muted"))
         info = get_executable_info(exe_name)
 
         if not info["exists"]:
@@ -3443,7 +3410,7 @@ def server(input, output, session):
             build_info = "release build"
         else:
             build_info = "release build"
-
+        
         # Check if Intel executable needs runtime libraries
         if is_intel_executable(exe_name):
             intel_available, intel_path = check_intel_libs_available()
@@ -3461,7 +3428,7 @@ def server(input, output, session):
                     ui.tags.br(),
                     ui.tags.small("Run 'source /opt/intel/oneapi/setvars.sh' first, or use gfortran builds.", class_="text-muted", style="font-size: 9px;")
                 )
-
+        
         return ui.div(
             ui.tags.small(f"✓ {build_info}, {info['size'] / 1024:.1f} KB", class_="text-success")
         )
@@ -3576,15 +3543,7 @@ def server(input, output, session):
                     )
                     for line in p.stdout:
                         _build_log_lines.append(line)
-                        if len(_build_log_lines) > 500:
-                            del _build_log_lines[:100]
-                    try:
-                        p.wait(timeout=120)
-                    except subprocess.TimeoutExpired:
-                        logger.error("Clean timed out after 120s, killing")
-                        p.kill()
-                        p.wait()
-                        _build_log_lines.append("✗ Clean timed out after 120s\n")
+                    p.wait()
 
                 _build_log_lines.append("\n=== Building library and executable ===\n")
 
@@ -3605,18 +3564,12 @@ def server(input, output, session):
                     if len(_build_log_lines) > 500:
                         del _build_log_lines[:100]
 
-                try:
-                    p.wait(timeout=600)
-                except subprocess.TimeoutExpired:
-                    logger.error("Build timed out after 600s, killing")
-                    p.kill()
-                    p.wait()
-                    _build_log_lines.append("✗ Build timed out after 600s\n")
+                p.wait()
                 elapsed = time.time() - start_time
 
                 _build_log_lines.append("-" * 50 + "\n")
                 if p.returncode == 0:
-                    _build_log_lines.append("✓ Build completed successfully!\n")
+                    _build_log_lines.append(f"✓ Build completed successfully!\n")
                     _build_log_lines.append(f"  Executable: {_exe_name}\n")
                     _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
                 else:
@@ -3688,15 +3641,7 @@ def server(input, output, session):
                 )
                 for line in p.stdout:
                     _build_log_lines.append(line)
-                    if len(_build_log_lines) > 500:
-                        del _build_log_lines[:100]
-                try:
-                    p.wait(timeout=120)
-                except subprocess.TimeoutExpired:
-                    logger.error("Clean timed out after 120s, killing")
-                    p.kill()
-                    p.wait()
-                    _build_log_lines.append("✗ Clean timed out after 120s\n")
+                p.wait()
 
                 _build_log_lines.append("\n=== Rebuilding library and executable ===\n")
 
@@ -3717,18 +3662,12 @@ def server(input, output, session):
                     if len(_build_log_lines) > 500:
                         del _build_log_lines[:100]
 
-                try:
-                    p.wait(timeout=600)
-                except subprocess.TimeoutExpired:
-                    logger.error("Rebuild timed out after 600s, killing")
-                    p.kill()
-                    p.wait()
-                    _build_log_lines.append("✗ Rebuild timed out after 600s\n")
+                p.wait()
                 elapsed = time.time() - start_time
 
                 _build_log_lines.append("-" * 50 + "\n")
                 if p.returncode == 0:
-                    _build_log_lines.append("✓ Rebuild completed successfully!\n")
+                    _build_log_lines.append(f"✓ Rebuild completed successfully!\n")
                     _build_log_lines.append(f"  Executable: {_exe_name}\n")
                     _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
                 else:
@@ -3752,7 +3691,7 @@ def server(input, output, session):
     def constants_validation_status():
         """Display real-time validation status of the selected constants file"""
         const_file = input.cmd_constants_file() or ""
-
+        
         # Check if binary/shear file is set but not constants - use default
         try:
             binary_enabled = input.cmd_binary_enabled()
@@ -3761,19 +3700,19 @@ def server(input, output, session):
                 const_file = DEFAULT_CONSTANTS_FILE
         except Exception:
             pass
-
+        
         if not const_file:
             return ui.div(
-                ui.tags.small("ℹ️ No constants file selected (using model defaults)",
+                ui.tags.small("ℹ️ No constants file selected (using model defaults)", 
                              class_="text-muted")
             )
-
+        
         is_valid, actual_count, error_msg = validate_constants_file(const_file)
-
+        
         if is_valid:
             return ui.div(
                 ui.tags.small(
-                    f"✓ {const_file}: {actual_count}/{REQUIRED_MODEL_CONSTANTS} constants",
+                    f"✓ {const_file}: {actual_count}/{REQUIRED_MODEL_CONSTANTS} constants", 
                     class_="text-success"
                 )
             )
@@ -3831,11 +3770,11 @@ def server(input, output, session):
             if is_intel_executable(exe_name):
                 setvars_path = get_intel_setvars_path()
                 if setvars_path:
-                    _log_lines.append("ℹ️  Intel executable detected. Will source Intel environment.\n")
+                    _log_lines.append(f"ℹ️  Intel executable detected. Will source Intel environment.\n")
                 else:
                     intel_available, intel_path = check_intel_libs_available()
                     if intel_available:
-                        _log_lines.append("ℹ️  Intel executable detected. Using runtime libs from:\n")
+                        _log_lines.append(f"ℹ️  Intel executable detected. Using runtime libs from:\n")
                         _log_lines.append(f"   {intel_path}\n")
                     else:
                         _log_lines.append("⚠️  WARNING: Intel-compiled executable selected but Intel runtime\n")
@@ -3920,7 +3859,7 @@ def server(input, output, session):
                 use_shell = False
                 final_cmd = exec_cmd
                 run_env = os.environ.copy()  # Start with current environment
-
+                
                 if is_intel_executable(exe_name):
                     setvars_path = get_intel_setvars_path()
                     if setvars_path:
@@ -3937,7 +3876,7 @@ def server(input, output, session):
                 else:
                     # For non-Intel executables, use standard environment
                     run_env = get_run_environment()
-
+                
                 logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
                 p = subprocess.Popen(
                     final_cmd,
@@ -3996,7 +3935,7 @@ def server(input, output, session):
                 output_info = get_csv_info()
                 _log_lines.append("-" * 40 + "\n")
                 if rc == 0:
-                    _log_lines.append("✓ Model run completed successfully!\n")
+                    _log_lines.append(f"✓ Model run completed successfully!\n")
                     _model_progress[0] = ({
                         "elapsed": format_time(elapsed),
                         "rows": output_info.get("lines", 0),
@@ -4048,10 +3987,10 @@ def server(input, output, session):
                     ui.tags.p("Help file not found.", class_="text-danger"),
                     ui.tags.p(f"Expected: {help_file}", class_="text-muted small")
                 )
-
-            with open(help_file, encoding='utf-8') as f:
+            
+            with open(help_file, 'r', encoding='utf-8') as f:
                 md_content = f.read()
-
+            
             # Add custom CSS for better table and navigation styling
             table_css = """
             <style>
@@ -4162,7 +4101,7 @@ def server(input, output, session):
                 }
             </style>
             """
-
+            
             if MARKDOWN_AVAILABLE:
                 # Convert markdown to HTML with table extension
                 html_content = markdown.markdown(
@@ -4198,10 +4137,10 @@ def server(input, output, session):
                     ui.tags.p("Changelog file not found.", class_="text-warning"),
                     ui.tags.p(f"Expected: {changelog_file}", class_="text-muted small")
                 )
-
-            with open(changelog_file, encoding='utf-8') as f:
+            
+            with open(changelog_file, 'r', encoding='utf-8') as f:
                 md_content = f.read()
-
+            
             # Custom CSS for changelog styling
             changelog_css = """
             <style>
@@ -4254,7 +4193,7 @@ def server(input, output, session):
                 }
             </style>
             """
-
+            
             if MARKDOWN_AVAILABLE:
                 html_content = markdown.markdown(
                     md_content,
@@ -4353,15 +4292,10 @@ def server(input, output, session):
             logger.debug("load_file called but no file selected")
             return
         logger.info(f"Loading file: {f}")
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-        except ValueError as e:
-            logger.error(f"Invalid file path: {e}")
-            ui.update_text_area("file_contents", value="Error: invalid filename")
-            return
+        path = os.path.join(INPUTS_DIR, f)
 
         try:
-            with open(path) as fh:
+            with open(path, 'r') as fh:
                 txt = fh.read()
             logger.info(f"Successfully loaded {f} ({len(txt)} characters)")
             ui.update_text_area("file_contents", value=txt)
@@ -4388,10 +4322,7 @@ def server(input, output, session):
             )
 
         # Analyze the file
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-        except ValueError:
-            return ui.tags.div(ui.tags.p("Invalid file path", class_="text-danger"), class_="p-2")
+        path = os.path.join(INPUTS_DIR, f)
         analysis = analyze_input_file(path)
 
         # Build info rows
@@ -4492,19 +4423,14 @@ def server(input, output, session):
     @reactive.event(input.save_file)
     def save_file():
         f = input.file_select()
-        logger.info("User clicked 'Save file' button")
+        logger.info(f"User clicked 'Save file' button")
         if not f:
             logger.warning("Save attempted but no file selected")
             save_status_msg.set("Error: No file selected")
             return
 
         logger.info(f"Saving file: {f}")
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-        except ValueError as e:
-            logger.error(f"Invalid file path for save: {e}")
-            save_status_msg.set(f"✗ Invalid filename: {e}")
-            return
+        path = os.path.join(INPUTS_DIR, f)
         content_length = len(input.file_contents())
         logger.debug(f"Content length: {content_length} characters")
 
@@ -5339,7 +5265,7 @@ def server(input, output, session):
                 output_config_msg.set("Output config file not found")
                 return
 
-            with open(OUTPUT_INFO_FILE) as f:
+            with open(OUTPUT_INFO_FILE, 'r') as f:
                 lines = f.readlines()
 
             selected_boxes = []
@@ -5839,18 +5765,18 @@ def server(input, output, session):
         """Scan OBSERVATIONS directory for observation files"""
         obs_dir = os.path.join(ROOT, "OBSERVATIONS")
         logger.info(f"Scanning observations directory: {obs_dir}")
-
+        
         if not os.path.isdir(obs_dir):
             ui.notification_show(f"OBSERVATIONS directory not found: {obs_dir}", type="warning")
             return
-
+        
         files = scan_observations_directory(obs_dir)
         obs_files_list.set(files)
-
+        
         # Update file selector
         if files:
             choices = {f.filepath: f"{f.filename} ({f.file_type})" for f in files}
-            ui.update_select("obs_file_select", choices=choices,
+            ui.update_select("obs_file_select", choices=choices, 
                             selected=files[0].filepath if files else None)
             ui.notification_show(f"Found {len(files)} observation files", type="message")
         else:
@@ -5864,17 +5790,9 @@ def server(input, output, session):
         if not selected:
             obs_file_preview.set(None)
             return
-
-        # Validate path stays within OBSERVATIONS directory
-        obs_dir = os.path.join(ROOT, "OBSERVATIONS")
-        try:
-            selected_safe = safe_resolve(obs_dir, os.path.relpath(selected, obs_dir))
-        except ValueError:
-            obs_file_preview.set(None)
-            return
-
+        
         # Get preview
-        preview = get_file_preview(selected_safe)
+        preview = get_file_preview(selected)
         obs_file_preview.set(preview)
 
     @reactive.effect
@@ -5882,37 +5800,26 @@ def server(input, output, session):
     def load_selected_obs_file():
         """Load the selected observation file"""
         selected = input.obs_file_select()
-        if not selected:
+        if not selected or not os.path.exists(selected):
             ui.notification_show("No file selected", type="warning")
             return
-
-        # Validate path stays within OBSERVATIONS directory
-        obs_dir = os.path.join(ROOT, "OBSERVATIONS")
-        try:
-            selected = safe_resolve(obs_dir, os.path.relpath(selected, obs_dir))
-        except ValueError:
-            ui.notification_show("Invalid observation file path", type="error")
-            return
-        if not os.path.exists(selected):
-            ui.notification_show("No file selected", type="warning")
-            return
-
+        
         logger.info(f"Loading observation file: {selected}")
-
+        
         # Load based on file type
         loaded = load_obs_file(selected)
-
+        
         if loaded:
             obs_loaded_file.set(loaded)
-
+            
             # Update variable selector with available variables
             available = loaded.get_available_variables()
             if available:
-                choices = {str(idx): f"{idx}: {name} ({count} pts)"
+                choices = {str(idx): f"{idx}: {name} ({count} pts)" 
                           for idx, name, count in available}
                 ui.update_select("obs_variable", choices=choices,
                                selected=str(available[0][0]) if available else None)
-
+            
             ui.notification_show(
                 f"Loaded {loaded.file_info.filename}: {len(available)} variables with data",
                 type="message"
@@ -5924,21 +5831,21 @@ def server(input, output, session):
     def obs_file_info():
         """Render file information"""
         preview = obs_file_preview.get()
-
+        
         if preview is None:
             return ui.tags.div(
-                ui.tags.p("Click 'Scan OBSERVATIONS Directory' to discover files",
+                ui.tags.p("Click 'Scan OBSERVATIONS Directory' to discover files", 
                          class_="text-muted text-center"),
                 class_="p-3"
             )
-
+        
         info = preview.get("info", {})
-
+        
         if "error" in info:
             return ui.tags.div(
                 ui.tags.p(f"Error: {info['error']}", class_="text-danger"),
             )
-
+        
         # File info summary
         return ui.tags.div(
             ui.tags.div(
@@ -5972,13 +5879,13 @@ def server(input, output, session):
     def obs_variables_table():
         """Render table of available variables in selected file"""
         preview = obs_file_preview.get()
-
+        
         if preview is None or "info" not in preview:
             return ui.tags.div()
-
+        
         info = preview.get("info", {})
         variables = info.get("variables_with_data", [])
-
+        
         if not variables:
             # Show data preview table instead
             data = preview.get("data", [])
@@ -5987,13 +5894,13 @@ def server(input, output, session):
                 return ui.tags.div(
                     ui.tags.h6("Data Preview:", class_="mb-2"),
                     ui.tags.div(
-                        ui.HTML(df.head(5).to_html(classes="table table-sm table-striped",
+                        ui.HTML(df.head(5).to_html(classes="table table-sm table-striped", 
                                                    index=False, border=0)),
                         style="overflow-x: auto; font-size: 11px;"
                     )
                 )
             return ui.tags.p("No data available", class_="text-muted")
-
+        
         # Create variable summary table
         rows = []
         for idx, name, count in variables[:20]:  # Limit to 20 variables
@@ -6003,7 +5910,7 @@ def server(input, output, session):
                 "Description": name.split(" - ")[1].split(" (")[0] if " - " in name else "",
                 "N": count
             })
-
+        
         if len(variables) > 20:
             rows.append({
                 "Index": "...",
@@ -6011,13 +5918,13 @@ def server(input, output, session):
                 "Description": "",
                 "N": ""
             })
-
+        
         df = pd.DataFrame(rows)
-
+        
         return ui.tags.div(
             ui.tags.h6("Available Measurements:", class_="mb-2"),
             ui.tags.div(
-                ui.HTML(df.to_html(classes="table table-sm table-striped table-hover",
+                ui.HTML(df.to_html(classes="table table-sm table-striped table-hover", 
                                    index=False, border=0)),
                 style="max-height: 300px; overflow-y: auto; font-size: 11px;"
             )
@@ -6237,7 +6144,7 @@ def server(input, output, session):
 
     def _get_cached_data(max_rows=None, file_path=None, file_format=None):
         """Get cached output data or reload if modified.
-
+        
         Args:
             max_rows: Maximum number of rows to read
             file_path: Path to output file
@@ -6245,7 +6152,7 @@ def server(input, output, session):
         """
         try:
             target_path = file_path or OUTPUT_CSV
-
+            
             if not os.path.exists(target_path):
                 logger.warning(f"Output file does not exist: {target_path}")
                 return None
@@ -6267,7 +6174,7 @@ def server(input, output, session):
             if cached_path == target_path and cached_mtime == current_mtime and csv_cache.get() is not None:
                 logger.debug("Using cached output data")
                 return csv_cache.get()
-
+            
             logger.info(f"Loading {file_format} output (max_rows={max_rows}, file={os.path.basename(target_path)})")
             start_time = time.time()
 
@@ -6304,7 +6211,7 @@ def server(input, output, session):
     def _get_output_columns(file_path=None, file_format=None):
         """Get column names from an output file."""
         target_path = file_path or OUTPUT_CSV
-
+        
         # Auto-detect format
         if file_format is None:
             if target_path.endswith('.bin'):
@@ -6313,7 +6220,7 @@ def server(input, output, session):
                 file_format = 'text'
             else:
                 file_format = 'csv'
-
+        
         try:
             if file_format == 'binary':
                 # Binary files use fixed column names
@@ -6337,19 +6244,19 @@ def server(input, output, session):
         try:
             file_format = input.output_format() if hasattr(input, 'output_format') else None
             selected_file = get_selected_output_file_path()
-
+            
             if selected_file:
                 cols = _get_output_columns(file_path=selected_file, file_format=file_format)
             else:
                 cols = _get_output_columns()
-
+            
             if cols:
                 # TIME is first column, get the rest
                 y_cols = cols[1:]
-
+                
                 # Create grouped choices with descriptive names
                 grouped_choices = get_grouped_variable_choices(y_cols)
-
+                
                 # Default select first variable on left, none on right
                 first_var = y_cols[0] if y_cols else None
                 ui.update_selectize("left_vars", choices=grouped_choices, selected=[first_var] if first_var else [])
@@ -6388,14 +6295,8 @@ def server(input, output, session):
                     while len(_log_lines) > 500:
                         _log_lines.pop(0)
 
-            p.wait(timeout=600)
-            return p.returncode
-        except subprocess.TimeoutExpired:
-            logger.error("Command timed out after 600s, killing process")
-            p.kill()
             p.wait()
-            _log_lines.append("Error: command timed out after 600 seconds\n")
-            return -1
+            return p.returncode
         except Exception as e:
             logger.error(f"Command execution failed: {e}")
             _log_lines.append(f"Error: {e}\n")
@@ -6479,7 +6380,7 @@ def server(input, output, session):
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
             _log_lines.append(f"Step {step}/{total_steps}: Running ESTAS_II\n")
             _log_lines.append(f"Command: {cmd_display}\n")
-
+            
             # Filter out empty strings for actual execution
             exec_cmd = [c for c in estas_cmd if c]
             rc = run_command(exec_cmd, cwd=ROOT)
@@ -6513,15 +6414,15 @@ def server(input, output, session):
         try:
             output_folder = get_output_folder_from_config()
             output_dir = os.path.join(ROOT, output_folder)
-
+            
             if not os.path.isdir(output_dir):
                 return {"exists": False, "size_kb": 0, "file_count": 0, "folder": output_folder}
-
+            
             total_size = 0
             file_count = 0
             out_files = 0
             bin_files = 0
-
+            
             for fname in os.listdir(output_dir):
                 fpath = os.path.join(output_dir, fname)
                 if os.path.isfile(fpath):
@@ -6532,7 +6433,7 @@ def server(input, output, session):
                             out_files += 1
                         elif fname.endswith('.bin'):
                             bin_files += 1
-                    except Exception:
+                    except OSError:
                         pass
 
             return {
@@ -6641,7 +6542,7 @@ def server(input, output, session):
                 use_shell = False
                 final_cmd = exec_cmd
                 run_env = os.environ.copy()  # Start with current environment
-
+                
                 if is_intel_executable(exe_name):
                     setvars_path = get_intel_setvars_path()
                     if setvars_path:
@@ -6655,7 +6556,7 @@ def server(input, output, session):
                 else:
                     # For non-Intel executables, use standard environment
                     run_env = get_run_environment()
-
+                
                 # Start the model process
                 logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
                 p = subprocess.Popen(
@@ -6748,7 +6649,7 @@ def server(input, output, session):
                 out_folder = final_output_info.get("folder", "OUTPUTS")
 
                 if rc == 0:
-                    _log_lines.append("✓ Model run completed successfully!\n")
+                    _log_lines.append(f"✓ Model run completed successfully!\n")
                     _log_lines.append(f"  Total time: {format_elapsed(elapsed)}\n")
                     _log_lines.append(f"  Output folder: {out_folder}/\n")
                     _log_lines.append(f"  Files: {final_files} total ({final_out} .out, {final_bin} .bin), {final_size:.1f} KB\n")
@@ -6977,7 +6878,7 @@ def server(input, output, session):
         try:
             input_path = os.path.join(ROOT, "INPUT.txt")
             if os.path.exists(input_path):
-                with open(input_path) as f:
+                with open(input_path, 'r') as f:
                     lines = f.readlines()
 
                 # First pass: get base_year for date conversion
@@ -7045,7 +6946,7 @@ def server(input, output, session):
                 try:
                     output_info_path = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
                     if os.path.exists(output_info_path):
-                        with open(output_info_path) as f:
+                        with open(output_info_path, 'r') as f:
                             output_lines = f.readlines()
                         output_boxes = []
                         for line in output_lines[1:]:  # Skip header
@@ -7169,7 +7070,7 @@ def server(input, output, session):
         # Add root OUTPUT.csv as option
         if os.path.exists(OUTPUT_CSV):
             dirs["ROOT"] = "OUTPUT.csv (root directory)"
-
+        
         # Find OUTPUTS_* directories
         for item in os.listdir(ROOT):
             if item.startswith("OUTPUTS") and os.path.isdir(os.path.join(ROOT, item)):
@@ -7186,7 +7087,7 @@ def server(input, output, session):
             if not os.path.isdir(dir_path):
                 return {"error": f"Directory not found: {dir_name}"}
             files_to_check = os.listdir(dir_path)
-
+        
         summary = {
             "path": dir_path,
             "files": [],
@@ -7196,21 +7097,21 @@ def server(input, output, session):
             "mtrx_files": 0,
             "bin_files": 0,
         }
-
+        
         for fname in files_to_check:
             if dir_name == "ROOT":
                 fpath = os.path.join(ROOT, fname)
             else:
                 fpath = os.path.join(dir_path, fname)
-
+            
             if not os.path.isfile(fpath):
                 continue
-
+                
             try:
                 stat = os.stat(fpath)
                 size = stat.st_size
                 mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-
+                
                 file_info = {
                     "name": fname,
                     "size": size,
@@ -7218,7 +7119,7 @@ def server(input, output, session):
                     "modified": mtime,
                     "type": "unknown"
                 }
-
+                
                 # Categorize file
                 if fname.endswith(".csv"):
                     file_info["type"] = "csv"
@@ -7228,7 +7129,7 @@ def server(input, output, session):
                         with open(fpath, 'rb') as f:
                             lines = sum(1 for _ in f)
                         file_info["rows"] = lines
-                    except Exception:
+                    except (OSError, UnicodeDecodeError):
                         file_info["rows"] = "?"
                 elif fname.endswith(".out"):
                     file_info["type"] = "output"
@@ -7239,12 +7140,12 @@ def server(input, output, session):
                 elif fname.endswith(".bin"):
                     file_info["type"] = "binary"
                     summary["bin_files"] += 1
-
+                
                 summary["files"].append(file_info)
                 summary["total_size"] += size
             except Exception as e:
                 logger.warning(f"Error analyzing file {fname}: {e}")
-
+        
         # Sort files by type then name
         summary["files"].sort(key=lambda x: (x["type"], x["name"]))
         summary["total_size_str"] = f"{summary['total_size'] / (1024*1024):.2f} MB"
@@ -7270,11 +7171,11 @@ def server(input, output, session):
                             logger.warning(f"Output folder '{config_output}' from INPUT.txt not found, using OUTPUTS")
             except Exception as e:
                 logger.warning(f"Could not read output folder from INPUT.txt: {e}")
-
+            
             # Fall back to OUTPUTS if no config or folder not found
             if default_dir not in dirs:
                 default_dir = "OUTPUTS" if "OUTPUTS" in dirs else list(dirs.keys())[0]
-
+            
             ui.update_select("output_dir_select", choices=dirs, selected=default_dir)
             # Also update Model Config output directory
             ui.update_select("sim_output_dir", choices=dirs, selected=default_dir)
@@ -7317,32 +7218,32 @@ def server(input, output, session):
         """Display preview info about the selected output file"""
         dir_name = input.output_dir_select()
         file_name = input.plot_output_file()
-
+        
         if not dir_name or not file_name:
             return ui.div(ui.tags.em("Select a file to preview", class_="text-muted"))
-
+        
         # Build file path
         if dir_name == "ROOT":
             file_path = os.path.join(ROOT, file_name)
         else:
             file_path = os.path.join(ROOT, dir_name, file_name)
-
+        
         if not os.path.exists(file_path):
             return ui.div(ui.tags.em(f"File not found: {file_name}", class_="text-danger"))
-
+        
         try:
             # Get file stats
             stat = os.stat(file_path)
             mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
             size = stat.st_size
             size_str = f"{size / 1024:.1f} KB" if size < 1024*1024 else f"{size / (1024*1024):.2f} MB"
-
+            
             # Detect file format and read metadata
             file_ext = os.path.splitext(file_path)[1].lower()
             num_vars = 0
             num_rows = 0
             time_range = ""
-
+            
             if file_ext == '.bin':
                 # Binary file - calculate from file size
                 num_cols = 37  # PELAGIC_BOX binary format
@@ -7356,13 +7257,12 @@ def server(input, output, session):
                     if len(data) >= num_cols:
                         first_time = data[0]
                         last_time = data[-num_cols]
-                        from datetime import datetime as dt
-                        from datetime import timedelta
+                        from datetime import datetime as dt, timedelta
                         ref_date = dt(1997, 1, 1)
                         start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
                         end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
                         time_range = f"{start_date} to {end_date}"
-                except Exception:
+                except (OSError, ValueError, IndexError):
                     pass
             elif file_ext == '.csv':
                 # CSV file
@@ -7383,13 +7283,12 @@ def server(input, output, session):
                     df_full = pd.read_csv(file_path, sep=r'\s+', usecols=[0])
                     first_time = df_full.iloc[0, 0]
                     last_time = df_full.iloc[-1, 0]
-                    from datetime import datetime as dt
-                    from datetime import timedelta
+                    from datetime import datetime as dt, timedelta
                     ref_date = dt(1997, 1, 1)
                     start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
                     end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
                     time_range = f"{start_date} to {end_date}"
-                except Exception:
+                except (OSError, ValueError, IndexError, KeyError):
                     pass
 
             # Build preview display
@@ -7399,14 +7298,14 @@ def server(input, output, session):
                 ui.tags.p(ui.tags.strong("📈 Data points: "), f"{num_rows:,}"),
                 ui.tags.p(ui.tags.strong("💾 Size: "), size_str),
             ]
-
+            
             if time_range:
                 items.append(ui.tags.p(ui.tags.strong("📅 Period: "), time_range))
-
+            
             items.append(ui.tags.p(ui.tags.strong("🕐 Modified: "), mtime))
-
+            
             return ui.div(*items)
-
+            
         except Exception as e:
             logger.warning(f"Error previewing file {file_path}: {e}")
             return ui.div(ui.tags.em(f"Error reading file: {str(e)}", class_="text-danger"))
@@ -7418,15 +7317,15 @@ def server(input, output, session):
         dir_name = input.output_dir_select()
         if not dir_name:
             return ui.div(ui.tags.em("Select a directory and click 'Analyze Directory'", class_="text-muted"))
-
+        
         summary = analyze_output_directory(dir_name)
-
+        
         if "error" in summary:
             return ui.div(ui.tags.span(summary["error"], class_="text-danger"))
-
+        
         if not summary["files"]:
             return ui.div(ui.tags.em("No files found in directory", class_="text-muted"))
-
+        
         # Build summary cards
         stats_row = ui.layout_columns(
             ui.value_box(
@@ -7451,7 +7350,7 @@ def server(input, output, session):
             ),
             col_widths=[3, 3, 3, 3]
         )
-
+        
         # Build file table
         table_rows = []
         for f in summary["files"]:
@@ -7462,7 +7361,7 @@ def server(input, output, session):
                 "binary": ("BIN", "bg-secondary"),
                 "unknown": ("?", "bg-light text-dark"),
             }.get(f["type"], ("?", "bg-light"))
-
+            
             row_content = [
                 ui.tags.td(ui.tags.span(type_badge[0], class_=f"badge {type_badge[1]}")),
                 ui.tags.td(f["name"]),
@@ -7473,9 +7372,9 @@ def server(input, output, session):
                 row_content.append(ui.tags.td(str(f["rows"]) + " rows"))
             else:
                 row_content.append(ui.tags.td("-"))
-
+            
             table_rows.append(ui.tags.tr(*row_content))
-
+        
         file_table = ui.tags.table(
             ui.tags.thead(
                 ui.tags.tr(
@@ -7489,7 +7388,7 @@ def server(input, output, session):
             ui.tags.tbody(*table_rows),
             class_="table table-sm table-striped"
         )
-
+        
         return ui.div(
             stats_row,
             ui.tags.hr(),
@@ -7499,27 +7398,27 @@ def server(input, output, session):
     # ========== PLOT OUTPUT FILE SELECTION ==========
     def get_output_files_from_dir(dir_name, file_format="text"):
         """Get list of output files from the selected directory based on format.
-
+        
         Args:
             dir_name: Directory name (relative to ROOT) or "ROOT"
             file_format: 'text' for .out, 'binary' for .bin, 'csv' for .csv
-
+            
         Returns:
             dict: {filename: display_name} for UI choices
         """
         files = {}
-
+        
         if not dir_name:
             return files
-
+        
         if dir_name == "ROOT":
             dir_path = ROOT
         else:
             dir_path = os.path.join(ROOT, dir_name)
-
+        
         if not os.path.isdir(dir_path):
             return files
-
+        
         # Determine file extensions based on format
         if file_format == "binary":
             extensions = [".bin"]
@@ -7537,17 +7436,17 @@ def server(input, output, session):
             for f in os.listdir(dir_path):
                 if f.endswith(".out") and "PELAGIC_BOX" in f and os.path.isfile(os.path.join(dir_path, f)):
                     files[f] = f
-
+        
         return files
 
     def get_selected_output_file_path():
         """Get full path to selected output file"""
         dir_name = input.output_dir_select()
         file_name = input.plot_output_file()
-
+        
         if not dir_name or not file_name:
             return None
-
+        
         if dir_name == "ROOT":
             return os.path.join(ROOT, file_name)
         else:
@@ -7559,14 +7458,14 @@ def server(input, output, session):
         dir_name = input.output_dir_select()
         file_format = input.output_format() if hasattr(input, 'output_format') else "text"
         files = get_output_files_from_dir(dir_name, file_format)
-
+        
         # Select first file by default
         selected = None
         if "OUTPUT.csv" in files:
             selected = "OUTPUT.csv"
         elif files:
             selected = list(files.keys())[0]
-
+        
         ui.update_select("plot_output_file", choices=files, selected=selected)
 
     @reactive.effect
@@ -7584,21 +7483,21 @@ def server(input, output, session):
     def plot_output_file_info():
         """Display info about selected output file"""
         file_path = get_selected_output_file_path()
-
+        
         if not file_path or not os.path.exists(file_path):
             return ui.div(ui.tags.small("No file selected", class_="text-muted"))
-
+        
         try:
             stat = os.stat(file_path)
             size = stat.st_size
             mtime = datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M')
-
+            
             # Count lines
             with open(file_path, 'rb') as f:
                 lines = sum(1 for _ in f)
-
+            
             size_str = f"{size / 1024:.1f} KB" if size < 1024*1024 else f"{size / (1024*1024):.2f} MB"
-
+            
             return ui.div(
                 ui.tags.small(f"📄 {size_str} | {lines:,} rows | {mtime}", class_="text-muted")
             )
@@ -7612,26 +7511,26 @@ def server(input, output, session):
         # Explicitly read inputs to establish reactive dependency
         dir_name = input.output_dir_select()
         file_name = input.plot_output_file()
-
+        
         if not dir_name or not file_name:
             ui.update_selectize("left_vars", choices=[], selected=[])
             ui.update_selectize("right_vars", choices=[], selected=[])
             return
-
+            
         if dir_name == "ROOT":
             file_path = os.path.join(ROOT, file_name)
         else:
             file_path = os.path.join(ROOT, dir_name, file_name)
-
+        
         if not os.path.exists(file_path):
             ui.update_selectize("left_vars", choices=[], selected=[])
             ui.update_selectize("right_vars", choices=[], selected=[])
             return
-
+        
         try:
             # Detect file format from extension and use appropriate separator
             file_ext = os.path.splitext(file_path)[1].lower()
-
+            
             if file_ext == '.csv':
                 # CSV files use comma separator
                 df = pd.read_csv(file_path, comment='#', nrows=5)
@@ -7653,17 +7552,17 @@ def server(input, output, session):
                     df = pd.read_csv(file_path, sep=r'\s+', comment='#', nrows=5)
                     if len(df.columns) <= 1:
                         df = pd.read_csv(file_path, comment='#', nrows=5)
-                except Exception:
+                except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError):
                     df = pd.read_csv(file_path, comment='#', nrows=5)
-
+            
             df.columns = [c.strip() for c in df.columns]
-
+            
             # Filter out time columns
             cols = [c for c in df.columns if c.lower() not in ['time', 'time_days', 'date', 'datetime', 'julian_day']]
-
+            
             # Create grouped choices with descriptive names
             grouped_choices = get_grouped_variable_choices(cols)
-
+            
             # Pass grouped choices directly (Shiny supports nested dicts for groups)
             ui.update_selectize("left_vars", choices=grouped_choices, selected=[])
             ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
@@ -7758,11 +7657,11 @@ def server(input, output, session):
         try:
             # Read the timeseries file
             # Skip header lines (lines starting with #)
-            with open(filepath) as f:
+            with open(filepath, 'r') as f:
                 lines = f.readlines()
 
             # Find data start - look for the column header line "# TIME" and start after it
-            # The data format has headers with comments, then "# TIME TEMP1 TEMP2 ..."
+            # The data format has headers with comments, then "# TIME TEMP1 TEMP2 ..." 
             # followed by actual data rows
             data_start = 0
             for i, line in enumerate(lines):
@@ -7772,7 +7671,7 @@ def server(input, output, session):
                     # Data starts on the next line
                     data_start = i + 1
                     # Don't break - keep looking for the LAST such header
-
+            
             # If no TIME header found, fall back to finding first data line
             if data_start == 0:
                 for i, line in enumerate(lines):
@@ -7789,7 +7688,7 @@ def server(input, output, session):
                                 continue
 
             logger.debug(f"Input timeseries data starts at line {data_start}")
-
+            
             # Read as DataFrame
             df = pd.read_csv(filepath, skiprows=data_start, sep=r'\s+', header=None)
 
@@ -7864,7 +7763,7 @@ def server(input, output, session):
         if not selected_file:
             logger.warning("No output file selected")
             return None
-
+        
         file_format = input.output_format() if hasattr(input, 'output_format') else None
         logger.info(f"Plotting from: {selected_file} (format: {file_format})")
 
@@ -7989,10 +7888,10 @@ def server(input, output, session):
         logger.info(f"Plot generated successfully with {trace_count} traces")
         return go.FigureWidget(fig)
 
-    # === FOLIUM MAP RENDER ===
-    @render.ui
+    # === IPYLEAFLET MAP RENDER ===
+    @render_widget
     def pydeck_map():
-        """Render an interactive folium map with sample data points."""
+        """Render an interactive ipyleaflet map with sample data points."""
         # Sample data points for demonstration (Curonian Lagoon area)
         stations = [
             {'lat': 55.5, 'lon': 21.0, 'name': 'Station 1', 'value': 10},
@@ -8003,38 +7902,38 @@ def server(input, output, session):
             {'lat': 55.52, 'lon': 21.08, 'name': 'Station 6', 'value': 18},
             {'lat': 55.48, 'lon': 20.92, 'name': 'Station 7', 'value': 22},
         ]
-
+        
         # Get user inputs
         center_lat = input.map_lat() or 55.5
         center_lon = input.map_lon() or 21.0
         zoom = input.map_zoom() or 8
         map_style = input.map_style() or "OpenStreetMap.Mapnik"
         point_radius = input.map_point_radius() or 1000
-
-        # Map style to folium tile names
-        tile_map = {
-            "OpenStreetMap.Mapnik": "OpenStreetMap",
-            "CartoDB.Positron": "CartoDB positron",
-            "CartoDB.DarkMatter": "CartoDB dark_matter",
-        }
-        tiles = tile_map.get(map_style, "OpenStreetMap")
-
-        # Create folium map
-        m = folium.Map(
-            location=[center_lat, center_lon],
-            zoom_start=zoom,
-            tiles=tiles,
-            height=600,
+        
+        # Get basemap from ipyleaflet basemaps
+        basemap_parts = map_style.split('.')
+        if len(basemap_parts) == 2:
+            basemap = getattr(getattr(L.basemaps, basemap_parts[0], L.basemaps.OpenStreetMap), basemap_parts[1], L.basemaps.OpenStreetMap.Mapnik)
+        else:
+            basemap = getattr(L.basemaps, map_style, L.basemaps.OpenStreetMap.Mapnik)
+        
+        # Create the ipyleaflet map
+        m = L.Map(
+            center=(center_lat, center_lon),
+            zoom=zoom,
+            basemap=basemap,
+            layout={'height': '600px'}
         )
-
+        
         # Add markers for each station
         for station in stations:
             # Color based on value (gradient from green to red)
-            value_normalized = station['value'] / 30.0
+            value_normalized = station['value'] / 30.0  # Normalize to 0-1
             r = int(200 * value_normalized)
             g = int(200 * (1 - value_normalized))
             color = f'#{r:02x}{g:02x}50'
-
+            
+            # Create popup content
             popup_html = f"""
             <div style="font-family: Arial, sans-serif;">
                 <h4 style="margin: 0 0 10px 0; color: steelblue;">{station['name']}</h4>
@@ -8045,21 +7944,25 @@ def server(input, output, session):
                 </table>
             </div>
             """
-
-            folium.CircleMarker(
-                location=[station['lat'], station['lon']],
-                radius=point_radius / 100,
+            
+            # Add circle marker
+            circle = L.CircleMarker(
+                location=(station['lat'], station['lon']),
+                radius=point_radius / 100,  # Scale down for leaflet
                 color=color,
-                fill=True,
                 fill_color=color,
                 fill_opacity=0.7,
-                weight=2,
-                popup=folium.Popup(popup_html, max_width=250),
-            ).add_to(m)
-
-        # Return map as HTML in an iframe
-        map_html = m._repr_html_()
-        return ui.HTML(map_html)
+                weight=2
+            )
+            circle.popup = HTML(popup_html)
+            m.add_layer(circle)
+        
+        # Add layer control
+        m.add_control(L.LayersControl(position='topright'))
+        m.add_control(L.FullScreenControl())
+        m.add_control(L.ScaleControl(position='bottomleft'))
+        
+        return m
 
     @render.ui
     def map_info():
@@ -8080,7 +7983,7 @@ def server(input, output, session):
                 )
             ),
             ui.tags.p(
-                ui.tags.em("Map powered by folium with free OpenStreetMap tiles."),
+                ui.tags.em("Map powered by ipyleaflet with free OpenStreetMap tiles."),
                 class_="text-muted"
             ),
             class_="small"
@@ -8104,6 +8007,6 @@ if __name__ == '__main__':
     print("=" * 60)
     print("To run this app, use one of these commands:")
     print(f"  shiny run --reload {__file__}")
-    print("  shiny run --reload shiny_app.app:app")
-    print("  shiny run --reload --port 8000 shiny_app.app:app")
+    print(f"  shiny run --reload shiny_app.app:app")
+    print(f"  shiny run --reload --port 8000 shiny_app.app:app")
     print("=" * 60)
