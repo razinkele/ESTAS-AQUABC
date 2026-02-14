@@ -19,14 +19,14 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install ruff pytest
+          pip install ruff pytest pytest-cov
           pip install shiny pandas plotly shinywidgets python-dotenv
 
       - name: Lint with ruff (tests only, shiny_app is WIP)
         run: ruff check tests/python/
 
       - name: Run Python tests
-        run: pytest tests/python/ -v
+        run: pytest tests/python/ -v --cov=shiny_app --cov-report=term-missing --cov-report=xml
 
   build-and-run:
     runs-on: ubuntu-latest
