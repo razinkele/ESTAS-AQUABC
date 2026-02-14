@@ -1308,6 +1308,7 @@ contains
                 RGasConstant, TB, TF, TS, TempK, RT, logTempK, Pbar, TempK100, lnK0, K0, KS, &
                 fH, K1, K2, KW, KB, KF, KP1, KP2, KP3, KSi, &
                 FugFac, VPFac)
+        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
         implicit none
 
         ! Argument list
@@ -1688,10 +1689,10 @@ contains
             ! these are only for sals 33 to 36 and are on the NBS scale
 
             ! this is on the NBS scale convert to SWS scale
-            KP2 = exp(-9.039D0 - (1450D0 / TempK)) / fH
+            KP2 = safe_exp(-9.039D0 - (1450D0 / TempK)) / fH
 
             ! this is on the NBS scale convert to SWS scale
-            KP3 = exp(4.466D0 - (7276D0 / TempK)) / fH
+            KP3 = safe_exp(4.466D0 - (7276D0 / TempK)) / fH
 
             ! Sillen, Martell, and Bjerrum,  Stability Constants of metal-ion complexes,
             ! The Chemical Society (London), Special Publ. 17:751, 1964:
@@ -2437,7 +2438,7 @@ contains
 
         ! For a mixture of CO2 and air at 1 atm (at low CO2 concentrations)
         P1atm = 1.01325D0 ! in bar
-        FugFac = exp((b + 2 * Delta) * P1atm / RT)
+        FugFac = safe_exp((b + 2 * Delta) * P1atm / RT)
 
         where((WhichKs==6).or.(WhichKs==7))
             FugFac = 1.0D0
@@ -2463,7 +2464,7 @@ contains
         !       This is in atmospheres.
 
         if(.not.(allocated(VPWP))) allocate(VPWP(ntps))
-        VPWP = exp(24.4543D0 - 67.4509D0 * (100.0D0 / TempK) - 4.8489D0 * log(TempK / 100.0D0))
+        VPWP = safe_exp(24.4543D0 - 67.4509D0 * (100.0D0 / TempK) - 4.8489D0 * log(TempK / 100.0D0))
 
         if(.not.(allocated(VPCorrWP))) allocate(VPCorrWP(ntps))
         VPCorrWP = exp(-0.000544D0 * Sal)
@@ -4392,6 +4393,7 @@ contains
                 RGasConstant, TB, TF, TS, TempK, RT, logTempK, Pbar, TempK100, lnK0, K0, KS, &
                 fH, K1, K2, KW, KB, KF, KP1, KP2, KP3, KSi, &
                 FugFac, VPFac)
+        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
         implicit none
 
         ! '***********************************************************************
@@ -4535,7 +4537,7 @@ contains
             deltaVKCa = -48.76D0  + 0.5304D0 * TempC
             KappaKCa  = (-11.76D0 + 0.3692D0 * TempC) / 1000.0D0
             lnKCafac  = (-deltaVKCa + 0.5D0 * KappaKCa * Pbar) * Pbar /RT
-            KCa       = KCa * exp(lnKCafac)
+            KCa       = KCa * safe_exp(lnKCafac)
 
             ! PressureCorrectionForAragonite:
             ! '       Millero, Geochemica et Cosmochemica Acta 43:1651-1661, 1979,
@@ -4544,7 +4546,7 @@ contains
             deltaVKAr = deltaVKCa + 2.8D0
             KappaKAr  = KappaKCa
             lnKArfac  = (-deltaVKAr + 0.5D0 * KappaKAr * Pbar) * Pbar / RT
-            KAr       = KAr * exp(lnKArfac)
+            KAr       = KAr * safe_exp(lnKArfac)
         end where
 
         where((WhichKs.eq.6).or.(WhichKs.eq.7))
@@ -4577,8 +4579,8 @@ contains
             ! but their paper is not even on this topic).
             ! The fits appears to be new in the GEOSECS report.
             ! I can't find them anywhere else.
-            KCa = KCa * exp((36D0   - 0.2D0  * TempC) * Pbar / RT)
-            KAr = KAr * exp((33.3D0 - 0.22D0 * TempC) * Pbar / RT)
+            KCa = KCa * safe_exp((36D0   - 0.2D0  * TempC) * Pbar / RT)
+            KAr = KAr * safe_exp((33.3D0 - 0.22D0 * TempC) * Pbar / RT)
         end where
 
         ! CalculateOmegasHere:
