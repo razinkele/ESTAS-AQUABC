@@ -478,14 +478,14 @@ export OMP_PLACES=cores
 - [x] 3.4 Pin GitHub Actions to SHA — **Done** (5 action references pinned)
 - [x] 3.5 CI dependency caching — **Done** (pip cache enabled)
 
-### Sprint 3 — Code Quality (3–5 days)
-- [ ] 2.3 Deduplicate build/rebuild logic
-- [ ] 2.5 Unit tests for business logic
-- [ ] 3.2 Integration tests in CI
-- [ ] 3.6 Pre-commit hooks
-- [ ] 4.1 OpenMP benchmarking
+### Sprint 3 — Code Quality (3–5 days) --- COMPLETED 2026-02-14
+- [x] 2.3 Deduplicate build/rebuild logic — **Done** (extracted _execute_build_process helper, -110 duplicated lines)
+- [x] 2.5 Unit tests for business logic — **Done** (4 functions extracted to utils.py, 28 tests added, 65 total)
+- [x] 3.2 Integration tests in CI — **Done** (Playwright job added, 19 tests)
+- [x] 3.6 Pre-commit hooks — **Done** (ruff + file hygiene hooks configured)
 
 ### Sprint 4 — Architecture (1–2 weeks)
+- [ ] 4.1 OpenMP benchmarking
 - [ ] 2.1 Modularize app.py
 - [ ] 1.6 Decompose mega-subroutine
 - [ ] 5.1 Expand Fortran test coverage
