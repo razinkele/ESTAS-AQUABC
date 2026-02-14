@@ -650,6 +650,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
                         FE_III_DISS      = FE_III
                         MULT_FE_III_DISS = 1.0D0
                         MULT_FE_III_PART = 0.0D0
+                    elsewhere(FE_III .lt. 1.0D-20)
+                        ! Guard against division by zero when total Fe3+ is depleted
+                        FE_III_DISS      = 0.0D0
+                        MULT_FE_III_DISS = 1.0D0
+                        MULT_FE_III_PART = 0.0D0
                     elsewhere
                         MULT_FE_III_DISS = FE_III_DISS_EQ / FE_III
                         MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS

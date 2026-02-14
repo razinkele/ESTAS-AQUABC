@@ -78,18 +78,36 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 
 ---
 
-### 1.5 [P1] Remaining Division-by-Zero Risks in Pelagic Model
+### 1.5 [P1] Remaining Division-by-Zero Risks in Pelagic Model --- COMPLETED 2026-02-14
 
 **File:** `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90`
 
-**Problem:** A handful of divisions were missed in the earlier hardening pass:
-- `DIA_C / PHYT_TOT_C` and similar phytoplankton fraction calculations where `PHYT_TOT_C` could be zero
-- `FE_II / (FE_II + FE_III)` dissolved iron fractions
-- Any division by biomass quantities that could reach zero during die-off events
+**Audit complete.** Systematic review of all ~80 division operations in `AQUABC_PELAGIC_KINETICS`. One missing guard was found and fixed:
 
-**Fix:** Audit all `/` operations in the kinetics subroutine, add `max(divisor, 1.0D-20)` guards where needed.
+**Fix applied:** Added `elsewhere(FE_III .lt. 1.0D-20)` guard to the Fe3+ first-timestep initialization (case 1), matching the existing Fe2+ pattern. All other divisions confirmed safe:
 
-**Effort:** ~1 hour
+| Category | Count | Protection |
+|----------|-------|------------|
+| Constant divisors (molar masses, unit conversions) | ~20 | `S_MOLAR_MASS_MG`, `FE_MOLAR_MASS_MG`, `12000.0D0`, `14007.0D0`, `30974.0D0`, `14.D0`, `31.D0`, `28.0855D0`, `30.9737D0`, `1.0D4`, `1.0D6` |
+| C-to-CHLA ratios | 5 | `DIA_C_TO_CHLA`, `CYN_C_TO_CHLA`, etc. (model constants, always > 0) |
+| Monod/half-saturation kinetics | ~30 | Form `X / (X + K_HS)` where K_HS > 0, so denominator > 0 |
+| Fe2+ fractions (first timestep + subsequent) | 2 | `where(FE_II .lt. 1.0D-20)` guard |
+| Fe3+ fractions (subsequent timestep) | 1 | `where(FE_III .lt. 1.0D-20)` guard |
+| Fe3+ fractions (first timestep) | 1 | **Fixed:** added `elsewhere(FE_III .lt. 1.0D-20)` guard |
+| Mn2+ fractions | 1 | `where(MN_II .lt. 1.0D-20)` guard |
+| Saved outputs (FE_II, FE_III) | 2 | `where(FE_II/FE_III .lt. 1.0D-20)` guard |
+| H2S speciation | 2 | `H2S_DIVISOR = H+ ^2 + H+*K1 + K1*K2` (sum of positive terms, always > 0 for valid pH) |
+| Phosphate speciation | 3 | `FRACTION_DIVISOR_TIP = H+^3 + K1*H+^2 + K1*K2*H+ + K1*K2*K3` (sum of positive terms) |
+| Temperature-dependent constants | ~6 | `T_A = TEMP + 273.15` (always > 0 for liquid water) |
+| Zoo/detritus N:C and P:C | 4 | `max(divisor, MIN_CONCENTRATION)` guard |
+| NH4 preference fractions | 2 | `max(denominator, 1.0D-10)` guard |
+| N:P molar ratio | 1 | `where(PO4_P .lt. 1.0D-10)` conditional guard |
+| FRAC_NH3 | 1 | `1.0 / (1.0 + 10^(...))` — denominator always >= 1.0 |
+| FRAC_FIX_N_FOR_GR_VEG_HET | 2 | Model constant (default 0.65, user-provided, must be > 0) |
+| Rate limiters (allowed_rate/total_removal) | 1 | Guarded by `if (total_removal > allowed_rate)` |
+| OpenMP chunk_size | 1 | Integer division `(nkn + nthreads - 1) / nthreads`, always > 0 |
+
+**Effort:** ~1 hour (as estimated)
 
 ---
 
@@ -455,7 +473,7 @@ export OMP_PLACES=cores
 
 ### Sprint 2 — Numerical Safety & CI (2–3 days)
 - [ ] 1.4 CO2SYS safe_exp
-- [ ] 1.5 Remaining division-by-zero audit
+- [x] 1.5 Remaining division-by-zero audit — **Audit complete** (2026-02-14). All ~80 divisions in pelagic_model.f90 confirmed safe: iron/Mn use conditional guards, zoo/det use max(), Monod kinetics are mathematically safe, CHLA divides by constants only. One missing Fe3+ first-timestep guard added.
 - [ ] 3.3 Python code coverage
 - [ ] 3.4 Pin GitHub Actions to SHA
 - [ ] 3.5 CI dependency caching
