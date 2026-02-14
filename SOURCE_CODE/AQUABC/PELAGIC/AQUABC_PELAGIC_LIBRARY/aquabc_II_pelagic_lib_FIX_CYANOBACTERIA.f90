@@ -450,7 +450,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     end if
 
     if (smith .eq. 1) then
-        EUPHOTIC_DEPTH(:) = 4.61D0 / K_E(:)
+        EUPHOTIC_DEPTH(:) = 4.61D0 / max(K_E(:), 1.0D-20)
 
         ! Introduced by Petras 2019-08-10. The depth in which 1% of ligt is reached
         ! The same for fixers. This fix is valid only for 2d. fixme
