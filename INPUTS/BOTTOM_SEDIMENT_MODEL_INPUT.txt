@@ -41,9 +41,9 @@
          1
 # ADVECTIVE_VELOCITY (m/day)
     0.0000000001
-# PART_MIXING_COEFFS_OPTIONS  (Now inactive, different options will be implemented in the future)
+# PART_MIXING_COEFFS_OPTIONS  (Surface Db0, used with depth/O2/seasonal attenuation)
          1
-# PART_MIXING_COEFFS (m^2/day)
+# PART_MIXING_COEFFS (m^2/day) - Surface biodiffusion coefficient Db0
  0.0000264
 # SED_BURRIALS_OPTIONS        (Now inactive, different options will be implemented in the future)
          1

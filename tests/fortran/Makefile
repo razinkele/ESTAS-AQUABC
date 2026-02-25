@@ -19,11 +19,12 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
 PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
+SEDIMENT_SRC = $(AQUABC_SRC)/SEDIMENTS
 
 # Source dependencies for each test
 DO_SAT_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DO_SATURATION.f90
@@ -261,6 +262,12 @@ test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_NOSTACALES.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_nostocales.f90 *.o
+
+# Compile test_bioturbation
+test_bioturbation: test_bioturbation.f90 $(SEDIMENT_SRC)/aquabc_II_sediment_bioturbation.f90
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
+	$(FC) $(FFLAGS) -c $(SEDIMENT_SRC)/aquabc_II_sediment_bioturbation.f90
+	$(FC) $(FFLAGS) -o $@ test_bioturbation.f90 *.o
 
 # Run all tests
 .PHONY: test

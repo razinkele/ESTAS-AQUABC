@@ -1,0 +1,29 @@
+# DESCRIPTION LINE 1
+# DEBUG RUN - Short window around first negative mass
+# DESCRIPTION LINE 3
+# DESCRIPTION LINE 4
+# DESCRIPTION LINE 5
+# BASE_YEAR
+           1998
+# SIMULATION_START
+         6209.0
+# SIMULATION_END
+         6211.0
+# NUM_REPEATS
+              1
+# TIME_STEPS_PER_DAY
+            240
+# PRINT_INTERVAL IN TIME STEPS
+             10
+# PELAGIC MODEL INPUT FOLDER write the folder always "\" (windows) or "/" (UNIX) in the end
+INPUTS/
+# PELAGIC MODEL INPUT FILE
+            PELAGIC_INPUTS.txt
+# PELAGIC MODEL OUTPUT FOLDER write the folder always "\" (windows) or "/" (UNIX) in the end
+OUTPUTS_gf_debug/
+# RESUSPENSION_OPTION
+          0
+# MODEL_SEDIMENTS (2 = full coupled sediment model)
+          2
+# BOTTOM SEDIMENT MODEL INPUT FILE
+BOTTOM_SEDIMENT_MODEL_INPUT.txt

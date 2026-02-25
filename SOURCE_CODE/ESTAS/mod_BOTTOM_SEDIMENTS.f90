@@ -10,6 +10,7 @@ contains
     subroutine INIT_BSED_MODEL_CONSTANTS
         use GLOBAL
         use AQUABC_BSED_MODEL_CONSTANTS
+        use para_aqua, only: para_insert_value
         implicit none
 
         ! AQUABC_II BS model constants
@@ -185,6 +186,11 @@ contains
         SED_k_DISS_FE_III_20         = SED_MODEL_CONSTANTS(168)
         SED_THETA_k_DISS_FE_III      = SED_MODEL_CONSTANTS(169)
         SED_INIT_MULT_FE_III_DISS    = SED_MODEL_CONSTANTS(170)
+
+        ! Register isedi parameter for sediment transport mode selection.
+        ! In ESTAS (without SHYFEM sediment transport), isedi must be 0
+        ! to use prescribed fluxes/settling rather than erosion/deposition.
+        call para_insert_value('isedi', 0.0D0)
 
     end subroutine INIT_BSED_MODEL_CONSTANTS
 

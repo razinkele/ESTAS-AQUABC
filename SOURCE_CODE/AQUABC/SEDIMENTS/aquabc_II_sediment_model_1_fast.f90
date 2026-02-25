@@ -76,6 +76,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     use AQUABC_II_GLOBAL
     use AQUABC_BSED_MODEL_CONSTANTS
     use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG
+    use AQUABC_SEDIMENT_BIOTURBATION
     use GLOBAL, only: SED_VARS_CHECK => NUM_SED_VARS, &
                       SED_CONSTS_CHECK => NUM_SED_CONSTS, &
                       SED_OUTPUTS_CHECK => NUM_SED_OUTPUTS
@@ -301,6 +302,18 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
     INTEGER switch_erosion    ! for new version
     INTEGER switch_deposition ! for new version
+    INTEGER switch_bioirrigation ! bioirrigation enhancement for solute diffusion
+
+    ! Bioturbation parameters
+    real(kind = DBL_PREC) :: BIOTURB_DB0             ! Surface biodiffusion coeff (m^2/day)
+    real(kind = DBL_PREC) :: BIOTURB_Z_MIX           ! Characteristic mixing depth (m)
+    real(kind = DBL_PREC) :: BIOTURB_KHS_O2          ! Half-sat O2 for bioturbation (g/m^3)
+    real(kind = DBL_PREC) :: BIOTURB_SEASONAL_AMP    ! Seasonal amplitude (0-0.9)
+    real(kind = DBL_PREC) :: BIOTURB_DAY_PEAK        ! Day of peak activity (1-365)
+    real(kind = DBL_PREC) :: BIOIRR_ALPHA0           ! Max bioirrigation enhancement
+    real(kind = DBL_PREC) :: BIOIRR_Z_IRR            ! Bioirrigation depth scale (m)
+    real(kind = DBL_PREC) :: BIOTURB_DAY_OF_YEAR     ! Current day of year
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: IRRIG_FACTORS  ! Bioirrigation multipliers
 
 
     !27 September 2014
@@ -600,12 +613,13 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     !     1 - is calculated
     switch_kinetics   = 1
     switch_burial     = 1
-    switch_partmixing = 0
+    switch_partmixing = 1
     switch_diffusion  = 1
     switch_advection  = 0
     switch_settling   = 1 ! for old version, when sedtrans not used
     switch_erosion    = 1 ! for new version
     switch_deposition = 1 ! for new version
+    switch_bioirrigation = 1 ! bioirrigation on by default
 
     CONSIDER_ALKALNITY_DERIVATIVE = 1
     CONSIDER_INORG_C_DERIVATIVE   = 1
@@ -618,6 +632,20 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
     ! Multiplier for diffusion rate for the first layer (used reverse for negative)
     DIFF_DRAG = 6.0D0 !fixme
+
+    ! ---- Bioturbation parameters (defaults, can be overridden from input) ----
+    ! Db0: Surface biodiffusion coefficient from input PART_MIXING_COEFFS
+    ! Use the first value of PART_MIXING_COEFFS as the surface Db0
+    BIOTURB_DB0          = PART_MIXING_COEFFS(1, 1, 1)  ! m^2/day (from input)
+    BIOTURB_Z_MIX        = 0.05D0    ! 5 cm characteristic mixing depth
+    BIOTURB_KHS_O2       = 2.0D0     ! 2 mg/L half-saturation O2
+    BIOTURB_SEASONAL_AMP = 0.3D0     ! +/- 30% seasonal variation
+    BIOTURB_DAY_PEAK     = 200.0D0   ! mid-July peak activity
+    BIOIRR_ALPHA0        = 3.0D0     ! max 4x irrigation enhancement at surface
+    BIOIRR_Z_IRR         = 0.04D0    ! 4 cm irrigation depth scale
+    ! Compute day-of-year from simulation time (PSTIME is in days)
+    BIOTURB_DAY_OF_YEAR  = mod(PSTIME, 365.0D0) + 1.0D0
+    ! ---- End bioturbation parameters ----
 
 
     !INITIALIZATIONS
@@ -690,8 +718,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     PROCESSES_sed(1:nkn,1:NUM_SED_LAYERS, 1:NUM_SED_VARS, 1:NDIAGVAR_sed) = 0.0D+0
 
     PART_MIXING_RATES(1:nkn,1:NUM_SED_LAYERS, 1:NUM_SED_VARS) = 0.0D0
-                                       ! Made zero in order not to have particle mixing
-                                       ! It is also cancelled by switch. fixme
+
+    ! Initialize bioirrigation factors to 1.0 (no enhancement)
+    IRRIG_FACTORS(1:nkn,1:NUM_SED_LAYERS) = 1.0D0
 
     !END OF INITIALIZATIONS
 
@@ -1522,6 +1551,21 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
         !++++++++++++++++++++++++++PREPARATION FOR CALCULATION DERIVATIVES++++++++++++++++++++++++++++++++++
 
+        ! --- Update bioturbation coefficients dynamically ---
+        ! Recompute PART_MIXING_COEFFS with depth, O2, and seasonal dependence
+        ! using the current intermediate dissolved oxygen (variable 8).
+        if (switch_partmixing .ne. 0) then
+            call APPLY_BIOTURBATION_COEFFS( &
+                nkn, NUM_SED_LAYERS, NUM_SED_VARS,            &
+                BIOTURB_DB0, BIOTURB_Z_MIX, BIOTURB_KHS_O2,  &
+                BIOIRR_ALPHA0, BIOIRR_Z_IRR,                  &
+                BIOTURB_SEASONAL_AMP, BIOTURB_DAY_PEAK,       &
+                SED_DEPTHS, INTERMED_RESULTS(:,:,8),           &
+                BIOTURB_DAY_OF_YEAR,                           &
+                PART_MIXING_COEFFS, IRRIG_FACTORS)
+        end if
+        ! --- End update bioturbation coefficients ---
+
         do i=1,NUM_SED_LAYERS
             do j = 1, NUM_SIMULATED_SED_VARS
 
@@ -1648,6 +1692,16 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                             where (SED_DIFFUSION_RATES(:,1, j) .lt. 0.D0) &
                                 SED_DIFFUSION_RATES(:,i, j) = (1.D0/DIFF_DRAG) * SED_DIFFUSION_RATES(:,i, j)
                         end if
+
+                        ! Apply bioirrigation enhancement for solute species
+                        ! Bioirrigation enhances porewater exchange for dissolved species
+                        if (switch_bioirrigation .ne. 0) then
+                            if (IN_WHICH_PHASE(j) .eq. 0 .or. IN_WHICH_PHASE(j) .eq. 2) then
+                                SED_DIFFUSION_RATES(:,i, j) = &
+                                    SED_DIFFUSION_RATES(:,i, j) * IRRIG_FACTORS(:, i)
+                            end if
+                        end if
+
                     end if !switch_diffusion.ne.0
 
                     !FLUX FROM SEDIMENTS TO WATER COLUMN
@@ -1848,7 +1902,11 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                    SED_BURRIAL_RATES (:,NUM_SED_LAYERS - 1, j) - &
                    SED_BURRIAL_RATES (:,NUM_SED_LAYERS, j)
 
-                PART_MIXING_DERIVS(:,NUM_SED_LAYERS, j) = 0. !temporary fi
+                ! Zero-flux (Neumann) lower boundary for particle mixing:
+                ! No mixing below the deepest layer, so the derivative is
+                ! 0 - PART_MIXING_RATES(N) = -PART_MIXING_RATES(N)
+                PART_MIXING_DERIVS(:,NUM_SED_LAYERS, j) = &
+                    -PART_MIXING_RATES(:,NUM_SED_LAYERS, j)
 
                 ADVECTION_DERIVS(:,NUM_SED_LAYERS, j) = &   !Added by Petras(last layer was not processed for advection)
                    SED_IN_ADVEC_RATES (:,NUM_SED_LAYERS, j) - &
@@ -1871,7 +1929,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     SED_IN_ADVEC_RATES (:,NUM_SED_LAYERS, j) - &
                     SED_OUT_ADVEC_RATES(:,NUM_SED_LAYERS, j)
 
-                PART_MIXING_DERIVS(:,NUM_SED_LAYERS, J) = 0. !temporary fix
+                ! Zero-flux lower boundary for single-layer case
+                PART_MIXING_DERIVS(:,NUM_SED_LAYERS, J) = &
+                    -PART_MIXING_RATES(:,NUM_SED_LAYERS, J)
 
                 TRANSPORT_DERIVS(:,NUM_SED_LAYERS, j) = &
                     DIFFUSION_DERIVS  (:,NUM_SED_LAYERS, j) * SED_POROSITIES(:,NUM_SED_LAYERS) + & !diffusion derivs multipl. by poros. to have deriv. in total volume &

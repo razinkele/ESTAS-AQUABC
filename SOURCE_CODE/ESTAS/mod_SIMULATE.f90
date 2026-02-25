@@ -715,7 +715,7 @@ contains
                     ! Sediments
                     if (MODEL_BOTTOM_SEDIMENTS > 1) then
                         do i = 1, nkn
-                            write(unit = 1023, fmt = '(F10.4,I10,33F20.10)') &
+                            write(unit = 1023, fmt = '(F10.4,I10,36F20.10)') &
                                   WTIME, i, FLUXES_OUTPUT_TO_WATER_COLUMN(nkn,:)
 
                             do j = 1, NUM_SED_LAYERS
