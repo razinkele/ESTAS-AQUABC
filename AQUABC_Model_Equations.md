@@ -56,6 +56,7 @@ Nodes are colour-coded by component (green = phytoplankton, red = zooplankton, b
 | Pelagic kinetics | `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` |
 | Phytoplankton libraries | `SOURCE_CODE/AQUABC/PELAGIC/AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_*.f90` |
 | Sediment model | `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model_1_fast.f90` |
+| Bioturbation module | `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_bioturbation.f90` |
 | Macroalgae | `SOURCE_CODE/MACROALGAE/mod_MACROALGAE.f90` |
 | CO2SYS | `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90` |
 | Allelopathy | `SOURCE_CODE/ALLELOPATHY/mod_ALLELOPATHY.f90` |
@@ -928,7 +929,86 @@ FLUXES(15) = ALK,  FLUXES(16-24) = metals/S/CH4
 
 Positive flux = release from sediment to water.
 
-### 13.8 Numerical Safety in Sediment Model
+### 13.8 Bioturbation and Bioirrigation
+
+File: `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_bioturbation.f90`
+
+Bioturbation (particle mixing by benthic fauna) and bioirrigation (solute pumping through burrows) are modelled as dynamic, spatially and temporally varying processes. When enabled (`switch_partmixing = 1`), particle mixing coefficients and diffusion enhancement factors are recomputed at every sub-timestep based on local conditions.
+
+#### 13.8.1 Biodiffusion Coefficient
+
+The effective biodiffusion coefficient $D_b$ at a given sediment depth $z$, time, and oxygen concentration is:
+
+$$D_b(z, t) = D_{b0} \cdot f_{\text{depth}}(z) \cdot f_{\text{O}_2}(\text{DOXY}) \cdot f_{\text{season}}(t)$$
+
+where:
+
+**Depth attenuation** — exponential decay with depth (Boudreau, 1997):
+$$f_{\text{depth}}(z) = \exp\left(-\frac{z}{z_{\text{mix}}}\right)$$
+
+- $D_{b0}$: Surface biodiffusion coefficient (m²/day), initialised from `PART_MIXING_COEFFS` input
+- $z$: Midpoint depth of the layer from the sediment-water interface (m)
+- $z_{\text{mix}}$: Characteristic bioturbation mixing depth (default 0.05 m = 5 cm)
+
+**Oxygen dependence** — Monod half-saturation kinetics:
+$$f_{\text{O}_2} = \frac{[\text{O}_2]}{[\text{O}_2] + K_{\text{HS,O}_2}}$$
+
+- $K_{\text{HS,O}_2}$: Half-saturation O₂ for bioturbation (default 2.0 mg/L)
+- Under anoxia, $f_{\text{O}_2} \to 0$ and bioturbation ceases
+
+**Seasonal modulation** — sinusoidal annual cycle (Soetaert et al., 1996):
+$$f_{\text{season}}(t) = 1 + A \cos\left(\frac{2\pi(d - d_{\text{peak}})}{365}\right)$$
+
+- $A$: Seasonal amplitude (default 0.3 = ±30% variation)
+- $d$: Day of year (1–365)
+- $d_{\text{peak}}$: Day of peak activity (default 200, mid-July)
+
+#### 13.8.2 Bioturbation Parameters
+
+| Parameter | Symbol | Default | Unit | Description |
+|-----------|--------|---------|------|-------------|
+| Surface biodiffusion | $D_{b0}$ | from input | m²/day | Read from `PART_MIXING_COEFFS` in `BOTTOM_SEDIMENT_MODEL_INPUT.txt` |
+| Mixing depth | $z_{\text{mix}}$ | 0.05 | m | Characteristic e-folding depth of bioturbation |
+| O₂ half-saturation | $K_{\text{HS,O}_2}$ | 2.0 | mg/L | Monod half-saturation for O₂ dependence |
+| Seasonal amplitude | $A$ | 0.3 | — | Fractional seasonal variation (0 = none) |
+| Peak day | $d_{\text{peak}}$ | 200 | day | Day of year with maximum activity |
+| Irrigation enhancement | $\alpha_0$ | 3.0 | — | Maximum irrigation factor at surface |
+| Irrigation depth | $z_{\text{irr}}$ | 0.04 | m | e-folding depth for irrigation |
+
+#### 13.8.3 Bioirrigation
+
+Bioirrigation enhances porewater solute exchange due to burrow flushing by macrofauna. The irrigation factor $\alpha$ is applied as a multiplier on molecular diffusion coefficients for dissolved-phase species:
+
+$$\alpha(z, t) = 1 + \alpha_0 \cdot \exp\left(-\frac{z}{z_{\text{irr}}}\right) \cdot f_{\text{O}_2} \cdot f_{\text{season}}(t)$$
+
+The enhanced diffusion rate for solute species becomes:
+```
+R_DIFF_enhanced = alpha * R_DIFF_molecular
+```
+
+Bioirrigation is only applied to dissolved-phase and mixed-phase species (`IN_WHICH_PHASE = 0` or `2`), not to purely particulate species. When `switch_bioirrigation = 0`, $\alpha = 1$ everywhere.
+
+#### 13.8.4 Last-Layer Boundary Condition
+
+A zero-flux (Neumann) boundary condition is applied at the bottom of the deepest sediment layer for particle mixing:
+
+$$\left.\frac{\partial C}{\partial z}\right|_{z=z_{\text{bottom}}} = 0$$
+
+This is implemented as:
+```
+PART_MIXING_DERIV(N) = -PART_MIXING_RATE(N)
+```
+
+which ensures no net particle flux through the lower boundary, preventing artificial mass loss from the sediment column.
+
+#### 13.8.5 Numerical Safety
+
+All bioturbation functions include numerical guards:
+- Division by mixing depth: `max(z_mix, 1.0D-20)`
+- Oxygen concentrations clamped: `max(DOXY, 0.0)`
+- Seasonal factor clamped: `max(f_season, 0.0)` (prevents negative values if amplitude ≥ 1)
+
+### 13.9 Numerical Safety in Sediment Model
 
 All division operations in the sediment model are guarded with `max(divisor, 1.0D-20)` floors to prevent NaN/Inf from degenerate inputs (zero porosity, zero depth, zero mixing length). pH-to-H+ conversion is clamped to pH [4, 11] matching the pelagic redox convention.
 
@@ -1254,6 +1334,9 @@ For each of 6 electron acceptor pathways: K_MIN_20, THETA, KHS (substrate half-s
 - Platt, T., Gallegos, C.L., and Harrison, W.G. (1980). Photoinhibition of photosynthesis in natural assemblages of marine phytoplankton. J. Mar. Res. 38:687-701.
 - Stumm, W. and Morgan, J.J. (1996). Aquatic Chemistry. Wiley.
 - Stumm, W. and Lee, G.F. (1960). Oxygenation of ferrous iron. Industrial & Engineering Chemistry.
+- Boudreau, B.P. (1997). Diagenetic Models and Their Implementation. Springer.
+- Soetaert, K., Herman, P.M.J., and Middelburg, J.J. (1996). A model of early diagenetic processes from the shelf to abyssal depths. Geochimica et Cosmochimica Acta 60:1019-1040.
+- Middelburg, J.J., Soetaert, K., and Herman, P.M.J. (1997). Empirical relationships for use in global diagenetic models. Deep-Sea Research I 44:327-344.
 - Morgan, B. and Lahav, O. (2007). The effect of pH on the kinetics of spontaneous Fe(II) oxidation. Chemosphere.
 - Snoeyink, V.L. and Jenkins, D. (1980). Water Chemistry. Wiley.
 - Steele, J.H. (1962). Environmental control of photosynthesis in the sea. Limnology and Oceanography.

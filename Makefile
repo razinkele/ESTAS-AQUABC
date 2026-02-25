@@ -1,4 +1,4 @@
-.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint
+.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint build-docs
 
 # =============================================================================
 # Compiler Configuration
@@ -343,3 +343,10 @@ test-python:
 lint:
 	@echo "Running ruff lint..."
 	$(PYTHON) -m ruff check tests/python/ shiny_app/
+
+# Build PDF reference manuals from Markdown sources
+build-docs:
+	@echo "Building PDF reference manuals..."
+	cd docs && pandoc AQUABC_Reference_Manual.md -o AQUABC_Reference_Manual.pdf --pdf-engine=pdflatex
+	cd docs && pandoc ESTAS_Reference_Manual.md -o ESTAS_Reference_Manual.pdf --pdf-engine=pdflatex
+	@echo "PDFs written to docs/"
