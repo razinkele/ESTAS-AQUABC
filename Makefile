@@ -349,4 +349,5 @@ build-docs:
 	@echo "Building PDF reference manuals..."
 	cd docs && pandoc AQUABC_Reference_Manual.md -o AQUABC_Reference_Manual.pdf --pdf-engine=pdflatex
 	cd docs && pandoc ESTAS_Reference_Manual.md -o ESTAS_Reference_Manual.pdf --pdf-engine=pdflatex
+	cd docs && pandoc ESTAS_AQUABC_Integration_Guide.md -o ESTAS_AQUABC_Integration_Guide.pdf --pdf-engine=pdflatex
 	@echo "PDFs written to docs/"
