@@ -4631,14 +4631,13 @@ def server(input, output, session):
     def _build_box_network_figure(boxes, links):
         """Build a mosaic diagram with tall rectangular cells (height = 3×width).
 
-        Box 12 (Curonian Spit) is 4× taller than the rest, spanning
-        alongside the central lagoon.  Boxes 4 and 16 sit in a separate
-        spit column (col −1) so they do NOT touch central-lagoon boxes
-        9, 8, or 14.
+        Box 12 (Curonian Spit) spans 6 grid rows alongside the lagoon,
+        reaching the same level as box 10 (Klaipeda Strait).
+        Boxes 4 and 16 sit in a separate spit column (col −1) detached
+        from central-lagoon boxes 9, 8, 14.
 
-        Adjacency is computed geometrically (shared non-zero-length edge)
-        so the multi-row Box 12 can be adjacent to several lagoon boxes
-        at once.
+        Open boundaries are shown as thick red edges on the pelagic box
+        faces rather than as separate rectangles.
 
         Geographic orientation (Curonian Lagoon):
             • North  (top)   – Klaipeda Strait → Baltic Sea
@@ -4651,16 +4650,13 @@ def server(input, output, session):
         BH = 3     # display height per grid row  (3× width)
 
         # ---- box geometry  (col, row, col_span, row_span) ----
-        # Display rectangle:
-        #   x0 = col * BW,  y0 = row * BH,
-        #   x1 = (col + cs) * BW,  y1 = (row + rs) * BH
         BOX_GEOM = {
             # North – Klaipeda Strait
             10: (1, 10, 1, 1),
              1: (1,  9, 1, 1),
             # Curonian Spit strip  (col −1 & col 0)
              4: (-1, 8, 1, 1),         # spit – upper
-            12: (0,  5, 1, 4),         # spit – BIG  (rows 5-8, h = 4·BH)
+            12: (0,  5, 1, 6),         # spit – BIG  (rows 5-10, same level as box 10)
             16: (-1, 5, 1, 1),         # spit – lower
             # Upper lagoon
             13: (1,  8, 1, 1),
@@ -4692,28 +4688,24 @@ def server(input, output, session):
             19: (2,  1, 1, 1),
         }
 
-        BND_GEOM = {
-            -1: (-1, 7, 1, 1),     # Baltic Sea (between 4 & 16 on spit)
-            -2: (5,  3, 1, 1),     # Nemunas – east of 24
-            -3: (4,  4, 1, 1),     # Nemunas – above 24
-            -4: (3,  1, 1, 1),     # River – east of 19
-            -5: (2,  0, 1, 1),     # River – south of 19
-        }
-        BND_NAMES = {
-            -1: 'Baltic', -2: 'Nemunas', -3: 'Nemunas',
-            -4: 'River', -5: 'River',
-        }
-
-        ALL_GEOM = {**BOX_GEOM, **BND_GEOM}
+        # Open boundaries as thick red edges on pelagic box faces
+        # (boundary_id, pelagic_box, side, label)
+        BOUNDARY_EDGES = [
+            (-1, 12, 'top',    'Baltic\n(−1)'),
+            (-2, 24, 'right',  'Nemunas (−2)'),
+            (-3, 24, 'top',    'Nemunas (−3)'),
+            (-4, 19, 'right',  'River (−4)'),
+            (-5, 19, 'bottom', 'River (−5)'),
+        ]
 
         def drect(bid):
             """Display rectangle (x0, y0, x1, y1) for a box."""
-            c, r, cs, rs = ALL_GEOM[bid]
+            c, r, cs, rs = BOX_GEOM[bid]
             return (c * BW, r * BH, (c + cs) * BW, (r + rs) * BH)
 
         def shares_edge(a, b):
             """True when a and b share a non-zero-length boundary."""
-            if a not in ALL_GEOM or b not in ALL_GEOM:
+            if a not in BOX_GEOM or b not in BOX_GEOM:
                 return False
             ax0, ay0, ax1, ay1 = drect(a)
             bx0, by0, bx1, by1 = drect(b)
@@ -4751,15 +4743,15 @@ def server(input, output, session):
         adjacent_links = set()
         distant_links = []
         for u, v in edge_set:
-            if u not in ALL_GEOM or v not in ALL_GEOM:
-                continue
+            if u not in BOX_GEOM or v not in BOX_GEOM:
+                continue  # skip boundary edges – shown as red lines
             if shares_edge(u, v):
                 adjacent_links.add((u, v))
             else:
                 distant_links.append((u, v))
 
         false_adj = set()
-        ids = sorted(ALL_GEOM)
+        ids = sorted(BOX_GEOM)
         for i, a in enumerate(ids):
             for b in ids[i + 1:]:
                 if shares_edge(a, b):
@@ -4818,29 +4810,35 @@ def server(input, output, session):
                 font=dict(size=9, color=tc, family='Arial'),
             ))
 
-        # Draw boundary rectangles
-        for bnd, (c, r, cs, rs) in BND_GEOM.items():
-            x0, y0 = c * BW, r * BH
-            x1, y1 = (c + cs) * BW, (r + rs) * BH
-            cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-
+        # ---- Draw boundary edges as thick red lines ----
+        BND_CLR = 'rgba(231,76,60,0.9)'
+        BND_W = 5
+        for bnd_id, box_id, side, label in BOUNDARY_EDGES:
+            bx0, by0, bx1, by1 = drect(box_id)
+            if side == 'top':
+                lx0, ly0, lx1, ly1 = bx0, by1, bx1, by1
+                ax, ay, anch = (bx0 + bx1) / 2, by1 + 1.0, 'bottom'
+            elif side == 'bottom':
+                lx0, ly0, lx1, ly1 = bx0, by0, bx1, by0
+                ax, ay, anch = (bx0 + bx1) / 2, by0 - 1.0, 'top'
+            elif side == 'left':
+                lx0, ly0, lx1, ly1 = bx0, by0, bx0, by1
+                ax, ay, anch = bx0 - 0.4, (by0 + by1) / 2, 'right'
+            else:  # right
+                lx0, ly0, lx1, ly1 = bx1, by0, bx1, by1
+                ax, ay, anch = bx1 + 0.4, (by0 + by1) / 2, 'left'
             shapes.append(dict(
-                type='rect', x0=x0, y0=y0, x1=x1, y1=y1,
-                fillcolor='rgba(192,57,43,0.85)',
-                line=dict(color='#922b21', width=2),
-                layer='below',
+                type='line', x0=lx0, y0=ly0, x1=lx1, y1=ly1,
+                line=dict(color=BND_CLR, width=BND_W),
+                layer='above',
             ))
             annotations.append(dict(
-                x=cx, y=cy + 0.35,
-                text=f'<b>{bnd}</b>',
+                x=ax, y=ay,
+                text=f'<b>{label}</b>',
                 showarrow=False,
-                font=dict(size=11, color='white', family='Arial Black'),
-            ))
-            annotations.append(dict(
-                x=cx, y=cy - 0.35,
-                text=BND_NAMES.get(bnd, ''),
-                showarrow=False,
-                font=dict(size=8, color='#fadbd8', family='Arial'),
+                font=dict(size=9, color='#e74c3c', family='Arial'),
+                xanchor=anch if side in ('left', 'right') else 'center',
+                yanchor=anch if side in ('top', 'bottom') else 'middle',
             ))
 
         # ---- gap separators for FALSE adjacencies ----
@@ -4916,17 +4914,17 @@ def server(input, output, session):
 
         # ---- geographic annotations ----
         annotations.extend([
-            dict(x=1.5, y=34.0,
+            dict(x=1.5, y=34.5,
                  text='<b>↑ Klaipeda Strait → Baltic Sea</b>',
                  showarrow=False,
                  font=dict(size=11, color='#5dade2')),
-            dict(x=-2.0, y=18.0,
+            dict(x=-2.0, y=22.0,
                  text='C<br>u<br>r<br>o<br>n<br>i<br>a<br>n<br><br>'
                       'S<br>p<br>i<br>t',
                  showarrow=False,
                  font=dict(size=8, color='#7f8c8d'),
                  align='center'),
-            dict(x=6.8, y=10.5,
+            dict(x=6.2, y=10.5,
                  text='<b>← Nemunas</b><br>delta',
                  showarrow=False,
                  font=dict(size=10, color='#e74c3c'),
@@ -4957,9 +4955,8 @@ def server(input, output, session):
             name='Mud substrate', showlegend=True,
         ))
         fig.add_trace(go.Scatter(
-            x=[None], y=[None], mode='markers',
-            marker=dict(size=10, color='rgba(192,57,43,0.85)', symbol='square',
-                        line=dict(color='#922b21', width=1)),
+            x=[None], y=[None], mode='lines',
+            line=dict(color=BND_CLR, width=BND_W),
             name='Open boundary', showlegend=True,
         ))
         fig.add_trace(go.Scatter(
@@ -4989,9 +4986,9 @@ def server(input, output, session):
             showlegend=True,
             legend=dict(x=0.72, y=0.99, bgcolor='rgba(0,0,0,0.35)',
                         font=dict(size=9)),
-            xaxis=dict(visible=False, range=[-2.5, 7.5],
+            xaxis=dict(visible=False, range=[-2.5, 7.0],
                        scaleanchor='y', scaleratio=1),
-            yaxis=dict(visible=False, range=[-2, 36]),
+            yaxis=dict(visible=False, range=[-2, 37]),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             margin=dict(l=5, r=50, t=40, b=10),
