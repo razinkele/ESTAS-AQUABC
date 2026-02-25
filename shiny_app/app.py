@@ -4629,228 +4629,299 @@ def server(input, output, session):
         return layers
 
     def _build_box_network_figure(boxes, links):
-        """Build a plotly figure showing the box network as structured rectangular boxes.
+        """Build a mosaic box-model diagram with touching rectangular cells.
 
-        Layout follows the Curonian Lagoon from south (Baltic Sea) at the bottom
-        to north (Nemunas river inputs) at the top.  Connected boxes are placed
-        adjacent to each other in the grid so advective links appear as short
-        straight lines between facing rectangle edges.
+        Boxes that share an advective link are placed as grid-neighbours so
+        they literally share an edge.  A small gap is drawn between cells
+        that touch in the grid but are **not** connected, so the visual
+        rule is: touching wall = water exchange.
+
+        Geographic orientation (Curonian Lagoon):
+            • North  (top)   – Klaipeda Strait → Baltic Sea
+            • East   (right) – Nemunas river delta
+            • South  (bottom)– Kaliningrad / far-south lagoon
         """
 
-        # ---- structured grid positions (x, y) ----
-        # South (Baltic) at bottom, North (rivers) at top.
-        BOX_POS = {
-            # Row 0 – deep entrance near Baltic
-            10: (1.0, 0), 12: (2.0, 0), 16: (3.0, 0),
-            # Row 1
-            1:  (1.0, 1), 13: (2.0, 1), 4:  (3.0, 1),
-            # Row 2 – narrow middle
-            7:  (2.0, 2),
-            # Row 3
-            11: (2.0, 3),
-            # Row 4
-            20: (1.0, 4), 22: (3.0, 4),
+        # ---- grid cell positions (col, row) ----
+        GRID = {
+            # Row 8 – deep channel near Klaipeda / Baltic
+            10: (0, 8), 12: (1, 8), 16: (2, 8),
+            # Row 7
+             1: (0, 7), 13: (1, 7),  4: (2, 7),
+            # Row 6 – transition narrows
+             7: (1, 6),
             # Row 5
-            9:  (1.0, 5), 5:  (3.0, 5),
-            # Row 6
-            8:  (1.0, 6), 6:  (3.0, 6),
-            # Row 7 – widening toward north
-            14: (0.5, 7), 17: (1.5, 7), 15: (2.5, 7), 25: (3.5, 7),
-            # Row 8
-            21: (0.5, 8), 3:  (1.5, 8), 19: (2.5, 8), 2:  (3.5, 8),
-            # Row 9 – furthest north
-            18: (0.5, 9), 23: (1.5, 9), 24: (3.5, 9),
+            11: (1, 5),
+            # Row 4 – central wide
+            20: (0, 4), 22: (1, 4),
+            # Row 3
+             9: (0, 3),  5: (1, 3),
+            # Row 2 – mid-lagoon + Nemunas arm extending east
+             8: (0, 2),  6: (1, 2), 25: (2, 2),  2: (3, 2), 24: (4, 2),
+            # Row 1 – southern shallow / muddy
+            14: (0, 1), 17: (1, 1), 15: (2, 1), 19: (3, 1),
+            # Row 0
+            21: (0, 0),  3: (1, 0), 23: (2, 0),
+            # Row -1
+            18: (0, -1),
         }
-        BND_POS = {
-            -1: (2.0, -1.2),                         # Baltic Sea outlet
-            -4: (1.8, 10.2), -5: (2.8, 10.2),        # River inflows → box 19
-            -2: (3.5, 10.2), -3: (4.3, 10.2),        # Nemunas → box 24
+
+        BND_GRID = {
+            -1: (1, 9),    # Baltic Sea – above box 12
+            -2: (4, 3),    # Nemunas – above box 24
+            -3: (5, 2),    # Nemunas – right of box 24
+            -4: (4, 1),    # River – right of box 19
+            -5: (3, 0),    # River – below box 19
         }
-        BND_LABELS = {-1: 'Baltic', -2: 'Nemunas', -3: 'Nemunas',
-                      -4: 'River', -5: 'River'}
-        all_pos = {**BOX_POS, **BND_POS}
+        BND_NAMES = {
+            -1: 'Baltic', -2: 'Nemunas', -3: 'Nemunas',
+            -4: 'River', -5: 'River',
+        }
 
-        # rectangle half-sizes
-        BW, BH = 0.34, 0.30       # pelagic boxes
-        BW_B, BH_B = 0.28, 0.22   # boundary nodes
+        all_grid = {**GRID, **BND_GRID}
 
-        # ---- depth → colour mapping ----
-        max_depth = max((info['depth'] for info in boxes.values()), default=35.0)
-
-        def depth_color(depth):
-            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
-            r = int(174 * (1 - t) + 26 * t)
-            g = int(214 * (1 - t) + 82 * t)
-            b = int(241 * (1 - t) + 118 * t)
-            return f'rgb({r},{g},{b})'
-
-        def text_color(depth):
-            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
-            return 'white' if t > 0.35 else '#1a1a2e'
-
-        # ---- clip line to rectangle edge ----
-        def rect_edge(cx, cy, tx, ty, hw, hh):
-            dx, dy = tx - cx, ty - cy
-            if abs(dx) < 1e-9 and abs(dy) < 1e-9:
-                return cx, cy
-            sx = hw / abs(dx) if abs(dx) > 1e-9 else 1e9
-            sy = hh / abs(dy) if abs(dy) > 1e-9 else 1e9
-            s = min(sx, sy)
-            return cx + dx * s, cy + dy * s
-
-        # ---- deduplicate edges ----
+        # ---- classify links ----
         edge_set = set()
         for up, down in links:
             edge_set.add((min(up, down), max(up, down)))
 
-        # ---- build edge lines (clipped to rect borders) ----
-        edge_x, edge_y = [], []
+        def manhattan(a, b):
+            ca, ra = all_grid[a]; cb, rb = all_grid[b]
+            return abs(ca - cb) + abs(ra - rb)
+
+        adjacent_links = set()   # grid-neighbour AND connected
+        distant_links = []       # connected but NOT grid-neighbours
         for u, v in edge_set:
-            if u not in all_pos or v not in all_pos:
+            if u not in all_grid or v not in all_grid:
                 continue
-            ux, uy = all_pos[u]
-            vx, vy = all_pos[v]
-            uhw, uhh = (BW_B, BH_B) if u < 0 else (BW, BH)
-            vhw, vhh = (BW_B, BH_B) if v < 0 else (BW, BH)
-            ex1, ey1 = rect_edge(ux, uy, vx, vy, uhw, uhh)
-            ex2, ey2 = rect_edge(vx, vy, ux, uy, vhw, vhh)
-            edge_x.extend([ex1, ex2, None])
-            edge_y.extend([ey1, ey2, None])
+            if manhattan(u, v) == 1:
+                adjacent_links.add((u, v))
+            else:
+                distant_links.append((u, v))
 
+        # false adjacencies: grid-neighbours that are NOT connected
+        false_adj = set()
+        for a in all_grid:
+            for b in all_grid:
+                if a >= b:
+                    continue
+                ca, ra = all_grid[a]; cb, rb = all_grid[b]
+                if abs(ca - cb) + abs(ra - rb) == 1:
+                    key = (min(a, b), max(a, b))
+                    if key not in edge_set:
+                        false_adj.add(key)
+
+        # ---- colour helpers ----
+        max_depth = max((i['depth'] for i in boxes.values()), default=35)
+
+        def fill_clr(depth):
+            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
+            r = int(214 * (1 - t) + 21 * t)
+            g = int(234 * (1 - t) + 67 * t)
+            b = int(248 * (1 - t) + 96 * t)
+            return f'rgb({r},{g},{b})'
+
+        def txt_clr(depth):
+            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
+            return '#ffffff' if t > 0.30 else '#1b2631'
+
+        # ---- build figure ----
         fig = go.Figure()
+        shapes = []
+        annotations = []
+        MARGIN = 0.07  # half-gap between non-connected neighbours
 
-        # edge trace
-        fig.add_trace(go.Scatter(
-            x=edge_x, y=edge_y, mode='lines',
-            line=dict(width=1.5, color='rgba(127,140,141,0.6)'),
-            hoverinfo='none', showlegend=False,
-        ))
-
-        # ---- invisible hover layer (one marker per box for tooltips) ----
-        hvr_x, hvr_y, hvr_text = [], [], []
-        for box_no, (cx, cy) in BOX_POS.items():
+        # Draw pelagic boxes
+        for box_no, (c, r) in GRID.items():
             info = boxes.get(box_no, {})
-            hvr_x.append(cx); hvr_y.append(cy)
-            hvr_text.append(
+            d = info.get('depth', 0)
+            sed = info.get('sediment', '?')
+            sedchar = 'M' if sed == 'Mud' else 'S'
+            border = '#6e4b1e' if sed == 'Mud' else '#1a5276'
+            tc = txt_clr(d)
+
+            shapes.append(dict(
+                type='rect',
+                x0=c, y0=r, x1=c + 1, y1=r + 1,
+                fillcolor=fill_clr(d),
+                line=dict(color=border, width=2),
+                layer='below',
+            ))
+            annotations.append(dict(
+                x=c + 0.5, y=r + 0.65,
+                text=f'<b>{box_no}</b>',
+                showarrow=False,
+                font=dict(size=14, color=tc, family='Arial Black'),
+            ))
+            annotations.append(dict(
+                x=c + 0.5, y=r + 0.28,
+                text=f'{d:.0f}m {sedchar}',
+                showarrow=False,
+                font=dict(size=9, color=tc, family='Arial'),
+            ))
+
+        # Draw boundary rectangles
+        for bnd, (c, r) in BND_GRID.items():
+            shapes.append(dict(
+                type='rect',
+                x0=c, y0=r, x1=c + 1, y1=r + 1,
+                fillcolor='rgba(192,57,43,0.85)',
+                line=dict(color='#922b21', width=2),
+                layer='below',
+            ))
+            annotations.append(dict(
+                x=c + 0.5, y=r + 0.65,
+                text=f'<b>{bnd}</b>',
+                showarrow=False,
+                font=dict(size=11, color='white', family='Arial Black'),
+            ))
+            annotations.append(dict(
+                x=c + 0.5, y=r + 0.28,
+                text=BND_NAMES.get(bnd, ''),
+                showarrow=False,
+                font=dict(size=8, color='#fadbd8', family='Arial'),
+            ))
+
+        # ---- gap separators for FALSE adjacencies ----
+        # Draw a thin dark strip between touching boxes that are NOT connected
+        for a, b in false_adj:
+            ca, ra = all_grid[a]; cb, rb = all_grid[b]
+            if ra == rb:  # horizontal neighbours → vertical gap
+                xg = max(ca, cb)
+                shapes.append(dict(
+                    type='rect',
+                    x0=xg - MARGIN, y0=ra + 0.08,
+                    x1=xg + MARGIN, y1=ra + 0.92,
+                    fillcolor='#1b2631', line=dict(width=0),
+                    layer='above',
+                ))
+            else:  # vertical neighbours → horizontal gap
+                yg = max(ra, rb)
+                shapes.append(dict(
+                    type='rect',
+                    x0=min(ca, cb) + 0.08, y0=yg - MARGIN,
+                    x1=min(ca, cb) + 0.92, y1=yg + MARGIN,
+                    fillcolor='#1b2631', line=dict(width=0),
+                    layer='above',
+                ))
+
+        # ---- distant connections (thin dashed lines) ----
+        dx, dy = [], []
+        for u, v in distant_links:
+            cu, ru = all_grid[u]; cv, rv = all_grid[v]
+            dx.extend([cu + 0.5, cv + 0.5, None])
+            dy.extend([ru + 0.5, rv + 0.5, None])
+        if dx:
+            fig.add_trace(go.Scatter(
+                x=dx, y=dy, mode='lines',
+                line=dict(color='rgba(46,204,113,0.55)', width=1.5, dash='dot'),
+                hoverinfo='none', showlegend=False,
+            ))
+
+        # ---- invisible hover markers ----
+        hvr_x, hvr_y, hvr_txt = [], [], []
+        for box_no in GRID:
+            c, r = GRID[box_no]
+            info = boxes.get(box_no, {})
+            # find this box's neighbours
+            nbrs = sorted([v for u, v in edge_set if u == box_no] +
+                          [u for u, v in edge_set if v == box_no])
+            nbrs = [n for n in nbrs if n > 0]
+            hvr_x.append(c + 0.5)
+            hvr_y.append(r + 0.5)
+            hvr_txt.append(
                 f"<b>Box {box_no}</b><br>"
                 f"Depth: {info.get('depth', 0):.1f} m<br>"
                 f"Bottom: {info.get('bottom_elevation', 0):.1f} m<br>"
                 f"Surface: {info.get('surface_elevation', 0):.4f} m<br>"
-                f"Sediment: {info.get('sediment', '?')}"
+                f"Sediment: {info.get('sediment', '?')}<br>"
+                f"Connected to: {', '.join(str(n) for n in nbrs)}"
             )
         fig.add_trace(go.Scatter(
             x=hvr_x, y=hvr_y, mode='markers',
-            marker=dict(size=30, color='rgba(0,0,0,0)'),
-            hovertext=hvr_text, hoverinfo='text',
+            marker=dict(size=35, color='rgba(0,0,0,0)'),
+            hovertext=hvr_txt, hoverinfo='text',
             showlegend=False,
         ))
 
-        # ---- rectangle shapes + annotations ----
-        shapes, annotations = [], []
-
-        for box_no, (cx, cy) in BOX_POS.items():
-            info = boxes.get(box_no, {})
-            depth = info.get('depth', 0)
-            sed = info.get('sediment', '?')
-            fill = depth_color(depth)
-            tc = text_color(depth)
-            border = '#8e6c3a' if sed == 'Mud' else '#2980b9'
-
-            shapes.append(dict(
-                type='rect',
-                x0=cx - BW, y0=cy - BH, x1=cx + BW, y1=cy + BH,
-                fillcolor=fill,
-                line=dict(color=border, width=2.5),
-                layer='above',
-            ))
-            annotations.append(dict(
-                x=cx, y=cy + 0.06, text=f"<b>{box_no}</b>",
-                showarrow=False,
-                font=dict(size=11, color=tc, family='Arial Black'),
-            ))
-            annotations.append(dict(
-                x=cx, y=cy - 0.12,
-                text=f"{depth:.0f}m {'M' if sed == 'Mud' else 'S'}",
-                showarrow=False,
-                font=dict(size=8, color=tc, family='Arial'),
-            ))
-
-        for bnd_no, (cx, cy) in BND_POS.items():
-            shapes.append(dict(
-                type='rect',
-                x0=cx - BW_B, y0=cy - BH_B, x1=cx + BW_B, y1=cy + BH_B,
-                fillcolor='rgba(231,76,60,0.85)',
-                line=dict(color='#c0392b', width=2),
-                layer='above',
-            ))
-            annotations.append(dict(
-                x=cx, y=cy + 0.04, text=f"<b>{bnd_no}</b>",
-                showarrow=False,
-                font=dict(size=9, color='white', family='Arial Black'),
-            ))
-            annotations.append(dict(
-                x=cx, y=cy - 0.09,
-                text=BND_LABELS.get(bnd_no, ''),
-                showarrow=False,
-                font=dict(size=7, color='white', family='Arial'),
-            ))
-
-        # geographic reference labels
-        annotations.append(dict(
-            x=-0.2, y=-1.2, text='↓ Baltic Sea',
-            showarrow=False, font=dict(size=10, color='#5dade2'),
-            xanchor='left',
-        ))
-        annotations.append(dict(
-            x=-0.2, y=10.2, text='↑ Rivers (Nemunas)',
-            showarrow=False, font=dict(size=10, color='#e74c3c'),
-            xanchor='left',
-        ))
+        # ---- geographic labels ----
+        annotations.extend([
+            dict(x=1.5, y=10.3,
+                 text='<b>↑ Baltic Sea  (Klaipeda Strait)</b>',
+                 showarrow=False,
+                 font=dict(size=11, color='#5dade2')),
+            dict(x=5.8, y=2.5,
+                 text='<b>← Nemunas</b>',
+                 showarrow=False,
+                 font=dict(size=10, color='#e74c3c')),
+            dict(x=5.0, y=1.0,
+                 text='← Rivers',
+                 showarrow=False,
+                 font=dict(size=9, color='#e74c3c')),
+            dict(x=-0.7, y=3.5, text='<b>N</b>↑',
+                 showarrow=False,
+                 font=dict(size=10, color='#7f8c8d'),
+                 textangle=0),
+        ])
 
         # ---- legend entries ----
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode='markers',
-            marker=dict(size=12, color='#2980b9', symbol='square'),
-            name='Sand substrate', showlegend=True,
+            marker=dict(size=12, color=fill_clr(3), symbol='square',
+                        line=dict(color='#1a5276', width=2)),
+            name='Sand (shallow)', showlegend=True,
         ))
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode='markers',
-            marker=dict(size=12, color='#8e6c3a', symbol='square'),
+            marker=dict(size=12, color=fill_clr(max_depth), symbol='square',
+                        line=dict(color='#1a5276', width=2)),
+            name='Sand (deep)', showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='markers',
+            marker=dict(size=12, color=fill_clr(5), symbol='square',
+                        line=dict(color='#6e4b1e', width=2)),
             name='Mud substrate', showlegend=True,
         ))
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode='markers',
-            marker=dict(size=10, color='#e74c3c', symbol='diamond'),
+            marker=dict(size=10, color='rgba(192,57,43,0.85)', symbol='square',
+                        line=dict(color='#922b21', width=1)),
             name='Open boundary', showlegend=True,
         ))
-        # colourbar via invisible trace
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='lines',
+            line=dict(color='rgba(46,204,113,0.55)', width=1.5, dash='dot'),
+            name='Non-adjacent link', showlegend=True,
+        ))
+
+        # colourbar
         fig.add_trace(go.Scatter(
             x=[None], y=[None], mode='markers',
             marker=dict(
                 size=0, color=[0, max_depth],
-                colorscale=[[0, 'rgb(174,214,241)'], [1, 'rgb(26,82,118)']],
-                colorbar=dict(title='Depth (m)', thickness=12, len=0.45, x=1.02),
-                showscale=True,
-            ),
+                colorscale=[[0, 'rgb(214,234,248)'], [1, 'rgb(21,67,96)']],
+                colorbar=dict(title='Depth (m)', thickness=12,
+                              len=0.35, x=1.02, y=0.3),
+                showscale=True),
             showlegend=False, hoverinfo='none',
         ))
 
         fig.update_layout(
-            shapes=shapes, annotations=annotations,
-            title=dict(text='AQUABC Box Model — 25 Pelagic Boxes',
-                       font=dict(size=14)),
+            shapes=shapes,
+            annotations=annotations,
+            title=dict(
+                text='AQUABC Box Model — Curonian Lagoon (25 Pelagic Boxes)',
+                font=dict(size=14)),
             showlegend=True,
-            legend=dict(x=0, y=1, bgcolor='rgba(0,0,0,0.3)',
-                        font=dict(size=10)),
-            xaxis=dict(showgrid=False, zeroline=False,
-                       showticklabels=False, visible=False,
-                       range=[-0.8, 5.2]),
-            yaxis=dict(showgrid=False, zeroline=False,
-                       showticklabels=False, visible=False,
-                       range=[-2.0, 11.2]),
+            legend=dict(x=0.72, y=0.99, bgcolor='rgba(0,0,0,0.35)',
+                        font=dict(size=9)),
+            xaxis=dict(visible=False, range=[-1.2, 7.2],
+                       scaleanchor='y', scaleratio=1),
+            yaxis=dict(visible=False, range=[-2.2, 11]),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=5, r=40, t=40, b=10),
+            margin=dict(l=5, r=50, t=40, b=10),
             height=700,
             template='plotly_dark',
         )
@@ -5006,10 +5077,14 @@ def server(input, output, session):
         if view == "Box Network":
             return ui.tags.div(
                 ui.tags.small(
-                    ui.tags.strong("Box Network: "),
-                    "25 pelagic boxes connected by 45 bidirectional advective links. "
-                    "Boxes colored by depth (darker = deeper). "
-                    "Red diamonds = open boundaries. Hover for details.",
+                    ui.tags.strong("Mosaic box model: "),
+                    "Touching boxes share an advective link (water exchange). "
+                    "Dark gaps separate grid-neighbours with no connection. "
+                    "Green dashed lines = non-adjacent links (8 of 42). "
+                    "Border colour: blue = Sand, brown = Mud. "
+                    "Box numbering is an ID, not geographic order "
+                    "(e.g. Box 2 sits at the Nemunas inflow, not near Baltic). "
+                    "Hover for details.",
                     class_="text-muted"
                 ),
                 class_="mt-2"
