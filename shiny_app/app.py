@@ -31,8 +31,10 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import networkx as nx
 import ipyleaflet as L
 from ipywidgets import HTML
 
@@ -2097,11 +2099,40 @@ def create_ui(theme_name="darkly"):
                     style="max-height: 350px; overflow-y: auto;"
                 ),
             ),
-            # Right column: File contents (read-only view)
-            ui.card(
-                ui.card_header(ui.output_text("file_header_text")),
-                ui.input_text_area("file_contents", "File contents:", value="", rows=28, width="100%"),
-                ui.tags.small("Read-only preview. Edit files in Parameters, Initial Conditions, or Model Config tabs.", class_="text-muted")
+            # Right column: File contents + Map Display tabs
+            ui.navset_tab(
+                ui.nav_panel(
+                    "File Contents",
+                    ui.card(
+                        ui.card_header(ui.output_text("file_header_text")),
+                        ui.input_text_area("file_contents", "File contents:", value="", rows=28, width="100%"),
+                        ui.tags.small("Read-only preview. Edit files in Parameters, Initial Conditions, or Model Config tabs.", class_="text-muted")
+                    ),
+                ),
+                ui.nav_panel(
+                    "Map Display",
+                    ui.card(
+                        ui.card_header("Box Network & Bathymetry"),
+                        ui.layout_columns(
+                            ui.input_select(
+                                "map_display_view",
+                                "View:",
+                                choices=["Box Network", "Bathymetry Profile", "Box Depths Overview"],
+                                selected="Box Network"
+                            ),
+                            ui.input_select(
+                                "map_bathymetry_box",
+                                "Bathymetry box:",
+                                choices={str(i): f"Box {i}" for i in range(1, 26)},
+                                selected="1"
+                            ),
+                            col_widths=[6, 6]
+                        ),
+                        output_widget("map_display_plot", height="700px"),
+                        ui.output_ui("map_display_info"),
+                    ),
+                ),
+                id="input_files_tabs"
             ),
             col_widths=[4, 8]
         )
@@ -2660,15 +2691,15 @@ def create_ui(theme_name="darkly"):
                         "Select the base map style"
                     ),
                     ui.tooltip(
-                        ui.input_numeric("map_lat", "Center Latitude:", value=55.5, min=-90, max=90, step=0.1),
+                        ui.input_numeric("map_lat", "Center Latitude:", value=55.32, min=-90, max=90, step=0.01),
                         "Map center latitude coordinate"
                     ),
                     ui.tooltip(
-                        ui.input_numeric("map_lon", "Center Longitude:", value=21.0, min=-180, max=180, step=0.1),
+                        ui.input_numeric("map_lon", "Center Longitude:", value=21.10, min=-180, max=180, step=0.01),
                         "Map center longitude coordinate"
                     ),
                     ui.tooltip(
-                        ui.input_slider("map_zoom", "Zoom Level:", min=1, max=18, value=8, step=1),
+                        ui.input_slider("map_zoom", "Zoom Level:", min=1, max=18, value=10, step=1),
                         "Map zoom level (1=world, 18=street level)"
                     ),
                     ui.tooltip(
@@ -4486,6 +4517,529 @@ def server(input, output, session):
     @render.text
     def save_status():
         return save_status_msg.get()
+
+    # ========== MAP DISPLAY TAB (Input Files) ==========
+
+    def _parse_pelagic_inputs():
+        """Parse PELAGIC_INPUTS.txt for box data: depths, sediment types, basin mapping."""
+        path = os.path.join(INPUTS_DIR, "PELAGIC_INPUTS.txt")
+        boxes = {}
+        if not os.path.isfile(path):
+            return boxes
+        try:
+            with open(path, 'r') as fh:
+                lines = fh.readlines()
+            # Find INITIAL CONDITIONS section
+            in_ic = False
+            for line in lines:
+                stripped = line.strip()
+                if "INITIAL CONDITIONS" in stripped:
+                    in_ic = True
+                    continue
+                if in_ic and stripped.startswith("#"):
+                    # End of IC section
+                    if "MASS LOADS" in stripped:
+                        break
+                    continue
+                if in_ic and stripped:
+                    parts = stripped.split()
+                    if len(parts) >= 4:
+                        try:
+                            box_no = int(parts[0])
+                            ic_set = int(parts[1])    # 1=Mud, 2=Sand
+                            surf_elev = float(parts[2])
+                            bot_elev = float(parts[3])
+                            boxes[box_no] = {
+                                'ic_set': ic_set,
+                                'sediment': 'Mud' if ic_set == 1 else 'Sand',
+                                'surface_elevation': surf_elev,
+                                'bottom_elevation': bot_elev,
+                                'depth': abs(bot_elev - surf_elev),
+                            }
+                        except (ValueError, IndexError):
+                            pass
+        except Exception as e:
+            logger.error(f"Error parsing PELAGIC_INPUTS.txt: {e}")
+        return boxes
+
+    def _parse_advective_links():
+        """Parse ADVECTIVE_LINKS.txt for box connectivity."""
+        path = os.path.join(INPUTS_DIR, "ADVECTIVE_LINKS.txt")
+        links = []
+        if not os.path.isfile(path):
+            return links
+        try:
+            with open(path, 'r') as fh:
+                for line in fh:
+                    stripped = line.strip()
+                    if stripped.startswith("#") or not stripped:
+                        continue
+                    parts = stripped.split()
+                    if len(parts) >= 3:
+                        try:
+                            upstream = int(parts[1])
+                            downstream = int(parts[2])
+                            links.append((upstream, downstream))
+                        except (ValueError, IndexError):
+                            pass
+        except Exception as e:
+            logger.error(f"Error parsing ADVECTIVE_LINKS.txt: {e}")
+        return links
+
+    def _parse_bathymetry(box_no):
+        """Parse BATHYMETRY_{box_no}.txt for layer data."""
+        path = os.path.join(INPUTS_DIR, f"BATHYMETRY_{box_no}.txt")
+        layers = []
+        if not os.path.isfile(path):
+            return layers
+        try:
+            with open(path, 'r') as fh:
+                lines = fh.readlines()
+            # Skip header lines (first 3 lines: title, NUM_LAYERS, count, column headers)
+            data_start = None
+            for i, line in enumerate(lines):
+                stripped = line.strip()
+                parts = stripped.split()
+                if len(parts) >= 7:
+                    try:
+                        int(parts[0])  # layer number
+                        float(parts[1])  # upper elevation
+                        data_start = i
+                        break
+                    except ValueError:
+                        continue
+            if data_start is not None:
+                for line in lines[data_start:]:
+                    parts = line.strip().split()
+                    if len(parts) >= 7:
+                        try:
+                            layers.append({
+                                'layer_no': int(parts[0]),
+                                'upper_elevation': float(parts[1]),
+                                'lower_elevation': float(parts[2]),
+                                'upper_area': float(parts[3]),
+                                'lower_area': float(parts[4]),
+                                'upper_length': float(parts[5]),
+                                'lower_length': float(parts[6]),
+                            })
+                        except (ValueError, IndexError):
+                            pass
+        except Exception as e:
+            logger.error(f"Error parsing BATHYMETRY_{box_no}.txt: {e}")
+        return layers
+
+    def _build_box_network_figure(boxes, links):
+        """Build a plotly figure showing the box network as structured rectangular boxes.
+
+        Layout follows the Curonian Lagoon from south (Baltic Sea) at the bottom
+        to north (Nemunas river inputs) at the top.  Connected boxes are placed
+        adjacent to each other in the grid so advective links appear as short
+        straight lines between facing rectangle edges.
+        """
+
+        # ---- structured grid positions (x, y) ----
+        # South (Baltic) at bottom, North (rivers) at top.
+        BOX_POS = {
+            # Row 0 – deep entrance near Baltic
+            10: (1.0, 0), 12: (2.0, 0), 16: (3.0, 0),
+            # Row 1
+            1:  (1.0, 1), 13: (2.0, 1), 4:  (3.0, 1),
+            # Row 2 – narrow middle
+            7:  (2.0, 2),
+            # Row 3
+            11: (2.0, 3),
+            # Row 4
+            20: (1.0, 4), 22: (3.0, 4),
+            # Row 5
+            9:  (1.0, 5), 5:  (3.0, 5),
+            # Row 6
+            8:  (1.0, 6), 6:  (3.0, 6),
+            # Row 7 – widening toward north
+            14: (0.5, 7), 17: (1.5, 7), 15: (2.5, 7), 25: (3.5, 7),
+            # Row 8
+            21: (0.5, 8), 3:  (1.5, 8), 19: (2.5, 8), 2:  (3.5, 8),
+            # Row 9 – furthest north
+            18: (0.5, 9), 23: (1.5, 9), 24: (3.5, 9),
+        }
+        BND_POS = {
+            -1: (2.0, -1.2),                         # Baltic Sea outlet
+            -4: (1.8, 10.2), -5: (2.8, 10.2),        # River inflows → box 19
+            -2: (3.5, 10.2), -3: (4.3, 10.2),        # Nemunas → box 24
+        }
+        BND_LABELS = {-1: 'Baltic', -2: 'Nemunas', -3: 'Nemunas',
+                      -4: 'River', -5: 'River'}
+        all_pos = {**BOX_POS, **BND_POS}
+
+        # rectangle half-sizes
+        BW, BH = 0.34, 0.30       # pelagic boxes
+        BW_B, BH_B = 0.28, 0.22   # boundary nodes
+
+        # ---- depth → colour mapping ----
+        max_depth = max((info['depth'] for info in boxes.values()), default=35.0)
+
+        def depth_color(depth):
+            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
+            r = int(174 * (1 - t) + 26 * t)
+            g = int(214 * (1 - t) + 82 * t)
+            b = int(241 * (1 - t) + 118 * t)
+            return f'rgb({r},{g},{b})'
+
+        def text_color(depth):
+            t = min(depth / max_depth, 1.0) if max_depth > 0 else 0
+            return 'white' if t > 0.35 else '#1a1a2e'
+
+        # ---- clip line to rectangle edge ----
+        def rect_edge(cx, cy, tx, ty, hw, hh):
+            dx, dy = tx - cx, ty - cy
+            if abs(dx) < 1e-9 and abs(dy) < 1e-9:
+                return cx, cy
+            sx = hw / abs(dx) if abs(dx) > 1e-9 else 1e9
+            sy = hh / abs(dy) if abs(dy) > 1e-9 else 1e9
+            s = min(sx, sy)
+            return cx + dx * s, cy + dy * s
+
+        # ---- deduplicate edges ----
+        edge_set = set()
+        for up, down in links:
+            edge_set.add((min(up, down), max(up, down)))
+
+        # ---- build edge lines (clipped to rect borders) ----
+        edge_x, edge_y = [], []
+        for u, v in edge_set:
+            if u not in all_pos or v not in all_pos:
+                continue
+            ux, uy = all_pos[u]
+            vx, vy = all_pos[v]
+            uhw, uhh = (BW_B, BH_B) if u < 0 else (BW, BH)
+            vhw, vhh = (BW_B, BH_B) if v < 0 else (BW, BH)
+            ex1, ey1 = rect_edge(ux, uy, vx, vy, uhw, uhh)
+            ex2, ey2 = rect_edge(vx, vy, ux, uy, vhw, vhh)
+            edge_x.extend([ex1, ex2, None])
+            edge_y.extend([ey1, ey2, None])
+
+        fig = go.Figure()
+
+        # edge trace
+        fig.add_trace(go.Scatter(
+            x=edge_x, y=edge_y, mode='lines',
+            line=dict(width=1.5, color='rgba(127,140,141,0.6)'),
+            hoverinfo='none', showlegend=False,
+        ))
+
+        # ---- invisible hover layer (one marker per box for tooltips) ----
+        hvr_x, hvr_y, hvr_text = [], [], []
+        for box_no, (cx, cy) in BOX_POS.items():
+            info = boxes.get(box_no, {})
+            hvr_x.append(cx); hvr_y.append(cy)
+            hvr_text.append(
+                f"<b>Box {box_no}</b><br>"
+                f"Depth: {info.get('depth', 0):.1f} m<br>"
+                f"Bottom: {info.get('bottom_elevation', 0):.1f} m<br>"
+                f"Surface: {info.get('surface_elevation', 0):.4f} m<br>"
+                f"Sediment: {info.get('sediment', '?')}"
+            )
+        fig.add_trace(go.Scatter(
+            x=hvr_x, y=hvr_y, mode='markers',
+            marker=dict(size=30, color='rgba(0,0,0,0)'),
+            hovertext=hvr_text, hoverinfo='text',
+            showlegend=False,
+        ))
+
+        # ---- rectangle shapes + annotations ----
+        shapes, annotations = [], []
+
+        for box_no, (cx, cy) in BOX_POS.items():
+            info = boxes.get(box_no, {})
+            depth = info.get('depth', 0)
+            sed = info.get('sediment', '?')
+            fill = depth_color(depth)
+            tc = text_color(depth)
+            border = '#8e6c3a' if sed == 'Mud' else '#2980b9'
+
+            shapes.append(dict(
+                type='rect',
+                x0=cx - BW, y0=cy - BH, x1=cx + BW, y1=cy + BH,
+                fillcolor=fill,
+                line=dict(color=border, width=2.5),
+                layer='above',
+            ))
+            annotations.append(dict(
+                x=cx, y=cy + 0.06, text=f"<b>{box_no}</b>",
+                showarrow=False,
+                font=dict(size=11, color=tc, family='Arial Black'),
+            ))
+            annotations.append(dict(
+                x=cx, y=cy - 0.12,
+                text=f"{depth:.0f}m {'M' if sed == 'Mud' else 'S'}",
+                showarrow=False,
+                font=dict(size=8, color=tc, family='Arial'),
+            ))
+
+        for bnd_no, (cx, cy) in BND_POS.items():
+            shapes.append(dict(
+                type='rect',
+                x0=cx - BW_B, y0=cy - BH_B, x1=cx + BW_B, y1=cy + BH_B,
+                fillcolor='rgba(231,76,60,0.85)',
+                line=dict(color='#c0392b', width=2),
+                layer='above',
+            ))
+            annotations.append(dict(
+                x=cx, y=cy + 0.04, text=f"<b>{bnd_no}</b>",
+                showarrow=False,
+                font=dict(size=9, color='white', family='Arial Black'),
+            ))
+            annotations.append(dict(
+                x=cx, y=cy - 0.09,
+                text=BND_LABELS.get(bnd_no, ''),
+                showarrow=False,
+                font=dict(size=7, color='white', family='Arial'),
+            ))
+
+        # geographic reference labels
+        annotations.append(dict(
+            x=-0.2, y=-1.2, text='↓ Baltic Sea',
+            showarrow=False, font=dict(size=10, color='#5dade2'),
+            xanchor='left',
+        ))
+        annotations.append(dict(
+            x=-0.2, y=10.2, text='↑ Rivers (Nemunas)',
+            showarrow=False, font=dict(size=10, color='#e74c3c'),
+            xanchor='left',
+        ))
+
+        # ---- legend entries ----
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='markers',
+            marker=dict(size=12, color='#2980b9', symbol='square'),
+            name='Sand substrate', showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='markers',
+            marker=dict(size=12, color='#8e6c3a', symbol='square'),
+            name='Mud substrate', showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='markers',
+            marker=dict(size=10, color='#e74c3c', symbol='diamond'),
+            name='Open boundary', showlegend=True,
+        ))
+        # colourbar via invisible trace
+        fig.add_trace(go.Scatter(
+            x=[None], y=[None], mode='markers',
+            marker=dict(
+                size=0, color=[0, max_depth],
+                colorscale=[[0, 'rgb(174,214,241)'], [1, 'rgb(26,82,118)']],
+                colorbar=dict(title='Depth (m)', thickness=12, len=0.45, x=1.02),
+                showscale=True,
+            ),
+            showlegend=False, hoverinfo='none',
+        ))
+
+        fig.update_layout(
+            shapes=shapes, annotations=annotations,
+            title=dict(text='AQUABC Box Model — 25 Pelagic Boxes',
+                       font=dict(size=14)),
+            showlegend=True,
+            legend=dict(x=0, y=1, bgcolor='rgba(0,0,0,0.3)',
+                        font=dict(size=10)),
+            xaxis=dict(showgrid=False, zeroline=False,
+                       showticklabels=False, visible=False,
+                       range=[-0.8, 5.2]),
+            yaxis=dict(showgrid=False, zeroline=False,
+                       showticklabels=False, visible=False,
+                       range=[-2.0, 11.2]),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=5, r=40, t=40, b=10),
+            height=700,
+            template='plotly_dark',
+        )
+        return fig
+
+    def _build_bathymetry_figure(box_no, layers, boxes):
+        """Build a plotly figure showing bathymetry cross-section for a box."""
+        if not layers:
+            fig = go.Figure()
+            fig.add_annotation(text=f"No bathymetry data for Box {box_no}", showarrow=False,
+                               font=dict(size=16, color='#aaa'))
+            fig.update_layout(height=700, template='plotly_dark',
+                              paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            return fig
+
+        elevations = [(l['upper_elevation'] + l['lower_elevation']) / 2 for l in layers]
+        areas_m2 = [l['upper_area'] for l in layers]
+        areas_km2 = [a / 1e6 for a in areas_m2]  # Convert to km²
+        layer_thickness = [l['upper_elevation'] - l['lower_elevation'] for l in layers]
+
+        info = boxes.get(box_no, {})
+        sediment = info.get('sediment', 'Unknown')
+        depth = info.get('depth', 0)
+
+        fig = go.Figure()
+
+        # Area profile (horizontal bars showing area at each elevation)
+        fig.add_trace(go.Bar(
+            x=areas_km2,
+            y=elevations,
+            orientation='h',
+            marker=dict(
+                color=elevations,
+                colorscale='ice',
+                line=dict(width=0.5, color='rgba(44,62,80,0.5)'),
+            ),
+            hovertemplate='Elevation: %{y:.1f} m<br>Area: %{x:.2f} km²<extra></extra>',
+            name='Layer Area',
+            width=[abs(t) * 0.9 for t in layer_thickness],
+        ))
+
+        # Add water surface line
+        surf = info.get('surface_elevation', 0)
+        fig.add_hline(y=surf, line=dict(color='#3498db', width=2, dash='dash'),
+                      annotation_text='Water Surface', annotation_position='top right')
+
+        # Add bottom line
+        bot = info.get('bottom_elevation', 0)
+        fig.add_hline(y=bot, line=dict(color='#e74c3c', width=2, dash='dash'),
+                      annotation_text='Bottom', annotation_position='bottom right')
+
+        fig.update_layout(
+            title=dict(text=f'Box {box_no} Bathymetry — {sediment} substrate, {depth:.1f} m depth',
+                       font=dict(size=14)),
+            xaxis_title='Area (km²)',
+            yaxis_title='Elevation (m)',
+            height=700,
+            template='plotly_dark',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=60, r=20, t=50, b=50),
+            showlegend=False,
+        )
+        return fig
+
+    def _build_depths_overview(boxes):
+        """Build a plotly figure showing all box depths as a bar chart."""
+        if not boxes:
+            fig = go.Figure()
+            fig.add_annotation(text="No box data available", showarrow=False,
+                               font=dict(size=16, color='#aaa'))
+            fig.update_layout(height=700, template='plotly_dark',
+                              paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+            return fig
+
+        box_nos = sorted(boxes.keys())
+        depths = [boxes[b]['depth'] for b in box_nos]
+        bottoms = [boxes[b]['bottom_elevation'] for b in box_nos]
+        sediments = [boxes[b]['sediment'] for b in box_nos]
+        colors = ['#3498db' if s == 'Sand' else '#8e6c3a' for s in sediments]
+
+        hover_texts = [
+            f"Box {b}<br>Depth: {boxes[b]['depth']:.1f} m<br>"
+            f"Bottom: {boxes[b]['bottom_elevation']:.1f} m<br>"
+            f"Sediment: {boxes[b]['sediment']}"
+            for b in box_nos
+        ]
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=[f"Box {b}" for b in box_nos],
+            y=bottoms,
+            marker=dict(color=colors, line=dict(width=1, color='#2c3e50')),
+            hovertext=hover_texts,
+            hoverinfo='text',
+            name='Bottom Elevation',
+        ))
+
+        # Add surface elevation markers
+        surfs = [boxes[b]['surface_elevation'] for b in box_nos]
+        fig.add_trace(go.Scatter(
+            x=[f"Box {b}" for b in box_nos],
+            y=surfs,
+            mode='markers',
+            marker=dict(size=8, color='#1abc9c', symbol='diamond'),
+            name='Surface Elevation',
+            hovertemplate='Box %{x}<br>Surface: %{y:.4f} m<extra></extra>',
+        ))
+
+        # Add legend entries for sediment types
+        fig.add_trace(go.Bar(x=[None], y=[None], marker=dict(color='#3498db'), name='Sand', showlegend=True))
+        fig.add_trace(go.Bar(x=[None], y=[None], marker=dict(color='#8e6c3a'), name='Mud', showlegend=True))
+
+        fig.update_layout(
+            title=dict(text='All Boxes — Bottom Elevation & Sediment Type', font=dict(size=14)),
+            xaxis_title='Box',
+            yaxis_title='Elevation (m)',
+            height=700,
+            template='plotly_dark',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=60, r=20, t=50, b=80),
+            xaxis=dict(tickangle=-45),
+            legend=dict(x=0.75, y=0.98, bgcolor='rgba(255,255,255,0.1)'),
+            barmode='relative',
+        )
+        return fig
+
+    @render_widget
+    def map_display_plot():
+        """Render the Map Display plotly figure based on selected view."""
+        view = input.map_display_view()
+        box_no = int(input.map_bathymetry_box())
+
+        boxes = _parse_pelagic_inputs()
+        if view == "Box Network":
+            links = _parse_advective_links()
+            fig = _build_box_network_figure(boxes, links)
+        elif view == "Bathymetry Profile":
+            layers = _parse_bathymetry(box_no)
+            fig = _build_bathymetry_figure(box_no, layers, boxes)
+        elif view == "Box Depths Overview":
+            fig = _build_depths_overview(boxes)
+        else:
+            fig = go.Figure()
+            fig.update_layout(height=700, template='plotly_dark')
+        return go.FigureWidget(fig)
+
+    @render.ui
+    def map_display_info():
+        """Contextual info for the current map view."""
+        view = input.map_display_view()
+        if view == "Box Network":
+            return ui.tags.div(
+                ui.tags.small(
+                    ui.tags.strong("Box Network: "),
+                    "25 pelagic boxes connected by 45 bidirectional advective links. "
+                    "Boxes colored by depth (darker = deeper). "
+                    "Red diamonds = open boundaries. Hover for details.",
+                    class_="text-muted"
+                ),
+                class_="mt-2"
+            )
+        elif view == "Bathymetry Profile":
+            box_no = int(input.map_bathymetry_box())
+            boxes = _parse_pelagic_inputs()
+            info = boxes.get(box_no, {})
+            return ui.tags.div(
+                ui.tags.small(
+                    ui.tags.strong(f"Box {box_no}: "),
+                    f"Depth {info.get('depth', 0):.1f} m, "
+                    f"{info.get('sediment', 'Unknown')} substrate. "
+                    "Horizontal bars show layer area at each elevation.",
+                    class_="text-muted"
+                ),
+                class_="mt-2"
+            )
+        elif view == "Box Depths Overview":
+            return ui.tags.div(
+                ui.tags.small(
+                    ui.tags.strong("Overview: "),
+                    "Bottom elevations for all 25 boxes. "
+                    "Blue = Sand substrate, Brown = Mud. "
+                    "Diamonds = surface water elevation.",
+                    class_="text-muted"
+                ),
+                class_="mt-2"
+            )
+        return ui.tags.div()
 
     # ========== PARAMETER EDITOR ==========
     # Reactive values for parameter editing
@@ -7921,21 +8475,17 @@ def server(input, output, session):
     @render_widget
     def pydeck_map():
         """Render an interactive ipyleaflet map with sample data points."""
-        # Sample data points for demonstration (Curonian Lagoon area)
+        # Observation station locations in the Curonian Lagoon (WGS84 / EPSG:4326)
+        # sta1ND = Nida, sta2VM = Ventė Cape
         stations = [
-            {'lat': 55.5, 'lon': 21.0, 'name': 'Station 1', 'value': 10},
-            {'lat': 55.6, 'lon': 21.1, 'name': 'Station 2', 'value': 25},
-            {'lat': 55.4, 'lon': 20.9, 'name': 'Station 3', 'value': 15},
-            {'lat': 55.55, 'lon': 21.05, 'name': 'Station 4', 'value': 30},
-            {'lat': 55.45, 'lon': 20.95, 'name': 'Station 5', 'value': 20},
-            {'lat': 55.52, 'lon': 21.08, 'name': 'Station 6', 'value': 18},
-            {'lat': 55.48, 'lon': 20.92, 'name': 'Station 7', 'value': 22},
+            {'lat': 55.3028, 'lon': 21.0003, 'name': 'Nida (sta1ND)', 'value': 15},
+            {'lat': 55.3417, 'lon': 21.1900, 'name': 'Ventė (sta2VM)', 'value': 25},
         ]
         
         # Get user inputs
-        center_lat = input.map_lat() or 55.5
-        center_lon = input.map_lon() or 21.0
-        zoom = input.map_zoom() or 8
+        center_lat = input.map_lat() or 55.32
+        center_lon = input.map_lon() or 21.10
+        zoom = input.map_zoom() or 10
         map_style = input.map_style() or "OpenStreetMap.Mapnik"
         point_radius = input.map_point_radius() or 1000
         
@@ -7951,6 +8501,7 @@ def server(input, output, session):
             center=(center_lat, center_lon),
             zoom=zoom,
             basemap=basemap,
+            scroll_wheel_zoom=True,
             layout={'height': '600px'}
         )
         
@@ -7999,7 +8550,7 @@ def server(input, output, session):
         return ui.div(
             ui.tags.p(
                 ui.tags.strong("About this map: "),
-                "This interactive map displays sample monitoring stations in the Curonian Lagoon area. ",
+                "This interactive map displays observation stations in the Curonian Lagoon: Nida (sta1ND) and Ventė Cape (sta2VM). ",
                 "Use the controls on the left to adjust the map view and visualization settings."
             ),
             ui.tags.p(
