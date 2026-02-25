@@ -1,0 +1,222 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="lib/vis-10.0.2/vis-network.min.css" type="text/css" />
+            <script src="lib/vis-10.0.2/vis-network.min.js" type="text/javascript"></script>
+            
+        
+
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1100px;
+                 background-color: #F5F7FA;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+
+             
+        </style>
+    
+    <style>
+      body { margin: 0; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+      .diagram-header {
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        color: #F1F5F9;
+        padding: 18px 28px 14px;
+        text-align: center;
+      }
+      .diagram-header h1 {
+        margin: 0 0 6px;
+        font-size: 1.6em;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .diagram-header p {
+        margin: 0;
+        font-size: 0.85em;
+        color: #94A3B8;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 18px;
+        padding: 10px 20px;
+        background: #F8FAFC;
+        border-bottom: 1px solid #E2E8F0;
+        font-size: 0.78em;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .legend-swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1.5px solid rgba(0,0,0,0.15);
+        flex-shrink: 0;
+      }
+      /* ── Navigation button overrides ── */
+      div.vis-navigation div.vis-button {
+        background-color: #334155 !important;
+        border: 1.5px solid #475569 !important;
+        border-radius: 6px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+      }
+      div.vis-navigation div.vis-button:hover {
+        background-color: #475569 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+      }
+      div.vis-navigation div.vis-button.vis-up,
+      div.vis-navigation div.vis-button.vis-down,
+      div.vis-navigation div.vis-button.vis-left,
+      div.vis-navigation div.vis-button.vis-right,
+      div.vis-navigation div.vis-button.vis-zoomIn,
+      div.vis-navigation div.vis-button.vis-zoomOut,
+      div.vis-navigation div.vis-button.vis-zoomExtends {
+        background-color: #334155 !important;
+      }
+    </style>
+    </head>
+
+
+    <body>
+        
+    <div class="diagram-header">
+      <h1>AQUABC v0.2 &mdash; Ecological Model Architecture</h1>
+      <p>Interactive biogeochemical network &middot; 32 pelagic + 24 sediment + 6 macroalgae + 4 allelopathy state variables</p>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:#F59E0B;"></div>Forcing</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#34D399;"></div>Phytoplankton</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#F87171;"></div>Zooplankton</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#3B82F6;"></div>Nutrients</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#38BDF8;"></div>Dissolved O&#x2082;</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#FCD34D;"></div>Inorganic C</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#D97706;"></div>Particulate OM</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#A78BFA;"></div>Dissolved OM</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#8B5CF6;"></div>Redox Species</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#64748B;"></div>Sediment</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#14B8A6;"></div>Macroalgae</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#FB7185;"></div>Allelopathy</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#E2E8F0;"></div>CO&#x2082;SYS</div>
+    </div>
+    <div class="card" style="width: 100%; border: none;">
+            
+            
+
+            
+
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"font": {"color": "#2D3436"}, "group": "forcing", "id": "TEMP", "label": "Temperature", "shape": "diamond", "size": 22, "title": "Water temperature \u2013 CTMI for phyto, Arrhenius \u03b8^(T-20) for other processes"}, {"font": {"color": "#2D3436"}, "group": "forcing", "id": "PAR", "label": "Light (PAR)", "shape": "diamond", "size": 22, "title": "Photosynthetically active radiation (langleys/day)"}, {"font": {"color": "#2D3436"}, "group": "forcing", "id": "WIND", "label": "Wind Speed", "shape": "diamond", "size": 22, "title": "Wind speed (m/s) \u2013 drives aeration K_A"}, {"font": {"color": "#2D3436"}, "group": "forcing", "id": "ICE", "label": "Ice Cover", "shape": "diamond", "size": 22, "title": "Ice cover fraction (0-1) \u2013 suppresses aeration"}, {"font": {"color": "#2D3436"}, "group": "forcing", "id": "SALT", "label": "Salinity", "shape": "diamond", "size": 22, "title": "Salinity (PSU) \u2013 affects DO saturation \u0026 CO2SYS"}, {"font": {"color": "#2D3436"}, "group": "forcing", "id": "DEPTH", "label": "Depth", "shape": "diamond", "size": 22, "title": "Water column depth (m) \u2013 light attenuation, settling"}, {"font": {"color": "#2D3436"}, "group": "phyto", "id": "DIA", "label": "Diatoms\n(DIA_C)", "shape": "dot", "size": 28, "title": "Si-limited \u00b7 Synthesizing Unit colimitation\nKG=3.7/d \u00b7 N:C=0.22 \u00b7 Si:C=0.25\nNo DON, no buoyancy"}, {"font": {"color": "#2D3436"}, "group": "phyto", "id": "CYN", "label": "Non-fixing\nCyanobacteria\n(CYN_C)", "shape": "dot", "size": 28, "title": "DON utilisation \u00b7 Optional buoyancy model\nKG=2.4/d \u00b7 No Si requirement"}, {"font": {"color": "#2D3436"}, "group": "phyto", "id": "FIX", "label": "N\u2082-fixing\nCyanobacteria\n(FIX_CYN_C)", "shape": "dot", "size": 28, "title": "Two metabolic fractions (fixing + non-fixing)\nInverse Monod N-fixation \u00b7 Buoyancy model\nKG=3.5/d"}, {"font": {"color": "#2D3436"}, "group": "phyto", "id": "OPA", "label": "Other Plankton\nAlgae (OPA_C)", "shape": "dot", "size": 28, "title": "Flagellates, cryptophytes, chrysophytes\nKG=2.9/d \u00b7 Cooler optimum (9-20\u00b0C)\nNo DON, no Si, no buoyancy"}, {"font": {"color": "#2D3436"}, "group": "phyto", "id": "NOST", "label": "Nostocales\n(NOST_C + AKI_C)", "shape": "dot", "size": 28, "title": "Obligate N\u2082 fixer \u00b7 Heterocyst differentiation\nAkinete lifecycle (germination/formation)\nDensity-dependent mortality \u00b7 Buoyancy"}, {"font": {"color": "#2D3436"}, "group": "zoo", "id": "ZOO", "label": "Zooplankton\n(ZOO_C/N/P)", "shape": "dot", "size": 30, "title": "Multi-prey Monod grazing \u00b7 KG=0.45/d\nPreferences: DIA=0.26, OPA=0.37, CYN=0.10\nFIX=0.07, DET=0.20 \u00b7 Hypoxia response"}, {"font": {"color": "#2D3436"}, "group": "pom", "id": "POM", "label": "Particulate OM\n(DET_POC, PON, POP)", "shape": "dot", "size": 24, "title": "Detrital particulate organic matter\nDissolution: POC=0.1/d, PON=0.25/d, POP=0.48/d\nPhytoplankton-enhanced dissolution"}, {"font": {"color": "#2D3436"}, "group": "dom", "id": "DOM", "label": "Dissolved OM\n(DOC, DON, DOP)", "shape": "dot", "size": 24, "title": "Dissolved organic matter\nMineralization via 6 electron-acceptor pathways\nAerobic \u2192 NO\u2083 \u2192 Mn(IV) \u2192 Fe(III) \u2192 SO\u2084 \u2192 CH\u2084"}, {"font": {"color": "#2D3436"}, "group": "nutrient", "id": "NH4", "label": "NH\u2084\u207a-N", "shape": "dot", "size": 22, "title": "Ammonium nitrogen (mg-N/L)\nSources: mineralization, zoo excretion, phyto resp\nSinks: phyto uptake, nitrification"}, {"font": {"color": "#2D3436"}, "group": "nutrient", "id": "NO3", "label": "NO\u2083\u207b-N", "shape": "dot", "size": 22, "title": "Nitrate nitrogen (mg-N/L)\nSource: nitrification\nSinks: phyto uptake, denitrification"}, {"font": {"color": "#2D3436"}, "group": "nutrient", "id": "PO4", "label": "PO\u2084\u00b3\u207b-P", "shape": "dot", "size": 22, "title": "Orthophosphate (mg-P/L)\nModulated by Fe(III) co-precipitation\nIP_SOLUBLE_FRACTION from FePO\u2084 equilibrium"}, {"font": {"color": "#2D3436"}, "group": "nutrient", "id": "DSi", "label": "Dissolved Si", "shape": "dot", "size": 22, "title": "Dissolved silica (mg-Si/L)\nRequired by diatoms only\nSource: biogenic Si dissolution"}, {"font": {"color": "#2D3436"}, "group": "nutrient", "id": "PSi", "label": "Biogenic Si", "shape": "dot", "size": 22, "title": "Particulate biogenic silica (mg-Si/L)\nFrom diatom mortality \u00b7 Settles \u00b7 Dissolves"}, {"font": {"color": "#2D3436"}, "group": "oxygen", "id": "DO", "label": "Dissolved O\u2082\n(DISS_OXYGEN)", "shape": "star", "size": 30, "title": "Sources: photosynthesis, aeration\nSinks: respiration, nitrification, oxidation of\n Fe\u00b2\u207a, Mn\u00b2\u207a, H\u2082S, CH\u2084, aerobic DOC mineral.\nSaturation f(T, S, altitude)"}, {"font": {"color": "#2D3436"}, "group": "carbon", "id": "DIC", "label": "DIC\n(INORG_C)", "shape": "dot", "size": 22, "title": "Dissolved inorganic carbon (mol-C/L)\nLinks to CO2SYS for pH, pCO\u2082"}, {"font": {"color": "#2D3436"}, "group": "carbon", "id": "ALK", "label": "Total\nAlkalinity", "shape": "dot", "size": 22, "title": "Total alkalinity (meq/L)\nAffected by nitrification, denitrification,\nsulphate reduction, Fe/Mn redox"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "FE2", "label": "Fe\u00b2\u207a", "shape": "dot", "size": 20, "title": "Ferrous iron \u00b7 Oxidised by O\u2082 (Morgan \u0026 Lahav 2007)\nSpeciation: FeCO\u2083, Fe(OH)\u2082, FeS, FeS\u2082 phases"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "FE3", "label": "Fe\u00b3\u207a", "shape": "dot", "size": 20, "title": "Ferric iron \u00b7 Reduced by DOC under anoxia\nHydrolysis speciation (Stumm \u0026 Morgan 1996)\nControls PO\u2084 solubility via FePO\u2084"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "MN2", "label": "Mn\u00b2\u207a", "shape": "dot", "size": 20, "title": "Manganous manganese \u00b7 Oxidised by O\u2082\nSpeciation: MnCO\u2083, Mn(OH)\u2082, MnS phases"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "MN4", "label": "Mn\u2074\u207a", "shape": "dot", "size": 20, "title": "Manganic manganese \u00b7 Reduced by DOC\nElectron acceptor in redox sequence"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "SO4", "label": "SO\u2084\u00b2\u207b-S", "shape": "dot", "size": 20, "title": "Sulphate sulphur \u00b7 Reduced to H\u2082S under anoxia\n5th in thermodynamic redox hierarchy"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "H2S", "label": "H\u2082S-S", "shape": "dot", "size": 20, "title": "Sulphide sulphur \u00b7 Re-oxidised by O\u2082\nControls Fe speciation (FeS, FeS\u2082)"}, {"font": {"color": "#2D3436"}, "group": "redox", "id": "CH4", "label": "CH\u2084-C", "shape": "dot", "size": 20, "title": "Methane carbon \u00b7 Produced by methanogenesis\n(last resort electron acceptor)\nOxidised by O\u2082: 5.33 mg-O\u2082/mg-C"}, {"font": {"color": "#2D3436"}, "group": "macro", "id": "MAC", "label": "Macroalgae\n(C, N, P)", "shape": "dot", "size": 25, "title": "Droop quota nutrient limitation\nSpace limitation (logistic)\n3 light formulations (Baly/Smith/Steele)"}, {"font": {"color": "#2D3436"}, "group": "macro", "id": "MACDET", "label": "Attached\nDetritus", "shape": "dot", "size": 25, "title": "Dead macroalgae tissue (POC, PON, POP)\nDeattaches to water column POM"}, {"font": {"color": "#2D3436"}, "group": "allelo", "id": "SM_DIA", "label": "Diatom\nMetabolites", "shape": "triangle", "size": 18, "title": "Secondary metabolites from diatom death\nInhibit other phytoplankton (Monod-type)"}, {"font": {"color": "#2D3436"}, "group": "allelo", "id": "SM_CYN", "label": "Cyanobact.\nMetabolites", "shape": "triangle", "size": 18, "title": "Secondary metabolites from cyanobacteria death"}, {"font": {"color": "#2D3436"}, "group": "allelo", "id": "SM_FIX", "label": "Fix-Cyan.\nMetabolites", "shape": "triangle", "size": 18, "title": "Secondary metabolites from N\u2082-fixing cyan. death"}, {"font": {"color": "#2D3436"}, "group": "allelo", "id": "SM_NOST", "label": "Nostocales\nMetabolites", "shape": "triangle", "size": 18, "title": "Secondary metabolites from Nostocales death"}, {"font": {"color": "#2D3436"}, "group": "sediment", "id": "SED_OM", "label": "Sediment OM\n(POC \u2192 DOC)", "shape": "box", "size": 25, "title": "24 state variables per layer\nOxic + anoxic dissolution pathways"}, {"font": {"color": "#2D3436"}, "group": "sediment", "id": "SED_NUT", "label": "Sediment\nNutrients", "shape": "box", "size": 25, "title": "Porewater nutrients: NH\u2084, NO\u2083, PO\u2084, Si, DIC, ALK"}, {"font": {"color": "#2D3436"}, "group": "sediment", "id": "SED_REDOX", "label": "Sediment\nRedox Sequence", "shape": "box", "size": 25, "title": "Same 6-pathway hierarchy as pelagic\nSediment-specific rate constants \u0026 pH correction (Gaussian)"}, {"font": {"color": "#2D3436"}, "group": "sediment", "id": "SED_TRANS", "label": "Transport\n(Diff/Adv/Bio/Bur)", "shape": "box", "size": 25, "title": "Diffusion (Archie\u0027s law tortuosity)\nAdvection \u00b7 Bioturbation (particle mixing)\nBurial \u00b7 Erosion/Deposition"}, {"font": {"color": "#2D3436"}, "group": "co2sys", "id": "CO2SYS", "label": "CO2SYS\nCarbonate Chemistry", "shape": "box", "size": 25, "title": "CDIAC implementation\npH, pCO\u2082, HCO\u2083\u207b, CO\u2083\u00b2\u207b\n\u03a9_calcite, \u03a9_aragonite\n13 K1/K2 constant sets"}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "DIA", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "CYN", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "FIX", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "OPA", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "NOST", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "ZOO", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "POM", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "TEMP", "label": "", "to": "DO", "width": 1}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "DIA", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "CYN", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "FIX", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "OPA", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "NOST", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "PAR", "label": "Light", "to": "MAC", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "WIND", "label": "Aeration K_A", "to": "DO", "width": 1.5}, {"arrows": "to", "color": "#93C5FD", "dashes": false, "from": "ICE", "label": "Suppress aeration", "to": "DO", "width": 1.5}, {"arrows": "to", "color": "#FBBF24", "dashes": false, "from": "SALT", "label": "", "to": "CO2SYS", "width": 1}, {"arrows": "to", "color": "#F59E0B44", "dashes": true, "from": "DEPTH", "label": "", "to": "DO", "width": 1}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NH4", "label": "N uptake", "to": "DIA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NO3", "label": "N uptake", "to": "DIA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "PO4", "label": "P uptake", "to": "DIA", "width": 1.5}, {"arrows": "to", "color": "#6EE7B7", "dashes": false, "from": "DIC", "label": "Photosynthesis", "to": "DIA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NH4", "label": "N uptake", "to": "CYN", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NO3", "label": "N uptake", "to": "CYN", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "PO4", "label": "P uptake", "to": "CYN", "width": 1.5}, {"arrows": "to", "color": "#6EE7B7", "dashes": false, "from": "DIC", "label": "Photosynthesis", "to": "CYN", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NH4", "label": "N uptake", "to": "FIX", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NO3", "label": "N uptake", "to": "FIX", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "PO4", "label": "P uptake", "to": "FIX", "width": 1.5}, {"arrows": "to", "color": "#6EE7B7", "dashes": false, "from": "DIC", "label": "Photosynthesis", "to": "FIX", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NH4", "label": "N uptake", "to": "OPA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NO3", "label": "N uptake", "to": "OPA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "PO4", "label": "P uptake", "to": "OPA", "width": 1.5}, {"arrows": "to", "color": "#6EE7B7", "dashes": false, "from": "DIC", "label": "Photosynthesis", "to": "OPA", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NH4", "label": "N uptake", "to": "NOST", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "NO3", "label": "N uptake", "to": "NOST", "width": 1.5}, {"arrows": "to", "color": "#059669", "dashes": false, "from": "PO4", "label": "P uptake", "to": "NOST", "width": 1.5}, {"arrows": "to", "color": "#6EE7B7", "dashes": false, "from": "DIC", "label": "Photosynthesis", "to": "NOST", "width": 1.5}, {"arrows": "to", "color": "#1D4ED8", "dashes": false, "from": "DSi", "label": "Si uptake\n(diatoms only)", "to": "DIA", "width": 2}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "DIA", "label": "O\u2082 production", "to": "DO", "width": 2}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "CYN", "label": "O\u2082 production", "to": "DO", "width": 2}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "FIX", "label": "O\u2082 production", "to": "DO", "width": 2}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "OPA", "label": "O\u2082 production", "to": "DO", "width": 2}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "NOST", "label": "O\u2082 production", "to": "DO", "width": 2}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "DIA", "label": "Grazing (0.26)", "to": "ZOO", "width": 2.5}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "CYN", "label": "Grazing (0.10)", "to": "ZOO", "width": 1.5}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "FIX", "label": "Grazing (0.07)", "to": "ZOO", "width": 1.2}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "OPA", "label": "Grazing (0.37)", "to": "ZOO", "width": 3}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "NOST", "label": "Grazing", "to": "ZOO", "width": 1.5}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "POM", "label": "Grazing (0.20)", "to": "ZOO", "width": 2}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "DIA", "label": "Death", "to": "POM", "width": 1.5}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "CYN", "label": "Death", "to": "POM", "width": 1.5}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "FIX", "label": "Death", "to": "POM", "width": 1.5}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "OPA", "label": "Death", "to": "POM", "width": 1.5}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "NOST", "label": "Death", "to": "POM", "width": 1.5}, {"arrows": "to", "color": "#B45309", "dashes": false, "from": "ZOO", "label": "Death + faecal", "to": "POM", "width": 2}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "DIA", "label": "Excretion", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "CYN", "label": "Excretion", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "FIX", "label": "Excretion", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "OPA", "label": "Excretion", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "NOST", "label": "Excretion", "to": "DOM", "width": 1}, {"arrows": "to", "color": "#C4B5FD", "dashes": false, "from": "ZOO", "label": "Excretion", "to": "DOM", "width": 1.5}, {"arrows": "to", "color": "#FCA5A5", "dashes": false, "from": "ZOO", "label": "Respiration", "to": "DO", "width": 1.5}, {"arrows": "to", "color": "#7C3AED", "dashes": false, "from": "POM", "label": "Dissolution", "to": "DOM", "width": 3}, {"arrows": "to", "color": "#6D28D9", "dashes": false, "from": "DOM", "label": "Mineralisation\n(6 redox pathways)", "to": "DIC", "width": 3}, {"arrows": "to", "color": "#3B82F6", "dashes": false, "from": "DOM", "label": "N mineralisation", "to": "NH4", "width": 2}, {"arrows": "to", "color": "#3B82F6", "dashes": false, "from": "DOM", "label": "P mineralisation", "to": "PO4", "width": 2}, {"arrows": "to", "color": "#1D4ED8", "dashes": false, "from": "NH4", "label": "Nitrification\n(consumes O\u2082)", "to": "NO3", "width": 2.5}, {"arrows": "to", "color": "#7C3AED", "dashes": false, "from": "NO3", "label": "Denitrification\n(DOC as e\u207b donor)", "to": "DIC", "width": 2}, {"arrows": "to", "color": "#8B5CF6", "dashes": false, "from": "MN4", "label": "Mn(IV) reduction\n(DOC oxidation)", "to": "MN2", "width": 2}, {"arrows": "to", "color": "#8B5CF6", "dashes": false, "from": "FE3", "label": "Fe(III) reduction\n(DOC oxidation)", "to": "FE2", "width": 2}, {"arrows": "to", "color": "#8B5CF6", "dashes": false, "from": "SO4", "label": "SO\u2084\u00b2\u207b reduction\n(DOC oxidation)", "to": "H2S", "width": 2}, {"arrows": "to", "color": "#8B5CF6", "dashes": false, "from": "DOM", "label": "Methanogenesis\n(last resort)", "to": "CH4", "width": 2}, {"arrows": "to", "color": "#A78BFA", "dashes": false, "from": "FE2", "label": "Oxidation\n(O\u2082)", "to": "FE3", "width": 1.5}, {"arrows": "to", "color": "#A78BFA", "dashes": false, "from": "MN2", "label": "Oxidation\n(O\u2082)", "to": "MN4", "width": 1.5}, {"arrows": "to", "color": "#A78BFA", "dashes": false, "from": "H2S", "label": "Oxidation\n(O\u2082)", "to": "SO4", "width": 1.5}, {"arrows": "to", "color": "#A78BFA", "dashes": false, "from": "CH4", "label": "Oxidation\n(5.33 mg O\u2082/mg C)", "to": "DIC", "width": 1.5}, {"arrows": "to", "color": "#E11D48", "dashes": true, "from": "FE3", "label": "FePO\u2084 precipitation\n(controls P solubility)", "to": "PO4", "width": 2}, {"arrows": "to", "color": "#94A3B8", "dashes": false, "from": "DIC", "label": "Equilibrium", "to": "CO2SYS", "width": 2}, {"arrows": "to", "color": "#94A3B8", "dashes": false, "from": "ALK", "label": "Equilibrium", "to": "CO2SYS", "width": 2}, {"arrows": "to", "color": "#94A3B8", "dashes": true, "from": "CO2SYS", "label": "pH feedback", "to": "DIC", "width": 1}, {"arrows": "to", "color": "#1D4ED8", "dashes": false, "from": "DIA", "label": "Diatom mortality", "to": "PSi", "width": 1.5}, {"arrows": "to", "color": "#60A5FA", "dashes": false, "from": "PSi", "label": "Dissolution", "to": "DSi", "width": 1.5}, {"arrows": "to", "color": "#475569", "dashes": false, "from": "POM", "label": "Settling", "to": "SED_OM", "width": 2.5}, {"arrows": "to", "color": "#475569", "dashes": false, "from": "PSi", "label": "Settling", "to": "SED_OM", "width": 1.5}, {"arrows": "to", "color": "#475569", "dashes": false, "from": "DIA", "label": "Settling", "to": "SED_OM", "width": 1}, {"arrows": "to", "color": "#475569", "dashes": false, "from": "CYN", "label": "Settling", "to": "SED_OM", "width": 1}, {"arrows": "to", "color": "#475569", "dashes": false, "from": "OPA", "label": "Settling", "to": "SED_OM", "width": 1}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_NUT", "label": "Sediment flux", "to": "NH4", "width": 2}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_NUT", "label": "Sediment flux", "to": "NO3", "width": 1.5}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_NUT", "label": "Sediment flux", "to": "PO4", "width": 2}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_NUT", "label": "Sediment flux", "to": "DSi", "width": 1.5}, {"arrows": "to", "color": "#DC2626", "dashes": false, "from": "SED_NUT", "label": "O\u2082 demand", "to": "DO", "width": 2.5}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_OM", "label": "DOC release", "to": "DOM", "width": 1.5}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_OM", "label": "DIC release", "to": "DIC", "width": 1.5}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_REDOX", "label": "Fe\u00b2\u207a flux", "to": "FE2", "width": 1}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_REDOX", "label": "H\u2082S flux", "to": "H2S", "width": 1}, {"arrows": "to", "color": "#64748B", "dashes": false, "from": "SED_REDOX", "label": "CH\u2084 flux", "to": "CH4", "width": 1}, {"arrows": "to", "color": "#334155", "dashes": false, "from": "SED_OM", "label": "Mineralisation", "to": "SED_NUT", "width": 2}, {"arrows": "to", "color": "#334155", "dashes": false, "from": "SED_OM", "label": "Redox coupling", "to": "SED_REDOX", "width": 2}, {"arrows": "to", "color": "#475569", "dashes": true, "from": "SED_TRANS", "label": "Transport", "to": "SED_OM", "width": 1}, {"arrows": "to", "color": "#475569", "dashes": true, "from": "SED_TRANS", "label": "Transport", "to": "SED_NUT", "width": 1}, {"arrows": "to", "color": "#475569", "dashes": true, "from": "SED_TRANS", "label": "Transport", "to": "SED_REDOX", "width": 1}, {"arrows": "to", "color": "#0D9488", "dashes": false, "from": "NH4", "label": "N uptake", "to": "MAC", "width": 1.5}, {"arrows": "to", "color": "#0D9488", "dashes": false, "from": "NO3", "label": "N uptake", "to": "MAC", "width": 1.5}, {"arrows": "to", "color": "#0D9488", "dashes": false, "from": "PO4", "label": "P uptake", "to": "MAC", "width": 1.5}, {"arrows": "to", "color": "#38BDF8", "dashes": false, "from": "MAC", "label": "O\u2082 production", "to": "DO", "width": 1.5}, {"arrows": "to", "color": "#0D9488", "dashes": false, "from": "MAC", "label": "Death", "to": "MACDET", "width": 2}, {"arrows": "to", "color": "#0D9488", "dashes": false, "from": "MACDET", "label": "Deattachment\nto water column", "to": "POM", "width": 2}, {"arrows": "to", "color": "#E11D48", "dashes": false, "from": "DIA", "label": "Death metabolites", "to": "SM_DIA", "width": 1}, {"arrows": "to", "color": "#E11D48", "dashes": false, "from": "CYN", "label": "Death metabolites", "to": "SM_CYN", "width": 1}, {"arrows": "to", "color": "#E11D48", "dashes": false, "from": "FIX", "label": "Death metabolites", "to": "SM_FIX", "width": 1}, {"arrows": "to", "color": "#E11D48", "dashes": false, "from": "NOST", "label": "Death metabolites", "to": "SM_NOST", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_DIA", "label": "Inhibition", "to": "DIA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_DIA", "label": "Inhibition", "to": "CYN", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_DIA", "label": "Inhibition", "to": "FIX", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_DIA", "label": "Inhibition", "to": "OPA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_DIA", "label": "Inhibition", "to": "NOST", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_CYN", "label": "Inhibition", "to": "DIA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_CYN", "label": "Inhibition", "to": "CYN", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_CYN", "label": "Inhibition", "to": "FIX", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_CYN", "label": "Inhibition", "to": "OPA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_CYN", "label": "Inhibition", "to": "NOST", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_FIX", "label": "Inhibition", "to": "DIA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_FIX", "label": "Inhibition", "to": "CYN", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_FIX", "label": "Inhibition", "to": "FIX", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_FIX", "label": "Inhibition", "to": "OPA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_FIX", "label": "Inhibition", "to": "NOST", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_NOST", "label": "Inhibition", "to": "DIA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_NOST", "label": "Inhibition", "to": "CYN", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_NOST", "label": "Inhibition", "to": "FIX", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_NOST", "label": "Inhibition", "to": "OPA", "width": 1}, {"arrows": "to", "color": "#FDA4AF", "dashes": true, "from": "SM_NOST", "label": "Inhibition", "to": "NOST", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"barnesHut": {"gravitationalConstant": -12000, "centralGravity": 0.8, "springLength": 180, "springConstant": 0.02, "damping": 0.4, "avoidOverlap": 0.6}, "maxVelocity": 30, "minVelocity": 0.75, "stabilization": {"enabled": true, "iterations": 500, "updateInterval": 25}}, "edges": {"smooth": {"type": "curvedCW", "roundness": 0.15}, "font": {"size": 10, "color": "#555555", "strokeWidth": 2, "strokeColor": "#FFFFFF"}, "arrows": {"to": {"enabled": true, "scaleFactor": 0.7}}}, "nodes": {"font": {"size": 13, "face": "Helvetica"}, "borderWidth": 2, "shadow": true}, "interaction": {"hover": true, "tooltipDelay": 200, "navigationButtons": true, "keyboard": true}};
+
+                  
+
+
+                  
+
+                  
+
+                  network = new vis.Network(container, data, options);
+                  
+                  // Expose network, nodes, and edges to window for external access (e.g. from Shiny)
+                  window.network = network;
+                  window.nodes = nodes;
+                  window.edges = edges;
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

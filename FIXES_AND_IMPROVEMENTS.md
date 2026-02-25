@@ -4,7 +4,7 @@
 
 This document summarizes fixes and improvements identified by scanning the repository. Items are grouped by priority with current status.
 
-**Last updated:** 2026-02-12
+**Last updated:** 2026-02-13
 
 ---
 
@@ -42,11 +42,8 @@ This document summarizes fixes and improvements identified by scanning the repos
 1) ~~Documentation and developer onboarding~~ **RESOLVED**
    - **Status:** `CONTRIBUTING.md` created with build/test/PR workflow, Shiny app instructions, and coding guidelines.
 
-2) Dependency security & maintenance
-   - Files: `requirements.txt`
-   - Suggestions:
-     - Consider adding Dependabot or GitHub Actions job to check package security (e.g., `safety`), and optionally a `requirements-dev.txt` for test/dev tools.
-   - Estimated effort: 0.25 day.
+2) ~~Dependency security & maintenance~~ **RESOLVED**
+   - **Status:** Dependabot configured (`.github/dependabot.yml`) with weekly scans for pip and GitHub Actions ecosystems. `requirements-dev.txt` created for test/dev tools (ruff, pytest). Fixed `shinywidgets==0.7.0` → `0.7.1` in `requirements.txt`.
 
 3) ~~Add `Makefile` commands for developer checks~~ **RESOLVED**
    - **Status:** Added `make test-all`, `make test-python`, `make test-fortran`, `make lint` targets.
@@ -59,6 +56,7 @@ The following major improvements have been implemented:
 
 ### Numerical Safety
 - **Division-by-zero guards**: ~50+ guarded divisions across pelagic, sediment, macroalgae, CO2SYS, and REDOX models using `max(divisor, 1.0D-20)` convention
+- **Zero K_HS defaults fixed**: 3 Monod half-saturation constants (`K_HS_DOC_MIN_DOXY`, `K_HS_DON_MIN_DOXY`, `K_HS_DOP_MIN_DOXY`) had default value 0.0, causing `0/(0+0)=NaN` when substrate reached zero. Fixed to match sibling values (1.0, 0.05, 0.052).
 - **pH clamping**: All pH-to-H+ conversions clamped to [4, 11] across all model compartments
 - **Safe exponential**: `safe_exp()` function prevents overflow/underflow in light limitation
 - **Input clamping**: Temperature [0, 45], salinity >= 0, pH [4, 11] at model entry points

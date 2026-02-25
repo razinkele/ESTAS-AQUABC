@@ -11,7 +11,7 @@ module AQUABC_PELAGIC_INTERNAL
 
     !State variables
     real(kind = DBL_PREC), allocatable, dimension(:) :: NH4_N
-    real(kind = DBL_PREC), allocatable, dimension(:) :: NO3_N
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: NO3_N
     real(kind = DBL_PREC), allocatable, dimension(:) :: PO4_P
     real(kind = DBL_PREC), allocatable, target, dimension(:) :: DISS_OXYGEN
     real(kind = DBL_PREC), allocatable, dimension(:) :: DIA_C
@@ -21,7 +21,7 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: DET_PART_ORG_C
     real(kind = DBL_PREC), allocatable, dimension(:) :: DET_PART_ORG_N
     real(kind = DBL_PREC), allocatable, dimension(:) :: DET_PART_ORG_P
-    real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_ORG_C
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: DISS_ORG_C
     real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_ORG_N
     real(kind = DBL_PREC), allocatable, dimension(:) :: DISS_ORG_P
     real(kind = DBL_PREC), allocatable, dimension(:) :: CYN_C
@@ -35,17 +35,17 @@ module AQUABC_PELAGIC_INTERNAL
     ! End of new state variables added 22 September 2014
 
     ! New state variables added 9 September 2015
-    real(kind = DBL_PREC), allocatable, dimension(:) :: FE_II
-    real(kind = DBL_PREC), allocatable, dimension(:) :: FE_III
-    real(kind = DBL_PREC), allocatable, dimension(:) :: MN_II
-    real(kind = DBL_PREC), allocatable, dimension(:) :: MN_IV
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: FE_II
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: FE_III
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: MN_II
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: MN_IV
     ! End of new state variables added 22 September 2015
 
     ! New state variables added 27 January 2016
     real(kind = DBL_PREC), allocatable, dimension(:) :: CA
     real(kind = DBL_PREC), allocatable, dimension(:) :: MG
-    real(kind = DBL_PREC), allocatable, dimension(:) :: S_PLUS_6
-    real(kind = DBL_PREC), allocatable, dimension(:) :: S_MINUS_2
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: S_PLUS_6
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: S_MINUS_2
     real(kind = DBL_PREC), allocatable, dimension(:) :: CH4_C
     ! End of new state variables added 27 January 2016
 
@@ -89,12 +89,12 @@ module AQUABC_PELAGIC_INTERNAL
     ! End of new kinetic rates added 9 September 2015
 
     ! New kinetic rates introduced 27 January 2016 for the redox sequences
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_DOXY
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_NO3N
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_MN_IV
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_FE_III
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_S_PLUS_6
-    real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOC_MIN_DOC
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_DOXY
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_NO3N
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_MN_IV
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_FE_III
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_S_PLUS_6
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: R_ABIOTIC_DOC_MIN_DOC
     ! End of new kinetic rates introduced 27 January 2016 for the redox sequences
 
     ! New kinetic rates introduced 28 January 2016 for the redox sequences
@@ -188,7 +188,7 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DON_MIN
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_ABIOTIC_DOP_MIN
 
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_PHYT_AMIN_DOC
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_PHYT_AMIN_DOC
 
     real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_N_AMIN_DON
     real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_PHY_N_AMIN_DON
@@ -356,8 +356,8 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: H2CO3
 
     !Introduced by Petras instead of using co2sys_outdata directly
-    real(kind = DBL_PREC), allocatable, dimension(:) :: HCO3
-    real(kind = DBL_PREC), allocatable, dimension(:) :: CO3
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: HCO3
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: CO3
 
 
     ! Variables and constansts for Alkalinity?
@@ -518,18 +518,18 @@ module AQUABC_PELAGIC_INTERNAL
     ! -------------------------------------------------------------------------
     ! New auxillary variables introduced 27 January 2016
     ! -------------------------------------------------------------------------
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_DOXY
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_NO3N
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_MN_IV
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_FE_III
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_S_PLUS_6
-    real(kind = DBL_PREC), allocatable, dimension(:) :: PH_CORR_DOC_MIN_DOC
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_DOXY_RED
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_NO3N_RED
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_MN_IV_RED
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_FE_III_RED
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_S_PLUS_6_RED
-    real(kind = DBL_PREC), allocatable, dimension(:) :: LIM_DOC_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_DOXY
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_NO3N
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_MN_IV
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_FE_III
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_S_PLUS_6
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: PH_CORR_DOC_MIN_DOC
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_DOXY_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_NO3N_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_MN_IV_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_FE_III_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_S_PLUS_6_RED
+    real(kind = DBL_PREC), allocatable, target, dimension(:) :: LIM_DOC_RED
     real(kind = DBL_PREC), allocatable, dimension(:) :: K_NO3_RED
     real(kind = DBL_PREC), allocatable, dimension(:) :: K_MN_IV_RED
     real(kind = DBL_PREC), allocatable, dimension(:) :: K_FE_III_RED

@@ -229,6 +229,52 @@ module AQUABC_PELAGIC_TYPES
         real(kind = DBL_PREC) :: K_HS_S_PLUS_6_RED_INHB
     end type t_redox_params
 
+    ! ----- REDOX STATE VARIABLES (11 arrays, shared by REDOX & DOC_MIN) -----
+    ! Pointer components allow zero-copy population via pointer assignment.
+    type :: t_redox_state
+        real(kind = DBL_PREC), pointer :: DOXY(:)       => null()
+        real(kind = DBL_PREC), pointer :: NO3N(:)       => null()
+        real(kind = DBL_PREC), pointer :: MN_IV(:)      => null()
+        real(kind = DBL_PREC), pointer :: FE_III(:)     => null()
+        real(kind = DBL_PREC), pointer :: S_PLUS_6(:)   => null()
+        real(kind = DBL_PREC), pointer :: DISS_ORG_C(:) => null()
+        real(kind = DBL_PREC), pointer :: S_MINUS_2(:)  => null()
+        real(kind = DBL_PREC), pointer :: MN_II(:)      => null()
+        real(kind = DBL_PREC), pointer :: FE_II(:)      => null()
+        real(kind = DBL_PREC), pointer :: HCO3(:)       => null()
+        real(kind = DBL_PREC), pointer :: CO3(:)        => null()
+    end type t_redox_state
+
+    ! ----- REDOX LIMITATION FACTORS (6 arrays, shared by REDOX & DOC_MIN) ---
+    ! Pointer components allow zero-copy population via pointer assignment.
+    type :: t_redox_lim
+        real(kind = DBL_PREC), pointer :: LIM_NO3N_RED(:)     => null()
+        real(kind = DBL_PREC), pointer :: LIM_MN_IV_RED(:)    => null()
+        real(kind = DBL_PREC), pointer :: LIM_FE_III_RED(:)   => null()
+        real(kind = DBL_PREC), pointer :: LIM_S_PLUS_6_RED(:) => null()
+        real(kind = DBL_PREC), pointer :: LIM_DOC_RED(:)      => null()
+        real(kind = DBL_PREC), pointer :: LIM_DOXY_RED(:)     => null()
+    end type t_redox_lim
+
+    ! ----- DOC MINERALIZATION OUTPUTS (13 arrays) ---------------------------
+    ! Pointer components allow zero-copy population via pointer assignment.
+    ! Used by ORGANIC_CARBON_MINERALIZATION only.
+    type :: t_docmin_outputs
+        real(kind = DBL_PREC), pointer :: LIM_PHYT_AMIN_DOC(:)           => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_DOXY(:)      => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_NO3N(:)      => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_MN_IV(:)     => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_FE_III(:)    => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_S_PLUS_6(:)  => null()
+        real(kind = DBL_PREC), pointer :: R_ABIOTIC_DOC_MIN_DOC(:)       => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_DOXY(:)       => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_NO3N(:)       => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_MN_IV(:)      => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_FE_III(:)     => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_S_PLUS_6(:)   => null()
+        real(kind = DBL_PREC), pointer :: PH_CORR_DOC_MIN_DOC(:)        => null()
+    end type t_docmin_outputs
+
     ! ----- DOC MINERALIZATION PARAMS (31 constants) -------------------------
     ! Used by ORGANIC_CARBON_MINERALIZATION only.
     type :: t_docmin_params

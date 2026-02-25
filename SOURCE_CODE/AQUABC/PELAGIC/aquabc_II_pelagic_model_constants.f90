@@ -1500,7 +1500,7 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                THETA_K_MIN_DOC_FE_III =   1.04  !Temperature correction factor for mineralization process rate constant of DOC for FE III as final electron accept
              THETA_K_MIN_DOC_S_PLUS_6 =   1.04  !Temperature correction factor for mineralization process rate constant of DOC for Suphate as final electron accep
                   THETA_K_MIN_DOC_DOC =   1.04  !Temperature correction factor for mineralization process rate constant of DOC for DOC
-                    K_HS_DOC_MIN_DOXY =   0.00  !Monod type half-saturation concentration of DOC for DOC mineralization for dissolved oxygen as the final electron
+                    K_HS_DOC_MIN_DOXY =   1.00  !Monod type half-saturation concentration of DOC for DOC mineralization for dissolved oxygen as the final electron
                     K_HS_DOC_MIN_NO3N =   1.00  !Monod type half-saturation concentration of DOC for DOC mineralization for nitrate as the final electron acceptor
                    K_HS_DOC_MIN_MN_IV =   1.00  !Monod type half-saturation concentration of DOC for DOC mineralization for Mn IV as the final electron acceptor
                   K_HS_DOC_MIN_FE_III =   1.00  !Monod type half-saturation concentration of DOC for DOC mineralization for Fe III as the final electron acceptor
@@ -1540,7 +1540,7 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                THETA_K_MIN_DON_FE_III =   1.08  !Temperature correction factor for mineralization process rate constant of DON for FE_III as final electron accept
              THETA_K_MIN_DON_S_PLUS_6 =   1.08  !Temperature correction factor for mineralization process rate constant of DON for sulphate as final electron acce
                   THETA_K_MIN_DON_DOC =   1.08  !Temperature correction factor for mineralization process rate constant of DON for DOC
-                    K_HS_DON_MIN_DOXY =   0.00  !Monod type half-saturation concentration of DON for DON mineralization for dissolved oxygen as the final electron
+                    K_HS_DON_MIN_DOXY =   0.05  !Monod type half-saturation concentration of DON for DON mineralization for dissolved oxygen as the final electron
                     K_HS_DON_MIN_NO3N =   0.05  !Monod type half-saturation concentration of DON for DON mineralization for nitrate nitrogen as the final electron
                    K_HS_DON_MIN_MN_IV =   0.05  !Monod type half-saturation concentration of DON for DON mineralization for MN_IV as the final electron acceptor
                   K_HS_DON_MIN_FE_III =   0.05  !Monod type half-saturation concentration of DON for DON mineralization for FE_III as the final electron acceptor
@@ -1570,7 +1570,7 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                THETA_K_MIN_DOP_FE_III =   1.04  !Temperature correction factor for mineralization process rate constant of DOP for FE_III as final electron accept
              THETA_K_MIN_DOP_S_PLUS_6 =   1.04  !Temperature correction factor for mineralization process rate constant of DOP for sulphate as final electron acce
                   THETA_K_MIN_DOP_DOC =   1.04  !Temperature correction factor for mineralization process rate constant of DOP for DOC
-                    K_HS_DOP_MIN_DOXY =   0.00  !Monod type half-saturation concentration of DOP for DOP mineralization for dissolved oxygen as the final electron
+                    K_HS_DOP_MIN_DOXY =  0.052  !Monod type half-saturation concentration of DOP for DOP mineralization for dissolved oxygen as the final electron
                     K_HS_DOP_MIN_NO3N =  0.052  !Monod type half-saturation concentration of DOP for DOP mineralization for nitrate nitrogen as the final electron
                    K_HS_DOP_MIN_MN_IV =  0.052  !Monod type half-saturation concentration of DOP for DOP mineralization for MN_IV as the final electron acceptor
                   K_HS_DOP_MIN_FE_III =  0.052  !Monod type half-saturation concentration of DOP for DOP mineralization for FE_III as the final electron acceptor

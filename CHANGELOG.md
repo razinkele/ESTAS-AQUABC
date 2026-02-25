@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Unit tests for FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, and NOSTOCALES kinetics subroutines (25 test programs, 196 assertions total)
+- Dependabot configuration (`.github/dependabot.yml`) for weekly pip and GitHub Actions dependency scanning
+- `requirements-dev.txt` for development/test Python dependencies (ruff, pytest)
 - Cardinal Temperature Model with Inflection (CTMI, Rosso et al. 1993) replacing piecewise-exponential temperature response for phytoplankton growth
 - Synthesizing Unit nutrient colimitation (Saito et al. 2008) replacing Liebig's Law of the Minimum for all phytoplankton groups
 - Tunable Platt-style photoinhibition (BETA parameter) for light limitation in all phytoplankton groups
@@ -17,8 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Comprehensive AQUABC model equations reference document (`AQUABC_Model_Equations.md`)
 
 ### Changed
+- OpenMP parallelization of pelagic kinetics nkn loop: single parallel region with chunked array slicing, ~750 line-level changes in `aquabc_II_pelagic_model.f90`, all library subroutine calls use per-thread derived type bundles, debug calls guarded with `!$omp master` barriers, serial fallback via Fortran sentinel comments
 - Bundled scalar constant arguments into derived types (`t_diatom_params`, `t_cyn_params`, `t_opa_params`, etc.) for 6 kinetics subroutines
 - Bundled environmental input arrays into `t_phyto_env` derived type in 7 phytoplankton subroutines
+- Bundled ORGANIC_CARBON_MINERALIZATION I/O arrays into 3 new shared pointer types (`t_redox_state`, `t_redox_lim`, `t_docmin_outputs`), reducing arguments from 36 to 9
+- Bundled REDOX_AND_SPECIATION I/O arrays into shared pointer types, reducing arguments from 33 to 12
+- Removed 5 dead arguments (`K_NO3_RED`, `K_MN_IV_RED`, `K_FE_III_RED`, `K_S_PLUS_6_RED`, `K_DOC_RED`) from ORGANIC_CARBON_MINERALIZATION
 - Replaced hardcoded dimension magic numbers with named constants throughout
 - Replaced tabs with spaces in 15 source files for consistent formatting
 
@@ -38,6 +45,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed all 653 ruff lint warnings across `shiny_app/*.py` (whitespace, imports, type annotations, bare excepts)
 
 ### Fixed
+- Fixed 3 zero-valued Monod half-saturation defaults (`K_HS_DOC_MIN_DOXY=0→1.0`, `K_HS_DON_MIN_DOXY=0→0.05`, `K_HS_DOP_MIN_DOXY=0→0.052`) that caused NaN when substrate concentration reached zero
+- 25 Fortran unit tests (196 assertions) covering kinetics subroutines (DIATOMS, CYANOBACTERIA, FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, NOSTOCALES, ZOOPLANKTON, REDOX_AND_SPECIATION, ORGANIC_CARBON_MINERALIZATION) plus utility subroutines
+- Shared test defaults module (`test_defaults.f90`) with realistic parameter populators for all derived types
 - Guarded ~25 division-by-zero risks in sediment model (porosity, depth, mixing length, pH-to-H+ conversions)
 - Guarded REDOX speciation divisions against zero/negative values in pelagic model
 - Guarded CO2SYS critical divisions and discriminant
@@ -57,6 +67,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Resolved character truncation warning in WRITE_PELAGIC_MODEL_CONSTANTS
 - Fixed missing `precision_kinds` dependency in 6 test targets
 - Removed ~250 lines of dead/commented-out code across 9 source files
+- Fixed `shinywidgets` version pin (0.7.0 → 0.7.1) in `requirements.txt`
 
 ---
 
