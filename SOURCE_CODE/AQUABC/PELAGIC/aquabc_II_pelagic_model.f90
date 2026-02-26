@@ -1261,8 +1261,12 @@ subroutine AQUABC_PELAGIC_KINETICS &
         R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
 
     if (ZOOP_OPTION_1 > 0) then
-        ACTUAL_ZOO_N_TO_C(ns:ne) = ZOO_N(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION)
-        ACTUAL_ZOO_P_TO_C(ns:ne) = ZOO_P(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION)
+        ! Compute actual stoichiometric ratios with minimum enforcement
+        ! to prevent unrealistic drift below 50% of target ratio
+        ACTUAL_ZOO_N_TO_C(ns:ne) = max(ZOO_N(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
+                                       0.5D0 * ZOO_PARAMS%ZOO_N_TO_C)
+        ACTUAL_ZOO_P_TO_C(ns:ne) = max(ZOO_P(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
+                                       0.5D0 * ZOO_PARAMS%ZOO_P_TO_C)
     end if
 
     !$omp barrier

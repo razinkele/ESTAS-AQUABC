@@ -1,39 +1,38 @@
-# PELAGIC INITIAL CONCENTRATION DATA SET 1: Sand. Only akinetes made 0. Should be corrected according to station later
+# PELAGIC INITIAL CONCENTRATION DATA SET 2: Sand (from R10 MTRX boxes 5,6,8,9; ZOO_N/P stoichiometric)
 #     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION
-                          1           0.02            ! AMMONIUM NITROGEN                                   0.05000
-                          2           0.50            ! NITRATE NITROGEN                                    3.00000
-                          3           0.005            ! ORTHOPHOSPHATE PHOSPHORUS                           0.04000
-                          4           15.0            ! DISSOLVED OXYGEN                                   14.00000
-                          5           1.0             ! DIATOMS CARBON                                      0.90000
-                          6           0.020           ! ZOOPLANKTON CARBON                                  0.02000
-                          7           0.0040         ! ZOOPLANKTON NITROGEN                                0.00000
-                          8           0.0005         ! ZOOPLANKTON PHOSPHORUS                              0.00000
-                          9           6.0             ! DETRITUS PARTICULATE ORG. CARBON                    2.00000
-                         10           1.0             ! DETRITUS PARTICULATE ORG. NITROGEN                  0.40000
-                         11           0.0052          ! DETRITUS PARTICULATE ORG. PHOSPHORUS                0.01500
-                         12           11.             ! DISSOLVED ORGANIC CARBON                           10.00000
-                         13           4.5             ! DISSOLVED ORGANIC NITROGEN                          4.00000
-                         14           0.04            ! DISSOLVED ORGANIC PHOSPHORUS                        0.01500
-                         15           0.06            ! NON FIXING CYANOBACTERIA CARBON                     0.06000
-                         16           0.022           ! OTHER PHYTOPLANKTON CARBON                          0.02000
-                         17           3.7             ! DISSOLOVED SILICA                                   3.00000
-                         18           1.5             ! PARTICULATE SILICA                                  0.40000
-                         19           0.01            ! FIXING CYANOBACTERIA CARBON                         0.01000
-                         20           25.0000        ! INORG CARBON CARBON                                 0.00301
-                         21           2.8000         ! TOTAL ALKALNITY                                     0.00297
-                         22           0.23            ! Iron charged as plus 2                              0.23000
-                         23           0.55            ! Iron chargen as plus 3                              0.55000
-                         24           0.1             ! Manganese charged as plus 2                         0.10000
-                         25           0.1             ! Manganese charged as plus 4                         0.10000
-                         26           70.             ! Calcium                                            70.00000
-                         27           15.             ! Magnesium                                          15.00000
-                         28           1.35            ! Sulphur 6+ (Sulphate sulphur)                       1.35000
-                         29           0.0             ! Sulphur 2- (Sulphide sulphur)                       0.00000
-                         30           0.0             ! Methane carbon                                      0.00000
-                         31           0.0             ! Nostocales                                          0.00000
-                         32           0.0             ! Akinetes                                            0.00000
-                         33          1.0
-                         34          1.0
-                         35          1.0
-                         36          1.0
-                         37          1.0
+                          1          0.025392      ! AMMONIUM NITROGEN
+                          2          0.682144      ! NITRATE NITROGEN
+                          3          0.044529      ! ORTHOPHOSPHATE PHOSPHORUS
+                          4          12.616441     ! DISSOLVED OXYGEN
+                          5          0.001751      ! DIATOMS CARBON
+                          6          0.000100      ! ZOOPLANKTON CARBON
+                          7          0.000022      ! ZOOPLANKTON NITROGEN
+                          8          0.000002      ! ZOOPLANKTON PHOSPHORUS
+                          9          0.069858      ! DETRITUS PARTICULATE ORG. CARBON
+                         10          0.011773      ! DETRITUS PARTICULATE ORG. NITROGEN
+                         11          0.000008      ! DETRITUS PARTICULATE ORG. PHOSPHORUS
+                         12          4.162067      ! DISSOLVED ORGANIC CARBON
+                         13          0.107603      ! DISSOLVED ORGANIC NITROGEN
+                         14          0.000345      ! DISSOLVED ORGANIC PHOSPHORUS
+                         15          0.000639      ! NON FIXING CYANOBACTERIA CARBON
+                         16          0.000850      ! OTHER PHYTOPLANKTON CARBON
+                         17          1.108021      ! DISSOLVED SILICA
+                         18          0.027719      ! PARTICULATE SILICA
+                         19          0.000000      ! FIXING CYANOBACTERIA CARBON
+                         20          2.983247      ! INORG CARBON
+                         21          2.944865      ! TOTAL ALKALINITY
+                         22          0.007078      ! IRON (Fe2+)
+                         23          0.013787      ! IRON (Fe3+)
+                         24          0.001711      ! MANGANESE (Mn2+)
+                         25          0.002382      ! MANGANESE (Mn4+)
+                         26          3.722783      ! CALCIUM
+                         27          1.353271      ! MAGNESIUM
+                         28          15.006001     ! SULPHATE SULPHUR (S6+)
+                         29          0.000000      ! SULPHIDE SULPHUR (S2-)
+                         30          0.000000      ! METHANE CARBON
+                         31          0.000007      ! NOSTOCALES
+                         32          0.075352      ! AKINETES    15.0
+                         33          0.0
+                         34          0.0
+                         35          0.0
+                         36          0.0

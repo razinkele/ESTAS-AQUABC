@@ -341,6 +341,12 @@ subroutine ZOOPLANKTON &
     R_ZOO_RESP = R_ZOO_GROWTH * (1.0D0 - EFF_ZOO_GROWTH)
     R_ZOO_INT_RESP = KR_ZOO_20 * (THETA_KR_ZOO ** (TEMP - 2.0D1)) * ZOO_C
 
+    !Zooplankton excretion rates (dissolved organic matter)
+    !KE_ZOO = excretion coefficient, FRAC_ZOO_EX_ORG = organic fraction
+    R_ZOO_EX_DOC = KE_ZOO * FRAC_ZOO_EX_ORG * R_ZOO_GROWTH
+    R_ZOO_EX_DON = R_ZOO_EX_DOC * ZOO_N_TO_C
+    R_ZOO_EX_DOP = R_ZOO_EX_DOC * ZOO_P_TO_C
+
     !Zooplankton death rate
     KD_ZOO = KD_ZOO_20 * (THETA_KD_ZOO ** (TEMP - 2.0D1))
 
