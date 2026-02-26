@@ -235,6 +235,22 @@ $$\left(\frac{dM_{i,j}}{dt}\right)_{\text{sed}} = A_i^b \cdot F_j^{\text{sed}}(t
 
 where $F_j^{\text{sed}}(t)$ is the prescribed areal flux (g m$^{-2}$ s$^{-1}$), active only in Mode 1.
 
+### Derivative Array Naming Convention
+
+The seven mass-balance components above correspond to the following arrays in `mod_SOLVER.f90`, which are summed to form `tot_deriv`:
+
+| Mass-Balance Term | Code Array | Paper Eq. 1 Equivalent |
+|:---|:---|:---|
+| Advection | `ECOL_ADVECTION_DERIVS` | Inflow from neighbours + outflow to neighbours |
+| Dispersion | `ECOL_DISPERSION_DERIVS` | Diffusion term |
+| Settling | `ECOL_SETTLING_DERIVS` | Settling from/to boxes |
+| Mass loads | `ECOL_MASS_LOAD_DERIVS` | Part of boundary forcing |
+| Withdrawals | `ECOL_MASS_WITHDRAWAL_DERIVS` | Part of boundary forcing |
+| Kinetics | `ECOL_KINETIC_DERIVS` | Kinetics (AQUABC) |
+| Sediment fluxes | `ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS` | Not explicitly separated in paper |
+
+> **Note:** The paper (Ertürk et al., 2023, Eq. 1) combines mass loads and withdrawals into a single \"boundary forcing\" term and splits settling into receiving/losing components. The code treats them as separate arrays.
+
 \newpage
 
 # Time Integration
@@ -249,7 +265,19 @@ $$V_i^{n+1} = V_i^{n} + \frac{dV_i}{dt}\bigg|^{n} \cdot \Delta t$$
 
 $$C_{i,j}^{n+1} = \frac{M_{i,j}^{n+1}}{V_i^{n+1}}$$
 
-The solver ID (`PELAGIC_SOLVER_NO = 1`) currently selects this scheme.  The infrastructure supports future addition of higher-order methods (e.g.\ Runge--Kutta 2).
+The solver ID (`PELAGIC_SOLVER_NO = 1`) selects the Forward Euler scheme (default).  Setting `PELAGIC_SOLVER_NO = 2` activates the **RK2 (Heun's method)** solver, which is fully implemented in `mod_SOLVER.f90` (lines 280--410+).
+
+### RK2 (Heun's Method)
+
+When `PELAGIC_SOLVER_NO = 2`, ESTAS uses Heun's two-stage predictor--corrector method:
+
+**Stage 1 (predictor):**
+$$\tilde{M}_{i,j}^{n+1} = M_{i,j}^{n} + \frac{dM_{i,j}}{dt}\bigg|^{n} \cdot \Delta t$$
+
+**Stage 2 (corrector):** Recalculate derivatives at the predicted state, then average:
+$$M_{i,j}^{n+1} = M_{i,j}^{n} + \frac{1}{2}\left(\frac{dM_{i,j}}{dt}\bigg|^{n} + \frac{dM_{i,j}}{dt}\bigg|^{\text{pred}}\right) \cdot \Delta t$$
+
+The RK2 solver includes negative mass handling, concentration clamping, and diagnostic messages identical to the Euler solver. It provides improved accuracy for stiff problems or when larger time steps are used.
 
 ## Stability and Safety
 
@@ -262,6 +290,17 @@ The solver ID (`PELAGIC_SOLVER_NO = 1`) currently selects this scheme.  The infr
 
 - **Repeat cycles**: the simulation can be repeated `NUM_REPEATS` times, useful for spin-up.
 - **Print interval**: output is written every `PRINT_INTERVAL` time steps.
+
+### Spin-Up (Repeat Cycle) Mechanism
+
+When `NUM_REPEATS > 1`, each cycle after the first:
+
+1. **Time is reset** to `SIMULATION_START` (forcing time series indices are also reset to the beginning).
+2. **State variables are preserved** — the final concentrations from the previous cycle become the initial conditions for the next cycle.
+3. **Output continues appending** to the same output files (the output time is offset by the cycle number).
+4. **Sediment state** (if Mode 2) is also carried forward.
+
+This allows the model to "spin up" by repeating the same forcing period until the state variables converge.
 
 \newpage
 
@@ -375,6 +414,16 @@ $$\text{Ex}_i = \sum_j \beta_j \, C_{i,j} \, V_i$$
 
 Exergy outputs can be written to separate output files when enabled.
 
+### Enabling Exergy Output
+
+Exergy computation and output are controlled by three settings in the `PELAGIC_INPUTS.txt` file, read sequentially after the COCOA configuration section:
+
+1. `CALCULATE_PELAGIC_EXERGY` — set to `1` to enable exergy computation (default: `0`).
+2. `CREATE_PELAGIC_EXERGY_OUTPUTS` — set to `1` to write exergy output files (only read if step 1 is > 0).
+3. `START_REPEAT_NO_PEL_EX_OUTS` — the repeat-cycle number from which to start writing exergy output (only read if step 2 is > 0).
+
+By default, all three are `0` (disabled). To enable, add the appropriate lines to your `PELAGIC_INPUTS.txt` configuration.
+
 \newpage
 
 # Output Files
@@ -469,7 +518,7 @@ All files are located under `SOURCE_CODE/ESTAS/`:
 | File | Lines | Description |
 |:---|:---:|:---|
 | `ESTAS_II.f90` | 151 | Main program |
-| `mod_GLOBAL.f90` | 286 | Global dimensions, allocatable arrays, switches |
+| `mod_GLOBAL.f90` | 285 | Global dimensions, allocatable arrays, switches |
 | `mod_AQUATIC_MODEL.f90` | — | Master data structure and input reader |
 | `mod_SIMULATE.f90` | 832 | Time loop, output orchestration |
 | `mod_SOLVER.f90` | 1590 | Derivative calculation and Euler update |

@@ -57,38 +57,50 @@ AQUABC consists of five coupled sub-models:
 
 ## State Variables
 
-The pelagic model tracks 32 state variables in each computational box:
+The pelagic model tracks 32 state variables in each computational box. An additional 4 allelopathic metabolite variables (indices 33--36) are appended when the allelopathy module is active, giving 36 total transported variables.
 
-| Index | Variable | Unit | Description |
-|-------|----------|------|-------------|
-| 1 | NH$_4$-N | mg/L | Ammonium nitrogen |
-| 2 | NO$_3$-N | mg/L | Nitrate nitrogen |
-| 3 | PO$_4$-P | mg/L | Orthophosphate phosphorus |
-| 4 | DOXY | mg/L | Dissolved oxygen |
-| 5 | DIA-C | mg/L | Diatom carbon |
-| 6 | CYN-C | mg/L | Non-fixing cyanobacteria carbon |
-| 7 | OPA-C | mg/L | Other planktonic algae carbon |
-| 8 | FIX-CYN-C | mg/L | N-fixing cyanobacteria carbon |
-| 9 | ZOO-C | mg/L | Zooplankton carbon |
-| 10 | DET-C | mg/L | Detrital organic carbon |
-| 11 | DET-N | mg/L | Detrital organic nitrogen |
-| 12 | DET-P | mg/L | Detrital organic phosphorus |
-| 13 | DOC | mg/L | Dissolved organic carbon |
-| 14 | DON | mg/L | Dissolved organic nitrogen |
-| 15 | DOP | mg/L | Dissolved organic phosphorus |
-| 16 | DSi | mg/L | Dissolved silica |
-| 17 | PSi | mg/L | Particulate (biogenic) silica |
-| 18 | DIC | mg/L | Dissolved inorganic carbon |
-| 19 | ALK | meq/L | Alkalinity |
-| 20 | Mn(II) | mg/L | Dissolved manganese |
-| 21 | Mn(IV) | mg/L | Particulate manganese oxide |
-| 22 | Fe(II) | mg/L | Dissolved ferrous iron |
-| 23 | Fe(III) | mg/L | Particulate ferric iron |
-| 24 | S(-II) | mg/L | Dissolved sulphide |
-| 25 | S(VI) | mg/L | Dissolved sulphate |
-| 26 | CH$_4$ | mg/L | Dissolved methane |
-| 27--28 | NOST-VEG, NOST-HET | mg/L | Nostocales vegetative cells and heterocysts |
-| 29--32 | SEC-METAB 1--4 | mg/L | Allelopathic secondary metabolites |
+> **Note:** The indices below correspond to the actual code assignments in `aquabc_II_pelagic_svindex.f90`. The paper (Ertürk et al., 2023) uses a different numbering (1--21) reflecting a simplified configuration.
+
+| Index | Code Name | Unit | Description |
+|:-----:|-----------|------|-------------|
+| 1 | `NH4_N` | mg N/L | Ammonium nitrogen |
+| 2 | `NO3_N` | mg N/L | Nitrate nitrogen |
+| 3 | `PO4_P` | mg P/L | Orthophosphate phosphorus |
+| 4 | `DOXY` | mg O$_2$/L | Dissolved oxygen |
+| 5 | `DIA_C` | mg C/L | Diatom carbon |
+| 6 | `ZOO_C` | mg C/L | Zooplankton carbon |
+| 7 | `ZOO_N` | mg N/L | Zooplankton nitrogen |
+| 8 | `ZOO_P` | mg P/L | Zooplankton phosphorus |
+| 9 | `DET_PART_ORG_C` | mg C/L | Detrital particulate organic carbon |
+| 10 | `DET_PART_ORG_N` | mg N/L | Detrital particulate organic nitrogen |
+| 11 | `DET_PART_ORG_P` | mg P/L | Detrital particulate organic phosphorus |
+| 12 | `DISS_ORG_C` | mg C/L | Dissolved organic carbon |
+| 13 | `DISS_ORG_N` | mg N/L | Dissolved organic nitrogen |
+| 14 | `DISS_ORG_P` | mg P/L | Dissolved organic phosphorus |
+| 15 | `CYN_C` | mg C/L | Non-fixing cyanobacteria carbon |
+| 16 | `OPA_C` | mg C/L | Other planktonic algae carbon |
+| 17 | `DISS_Si` | mg Si/L | Dissolved silica |
+| 18 | `PART_Si` | mg Si/L | Particulate (biogenic) silica |
+| 19 | `FIX_CYN_C` | mg C/L | N-fixing cyanobacteria carbon |
+| 20 | `INORG_C` | mg C/L | Dissolved inorganic carbon (DIC) |
+| 21 | `TOT_ALK` | meq/L | Alkalinity |
+| 22 | `FE_II` | mg Fe/L | Dissolved ferrous iron |
+| 23 | `FE_III` | mg Fe/L | Particulate ferric iron |
+| 24 | `MN_II` | mg Mn/L | Dissolved manganese(II) |
+| 25 | `MN_IV` | mg Mn/L | Particulate manganese(IV) oxide |
+| 26 | `CA` | mg Ca/L | Calcium |
+| 27 | `MG` | mg Mg/L | Magnesium |
+| 28 | `S_PLUS_6` | mg S/L | Dissolved sulphate |
+| 29 | `S_MINUS_2` | mg S/L | Dissolved sulphide |
+| 30 | `CH4_C` | mg C/L | Dissolved methane |
+| 31 | `NOST_VEG_HET_C` | mg C/L | Nostocales vegetative cells + heterocysts |
+| 32 | `NOST_AKI_C` | mg C/L | Nostocales akinetes |
+| 33 | `SEC_METAB_1` | mg/L | Allelopathic secondary metabolite 1 |
+| 34 | `SEC_METAB_2` | mg/L | Allelopathic secondary metabolite 2 |
+| 35 | `SEC_METAB_3` | mg/L | Allelopathic secondary metabolite 3 |
+| 36 | `SEC_METAB_4` | mg/L | Allelopathic secondary metabolite 4 |
+
+> **Legacy naming note:** Variables 31--32 use two naming conventions in the code: the legacy `FIX_CYN_HET_C_INDEX` / `FIX_CYN_AK_C_INDEX` and the preferred `NOST_VEG_HET_C_INDEX` / `NOST_AKI_C_INDEX`. Both refer to the same state variables. The `NOST_*` convention is recommended.
 
 ## Phytoplankton Submodels
 
@@ -103,6 +115,17 @@ $$\mu(T) = \begin{cases}
 0 & \text{otherwise}
 \end{cases}$$
 
+#### CTMI Parameter Name Mapping
+
+The parameter names in the constant file (`WCONST_04.txt`) have counter-intuitive mappings to the CTMI cardinal temperatures. The following table clarifies the relationship (see `aquabc_II_pelagic_auxillary.f90`):
+
+| WCONST Parameter Name | CTMI Role | Description |
+|:---|:---|:---|
+| `OPT_TEMP_LR` (mapped to `Lower_TEMP`) | $T_{\min}$ | Minimum cardinal temperature (growth = 0 below) |
+| `OPT_TEMP_UR` (mapped to `Upper_TEMP`) | $T_{\text{opt}}$ | Optimal temperature (growth peaks) |
+| `KAPPA_OVER_OPT_TEMP` | $T_{\max}$ | Maximum cardinal temperature (growth = 0 above) |
+| `KAPPA_UNDER_OPT_TEMP` | *unused* | Not used in the CTMI formulation |
+
 ### Light Limitation
 
 Steele/Smith formulation with optional Platt-style photoinhibition:
@@ -113,17 +136,38 @@ where $I$ is the depth-averaged PAR (Photosynthetically Active Radiation), $I_s$
 
 ### Nutrient Limitation (Synthesizing Unit)
 
-The Synthesizing Unit colimitation model (Saito et al., 2008) replaces Liebig's minimum:
+The Synthesizing Unit colimitation model (Saito et al., 2008) is used for N--P colimitation in the **non-fixing** growth pathway of all phytoplankton groups:
 
 $$f_N = \frac{1}{\frac{1}{f_{\text{N-lim}}} + \frac{1}{f_{\text{P-lim}}} + \frac{1}{f_{\text{Si-lim}}} - \frac{1}{f_{\text{N-lim}} \cdot f_{\text{P-lim}}} - \frac{1}{f_{\text{N-lim}} \cdot f_{\text{Si-lim}}} - \frac{1}{f_{\text{P-lim}} \cdot f_{\text{Si-lim}}} + \frac{1}{f_{\text{N-lim}} \cdot f_{\text{P-lim}} \cdot f_{\text{Si-lim}}}}$$
 
 where each individual limitation follows Monod kinetics: $f_{\text{N-lim}} = [\text{DIN}]/([\text{DIN}] + K_{\text{HS,N}})$.
+
+> **Important:** The Synthesizing Unit replaces Liebig's minimum **only** for N--P nutrient colimitation in the non-fixing pathway. Liebig's minimum is still used in: (1) the **fixing fraction** of N-fixing cyanobacteria, where the nitrogen term is a DIN-inhibition switch rather than colimitation; (2) combining nutrient limitation with oxygen limitation; (3) diatom Si colimitation cascaded with the N--P SU result. There is no user-configurable switch between SU and Liebig --- the choice is hardcoded per pathway.
 
 ### Growth, Respiration, Mortality
 
 $$\frac{d[\text{PHYTO}]}{dt} = (\mu - R - D) \cdot [\text{PHYTO}]$$
 
 where $\mu$ is the temperature-, light-, and nutrient-limited growth rate, $R$ is Arrhenius-corrected respiration $R = k_{R,20} \cdot \theta^{T-20}$, and $D$ is mortality (enhanced under hypoxia).
+
+### Hypoxia Stress: Three-Regime System
+
+All phytoplankton groups implement a three-regime dissolved oxygen stress system that modulates mortality, respiration, and growth. Given a group-specific DO threshold `DO_STR_HYPOX`:
+
+**Regime 1 — Normal** ($[\text{O}_2] > \text{DO\_STR\_HYPOX}$):
+$$\text{FAC\_HYPOX} = 1.0$$
+No enhancement of mortality. Normal growth and respiration.
+
+**Regime 2 — Hypoxia** ($0.1 \cdot \text{DO\_STR\_HYPOX} < [\text{O}_2] \leq \text{DO\_STR\_HYPOX}$):
+$$\text{FAC\_HYPOX} = \theta_{\text{hypox}}^{\;\epsilon_{\text{hypox}} \cdot (\text{DO\_STR\_HYPOX} - [\text{O}_2])}$$
+Mortality is exponentially enhanced as DO drops below the threshold.
+
+**Regime 3 — Crash** ($[\text{O}_2] / \text{DO\_STR\_HYPOX} \leq 0.1$):
+$$\text{FAC\_HYPOX} = \min\!\left(\frac{\Delta t}{0.5 \cdot K_D},\; \frac{0.9}{K_D \cdot \Delta t}\right)$$
+$$R_{\text{growth}} = 0, \quad R_{\text{respiration}} = 0$$
+This crash regime is a critical **numerical safeguard** that prevents mass-balance overshoot under near-anoxia. Growth and respiration are zeroed, and mortality is capped to ensure no more than 90% of biomass can be removed in a single time step.
+
+The parameters `THETA_HYPOX` and `EXPON_HYPOX` are defined per phytoplankton group in the `WCONST` constants file.
 
 ## Zooplankton Dynamics
 
@@ -132,6 +176,12 @@ Zooplankton feeding uses the Active Switching Model (Gentleman et al., 2003):
 $$I_i = I_{\max} \cdot \frac{\rho_i \cdot [F_i] / \sum_j (\rho_j \cdot [F_j])}{K_F + \sum_j [F_j]} \cdot \sum_j [F_j]$$
 
 where $I_i$ is ingestion rate of food source $i$, $\rho_i$ are preference weights, $[F_i]$ are food concentrations, and $K_F$ is the half-saturation constant.
+
+The dynamic preferences are computed using a switching power exponent:
+
+$$\rho_i^{\text{dyn}} = \rho_i \cdot \left(\frac{\rho_i \cdot [F_i]}{\sum_j (\rho_j \cdot [F_j])}\right)^{n-1}$$
+
+where $n = 1.5$ is the **switching power** (hardcoded in `aquabc_II_pelagic_lib_ZOOPLANKTON.f90`, line 192). Values: $n = 1.0$ gives linear (no switching), $n = 2.0$ gives strong switching. The default $n = 1.5$ provides moderate prey-switching behaviour.
 
 ## Organic Matter Cycling
 
@@ -321,6 +371,10 @@ $$\text{CO}_2 \rightleftharpoons \text{HCO}_3^- \rightleftharpoons \text{CO}_3^{
 
 Given any two of (pH, pCO$_2$, DIC, ALK, CO$_3^{2-}$), the system solves for all others using iterative Newton--Raphson methods with temperature- and salinity-dependent equilibrium constants.
 
+### Equilibrium Constant Selection
+
+The code uses `K1K2CONSTANTS = 4`, which selects the **Mehrbach (1973) constants refit by Dickson \& Millero (1987)**. This is the standard choice for estuarine and coastal applications. The selection is hardcoded in `aquabc_II_pelagic_model.f90` (line 390).
+
 \newpage
 
 # Macroalgae Model
@@ -339,7 +393,7 @@ where $\Phi_S = 1 - [\text{MAC-C}]/C_{\max}$ is the logistic space limitation.
 
 # Allelopathy Module
 
-Four secondary metabolite pools model inter-species chemical inhibition. Each phytoplankton group produces a specific metabolite that inhibits growth of competing groups via Monod-type dose--response:
+Four secondary metabolite pools (state variable indices **33--36**, appended after the 32 standard pelagic variables) model inter-species chemical inhibition. Each phytoplankton group produces a specific metabolite that inhibits growth of competing groups via Monod-type dose--response:
 
 $$f_{\text{inhib}} = 1 - \frac{[\text{SEC-METAB}]}{[\text{SEC-METAB}] + K_{\text{HS,inhib}}}$$
 
@@ -347,18 +401,18 @@ $$f_{\text{inhib}} = 1 - \frac{[\text{SEC-METAB}]}{[\text{SEC-METAB}] + K_{\text
 
 # Model Constants
 
-## Pelagic Model Constants (318 parameters)
+## Pelagic Model Constants (323 parameters)
 
-Organised in 15 categories:
+The pelagic model uses 323 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)` array and 5 additional photoinhibition parameters (`BETA_*`) accessed via the named-parameter dictionary (`para_get_value`). Organised in 20 categories:
 
-1. **General** (1--5): Temperature ranges, O$_2$ tolerances
+1. **General** (1--4): Temperature ranges, O$_2$ tolerances
 2. **Diatoms** (5--31): Growth, respiration, mortality, nutrient kinetics, Si:C ratio
 3. **Non-fixing cyanobacteria** (29--50): Buoyancy regulation, light adaptation
 4. **N-fixing cyanobacteria** (51--74): Nitrogen fixation rates, heterocyst parameters
 5. **Other planktonic algae** (75--96): Growth and loss parameters
 6. **Zooplankton** (97--133): Feeding preferences, active switching parameters
-7. **POM dissolution** (134--145): Rate constants per organic matter type
-8. **DOM mineralisation** (146--152): Aerobic pathway parameters
+7. **POM dissolution** (134--146): Rate constants per organic matter type
+8. **DOM mineralisation** (147--152): Aerobic pathway parameters
 9. **Nitrification** (152--157): Rate and half-saturation constants
 10. **Redox chemistry** (158--209): All six electron acceptor pathways
 11. **Methane** (210--234): CH$_4$ oxidation and production
@@ -366,10 +420,17 @@ Organised in 15 categories:
 13. **pH correction** (251--266): Optimal pH ranges per process
 14. **Dissolved metals** (267--276): Fe/Mn oxidation and dissolution rates
 15. **Nostocales** (276--298): Heterocyst-forming cyanobacteria parameters
+16. **Nostocales extended** (299--306): Akinete temperature/nitrogen thresholds
+17. **POM dissolution saturation** (307--309): POM dissolution saturation kinetics
+18. **DOM availability fractions** (310--315): DON/DOP availability fractions per process
+19. **Phytoplankton mineralisation caps** (316--318): Max phytoplankton-mediated mineralisation rates
+20. **Photoinhibition BETA** (319--323): Five $\beta$ photoinhibition constants for each phytoplankton group, accessed via `para_get_value` using names `BETA_*`
+
+> **Note on paper vs. code:** Ert\u00fcrk et al. (2023) report 183 calibrated constants — this refers to the subset actively calibrated for the Curonian Lagoon case study, not the full model constant set.
 
 All constants are read from an external file and stored in the `para_aqua` name--value dictionary for runtime access.
 
-## Sediment Model Constants (170 parameters)
+## Sediment Model Constants (171 parameters)
 
 Sediment-specific rate constants mirror the pelagic model with separate values optimised for sediment conditions (lower temperatures, higher organic matter concentrations, different pH ranges). Read from `BOTTOM_SEDIMENT_MODEL_INPUT.txt` via the `WCONST` constants file.
 
