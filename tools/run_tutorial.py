@@ -878,15 +878,79 @@ def step9_view_results(args: argparse.Namespace, config: dict) -> None:
         warn("No data rows in output file")
         return
 
-    # Key variables to report
-    key_vars = [
-        "NH4_N", "NO3_N", "PO4_P", "DISS_OXYGEN", "DIA_C",
-        "CYN_C", "ZOO_C", "INORG_C", "DISS_Si",
+    # All state variables grouped by category
+    var_groups: list[tuple[str, list[tuple[str, str]]]] = [
+        ("Nutrients", [
+            ("NH4_N",       "mg N/L"),
+            ("NO3_N",       "mg N/L"),
+            ("PO4_P",       "mg P/L"),
+            ("DISS_Si",     "mg Si/L"),
+        ]),
+        ("Dissolved Gases", [
+            ("DISS_OXYGEN", "mg O2/L"),
+        ]),
+        ("Phytoplankton", [
+            ("DIA_C",           "mg C/L"),
+            ("CYN_C",           "mg C/L"),
+            ("OPA_C",           "mg C/L"),
+            ("FIX_CYN_C",       "mg C/L"),
+            ("NOST_VEG_HET_C",  "mg C/L"),
+            ("AKI_C",           "mg C/L"),
+        ]),
+        ("Zooplankton", [
+            ("ZOO_C",  "mg C/L"),
+            ("ZOO_N",  "mg N/L"),
+            ("ZOO_P",  "mg P/L"),
+        ]),
+        ("Particulate Organics", [
+            ("DET_PART_ORG_C",  "mg C/L"),
+            ("DET_PART_ORG_N",  "mg N/L"),
+            ("DET_PART_ORG_P",  "mg P/L"),
+            ("PART_Si",         "mg Si/L"),
+        ]),
+        ("Dissolved Organics", [
+            ("DISS_ORG_C",  "mg C/L"),
+            ("DISS_ORG_N",  "mg N/L"),
+            ("DISS_ORG_P",  "mg P/L"),
+        ]),
+        ("Carbonate System", [
+            ("INORG_C",    "mg C/L"),
+            ("TOT_ALK",    "meq/L"),
+        ]),
+        ("Metals", [
+            ("FE_II",  "mg/L"),
+            ("FE_III", "mg/L"),
+            ("MN_II",  "mg/L"),
+            ("MN_IV",  "mg/L"),
+            ("CA",     "mg/L"),
+            ("MG",     "mg/L"),
+        ]),
+        ("Sulphur & Methane", [
+            ("S_PLUS_6",   "mg S/L"),
+            ("S_MINUS_2",  "mg S/L"),
+            ("CH4_C",      "mg C/L"),
+        ]),
+        ("Allelopathy", [
+            ("SEC_METAB_DIA",        "–"),
+            ("SEC_METAB_NOFIX_CYN",  "–"),
+            ("SEC_METAB_FIX_CYN",    "–"),
+            ("SEC_METAB_NOST",       "–"),
+        ]),
     ]
+
+    # Build flat list of variable names and units
+    all_vars: list[str] = []
+    units: dict[str, str] = {}
+    var_to_group: dict[str, str] = {}
+    for grp_name, members in var_groups:
+        for vname, unit in members:
+            all_vars.append(vname)
+            units[vname] = unit
+            var_to_group[vname] = grp_name
 
     # Find column indices
     col_indices: dict[str, int] = {}
-    for vname in key_vars:
+    for vname in all_vars:
         if vname in header:
             col_indices[vname] = header.index(vname)
 
@@ -899,16 +963,9 @@ def step9_view_results(args: argparse.Namespace, config: dict) -> None:
 
     print(f"\n  Time range: {data_lines[0].split()[0]} – {data_lines[-1].split()[0]} days")
     print(f"  Output rows: {len(data_lines)}")
-    print()
-    print(f"  {'Variable':<20s} {'Min':>10s} {'Max':>10s} {'Mean':>10s} {'StdDev':>10s} {'Unit'}")
-    print(f"  {'-' * 20} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}")
 
-    units = {
-        "NH4_N": "mg N/L", "NO3_N": "mg N/L", "PO4_P": "mg P/L",
-        "DISS_OXYGEN": "mg O2/L", "DIA_C": "mg C/L", "CYN_C": "mg C/L",
-        "ZOO_C": "mg C/L", "INORG_C": "mg C/L", "DISS_Si": "mg Si/L",
-    }
-
+    # Pre-compute all values
+    var_vals: dict[str, list[float]] = {}
     for vname, col_idx in col_indices.items():
         vals = []
         for line in data_lines:
@@ -918,13 +975,33 @@ def step9_view_results(args: argparse.Namespace, config: dict) -> None:
                     vals.append(float(parts[col_idx]))
                 except ValueError:
                     pass
-        if vals:
+        var_vals[vname] = vals
+
+    # Print grouped output
+    for grp_name, members in var_groups:
+        # Check if any vars from this group are in the output
+        grp_vars = [vn for vn, _ in members if vn in col_indices]
+        if not grp_vars:
+            continue
+
+        print(f"\n  {_bold(grp_name)}")
+        print(f"  {'Variable':<25s} {'Min':>10s} {'Max':>10s} {'Mean':>10s} {'StdDev':>10s}  {'Unit'}")
+        print(f"  {'-' * 25} {'-' * 10} {'-' * 10} {'-' * 10} {'-' * 10}  {'-' * 8}")
+
+        for vname, _ in members:
+            vals = var_vals.get(vname, [])
+            if not vals:
+                continue
             vmin = min(vals)
             vmax = max(vals)
             vmean = stat_mod.mean(vals)
             vstd = stat_mod.stdev(vals) if len(vals) > 1 else 0.0
             unit = units.get(vname, "")
-            print(f"  {vname:<20s} {vmin:>10.4f} {vmax:>10.4f} {vmean:>10.4f} {vstd:>10.4f} {unit}")
+            print(f"  {vname:<25s} {vmin:>10.4f} {vmax:>10.4f} {vmean:>10.4f} {vstd:>10.4f}  {unit}")
+
+    matched = len(col_indices)
+    total = len(all_vars)
+    info(f"\n{matched}/{total} state variables found in output")
 
 
 # ---------------------------------------------------------------------------
