@@ -881,6 +881,13 @@ def build_pdf(consts: list[dict], out_path: Path):
     summary = (
         "This document provides a complete reference for all model constants "
         "in the AQUABC pelagic ecological model (file WCONST_04.txt). "
+        "The model is described in: Erturk, A., Sakurova, I., Zilius, M., "
+        "Zemlys, P., Umgiesser, G., Kaynaroglu, B., Pilkaityte, R. & "
+        "Razinkovas-Baziukas, A. (2023) Development of a pelagic "
+        "biogeochemical model with enhanced computational performance by "
+        "optimizing ecological complexity and spatial resolution. "
+        "Ecological Modelling, 486, 110509. "
+        "doi:10.1016/j.ecolmodel.2023.110509.\n\n"
         "Constants are organised by functional category. Each section shows "
         "the constant number, name, current value, measurement unit, and "
         "description. A value-selection rationale explains *why* specific "
@@ -976,6 +983,13 @@ def build_pdf(consts: list[dict], out_path: Path):
              new_x="LMARGIN", new_y="NEXT")
     pdf.ln(2)
     extra_refs = [
+        "Erturk, A., Sakurova, I., Zilius, M., Zemlys, P., Umgiesser, G., "
+        "Kaynaroglu, B., Pilkaityte, R. & Razinkovas-Baziukas, A. (2023) "
+        "Development of a pelagic biogeochemical model with enhanced "
+        "computational performance by optimizing ecological complexity and "
+        "spatial resolution. Ecological Modelling, 486, 110509. "
+        "doi:10.1016/j.ecolmodel.2023.110509. "
+        "[PRIMARY ESTAS-AQUABC MODEL DESCRIPTION PAPER].",
         "Ambrose, R.B., Wool, T.A. & Martin, J.L. (1993) The Water Quality "
         "Analysis Simulation Program, WASP5. Part A: Model Documentation. "
         "U.S. EPA, Athens, GA.",
