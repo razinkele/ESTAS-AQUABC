@@ -6,8 +6,8 @@
                           4           15.0            ! DISSOLVED OXYGEN                                   14.00000
                           5           1.0             ! DIATOMS CARBON                                      0.90000
                           6           0.020           ! ZOOPLANKTON CARBON                                  0.02000
-                          7           0.000           ! ZOOPLANKTON NITROGEN                                0.00000
-                          8           0.0000          ! ZOOPLANKTON PHOSPHORUS                              0.00000
+                          7           0.0040         ! ZOOPLANKTON NITROGEN                                0.00000
+                          8           0.0005         ! ZOOPLANKTON PHOSPHORUS                              0.00000
                           9           6.0             ! DETRITUS PARTICULATE ORG. CARBON                    2.00000
                          10           1.0             ! DETRITUS PARTICULATE ORG. NITROGEN                  0.40000
                          11           0.0052          ! DETRITUS PARTICULATE ORG. PHOSPHORUS                0.01500
@@ -19,8 +19,8 @@
                          17           3.7             ! DISSOLOVED SILICA                                   3.00000
                          18           1.5             ! PARTICULATE SILICA                                  0.40000
                          19           0.01            ! FIXING CYANOBACTERIA CARBON                         0.01000
-                         20           0.0036          ! INORG CARBON CARBON                                 0.00301
-                         21           0.0035          ! TOTAL ALKALNITY                                     0.00297
+                         20           25.0000        ! INORG CARBON CARBON                                 0.00301
+                         21           2.8000         ! TOTAL ALKALNITY                                     0.00297
                          22           0.23            ! Iron charged as plus 2                              0.23000
                          23           0.55            ! Iron chargen as plus 3                              0.55000
                          24           0.1             ! Manganese charged as plus 2                         0.10000
