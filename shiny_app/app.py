@@ -1778,16 +1778,8 @@ def create_ui():
         "input.navigation === 'nav_parameters'",
         ui.card(
             ui.card_header("Parameters"),
+            # Top bar: file selector + category dropdown + load
             ui.layout_columns(
-                ui.tooltip(
-                    ui.input_select(
-                        "param_category",
-                        "Category:",
-                        choices=list(PARAMETER_CATEGORIES.keys()),
-                        selected="Diatoms"
-                    ),
-                    "Select parameter category: Diatoms, Cyanobacteria, Zooplankton, etc."
-                ),
                 ui.tooltip(
                     ui.input_select(
                         "param_file",
@@ -1798,25 +1790,33 @@ def create_ui():
                     "WCONST_04.txt contains calibrated model parameters"
                 ),
                 ui.tooltip(
+                    ui.input_select(
+                        "param_category",
+                        "Category:",
+                        choices=list(PARAMETER_CATEGORIES.keys()),
+                        selected="Diatoms"
+                    ),
+                    "Select parameter category: Diatoms, Cyanobacteria, Zooplankton, etc."
+                ),
+                ui.tooltip(
                     ui.input_action_button("load_params", "Load", class_="btn-secondary mt-4"),
                     "Load parameters from selected file and category"
                 ),
-                col_widths=[5, 5, 2]
+                col_widths=[3, 7, 2]
             ),
             ui.tags.hr(),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Category Info"),
-                    ui.output_text("param_category_info"),
-                    fill=False
-                ),
-                ui.card(
-                    ui.card_header("Parameters"),
-                    ui.output_ui("param_table"),
-                    style="max-height: 500px; overflow-y: auto;"
-                ),
-                col_widths=[4, 8]
+            # Category info as a compact inline bar
+            ui.div(
+                ui.output_text("param_category_info"),
+                style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(14, 165, 233, 0.04); border-radius: 4px; margin-bottom: 0.75rem; border: 1px solid rgba(14, 165, 233, 0.1);"
             ),
+            # Full-width parameter table
+            ui.card(
+                ui.card_header("Parameters"),
+                ui.output_ui("param_table"),
+                style="max-height: 550px; overflow-y: auto;"
+            ),
+            # Save bar
             ui.layout_columns(
                 ui.tooltip(
                     ui.input_action_button("save_params", "Save All Changes", class_="btn-success"),
