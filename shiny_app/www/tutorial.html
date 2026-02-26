@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ESTAS-AQUABC Tutorial: Getting Started</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="" />
+  <style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 20px 40px; line-height: 1.6; color: #333; }
+  h1,h2,h3,h4 { color: #2c3e50; margin-top: 1.5em; }
+  h1 { border-bottom: 2px solid #3498db; padding-bottom: 0.3em; }
+  h2 { border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f8f9fa; }
+  code { background-color: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+  pre { background-color: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote { border-left: 4px solid #3498db; margin: 1em 0; padding: 0.5em 1em; background: #f0f7ff; }
+  nav#TOC { background: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 2em; }
+  nav#TOC ul { list-style: none; padding-left: 1em; }
+  nav#TOC > ul { padding-left: 0; }
+  nav#TOC a { color: #3498db; text-decoration: none; }
+  nav#TOC a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">ESTAS-AQUABC Tutorial: Getting Started</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#estas-aquabc-tutorial-getting-started"
+id="toc-estas-aquabc-tutorial-getting-started">ESTAS-AQUABC Tutorial:
+Getting Started</a>
+<ul>
+<li><a href="#table-of-contents" id="toc-table-of-contents">Table of
+Contents</a></li>
+<li><a href="#overview" id="toc-overview">1. Overview</a>
+<ul>
+<li><a href="#what-data-files-are-used"
+id="toc-what-data-files-are-used">What data files are used?</a></li>
+</ul></li>
+<li><a href="#prerequisites" id="toc-prerequisites">2. Prerequisites</a>
+<ul>
+<li><a href="#quick-environment-setup"
+id="toc-quick-environment-setup">Quick environment setup</a></li>
+</ul></li>
+<li><a href="#starting-the-application"
+id="toc-starting-the-application">3. Starting the Application</a>
+<ul>
+<li><a href="#option-a-development-mode-recommended-for-this-tutorial"
+id="toc-option-a-development-mode-recommended-for-this-tutorial">Option
+A: Development mode (recommended for this tutorial)</a></li>
+<li><a href="#option-b-production-deployment"
+id="toc-option-b-production-deployment">Option B: Production
+deployment</a></li>
+</ul></li>
+<li><a href="#application-layout" id="toc-application-layout">4.
+Application Layout</a>
+<ul>
+<li><a href="#navigation-pages" id="toc-navigation-pages">Navigation
+Pages</a></li>
+</ul></li>
+<li><a href="#tutorial-exercise-30-day-simulation"
+id="toc-tutorial-exercise-30-day-simulation">5. Tutorial Exercise:
+30-Day Simulation</a>
+<ul>
+<li><a href="#step-1-dashboard-overview"
+id="toc-step-1-dashboard-overview">Step 1: Dashboard Overview</a></li>
+<li><a href="#step-2-building-the-model"
+id="toc-step-2-building-the-model">Step 2: Building the Model</a></li>
+<li><a href="#step-3-exploring-input-files"
+id="toc-step-3-exploring-input-files">Step 3: Exploring Input
+Files</a></li>
+<li><a href="#step-4-reviewing-parameters"
+id="toc-step-4-reviewing-parameters">Step 4: Reviewing
+Parameters</a></li>
+<li><a href="#step-5-setting-initial-conditions"
+id="toc-step-5-setting-initial-conditions">Step 5: Setting Initial
+Conditions</a></li>
+<li><a href="#step-6-configuring-model-options"
+id="toc-step-6-configuring-model-options">Step 6: Configuring Model
+Options</a></li>
+<li><a href="#step-7-configuring-the-simulation"
+id="toc-step-7-configuring-the-simulation">Step 7: Configuring the
+Simulation</a></li>
+<li><a href="#step-8-running-the-simulation"
+id="toc-step-8-running-the-simulation">Step 8: Running the
+Simulation</a></li>
+<li><a href="#step-9-viewing-results"
+id="toc-step-9-viewing-results">Step 9: Viewing Results</a></li>
+<li><a href="#step-10-analysing-mass-balance"
+id="toc-step-10-analysing-mass-balance">Step 10: Analysing Mass
+Balance</a></li>
+<li><a href="#step-11-comparing-with-observations"
+id="toc-step-11-comparing-with-observations">Step 11: Comparing with
+Observations</a></li>
+</ul></li>
+<li><a href="#working-with-scenarios" id="toc-working-with-scenarios">6.
+Working with Scenarios</a>
+<ul>
+<li><a href="#saving-a-scenario" id="toc-saving-a-scenario">Saving a
+Scenario</a></li>
+<li><a href="#loading-a-scenario" id="toc-loading-a-scenario">Loading a
+Scenario</a></li>
+</ul></li>
+<li><a href="#geographic-visualization"
+id="toc-geographic-visualization">7. Geographic Visualization</a></li>
+<li><a href="#tips-and-troubleshooting"
+id="toc-tips-and-troubleshooting">8. Tips and Troubleshooting</a>
+<ul>
+<li><a href="#performance" id="toc-performance">Performance</a></li>
+<li><a href="#common-issues" id="toc-common-issues">Common
+Issues</a></li>
+<li><a href="#navigating-efficiently"
+id="toc-navigating-efficiently">Navigating Efficiently</a></li>
+<li><a href="#file-safety" id="toc-file-safety">File Safety</a></li>
+</ul></li>
+<li><a href="#data-files-reference" id="toc-data-files-reference">9.
+Data Files Reference</a>
+<ul>
+<li><a href="#input-configuration-files-input.txt"
+id="toc-input-configuration-files-input.txt">Input Configuration Files
+(<code>INPUT*.txt</code>)</a></li>
+<li><a href="#key-input-data-files-inputs"
+id="toc-key-input-data-files-inputs">Key Input Data Files
+(<code>INPUTS/</code>)</a></li>
+<li><a href="#output-files-outputs_30day"
+id="toc-output-files-outputs_30day">Output Files
+(<code>OUTPUTS_30day/</code>)</a></li>
+<li><a href="#observation-files-observations"
+id="toc-observation-files-observations">Observation Files
+(<code>OBSERVATIONS/</code>)</a></li>
+</ul></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="estas-aquabc-tutorial-getting-started">ESTAS-AQUABC Tutorial:
+Getting Started</h1>
+<p><strong>A step-by-step practical guide to running the ESTAS-AQUABC
+ecological model using the Shiny web interface</strong></p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#1-overview">Overview</a></li>
+<li><a href="#2-prerequisites">Prerequisites</a></li>
+<li><a href="#3-starting-the-application">Starting the
+Application</a></li>
+<li><a href="#4-application-layout">Application Layout</a></li>
+<li><a href="#5-tutorial-exercise-30-day-simulation">Tutorial Exercise:
+30-Day Simulation</a>
+<ul>
+<li><a href="#step-1-dashboard-overview">Step 1: Dashboard
+Overview</a></li>
+<li><a href="#step-2-building-the-model">Step 2: Building the
+Model</a></li>
+<li><a href="#step-3-exploring-input-files">Step 3: Exploring Input
+Files</a></li>
+<li><a href="#step-4-reviewing-parameters">Step 4: Reviewing
+Parameters</a></li>
+<li><a href="#step-5-setting-initial-conditions">Step 5: Setting Initial
+Conditions</a></li>
+<li><a href="#step-6-configuring-model-options">Step 6: Configuring
+Model Options</a></li>
+<li><a href="#step-7-configuring-the-simulation">Step 7: Configuring the
+Simulation</a></li>
+<li><a href="#step-8-running-the-simulation">Step 8: Running the
+Simulation</a></li>
+<li><a href="#step-9-viewing-results">Step 9: Viewing Results</a></li>
+<li><a href="#step-10-analysing-mass-balance">Step 10: Analysing Mass
+Balance</a></li>
+<li><a href="#step-11-comparing-with-observations">Step 11: Comparing
+with Observations</a></li>
+</ul></li>
+<li><a href="#6-working-with-scenarios">Working with Scenarios</a></li>
+<li><a href="#7-geographic-visualization">Geographic
+Visualization</a></li>
+<li><a href="#8-tips-and-troubleshooting">Tips and
+Troubleshooting</a></li>
+<li><a href="#9-data-files-reference">Data Files Reference</a></li>
+</ol>
+<hr />
+<h2 id="overview">1. Overview</h2>
+<p>ESTAS-AQUABC is a coupled hydrodynamic–biogeochemical model for
+simulating water quality in aquatic systems. The model couples:</p>
+<ul>
+<li><strong>ESTAS</strong> — a finite-element hydrodynamic transport
+solver (25-box Curonian Lagoon domain, advective + dispersive
+transport)</li>
+<li><strong>AQUABC</strong> — an ecological/biogeochemical module with
+36 state variables and 318+ calibratable parameters covering
+phytoplankton, zooplankton, nutrients, dissolved oxygen, carbon cycling,
+metals, and sediment fluxes</li>
+</ul>
+<p>This tutorial uses the <strong>Python Shiny web interface</strong> to
+walk you through a complete model run using the pre-configured data
+files shipped with the repository. By the end you will have:</p>
+<ul>
+<li>Built the Fortran executable from source</li>
+<li>Configured and executed a 30-day simulation</li>
+<li>Inspected model parameters and initial conditions</li>
+<li>Plotted output variables and input forcing timeseries</li>
+<li>Evaluated mass balance results</li>
+<li>Compared model output against observations</li>
+</ul>
+<h3 id="what-data-files-are-used">What data files are used?</h3>
+<p>All input data is already present in the <code>INPUTS/</code>
+directory (89 files). The tutorial uses <code>INPUT_30day.txt</code> — a
+lightweight 30-day configuration (days 6209–6239, year 1998) that
+completes in a few minutes on a modern machine. The full 365-day
+configuration (<code>INPUT.txt</code>) is also available for later
+exploration.</p>
+<hr />
+<h2 id="prerequisites">2. Prerequisites</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Operating System</strong></td>
+<td>Linux (tested on Ubuntu 22.04+)</td>
+</tr>
+<tr class="even">
+<td><strong>Fortran Compiler</strong></td>
+<td><code>gfortran</code> (GCC 9+) or Intel
+<code>ifort</code>/<code>ifx</code></td>
+</tr>
+<tr class="odd">
+<td><strong>Python</strong></td>
+<td>3.10 or newer</td>
+</tr>
+<tr class="even">
+<td><strong>Python packages</strong></td>
+<td><code>shiny</code>, <code>plotly</code>, <code>pandas</code>,
+<code>numpy</code>, <code>openpyxl</code>, <code>ipywidgets</code>,
+<code>shinywidgets</code>, <code>fpdf2</code> (see
+<code>shiny_app/requirements.txt</code>)</td>
+</tr>
+<tr class="odd">
+<td><strong>Make</strong></td>
+<td>GNU Make</td>
+</tr>
+<tr class="even">
+<td><strong>Browser</strong></td>
+<td>Any modern browser (Chrome, Firefox, Edge)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="quick-environment-setup">Quick environment setup</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Navigate to the project root</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /path/to/AQUABCv0.2</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a virtual environment (one-time)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv .venv</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Python dependencies</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> shiny_app/requirements.txt</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify gfortran is available</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="ex">gfortran</span> <span class="at">--version</span></span></code></pre></div>
+<p>If you are using the pre-configured server deployment, the
+environment is already set up at
+<code>/opt/micromamba/envs/shiny/</code> and the app runs as a systemd
+service.</p>
+<hr />
+<h2 id="starting-the-application">3. Starting the Application</h2>
+<h3 id="option-a-development-mode-recommended-for-this-tutorial">Option
+A: Development mode (recommended for this tutorial)</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /path/to/AQUABCv0.2</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> .venv/bin/activate</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">shiny</span> run <span class="at">--reload</span> shiny_app:app</span></code></pre></div>
+<p>Open your browser to <strong>http://127.0.0.1:8000</strong>.</p>
+<h3 id="option-b-production-deployment">Option B: Production
+deployment</h3>
+<p>If deployed via <code>shiny_app/deploy.sh</code>, the app is
+accessible on the machine’s HTTP address (port 80 via nginx reverse
+proxy). Check status:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl status shiny_aquabc</span></code></pre></div>
+<hr />
+<h2 id="application-layout">4. Application Layout</h2>
+<p>The application has a <strong>sidebar navigation</strong> on the left
+and a <strong>main content area</strong> on the right. The header bar at
+the top provides access to the <strong>Changelog</strong> (journal
+icon), <strong>State Variables Reference</strong> (question mark icon),
+and <strong>Settings</strong> (gear icon).</p>
+<h3 id="navigation-pages">Navigation Pages</h3>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 33%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Page</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td><strong>Dashboard</strong></td>
+<td>Quick Run button, system status, simulation config summary, run
+log</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td><strong>Model Structure</strong></td>
+<td>Interactive network diagram of all state variables and
+interactions</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td><strong>Model Build</strong></td>
+<td>Compile the Fortran source code (gfortran/ifort,
+release/debug/fast)</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td><strong>Model Config</strong></td>
+<td>Configure simulation parameters, run the model, set output
+options</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td><strong>Input Files</strong></td>
+<td>Browse, preview, and analyse all files in <code>INPUTS/</code> with
+map display</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td><strong>Parameters</strong></td>
+<td>View and edit the 318 model constants in <code>WCONST_04.txt</code>
+by category</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td><strong>Initial Cond.</strong></td>
+<td>View and edit initial concentrations for all 36 state variables</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td><strong>Model Options</strong></td>
+<td>Toggle model switches (zooplankton, redox, light, cyanobacteria,
+etc.)</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td><strong>Scenarios</strong></td>
+<td>Save/load named scenario presets (parameters + ICs + options)</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td><strong>Plots</strong></td>
+<td>Visualise model output, input timeseries, and data previews</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td><strong>Mass Balance</strong></td>
+<td>Calculate and display element mass balance (N, C, P, Si)</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td><strong>Observations</strong></td>
+<td>Load observation data and compare against model output</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td><strong>Map</strong></td>
+<td>Geographic 3D map visualization of the model domain</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="tutorial-exercise-30-day-simulation">5. Tutorial Exercise:
+30-Day Simulation</h2>
+<p>This exercise walks through every major page of the application using
+the bundled Curonian Lagoon dataset.</p>
+<hr />
+<h3 id="step-1-dashboard-overview">Step 1: Dashboard Overview</h3>
+<ol type="1">
+<li><p><strong>Click “Dashboard”</strong> in the sidebar (it is selected
+by default on startup).</p></li>
+<li><p>You will see three main sections:</p>
+<ul>
+<li><strong>Quick Run / Stop buttons</strong> and a run timer at the
+top</li>
+<li><strong>System Status</strong> (left) — shows OS, Python version,
+available executables, current model configuration, and the command that
+will be executed</li>
+<li><strong>Simulation Config</strong> (centre) — displays key
+parameters loaded from the selected <code>INPUT*.txt</code> file (base
+year, time period, steps/day, folders)</li>
+<li><strong>Run Log</strong> (right) — shows real-time output when a
+simulation is running</li>
+</ul></li>
+<li><p>Review the <strong>System Status</strong> panel. It shows:</p>
+<ul>
+<li>The selected executable (default: <code>ESTAS_II</code>)</li>
+<li>The selected input file (default: <code>INPUT.txt</code>)</li>
+<li>The number of input files found in <code>INPUTS/</code></li>
+</ul></li>
+<li><p><strong>Do not click Quick Run yet</strong> — we will first build
+the executable and configure the simulation.</p></li>
+</ol>
+<blockquote>
+<p><strong>Tip:</strong> The “Model Config” button below the System
+Status panel is a shortcut to the Model Config page.</p>
+</blockquote>
+<hr />
+<h3 id="step-2-building-the-model">Step 2: Building the Model</h3>
+<p>Before running a simulation, you need a compiled executable.</p>
+<ol type="1">
+<li><p><strong>Click “Model Build”</strong> in the sidebar.</p></li>
+<li><p>The page has three columns:</p>
+<ul>
+<li><strong>Build Configuration</strong> (left) — compiler, build type,
+and options</li>
+<li><strong>Available Executables</strong> (centre) — list of compiled
+executables</li>
+<li><strong>Build Log</strong> (right) — compilation output</li>
+</ul></li>
+<li><p><strong>Configure the build:</strong></p>
+<ul>
+<li><strong>Compiler:</strong> Select <code>gfortran (GNU)</code>
+(default, recommended)</li>
+<li><strong>Build Type:</strong> Select <code>Release</code> (optimised,
+good for production runs)</li>
+<li>Leave <strong>“Clean before build”</strong> unchecked for a normal
+build</li>
+<li>The <strong>Target Executable</strong> will show
+<code>ESTAS_gf_release</code></li>
+</ul></li>
+<li><p><strong>Click the “Build” button.</strong></p></li>
+<li><p>Watch the <strong>Build Log</strong> panel on the right. The
+compilation takes approximately 30–60 seconds depending on your machine.
+You will see:</p>
+<ul>
+<li>Individual Fortran source files being compiled</li>
+<li>Library archive creation</li>
+<li>Final linking step</li>
+<li>A success or failure message</li>
+</ul></li>
+<li><p>Once the build completes successfully:</p>
+<ul>
+<li>The new executable appears in the <strong>Available
+Executables</strong> list</li>
+<li>Use the <strong>“Select for Run”</strong> dropdown to choose the
+newly built executable</li>
+<li>If <code>ESTAS_II</code> already exists (pre-compiled), you may use
+that instead</li>
+</ul></li>
+</ol>
+<blockquote>
+<p><strong>Note:</strong> If you already have a compiled
+<code>ESTAS_II</code> executable (shown in the Available Executables
+list), you can skip building and proceed directly to <strong>Step
+3</strong>. The repository includes a pre-compiled <code>ESTAS_II</code>
+(gfortran, 64-bit Linux).</p>
+</blockquote>
+<hr />
+<h3 id="step-3-exploring-input-files">Step 3: Exploring Input Files</h3>
+<ol type="1">
+<li><p><strong>Click “Input Files”</strong> in the sidebar.</p></li>
+<li><p>The page has two main sections:</p>
+<ul>
+<li><strong>File Browser</strong> (left) — file list with category
+filter and file information</li>
+<li><strong>File Contents / Map Display</strong> (right) — preview panel
+with two tabs</li>
+</ul></li>
+<li><p><strong>Use the category filter</strong> dropdown to explore
+files by type:</p>
+<ul>
+<li><em>Forcing Data</em> — meteorological and hydrological
+timeseries</li>
+<li><em>Geometry</em> — box connectivity and bathymetry</li>
+<li><em>Initial Conditions</em> — starting concentrations</li>
+<li><em>Constants</em> — model parameter files</li>
+<li><em>Sediment</em> — prescribed sediment flux files</li>
+</ul></li>
+<li><p><strong>Select and preview key files:</strong></p>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 35%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Description</th>
+<th>What to look for</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PELAGIC_INPUTS.txt</code></td>
+<td>Master pelagic config</td>
+<td>Box count, layer structure, file references</td>
+</tr>
+<tr class="even">
+<td><code>ADVECTIVE_LINKS.txt</code></td>
+<td>Box connectivity</td>
+<td>Transport link definitions (from → to)</td>
+</tr>
+<tr class="odd">
+<td><code>TEMP_TS.txt</code></td>
+<td>Water temperature</td>
+<td>Time-varying forcing for all 25 boxes</td>
+</tr>
+<tr class="even">
+<td><code>FLOW_TS.txt</code></td>
+<td>Water flow rates</td>
+<td>Hydrodynamic forcing timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>WCONST_04.txt</code></td>
+<td>Model constants</td>
+<td>All 323 calibrated parameter values</td>
+</tr>
+<tr class="even">
+<td><code>INIT_CONC_1.txt</code></td>
+<td>Initial conditions</td>
+<td>Starting concentrations for 36 variables</td>
+</tr>
+</tbody>
+</table></li>
+<li><p><strong>Check the File Information</strong> panel below the file
+list — it shows file size, line count, detected format, and data range
+for timeseries files.</p></li>
+<li><p><strong>Switch to the “Map Display” tab</strong> to see:</p>
+<ul>
+<li><strong>Box Network</strong> — connectivity diagram of the 25 model
+boxes</li>
+<li><strong>Bathymetry Profile</strong> — depth profile for a selected
+box</li>
+<li><strong>Box Depths Overview</strong> — comparative depth view across
+all boxes</li>
+</ul></li>
+</ol>
+<hr />
+<h3 id="step-4-reviewing-parameters">Step 4: Reviewing Parameters</h3>
+<ol type="1">
+<li><p><strong>Click “Parameters”</strong> in the sidebar.</p></li>
+<li><p>The page shows parameter values from the constants file
+(<code>WCONST_04.txt</code>), organised into 14 categories:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Parameters</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>General</td>
+<td>1–17</td>
+<td>Light, temperature functions, global switches</td>
+</tr>
+<tr class="even">
+<td>Diatoms</td>
+<td>18–54</td>
+<td>Diatom growth, respiration, mortality</td>
+</tr>
+<tr class="odd">
+<td>Non-fixing Cyanobacteria</td>
+<td>55–89</td>
+<td>Non-N2-fixing cyano processes</td>
+</tr>
+<tr class="even">
+<td>Fixing Cyanobacteria</td>
+<td>90–124</td>
+<td>N2-fixing cyanobacteria processes</td>
+</tr>
+<tr class="odd">
+<td>Other Phytoplankton</td>
+<td>125–159</td>
+<td>Other algae (OPA) kinetics</td>
+</tr>
+<tr class="even">
+<td>Zooplankton</td>
+<td>160–192</td>
+<td>Grazing, respiration, mortality</td>
+</tr>
+<tr class="odd">
+<td>Detritus</td>
+<td>193–218</td>
+<td>Particulate organic matter</td>
+</tr>
+<tr class="even">
+<td>Dissolved Organics</td>
+<td>219–234</td>
+<td>DOM cycling</td>
+</tr>
+<tr class="odd">
+<td>Nitrification</td>
+<td>235–250</td>
+<td>NH4 → NO3 transformation</td>
+</tr>
+<tr class="even">
+<td>Redox Chemistry</td>
+<td>251–272</td>
+<td>Fe, Mn, S redox</td>
+</tr>
+<tr class="odd">
+<td>Methane</td>
+<td>273–283</td>
+<td>CH4 production and oxidation</td>
+</tr>
+<tr class="even">
+<td>Settling</td>
+<td>284–297</td>
+<td>Particle settling velocities</td>
+</tr>
+<tr class="odd">
+<td>pH Effects</td>
+<td>298–305</td>
+<td>Carbonate system, alkalinity</td>
+</tr>
+<tr class="even">
+<td>Nostocales</td>
+<td>306–323</td>
+<td>Nostocales-specific parameters</td>
+</tr>
+</tbody>
+</table></li>
+<li><p><strong>Select a category</strong> (e.g., “Diatoms”) and click
+<strong>“Load”</strong>.</p></li>
+<li><p>The <strong>Parameters</strong> table shows:</p>
+<ul>
+<li>Parameter index number</li>
+<li>Current value</li>
+<li>An editable input field for each parameter</li>
+</ul></li>
+<li><p><strong>For this tutorial, do not modify any parameters.</strong>
+Simply review the values to familiarise yourself with the model
+calibration. The supplied <code>WCONST_04.txt</code> contains the latest
+calibrated parameter set.</p></li>
+</ol>
+<blockquote>
+<p><strong>Tip:</strong> If you do modify parameters, click
+<strong>“Save All Changes”</strong> to write the updated values back to
+the file. A <code>.bak</code> backup is created automatically before any
+save.</p>
+</blockquote>
+<hr />
+<h3 id="step-5-setting-initial-conditions">Step 5: Setting Initial
+Conditions</h3>
+<ol type="1">
+<li><p><strong>Click “Initial Cond.”</strong> in the sidebar.</p></li>
+<li><p>Select the IC file: <strong><code>INIT_CONC_1.txt</code></strong>
+(default).</p></li>
+<li><p>Choose a category to view. State variables are grouped into 11
+categories:</p>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>Variables</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Nutrients</td>
+<td>NH4-N, NO3-N, PO4-P, Dissolved Si</td>
+</tr>
+<tr class="even">
+<td>Dissolved Gases</td>
+<td>Dissolved Oxygen</td>
+</tr>
+<tr class="odd">
+<td>Phytoplankton</td>
+<td>DIA_C, CYN_C, OPA_C, FIX_CYN_C, NOST_VEG_HET_C, AKI_C</td>
+</tr>
+<tr class="even">
+<td>Zooplankton</td>
+<td>ZOO_C, ZOO_N, ZOO_P</td>
+</tr>
+<tr class="odd">
+<td>Particulate Organics</td>
+<td>DET_PART_ORG_C, DET_PART_ORG_N, DET_PART_ORG_P, PART_Si</td>
+</tr>
+<tr class="even">
+<td>Dissolved Organics</td>
+<td>DISS_ORG_C, DISS_ORG_N, DISS_ORG_P</td>
+</tr>
+<tr class="odd">
+<td>Carbonate System</td>
+<td>INORG_C, TOT_ALK</td>
+</tr>
+<tr class="even">
+<td>Metals</td>
+<td>FE_II, FE_III, MN_II, MN_IV, CA, MG</td>
+</tr>
+<tr class="odd">
+<td>Sulphur</td>
+<td>S_PLUS_6, S_MINUS_2</td>
+</tr>
+<tr class="even">
+<td>Allelopathy</td>
+<td>SEC_METAB_DIA, SEC_METAB_NOFIX_CYN, SEC_METAB_FIX_CYN,
+SEC_METAB_NOST</td>
+</tr>
+<tr class="odd">
+<td>Other</td>
+<td>CH4_C</td>
+</tr>
+</tbody>
+</table></li>
+<li><p>Click <strong>“Load”</strong> to display the current initial
+values.</p></li>
+<li><p>Review the concentrations. The values represent starting
+conditions at simulation time 6209 (approximately 1 January of the
+simulation year).</p></li>
+<li><p><strong>For this tutorial, keep the default values and
+proceed.</strong></p></li>
+</ol>
+<hr />
+<h3 id="step-6-configuring-model-options">Step 6: Configuring Model
+Options</h3>
+<ol type="1">
+<li><p><strong>Click “Model Options”</strong> in the sidebar.</p></li>
+<li><p>Select a category from the dropdown. Available categories:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Category</th>
+<th>What it controls</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Zooplankton</td>
+<td>Feeding preference, switching function selection</td>
+</tr>
+<tr class="even">
+<td>Redox Chemistry</td>
+<td>Fe/Mn/S cycling switches</td>
+</tr>
+<tr class="odd">
+<td>Light</td>
+<td>Light limitation formulation</td>
+</tr>
+<tr class="even">
+<td>Cyanobacteria</td>
+<td>N2 fixation switches, CTMI temperature model</td>
+</tr>
+<tr class="odd">
+<td>Allelopathy</td>
+<td>Secondary metabolite interactions</td>
+</tr>
+<tr class="even">
+<td>Organic Matter</td>
+<td>DOM/POM processing options</td>
+</tr>
+</tbody>
+</table></li>
+<li><p>Click <strong>“Load Options”</strong> to display the current
+settings.</p></li>
+<li><p>The page shows two panels:</p>
+<ul>
+<li><strong>Model Switches</strong> — on/off toggles for various model
+features</li>
+<li><strong>Extra Constants</strong> — additional constants from
+<code>EXTRA_WCONST.txt</code></li>
+</ul></li>
+<li><p><strong>For this tutorial, keep the default options and
+proceed.</strong></p></li>
+</ol>
+<hr />
+<h3 id="step-7-configuring-the-simulation">Step 7: Configuring the
+Simulation</h3>
+<ol type="1">
+<li><p><strong>Click “Model Config”</strong> in the sidebar.</p></li>
+<li><p>The page has three tabs: <strong>Simulation Config</strong>,
+<strong>Run Model</strong>, and <strong>Output Config</strong>.</p></li>
+</ol>
+<h4 id="tab-1-simulation-config">Tab 1: Simulation Config</h4>
+<ol start="3" type="1">
+<li><p>Click <strong>“Load Configuration”</strong> to read the current
+<code>INPUT.txt</code> settings.</p></li>
+<li><p>Configure the 30-day tutorial run:</p>
+<table>
+<colgroup>
+<col style="width: 39%" />
+<col style="width: 30%" />
+<col style="width: 30%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Setting</th>
+<th>Value</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Base Year</strong></td>
+<td><code>1998</code></td>
+<td>Reference year for forcing data</td>
+</tr>
+<tr class="even">
+<td><strong>Start Date</strong></td>
+<td>Corresponds to day 6209</td>
+<td>~1 Jan of the simulation year</td>
+</tr>
+<tr class="odd">
+<td><strong>End Date</strong></td>
+<td>Corresponds to day 6239</td>
+<td>~31 Jan (30-day run)</td>
+</tr>
+<tr class="even">
+<td><strong>Time Step</strong></td>
+<td><code>6 minutes</code> (240 steps/day)</td>
+<td>Recommended default</td>
+</tr>
+<tr class="odd">
+<td><strong>Output Frequency</strong></td>
+<td><code>Hourly</code> (print interval = 10)</td>
+<td>10 × 6 min = 1 hour</td>
+</tr>
+<tr class="even">
+<td><strong>Enable Sediment Model</strong></td>
+<td><code>Off</code></td>
+<td>Faster run without sediment diagenesis</td>
+</tr>
+<tr class="odd">
+<td><strong>Resuspension Option</strong></td>
+<td><code>0 (Disabled)</code></td>
+<td>Simplest configuration for tutorial</td>
+</tr>
+</tbody>
+</table>
+<p>Alternatively — and <strong>recommended for this tutorial</strong> —
+you can simply select <code>INPUT_30day.txt</code> as the input file in
+the Run Model tab (next step), which already has these settings
+pre-configured.</p></li>
+<li><p>If you modified settings, click <strong>“Save
+Configuration”</strong> to write them to the input file.</p></li>
+</ol>
+<h4 id="tab-2-run-model">Tab 2: Run Model</h4>
+<ol start="6" type="1">
+<li><p>Switch to the <strong>“Run Model”</strong> tab.</p></li>
+<li><p>Configure the run parameters:</p>
+<ul>
+<li><strong>Executable:</strong> Select the executable you built in Step
+2 (e.g., <code>ESTAS_gf_release</code>) or use the default
+<code>ESTAS_II</code></li>
+<li><strong>Input Configuration File:</strong> Select
+<strong><code>INPUT_30day.txt</code></strong> from the dropdown — this
+is the pre-configured 30-day tutorial run</li>
+<li><strong>Pelagic Constants File:</strong> Select
+<strong><code>WCONST_04.txt</code></strong> (recommended) or leave as
+“(not used - use defaults)” to use built-in constants</li>
+<li><strong>Enable Binary Output:</strong> Leave <code>Off</code> for
+this tutorial</li>
+</ul></li>
+<li><p>Check the <strong>Command Preview</strong> box at the bottom of
+the left panel. It should show something like:</p>
+<pre><code>./ESTAS_II INPUT_30day.txt WCONST_04.txt</code></pre>
+<p>If using a custom-named executable:</p>
+<pre><code>./ESTAS_gf_release INPUT_30day.txt WCONST_04.txt</code></pre></li>
+</ol>
+<h4 id="tab-3-output-config">Tab 3: Output Config</h4>
+<ol start="9" type="1">
+<li><p>Switch to the <strong>“Output Config”</strong> tab (optional but
+informative).</p></li>
+<li><p>Review the <strong>Output Boxes</strong> selection. By default,
+boxes 5, 6, 8, 9, 14, 17, and 25 are selected. These are the boxes for
+which output files (<code>PELAGIC_BOX_*.out</code>) will be
+written.</p></li>
+<li><p>Review the <strong>Output Directory</strong>. For
+<code>INPUT_30day.txt</code>, output goes to
+<code>OUTPUTS_30day/</code>.</p></li>
+<li><p>The <strong>Output Types</strong> section lets you select:</p>
+<ul>
+<li><strong>State Variables</strong> — concentration timeseries (always
+recommended)</li>
+<li><strong>Process Rates</strong> — biogeochemical flux timeseries</li>
+<li><strong>Mass Balance</strong> — conservation check timeseries</li>
+</ul></li>
+</ol>
+<hr />
+<h3 id="step-8-running-the-simulation">Step 8: Running the
+Simulation</h3>
+<p>You can run the simulation from either the <strong>Dashboard</strong>
+or the <strong>Model Config → Run Model</strong> tab.</p>
+<h4 id="method-a-quick-run-from-dashboard">Method A: Quick Run from
+Dashboard</h4>
+<ol type="1">
+<li>Navigate to the <strong>Dashboard</strong>.</li>
+<li>Verify the System Status panel shows the correct executable and
+input file.</li>
+<li>Click the green <strong>“Quick Run”</strong> button.</li>
+</ol>
+<h4 id="method-b-run-from-model-config">Method B: Run from Model
+Config</h4>
+<ol type="1">
+<li>Navigate to <strong>Model Config → Run Model</strong> tab.</li>
+<li>Verify the command preview is correct.</li>
+<li>Click the green <strong>“Run Model”</strong> button.</li>
+</ol>
+<h4 id="monitoring-the-run">Monitoring the Run</h4>
+<ol start="4" type="1">
+<li><p>The <strong>Run Log</strong> panel (right side of Dashboard, or
+right side of Run Model tab) shows real-time output:</p>
+<pre><code>Starting quick run...
+Validating input files...
+OK Input files validated
+OK Constants file validated: WCONST_04.txt (323 constants)
+
+Command: ./ESTAS_II INPUT_30day.txt WCONST_04.txt
+------------------------------------
+Starting model execution...</code></pre></li>
+<li><p>The model will output progress as it processes each simulation
+day. A 30-day run typically completes in <strong>2–5 minutes</strong>
+depending on hardware.</p></li>
+<li><p>On the Dashboard, a <strong>timer</strong> display shows elapsed
+time.</p></li>
+<li><p>When the run finishes, the log shows:</p>
+<pre><code>OK Model completed successfully</code></pre></li>
+<li><p>To <strong>stop a running simulation</strong>, click the red
+<strong>“Stop”</strong> button.</p></li>
+</ol>
+<blockquote>
+<p><strong>What if the run fails?</strong> Check the Run Log for error
+messages. Common issues: - “Executable not found” → Go to Model Build
+and compile first - “Missing required file” → Check that
+<code>INPUTS/</code> directory has all files - “Constants file
+validation failed” → Select <code>WCONST_04.txt</code> which has all 323
+required constants</p>
+</blockquote>
+<hr />
+<h3 id="step-9-viewing-results">Step 9: Viewing Results</h3>
+<ol type="1">
+<li><p><strong>Click “Plots”</strong> in the sidebar.</p></li>
+<li><p>The Plots page has four tabs:</p>
+<ul>
+<li><strong>Output Directory</strong> — select which output folder to
+analyse</li>
+<li><strong>Model Output</strong> — plot state variable timeseries</li>
+<li><strong>Input Timeseries</strong> — visualise forcing data</li>
+<li><strong>Data Preview</strong> — tabular view of raw data</li>
+</ul></li>
+</ol>
+<h4 id="selecting-the-output-directory">Selecting the Output
+Directory</h4>
+<ol start="3" type="1">
+<li>In the <strong>Output Directory</strong> tab:
+<ul>
+<li>Select <strong><code>OUTPUTS_30day</code></strong> from the dropdown
+(or click “Refresh Directories” if it’s not listed)</li>
+<li>Click <strong>“Analyze Directory”</strong> to see a summary of
+available output files</li>
+</ul></li>
+</ol>
+<h4 id="plotting-model-output">Plotting Model Output</h4>
+<ol start="4" type="1">
+<li><p>Switch to the <strong>Model Output</strong> tab.</p></li>
+<li><p>Configure the plot:</p>
+<ul>
+<li><strong>File format:</strong> Select <code>Text (.out)</code></li>
+<li><strong>Output file:</strong> Select a box file, e.g.,
+<code>PELAGIC_BOX_00005.out</code> (Box 5 — central lagoon area)</li>
+</ul></li>
+<li><p>Select variables to plot:</p>
+<ul>
+<li><strong>Left axis:</strong> Choose one or more variables, e.g.:
+<ul>
+<li><code>DISS_OXYGEN</code> — dissolved oxygen</li>
+<li><code>NH4_N</code> — ammonium nitrogen</li>
+</ul></li>
+<li><strong>Right axis:</strong> Optionally add a variable on a
+different scale, e.g.:
+<ul>
+<li><code>DIA_C</code> — diatom carbon biomass</li>
+</ul></li>
+</ul></li>
+<li><p>Set plot options:</p>
+<ul>
+<li><strong>Apply rolling mean:</strong> Enable and set window size
+(e.g., 5) to smooth noisy output</li>
+<li><strong>Log scale:</strong> Enable for variables spanning several
+orders of magnitude</li>
+</ul></li>
+<li><p>Click <strong>“Refresh Plot”</strong> or the plot updates
+automatically.</p></li>
+<li><p>The interactive Plotly chart allows:</p>
+<ul>
+<li><strong>Hover</strong> over data points to see exact values and
+time</li>
+<li><strong>Zoom</strong> by clicking and dragging to select a
+region</li>
+<li><strong>Pan</strong> by holding shift and dragging</li>
+<li><strong>Reset zoom</strong> by double-clicking</li>
+<li><strong>Download</strong> the plot as PNG using the camera icon in
+the toolbar</li>
+</ul></li>
+</ol>
+<h4 id="suggested-variables-to-explore">Suggested Variables to
+Explore</h4>
+<table>
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 19%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Unit</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NH4_N</code></td>
+<td>mg N/L</td>
+<td>Ammonium — key nutrient</td>
+</tr>
+<tr class="even">
+<td><code>NO3_N</code></td>
+<td>mg N/L</td>
+<td>Nitrate — nutrient, nitrification product</td>
+</tr>
+<tr class="odd">
+<td><code>PO4_P</code></td>
+<td>mg P/L</td>
+<td>Phosphate — limiting nutrient</td>
+</tr>
+<tr class="even">
+<td><code>DISS_OXYGEN</code></td>
+<td>mg O2/L</td>
+<td>Dissolved oxygen — ecosystem health indicator</td>
+</tr>
+<tr class="odd">
+<td><code>DIA_C</code></td>
+<td>mg C/L</td>
+<td>Diatom biomass</td>
+</tr>
+<tr class="even">
+<td><code>CYN_C</code></td>
+<td>mg C/L</td>
+<td>Non-fixing cyanobacteria biomass</td>
+</tr>
+<tr class="odd">
+<td><code>FIX_CYN_C</code></td>
+<td>mg C/L</td>
+<td>Nitrogen-fixing cyanobacteria biomass</td>
+</tr>
+<tr class="even">
+<td><code>ZOO_C</code></td>
+<td>mg C/L</td>
+<td>Zooplankton biomass</td>
+</tr>
+<tr class="odd">
+<td><code>INORG_C</code></td>
+<td>mg C/L</td>
+<td>Dissolved inorganic carbon</td>
+</tr>
+<tr class="even">
+<td><code>TOT_ALK</code></td>
+<td>meq/L</td>
+<td>Total alkalinity</td>
+</tr>
+</tbody>
+</table>
+<h4 id="plotting-input-timeseries">Plotting Input Timeseries</h4>
+<ol start="10" type="1">
+<li><p>Switch to the <strong>Input Timeseries</strong> tab.</p></li>
+<li><p>Select a forcing file:</p>
+<ul>
+<li><code>Temperature</code> — water temperature (°C)</li>
+<li><code>Salinity</code> — water salinity (PSU)</li>
+<li><code>Flow</code> — water flow rates (m³/s)</li>
+<li><code>Solar Radiation</code> — incoming solar radiation (W/m²)</li>
+<li><code>Wind Speed</code> — wind speed (m/s)</li>
+<li><code>Air Temperature</code> — air temperature (°C)</li>
+<li><code>Shear Stress</code> — bottom shear stress (Pa)</li>
+</ul></li>
+<li><p>Select boxes to display (e.g., “5”, “14”, “25” to compare lake
+regions).</p></li>
+<li><p>Click <strong>“Plot Timeseries”</strong> to generate the
+chart.</p></li>
+</ol>
+<h4 id="data-preview">Data Preview</h4>
+<ol start="14" type="1">
+<li>The <strong>Data Preview</strong> tab shows raw tabular data from
+the currently loaded output file. Use this to inspect exact values.</li>
+</ol>
+<hr />
+<h3 id="step-10-analysing-mass-balance">Step 10: Analysing Mass
+Balance</h3>
+<ol type="1">
+<li><p><strong>Click “Mass Balance”</strong> in the sidebar.</p></li>
+<li><p>Click the <strong>“Calculate Mass Balance”</strong>
+button.</p></li>
+<li><p>The page shows:</p>
+<ul>
+<li><strong>Summary table</strong> — mass balance for Nitrogen, Carbon,
+Phosphorus, and Silicon showing initial mass, final mass, and relative
+error</li>
+<li><strong>Element Details</strong> — select an element (e.g.,
+Nitrogen) to see a breakdown of all contributing state variables</li>
+<li><strong>Time Series</strong> — temporal evolution of total element
+mass over the simulation period</li>
+</ul></li>
+<li><p>A well-calibrated run should show mass balance relative errors
+below 1%. Larger errors may indicate numerical instability or
+configuration issues.</p></li>
+</ol>
+<hr />
+<h3 id="step-11-comparing-with-observations">Step 11: Comparing with
+Observations</h3>
+<ol type="1">
+<li><p><strong>Click “Observations”</strong> in the sidebar.</p></li>
+<li><p>The page provides two ways to load observation data:</p>
+<p><strong>Method A: From OBSERVATIONS directory</strong></p>
+<ul>
+<li>Click <strong>“Scan OBSERVATIONS Directory”</strong> to find
+available files</li>
+<li>The bundled files include:
+<ul>
+<li><code>Water_column_chemistry_2015.xlsx</code> — field
+measurements</li>
+<li><code>2015ST14.xlsx</code> — station 14 observation data</li>
+<li><code>PelagicProcesses.xlsx</code> — measured pelagic process
+rates</li>
+<li><code>.dates</code> files — date-indexed observation records</li>
+</ul></li>
+<li>Select a file and click <strong>“Load Selected File”</strong></li>
+</ul>
+<p><strong>Method B: Upload your own</strong></p>
+<ul>
+<li>Use the file upload widget to load CSV or Excel files</li>
+</ul>
+<p><strong>Method C: Generate synthetic data</strong></p>
+<ul>
+<li>Click <strong>“Generate Sample Data”</strong> to create synthetic
+observations for testing the comparison workflow</li>
+</ul></li>
+<li><p>After loading observations:</p>
+<ul>
+<li><strong>File Preview</strong> shows the data structure and available
+columns</li>
+<li><strong>Comparison Summary</strong> shows statistical metrics (RMSE,
+R², bias) for matched variables</li>
+<li><strong>Variable Details</strong> — select a variable for detailed
+comparison metrics</li>
+<li><strong>Scatter Plot Info</strong> — model vs. observation scatter
+analysis</li>
+</ul></li>
+</ol>
+<hr />
+<h2 id="working-with-scenarios">6. Working with Scenarios</h2>
+<p>The <strong>Scenarios</strong> page lets you save and restore
+complete model configurations.</p>
+<h3 id="saving-a-scenario">Saving a Scenario</h3>
+<ol type="1">
+<li><p><strong>Click “Scenarios”</strong> in the sidebar.</p></li>
+<li><p>In the <strong>“Save Current Configuration”</strong> panel:</p>
+<ul>
+<li>Enter a <strong>name</strong> (e.g., “Tutorial_baseline”)</li>
+<li>Enter a <strong>description</strong> (e.g., “Default 30-day run with
+WCONST_04”)</li>
+<li>Select what to include:
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" />Parameters
+(WCONST_04.txt)</label></li>
+<li><label><input type="checkbox" checked="" />Initial Conditions
+(select INIT_CONC_1.txt)</label></li>
+<li><label><input type="checkbox" checked="" />Model Options &amp;
+Constants</label></li>
+</ul></li>
+<li>Click <strong>“Save as New Scenario”</strong></li>
+</ul></li>
+</ol>
+<h3 id="loading-a-scenario">Loading a Scenario</h3>
+<ol start="3" type="1">
+<li><p>Use the <strong>“Select Scenario”</strong> dropdown to choose a
+previously saved configuration.</p></li>
+<li><p>Click <strong>“Load”</strong> to replace the current
+configuration with the saved one.</p></li>
+<li><p>A scenario can be <strong>deleted</strong> using the “Delete”
+button if no longer needed.</p></li>
+</ol>
+<blockquote>
+<p><strong>Why use scenarios?</strong> Scenarios are particularly useful
+for: - Saving a calibrated baseline before making changes - Comparing
+different parameter sets - Quickly switching between configurations for
+sensitivity analysis</p>
+</blockquote>
+<hr />
+<h2 id="geographic-visualization">7. Geographic Visualization</h2>
+<ol type="1">
+<li><p><strong>Click “Map”</strong> in the sidebar.</p></li>
+<li><p>The map shows the Curonian Lagoon domain centred at approximately
+55.32°N, 21.10°E.</p></li>
+<li><p><strong>Map controls:</strong></p>
+<ul>
+<li><strong>Map Style:</strong> Choose from OpenStreetMap, Light/Dark
+(Carto), Satellite (Esri), or Topographic</li>
+<li><strong>Centre Latitude/Longitude:</strong> Adjust map centre
+coordinates</li>
+<li><strong>Zoom Level:</strong> 1 (world) to 18 (street level); default
+10</li>
+<li><strong>Pitch (3D tilt):</strong> Angle for 3D perspective view
+(default 45°)</li>
+<li><strong>Point Radius:</strong> Size of data points on the map</li>
+<li><strong>Elevation Scale:</strong> Vertical exaggeration for 3D
+visualisation</li>
+</ul></li>
+<li><p>The map also displays sample data points corresponding to model
+box locations.</p></li>
+</ol>
+<hr />
+<h2 id="tips-and-troubleshooting">8. Tips and Troubleshooting</h2>
+<h3 id="performance">Performance</h3>
+<ul>
+<li>The <strong>30-day simulation</strong>
+(<code>INPUT_30day.txt</code>) is recommended for learning and testing.
+It completes in 2–5 minutes.</li>
+<li>The <strong>365-day simulation</strong> (<code>INPUT.txt</code>)
+takes 30–60 minutes and produces ~8,700 output lines per box.</li>
+<li>Use <strong>Release</strong> build type for production runs. Debug
+builds are 5–10× slower but provide better error diagnostics.</li>
+</ul>
+<h3 id="common-issues">Common Issues</h3>
+<table>
+<colgroup>
+<col style="width: 47%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Problem</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>“Executable not found”</td>
+<td>Go to Model Build and compile, or verify ESTAS_II exists</td>
+</tr>
+<tr class="even">
+<td>“Missing required file”</td>
+<td>Check <code>INPUTS/</code> directory has PELAGIC_INPUTS.txt,
+PELAGIC_MODEL_OPTIONS.txt, TEMP_TS.txt, FLOW_TS.txt,
+ADVECTIVE_LINKS.txt, INIT_CONC_1.txt</td>
+</tr>
+<tr class="odd">
+<td>“Constants file validation failed”</td>
+<td>Use <code>WCONST_04.txt</code> which has all 323 required
+constants</td>
+</tr>
+<tr class="even">
+<td>Run produces NaN or crashes</td>
+<td>Try Debug build type to get detailed error output; check initial
+conditions for zero or negative values</td>
+</tr>
+<tr class="odd">
+<td>“Intel runtime libraries not found”</td>
+<td>Only relevant for ifort-compiled executables; use gfortran
+instead</td>
+</tr>
+<tr class="even">
+<td>Plot shows no data</td>
+<td>Verify the output directory matches the INPUT file configuration;
+click “Refresh Files”</td>
+</tr>
+<tr class="odd">
+<td>App won’t start</td>
+<td>Check Python environment:
+<code>pip install -r shiny_app/requirements.txt</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="navigating-efficiently">Navigating Efficiently</h3>
+<ul>
+<li>Use the <strong>Dashboard</strong> for a quick overview and
+one-click model run</li>
+<li>The <strong>Model Structure</strong> diagram provides a visual
+reference of all biogeochemical interactions — useful when interpreting
+output variables</li>
+<li>The <strong>State Variables Reference</strong> (question mark icon
+in header) provides a quick-reference table of all 36 state
+variables</li>
+<li>The <strong>Settings</strong> panel (gear icon) allows theme
+customisation</li>
+</ul>
+<h3 id="file-safety">File Safety</h3>
+<ul>
+<li>All parameter and IC file edits create automatic <code>.bak</code>
+backups</li>
+<li>The app writes directly to <code>INPUTS/</code> files — use
+Scenarios to save checkpoints before major changes</li>
+<li>Output files are overwritten on each new run into the configured
+directory</li>
+</ul>
+<hr />
+<h2 id="data-files-reference">9. Data Files Reference</h2>
+<h3 id="input-configuration-files-input.txt">Input Configuration Files
+(<code>INPUT*.txt</code>)</h3>
+<p>These files sit in the project root and control the overall
+simulation.</p>
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 14%" />
+<col style="width: 19%" />
+<col style="width: 23%" />
+<col style="width: 22%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Duration</th>
+<th>Resuspension</th>
+<th>Sediment Model</th>
+<th>Output Folder</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>INPUT_30day.txt</code></td>
+<td>30 days</td>
+<td>Disabled (0)</td>
+<td>Off</td>
+<td><code>OUTPUTS_30day/</code></td>
+<td><strong>Tutorial — recommended</strong></td>
+</tr>
+<tr class="even">
+<td><code>INPUT.txt</code></td>
+<td>365 days</td>
+<td>Semi-prescribed (2)</td>
+<td>Off</td>
+<td><code>OUTPUTS/</code></td>
+<td>Full annual simulation</td>
+</tr>
+<tr class="odd">
+<td><code>INPUT_gf_release.txt</code></td>
+<td>365 days</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>Release build config</td>
+</tr>
+<tr class="even">
+<td><code>INPUT_gf_debug.txt</code></td>
+<td>365 days</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>Debug build config</td>
+</tr>
+<tr class="odd">
+<td><code>INPUT_gf_fast.txt</code></td>
+<td>365 days</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>Fast build config</td>
+</tr>
+<tr class="even">
+<td><code>INPUT_debug_run.txt</code></td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td><code>OUTPUTS_debug_run/</code></td>
+<td>Debugging configuration</td>
+</tr>
+<tr class="odd">
+<td><code>INPUT_sediment_test.txt</code></td>
+<td>—</td>
+<td>—</td>
+<td>On</td>
+<td>—</td>
+<td>Sediment model testing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-input-data-files-inputs">Key Input Data Files
+(<code>INPUTS/</code>)</h3>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 31%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>File(s)</th>
+<th>Category</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PELAGIC_INPUTS.txt</code></td>
+<td>Core</td>
+<td>Master pelagic model configuration; references all other input
+files</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_MODEL_OPTIONS.txt</code></td>
+<td>Core</td>
+<td>Model on/off switches and feature toggles</td>
+</tr>
+<tr class="odd">
+<td><code>WCONST_04.txt</code></td>
+<td>Constants</td>
+<td>323 calibrated model constants (recommended set)</td>
+</tr>
+<tr class="even">
+<td><code>EXTRA_WCONST.txt</code></td>
+<td>Constants</td>
+<td>Additional constants for extended features</td>
+</tr>
+<tr class="odd">
+<td><code>INIT_CONC_1.txt</code></td>
+<td>Initial Cond.</td>
+<td>Initial state variable concentrations (set 1)</td>
+</tr>
+<tr class="even">
+<td><code>INIT_CONC_2.txt</code></td>
+<td>Initial Cond.</td>
+<td>Initial state variable concentrations (set 2)</td>
+</tr>
+<tr class="odd">
+<td><code>ADVECTIVE_LINKS.txt</code></td>
+<td>Geometry</td>
+<td>Advective transport links between boxes</td>
+</tr>
+<tr class="even">
+<td><code>DISPERSIVE_LINKS.txt</code></td>
+<td>Geometry</td>
+<td>Dispersive transport links between boxes</td>
+</tr>
+<tr class="odd">
+<td><code>BATHYMETRY_1.txt</code> – <code>BATHYMETRY_25.txt</code></td>
+<td>Geometry</td>
+<td>Depth profiles for each of the 25 boxes</td>
+</tr>
+<tr class="even">
+<td><code>TEMP_TS.txt</code></td>
+<td>Forcing</td>
+<td>Water temperature timeseries (all boxes)</td>
+</tr>
+<tr class="odd">
+<td><code>SALT_TS.txt</code></td>
+<td>Forcing</td>
+<td>Salinity timeseries</td>
+</tr>
+<tr class="even">
+<td><code>FLOW_TS.txt</code></td>
+<td>Forcing</td>
+<td>Water flow rates</td>
+</tr>
+<tr class="odd">
+<td><code>SOLAR_RAD_TS.txt</code></td>
+<td>Forcing</td>
+<td>Solar radiation timeseries</td>
+</tr>
+<tr class="even">
+<td><code>WIND_SPEED_TS.txt</code></td>
+<td>Forcing</td>
+<td>Wind speed timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>AIR_TEMP_TS.txt</code></td>
+<td>Forcing</td>
+<td>Air temperature timeseries</td>
+</tr>
+<tr class="even">
+<td><code>CLOUD_COVER_TS.txt</code></td>
+<td>Forcing</td>
+<td>Cloud cover timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>EVAPORATION_TS.txt</code></td>
+<td>Forcing</td>
+<td>Evaporation timeseries</td>
+</tr>
+<tr class="even">
+<td><code>BOUNDARY_FLOW_TS.txt</code></td>
+<td>Forcing</td>
+<td>Boundary flow timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>FORC_TS_1.txt</code> – <code>FORC_TS_9.txt</code></td>
+<td>Forcing</td>
+<td>Boundary concentration forcing timeseries</td>
+</tr>
+<tr class="even">
+<td><code>SETTLING_VELOCITY_TS_1.txt</code> – <code>_6.txt</code></td>
+<td>Forcing</td>
+<td>Variable settling velocity timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>SHEAR_STRESSES_TS.txt</code></td>
+<td>Forcing</td>
+<td>Bottom shear stress timeseries</td>
+</tr>
+<tr class="even">
+<td><code>ICE_COVER.txt</code></td>
+<td>Forcing</td>
+<td>Ice cover timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>ALLELOPATHIC_INFORMATION.txt</code></td>
+<td>Config</td>
+<td>Allelopathic interaction parameters</td>
+</tr>
+<tr class="even">
+<td><code>PRESCRIBED_SEDIMENT_FLUXES.txt</code></td>
+<td>Sediment</td>
+<td>Prescribed benthic sediment fluxes</td>
+</tr>
+<tr class="odd">
+<td><code>PRESCRIBED_SEDIMENT_FLUXES_HYPOXIA.txt</code></td>
+<td>Sediment</td>
+<td>Hypoxic sediment flux set</td>
+</tr>
+<tr class="even">
+<td><code>FLUXES_FOR_MUDDY_SEDIMENTS*.txt</code></td>
+<td>Sediment</td>
+<td>Muddy sediment flux data (various sets)</td>
+</tr>
+<tr class="odd">
+<td><code>FLUXES_FOR_SANDY_SEDIMENTS*.txt</code></td>
+<td>Sediment</td>
+<td>Sandy sediment flux data</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_OUTPUT_INFORMATION_FILE.txt</code></td>
+<td>Output</td>
+<td>Controls which boxes produce output</td>
+</tr>
+<tr class="odd">
+<td><code>RESUSPENSION_INPUTS_2.txt</code></td>
+<td>Sediment</td>
+<td>Resuspension configuration</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output-files-outputs_30day">Output Files
+(<code>OUTPUTS_30day/</code>)</h3>
+<p>After a successful 30-day run:</p>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PELAGIC_BOX_00005.out</code></td>
+<td>Box 5 state variable timeseries</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_BOX_00006.out</code></td>
+<td>Box 6 state variable timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>PELAGIC_BOX_00008.out</code></td>
+<td>Box 8 state variable timeseries</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_BOX_00009.out</code></td>
+<td>Box 9 state variable timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>PELAGIC_BOX_00014.out</code></td>
+<td>Box 14 state variable timeseries</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_BOX_00017.out</code></td>
+<td>Box 17 state variable timeseries</td>
+</tr>
+<tr class="odd">
+<td><code>PELAGIC_BOX_00025.out</code></td>
+<td>Box 25 state variable timeseries</td>
+</tr>
+<tr class="even">
+<td><code>PELAGIC_BOX_*.mtrx</code></td>
+<td>Process rate matrices (if enabled)</td>
+</tr>
+<tr class="odd">
+<td><code>MASS_BALANCES.out</code></td>
+<td>Element mass balance timeseries</td>
+</tr>
+<tr class="even">
+<td><code>WATER_LEVELS.out</code></td>
+<td>Water level timeseries for all boxes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="observation-files-observations">Observation Files
+(<code>OBSERVATIONS/</code>)</h3>
+<table>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Water_column_chemistry_2015.xlsx</code></td>
+<td>Field water chemistry measurements</td>
+</tr>
+<tr class="even">
+<td><code>2015ST14.xlsx</code></td>
+<td>Station 14 monitoring data</td>
+</tr>
+<tr class="odd">
+<td><code>PelagicProcesses.xlsx</code></td>
+<td>Measured pelagic process rates</td>
+</tr>
+<tr class="even">
+<td><code>Growth_fixation_light_mixing.xlsx</code></td>
+<td>Growth and fixation measurements</td>
+</tr>
+<tr class="odd">
+<td><code>N2_fix_rates for model calibration.xlsx</code></td>
+<td>N2 fixation rate data</td>
+</tr>
+<tr class="even">
+<td><code>sta1ND.dates</code>, <code>sta2VM.dates</code></td>
+<td>Station date index files</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>This tutorial was prepared for ESTAS-AQUABC v0.2. For model
+equations and scientific background, see the</em> <a
+href="AQUABC_Reference_Manual.md">AQUABC Reference Manual</a>
+<em>and</em> <a href="ESTAS_Reference_Manual.md">ESTAS Reference
+Manual</a>.</p>
+</body>
+</html>

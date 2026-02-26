@@ -1611,6 +1611,17 @@ def create_ui(theme_name="darkly"):
         ),
         # Navigation links
         ui.div({"class": "sidebar-nav"}, *nav_links),
+        # Tutorial link at bottom of sidebar
+        ui.div(
+            {"class": "sidebar-nav", "style": "border-top: 1px solid rgba(255,255,255,0.15); margin-top: auto; padding-top: 0.5rem;"},
+            ui.tags.a(
+                {"class": "nav-link", "href": "tutorial.html", "target": "_blank",
+                 "style": "opacity: 0.8;"},
+                ui.tags.i(class_="bi bi-book"),
+                ui.tags.span("Tutorial"),
+                ui.tags.i(class_="bi bi-box-arrow-up-right", style="font-size: 0.7em; margin-left: 4px; opacity: 0.6;"),
+            ),
+        ),
     )
 
     # Hidden input to track navigation state (for Shiny reactivity)
@@ -2783,9 +2794,21 @@ def create_ui(theme_name="darkly"):
             ui.tags.i(class_="bi bi-water me-2"),
             "AQUABC - Aquatic Biogeochemical Model",
         ),
-        # Right side buttons container (changelog + help + settings)
+        # Right side buttons container (tutorial + changelog + help + settings)
         ui.div(
             {"class": "d-flex align-items-center gap-2"},
+            # Tutorial button - opens in new window
+            ui.tooltip(
+                ui.tags.a(
+                    ui.tags.i(class_="bi bi-book"),
+                    href="tutorial.html",
+                    target="_blank",
+                    class_="btn btn-link text-light p-1",
+                    title="Tutorial",
+                    style="font-size: inherit; text-decoration: none;",
+                ),
+                "Open Getting Started Tutorial in a new window"
+            ),
             # Changelog button
             ui.tooltip(
                 ui.input_action_button(
