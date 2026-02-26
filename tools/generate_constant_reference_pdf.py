@@ -204,7 +204,7 @@ def get_unit(name: str) -> str:
     if n.startswith("DO_STR_HYPOX_"):
         return "mg O2/L"
     if n.startswith("EXPON_HYPOX_"):
-        return "-"
+        return "L/mg O2"
     if n.startswith("THETA_HYPOX_"):
         return "-"
 
@@ -273,43 +273,54 @@ CATEGORIES = [
      "and stoichiometry for diatoms -- siliceous phytoplankton that dominate "
      "spring blooms in temperate lakes and estuaries.",
      "KG_DIA_OPT_TEMP = 3.7 /day: within 2-4 /day at optimal T (Eppley, 1972; "
-     "Reynolds, 2006). CTMI cardinal temperatures T_min=1, T_opt=24, T_max=35 degC "
-     "from Bernard & Remond (2012). EFF_DIA_GROWTH = 0.95 means only 5% of gross "
+     "Reynolds, 2006). CTMI cardinal temperatures: OPT_TEMP_LR = T_min = 1 degC, "
+     "OPT_TEMP_UR = T_opt = 24 degC, KAPPA_OVER_OPT_TEMP = T_max = 35 degC "
+     "(Bernard & R\u00e9mond, 2012; Rosso et al. 1993). Note: KAPPA_UNDER_OPT_TEMP "
+     "is passed to GROWTH_AT_TEMP but unused in the CTMI equation (retained for "
+     "backward compatibility). EFF_DIA_GROWTH = 0.95 means only 5% of gross "
      "growth lost to maintenance. KR_DIA_20 = 0.05 /day and KD_DIA_20 = 0.12 /day "
-     "within ranges 0.03-0.10 and 0.05-0.20 (Reynolds, 2006). Half-saturations "
-     "KHS_DIN=0.01, KHS_DIP=0.005, KHS_DSi=0.013 mg/L are typical for nutrient-"
-     "rich systems (Jorgensen et al., 1991). N:C=0.22, P:C=0.024 follow Redfield "
-     "(1958) with slight N enrichment; Si:C=0.25 follows Brzezinski (1985). "
-     "C:Chla=30 is in the range 20-100 (Geider et al., 1997)."),
+     "within ranges 0.03-0.10 and 0.05-0.20 (Reynolds, 2006). Hypoxia stress: "
+     "FAC_HYPOX = THETA^(EXPON*(DO_threshold - DO)); EXPON has units L/mg O2 so "
+     "the exponent is dimensionless. Half-saturations KHS_DIN=0.01, KHS_DIP=0.005, "
+     "KHS_DSi=0.013 mg/L are typical for nutrient-rich systems (Jorgensen et al., "
+     "1991). N:C=0.22, P:C=0.024 follow Redfield (1958) with slight N enrichment; "
+     "Si:C=0.25 follows Brzezinski (1985). C:Chla=30 is in the range 20-100 "
+     "(Geider et al., 1997)."),
     ("Non-Fixing Cyanobacteria", 29, 50,
      "Parameters for non-nitrogen-fixing cyanobacteria (e.g. Microcystis, "
      "Planktothrix). Warm-water specialists with higher optimal temperatures.",
      "KG_CYN_OPT_TEMP = 2.4 /day: within 1.0-3.5 /day (Reynolds, 2006). "
-     "T_min=15, T_opt=26, T_max=38 degC follow Robarts & Zohary (1987); Rosso "
-     "et al. (1993). KHS_DIN=0.009, KHS_DIP=0.008 mg/L are low, reflecting "
-     "cyanobacterial competitive advantage at low nutrients (Jorgensen et al., "
-     "1991). C:Chla=40 reflects higher pigment packaging than diatoms."),
+     "CTMI parameters: OPT_TEMP_LR = T_min = 15, OPT_TEMP_UR = T_opt = 26, "
+     "KAPPA_OVER_OPT_TEMP = T_max = 38 degC (Robarts & Zohary, 1987; Rosso "
+     "et al. 1993). KAPPA_UNDER_OPT_TEMP is unused in the CTMI equation. "
+     "KHS_DIN=0.009, KHS_DIP=0.008 mg/L are low, reflecting cyanobacterial "
+     "competitive advantage at low nutrients (Jorgensen et al., 1991). "
+     "C:Chla=40 reflects higher pigment packaging than diatoms."),
     ("Nitrogen-Fixing Cyanobacteria", 51, 74,
      "Parameters for heterocystous N2-fixing cyanobacteria (e.g. Aphanizomenon, "
      "Dolichospermum). Unique N-fixation parameters R_FIX and K_FIX control the "
      "transition from DIN uptake to atmospheric N2 fixation.",
      "KG_FIX_CYN_OPT_TEMP = 3.5 /day: upper range, compensating for the "
-     "energetic cost of nitrogenase (Staal et al., 2003). T_min=18, T_opt=26, "
-     "T_max=38 degC (Grimaud et al., 2017). R_FIX=1.0 means non-fixing and "
-     "fixing pathways balanced; K_FIX=0.008 sets switching sensitivity to low "
-     "DIN (Horne & Goldman, 1994)."),
+     "energetic cost of nitrogenase (Staal et al., 2003). CTMI parameters: "
+     "OPT_TEMP_LR = T_min = 18, OPT_TEMP_UR = T_opt = 26, KAPPA_OVER_OPT_TEMP "
+     "= T_max = 38 degC (Grimaud et al., 2017). KAPPA_UNDER_OPT_TEMP is unused. "
+     "R_FIX=1.0 means non-fixing and fixing pathways balanced; K_FIX=0.008 "
+     "sets switching sensitivity to low DIN (Horne & Goldman, 1994)."),
     ("Other Phytoplankton (Chlorophyta, Cryptophyta, etc.)", 75, 96,
      "Growth and loss parameters for a generic 'other phytoplankton' group "
      "representing green algae, cryptophytes, and chrysophytes.",
      "KG_OPA_OPT_TEMP = 2.9 /day: mid-range for green algae (Reynolds & "
-     "Irish, 1997). T_opt=20 degC is lower than cyanobacteria, reflecting "
-     "cooler-season dominance (Sommer, 1989). Stoichiometric ratios match "
-     "Redfield. C:Chla = 30 as for diatoms."),
+     "Irish, 1997). CTMI parameters: OPT_TEMP_LR = T_min, OPT_TEMP_UR = T_opt "
+     "= 20 degC, KAPPA_OVER_OPT_TEMP = T_max; KAPPA_UNDER_OPT_TEMP unused. "
+     "T_opt is lower than cyanobacteria, reflecting cooler-season dominance "
+     "(Sommer (Ed.), 1989). Stoichiometric ratios match Redfield. C:Chla = 30 "
+     "as for diatoms."),
     ("Zooplankton", 97, 133,
      "Growth, grazing preferences, half-saturation constants, respiration, "
      "and mortality for the bulk zooplankton compartment (mainly crustacean "
      "micro- and mesozooplankton).",
-     "KG_ZOO_OPT_TEMP = 0.45 /day: within 0.2-0.8 /day (Jorgensen, 1995). "
+     "KG_ZOO_OPT_TEMP = 0.45 /day: within 0.2-0.8 /day (Jorgensen & "
+     "Bendoricchio, 2001; Jorgensen, 1976). "
      "Grazing rate multipliers (GRAT_ZOO_*) = 1.0 for live phytoplankton, "
      "0.5 for detritus. Preferences (PREF_ZOO_*) sum to ~1.0 with OtherPhyto "
      "highest (0.37) and cyanobacteria low (0.10), reflecting selective "
@@ -453,7 +464,7 @@ REFERENCES: dict[str, list[tuple[str, str, str]]] = {
          "by a new model. J. Theoretical Biology, 162(4), 447-463.",
          "Cardinal Temperature Model with Inflection (CTMI): T_min, T_opt, T_max framework "
          "used for all phytoplankton temperature responses in AQUABC."),
-        ("Bernard, O. & Remond, B. (2012)",
+        ("Bernard, O. & R\u00e9mond, B. (2012)",
          "Validation of a simple model accounting for light and temperature effect on microalgal "
          "growth. Bioresource Technology, 123, 520-527.",
          "Validated CTMI with three cardinal temperatures for various microalgae."),
@@ -511,14 +522,13 @@ REFERENCES: dict[str, list[tuple[str, str, str]]] = {
          "Modelling phytoplankton dynamics in lakes and reservoirs: the problem of in-situ "
          "growth rates. Hydrobiologia, 349, 5-17.",
          "In-situ growth rates for green algae, cryptophytes; mu_max 1.5-3.5 /day."),
-        ("Sommer, U. (1989)",
+        ("Sommer, U. (Ed.) (1989)",
          "Plankton Ecology: Succession in Plankton Communities. Springer.",
-         "OtherPhyto T_opt typically 15-22 deg C (cooler than cyanobacteria)."),
+         "OtherPhyto T_opt typically 15-22 deg C (cooler than cyanobacteria). Edited volume."),
     ],
     "Zooplankton": [
-        ("Jorgensen, S.E. (1995)",
-         "The growth rate of zooplankton at the edge of chaos: ecological models. "
-         "J. Theoretical Biology, 175(1), 13-21.",
+        ("Jorgensen, S.E. & Bendoricchio, G. (2001)",
+         "Fundamentals of Ecological Modelling, 3rd ed. Elsevier.",
          "Zooplankton growth rates 0.2-0.8 /day; model uses 0.45 /day."),
         ("Hansen, P.J., Bjornsen, P.K. & Hansen, B.W. (1997)",
          "Zooplankton grazing and growth: scaling within the 2-2000 um body size range. "
@@ -642,7 +652,7 @@ REFERENCES: dict[str, list[tuple[str, str, str]]] = {
          "Nostocales temperature requirements T_opt 24-28 deg C; T_min 15-20 deg C."),
         ("Kovacs, A.W., Presing, M. & Voros, L. (2016)",
          "Thermal-dependent growth characteristics for Cylindrospermopsis raciborskii. "
-         "Aquatic Ecology, 50, 97-108.",
+         "Hydrobiologia, 764(1), 97-108.",
          "CTMI cardinal temperatures for Nostocales species."),
     ],
     "Dissolution Saturation & DOM Availability": [
@@ -993,11 +1003,11 @@ def build_pdf(consts: list[dict], out_path: Path):
         "quality and hydrodynamic modeling. Ecological Modelling, 222, "
         "2485-2494.",
         "Sakurova, I. (2019) Modeling of eutrophication processes in the "
-        "Curonian Lagoon. PhD Thesis, Klaipeda University. "
+        "Curonian Lagoon. Master's Thesis, Klaipeda University. "
         "[ESTAS-AQUABC model application].",
         "Idzelyte, R. (2016) A visualisation system for biogeochemical "
         "and hydrodynamic modelling and its application to the Curonian "
-        "lagoon. PhD Thesis, Klaipeda University.",
+        "lagoon. Master's Thesis, Klaipeda University.",
         "Eilola, K., Almroth-Rosell, E., Edman, M. et al. (2015) Model "
         "set-up at COCOA study sites. SMHI Report. "
         "[AQUABC ecological model description].",
