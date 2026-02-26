@@ -131,9 +131,9 @@
    131                         ZOO_N_TO_C             0.220  !131   Zooplankton Nitrogen to Carbon ratio
    132                         ZOO_P_TO_C             0.024  !132   Zooplankton Phosphorus to Carbon ratio
    133                        ZOO_O2_TO_C              2.66  !133   Zooplankton Oxygen to Carbon ratio for respiration
-   134            KDISS_DET_PART_ORG_C_20              10.0   !134    POC Dissolution rate not dependent on phytoplankton
+   134            KDISS_DET_PART_ORG_C_20              0.25   !134    POC Dissolution rate not dependent on phytoplankton
    135         THETA_KDISS_DET_PART_ORG_C              1.06  !135   POC Carbon Dissolution rate Temperature correction
-   136            FAC_PHYT_DET_PART_ORG_C                2.  !136   !0.001  POC Carbon Phytoplankton linear factor for dissolution rate
+   136            FAC_PHYT_DET_PART_ORG_C                0.  !136   !0.001  POC Carbon Phytoplankton linear factor for dissolution rate
    137            KDISS_DET_PART_ORG_N_20              0.25  !137 0.12   PON Dissolution rate not dependent on phytoplankton
    138         THETA_KDISS_DET_PART_ORG_N              1.06  !138   PON Dissolution rate Temperature correction
    139                         KHS_DISS_N              0.025  !139 0.025  PON dissolution reverse half saturation for DIN
