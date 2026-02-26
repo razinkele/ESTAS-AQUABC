@@ -1228,50 +1228,79 @@ def create_ui():
         "input.navigation === 'nav_dashboard'",
         ui.card(
             ui.card_header("Dashboard"),
-            # Run controls and timer at the top
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_action_button("quick_run", "Quick Run", class_="btn-success btn-lg w-100"),
-                    "Run the model with current settings using the selected executable"
-                ),
-                ui.tooltip(
-                    ui.input_action_button("dashboard_stop", "Stop", class_="btn-danger btn-lg w-100"),
-                    "Stop the currently running model simulation"
-                ),
-                # Timer display - sized to match buttons
+            # Status bar — horizontal summary strip
+            ui.div(
+                {"class": "dashboard-status-bar"},
                 ui.div(
+                    {"class": "status-item"},
+                    ui.div({"class": "status-dot idle", "id": "run-status-dot"}),
+                    ui.div(
+                        ui.div("Status", class_="status-label"),
+                        ui.div(ui.output_text("dashboard_status_text", inline=True), class_="status-value"),
+                    ),
+                ),
+                ui.div(
+                    {"class": "status-item"},
+                    ui.tags.i(class_="bi bi-cpu", style="color: var(--text-muted);"),
+                    ui.div(
+                        ui.div("Executable", class_="status-label"),
+                        ui.div(ui.output_text("dashboard_exe_text", inline=True), class_="status-value"),
+                    ),
+                ),
+                ui.div(
+                    {"class": "status-item"},
+                    ui.tags.i(class_="bi bi-clock-history", style="color: var(--text-muted);"),
+                    ui.div(
+                        ui.div("Last Run", class_="status-label"),
+                        ui.div(ui.output_text("dashboard_last_run_text", inline=True), class_="status-value"),
+                    ),
+                ),
+                ui.div(
+                    {"class": "status-item", "style": "margin-left: auto;"},
                     ui.output_ui("run_timer_display"),
-                    style="display: flex; align-items: stretch; height: 100%;"
                 ),
-                col_widths=[3, 3, 6],
-                class_="mb-3"
             ),
+            # Two-column layout: actions + system | run log
             ui.layout_columns(
-                # System Status - narrow
+                # Left: Quick actions + system info
                 ui.div(
-                    ui.card(
-                        ui.card_header("System Status"),
-                        ui.div(
-                            ui.output_ui("system_status_compact"),
-                            style="max-height: 340px; overflow-y: auto; font-size: 11px;"
+                    ui.layout_columns(
+                        ui.tooltip(
+                            ui.input_action_button("quick_run", "Quick Run", class_="btn-success btn-lg w-100"),
+                            "Run the model with current settings using the selected executable"
                         ),
-                        fill=False
+                        ui.tooltip(
+                            ui.input_action_button("dashboard_stop", "Stop", class_="btn-danger btn-lg w-100"),
+                            "Stop the currently running model simulation"
+                        ),
+                        col_widths=[6, 6],
+                        class_="mb-3"
+                    ),
+                    ui.layout_columns(
+                        ui.card(
+                            ui.card_header("System Status"),
+                            ui.div(
+                                ui.output_ui("system_status_compact"),
+                                style="max-height: 280px; overflow-y: auto; font-size: 0.78rem;"
+                            ),
+                            fill=False
+                        ),
+                        ui.card(
+                            ui.card_header("Simulation Config"),
+                            ui.div(
+                                ui.output_ui("input_txt_variables"),
+                                style="max-height: 280px; overflow-y: auto; font-size: 0.78rem;"
+                            ),
+                            fill=False
+                        ),
+                        col_widths=[6, 6]
                     ),
                     ui.tooltip(
                         ui.input_action_button("goto_model_config", "Model Config", class_="btn-primary btn-sm w-100 mt-2"),
                         "Navigate to Model Control panel to configure simulation settings"
                     ),
                 ),
-                # INPUT.txt Variables
-                ui.card(
-                    ui.card_header("Simulation Config"),
-                    ui.div(
-                        ui.output_ui("input_txt_variables"),
-                        style="max-height: 380px; overflow-y: auto;"
-                    ),
-                    fill=False
-                ),
-                # Run Log - wider
+                # Right: Run log
                 ui.card(
                     ui.card_header(
                         ui.div(
@@ -1282,12 +1311,13 @@ def create_ui():
                     ),
                     ui.div(
                         ui.output_ui("dashboard_run_log"),
-                        style="height: 380px; overflow-y: auto; background-color: #1e1e1e; padding: 10px; border-radius: 4px;",
+                        style="height: 420px; overflow-y: auto; padding: 10px; border-radius: 4px;",
+                        class_="run-log-container",
                         id="dashboard_log_container"
                     ),
                     fill=False
                 ),
-                col_widths=[2, 2, 8]
+                col_widths=[5, 7]
             )
         )
     )
@@ -3547,6 +3577,7 @@ def server(input, output, session):
                 )
                 _model_process[0] = p
                 _model_running[0] = True
+                _last_run_time[0] = datetime.now()
                 _model_progress[0] = ({"elapsed": "00:00", "rows": 0, "size_kb": 0, "status": "running"})
 
                 last_progress_update = time.time()
@@ -6681,6 +6712,7 @@ def server(input, output, session):
     # Use lists as mutable containers for thread-safety (can't use reactive values from threads)
     _model_process = [None]
     _model_running = [False]
+    _last_run_time = [None]
     _model_progress = [{"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}]
 
     def get_output_folder_from_config():
@@ -6857,6 +6889,7 @@ def server(input, output, session):
                 )
                 _model_process[0] = p
                 _model_running[0] = True
+                _last_run_time[0] = datetime.now()
 
                 # Progress tracking variables
                 last_update = time.time()
@@ -7141,6 +7174,23 @@ def server(input, output, session):
         ))
 
         return ui.div(*items)
+
+    @render.text
+    def dashboard_status_text():
+        return "Running" if _model_running[0] else "Ready"
+
+    @render.text
+    def dashboard_exe_text():
+        try:
+            return input.active_executable()
+        except Exception:
+            return "ESTAS_II"
+
+    @render.text
+    def dashboard_last_run_text():
+        if _last_run_time[0]:
+            return _last_run_time[0].strftime("%Y-%m-%d %H:%M")
+        return "Never"
 
     @render.ui
     def input_txt_variables():
