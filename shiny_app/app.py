@@ -128,14 +128,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("AQUABC")
 
-# Try to import shinyswatch for themes
-try:
-    import shinyswatch
-    THEMES_AVAILABLE = True
-    logger.info(f"shinyswatch version {shinyswatch.__version__} loaded successfully")
-except ImportError:
-    THEMES_AVAILABLE = False
-    logger.warning("shinyswatch not available - install with: pip install shinyswatch")
+# Theme is handled by custom CSS (shiny_app/www/aquabc.css)
 logger.info("=" * 60)
 logger.info("AQUABC Application starting...")
 logger.info("=" * 60)
@@ -297,48 +290,10 @@ try:
 except Exception:
     logger.warning("Could not get shiny version")
 
-# Available themes list
-AVAILABLE_THEMES = [
-    "default",
-    "cerulean",
-    "cosmo",
-    "cyborg",
-    "darkly",
-    "flatly",
-    "journal",
-    "litera",
-    "lumen",
-    "lux",
-    "materia",
-    "minty",
-    "morph",
-    "pulse",
-    "quartz",
-    "sandstone",
-    "simplex",
-    "sketchy",
-    "slate",
-    "solar",
-    "spacelab",
-    "superhero",
-    "united",
-    "vapor",
-    "yeti",
-    "zephyr"
-] if THEMES_AVAILABLE else ["default"]
-
 logger.info("=== Configuration ===")
 logger.info(f"MAX_LOG_LENGTH: {MAX_LOG_LENGTH}")
 logger.info(f"MIN_SMOOTH_WINDOW: {MIN_SMOOTH_WINDOW}")
 logger.info(f"DEFAULT_PLOT_ROWS: {DEFAULT_PLOT_ROWS}")
-
-logger.info("=== Theme Configuration ===")
-if THEMES_AVAILABLE:
-    logger.info(f"✓ Themes enabled with {len(AVAILABLE_THEMES)} available themes")
-    logger.info(f"  Default theme: darkly")
-else:
-    logger.info("⚠ Themes not available (shinyswatch not installed)")
-    logger.info("  Install with: pip install shinyswatch")
 
 logger.info("=" * 60)
 logger.info("Startup diagnostics complete. Building UI...")
@@ -1142,22 +1097,8 @@ def get_timeseries_variables(filename):
     return variables
 
 
-# Function to get theme CSS content
-def get_theme_css(theme_name):
-    """Get CSS content for a shinyswatch theme"""
-    if not THEMES_AVAILABLE:
-        return ""
-    try:
-        theme_obj = getattr(shinyswatch.theme, theme_name, None)
-        if theme_obj:
-            return theme_obj.to_css()
-    except Exception as e:
-        logger.error(f"Error getting theme CSS: {e}")
-    return ""
-
-# UI function with dynamic theme support
-def create_ui(theme_name="darkly"):
-    """Create UI - theme is applied dynamically via CSS, not at creation time"""
+def create_ui():
+    """Create the application UI layout."""
     # JavaScript to handle page reload and clipboard operations
     reload_js = ui.tags.script("""
         Shiny.addCustomMessageHandler('reload_page', function(message) {
@@ -1193,353 +1134,6 @@ def create_ui(theme_name="darkly"):
                 document.body.removeChild(textArea);
             }
         });
-    """)
-
-    # Custom CSS for collapsible sidebar navigation (BEACH4M style)
-    nav_css = ui.tags.style("""
-        :root {
-            --sidebar-width: 220px;
-            --sidebar-collapsed-width: 50px;
-        }
-        body {
-            overflow-x: hidden;
-            margin: 0;
-            padding: 0;
-        }
-        .custom-sidebar {
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            background: #2c3e50;
-            padding: 0;
-            transition: all 0.3s ease;
-            overflow: hidden;
-            position: relative;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-        }
-        .custom-sidebar.collapsed {
-            width: var(--sidebar-collapsed-width);
-            min-width: var(--sidebar-collapsed-width);
-        }
-        .custom-sidebar.collapsed .nav-link span,
-        .custom-sidebar.collapsed .sidebar-title {
-            display: none;
-        }
-        .custom-sidebar.collapsed .nav-link {
-            justify-content: center;
-            padding: 0.75rem 0;
-        }
-        .custom-sidebar.collapsed .nav-link i {
-            margin-right: 0;
-        }
-        .custom-sidebar.collapsed .sidebar-header {
-            justify-content: center;
-            padding: 0.75rem 0.5rem;
-        }
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 1rem;
-            background: #1a252f;
-            border-bottom: 1px solid #3498db;
-        }
-        .sidebar-title {
-            color: #ecf0f1;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .sidebar-toggle {
-            background: transparent;
-            border: none;
-            color: #ecf0f1;
-            cursor: pointer;
-            font-size: 1.4rem;
-            padding: 0.25rem;
-            line-height: 1;
-        }
-        .sidebar-toggle:hover {
-            color: #3498db;
-        }
-        .sidebar-nav {
-            padding: 0.5rem 0;
-            flex: 1;
-        }
-        .custom-sidebar .nav-link {
-            color: #bdc3c7;
-            padding: 0.65rem 1rem;
-            border-radius: 0;
-            border-left: 3px solid transparent;
-            margin: 0;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.15s ease;
-        }
-        .custom-sidebar .nav-link i {
-            margin-right: 0.75rem;
-            font-size: 1.1rem;
-            width: 1.25rem;
-            text-align: center;
-        }
-        .custom-sidebar .nav-link:hover {
-            background: #34495e;
-            border-left-color: #3498db;
-            color: white;
-        }
-        .custom-sidebar .nav-link.active {
-            background: #34495e;
-            border-left-color: #3498db;
-            color: white;
-            font-weight: 600;
-        }
-        .main-content {
-            flex: 1;
-            background: #f8f9fa;
-            padding: 1rem;
-            min-height: 100%;
-            overflow-x: auto;
-        }
-        .content-panel {
-            display: none;
-        }
-        .content-panel.active {
-            display: block;
-        }
-        .app-header {
-            background: #1a252f;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .app-header-title {
-            display: flex;
-            align-items: center;
-        }
-        .sidebar-container {
-            display: flex;
-            min-height: calc(100vh - 52px);
-            margin: 0;
-            padding: 0;
-        }
-        /* Remove any default page margins/gaps */
-        .container-fluid, .bslib-page-fill {
-            padding: 0 !important;
-            margin: 0 !important;
-            gap: 0 !important;
-        }
-        html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        /* Remove gaps from Shiny output containers */
-        .shiny-html-output {
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        /* Ensure app-header has no top margin */
-        .app-header {
-            margin-top: 0 !important;
-        }
-        /* Override Bootstrap card styles */
-        .card {
-            margin-bottom: 1rem;
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-        }
-        .card-header {
-            font-weight: 600;
-            background: white;
-            border-bottom: 2px solid #3498db;
-        }
-        /* Compact Run Parameters card - reduce vertical spacing */
-        .run-params-compact .form-group,
-        .run-params-compact .shiny-input-container {
-            margin-bottom: 0.2rem !important;
-        }
-        .run-params-compact .form-label,
-        .run-params-compact label {
-            margin-bottom: 0.1rem !important;
-            font-size: 0.8rem;
-        }
-        .run-params-compact .form-select,
-        .run-params-compact .form-control {
-            padding: 0.2rem 0.4rem;
-            font-size: 0.8rem;
-            height: auto;
-        }
-        .run-params-compact .form-switch {
-            margin-bottom: 0.15rem !important;
-            min-height: 1.2rem;
-        }
-        .run-params-compact hr {
-            margin: 0.3rem 0 !important;
-        }
-        .run-params-compact .card-header {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.9rem;
-        }
-        .run-params-compact .card-body {
-            padding: 0.5rem 0.75rem;
-        }
-        .run-params-compact strong.small {
-            font-size: 0.75rem;
-        }
-        .run-params-compact .btn-lg {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.9rem;
-        }
-        .run-params-compact pre {
-            padding: 0.3rem;
-            font-size: 0.7rem;
-            margin-bottom: 0.3rem;
-        }
-        /* Smaller run log text */
-        #run_log_mini {
-            font-size: 0.75rem !important;
-            line-height: 1.3 !important;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-    """)
-
-    # Harmonised button palette — Flat UI family to match sidebar (#2c3e50 / #3498db)
-    # Overrides darkly theme button colours for visual coherence
-    button_css = ui.tags.style("""
-        /* ── Primary (Belize Hole) — key actions: Build, Config, Calculate ── */
-        .btn-primary {
-            background-color: #2980b9 !important;
-            border-color: #2980b9 !important;
-            color: #fff !important;
-        }
-        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-            background-color: #2471a3 !important;
-            border-color: #2471a3 !important;
-            color: #fff !important;
-        }
-
-        /* ── Success (Nephritis) — positive actions: Run, Save ── */
-        .btn-success {
-            background-color: #27ae60 !important;
-            border-color: #27ae60 !important;
-            color: #fff !important;
-        }
-        .btn-success:hover, .btn-success:focus, .btn-success:active {
-            background-color: #229954 !important;
-            border-color: #229954 !important;
-            color: #fff !important;
-        }
-
-        /* ── Danger (Pomegranate) — destructive actions: Stop, Delete ── */
-        .btn-danger {
-            background-color: #c0392b !important;
-            border-color: #c0392b !important;
-            color: #fff !important;
-        }
-        .btn-danger:hover, .btn-danger:focus, .btn-danger:active {
-            background-color: #a93226 !important;
-            border-color: #a93226 !important;
-            color: #fff !important;
-        }
-
-        /* ── Warning (Carrot) — caution actions: Rebuild All ── */
-        .btn-warning {
-            background-color: #e67e22 !important;
-            border-color: #e67e22 !important;
-            color: #fff !important;
-        }
-        .btn-warning:hover, .btn-warning:focus, .btn-warning:active {
-            background-color: #d35400 !important;
-            border-color: #d35400 !important;
-            color: #fff !important;
-        }
-
-        /* ── Info (Turquoise) — analysis actions: Analyze, Plot, Apply Theme ── */
-        .btn-info {
-            background-color: #1abc9c !important;
-            border-color: #1abc9c !important;
-            color: #fff !important;
-        }
-        .btn-info:hover, .btn-info:focus, .btn-info:active {
-            background-color: #16a085 !important;
-            border-color: #16a085 !important;
-            color: #fff !important;
-        }
-
-        /* ── Secondary (Asbestos) — utility actions: Load, Refresh ── */
-        .btn-secondary {
-            background-color: #7f8c8d !important;
-            border-color: #7f8c8d !important;
-            color: #fff !important;
-        }
-        .btn-secondary:hover, .btn-secondary:focus, .btn-secondary:active {
-            background-color: #6c7a7b !important;
-            border-color: #6c7a7b !important;
-            color: #fff !important;
-        }
-
-        /* ── Outline variants ── */
-        .btn-outline-primary {
-            color: #2980b9 !important;
-            border-color: #2980b9 !important;
-            background-color: transparent !important;
-        }
-        .btn-outline-primary:hover, .btn-outline-primary:focus {
-            background-color: #2980b9 !important;
-            border-color: #2980b9 !important;
-            color: #fff !important;
-        }
-        .btn-outline-secondary {
-            color: #7f8c8d !important;
-            border-color: #7f8c8d !important;
-            background-color: transparent !important;
-        }
-        .btn-outline-secondary:hover, .btn-outline-secondary:focus {
-            background-color: #7f8c8d !important;
-            border-color: #7f8c8d !important;
-            color: #fff !important;
-        }
-
-        /* ── Smooth transition for all buttons ── */
-        .btn {
-            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
-        }
-        .btn:focus {
-            box-shadow: 0 0 0 0.2rem rgba(41, 128, 185, 0.25) !important;
-        }
-        .btn-success:focus { box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25) !important; }
-        .btn-danger:focus  { box-shadow: 0 0 0 0.2rem rgba(192, 57, 43, 0.25) !important; }
-        .btn-warning:focus { box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.25) !important; }
-        .btn-info:focus    { box-shadow: 0 0 0 0.2rem rgba(26, 188, 156, 0.25) !important; }
-
-        /* ── Header icon buttons (changelog, help, settings) ── */
-        .app-header .btn.btn-link {
-            color: #ecf0f1 !important;
-            background: transparent !important;
-            border: none !important;
-            text-decoration: none !important;
-            box-shadow: none !important;
-        }
-        .app-header .btn.btn-link:hover,
-        .app-header .btn.btn-link:focus {
-            color: #3498db !important;
-            background: transparent !important;
-            box-shadow: none !important;
-        }
-
-        /* ── Close buttons in offcanvas panels ── */
-        .btn-close-white {
-            filter: invert(1) !important;
-        }
     """)
 
     # JavaScript for sidebar toggle and navigation
@@ -2792,7 +2386,8 @@ def create_ui(theme_name="darkly"):
         ui.div(
             {"class": "app-header-title"},
             ui.tags.i(class_="bi bi-water me-2"),
-            "AQUABC - Aquatic Biogeochemical Model",
+            "AQUABC",
+            ui.tags.span("v0.2", class_="version-badge"),
         ),
         # Right side buttons container (tutorial + changelog + help + settings)
         ui.div(
@@ -2836,13 +2431,32 @@ def create_ui(theme_name="darkly"):
         ),
     )
 
-    # Bootstrap Icons CSS
-    bootstrap_icons_css = ui.tags.link(
-        rel="stylesheet",
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    # External CSS resources
+    external_css = ui.TagList(
+        ui.tags.link(
+            rel="stylesheet",
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+        ),
+        ui.tags.link(
+            rel="preconnect",
+            href="https://fonts.googleapis.com"
+        ),
+        ui.tags.link(
+            rel="preconnect",
+            href="https://fonts.gstatic.com",
+            crossorigin=""
+        ),
+        ui.tags.link(
+            rel="stylesheet",
+            href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap"
+        ),
+        ui.tags.link(
+            rel="stylesheet",
+            href="aquabc.css"
+        ),
     )
 
-    # Settings modal/offcanvas
+    # Settings offcanvas
     settings_offcanvas = ui.tags.div(
         ui.tags.div(
             ui.tags.div(
@@ -2852,35 +2466,20 @@ def create_ui(theme_name="darkly"):
                     class_="btn-close btn-close-white",
                     **{"data-bs-dismiss": "offcanvas", "aria-label": "Close"}
                 ),
-                class_="offcanvas-header bg-dark text-light"
+                class_="offcanvas-header"
             ),
             ui.tags.div(
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header("Appearance"),
-                        ui.input_select(
-                            "theme_select",
-                            "Theme:",
-                            choices=AVAILABLE_THEMES,
-                            selected=theme_name
-                        ) if THEMES_AVAILABLE else ui.tags.div("Themes not available"),
-                        ui.input_action_button("apply_theme", "Apply Theme", class_="btn-info w-100 mt-2") if THEMES_AVAILABLE else None,
-                        ui.output_text("theme_status"),
-                        fill=False
+                ui.card(
+                    ui.card_header("About"),
+                    ui.tags.h5("AQUABC v0.2"),
+                    ui.tags.p("Aquatic Biogeochemical Model"),
+                    ui.tags.p("A sophisticated water quality simulation tool with:"),
+                    ui.tags.ul(
+                        ui.tags.li("318 calibratable parameters"),
+                        ui.tags.li("36 state variables"),
+                        ui.tags.li("Complex biogeochemical processes"),
                     ),
-                    ui.card(
-                        ui.card_header("About"),
-                        ui.tags.h5("AQUABC v0.2"),
-                        ui.tags.p("Aquatic Biogeochemical Model"),
-                        ui.tags.p("A sophisticated water quality simulation tool with:"),
-                        ui.tags.ul(
-                            ui.tags.li("318 calibratable parameters"),
-                            ui.tags.li("36 state variables"),
-                            ui.tags.li("Complex biogeochemical processes"),
-                        ),
-                        fill=False
-                    ),
-                    col_widths=[12, 12]
+                    fill=False
                 ),
                 class_="offcanvas-body"
             ),
@@ -2972,16 +2571,10 @@ def create_ui(theme_name="darkly"):
         main_content,
     )
 
-    # Build final layout - use dynamic theming via output_ui instead of static theme
     content = [
-        bootstrap_icons_css,
-        nav_css,
+        external_css,
         nav_js,
         reload_js,
-        # Dynamic theme CSS placeholder - will be filled by server
-        ui.output_ui("dynamic_theme_css"),
-        # Harmonised button palette (after theme so it overrides)
-        button_css,
         app_header,
         settings_offcanvas,
         settings_js,
@@ -2992,29 +2585,9 @@ def create_ui(theme_name="darkly"):
         sidebar_container,
     ]
 
-    # Return page WITHOUT static theme - theme is applied dynamically
     return ui.page_fillable(*content, title="AQUABC")
 
-# Load saved theme preference
-def get_saved_theme():
-    """Load theme preference from file"""
-    theme_file = os.path.join(ROOT, '.aquabc_theme')
-    try:
-        if os.path.exists(theme_file):
-            with open(theme_file, 'r') as f:
-                theme = f.read().strip()
-                if theme in AVAILABLE_THEMES:
-                    logger.info(f"Loaded saved theme preference: {theme}")
-                    return theme
-                else:
-                    logger.warning(f"Saved theme '{theme}' not in available themes, using default")
-    except Exception as e:
-        logger.error(f"Error loading theme preference: {e}")
-    return "darkly"  # Default theme
-
-# Create UI with saved or default theme
-saved_theme = get_saved_theme()
-app_ui = create_ui(saved_theme)
+app_ui = create_ui()
 
 # Server
 
@@ -4046,20 +3619,6 @@ def server(input, output, session):
 
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
 
-    # Dynamic theme handling
-    current_theme = reactive.Value(get_saved_theme())
-    theme_save_status = reactive.Value("")
-
-    @render.ui
-    def dynamic_theme_css():
-        """Render the current theme CSS dynamically"""
-        theme_name = current_theme.get()
-        if THEMES_AVAILABLE and theme_name:
-            css = get_theme_css(theme_name)
-            if css:
-                return ui.tags.style(css, id="shinyswatch-theme")
-        return ui.TagList()
-
     @render.ui
     def help_content():
         """Render the state variables help content from markdown file"""
@@ -4299,31 +3858,6 @@ def server(input, output, session):
                 ui.tags.p("Error loading changelog.", class_="text-danger"),
                 ui.tags.pre(str(e), class_="text-muted small")
             )
-
-    if THEMES_AVAILABLE:
-        @reactive.effect
-        @reactive.event(input.apply_theme)
-        def handle_theme_change():
-            selected_theme = input.theme_select()
-            logger.info(f"User requested theme change to: {selected_theme}")
-
-            # Update the reactive theme value (triggers CSS update)
-            current_theme.set(selected_theme)
-
-            # Also save to file for persistence across restarts
-            theme_file = os.path.join(ROOT, '.aquabc_theme')
-            try:
-                with open(theme_file, 'w') as f:
-                    f.write(selected_theme)
-                logger.info(f"Saved theme preference: {selected_theme}")
-                theme_save_status.set(f"Theme '{selected_theme}' applied!")
-            except Exception as e:
-                logger.error(f"Error saving theme preference: {e}")
-                theme_save_status.set(f"Applied but save failed: {e}")
-
-        @render.text
-        def theme_status():
-            return theme_save_status.get()
 
     # Reactive value to track file list refresh
     file_list_version = reactive.Value(0)
