@@ -96,6 +96,9 @@ def read_pelagic_binary(bin_file, max_rows=None):
 def read_pelagic_text(text_file, max_rows=None):
     """Read PELAGIC_BOX text output file (whitespace-separated).
 
+    Handles both files with a proper header line and header-less files
+    (e.g. PROCESS_RATES) where all columns are numeric.
+
     Args:
         text_file: Path to .out file
         max_rows: Maximum rows to read (None for all)
@@ -105,6 +108,26 @@ def read_pelagic_text(text_file, max_rows=None):
     """
     df = pd.read_csv(text_file, sep=r'\s+', nrows=max_rows)
     df.columns = [c.strip() for c in df.columns]
+
+    # Detect header-less file: first column name looks like a number
+    # (proper headers start with strings like TIME_DAYS)
+    def _first_col_numeric(cols):
+        try:
+            float(cols[0])
+            return True
+        except (ValueError, TypeError, IndexError):
+            return False
+
+    if _first_col_numeric(df.columns):
+        logger.warning(f"Header-less text file detected: {os.path.basename(text_file)}")
+        # Re-read without header so the first data row is not lost
+        df = pd.read_csv(text_file, sep=r'\s+', header=None, nrows=max_rows)
+        ncols = len(df.columns)
+        if ncols == len(PELAGIC_BOX_COLUMNS):
+            df.columns = PELAGIC_BOX_COLUMNS
+        else:
+            df.columns = [f"V{i}" for i in range(ncols)]
+
     logger.info(f"Read text file: {len(df)} rows x {len(df.columns)} cols")
     return df
 

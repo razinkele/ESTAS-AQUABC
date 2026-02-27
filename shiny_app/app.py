@@ -6597,7 +6597,16 @@ def server(input, output, session):
             elif file_format == 'text':
                 # Read header from .out file
                 df = pd.read_csv(target_path, sep=r'\s+', nrows=0)
-                return [c.strip() for c in df.columns]
+                cols = [c.strip() for c in df.columns]
+                # Sanity check: if the first column name looks numeric, the file
+                # has no header (e.g. PROCESS_RATES).  A proper header always
+                # starts with a string like TIME_DAYS.
+                if cols and _looks_numeric(cols[0]):
+                    logger.warning(f"File appears headerless (numeric column names): {os.path.basename(target_path)}")
+                    if len(cols) == len(PELAGIC_BOX_COLUMNS):
+                        return list(PELAGIC_BOX_COLUMNS)
+                    return [f"V{i}" for i in range(len(cols))]
+                return cols
             else:
                 # Read header from CSV
                 df = pd.read_csv(target_path, comment='#', skip_blank_lines=True, nrows=0)
@@ -6605,19 +6614,29 @@ def server(input, output, session):
         except Exception as e:
             logger.error(f"Error reading output file header: {e}")
             return []
+    
+    def _looks_numeric(s: str) -> bool:
+        """Return True if string looks like a number (int or float)."""
+        try:
+            float(s)
+            return True
+        except (ValueError, TypeError):
+            return False
 
     @reactive.Effect
-    @reactive.event(input.plot_output_file, input.output_format)
+    @reactive.event(input.plot_output_file, input.output_format, input.output_dir_select)
     def _update_variable_choices():
-        """Update variable choices when output file or format changes"""
+        """Update variable choices when output file, format, or directory changes"""
         try:
             file_format = input.output_format() if hasattr(input, 'output_format') else None
             selected_file = get_selected_output_file_path()
             
-            if selected_file:
-                cols = _get_output_columns(file_path=selected_file, file_format=file_format)
-            else:
-                cols = _get_output_columns()
+            if not selected_file or not os.path.exists(selected_file):
+                ui.update_selectize("left_vars", choices=[], selected=[])
+                ui.update_selectize("right_vars", choices=[], selected=[])
+                return
+            
+            cols = _get_output_columns(file_path=selected_file, file_format=file_format)
             
             if cols:
                 # TIME is first column, get the rest
@@ -6630,6 +6649,10 @@ def server(input, output, session):
                 first_var = y_cols[0] if y_cols else None
                 ui.update_selectize("left_vars", choices=grouped_choices, selected=[first_var] if first_var else [])
                 ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
+                logger.info(f"Updated variable choices: {len(y_cols)} variables available")
+            else:
+                ui.update_selectize("left_vars", choices=[], selected=[])
+                ui.update_selectize("right_vars", choices=[], selected=[])
         except Exception as e:
             logger.debug(f"Variable choices update deferred: {e}")
 
@@ -7811,18 +7834,20 @@ def server(input, output, session):
         if file_format == "binary":
             extensions = [".bin"]
             # For binary, prefer PELAGIC_BOX files
-            for f in os.listdir(dir_path):
+            for f in sorted(os.listdir(dir_path)):
                 if f.endswith(".bin") and "PELAGIC_BOX" in f and "PROCESS_RATES" not in f:
                     files[f] = f
         elif file_format == "csv":
             extensions = [".csv"]
-            for f in os.listdir(dir_path):
+            for f in sorted(os.listdir(dir_path)):
                 if f.endswith(".csv") and os.path.isfile(os.path.join(dir_path, f)):
                     files[f] = f
         else:  # text (.out)
             extensions = [".out"]
-            for f in os.listdir(dir_path):
-                if f.endswith(".out") and "PELAGIC_BOX" in f and os.path.isfile(os.path.join(dir_path, f)):
+            for f in sorted(os.listdir(dir_path)):
+                if (f.endswith(".out") and "PELAGIC_BOX" in f
+                        and "PROCESS_RATES" not in f
+                        and os.path.isfile(os.path.join(dir_path, f))):
                     files[f] = f
         
         return files
@@ -7892,73 +7917,8 @@ def server(input, output, session):
         except Exception as e:
             return ui.div(ui.tags.small(f"Error: {e}", class_="text-danger"))
 
-    @reactive.effect
-    @reactive.event(input.plot_output_file, input.output_dir_select)
-    def update_plot_variables():
-        """Update variable choices when output file changes with descriptive names"""
-        # Explicitly read inputs to establish reactive dependency
-        dir_name = input.output_dir_select()
-        file_name = input.plot_output_file()
-        
-        if not dir_name or not file_name:
-            ui.update_selectize("left_vars", choices=[], selected=[])
-            ui.update_selectize("right_vars", choices=[], selected=[])
-            return
-            
-        if dir_name == "ROOT":
-            file_path = os.path.join(ROOT, file_name)
-        else:
-            file_path = os.path.join(ROOT, dir_name, file_name)
-        
-        if not os.path.exists(file_path):
-            ui.update_selectize("left_vars", choices=[], selected=[])
-            ui.update_selectize("right_vars", choices=[], selected=[])
-            return
-        
-        try:
-            # Detect file format from extension and use appropriate separator
-            file_ext = os.path.splitext(file_path)[1].lower()
-            
-            if file_ext == '.csv':
-                # CSV files use comma separator
-                df = pd.read_csv(file_path, comment='#', nrows=5)
-            elif file_ext in ['.out', '.txt', '.dat']:
-                # PELAGIC_BOX_*.out and similar files use whitespace separator
-                df = pd.read_csv(file_path, sep=r'\s+', comment='#', nrows=5)
-            elif file_ext == '.bin':
-                # Binary files - use predefined column names
-                cols = list(PELAGIC_BOX_COLUMNS[1:])  # Skip TIME column
-                grouped_choices = get_grouped_variable_choices(cols)
-                # Pass grouped choices directly (Shiny supports nested dicts for groups)
-                ui.update_selectize("left_vars", choices=grouped_choices, selected=[])
-                ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
-                logger.info(f"Updated variable choices from binary: {sum(len(v) for v in grouped_choices.values())} variables available")
-                return
-            else:
-                # Default: try whitespace first, then comma
-                try:
-                    df = pd.read_csv(file_path, sep=r'\s+', comment='#', nrows=5)
-                    if len(df.columns) <= 1:
-                        df = pd.read_csv(file_path, comment='#', nrows=5)
-                except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError):
-                    df = pd.read_csv(file_path, comment='#', nrows=5)
-            
-            df.columns = [c.strip() for c in df.columns]
-            
-            # Filter out time columns
-            cols = [c for c in df.columns if c.lower() not in ['time', 'time_days', 'date', 'datetime', 'julian_day']]
-            
-            # Create grouped choices with descriptive names
-            grouped_choices = get_grouped_variable_choices(cols)
-            
-            # Pass grouped choices directly (Shiny supports nested dicts for groups)
-            ui.update_selectize("left_vars", choices=grouped_choices, selected=[])
-            ui.update_selectize("right_vars", choices=grouped_choices, selected=[])
-            logger.info(f"Updated variable choices: {sum(len(v) for v in grouped_choices.values())} variables available")
-        except Exception as e:
-            logger.warning(f"Error reading columns from {file_path}: {e}")
-            ui.update_selectize("left_vars", choices=[], selected=[])
-            ui.update_selectize("right_vars", choices=[], selected=[])
+    # NOTE: update_plot_variables was removed — _update_variable_choices (earlier)
+    # now handles all three triggers: plot_output_file, output_format, output_dir_select
 
     # ========== INPUT TIMESERIES PLOTTING ==========
     @reactive.effect
