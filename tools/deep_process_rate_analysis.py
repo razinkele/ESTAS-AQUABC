@@ -278,10 +278,14 @@ def check_3_cross_variable_consistency(time, rates, box_id):
     doc_nost_excr = rates[:, get_slot_col(12, 9)]
     sum_aux = doc_dia_excr + doc_cyn_excr + doc_opa_excr + doc_fix_excr + doc_nost_excr
     max_diff = float(np.max(np.abs(sum_aux - doc_total_excr)))
+    # Use tolerance appropriate for text output precision (6 decimal places).
+    # Differences up to ~1e-5 are expected from independent rounding of each slot.
+    max_total = float(np.max(np.abs(doc_total_excr)))
+    tol = max(1e-5, 1e-4 * max_total)  # absolute or 0.01% relative
     issues.append({
         'check': 'Sum(DOC phyto excr slots 5-9) == DOC slot 4 (total excretion)',
         'max_difference': max_diff,
-        'severity': SEV_OK if max_diff < 1e-8 else SEV_WARNING,
+        'severity': SEV_OK if max_diff < tol else SEV_WARNING,
         'active': bool(np.any(np.abs(doc_total_excr) > 1e-15)),
     })
     # DIA excretion cross-check
@@ -697,7 +701,11 @@ def check_11_stoichiometry(sv_concs, sv_names, pr_rates, box_id):
                 'check': 'DET P:C ratio', 'mean': float(np.mean(pc)),
                 'min': float(np.min(pc)), 'max': float(np.max(pc)),
                 'expected_default': DEFAULT_P_TO_C,
-                'severity': SEV_INFO if 0.005 < np.mean(pc) < 0.1 else SEV_WARNING,
+                # DET P:C can be much lower than phyto Redfield because P
+                # dissolves faster than C (preferential recycling).  Only
+                # flag WARNING if the ratio is implausibly outside [0, 0.2].
+                'severity': SEV_INFO if np.mean(pc) < 0.2 and np.mean(pc) >= 0.0 else SEV_WARNING,
+                'note': 'Detritus P:C is dynamic — typically << Redfield due to faster P dissolution',
             })
 
     # ── DON:DOC and DOP:DOC ─────────────────────────────────────────────
@@ -996,12 +1004,22 @@ def check_15_smoothness(sv_time, sv_concs, sv_names, box_id):
         dC = np.diff(vals)
         mean_abs_dC = np.mean(np.abs(dC))
 
-        # Spike detection
+        # Spike detection — improved to handle near-zero-change variables.
+        # Use 10×mean(|dC|) as the primary threshold (original approach), but
+        # enforce a minimum absolute threshold based on the variable's dynamic
+        # range so that tiny fluctuations in low-biomass species (where the
+        # mean change is near zero) are not falsely flagged as spikes.
         n_spikes = 0
         spike_mask = np.zeros(len(dC), dtype=bool)
+        abs_range = float(np.max(vals) - np.min(vals))
+        # At minimum, a spike must exceed 0.1% of the variable's dynamic range
+        min_spike_size = max(1e-10, 0.001 * abs_range)
         if mean_abs_dC > 1e-15:
-            spike_mask = np.abs(dC) > 10 * mean_abs_dC
-            n_spikes = int(np.sum(spike_mask))
+            spike_threshold = max(10 * mean_abs_dC, min_spike_size)
+        else:
+            spike_threshold = min_spike_size
+        spike_mask = np.abs(dC) > spike_threshold
+        n_spikes = int(np.sum(spike_mask))
 
         n_pos = np.sum(dC > 0)
         n_neg_chg = np.sum(dC < 0)
@@ -1015,6 +1033,13 @@ def check_15_smoothness(sv_time, sv_concs, sv_names, box_id):
             spike_indices = np.where(spike_mask)[0]
             spike_times = sv_time[spike_indices + 1]
             spike_magnitudes = dC[spike_indices]
+            # Spikes are WARNING only when both frequent (>10) AND
+            # ecologically significant (mean spike magnitude > 1% of mean
+            # concentration).  Otherwise INFO — the spikes exist but are
+            # negligible relative to the variable's magnitude.
+            mean_spike_mag = float(np.mean(np.abs(spike_magnitudes)))
+            spike_pct = (mean_spike_mag / abs(mean_conc) * 100) if abs(mean_conc) > 1e-15 else 0.0
+            sev = SEV_WARNING if n_spikes > 10 and spike_pct > 1.0 else SEV_INFO
             findings.append({
                 'variable': var, 'type': 'spike',
                 'n_spikes': n_spikes,
@@ -1022,7 +1047,8 @@ def check_15_smoothness(sv_time, sv_concs, sv_names, box_id):
                 'spike_magnitudes_first5': [float(m) for m in spike_magnitudes[:5]],
                 'mean_conc': mean_conc,
                 'mean_abs_daily_change': float(mean_abs_dC),
-                'severity': SEV_WARNING if n_spikes > 10 else SEV_INFO,
+                'spike_pct_of_mean': spike_pct,
+                'severity': sev,
             })
 
         threshold = 0.01 * abs(mean_conc) if mean_conc != 0 else 1e-6

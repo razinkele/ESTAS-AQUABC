@@ -637,6 +637,10 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     TEMP3  = safe_exp( - TEMP1)
     LLIGHT = (EULER_E / TEMP1) * (safe_exp( -TEMP2 * Ia * TEMP3) - safe_exp( -TEMP2 * Ia))
 
+    ! Clamp to [0,1]: the Steele/Platt formula can produce tiny negatives
+    ! at dusk due to floating-point arithmetic when I_a is near zero.
+    LLIGHT = max(0.0D0, min(1.0D0, LLIGHT))
+
     if (STRANGERSD(LLIGHT,VALUE_strange,nkn).eq.1) then
         write(6,*) 'LIM_LIGT: Light limitation value is strange'
 

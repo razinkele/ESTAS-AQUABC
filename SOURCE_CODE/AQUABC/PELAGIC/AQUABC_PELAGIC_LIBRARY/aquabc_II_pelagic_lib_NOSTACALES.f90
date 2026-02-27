@@ -188,6 +188,8 @@ subroutine NOSTOCALES &
         LIM_KG_NOST_VEG_HET_LIGHT = &
             (((2.718 * FDAY) / (K_E * DEPTH)) * &
              (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
+        ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
+        LIM_KG_NOST_VEG_HET_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_NOST_VEG_HET_LIGHT))
     end if
 
     if (smith .eq. 1) then

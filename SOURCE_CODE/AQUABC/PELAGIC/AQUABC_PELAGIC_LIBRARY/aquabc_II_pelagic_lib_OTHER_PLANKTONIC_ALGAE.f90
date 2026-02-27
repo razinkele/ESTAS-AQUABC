@@ -147,6 +147,8 @@ subroutine OTHER_PLANKTONIC_ALGAE &
         LIM_KG_OPA_LIGHT = &
              (((2.718 * FDAY) / (K_E * DEPTH)) * &
               (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
+        ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
+        LIM_KG_OPA_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_OPA_LIGHT))
     end if
 
     if (smith .eq. 1) then
