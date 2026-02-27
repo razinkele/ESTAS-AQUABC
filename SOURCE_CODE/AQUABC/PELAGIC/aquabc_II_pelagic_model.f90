@@ -2060,11 +2060,18 @@ subroutine AQUABC_PELAGIC_KINETICS &
     PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 15) = 2.00D0 * R_SULPHIDE_OXIDATION(ns:ne)
     PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 16) = 5.33D0 * R_METHANE_OXIDATION(ns:ne)
 
-    ! Nostocales O2 production is already accounted in index 5 (EFDC-corrected).
-    ! Index 19 is reserved for diagnostic/auxiliary use only — do NOT add to derivative.
+    ! When both NOSTOCALES and NON_OBLIGATORY_FIXERS are enabled, slot 5 holds
+    ! NOST O2 production only.  Slot 19 (already in derivative with + sign) is
+    ! repurposed for FIX_CYN photosynthetic O2 production so it is not lost.
     ! Nostocales respiration O2 is accounted via index 20 (only sink, not in index 8/9).
     if (DO_NOSTOCALES > 0) then
-        PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = 0.0D0
+        if (DO_NON_OBLIGATORY_FIXERS > 0) then
+            ! FIX_CYN O2 production was missing when both groups are active (slot 5 = NOST only)
+            PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = &
+                R_FIX_CYN_GROWTH(ns:ne) * (1.3D0 - 0.3D0*PREF_NH4N_DON_FIX_CYN(ns:ne)) * FIX_CYN_O2_TO_C
+        else
+            PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = 0.0D0
+        end if
         PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 20) = R_NOST_VEG_HET_TOT_RESP(ns:ne) * NOST_O2_TO_C
     else
         PROCESS_RATES(ns:ne,DISS_OXYGEN_INDEX, 19) = 0.0D0
@@ -2796,8 +2803,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6) = &
             R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * NOST_N_TO_C * (1.D0 - PREF_DIN_DON_NOST(ns:ne))
     else
+       ! Bug fix: was CYN_N_TO_C — must be FIX_CYN_N_TO_C for nitrogen-fixing cyanobacteria DON uptake
        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6) = &
-           R_NON_FIX_CYN_GROWTH(ns:ne) * PREF_NH4N_DON_FIX_CYN(ns:ne) * CYN_N_TO_C * &
+           R_NON_FIX_CYN_GROWTH(ns:ne) * PREF_NH4N_DON_FIX_CYN(ns:ne) * FIX_CYN_N_TO_C * &
            ((DISS_ORG_N(ns:ne) * frac_avail_DON) / max(NH4_N(ns:ne) + (DISS_ORG_N(ns:ne) * frac_avail_DON), 1.0D-10))
     end if
 
