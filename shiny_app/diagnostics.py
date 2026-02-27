@@ -343,12 +343,17 @@ def diagnostics_server(input, output, session, root_dir):
         Absolute path to the AQUABC project root (same as ``ROOT`` in app.py).
     """
 
-    # ── reactive values ─────────────────────────────────────────────────
-    diag_results     = reactive.Value(None)   # raw all_results dict
-    diag_flat        = reactive.Value([])     # flattened finding rows
-    diag_status_msg  = reactive.Value("")     # status line shown in Overview
-    diag_running     = reactive.Value(False)  # True while analysis thread runs
-    diag_pdf_msg     = reactive.Value("")     # PDF generation status
+    # ── Thread-safe mutable state (NOT reactive.Value) ──────────────────
+    # reactive.Value.set() from a background thread deadlocks in Shiny.
+    # Use plain mutable containers + reactive.invalidate_later() polling,
+    # matching the pattern used by the model-run code in app.py.
+    _diag_state = {
+        "results": None,       # raw all_results dict from run_analysis()
+        "flat": [],            # flattened finding rows
+        "status_msg": "",      # status line shown in Overview
+        "running": False,      # True while analysis thread runs
+        "pdf_msg": "",         # PDF generation status
+    }
 
     # ── initialise output-dir dropdown ──────────────────────────────────
     @reactive.effect
@@ -368,7 +373,7 @@ def diagnostics_server(input, output, session, root_dir):
     @reactive.effect
     @reactive.event(input.diag_run_btn)
     def _run_analysis():
-        if diag_running.get():
+        if _diag_state["running"]:
             ui.notification_show("Analysis already running…", type="warning", duration=2)
             return
 
@@ -378,8 +383,8 @@ def diagnostics_server(input, output, session, root_dir):
             ui.notification_show(f"Directory not found: {sel_dir}", type="error", duration=3)
             return
 
-        diag_running.set(True)
-        diag_status_msg.set("⏳ Running 16-check analysis …")
+        _diag_state["running"] = True
+        _diag_state["status_msg"] = "⏳ Running 16-check analysis …"
         ui.notification_show("Diagnostics started — this may take a minute.", type="message", duration=3)
 
         def _work():
@@ -396,19 +401,20 @@ def diagnostics_server(input, output, session, root_dir):
                 flat = _flatten_results(results)
                 counts = _count_severities(flat)
 
-                diag_results.set(results)
-                diag_flat.set(flat)
-                diag_status_msg.set(
+                # Update shared state (thread-safe dict assignment)
+                _diag_state["results"] = results
+                _diag_state["flat"] = flat
+                _diag_state["status_msg"] = (
                     f"✓ Analysis complete — "
                     f"{counts['ERROR']} errors, {counts['WARNING']} warnings, "
                     f"{counts['INFO']} info, {counts['OK']} ok"
                 )
                 logger.info(f"Diagnostics complete: {counts}")
             except Exception as exc:
-                diag_status_msg.set(f"❌ Analysis failed: {exc}")
+                _diag_state["status_msg"] = f"❌ Analysis failed: {exc}"
                 logger.error(f"Diagnostics error: {exc}\n{traceback.format_exc()}")
             finally:
-                diag_running.set(False)
+                _diag_state["running"] = False
 
         threading.Thread(target=_work, daemon=True, name="DiagnosticsThread").start()
 
@@ -417,7 +423,7 @@ def diagnostics_server(input, output, session, root_dir):
     @render.ui
     def diag_run_status():
         reactive.invalidate_later(1.0)
-        msg = diag_status_msg.get()
+        msg = _diag_state["status_msg"]
         if not msg:
             return ui.tags.p("Press 'Run Diagnostics' to start.", class_="text-muted mt-2 small")
         css = "text-success" if msg.startswith("✓") else ("text-danger" if msg.startswith("❌") else "text-warning")
@@ -427,7 +433,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_severity_cards():
-        flat = diag_flat.get()
+        reactive.invalidate_later(2.0)
+        flat = _diag_state["flat"]
         if not flat:
             return ui.tags.p("No results yet.", class_="text-muted")
         counts = _count_severities(flat)
@@ -453,7 +460,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_box_summary_table():
-        results = diag_results.get()
+        reactive.invalidate_later(2.0)
+        results = _diag_state["results"]
         if results is None:
             return ui.tags.p("Run analysis to see per-box summary.", class_="text-muted")
 
@@ -526,7 +534,8 @@ def diagnostics_server(input, output, session, root_dir):
     # ── Detailed Results: update filter dropdowns ───────────────────────
     @reactive.effect
     def _update_filters():
-        results = diag_results.get()
+        reactive.invalidate_later(2.0)
+        results = _diag_state["results"]
         if results is None:
             return
         box_choices = {"ALL": "All Boxes"}
@@ -542,16 +551,26 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.data_frame
     def diag_findings_table():
-        flat = diag_flat.get()
+        reactive.invalidate_later(2.0)
+        flat = _diag_state["flat"]
         if not flat:
             return pd.DataFrame({"Message": ["Run analysis first."]})
 
         df = pd.DataFrame(flat)
 
         # Apply filters
-        box_filter = input.diag_filter_box()
-        sev_filter = input.diag_filter_severity()
-        chk_filter = input.diag_filter_check()
+        try:
+            box_filter = input.diag_filter_box()
+        except Exception:
+            box_filter = "ALL"
+        try:
+            sev_filter = input.diag_filter_severity()
+        except Exception:
+            sev_filter = "ALL"
+        try:
+            chk_filter = input.diag_filter_check()
+        except Exception:
+            chk_filter = "ALL"
 
         if box_filter != "ALL":
             try:
@@ -578,7 +597,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_plot_severity():
-        flat = diag_flat.get()
+        reactive.invalidate_later(3.0)
+        flat = _diag_state["flat"]
         if not flat:
             return ui.tags.p("No data.", class_="text-muted")
         counts = _count_severities(flat)
@@ -588,7 +608,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_plot_per_check():
-        results = diag_results.get()
+        reactive.invalidate_later(3.0)
+        results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
         fig = findings_per_check_chart(results)
@@ -597,7 +618,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_plot_per_box():
-        results = diag_results.get()
+        reactive.invalidate_later(3.0)
+        results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
         fig = findings_per_box_chart(results)
@@ -606,7 +628,8 @@ def diagnostics_server(input, output, session, root_dir):
     @output
     @render.ui
     def diag_plot_heatmap():
-        results = diag_results.get()
+        reactive.invalidate_later(3.0)
+        results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
         fig = box_health_heatmap(results)
@@ -616,11 +639,10 @@ def diagnostics_server(input, output, session, root_dir):
     @reactive.effect
     @reactive.event(input.diag_gen_results_pdf)
     def _gen_results_pdf():
-        results = diag_results.get()
-        if results is None:
+        if _diag_state["results"] is None:
             ui.notification_show("Run the analysis first.", type="warning", duration=3)
             return
-        diag_pdf_msg.set("⏳ Generating results PDF …")
+        _diag_state["pdf_msg"] = "⏳ Generating results PDF …"
 
         def _work():
             try:
@@ -632,22 +654,21 @@ def diagnostics_server(input, output, session, root_dir):
                         cwd=_parent_dir,
                         capture_output=True, timeout=60,
                     )
-                    diag_pdf_msg.set("✓ Results PDF saved to docs/AQUABC_Analysis_Results_Report.pdf")
+                    _diag_state["pdf_msg"] = "✓ Results PDF saved to docs/AQUABC_Analysis_Results_Report.pdf"
                 else:
-                    diag_pdf_msg.set("❌ PDF generator script not found.")
+                    _diag_state["pdf_msg"] = "❌ PDF generator script not found."
             except Exception as exc:
-                diag_pdf_msg.set(f"❌ PDF generation failed: {exc}")
+                _diag_state["pdf_msg"] = f"❌ PDF generation failed: {exc}"
 
         threading.Thread(target=_work, daemon=True, name="PDFGenThread").start()
 
     @reactive.effect
     @reactive.event(input.diag_gen_deep_pdf)
     def _gen_deep_pdf():
-        results = diag_results.get()
-        if results is None:
+        if _diag_state["results"] is None:
             ui.notification_show("Run the analysis first.", type="warning", duration=3)
             return
-        diag_pdf_msg.set("⏳ Generating deep analysis PDF …")
+        _diag_state["pdf_msg"] = "⏳ Generating deep analysis PDF …"
 
         def _work():
             try:
@@ -659,11 +680,11 @@ def diagnostics_server(input, output, session, root_dir):
                         cwd=_parent_dir,
                         capture_output=True, timeout=120,
                     )
-                    diag_pdf_msg.set("✓ Deep analysis PDF saved to docs/Deep_Process_Rate_Analysis_Report.pdf")
+                    _diag_state["pdf_msg"] = "✓ Deep analysis PDF saved to docs/Deep_Process_Rate_Analysis_Report.pdf"
                 else:
-                    diag_pdf_msg.set("❌ PDF generator script not found.")
+                    _diag_state["pdf_msg"] = "❌ PDF generator script not found."
             except Exception as exc:
-                diag_pdf_msg.set(f"❌ PDF generation failed: {exc}")
+                _diag_state["pdf_msg"] = f"❌ PDF generation failed: {exc}"
 
         threading.Thread(target=_work, daemon=True, name="PDFDeepThread").start()
 
@@ -671,7 +692,7 @@ def diagnostics_server(input, output, session, root_dir):
     @render.ui
     def diag_pdf_status():
         reactive.invalidate_later(1.0)
-        msg = diag_pdf_msg.get()
+        msg = _diag_state["pdf_msg"]
         if not msg:
             return ui.tags.p("Generate a PDF report after running the analysis.", class_="text-muted small")
         css = "text-success" if msg.startswith("✓") else ("text-danger" if msg.startswith("❌") else "text-warning")
