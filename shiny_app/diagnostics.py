@@ -374,8 +374,10 @@ def diagnostics_server(input, output, session, root_dir):
             f"{_diag_state.get('pdf_msg', '')}"
         )
         if fp != _prev_fp.get():
+            new_ver = _ver.get() + 1
+            logger.info(f"[_poll_diag_state] fingerprint changed → _ver={new_ver}, fp={fp[:80]}")
             _prev_fp.set(fp)
-            _ver.set(_ver.get() + 1)
+            _ver.set(new_ver)
 
     # ── initialise output-dir dropdown ──────────────────────────────────
     @reactive.effect
@@ -441,20 +443,24 @@ def diagnostics_server(input, output, session, root_dir):
         threading.Thread(target=_work, daemon=True, name="DiagnosticsThread").start()
 
     # ── Overview: status display ────────────────────────────────────────
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_run_status():
-        _ver.get()  # reactive dependency on central poll
+        v = _ver.get()  # reactive dependency on central poll
         msg = _diag_state["status_msg"]
+        logger.info(f"[diag_run_status] ver={v}, msg={msg!r}")
         if not msg:
             return ui.tags.p("Press 'Run Diagnostics' to start.", class_="text-muted mt-2 small")
         css = "text-success" if msg.startswith("✓") else ("text-danger" if msg.startswith("❌") else "text-warning")
         return ui.tags.p(msg, class_=f"{css} mt-2 small fw-bold")
 
     # ── Overview: severity value boxes ──────────────────────────────────
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_severity_cards():
-        _ver.get()
+        v = _ver.get()
         flat = _diag_state["flat"]
+        logger.info(f"[diag_severity_cards] ver={v}, flat_len={len(flat)}")
         if not flat:
             return ui.tags.p("No results yet.", class_="text-muted")
         counts = _count_severities(flat)
@@ -477,6 +483,7 @@ def diagnostics_server(input, output, session, root_dir):
         return ui.layout_columns(*cards, col_widths=[3, 3, 3, 3])
 
     # ── Overview: per-box summary table ─────────────────────────────────
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_box_summary_table():
         _ver.get()
@@ -567,10 +574,12 @@ def diagnostics_server(input, output, session, root_dir):
         ui.update_select("diag_filter_check", choices=check_choices)
 
     # ── Detailed Results: findings data frame ───────────────────────────
+    @output(suspend_when_hidden=False)
     @render.data_frame
     def diag_findings_table():
-        _ver.get()
+        v = _ver.get()
         flat = _diag_state["flat"]
+        logger.info(f"[diag_findings_table] ver={v}, flat_len={len(flat)}")
         if not flat:
             return pd.DataFrame({"Message": ["Run analysis first."]})
 
@@ -612,16 +621,19 @@ def diagnostics_server(input, output, session, root_dir):
         return render.DataTable(df, height="500px", filters=True)
 
     # ── Visualisations ──────────────────────────────────────────────────
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_plot_severity():
-        _ver.get()
+        v = _ver.get()
         flat = _diag_state["flat"]
+        logger.info(f"[diag_plot_severity] ver={v}, flat_len={len(flat)}")
         if not flat:
             return ui.tags.p("No data.", class_="text-muted")
         counts = _count_severities(flat)
         fig = severity_bar_chart(counts)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_plot_per_check():
         _ver.get()
@@ -631,6 +643,7 @@ def diagnostics_server(input, output, session, root_dir):
         fig = findings_per_check_chart(results)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_plot_per_box():
         _ver.get()
@@ -640,6 +653,7 @@ def diagnostics_server(input, output, session, root_dir):
         fig = findings_per_box_chart(results)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_plot_heatmap():
         _ver.get()
@@ -702,6 +716,7 @@ def diagnostics_server(input, output, session, root_dir):
 
         threading.Thread(target=_work, daemon=True, name="PDFDeepThread").start()
 
+    @output(suspend_when_hidden=False)
     @render.ui
     def diag_pdf_status():
         _ver.get()

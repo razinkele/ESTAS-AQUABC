@@ -32,7 +32,84 @@
     --header-height: 52px;
     --radius:        8px;
     --radius-sm:     4px;
+    --close-filter:  invert(1);
+    --sidebar-bg:    linear-gradient(180deg, #0c1520 0%, var(--bg-surface) 100%);
+    --header-bg:     linear-gradient(135deg, #0c1520 0%, #162231 50%, #0f1923 100%);
+    --table-dark-bg: transparent;
 }
+
+/* ─── Light Theme ─────────────────────────────────────────── */
+html.light {
+    --bg-deep:       #f0f4f8;
+    --bg-surface:    #ffffff;
+    --bg-card:       rgba(255, 255, 255, 0.85);
+    --bg-card-hover: rgba(255, 255, 255, 0.95);
+    --bg-input:      rgba(241, 245, 249, 0.8);
+    --border:        rgba(14, 165, 233, 0.18);
+    --border-strong: rgba(14, 165, 233, 0.35);
+    --accent:        #0284c7;
+    --accent-glow:   rgba(2, 132, 199, 0.2);
+    --accent-dim:    rgba(2, 132, 199, 0.06);
+    --text:          #334155;
+    --text-muted:    #64748b;
+    --text-bright:   #0f172a;
+    --success:       #059669;
+    --success-glow:  rgba(5, 150, 105, 0.15);
+    --danger:        #dc2626;
+    --danger-glow:   rgba(220, 38, 38, 0.15);
+    --warning:       #d97706;
+    --warning-glow:  rgba(217, 119, 6, 0.15);
+    --info:          #0891b2;
+    --secondary:     #94a3b8;
+    --close-filter:  none;
+    --sidebar-bg:    linear-gradient(180deg, #e2e8f0 0%, #ffffff 100%);
+    --header-bg:     linear-gradient(135deg, #e2e8f0 0%, #f0f4f8 50%, #e2e8f0 100%);
+    --table-dark-bg: transparent;
+}
+
+/* Light-mode overrides for elements that can't use CSS vars alone */
+html.light body { color: var(--text); }
+html.light .app-header { color: var(--text-bright); }
+html.light .app-header .btn.btn-link { color: var(--text-muted); }
+html.light .app-header .btn.btn-link:hover,
+html.light .app-header .btn.btn-link:focus { color: var(--accent); }
+html.light .version-badge { background: var(--accent-dim); color: var(--accent); }
+html.light .sidebar-title { color: var(--accent); }
+html.light .custom-sidebar { border-right-color: var(--border); }
+html.light .custom-sidebar .nav-link { color: var(--text-muted); }
+html.light .custom-sidebar .nav-link:hover { color: var(--text-bright); }
+html.light .custom-sidebar .nav-link.active { color: var(--text-bright); }
+html.light .btn-close-white { filter: none; }
+html.light .table { color: var(--text); }
+html.light .table-dark { --bs-table-bg: transparent; --bs-table-color: var(--text); }
+html.light .table th { color: var(--text-muted); }
+html.light .text-muted { color: var(--text-muted) !important; }
+html.light .text-light { color: var(--text-bright) !important; }
+html.light strong { color: var(--text-bright); }
+html.light code { color: var(--accent); }
+html.light pre { background: rgba(0, 0, 0, 0.04); color: var(--text); border-color: var(--border); }
+html.light textarea.form-control { background: rgba(0, 0, 0, 0.03); }
+html.light .offcanvas { background: var(--bg-surface); color: var(--text); }
+html.light .offcanvas-header { background: rgba(0, 0, 0, 0.04); }
+html.light .offcanvas-header .offcanvas-title { color: var(--text-bright); }
+html.light #dashboard_log_container,
+html.light #run_log_mini,
+html.light .run-log-container { background: rgba(0, 0, 0, 0.04); color: var(--success); }
+html.light .badge.bg-secondary { background: #cbd5e1 !important; color: #334155; }
+html.light .card { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+html.light .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+html.light .card-header { background: rgba(14, 165, 233, 0.04); }
+html.light .modal-content { background: var(--bg-surface); color: var(--text); }
+html.light .tooltip-inner { background: var(--bg-surface); color: var(--text); }
+html.light ::-webkit-scrollbar-track { background: var(--bg-deep); }
+html.light ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+html.light ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+html.light .selectize-input { background: var(--bg-input) !important; color: var(--text) !important; }
+html.light .selectize-dropdown { background: var(--bg-surface) !important; color: var(--text) !important; }
+html.light .selectize-dropdown .option { color: var(--text) !important; }
+html.light .selectize-dropdown .option.active { background: var(--accent-dim) !important; }
+html.light .bg-dark { background: rgba(0, 0, 0, 0.04) !important; }
+html.light .js-plotly-plot .plotly .main-svg { background: transparent !important; }
 
 /* Reset & Base */
 html, body {
@@ -79,7 +156,7 @@ small, .small { color: var(--text-muted); }
 
 /* App Header */
 .app-header {
-    background: linear-gradient(135deg, #0c1520 0%, #162231 50%, #0f1923 100%);
+    background: var(--header-bg);
     background-size: 200% 200%;
     animation: headerShift 20s ease-in-out infinite;
     color: var(--text-bright);
@@ -145,7 +222,7 @@ small, .small { color: var(--text-muted); }
 .custom-sidebar {
     width: var(--sidebar-width);
     min-width: var(--sidebar-width);
-    background: linear-gradient(180deg, #0c1520 0%, var(--bg-surface) 100%);
+    background: var(--sidebar-bg);
     padding: 0;
     transition: width 0.3s ease, min-width 0.3s ease;
     overflow: hidden;
@@ -495,7 +572,7 @@ input[type="number"]:focus {
 }
 .offcanvas-header .offcanvas-title { font-family: var(--font-display); color: var(--text-bright); }
 .offcanvas-body { background: var(--bg-surface); }
-.btn-close-white { filter: invert(1); }
+.btn-close-white { filter: var(--close-filter); }
 
 /* Tooltips */
 .tooltip-inner {

@@ -2462,6 +2462,18 @@ def create_ui():
                 class_="btn btn-link text-light p-1",
                 title="State Variables Help"
             ),
+            # Theme toggle button (light / dark)
+            ui.tooltip(
+                ui.tags.button(
+                    ui.tags.i(class_="bi bi-sun-fill", id="theme-icon"),
+                    id="theme-toggle-btn",
+                    class_="btn btn-link text-light p-1",
+                    type="button",
+                    title="Toggle light/dark theme",
+                    style="font-size: inherit;",
+                ),
+                "Switch between light and dark theme"
+            ),
             # Settings gear icon button
             ui.input_action_button(
                 "settings_toggle",
@@ -2605,6 +2617,35 @@ def create_ui():
         });
     """)
 
+    # JavaScript for light / dark theme toggle with localStorage persistence
+    theme_js = ui.tags.script("""
+        (function() {
+            // Apply saved theme immediately (before DOM paints) to avoid flash
+            var saved = localStorage.getItem('aquabc-theme');
+            if (saved === 'light') {
+                document.documentElement.classList.add('light');
+            }
+
+            $(document).ready(function() {
+                function updateIcon() {
+                    var isLight = document.documentElement.classList.contains('light');
+                    var icon = document.getElementById('theme-icon');
+                    if (icon) {
+                        icon.className = isLight ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+                    }
+                }
+                updateIcon();
+
+                $(document).on('click', '#theme-toggle-btn', function() {
+                    document.documentElement.classList.toggle('light');
+                    var isLight = document.documentElement.classList.contains('light');
+                    localStorage.setItem('aquabc-theme', isLight ? 'light' : 'dark');
+                    updateIcon();
+                });
+            });
+        })();
+    """)
+
     # Sidebar container with navigation and main content
     sidebar_container = ui.div(
         {"class": "sidebar-container"},
@@ -2616,6 +2657,7 @@ def create_ui():
         external_css,
         nav_js,
         reload_js,
+        theme_js,
         app_header,
         settings_offcanvas,
         settings_js,
