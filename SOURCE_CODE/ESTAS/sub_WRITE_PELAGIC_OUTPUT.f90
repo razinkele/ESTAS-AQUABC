@@ -14,17 +14,23 @@ subroutine WRITE_PELAGIC_OUTPUT &
     integer, intent(in) :: MODEL_AT_INIT
 
     character(len = 20) :: FORMAT_STRING
+    character(len = 20) :: FORMAT_STRING_PR
     character(len = 5)  :: INTEGER_STRING
     character(len = 5)  :: BOX_NO_STRING
 
     integer i
     integer j
     integer NUM_BOXES
+    integer NUM_PROCESS_RATES
 
     double precision, dimension(nkn)    :: MEAN_BOX_DEPTHS
 
     double precision, &
         dimension(nstate + NUM_ALLOLOPATHY_STATE_VARS) :: WRITTEN_CONC
+
+    double precision, &
+        dimension((nstate + NUM_ALLOLOPATHY_STATE_VARS) * NDIAGVAR) :: &
+        WRITTEN_PROCESS_RATE_1D
 
     do i = 1, nkn
 
@@ -146,6 +152,59 @@ subroutine WRITE_PELAGIC_OUTPUT &
     end do
     ! -----------------------------------------------------------------------------------
     ! END OF CREATE PELAGIC BOX OUTPUT FILES
+    ! -----------------------------------------------------------------------------------
+
+
+    ! -----------------------------------------------------------------------------------
+    ! CREATE PELAGIC BOX PROCESS RATES OUTPUT FILES
+    ! -----------------------------------------------------------------------------------
+    if (CONSIDER_ALLELOPATHY > 0) then
+        NUM_PROCESS_RATES = (nstate + NUM_ALLOLOPATHY_STATE_VARS) * NDIAGVAR
+    else
+        NUM_PROCESS_RATES = nstate * NDIAGVAR
+    end if
+
+    write(unit = INTEGER_STRING, fmt = '(i5)') NUM_PROCESS_RATES + 1
+    FORMAT_STRING_PR = '(' // INTEGER_STRING // 'f20.6)'
+
+    do i = 1, NUM_BOXES
+        if (PELAGIC_BOX_MODEL_DATA % PRODUCE_PEL_PROCESS_RATE_OUTPUTS(i) > 0) then
+            write(unit = BOX_NO_STRING, fmt = '(i5.5)') i
+
+            if (MODEL_AT_INIT > 0) then
+                open(unit   = RES_OUTPUT_UNIT, &
+                     file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // &
+                              trim(adjustl('PELAGIC_BOX_' // BOX_NO_STRING // &
+                                           '_PROCESS_RATES.out')), &
+                     status = 'REPLACE')
+                close(RES_OUTPUT_UNIT)
+            end if
+
+            open(unit   = RES_OUTPUT_UNIT, &
+                 file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // &
+                          trim(adjustl('PELAGIC_BOX_' // BOX_NO_STRING // &
+                                       '_PROCESS_RATES.out')), &
+                 status = 'UNKNOWN', position = 'APPEND')
+
+            do j = 1, NUM_PROCESS_RATES
+                if (PEL_PROCESS_RATE_OUTPUT_OPTION == 1) then
+                    WRITTEN_PROCESS_RATE_1D(j) = &
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % PROCESS_RATES(j)
+                else
+                    WRITTEN_PROCESS_RATE_1D(j) = &
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % PROCESS_RATES(j) * &
+                        MEAN_BOX_DEPTHS(i)
+                end if
+            end do
+
+            write(unit = RES_OUTPUT_UNIT, fmt = FORMAT_STRING_PR) &
+                  TIME, (WRITTEN_PROCESS_RATE_1D(j), j = 1, NUM_PROCESS_RATES)
+
+            close(RES_OUTPUT_UNIT)
+        end if
+    end do
+    ! -----------------------------------------------------------------------------------
+    ! END OF CREATE PELAGIC BOX PROCESS RATES OUTPUT FILES
     ! -----------------------------------------------------------------------------------
 
 
