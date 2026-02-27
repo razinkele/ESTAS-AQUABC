@@ -120,6 +120,12 @@ except ImportError:
         validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
     )
 
+# Import diagnostics panel (process rate analysis UI)
+try:
+    from shiny_app.diagnostics import diagnostics_ui, diagnostics_server
+except ImportError:
+    from diagnostics import diagnostics_ui, diagnostics_server
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -318,6 +324,7 @@ NAV_CHOICES = {
     "nav_mass_balance": ("bi-arrows-angle-expand", "Mass Balance"),
     "nav_observations": ("bi-binoculars", "Observations"),
     "nav_map": ("bi-globe", "Map"),
+    "nav_diagnostics": ("bi-shield-check", "Diagnostics"),
 }
 
 # Build configuration options
@@ -2390,6 +2397,9 @@ def create_ui():
         )
     )
 
+    # === DIAGNOSTICS PANEL (built by diagnostics module) ===
+    panel_diagnostics = diagnostics_ui()
+
     # === COMBINE ALL PANELS ===
     main_content = ui.div(
         {"class": "main-content"},
@@ -2408,6 +2418,7 @@ def create_ui():
         panel_mass_balance,
         panel_observations,
         panel_map,
+        panel_diagnostics,
     )
 
     # App header bar
@@ -8555,6 +8566,10 @@ var network = new vis.Network(container, data, options);
                 ui.tags.p(f"Error generating diagram: {e}", class_="text-danger"),
                 ui.tags.p("Ensure pyvis is installed in the shiny environment.", class_="text-muted small")
             )
+
+    # ========== DIAGNOSTICS ==========
+    diagnostics_server(input, output, session, root_dir=ROOT)
+    # ========== END DIAGNOSTICS ==========
 
     logger.info("=" * 60)
     logger.info("Server function initialization complete")
