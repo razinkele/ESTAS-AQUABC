@@ -345,8 +345,11 @@ def diagnostics_server(input, output, session, root_dir):
 
     # ── Thread-safe mutable state (NOT reactive.Value) ──────────────────
     # reactive.Value.set() from a background thread deadlocks in Shiny.
-    # Use plain mutable containers + reactive.invalidate_later() polling,
-    # matching the pattern used by the model-run code in app.py.
+    # Use plain mutable containers + a CENTRAL polling Effect that bumps
+    # a reactive.Value counter when state changes.  Render functions take
+    # a dependency on the counter so they re-render even on *inactive* tabs
+    # (reactive.invalidate_later() inside a render func is suppressed when
+    # the output is hidden/suspended).
     _diag_state = {
         "results": None,       # raw all_results dict from run_analysis()
         "flat": [],            # flattened finding rows
@@ -354,6 +357,25 @@ def diagnostics_server(input, output, session, root_dir):
         "running": False,      # True while analysis thread runs
         "pdf_msg": "",         # PDF generation status
     }
+
+    # Reactive counter — bumped by the polling effect whenever _diag_state
+    # changes.  All render functions call  _ver.get()  to take a dependency.
+    _ver = reactive.Value(0)
+    _prev_fp = reactive.Value("")
+
+    @reactive.effect
+    def _poll_diag_state():
+        """Central 1-second poll: compare fingerprint → bump _ver on change."""
+        reactive.invalidate_later(1.0)
+        fp = (
+            f"{_diag_state['running']}:"
+            f"{len(_diag_state.get('flat', []))}:"
+            f"{_diag_state.get('status_msg', '')}:"
+            f"{_diag_state.get('pdf_msg', '')}"
+        )
+        if fp != _prev_fp.get():
+            _prev_fp.set(fp)
+            _ver.set(_ver.get() + 1)
 
     # ── initialise output-dir dropdown ──────────────────────────────────
     @reactive.effect
@@ -419,10 +441,9 @@ def diagnostics_server(input, output, session, root_dir):
         threading.Thread(target=_work, daemon=True, name="DiagnosticsThread").start()
 
     # ── Overview: status display ────────────────────────────────────────
-    @output
     @render.ui
     def diag_run_status():
-        reactive.invalidate_later(1.0)
+        _ver.get()  # reactive dependency on central poll
         msg = _diag_state["status_msg"]
         if not msg:
             return ui.tags.p("Press 'Run Diagnostics' to start.", class_="text-muted mt-2 small")
@@ -430,10 +451,9 @@ def diagnostics_server(input, output, session, root_dir):
         return ui.tags.p(msg, class_=f"{css} mt-2 small fw-bold")
 
     # ── Overview: severity value boxes ──────────────────────────────────
-    @output
     @render.ui
     def diag_severity_cards():
-        reactive.invalidate_later(2.0)
+        _ver.get()
         flat = _diag_state["flat"]
         if not flat:
             return ui.tags.p("No results yet.", class_="text-muted")
@@ -457,10 +477,9 @@ def diagnostics_server(input, output, session, root_dir):
         return ui.layout_columns(*cards, col_widths=[3, 3, 3, 3])
 
     # ── Overview: per-box summary table ─────────────────────────────────
-    @output
     @render.ui
     def diag_box_summary_table():
-        reactive.invalidate_later(2.0)
+        _ver.get()
         results = _diag_state["results"]
         if results is None:
             return ui.tags.p("Run analysis to see per-box summary.", class_="text-muted")
@@ -534,7 +553,7 @@ def diagnostics_server(input, output, session, root_dir):
     # ── Detailed Results: update filter dropdowns ───────────────────────
     @reactive.effect
     def _update_filters():
-        reactive.invalidate_later(2.0)
+        _ver.get()
         results = _diag_state["results"]
         if results is None:
             return
@@ -548,10 +567,9 @@ def diagnostics_server(input, output, session, root_dir):
         ui.update_select("diag_filter_check", choices=check_choices)
 
     # ── Detailed Results: findings data frame ───────────────────────────
-    @output
     @render.data_frame
     def diag_findings_table():
-        reactive.invalidate_later(2.0)
+        _ver.get()
         flat = _diag_state["flat"]
         if not flat:
             return pd.DataFrame({"Message": ["Run analysis first."]})
@@ -594,10 +612,9 @@ def diagnostics_server(input, output, session, root_dir):
         return render.DataTable(df, height="500px", filters=True)
 
     # ── Visualisations ──────────────────────────────────────────────────
-    @output
     @render.ui
     def diag_plot_severity():
-        reactive.invalidate_later(3.0)
+        _ver.get()
         flat = _diag_state["flat"]
         if not flat:
             return ui.tags.p("No data.", class_="text-muted")
@@ -605,30 +622,27 @@ def diagnostics_server(input, output, session, root_dir):
         fig = severity_bar_chart(counts)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-    @output
     @render.ui
     def diag_plot_per_check():
-        reactive.invalidate_later(3.0)
+        _ver.get()
         results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
         fig = findings_per_check_chart(results)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-    @output
     @render.ui
     def diag_plot_per_box():
-        reactive.invalidate_later(3.0)
+        _ver.get()
         results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
         fig = findings_per_box_chart(results)
         return ui.HTML(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
-    @output
     @render.ui
     def diag_plot_heatmap():
-        reactive.invalidate_later(3.0)
+        _ver.get()
         results = _diag_state["results"]
         if results is None:
             return ui.tags.p("No data.", class_="text-muted")
@@ -688,10 +702,9 @@ def diagnostics_server(input, output, session, root_dir):
 
         threading.Thread(target=_work, daemon=True, name="PDFDeepThread").start()
 
-    @output
     @render.ui
     def diag_pdf_status():
-        reactive.invalidate_later(1.0)
+        _ver.get()
         msg = _diag_state["pdf_msg"]
         if not msg:
             return ui.tags.p("Generate a PDF report after running the analysis.", class_="text-muted small")
