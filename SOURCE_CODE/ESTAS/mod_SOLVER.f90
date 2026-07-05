@@ -21,6 +21,12 @@ module PELAGIC_SOLVER
     real(kind = DBL), allocatable, dimension(:,:) :: MASS_LOADS
     real(kind = DBL), allocatable, dimension(:,:) :: MASS_WITHDRAWALS
 
+    ! Hold box volumes constant instead of integrating them from the flux
+    ! imbalance. Set via env var ESTAS_HOLD_VOLUME=1. Needed when the supplied
+    ! flows are not per-box volume-conserving (e.g. EUTROPY, whose fluxes rely
+    ! on a prescribed volume time-series); default off preserves existing runs.
+    logical, save :: HOLD_VOLUME_CONSTANT = .false.
+
 contains
 
     subroutine SOLVE(PELAGIC_BOX_MODEL_DATA        , &
@@ -64,6 +70,7 @@ contains
 
         ! Debug temporaries for mass update diagnostics
         real(kind = DBL) :: tot_deriv, old_mass, new_mass
+        character(len=8) :: VOLUME_ENV
 
         integer :: NUM_PELAGIC_ADVECTIVE_LINKS
         integer :: NUM_OPEN_BOUNDARIES
@@ -99,6 +106,12 @@ contains
             allocate(INTERFACE_AREAS    (NUM_PELAGIC_DISPERSIVE_LINKS), stat=i)
             allocate(SURFACE_AREAS      (NUM_PELAGIC_BOXES), stat=i)
             allocate(BOTTOM_AREAS       (NUM_PELAGIC_BOXES), stat=i)
+
+            call get_environment_variable('ESTAS_HOLD_VOLUME', VOLUME_ENV)
+            if (trim(VOLUME_ENV) == '1') then
+                HOLD_VOLUME_CONSTANT = .true.
+                write(6,*) 'Box volumes held constant (prescribed) for stability'
+            end if
         end if
 
         if (PELAGIC_SOLVER_NO == 1) then
@@ -133,6 +146,7 @@ contains
             !$omp& private(STATE_VAR_NO, SED_STATE_VAR_NO, SED_LAYER_NO, k)
             do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
 
+                if (.not. HOLD_VOLUME_CONSTANT) &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
                      PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME + &
                      (PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, 1) * TIME_STEP)
@@ -321,6 +335,7 @@ contains
 
                 ! Store K1 derivatives and advance state to predicted position
                 do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                    if (.not. HOLD_VOLUME_CONSTANT) &
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
                          PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME + &
                          (PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, 1) * TIME_STEP)

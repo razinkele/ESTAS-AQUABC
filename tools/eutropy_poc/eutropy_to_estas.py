@@ -179,6 +179,10 @@ def main():
 
     print(f"[estas] wrote 29-box INPUTS to {OUT}/ "
           f"({NBOX} bathymetries, {len(links)} links, {NBND} boundaries)")
+    print("[estas] run with:  ESTAS_HOLD_VOLUME=1 ./ESTAS_II INPUT_CL29.txt")
+    print("[estas]   (ESTAS_HOLD_VOLUME=1 holds box volumes constant; EUTROPY's "
+          "fluxes are not per-box volume-conserving so ESTAS's flux-derived "
+          "volumes would otherwise drift to a negative-mass crash.)")
     return 0
 
 
