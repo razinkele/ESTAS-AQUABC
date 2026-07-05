@@ -129,7 +129,10 @@ def main():
         with open(os.path.join(OUT, f"BATHYMETRY_{b}.txt"), "w") as fh:
             fh.write(synth_bathymetry(b, area[b], depth[b]))
 
-    write_ts(os.path.join(OUT, "FLOW_TS.txt"), "FLOWS m3/day", fdays, flux)
+    # ESTAS multiplies FLOWS by SECONDS_PER_DAY internally, so it expects m3/s;
+    # net/flux.csv is m3/day (Eutropy m3/s x 86400), so convert back to m3/s.
+    flux_si = [[v / 86400.0 for v in row] for row in flux]
+    write_ts(os.path.join(OUT, "FLOW_TS.txt"), "FLOWS m3/s", fdays, flux_si)
     write_ts(os.path.join(OUT, "TEMP_TS.txt"), "WATER TEMPERATURE C", tdays, temp)
     write_ts(os.path.join(OUT, "SALT_TS.txt"), "SALINITY psu", tdays, salt)
     write_ts(os.path.join(OUT, "SOLAR_RAD_TS.txt"), "SOLAR RADIATION W/m2", tdays, light)
@@ -140,7 +143,9 @@ def main():
     for bi in range(1, NBND + 1):
         cols = []
         for di in range(len(bdays)):
-            vec32 = bnd[di][(bi - 1) * 32:bi * 32]
+            vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
+            vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
+            vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
         write_ts(os.path.join(OUT, f"FORC_TS_{bi}.txt"),
                  f"boundary {bi} concentrations", bdays, cols)
@@ -190,6 +195,7 @@ def _write_init_conc(out, ic):
             fh.write(f"# PELAGIC INITIAL CONDITION SET {setno} (EUTROPY box {box})\n")
             fh.write("#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION\n")
             vec = ic.get(box, [0.0] * 32) + [0.0, 0.0, 0.0, 0.0]
+            vec[19], vec[20] = 3.0, 3.1        # realistic INORG_C / TOT_ALK
             for i in range(NSTATE):
                 fh.write(f"{i + 1:27d}{vec[i]:20.6f}     ! {names[i]}\n")
 
