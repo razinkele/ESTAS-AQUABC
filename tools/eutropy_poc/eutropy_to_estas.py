@@ -224,8 +224,7 @@ def _write_master(out, state_block, links, depth, area):
     L.append(_hdr("NUM_BATHYMETRIES", NBOX))
     L.append(_hdr("NUM_PELAGIC_BOXES", NBOX))
     L.append(_hdr("NUM_PELAGIC_INIT_CONC_SETS", 2))
-    L.append(_hdr("NUM_PELAGIC_ADVECTIVE_LINKS",
-                  sum(1 for f, _t in links if f > 0)))
+    L.append(_hdr("NUM_PELAGIC_ADVECTIVE_LINKS", len(links)))
     L.append(_hdr("NUM_PELAGIC_DISPERSIVE_LINKS", 0))
     L.append(_hdr("NUM_FLOW_TS", 1))
     L.append(_hdr("NUM_MIXING_TS", 0))
@@ -281,16 +280,13 @@ def _write_master(out, state_block, links, depth, area):
     for b in range(1, NBOX + 1):
         L.append(f"# PELAGIC BOX {b}    : NO MASS WITHDRAWALS\n")
 
-    # ADVECTIVE LINKS (from EUTROPY flux topology; boundary from<0 skipped here)
+    # ADVECTIVE LINKS from EUTROPY flux topology. A negative upstream box is an
+    # open-boundary inflow (ESTAS: OPEN_BOUNDARY_NO = -UPSTREAM_BOX_NO, mod_SOLVER).
     L.append("# ********************* ADVECTIVE LINKS *********************\n")
     L.append("#  ADVECTIVE LINK NO        UPSTREAM BOX      DOWNSTREAM BOX"
              "             FLOW TS      FLOW TS VAR NO\n")
-    ln = 0
     for i, (f, t) in enumerate(links, start=1):
-        if f < 0:
-            continue          # boundary inflow handled via OPEN BOUNDARIES
-        ln += 1
-        L.append(f"{ln:20d}{f:20d}{t:20d}{1:20d}{i:20d}\n")
+        L.append(f"{i:20d}{f:20d}{t:20d}{1:20d}{i:20d}\n")
 
     L.append("# ********************* DISPERSIVE LINKS *********************\n")
     L.append("#  DISP LINK NO   FIRST BOX   SECOND BOX   MIXING TS NO   MIXING LENGTH\n")
