@@ -11,7 +11,13 @@
 # Usage: make FC=ifort BUILD_TYPE=release build-estas
 # =============================================================================
 
-FC ?= gfortran
+# FC is a built-in Make variable (default "f77"), so `?=` would never override
+# it and the build would silently fall through to the generic flag path. Use an
+# origin check so an explicit `make FC=...` or exported FC still wins, while the
+# built-in default is replaced by gfortran.
+ifeq ($(origin FC),default)
+    FC = gfortran
+endif
 BUILDDIR = SOURCE_CODE/build
 LIBAQUABC = $(BUILDDIR)/libaquabc.a
 
