@@ -145,6 +145,10 @@ program aquabc_II_pelagic_network
             ! Carbonate chemistry is not part of the chlorophyll comparison.
             STATE(:, 20) = IC(:, 20)
             STATE(:, 21) = IC(:, 21)
+            ! Floor concentrations to non-negative: explicit-Euler transport can
+            ! produce spurious negatives that drive Monod denominators (K_HS + X)
+            ! through zero (e.g. DIATOMS LIM_KG_DIA_DOXY at DISS_OXYGEN = -KHS_O2).
+            STATE = max(STATE, 0.0D0)
         end do
 
         call write_output(TIME, STATE, NBOX, NSTATE, CYN_COL)
