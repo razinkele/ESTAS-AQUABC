@@ -41,7 +41,7 @@ This document provides a detailed implementation plan for improving the AQUABC/E
 | Metric | Baseline (Jan 2026) | Current (Feb 2026) | Target |
 |--------|---------------------|-------------------|--------|
 | Subroutines with `implicit none` | ~60% | **100%** | 100% |
-| Unit test coverage | ~5% | **~30% (25 tests, 196 assertions)** | >50% |
+| Unit test coverage | ~5% | **26 test programs, 0 failures** | >50% |
 | Regression test suite | None | **Unit tests active** | Full suite |
 | Parallel efficiency (8 cores) | N/A | **OpenMP ready** | >70% |
 | Compile-time warnings (new) | Unknown | **Zero** | Zero |
@@ -563,7 +563,7 @@ aquabc_II_co2sys.f90: Legacy algorithm options
 **Duration:** 3 Sprints
 **Priority:** HIGH
 **Prerequisite:** Phase 1 Complete (can run parallel to Phase 2)
-**Status:** All tasks complete as of Feb 2026. 22 Fortran unit tests (160 assertions, 0 failures) covering utility subroutines, kinetics (DIATOMS, CYANOBACTERIA, ZOOPLANKTON), REDOX_AND_SPECIATION, and ORGANIC_CARBON_MINERALIZATION. Shared test defaults module (`test_defaults.f90`) provides realistic parameter values. Test compilation isolated from GLOBAL module via `test_pelagic_aux_subset.f90`.
+**Status:** All tasks complete as of Feb 2026. 26 Fortran unit-test programs (0 failures, verified 2026-07-05) covering utility subroutines, kinetics for all phytoplankton groups (DIATOMS, CYANOBACTERIA, FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, NOSTOCALES), ZOOPLANKTON, REDOX_AND_SPECIATION, ORGANIC_CARBON_MINERALIZATION, iron/dissolved-metal chemistry, pH correction, ammonia chemistry, light extinction, allelopathy, and sediment bioturbation. Shared test defaults module (`test_defaults.f90`) provides realistic parameter values. Test compilation isolated from GLOBAL module via `test_pelagic_aux_subset.f90`.
 
 ### 6.1 Task 3.1: Create Test Framework
 
@@ -1564,6 +1564,7 @@ SOURCE_CODE/MACROALGAE/mod_MACROALGAE.f90:62: subroutine MACRO_ALGAE_KINETICS
 | 1.0 | 2026-01-18 | Claude Code Review | Initial document |
 | 1.1 | 2026-02-12 | Claude Code Review | Phase 1 complete, Phase 2 in progress, metrics updated |
 | 1.2 | 2026-02-13 | Claude Code Review | Phases 2-3 complete, 22 unit tests, K_HS defaults fixed |
+| 1.3 | 2026-07-05 | Claude Code Review | Status re-verified by build + full test run: 26 test programs, 0 failures. Reconciled drifted test counts. Fixed `FC ?=` Makefile gotcha (default build was falling to generic `-O2`). |
 
 ---
 

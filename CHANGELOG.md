@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **Diagnostics panel** in the Shiny app (`shiny_app/diagnostics.py`, `diagnostics_plots.py`): live process-rate and state-variable diagnostics driven by a central reactive poll, integrated into the main UI
+- **"Scientific Observatory" UI redesign**: custom dark theme via external CSS (`shiny_app/www/aquabc.css`), shinyswatch removed, dashboard restructured with a horizontal status bar (5/7 layout), full-width Parameters panel, and a light/dark theme switcher
+- **In-app getting-started tutorial** (step-by-step UI walkthrough opening in a separate window), an automated tutorial runner (`tools/run_tutorial.py`), and Playwright E2E tests that follow the tutorial steps
+- **Process-rate analysis toolkit** (`tools/deep_process_rate_analysis.py`, `deep_state_vs_process_crosscheck.py`, `process_rate_slot_map.py`, `analyse_process_rates.py`, `aquabc_analysis_utils.py`): 16-check mass-balance and state-vs-process cross-check analysis over model output. Added 59 lines to `sub_WRITE_PELAGIC_OUTPUT.f90` to emit the required per-process rate output
+- 365-day and 3,560-day (10-year) deep-process analysis runs and reports
+- Analysis, cross-validation, and reference documentation as PDFs under `docs/`: process-rate and Fixes & Results reports, code-vs-paper cross-validation (Ertürk et al. 2023), AQUABC constant reference, and the ESTAS-AQUABC Integration Guide; plus the "Scientific Observatory" UI design/implementation plan under `docs/plans/`
 - **Bioturbation module** (`aquabc_II_sediment_bioturbation.f90`): depth-dependent biodiffusion, oxygen-dependent scaling, seasonal modulation, bioirrigation enhancement, and zero-flux lower boundary condition (Boudreau 1997; Soetaert et al. 1996)
 - Dynamic particle mixing coefficients (`switch_partmixing = 1`): biodiffusion recomputed every sub-timestep from local depth, O₂, and day-of-year
 - Bioirrigation enhancement of porewater diffusion for dissolved-phase species
@@ -18,10 +24,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Makefile target `make build-docs` for PDF generation via pandoc
 
 ### Fixed
+- **FIX_CYN photosynthetic O₂ production omitted (HIGH):** when both `DO_NOSTOCALES` and `DO_NON_OBLIGATORY_FIXERS` were enabled, nitrogen-fixing cyanobacteria O₂ production was dropped from the dissolved-oxygen derivative (slot 5 held Nostocales only). Repurposed rate slot 19 to carry FIX_CYN O₂ production. **Changes simulated dissolved-oxygen results.**
+- **DON-uptake N:C ratio (MEDIUM):** FIX_CYN dissolved-organic-nitrogen uptake used `CYN_N_TO_C` instead of `FIX_CYN_N_TO_C` (copy-paste error), producing a nitrogen mass imbalance. **Changes simulated nitrogen pools.**
+- **Light-limitation negativity:** the Steele/Platt formula produced tiny negatives (~−4e-4) at dusk when surface irradiance approaches zero; now clamped to [0,1] in all 8 code paths (central `LIM_LIGHT` plus inline Steele in DIA/OPA/CYN/FIX_CYN/NOST)
+- Detritus C:N ratio correction
+- Corrected model input values and initial-condition sets from long-run value analysis and code-vs-paper cross-validation; regenerated forcing time-series
+- Shiny plot panel mis-parsing `PROCESS_RATES` output files
+- Diagnostics panel reliability: thread-safe mutable dict instead of `reactive.Value`, and `suspend_when_hidden=False` + central poll so inactive-tab outputs refresh
+- WCONST parser fix (added units column and value justifications to the constant-reference PDF)
 - **Missing `isedi` parameter**: registered `isedi = 0` in ESTAS `INIT_BSED_MODEL_CONSTANTS` — was expected from SHYFEM parameter system but never provided in standalone ESTAS
 - **Sediment flux output format**: corrected format descriptor from `33F20.10` to `36F20.10` to match actual `FLUXES_OUTPUT_TO_WATER_COLUMN` array size (`nstate + NUM_ALLOLOPATHY_STATE_VARS = 36`)
 
 ### Changed
+- Zooplankton boundary conditions and initial-condition sets updated per the 3,560-day analysis recommendations
 - Sediment model particle mixing now uses bioturbation physics (exponential depth decay × Monod O₂ × seasonal) instead of uniform constant
 - Last-layer particle mixing boundary condition changed from hard-coded zero to proper zero-flux (Neumann) BC
 - Updated `AQUABC_Model_Equations.md` with bioturbation/bioirrigation equations (§13.8) and references

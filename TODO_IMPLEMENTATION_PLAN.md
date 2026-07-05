@@ -66,7 +66,7 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 
 ### 1.4 [P1] CO2SYS Exponential Overflow Risks
 
-**File:** `SOURCE_CODE/AQUABC/PELAGIC/co2sys.f90`
+**File:** `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90`
 
 **Problem:** Several raw `exp()` calls with unbounded arguments (e.g., `exp(-pH * log(10))` for extreme pH values). While pH is now clamped at model entry, CO2SYS has its own internal calculations that could produce extreme arguments.
 
@@ -132,9 +132,9 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 
 ### 1.7 [P2] Sediment Model Variable Declarations
 
-**File:** `SOURCE_CODE/AQUABC/SEDIMENT/aquabc_II_sed_solute_model.f90`
+**File:** `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model_1_fast.f90`
 
-**Problem:** ~307 variable declarations at the top of the main sediment subroutine. Many may be unused after previous cleanups.
+**Problem:** ~315 variable declarations at the top of the main sediment subroutine. Many may be unused after previous cleanups.
 
 **Fix:**
 - Run unused variable detection: `gfortran -Wunused-variable`
@@ -147,7 +147,7 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 
 ### 1.8 [P3] Magic Numbers in Physics Constants
 
-**Files:** Various, especially `co2sys.f90`, sediment model
+**Files:** Various, especially `aquabc_II_co2sys.f90`, sediment model
 
 **Problem:** Scattered numeric literals (e.g., `273.15`, `1013.25`, `8.314`) without named constants.
 
@@ -434,16 +434,14 @@ export OMP_PLACES=cores
 
 ### 5.1 [P2] Fortran Test Coverage Expansion
 
-**Current:** 25 test programs covering 8 library subroutines + utilities
+**Current:** 26 test programs (0 failures, verified 2026-07-05) covering phytoplankton, zooplankton, redox/speciation, organic-carbon mineralization, iron and dissolved-metal chemistry, pH correction, ammonia chemistry, light extinction, allelopathy, sediment bioturbation, and utilities.
 
 **Missing coverage:**
-- CO2SYS (complex equilibrium chemistry — high bug risk)
-- Sediment model subroutines
-- ALLELOPATHY subroutine
-- Light extinction (`light_kd`)
-- Ammonia volatilization
-- Iron oxidation
-- pH correction functions
+- CO2SYS (complex equilibrium chemistry — high bug risk, still untested)
+- Main sediment diagenesis model (`aquabc_II_sediment_model_1_fast.f90`) — bioturbation is tested, but the solute/kinetics core is not
+- End-to-end integrated pelagic + sediment run (see 5.2)
+
+Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemistry, dissolved metals, and pH correction now have dedicated test programs (`test_allelopathy`, `test_light`, `test_ammonia_chem`, `test_iron_ii`, `test_diss_me`, `test_ph_corr`) — they are no longer coverage gaps.
 
 **Effort:** ~1 day per subroutine
 
@@ -472,7 +470,7 @@ export OMP_PLACES=cores
 - [x] 2.2 Bare except blocks — **Fixed** (5 blocks replaced with specific exception types in app.py)
 
 ### Sprint 2 — Numerical Safety & CI (2–3 days) --- COMPLETED 2026-02-14
-- [x] 1.4 CO2SYS safe_exp — **Fixed** (8 vulnerable exp() calls wrapped with safe_exp in co2sys.f90)
+- [x] 1.4 CO2SYS safe_exp — **Fixed** (8 vulnerable exp() calls wrapped with safe_exp in aquabc_II_co2sys.f90)
 - [x] 1.5 Remaining division-by-zero audit — **Audit complete** (2026-02-14). All ~80 divisions in pelagic_model.f90 confirmed safe: iron/Mn use conditional guards, zoo/det use max(), Monod kinetics are mathematically safe, CHLA divides by constants only. One missing Fe3+ first-timestep guard added.
 - [x] 3.3 Python code coverage — **Added** (pytest-cov with CI reporting, 10% baseline)
 - [x] 3.4 Pin GitHub Actions to SHA — **Done** (5 action references pinned)
