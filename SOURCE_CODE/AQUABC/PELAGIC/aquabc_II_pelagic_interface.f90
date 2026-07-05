@@ -293,8 +293,8 @@ subroutine aquabc_run                       ( &
              nconst                        , &  ! total number of constants
              DRIVING_FUNCTIONS             , &  ! external forcings
              n_driving_functions           , &  ! total number of ext forc
-             FLAGS                         , &  ! flags (see above)
-             nflags                        , &  ! total number of flags
+             FLAGS(1:5)                    , &  ! only the 5 kinetics flags (options 6-12 are passed separately below)
+             5                             , &  ! number of kinetics flags (matches GLOBAL nflags)
              PROCESS_RATES                 , &  ! process rates for STV (out)
              NDIAGVAR                      , &  ! total number of process rates
              SAVED_OUTPUTS                 , &  ! values for next call (in/out)
