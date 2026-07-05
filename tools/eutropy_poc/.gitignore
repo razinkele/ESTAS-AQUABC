@@ -1,0 +1,5 @@
+# Build artifacts and regenerable model output (keep sources + results/plots)
+*.o
+run_box19
+box19/OUTPUT_aquabc.csv
+box19_cyn/OUTPUT_aquabc.csv

@@ -1,0 +1,34 @@
+# AQUABC boundary conc. from EUTROPY Nemunas (mean)
+#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION
+                          1            0.049784     ! NH4_N
+                          2            1.373621     ! NO3_N
+                          3            0.036506     ! PO4_P
+                          4           11.522162     ! DISS_OXYGEN
+                          5            0.000000     ! DIA_C
+                          6            0.040000     ! ZOO_C
+                          7            0.010000     ! ZOO_N
+                          8            0.002000     ! ZOO_P
+                          9            1.937195     ! DET_PART_ORG_C
+                         10            0.280562     ! DET_PART_ORG_N
+                         11            0.024218     ! DET_PART_ORG_P
+                         12            7.678847     ! DISS_ORG_C
+                         13            2.067749     ! DISS_ORG_N
+                         14            0.014746     ! DISS_ORG_P
+                         15            0.905170     ! CYN_C
+                         16            0.020000     ! OPA_C
+                         17            3.000000     ! DISS_Si
+                         18            1.500000     ! PART_Si
+                         19            0.000100     ! FIX_CYN_C
+                         20            0.002700     ! INORG_C
+                         21            0.002700     ! TOT_ALK
+                         22            0.230000     ! FE_II
+                         23            0.050000     ! FE_III
+                         24            0.100000     ! MN_II
+                         25            0.100000     ! MN_IV
+                         26           70.000000     ! CA
+                         27           15.000000     ! MG
+                         28            1.350000     ! S_PLUS_6
+                         29            0.000000     ! S_MINUS_2
+                         30            0.000000     ! CH4_C
+                         31            0.000000     ! NOST_VEG_HET_C
+                         32            0.000100     ! AKI_C
