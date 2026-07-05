@@ -1,0 +1,30 @@
+# DESCRIPTION Curonian Lagoon 29-box EUTROPY-derived
+# DESCRIPTION LINE 2
+# DESCRIPTION LINE 3
+# DESCRIPTION LINE 4
+# DESCRIPTION LINE 5
+# BASE_YEAR
+           2012
+# SIMULATION_START
+            0.0
+# SIMULATION_END
+         1826.0
+# NUM_REPEATS
+              1
+# TIME_STEPS_PER_DAY
+            240
+# PRINT_INTERVAL IN TIME STEPS
+             10
+# PELAGIC MODEL INPUT FOLDER write the folder always with / in the end
+INPUTS_CL29/
+# PELAGIC MODEL INPUT FILE
+            PELAGIC_INPUTS.txt
+# PELAGIC MODEL OUTPUT FOLDER write the folder always with / in the end
+OUTPUTS_CL29/
+# RESUSPENSION_OPTION
+          0
+# MODEL_SEDIMENTS
+          0
+# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS
+          0
+# SEDIMENT MODEL INPUT FILE

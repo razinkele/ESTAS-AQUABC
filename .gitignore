@@ -107,3 +107,7 @@ missing_implicit_none.txt
 
 # Observation data (local)
 OBSERVATIONS/
+
+# EUTROPY-derived 29-box ESTAS application (regenerable via tools/eutropy_poc/eutropy_to_estas.py)
+INPUTS_CL29/
+OUTPUTS_CL29/
