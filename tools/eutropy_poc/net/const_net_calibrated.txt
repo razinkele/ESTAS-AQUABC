@@ -173,7 +173,7 @@
    173             THETA_K_MIN_DOC_FE_III     0.104000D+01
    174           THETA_K_MIN_DOC_S_PLUS_6     0.104000D+01
    175                THETA_K_MIN_DOC_DOC     0.104000D+01
-   176                  K_HS_DOC_MIN_DOXY     0.000000D+00
+   176                  K_HS_DOC_MIN_DOXY     0.100000D+01
    177                  K_HS_DOC_MIN_NO3N     0.100000D+01
    178                 K_HS_DOC_MIN_MN_IV     0.100000D+01
    179                K_HS_DOC_MIN_FE_III     0.100000D+01
@@ -213,7 +213,7 @@
    213             THETA_K_MIN_DON_FE_III     0.108000D+01
    214           THETA_K_MIN_DON_S_PLUS_6     0.108000D+01
    215                THETA_K_MIN_DON_DOC     0.108000D+01
-   216                  K_HS_DON_MIN_DOXY     0.000000D+00
+   216                  K_HS_DON_MIN_DOXY     0.500000D-01
    217                  K_HS_DON_MIN_NO3N     0.500000D-01
    218                 K_HS_DON_MIN_MN_IV     0.500000D-01
    219                K_HS_DON_MIN_FE_III     0.500000D-01
@@ -243,7 +243,7 @@
    243             THETA_K_MIN_DOP_FE_III     0.104000D+01
    244           THETA_K_MIN_DOP_S_PLUS_6     0.104000D+01
    245                THETA_K_MIN_DOP_DOC     0.104000D+01
-   246                  K_HS_DOP_MIN_DOXY     0.000000D+00
+   246                  K_HS_DOP_MIN_DOXY     0.520000D-01
    247                  K_HS_DOP_MIN_NO3N     0.520000D-01
    248                 K_HS_DOP_MIN_MN_IV     0.520000D-01
    249                K_HS_DOP_MIN_FE_III     0.520000D-01

@@ -23,12 +23,13 @@ program aquabc_II_pelagic_network
     character(*), parameter :: DIR = 'tools/eutropy_poc/net/'
 
     character(len=256) :: CONST_FILE, arg2
+    character(len=16)  :: bmode
     integer :: nlink, ndays, d, s, b, L, nsteps
     double precision :: TIME, TIME_STEP, Q, VB
 
     double precision :: IC(NBOX, NSTATE), BND(NBND, NSTATE), DEPTH(NBOX)
     double precision, allocatable :: VOL(:,:), FT(:,:), FS(:,:), FL(:,:), FD(:,:)
-    double precision, allocatable :: FLUX(:,:)
+    double precision, allocatable :: FLUX(:,:), BND_DAILY(:,:)
     integer,          allocatable :: LFROM(:), LTO(:)
     double precision, allocatable :: STATE(:,:), STATE_OLD(:,:), DRIVING(:,:)
     double precision, allocatable :: PH(:), SED(:,:), INFLOW(:), OUTFLOW(:)
@@ -43,15 +44,25 @@ program aquabc_II_pelagic_network
     else
         read(arg2, *) nsteps
     end if
+    ! Boundary mode: 'mean' (time-mean, default, stable) or 'daily'
+    ! (time-varying; more faithful but currently trips a library divide-by-zero
+    ! in the N kinetics ~day 1589 when a box is driven to an extreme state).
+    call get_command_argument(3, bmode)
+    if (len_trim(bmode) == 0) bmode = 'mean'
 
     ! ---- read inputs ----
     call read_box_matrix(DIR//'initial_conditions.csv', IC, NBOX, NSTATE)
-    call read_box_matrix(DIR//'boundary_mean.csv', BND, NBND, NSTATE)
     call read_depths(DIR//'depths.csv', DEPTH, NBOX)
 
     call count_rows(DIR//'volumes.csv', ndays)
     allocate(VOL(ndays, NBOX), FT(ndays, NBOX), FS(ndays, NBOX))
     allocate(FL(ndays, NBOX), FD(ndays, NBOX))
+    if (trim(bmode) == 'daily') then
+        allocate(BND_DAILY(ndays, NBND * NSTATE))
+        call read_day_matrix(DIR//'boundary_daily.csv', BND_DAILY, ndays, NBND * NSTATE)
+    else
+        call read_box_matrix(DIR//'boundary_mean.csv', BND, NBND, NSTATE)
+    end if
     call read_day_matrix(DIR//'volumes.csv',       VOL, ndays, NBOX)
     call read_day_matrix(DIR//'forcing_temp.csv',  FT,  ndays, NBOX)
     call read_day_matrix(DIR//'forcing_salt.csv',  FS,  ndays, NBOX)
@@ -83,6 +94,12 @@ program aquabc_II_pelagic_network
     call write_output(TIME, STATE, NBOX, NSTATE, CYN_COL)
 
     do d = 1, ndays
+        ! time-varying boundary concentrations for this day (daily mode only)
+        if (trim(bmode) == 'daily') then
+            do b = 1, NBND
+                BND(b, :) = BND_DAILY(d, (b - 1) * NSTATE + 1 : b * NSTATE)
+            end do
+        end if
         ! per-box forcing for this day
         do b = 1, NBOX
             DRIVING(b, 1)  = FT(d, b)
@@ -123,6 +140,11 @@ program aquabc_II_pelagic_network
                 end do
                 STATE(b, :) = STATE(b, :) + (INFLOW - OUTFLOW) * TIME_STEP
             end do
+            ! Pin carbonate state (INORG_C=20, TOT_ALK=21) to reference so the
+            ! CO2SYS pH solver stays well-conditioned under time-varying inputs.
+            ! Carbonate chemistry is not part of the chlorophyll comparison.
+            STATE(:, 20) = IC(:, 20)
+            STATE(:, 21) = IC(:, 21)
         end do
 
         call write_output(TIME, STATE, NBOX, NSTATE, CYN_COL)

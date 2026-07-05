@@ -74,6 +74,47 @@ def daily_matrix(path: str, ncols: int):
     return [(d, [x / acc[d][1] for x in acc[d][0]]) for d in sorted(acc)]
 
 
+def read_boundary_series(path):
+    """Sorted [(day, {var: val})] from a ~2-weekly boundary concentration file."""
+    pts = []
+    with open(path) as fh:
+        for row in csv.DictReader(fh):
+            day = _to_day(row["time"])
+            if day is None:
+                continue
+            vals = {}
+            for v in EU_VARS:
+                if row.get(v):
+                    try:
+                        vals[v] = float(row[v])
+                    except ValueError:
+                        pass
+            pts.append((day, vals))
+    pts.sort(key=lambda p: p[0])
+    return pts
+
+
+def interp_daily(pts, var, ndays):
+    """Linear-interpolate one variable onto the daily grid 0..ndays-1."""
+    xs = [(d, vv[var]) for d, vv in pts if var in vv]
+    out = [0.0] * ndays
+    if not xs:
+        return out
+    for day in range(ndays):
+        if day <= xs[0][0]:
+            out[day] = xs[0][1]
+        elif day >= xs[-1][0]:
+            out[day] = xs[-1][1]
+        else:
+            for i in range(len(xs) - 1):
+                x0, y0 = xs[i]
+                x1, y1 = xs[i + 1]
+                if x0 <= day <= x1:
+                    out[day] = y0 + (y1 - y0) * (day - x0) / (x1 - x0) if x1 > x0 else y0
+                    break
+    return out
+
+
 def state_vector(eu_row: dict, which: int) -> list[float]:
     vec = [0.0] * 32
     for idx, (ic, bc) in AQUABC_DEFAULTS.items():
@@ -168,7 +209,26 @@ def main() -> int:
     write_matrix_csv(os.path.join(OUT, "boundary_mean.csv"),
                      ["boundary"] + AQUABC_STATE_NAMES, brows)
 
-    print(f"[network] wrote 9 files to {OUT}/")
+    # --- time-varying (daily-interpolated) boundary concentrations ---
+    nd = ndays
+    bnd_daily = {}
+    for bnd in range(1, BOUNDARIES + 1):
+        pts = read_boundary_series(os.path.join(EU, bfiles[bnd] + ".csv"))
+        series = {v: interp_daily(pts, v, nd) for v in EU_VARS}
+        bnd_daily[bnd] = [state_vector({v: series[v][day] for v in EU_VARS}, 1)
+                          for day in range(nd)]
+    header = ["day"] + [f"b{bnd}_{n}" for bnd in range(1, BOUNDARIES + 1)
+                        for n in AQUABC_STATE_NAMES]
+    drows = []
+    for day in range(nd):
+        row = [day]
+        for bnd in range(1, BOUNDARIES + 1):
+            row += [f"{v:.6f}" for v in bnd_daily[bnd][day]]
+        drows.append(row)
+    write_matrix_csv(os.path.join(OUT, "boundary_daily.csv"), header, drows)
+    print(f"[network] boundary_daily: {nd} days x {BOUNDARIES} boundaries")
+
+    print(f"[network] wrote 10 files to {OUT}/")
     return 0
 
 
