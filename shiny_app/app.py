@@ -153,6 +153,23 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
+
+def safe_resolve(base_dir: str, filename: str) -> str:
+    """Resolve filename under base_dir, rejecting path traversal.
+
+    Raises ValueError if the resolved path escapes base_dir.
+    """
+    if not filename or not filename.strip():
+        raise ValueError("Empty filename")
+    # Reject obvious traversal attempts before joining
+    if os.path.isabs(filename) or '..' in filename.split(os.sep):
+        raise ValueError(f"Invalid filename: {filename}")
+    resolved = os.path.realpath(os.path.join(base_dir, filename))
+    base = os.path.realpath(base_dir)
+    if not resolved.startswith(base + os.sep) and resolved != base:
+        raise ValueError(f"Path escapes base directory: {filename}")
+    return resolved
+
 # PELAGIC_BOX_COLUMNS imported from shiny_app.utils
 
 def get_output_folder():
@@ -3993,9 +4010,9 @@ def server(input, output, session):
             logger.debug("load_file called but no file selected")
             return
         logger.info(f"Loading file: {f}")
-        path = os.path.join(INPUTS_DIR, f)
 
         try:
+            path = safe_resolve(INPUTS_DIR, f)
             with open(path, 'r') as fh:
                 txt = fh.read()
             logger.info(f"Successfully loaded {f} ({len(txt)} characters)")
@@ -4023,7 +4040,13 @@ def server(input, output, session):
             )
 
         # Analyze the file
-        path = os.path.join(INPUTS_DIR, f)
+        try:
+            path = safe_resolve(INPUTS_DIR, f)
+        except ValueError as e:
+            return ui.tags.div(
+                ui.tags.p(f"Invalid file: {e}", class_="text-danger"),
+                class_="p-2"
+            )
         analysis = analyze_input_file(path)
 
         # Build info rows
@@ -4131,7 +4154,11 @@ def server(input, output, session):
             return
 
         logger.info(f"Saving file: {f}")
-        path = os.path.join(INPUTS_DIR, f)
+        try:
+            path = safe_resolve(INPUTS_DIR, f)
+        except ValueError as e:
+            save_status_msg.set(f"Error: {e}")
+            return
         content_length = len(input.file_contents())
         logger.debug(f"Content length: {content_length} characters")
 

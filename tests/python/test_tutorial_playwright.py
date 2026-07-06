@@ -26,7 +26,6 @@ For headed (visible browser):
 Requires: playwright, pytest, shiny[test]
 """
 
-import re
 
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
@@ -536,7 +535,7 @@ class TestStep8RunSimulation:
                     break
                 if "error" in log_text.lower() and "aborted" in log_text.lower():
                     # Run failed
-                    assert False, f"Model run failed:\n{log_text[-500:]}"
+                    raise AssertionError(f"Model run failed:\n{log_text[-500:]}")
 
             # Also check the mini run log
             mini_log = page.locator("#run_log_mini")
