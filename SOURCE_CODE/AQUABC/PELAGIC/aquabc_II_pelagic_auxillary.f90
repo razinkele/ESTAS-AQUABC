@@ -48,6 +48,7 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
                           KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn)
 
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP
     implicit none
 
     integer, intent(in) :: nkn
@@ -60,14 +61,15 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
     double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
     double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
 
-    ! Temperature-response model. CTMI (USE_CTMI=.true.) is used only when the
-    ! per-species constants are CTMI-valid: T_min < T_opt < T_max AND T_opt above the
-    ! range midpoint (2*T_opt > T_min+T_max, else the CTMI denominator vanishes inside
-    ! [T_min,T_max] and corrupts LIM_TEMP -- the CL29 diatom bloom-collapse failure).
-    ! Otherwise -- e.g. the plateau-era constants in the 0-D example / base model --
-    ! it falls back (with a one-time warning) to the original piecewise plateau model
-    ! those constants are calibrated for. Diagnosable degradation, not silent corruption.
-    logical, parameter :: USE_CTMI = .true.
+    ! Temperature-response model. USE_CTMI_TEMP (set at runtime by the driver from
+    ! PELAGIC_MODEL_OPTIONS.txt; default plateau) requests CTMI, which is used only
+    ! when the per-species constants are CTMI-valid: T_min < T_opt < T_max AND T_opt
+    ! above the range midpoint (2*T_opt > T_min+T_max, else the CTMI denominator
+    ! vanishes inside [T_min,T_max] and corrupts LIM_TEMP -- the CL29 diatom
+    ! bloom-collapse failure). Otherwise -- e.g. the plateau-era constants in the 0-D
+    ! example / base model -- it falls back (with a one-time warning) to the original
+    ! piecewise plateau model those constants are calibrated for. Diagnosable
+    ! degradation, not silent corruption.
     logical, save      :: ctmi_warned = .false.
     logical            :: ctmi_ok
 
@@ -79,9 +81,9 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
     T_opt = Upper_TEMP
     T_max = KAPPA_OVER_OPT_TEMP
 
-    ctmi_ok = USE_CTMI .and. (T_opt > T_min) .and. (T_opt < T_max) .and. &
+    ctmi_ok = USE_CTMI_TEMP .and. (T_opt > T_min) .and. (T_opt < T_max) .and. &
               (2.0D0 * T_opt > T_min + T_max)
-    if (USE_CTMI .and. (.not. ctmi_ok) .and. (.not. ctmi_warned)) then
+    if (USE_CTMI_TEMP .and. (.not. ctmi_ok) .and. (.not. ctmi_warned)) then
         write(6,*) 'GROWTH_AT_TEMP: CTMI params invalid (T_min/T_opt/T_max =', &
                    T_min, T_opt, T_max, '); falling back to plateau model.'
         ctmi_warned = .true.
