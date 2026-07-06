@@ -57,6 +57,15 @@ tests/fortran/test_ph_corr
 tests/fortran/test_settling
 tests/fortran/test_settling_suppres
 tests/fortran/test_vector_utils
+tests/fortran/test_bioturbation
+tests/fortran/test_cyanobacteria
+tests/fortran/test_diatoms
+tests/fortran/test_doc_mineralization
+tests/fortran/test_fix_cyn
+tests/fortran/test_nostocales
+tests/fortran/test_opa
+tests/fortran/test_redox
+tests/fortran/test_zooplankton
 tests/fortran/*.o
 tests/fortran/*.mod
 
