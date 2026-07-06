@@ -60,32 +60,35 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
     double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
     double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
 
-    ! Select the temperature-response model. CTMI is active with per-species
-    ! constants re-calibrated for CTMI semantics (cold diatom optimum; each
-    ! group's T_opt kept above its range midpoint to avoid the CTMI singularity).
+    ! Temperature-response model. CTMI (USE_CTMI=.true.) is used only when the
+    ! per-species constants are CTMI-valid: T_min < T_opt < T_max AND T_opt above the
+    ! range midpoint (2*T_opt > T_min+T_max, else the CTMI denominator vanishes inside
+    ! [T_min,T_max] and corrupts LIM_TEMP -- the CL29 diatom bloom-collapse failure).
+    ! Otherwise -- e.g. the plateau-era constants in the 0-D example / base model --
+    ! it falls back (with a one-time warning) to the original piecewise plateau model
+    ! those constants are calibrated for. Diagnosable degradation, not silent corruption.
     logical, parameter :: USE_CTMI = .true.
+    logical, save      :: ctmi_warned = .false.
+    logical            :: ctmi_ok
 
     ! Local: CTMI aliases
     double precision :: T_min, T_opt, T_max
     double precision :: denom(nkn)
 
-    if (USE_CTMI) then
-        T_min = Lower_TEMP
-        T_opt = Upper_TEMP
-        T_max = KAPPA_OVER_OPT_TEMP
+    T_min = Lower_TEMP
+    T_opt = Upper_TEMP
+    T_max = KAPPA_OVER_OPT_TEMP
 
-        ! CTMI validity: require T_min < T_opt < T_max AND T_opt strictly above the
-        ! range midpoint (2*T_opt > T_min+T_max). Otherwise the denominator vanishes
-        ! inside [T_min,T_max] and LIM_TEMP is silently corrupted -- the failure mode
-        ! behind the CL29 diatom bloom collapse. Fail loudly instead of silently.
-        if (T_opt <= T_min .or. T_opt >= T_max .or. &
-            2.0D0 * T_opt <= T_min + T_max) then
-            write(6,*) 'GROWTH_AT_TEMP: invalid CTMI params T_min/T_opt/T_max =', &
-                       T_min, T_opt, T_max
-            stop 'GROWTH_AT_TEMP: CTMI needs T_min < T_opt < T_max and 2*T_opt > T_min+T_max'
-        end if
+    ctmi_ok = USE_CTMI .and. (T_opt > T_min) .and. (T_opt < T_max) .and. &
+              (2.0D0 * T_opt > T_min + T_max)
+    if (USE_CTMI .and. (.not. ctmi_ok) .and. (.not. ctmi_warned)) then
+        write(6,*) 'GROWTH_AT_TEMP: CTMI params invalid (T_min/T_opt/T_max =', &
+                   T_min, T_opt, T_max, '); falling back to plateau model.'
+        ctmi_warned = .true.
+    end if
 
-        ! CTMI denominator (computed for all T, guarded below)
+    if (ctmi_ok) then
+        ! CTMI (Cardinal Temperature Model with Inflection, Rosso et al. 1993)
         denom = (T_opt - T_min) * ((T_opt - T_min) * (TEMP - T_opt) - &
                 (T_opt - T_max) * (T_opt + T_min - 2.0D0 * TEMP))
 
