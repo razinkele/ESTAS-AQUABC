@@ -148,13 +148,17 @@ def main() -> int:
     write_matrix_csv(os.path.join(OUT, "initial_conditions.csv"),
                      ["box"] + AQUABC_STATE_NAMES, ic_rows)
 
-    # --- depths ---
-    depths = {}
+    # --- depths + areas ---
+    # Emit both columns: eutropy_to_estas.py needs box surface area for the master
+    # geometry, and depths.csv is the only tracked source (the raw ~/eutropy input
+    # is external and absent from a fresh clone).
+    depths, areas = {}, {}
     with open(os.path.join(EU, "depth.csv")) as fh:
         for row in csv.DictReader(fh):
             depths[int(row["box"])] = float(row["depth"])
-    write_matrix_csv(os.path.join(OUT, "depths.csv"), ["box", "depth_m"],
-                     [[b, f"{depths[b]:.4f}"] for b in sorted(depths)])
+            areas[int(row["box"])] = float(row["area"])
+    write_matrix_csv(os.path.join(OUT, "depths.csv"), ["box", "depth_m", "area_m2"],
+                     [[b, f"{depths[b]:.4f}", f"{areas[b]:.1f}"] for b in sorted(depths)])
 
     # --- per-box daily forcing + volumes ---
     forcings = {

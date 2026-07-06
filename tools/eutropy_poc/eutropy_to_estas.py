@@ -264,8 +264,10 @@ def main():
 
 
 def _load_area():
-    with open(os.path.expanduser("~/eutropy/input/depth.csv")) as fh:
-        return {int(r["box"]): float(r["area"]) for r in csv.DictReader(fh)}
+    # Box surface area (m2) rides in the tracked net/depths.csv, so the pipeline
+    # runs from a fresh clone without the external ~/eutropy/input tree.
+    with open(os.path.join(NET, "depths.csv")) as fh:
+        return {int(r["box"]): float(r["area_m2"]) for r in csv.DictReader(fh)}
 
 
 def _write_init_conc(out, ic):
