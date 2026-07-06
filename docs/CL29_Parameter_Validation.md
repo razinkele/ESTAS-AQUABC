@@ -152,11 +152,35 @@ literature-realistic `T_opt` is feasible (grazing maintains succession) but fits
 The parameters are now labelled in the converter (`CL29_WCONST_OVERRIDE` comment) as
 *effective-niche calibration*, not physiology.
 
-**Open calibration gap (not addressed here):** both configurations undershoot the
-observed spring diatom magnitude by roughly 2× (20–26 vs 47 mg/m³). Si is ruled out;
-the likely controls are light (turbid lagoon), spring PO4 supply, grazing pressure, or
-the seed/refuge level — a target for a future calibration pass, not a single-parameter
-fix.
+### Spring diatom undershoot — root-caused (2026-07-06, box-19 process rates)
+
+The ~2× spring diatom undershoot (20–26 vs 47 mg/m³) was traced with the model's own
+limitation factors (`PROCESS_RATES(:,DIA_C,6–11)`, box 19, all 5 years):
+
+| Limitation (spring build-up mean) | Value | Binding? |
+|---|---|---|
+| `LIM_P` (phosphorus) | **0.29** | **yes — dominant** |
+| `LIM_TEMP` | 0.61 | secondary |
+| `LIM_LIGHT` | 0.79 | mild |
+| `LIM_N`, `LIM_Si` | ~1.0 | no |
+| grazing loss | 0 | no |
+
+**The spring bloom is phosphorus-supply-limited, system-wide** — PO4 is drawn to
+0.0009–0.014 mg/L (below the 0.005 half-saturation) and **no box reaches the observed
+lower bound** (domain max 24.6 mg/m³), so it is not a box-selection artifact. A Redfield
+check confirms a mass-balance ceiling: building DIA_C ≈ 1.4 mg C/L needs ~0.034 mg P/L,
+but the model supplies only ~0.014 (IC PO4 0.010 + river ~0.029 mg/L, low end of the
+Nemunas 0.03–0.10 range) with **`MODEL_SEDIMENTS = 0`** — no benthic P regeneration,
+which in a shallow hypertrophic lagoon is a major internal P source. Temperature is a
+genuine secondary co-limitation (why the T_opt=16 test nudged spring up).
+
+**Candidate fixes (ranked by physical defensibility; each needs a decision/data):**
+1. Enable benthic P recycling (`MODEL_SEDIMENTS` + sediment P return) — mechanistically
+   correct for this system, but a substantial model change (inputs, stability, runtime).
+2. Raise river/boundary PO4 loading toward measured Nemunas values, if monitoring data
+   supports it (forcing change).
+3. Raise the initial/background PO4 (IC 0.010 is low).
+4. *Not* lowering `KHS_DIP` — it adds no P, only draws PO4 lower.
 
 ---
 
