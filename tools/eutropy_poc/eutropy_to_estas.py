@@ -26,6 +26,7 @@ REPO = os.getcwd()
 TMPL = os.path.join(REPO, "INPUTS", "PELAGIC_INPUTS.txt")
 NET = os.path.join(REPO, "tools", "eutropy_poc", "net")
 OUT = os.path.join(REPO, "INPUTS_CL29")
+OUTPUT_FOLDER = "OUTPUTS_CL29"      # ESTAS pelagic output dir (relative to run CWD)
 NBOX = 29
 NSTATE = 36                 # ESTAS pelagic state vars (32 core + 4 allelopathy)
 
@@ -175,6 +176,9 @@ def main():
     if os.path.isdir(OUT):
         shutil.rmtree(OUT)
     os.makedirs(OUT)
+    # ESTAS does not create its output folder; make it so the pipeline runs
+    # end-to-end from a clean checkout (INPUT_CL29.txt points pelagic output here).
+    os.makedirs(os.path.join(REPO, OUTPUT_FOLDER), exist_ok=True)
     state_block = template_blocks()
 
     # ---- source data from net/ ----
@@ -482,7 +486,7 @@ def _write_input_txt(repo, tdays):
         fh.write("INPUTS_CL29/\n")
         fh.write("# PELAGIC MODEL INPUT FILE\n            PELAGIC_INPUTS.txt\n")
         fh.write("# PELAGIC MODEL OUTPUT FOLDER write the folder always with / in the end\n")
-        fh.write("OUTPUTS_CL29/\n")
+        fh.write(f"{OUTPUT_FOLDER}/\n")
         fh.write("# RESUSPENSION_OPTION\n          0\n")
         fh.write("# MODEL_SEDIMENTS\n          0\n")
         fh.write("# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n")
