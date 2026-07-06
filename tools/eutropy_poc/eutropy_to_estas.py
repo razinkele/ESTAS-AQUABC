@@ -51,6 +51,16 @@ CL29_PHYTO_REFUGE = {
 # CTMI temperature constants (*_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max):
 # warm-group T_max is lowered so each T_opt stays above its range midpoint (avoids
 # the CTMI denominator singularity that spikes LIM_TEMP to 1 at the cold cutoff).
+#
+# NB (see docs/CL29_Parameter_Validation.md): the diatom T_opt=10 / T_max=21 are
+# EFFECTIVE-NICHE CALIBRATION values, not physiology (cultured diatom optima are
+# ~15-25 C). They make the temperature term a proxy for spring-bloom phenology
+# because DISS_Si stays ~1.5 mg/L (>> KHS_DSi 0.013) -- Si never limits, so the
+# thermal cutoff is the load-bearing control that ends the spring bloom and hands
+# off to cyanobacteria. A test at T_opt=16 / T_max=28 (near-literature) confirmed
+# grazing still prevents a summer diatom takeover, but the summer cyano bloom
+# weakens and destabilises (worse fit); the low T_opt is kept as a deliberate
+# calibration tradeoff, not a physiological claim.
 # Other algae (OPA) get an early-summer optimum (T_opt 17), a competitive phosphorus
 # half-saturation (KHS_DIP_OPA), and reduced settling (see vels[] below) so they can
 # actually bloom in the clear-water phase between the spring diatoms (T_opt 10) and

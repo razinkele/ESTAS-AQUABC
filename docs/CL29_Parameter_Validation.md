@@ -103,6 +103,63 @@ competition.
 
 ---
 
+## Empirical follow-up (model runs, 2026-07-06)
+
+The recommendations above were tested against the running model (box 19, full 5-year
+2012–2017 hindcast, `ESTAS_HOLD_VOLUME=1`). Chl-a computed with the model's own C:Chl
+ratios (DIA/OPA 30, CYN/FIX_CYN/NOST 40).
+
+**Rec 4 — magnitude validation (baseline `T_opt=10 / T_max=21`):**
+
+| Metric (box 19, 5-yr mean) | Model | Observed (Bartoli et al. 2018) |
+|---|---|---|
+| Spring diatom Chl-a | 19.6 mg/m³ | 47 ± 14 → **undershoots ~2.4×** |
+| Summer cyano Chl-a | 64.6 mg/m³ | 96 ± 56 → within range, low side |
+| Annual total Chl-a | 74.1 mg/m³ | — |
+
+**Rec 3 — realized cyano growth:** despite inflated `KG` parameters (non-fix 2.4/d,
+N-fix 3.5/d), the model's *realized* peak net cyano growth is **0.77/d** (0.9-day
+doubling) — at the upper edge of the realistic 0.3–0.8/d range for bloom-forming
+cyanobacteria. The temperature/nutrient/light limitation terms largely mask the
+inflated maxima, so the biomass is not obtained by grossly unrealistic kinetics.
+The `KG` values remain physically ungrounded but are not, in practice, driving the
+result. *Concern mostly allayed.*
+
+**Rec 2 — mechanism-substitution test (`T_opt=16 / T_max=28`, near-literature):**
+
+| Metric (box 19, 5-yr mean) | Baseline (10/21) | Experiment (16/28) |
+|---|---|---|
+| Spring diatom Chl-a | 19.6 | **26.3** (closer to obs) |
+| Summer cyano Chl-a | 64.6 | 55.5 (worse) |
+| Year-3 summer cyano | 44.5 | 19.2 (near-collapse) |
+
+Two findings, both important:
+
+1. **`DISS_Si` never draws below ~1.4–1.7 mg/L** (≈ 100× the diatom `KHS_DSi` of
+   0.013) in *either* configuration. The lagoon is Si-replete (Nemunas is Si-rich),
+   so **Si-limitation cannot end the spring bloom** — the Rec 2 premise ("shift the
+   decline onto Si") is invalid for this system. The thermal cutoff is load-bearing.
+2. With the thermal cutoff removed (`T_max=28`), **diatoms did not run away in
+   summer** — grazing + P-competition kept the summer cyano-dominated. So the
+   `T_opt=10/T_max=21` fudge is *not strictly required* to preserve succession. But
+   raising `T_opt` toward literature trades a better spring fit for a **weaker, less
+   stable summer cyano bloom** (year 3 nearly collapses). Not a free win.
+
+**Revised conclusion.** The empirical test says **keep the calibrated parameters** and
+document the tradeoff rather than "fix" it: the low diatom `T_opt` buys a better
+summer-cyano fit and interannual stability at the cost of physiological honesty; a
+literature-realistic `T_opt` is feasible (grazing maintains succession) but fits worse.
+The parameters are now labelled in the converter (`CL29_WCONST_OVERRIDE` comment) as
+*effective-niche calibration*, not physiology.
+
+**Open calibration gap (not addressed here):** both configurations undershoot the
+observed spring diatom magnitude by roughly 2× (20–26 vs 47 mg/m³). Si is ruled out;
+the likely controls are light (turbid lagoon), spring PO4 supply, grazing pressure, or
+the seed/refuge level — a target for a future calibration pass, not a single-parameter
+fix.
+
+---
+
 ## References
 
 - Bartoli, M., Zilius, M., Bresciani, M., et al. (2018). Drivers of cyanobacterial blooms
