@@ -79,6 +79,22 @@ def _apply_wconst_overrides(path):
             raise SystemExit(f"WCONST override: '{name}' matched {n} times (expected 1)")
     with open(path, "w") as fh:
         fh.write(text)
+
+
+def _set_temperature_model_ctmi(path):
+    """CL29 opts into the CTMI temperature model: set TEMPERATURE_MODEL = 1 in the
+    copied PELAGIC_MODEL_OPTIONS.txt (append the option if the template lacks it)."""
+    with open(path) as fh:
+        lines = fh.readlines()
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("# TEMPERATURE_MODEL"):
+            lines[i + 1] = "            1\n"
+            break
+    else:
+        lines.append("# TEMPERATURE_MODEL (0=plateau, 1=CTMI)\n")
+        lines.append("            1\n")
+    with open(path, "w") as fh:
+        fh.writelines(lines)
 NBND = 5
 BND_TO_BOX = {1: 12, 2: 24, 3: 24, 4: 3, 5: 3}   # from Eutropy From_-N_To_j
 
@@ -220,6 +236,8 @@ def main():
     # model options: box-independent, copy from template
     shutil.copy(os.path.join(REPO, "INPUTS", "PELAGIC_MODEL_OPTIONS.txt"),
                 os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"))
+    # CL29 opts into CTMI (its temperature constants are recalibrated for it)
+    _set_temperature_model_ctmi(os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"))
     # output info: one row PER BOX (state-var / process-rate / mass-balance flags)
     with open(os.path.join(OUT, "PELAGIC_OUTPUT_INFORMATION_FILE.txt"), "w") as fh:
         fh.write("#  BOX_NO   STATE_VAR_OUT   PROCESS_RATE_OUT   MASS_BALANCE_OUT\n")
