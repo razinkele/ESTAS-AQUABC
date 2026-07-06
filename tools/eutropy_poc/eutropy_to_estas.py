@@ -38,9 +38,14 @@ NSTATE = 36                 # ESTAS pelagic state vars (32 core + 4 allelopathy)
 # These overrides give diatoms a cold CTMI optimum, a small initial seed, and a
 # continuous open-boundary refuge. Applied here (not in the shared INPUTS/ source)
 # so they stay scoped to the 29-box application and survive regeneration.
-DIA_IDX = 4                 # DIA_C is the 5th of the 32 core state vars (0-based)
-DIA_SEED = 0.002            # initial-condition diatom carbon (mg C/L)
-DIA_REFUGE = 0.02           # open-boundary diatom carbon (continuous reseeding)
+# Phytoplankton groups EUTROPY does not carry (raw net/ data has them at 0): give
+# each a small initial seed and a continuous open-boundary refuge so the pool cannot
+# reach the multiplicative absorbing-zero state. 0-based index into the 32 core state
+# vars -> (initial seed, boundary refuge), mg C/L.
+CL29_PHYTO_REFUGE = {
+    4:  (0.002, 0.02),      # DIA_C     - diatoms
+    18: (0.002, 0.02),      # FIX_CYN_C - N-fixing cyanobacteria
+}
 # CTMI constants: *_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max. Warm-group
 # T_max is lowered so each T_opt stays above its range midpoint (avoids the CTMI
 # denominator singularity that otherwise spikes LIM_TEMP to 1 at the cold cutoff).
@@ -149,8 +154,9 @@ def main():
     # ---- source data from net/ ----
     _, ic_rows = read_csv_matrix(os.path.join(NET, "initial_conditions.csv"))
     ic = {int(r[0]): [float(x) for x in r[1:1 + 32]] for r in ic_rows}
-    for vec in ic.values():                     # CL29: seed diatoms (EUTROPY has none)
-        vec[DIA_IDX] = max(vec[DIA_IDX], DIA_SEED)
+    for vec in ic.values():                     # CL29: seed groups EUTROPY lacks
+        for idx, (seed, _refuge) in CL29_PHYTO_REFUGE.items():
+            vec[idx] = max(vec[idx], seed)
     _, depth_rows = read_csv_matrix(os.path.join(NET, "depths.csv"))
     depth = {int(r[0]): float(r[1]) for r in depth_rows}
     _, link_rows = read_csv_matrix(os.path.join(NET, "links.csv"))
@@ -183,7 +189,8 @@ def main():
         cols = []
         for di in range(len(bdays)):
             vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
-            vec32[DIA_IDX] = max(vec32[DIA_IDX], DIA_REFUGE)  # CL29 diatom refuge
+            for idx, (_seed, refuge) in CL29_PHYTO_REFUGE.items():  # CL29 phyto refuge
+                vec32[idx] = max(vec32[idx], refuge)
             vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
             vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
