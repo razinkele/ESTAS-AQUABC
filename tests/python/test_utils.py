@@ -4,7 +4,6 @@ Covers: count_file_lines_fast, read_pelagic_binary, read_pelagic_text,
         validate_constants_file
 """
 
-import struct
 
 import numpy as np
 import pandas as pd
@@ -151,7 +150,7 @@ class TestReadPelagicText:
         """An empty text file should raise (pd.read_csv on empty file)."""
         f = tmp_path / "empty.out"
         f.write_text("")
-        with pytest.raises(Exception):
+        with pytest.raises(pd.errors.EmptyDataError):
             read_pelagic_text(str(f))
 
     def test_strips_column_whitespace(self, tmp_path):
