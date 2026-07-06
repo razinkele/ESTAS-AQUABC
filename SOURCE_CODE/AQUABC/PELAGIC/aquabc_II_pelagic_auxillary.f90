@@ -74,22 +74,33 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
         T_opt = Upper_TEMP
         T_max = KAPPA_OVER_OPT_TEMP
 
+        ! CTMI validity: require T_min < T_opt < T_max AND T_opt strictly above the
+        ! range midpoint (2*T_opt > T_min+T_max). Otherwise the denominator vanishes
+        ! inside [T_min,T_max] and LIM_TEMP is silently corrupted -- the failure mode
+        ! behind the CL29 diatom bloom collapse. Fail loudly instead of silently.
+        if (T_opt <= T_min .or. T_opt >= T_max .or. &
+            2.0D0 * T_opt <= T_min + T_max) then
+            write(6,*) 'GROWTH_AT_TEMP: invalid CTMI params T_min/T_opt/T_max =', &
+                       T_min, T_opt, T_max
+            stop 'GROWTH_AT_TEMP: CTMI needs T_min < T_opt < T_max and 2*T_opt > T_min+T_max'
+        end if
+
         ! CTMI denominator (computed for all T, guarded below)
         denom = (T_opt - T_min) * ((T_opt - T_min) * (TEMP - T_opt) - &
                 (T_opt - T_max) * (T_opt + T_min - 2.0D0 * TEMP))
 
         where (TEMP <= T_min .or. TEMP >= T_max .or. abs(denom) < 1.0D-20)
             LIM_TEMP_GROWTH = 0.0D0
-        elsewhere
+        else where
             LIM_TEMP_GROWTH = (TEMP - T_max) * (TEMP - T_min)**2 / denom
         end where
     else
         ! Original piecewise-exponential plateau model
         where (TEMP <= Lower_TEMP)
             LIM_TEMP_GROWTH = safe_exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * abs(Lower_TEMP - TEMP))
-        elsewhere (TEMP < Upper_TEMP)
+        else where (TEMP < Upper_TEMP)
             LIM_TEMP_GROWTH = 1.0D0
-        elsewhere
+        else where
             LIM_TEMP_GROWTH = safe_exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * abs(Upper_TEMP - TEMP))
         end where
     end if
