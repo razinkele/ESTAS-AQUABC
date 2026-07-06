@@ -42,7 +42,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install pytest playwright
+          pip install pytest playwright pytest-playwright
           pip install -r shiny_app/requirements.txt shinyswatch shinychat
 
       - name: Install Playwright browsers
