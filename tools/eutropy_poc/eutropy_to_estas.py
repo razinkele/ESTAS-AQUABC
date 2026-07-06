@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import csv
 import os
+import re
 import shutil
 
 REPO = os.getcwd()
@@ -27,6 +28,57 @@ NET = os.path.join(REPO, "tools", "eutropy_poc", "net")
 OUT = os.path.join(REPO, "INPUTS_CL29")
 NBOX = 29
 NSTATE = 36                 # ESTAS pelagic state vars (32 core + 4 allelopathy)
+
+# ---- CL29 diatom-presence overrides (single source of truth) --------------------
+# EUTROPY carries no diatoms, so the raw net/ data has DIA_C = 0 everywhere, and the
+# 25-box WCONST temperature constants were calibrated for the OLD plateau temperature
+# model. Under CTMI (aquabc GROWTH_AT_TEMP, USE_CTMI=.true.) those un-recalibrated
+# constants make diatoms a 24 C warm-water species that cannot grow in their cold
+# spring window, so the pool decays to the absorbing-zero state and never blooms.
+# These overrides give diatoms a cold CTMI optimum, a small initial seed, and a
+# continuous open-boundary refuge. Applied here (not in the shared INPUTS/ source)
+# so they stay scoped to the 29-box application and survive regeneration.
+# Phytoplankton groups EUTROPY does not carry (raw net/ data has them at 0): give
+# each a small initial seed and a continuous open-boundary refuge so the pool cannot
+# reach the multiplicative absorbing-zero state. 0-based index into the 32 core state
+# vars -> (initial seed, boundary refuge), mg C/L.
+CL29_PHYTO_REFUGE = {
+    4:  (0.002, 0.02),      # DIA_C     - diatoms
+    18: (0.002, 0.02),      # FIX_CYN_C - N-fixing cyanobacteria
+}
+# CL29 overrides applied to the copied WCONST file, matched by constant name.
+# CTMI temperature constants (*_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max):
+# warm-group T_max is lowered so each T_opt stays above its range midpoint (avoids
+# the CTMI denominator singularity that spikes LIM_TEMP to 1 at the cold cutoff).
+# Other algae (OPA) get an early-summer optimum (T_opt 17), a competitive phosphorus
+# half-saturation (KHS_DIP_OPA), and reduced settling (see vels[] below) so they can
+# actually bloom in the clear-water phase between the spring diatoms (T_opt 10) and
+# summer cyanobacteria (T_opt 26). The thermal window alone leaves OPA phosphate-
+# starved (diatoms with KHS_DIP 0.005 draw PO4 below OPA's default 0.013 half-sat),
+# and even with P affinity a sharp window + heavy settling caps accumulation; the
+# combination (window + KHS_DIP + low settling) lets OPA form a real shoulder bloom.
+CL29_WCONST_OVERRIDE = {
+    "DIA_OPT_TEMP_LR": -2.0, "DIA_OPT_TEMP_UR": 10.0, "KAPPA_DIA_OVER_OPT_TEMP": 21.0,
+    "KAPPA_CYN_OVER_OPT_TEMP": 34.0, "KAPPA_FIX_CYN_OVER_OPT_TEMP": 32.0,
+    "OPA_OPT_TEMP_LR": 10.0, "OPA_OPT_TEMP_UR": 17.0, "KAPPA_OPA_OVER_OPT_TEMP": 23.0,
+    "KHS_DIP_OPA": 0.006,
+    "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
+}
+
+
+def _apply_wconst_overrides(path):
+    """Rewrite the CL29 model constants from CL29_WCONST_OVERRIDE into a copied WCONST
+    file. Matches each constant by name and replaces only its numeric value; errors
+    out if any name is missing or ambiguous."""
+    with open(path) as fh:
+        text = fh.read()
+    for name, val in CL29_WCONST_OVERRIDE.items():
+        text, n = re.subn(r"(\b" + re.escape(name) + r"\s+)-?\d+(?:\.\d+)?",
+                          lambda m: m.group(1) + str(val), text)
+        if n != 1:
+            raise SystemExit(f"WCONST override: '{name}' matched {n} times (expected 1)")
+    with open(path, "w") as fh:
+        fh.write(text)
 NBND = 5
 BND_TO_BOX = {1: 12, 2: 24, 3: 24, 4: 3, 5: 3}   # from Eutropy From_-N_To_j
 
@@ -112,6 +164,9 @@ def main():
     # ---- source data from net/ ----
     _, ic_rows = read_csv_matrix(os.path.join(NET, "initial_conditions.csv"))
     ic = {int(r[0]): [float(x) for x in r[1:1 + 32]] for r in ic_rows}
+    for vec in ic.values():                     # CL29: seed groups EUTROPY lacks
+        for idx, (seed, _refuge) in CL29_PHYTO_REFUGE.items():
+            vec[idx] = max(vec[idx], seed)
     _, depth_rows = read_csv_matrix(os.path.join(NET, "depths.csv"))
     depth = {int(r[0]): float(r[1]) for r in depth_rows}
     _, link_rows = read_csv_matrix(os.path.join(NET, "links.csv"))
@@ -144,6 +199,8 @@ def main():
         cols = []
         for di in range(len(bdays)):
             vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
+            for idx, (_seed, refuge) in CL29_PHYTO_REFUGE.items():  # CL29 phyto refuge
+                vec32[idx] = max(vec32[idx], refuge)
             vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
             vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
@@ -172,6 +229,8 @@ def main():
     # constants files (box-independent): copy main + extra
     for f in ("WCONST_04.txt", "EXTRA_WCONST.txt"):
         shutil.copy(os.path.join(REPO, "INPUTS", f), os.path.join(OUT, f))
+    # CL29: apply the diatom/OPA temperature + phosphorus-affinity overrides to the copy
+    _apply_wconst_overrides(os.path.join(OUT, "WCONST_04.txt"))
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
@@ -380,7 +439,9 @@ def _write_master(out, state_block, links, depth, area):
         fh.writelines(L)
 
     # settling velocity TS files (constant velocities, m/day)
-    vels = [0.5, 0.1, 0.2, 1.0, 0.5, 0.3]
+    # #3 is OPA_C only: reduced 0.2 -> 0.05 (motile green algae) so OPA is not sunk
+    # out of its narrow clear-water-phase window before it can accumulate.
+    vels = [0.5, 0.1, 0.05, 1.0, 0.5, 0.3]
     for i, v in enumerate(vels, start=1):
         write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
                  f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
