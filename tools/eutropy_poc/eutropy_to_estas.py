@@ -46,27 +46,37 @@ CL29_PHYTO_REFUGE = {
     4:  (0.002, 0.02),      # DIA_C     - diatoms
     18: (0.002, 0.02),      # FIX_CYN_C - N-fixing cyanobacteria
 }
-# CTMI constants: *_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max. Warm-group
-# T_max is lowered so each T_opt stays above its range midpoint (avoids the CTMI
-# denominator singularity that otherwise spikes LIM_TEMP to 1 at the cold cutoff).
-CL29_TEMP_RECAL = {
+# CL29 overrides applied to the copied WCONST file, matched by constant name.
+# CTMI temperature constants (*_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max):
+# warm-group T_max is lowered so each T_opt stays above its range midpoint (avoids
+# the CTMI denominator singularity that spikes LIM_TEMP to 1 at the cold cutoff).
+# Other algae (OPA) get an early-summer optimum (T_opt 17), a competitive phosphorus
+# half-saturation (KHS_DIP_OPA), and reduced settling (see vels[] below) so they can
+# actually bloom in the clear-water phase between the spring diatoms (T_opt 10) and
+# summer cyanobacteria (T_opt 26). The thermal window alone leaves OPA phosphate-
+# starved (diatoms with KHS_DIP 0.005 draw PO4 below OPA's default 0.013 half-sat),
+# and even with P affinity a sharp window + heavy settling caps accumulation; the
+# combination (window + KHS_DIP + low settling) lets OPA form a real shoulder bloom.
+CL29_WCONST_OVERRIDE = {
     "DIA_OPT_TEMP_LR": -2.0, "DIA_OPT_TEMP_UR": 10.0, "KAPPA_DIA_OVER_OPT_TEMP": 21.0,
     "KAPPA_CYN_OVER_OPT_TEMP": 34.0, "KAPPA_FIX_CYN_OVER_OPT_TEMP": 32.0,
-    "KAPPA_OPA_OVER_OPT_TEMP": 30.0, "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
+    "OPA_OPT_TEMP_LR": 10.0, "OPA_OPT_TEMP_UR": 17.0, "KAPPA_OPA_OVER_OPT_TEMP": 23.0,
+    "KHS_DIP_OPA": 0.006,
+    "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
 }
 
 
-def _recalibrate_temp_constants(path):
-    """Rewrite the phytoplankton CTMI temperature constants in a copied WCONST file
-    with the CL29 values in CL29_TEMP_RECAL. Matches each constant by name and
-    replaces only its numeric value; errors out if any name is missing or ambiguous."""
+def _apply_wconst_overrides(path):
+    """Rewrite the CL29 model constants from CL29_WCONST_OVERRIDE into a copied WCONST
+    file. Matches each constant by name and replaces only its numeric value; errors
+    out if any name is missing or ambiguous."""
     with open(path) as fh:
         text = fh.read()
-    for name, val in CL29_TEMP_RECAL.items():
+    for name, val in CL29_WCONST_OVERRIDE.items():
         text, n = re.subn(r"(\b" + re.escape(name) + r"\s+)-?\d+(?:\.\d+)?",
                           lambda m: m.group(1) + str(val), text)
         if n != 1:
-            raise SystemExit(f"WCONST recal: '{name}' matched {n} times (expected 1)")
+            raise SystemExit(f"WCONST override: '{name}' matched {n} times (expected 1)")
     with open(path, "w") as fh:
         fh.write(text)
 NBND = 5
@@ -219,8 +229,8 @@ def main():
     # constants files (box-independent): copy main + extra
     for f in ("WCONST_04.txt", "EXTRA_WCONST.txt"):
         shutil.copy(os.path.join(REPO, "INPUTS", f), os.path.join(OUT, f))
-    # CL29: apply the cold-diatom CTMI temperature recalibration to the copy
-    _recalibrate_temp_constants(os.path.join(OUT, "WCONST_04.txt"))
+    # CL29: apply the diatom/OPA temperature + phosphorus-affinity overrides to the copy
+    _apply_wconst_overrides(os.path.join(OUT, "WCONST_04.txt"))
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
@@ -429,7 +439,9 @@ def _write_master(out, state_block, links, depth, area):
         fh.writelines(L)
 
     # settling velocity TS files (constant velocities, m/day)
-    vels = [0.5, 0.1, 0.2, 1.0, 0.5, 0.3]
+    # #3 is OPA_C only: reduced 0.2 -> 0.05 (motile green algae) so OPA is not sunk
+    # out of its narrow clear-water-phase window before it can accumulate.
+    vels = [0.5, 0.1, 0.05, 1.0, 0.5, 0.3]
     for i, v in enumerate(vels, start=1):
         write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
                  f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
