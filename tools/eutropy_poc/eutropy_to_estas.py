@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import csv
 import os
+import re
 import shutil
 
 REPO = os.getcwd()
@@ -27,6 +28,42 @@ NET = os.path.join(REPO, "tools", "eutropy_poc", "net")
 OUT = os.path.join(REPO, "INPUTS_CL29")
 NBOX = 29
 NSTATE = 36                 # ESTAS pelagic state vars (32 core + 4 allelopathy)
+
+# ---- CL29 diatom-presence overrides (single source of truth) --------------------
+# EUTROPY carries no diatoms, so the raw net/ data has DIA_C = 0 everywhere, and the
+# 25-box WCONST temperature constants were calibrated for the OLD plateau temperature
+# model. Under CTMI (aquabc GROWTH_AT_TEMP, USE_CTMI=.true.) those un-recalibrated
+# constants make diatoms a 24 C warm-water species that cannot grow in their cold
+# spring window, so the pool decays to the absorbing-zero state and never blooms.
+# These overrides give diatoms a cold CTMI optimum, a small initial seed, and a
+# continuous open-boundary refuge. Applied here (not in the shared INPUTS/ source)
+# so they stay scoped to the 29-box application and survive regeneration.
+DIA_IDX = 4                 # DIA_C is the 5th of the 32 core state vars (0-based)
+DIA_SEED = 0.002            # initial-condition diatom carbon (mg C/L)
+DIA_REFUGE = 0.02           # open-boundary diatom carbon (continuous reseeding)
+# CTMI constants: *_LR -> T_min, *_UR -> T_opt, KAPPA_*_OVER -> T_max. Warm-group
+# T_max is lowered so each T_opt stays above its range midpoint (avoids the CTMI
+# denominator singularity that otherwise spikes LIM_TEMP to 1 at the cold cutoff).
+CL29_TEMP_RECAL = {
+    "DIA_OPT_TEMP_LR": -2.0, "DIA_OPT_TEMP_UR": 10.0, "KAPPA_DIA_OVER_OPT_TEMP": 21.0,
+    "KAPPA_CYN_OVER_OPT_TEMP": 34.0, "KAPPA_FIX_CYN_OVER_OPT_TEMP": 32.0,
+    "KAPPA_OPA_OVER_OPT_TEMP": 30.0, "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
+}
+
+
+def _recalibrate_temp_constants(path):
+    """Rewrite the phytoplankton CTMI temperature constants in a copied WCONST file
+    with the CL29 values in CL29_TEMP_RECAL. Matches each constant by name and
+    replaces only its numeric value; errors out if any name is missing or ambiguous."""
+    with open(path) as fh:
+        text = fh.read()
+    for name, val in CL29_TEMP_RECAL.items():
+        text, n = re.subn(r"(\b" + re.escape(name) + r"\s+)-?\d+(?:\.\d+)?",
+                          lambda m: m.group(1) + str(val), text)
+        if n != 1:
+            raise SystemExit(f"WCONST recal: '{name}' matched {n} times (expected 1)")
+    with open(path, "w") as fh:
+        fh.write(text)
 NBND = 5
 BND_TO_BOX = {1: 12, 2: 24, 3: 24, 4: 3, 5: 3}   # from Eutropy From_-N_To_j
 
@@ -112,6 +149,8 @@ def main():
     # ---- source data from net/ ----
     _, ic_rows = read_csv_matrix(os.path.join(NET, "initial_conditions.csv"))
     ic = {int(r[0]): [float(x) for x in r[1:1 + 32]] for r in ic_rows}
+    for vec in ic.values():                     # CL29: seed diatoms (EUTROPY has none)
+        vec[DIA_IDX] = max(vec[DIA_IDX], DIA_SEED)
     _, depth_rows = read_csv_matrix(os.path.join(NET, "depths.csv"))
     depth = {int(r[0]): float(r[1]) for r in depth_rows}
     _, link_rows = read_csv_matrix(os.path.join(NET, "links.csv"))
@@ -144,6 +183,7 @@ def main():
         cols = []
         for di in range(len(bdays)):
             vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
+            vec32[DIA_IDX] = max(vec32[DIA_IDX], DIA_REFUGE)  # CL29 diatom refuge
             vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
             vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
@@ -172,6 +212,8 @@ def main():
     # constants files (box-independent): copy main + extra
     for f in ("WCONST_04.txt", "EXTRA_WCONST.txt"):
         shutil.copy(os.path.join(REPO, "INPUTS", f), os.path.join(OUT, f))
+    # CL29: apply the cold-diatom CTMI temperature recalibration to the copy
+    _recalibrate_temp_constants(os.path.join(OUT, "WCONST_04.txt"))
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)

@@ -28,23 +28,26 @@
 !*                                           *'
 !*********************************************'
 
-!Subroutine to calculate temperature limitation factor for growth
-! Uses the Cardinal Temperature Model with Inflection (CTMI)
-! (Rosso et al. 1993, J. Theor. Biol. 162:447-463)
+!Subroutine to calculate temperature limitation factor for growth.
+! Two models are available behind the SAME call signature; select with USE_CTMI.
 !
-! phi(T) = (T-T_max)*(T-T_min)^2 / ((T_opt-T_min)*D)
-! where D = (T_opt-T_min)*(T-T_opt) - (T_opt-T_max)*(T_opt+T_min-2*T)
-! phi = 0 outside [T_min, T_max], peaks at 1.0 when T = T_opt
+! PLATEAU (default, USE_CTMI=.false.) -- original AQUABC piecewise-exponential:
+!   Lower_TEMP / Upper_TEMP = lower / upper edge of the optimal plateau.
+!   LIM = 1 for Lower < T < Upper; exp(-KAPPA*|edge - T|) outside the plateau
+!   (so with KAPPA_UNDER=0, LIM = 1 for all T <= Lower). The per-species
+!   temperature constants in the model were calibrated for THIS model.
 !
-! Parameter reinterpretation (signature unchanged for call-site compatibility):
-!   Lower_TEMP          -> T_min  (minimum cardinal temperature, zero growth)
-!   Upper_TEMP          -> T_opt  (optimal temperature, maximum growth)
-!   KAPPA_OVER_OPT_TEMP -> T_max  (maximum cardinal temperature, zero growth)
-!   K_AT_OPT_TEMP       -> unused
-!   KAPPA_UNDER_OPT_TEMP-> unused
+! CTMI (USE_CTMI=.true.) -- Cardinal Temperature Model with Inflection
+! (Rosso et al. 1993, J. Theor. Biol. 162:447-463). Reinterprets the SAME
+! constants as Lower_TEMP->T_min, Upper_TEMP->T_opt, KAPPA_OVER_OPT_TEMP->T_max.
+!   WARNING: CTMI needs the per-species constants RE-CALIBRATED for these
+!   semantics. Using the plateau-era constants turns the cold-adapted groups
+!   (notably diatoms, whose UR=24 becomes T_opt=24) into warm-water species that
+!   cannot grow in their natural cold-season window -- see commit cc7c76e.
 subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OPT_TEMP, &
                           KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn)
 
+    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     implicit none
 
     integer, intent(in) :: nkn
@@ -57,23 +60,39 @@ subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OP
     double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
     double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
 
-    ! Local: CTMI aliases for clarity
+    ! Select the temperature-response model. CTMI is active with per-species
+    ! constants re-calibrated for CTMI semantics (cold diatom optimum; each
+    ! group's T_opt kept above its range midpoint to avoid the CTMI singularity).
+    logical, parameter :: USE_CTMI = .true.
+
+    ! Local: CTMI aliases
     double precision :: T_min, T_opt, T_max
     double precision :: denom(nkn)
 
-    T_min = Lower_TEMP
-    T_opt = Upper_TEMP
-    T_max = KAPPA_OVER_OPT_TEMP
+    if (USE_CTMI) then
+        T_min = Lower_TEMP
+        T_opt = Upper_TEMP
+        T_max = KAPPA_OVER_OPT_TEMP
 
-    ! CTMI denominator (computed for all T, guarded later)
-    denom = (T_opt - T_min) * ((T_opt - T_min) * (TEMP - T_opt) - &
-            (T_opt - T_max) * (T_opt + T_min - 2.0D0 * TEMP))
+        ! CTMI denominator (computed for all T, guarded below)
+        denom = (T_opt - T_min) * ((T_opt - T_min) * (TEMP - T_opt) - &
+                (T_opt - T_max) * (T_opt + T_min - 2.0D0 * TEMP))
 
-    where (TEMP <= T_min .or. TEMP >= T_max .or. abs(denom) < 1.0D-20)
-        LIM_TEMP_GROWTH = 0.0D0
-    elsewhere
-        LIM_TEMP_GROWTH = (TEMP - T_max) * (TEMP - T_min)**2 / denom
-    end where
+        where (TEMP <= T_min .or. TEMP >= T_max .or. abs(denom) < 1.0D-20)
+            LIM_TEMP_GROWTH = 0.0D0
+        elsewhere
+            LIM_TEMP_GROWTH = (TEMP - T_max) * (TEMP - T_min)**2 / denom
+        end where
+    else
+        ! Original piecewise-exponential plateau model
+        where (TEMP <= Lower_TEMP)
+            LIM_TEMP_GROWTH = safe_exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * abs(Lower_TEMP - TEMP))
+        elsewhere (TEMP < Upper_TEMP)
+            LIM_TEMP_GROWTH = 1.0D0
+        elsewhere
+            LIM_TEMP_GROWTH = safe_exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * abs(Upper_TEMP - TEMP))
+        end where
+    end if
 
     ! Clamp to [0, 1] for numerical safety
     LIM_TEMP_GROWTH = max(0.0D0, min(1.0D0, LIM_TEMP_GROWTH))
