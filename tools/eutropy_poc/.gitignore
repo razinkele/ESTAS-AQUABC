@@ -4,11 +4,13 @@ run_box19
 run_network
 box19/OUTPUT_aquabc.csv
 box19_cyn/OUTPUT_aquabc.csv
-# Network: keep topology/geometry/IC + plot; ignore large regenerable data + output
+# Network: keep topology/geometry/IC + plots + the converter's vendored inputs.
+# flux.csv / forcing_*.csv / boundary_daily.csv can't be regenerated from a fresh
+# clone -- the upstream ~/eutropy/input lives in an external repo -- so every file
+# eutropy_to_estas.py reads is committed here. Still ignore the intermediates and
+# output the converter never reads (volumes.csv, OUTPUT_cyn_C.csv, logs).
 net/OUTPUT_cyn_C.csv
-net/flux.csv
 net/volumes.csv
-net/forcing_*.csv
 net/run.log
 net/run.time
 net/net_calibration.log
