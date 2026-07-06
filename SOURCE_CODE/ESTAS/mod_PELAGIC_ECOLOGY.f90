@@ -1072,10 +1072,12 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     use GLOBAL
     use ALLELOPATHY
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP
 
     implicit none
 
     integer, intent(in) :: IN_FILE
+    integer :: TEMP_MODEL_OPT
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1135,6 +1137,21 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
         write(*,*) 'AQUABC state variables.'
     else
         write(*,*) 'Allelopathy will not be considered.'
+    end if
+
+    ! Temperature-response model (0 = plateau, 1 = CTMI). Read gracefully so option
+    ! files without this line default to plateau. This sets the AQUABC-side flag that
+    ! GROWTH_AT_TEMP reads. The trailing CYN_ALLELOPATHY_FILE_NAME lines (if present)
+    ! are consumed harmlessly here; the file is closed right after this routine.
+    USE_CTMI_TEMP = .false.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
+    USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
+900 continue
+    if (USE_CTMI_TEMP) then
+        write(*,*) 'Temperature model: CTMI (Cardinal Temperature Model).'
+    else
+        write(*,*) 'Temperature model: plateau (piecewise, default).'
     end if
 
 end subroutine READ_PELAGIC_MODEL_OPTIONS
