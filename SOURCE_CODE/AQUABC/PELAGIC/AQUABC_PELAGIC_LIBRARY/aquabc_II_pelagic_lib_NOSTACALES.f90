@@ -196,12 +196,6 @@ subroutine NOSTOCALES &
 
         EUPHOTIC_DEPTH(:) = 4.61D0 / max(K_E(:), 1.0D-20)
 
-        write(6,*) 'NOST CALL: I_A=', I_A(1:min(8,nkn))
-        write(6,*) 'NOST CALL: CHLA=', CHLA(1:min(8,nkn))
-        write(6,*) 'NOST CALL: KG_NOST=', KG_NOST_VEG_HET(1:min(8,nkn))
-        write(6,*) 'NOST CALL: NOST_DEPTH=', NOST_VEG_HET_DEPTH(1:min(8,nkn))
-        write(6,*) 'NOST CALL: K_E=', K_E(1:min(8,nkn))
-
         ! Introduced by Petras 2019-08-10. The depth in which 1% of ligt is reached
         ! The same for fixers. This fix is valid only for 2d. fixme
         ! Nothing is done to increase selfshading. Concentration is
