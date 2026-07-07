@@ -182,6 +182,16 @@ genuine secondary co-limitation (why the T_opt=16 test nudged spring up).
 3. Raise the initial/background PO4 (IC 0.010 is low).
 4. *Not* lowering `KHS_DIP` — it adds no P, only draws PO4 lower.
 
+**Confirmation test (2026-07-07).** Raising IC PO4 0.010→0.05 and river PO4 ×2
+(→ ~0.058 mg/L, within the Nemunas range) lifted box-19 spring diatom Chl-a
+19.6→29.0 and the domain max 24.6→42.7 mg/m³ (1 box now reaches the observed lower
+bound), with summer cyano rising only 65→70 (no overshoot, succession intact).
+Diagnostically, `LIM_P` stayed pinned at 0.29 while biomass rose ~50% — the textbook
+signature of resource limitation (adding the limiting nutrient raises standing crop,
+not the limitation ratio). This confirms P-supply as the ceiling. Box 19 still short
+of 47, so full closure needs a larger P input than ×2 or the benthic recycling source
+(option 1). The test edits were reverted; no parameter change committed.
+
 ---
 
 ## References
