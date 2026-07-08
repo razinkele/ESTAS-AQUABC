@@ -70,3 +70,24 @@ class TestWriteSedimentInputs:
         assert len(alk) == 7 and all(v == 3.1 for v in alk)
         # Control row (SED_NH4N) must be left untouched.
         assert out[i_nh4] == orig[i_nh4]
+
+
+class TestWriteInputTxt:
+    def _write(self, tmp_path, enable):
+        conv._write_input_txt(str(tmp_path), [0, 1826], enable_sediments=enable)
+        return (tmp_path / "INPUT_CL29.txt").read_text()
+
+    def test_enabled_uses_layout_2(self, tmp_path):
+        t = self._write(tmp_path, True)
+        assert "# MODEL_SEDIMENTS\n          2\n" in t
+        assert "# BOTTOM SEDIMENT MODEL INPUT FILE\nBOTTOM_SEDIMENT_MODEL_INPUT.txt\n" in t
+        assert "NUM_PRESCRIBED_SEDIMENT_FLUX_SETS" not in t   # must be absent under ==2
+        assert f"{240:15d}\n" in t                            # PRINT_INTERVAL 240
+
+    def test_disabled_matches_baseline(self, tmp_path):
+        t = self._write(tmp_path, False)
+        assert "# MODEL_SEDIMENTS\n          0\n" in t
+        assert "# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n" in t
+        assert "# SEDIMENT MODEL INPUT FILE\n" in t
+        assert f"{10:15d}\n" in t                             # PRINT_INTERVAL 10
+        assert "MODEL_SEDIMENTS\n          2" not in t

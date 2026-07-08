@@ -278,7 +278,8 @@ def main():
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
-    _write_input_txt(REPO, tdays)
+    _write_sediment_inputs(OUT, CL29_ENABLE_SEDIMENTS)
+    _write_input_txt(REPO, tdays, CL29_ENABLE_SEDIMENTS)
 
     print(f"[estas] wrote 29-box INPUTS to {OUT}/ "
           f"({NBOX} bathymetries, {len(links)} links, {NBND} boundaries)")
@@ -549,7 +550,7 @@ def _write_sediment_inputs(out, enable_sediments):
         fh.writelines(lines)
 
 
-def _write_input_txt(repo, tdays):
+def _write_input_txt(repo, tdays, enable_sediments=False):
     with open(os.path.join(repo, "INPUT_CL29.txt"), "w") as fh:
         fh.write("# DESCRIPTION Curonian Lagoon 29-box EUTROPY-derived\n")
         for i in range(2, 6):
@@ -559,16 +560,21 @@ def _write_input_txt(repo, tdays):
         fh.write(f"# SIMULATION_END\n{float(tdays[-1]):15.1f}\n")
         fh.write("# NUM_REPEATS\n              1\n")
         fh.write("# TIME_STEPS_PER_DAY\n            240\n")
-        fh.write("# PRINT_INTERVAL IN TIME STEPS\n             10\n")
+        fh.write(f"# PRINT_INTERVAL IN TIME STEPS\n{240 if enable_sediments else 10:15d}\n")
         fh.write("# PELAGIC MODEL INPUT FOLDER write the folder always with / in the end\n")
         fh.write("INPUTS_CL29/\n")
         fh.write("# PELAGIC MODEL INPUT FILE\n            PELAGIC_INPUTS.txt\n")
         fh.write("# PELAGIC MODEL OUTPUT FOLDER write the folder always with / in the end\n")
         fh.write(f"{OUTPUT_FOLDER}/\n")
         fh.write("# RESUSPENSION_OPTION\n          0\n")
-        fh.write("# MODEL_SEDIMENTS\n          0\n")
-        fh.write("# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n")
-        fh.write("# SEDIMENT MODEL INPUT FILE\n")
+        if enable_sediments:
+            fh.write("# MODEL_SEDIMENTS\n          2\n")
+            fh.write("# BOTTOM SEDIMENT MODEL INPUT FILE\n")
+            fh.write("BOTTOM_SEDIMENT_MODEL_INPUT.txt\n")
+        else:
+            fh.write("# MODEL_SEDIMENTS\n          0\n")
+            fh.write("# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n")
+            fh.write("# SEDIMENT MODEL INPUT FILE\n")
 
 
 if __name__ == "__main__":
