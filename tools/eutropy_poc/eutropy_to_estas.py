@@ -529,7 +529,10 @@ def _sed_ic_block_bounds(lines):
 
 
 def _override_sed_carbonate(lines, inorg_c, tot_alk, nlayers=7):
-    """Overwrite INORG_C (var 13) and TOT_ALK (var 14) IC rows with nlayers copies."""
+    """Overwrite INORG_C (var 13) and TOT_ALK (var 14) IC rows with nlayers copies.
+    Off by default (CL29_SED_CARBONATE_IC is None -- Phase 1 confirmed the template ICs
+    converge); this path is UNIT-TESTED ONLY, so do a short end-to-end run before trusting
+    it if ever enabled. Writes space-separated floats (list-directed reader parses them)."""
     start, _ = _sed_ic_block_bounds(lines)
     eol = "\r\n" if lines[start].endswith("\r\n") else "\n"
     def row(val):
@@ -547,6 +550,8 @@ def _override_sed_geometry(lines, depths, burial):
             if header_test(ln):
                 j, n = i + 1, 0
                 while j < len(lines) and n < len(values):
+                    if lines[j].lstrip().startswith("#"):
+                        break   # next section reached early -> errors below (no bleed)
                     try:
                         float(lines[j].split("!")[0].strip())
                     except ValueError:
@@ -579,7 +584,10 @@ def _write_sediment_inputs(out, enable_sediments):
     with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
               newline="") as fh:
         lines = fh.readlines()                       # newline="" preserves CRLF
-    for i, ln in enumerate(lines):                   # force ADVANCED REDOX -> 0
+    # Force sediment ADVANCED REDOX -> 0 to match CL29 pelagic redox (PELAGIC_MODEL_
+    # OPTIONS line 4 = 0). A pelagic/sediment mismatch only warns (not stops), so if the
+    # pelagic option ever changes to 1 this hardcoded 0 must change with it.
+    for i, ln in enumerate(lines):
         if ln.lstrip().startswith("# ADVANCED REDOX SIMULATION"):
             lines[i + 1] = _replace_leading_number(lines[i + 1], 0)
             break
