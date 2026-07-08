@@ -87,15 +87,28 @@ CL29_ENABLE_SEDIMENTS = False
 # magnitude this codebase's CO2SYS empirically needs (the pelagic uses 3.0/3.1). The
 # two readings conflict; the run decides. See spec section 5.
 CL29_SED_CARBONATE_IC = None
+# CL29 sediment STABILITY calibration (Phase 1). The template sediment config is
+# numerically unstable for CL29's diatom-driven PART_Si deposition: particulate
+# silica (SED_PSi) accumulates unbounded in the thin 5 mm surface layer and the
+# solver trips ~day 48. Rebalanced so deposition/dissolution/burial balance at a
+# bounded, plausible SED_PSi (~1350) over the full 5-yr run. These are STABILITY
+# values, NOT yet calibrated to measured Curonian Si fluxes (that is Phase 2).
+# NB: the sediment path is NOT OpenMP-safe -- build & run SERIAL (no OPENMP=1).
+CL29_SED_DEPTHS = [0.05, 0.05, 0.05, 0.05, 0.05, 0.07, 0.10]  # m; thicker surface layers
+CL29_SED_BURIAL = 0.000274        # m/day; 10x template -> spreads deposited Si to depth
+CL29_SED_CONST_OVERRIDE = {       # W_SED_CONST constants, matched by name
+    "K_OXIC_DISS_PSi":   0.1,     # 20x template: faster particulate-Si dissolution
+    "K_ANOXIC_DISS_PSi": 0.02,    # 20x template
+}
 
 
-def _apply_wconst_overrides(path):
-    """Rewrite the CL29 model constants from CL29_WCONST_OVERRIDE into a copied WCONST
-    file. Matches each constant by name and replaces only its numeric value; errors
-    out if any name is missing or ambiguous."""
+def _apply_wconst_overrides(path, overrides):
+    """Rewrite named constants into a copied WCONST-style file (pelagic WCONST or
+    sediment W_SED_CONST). Matches each constant by name and replaces only its numeric
+    value; errors out if any name is missing or ambiguous."""
     with open(path) as fh:
         text = fh.read()
-    for name, val in CL29_WCONST_OVERRIDE.items():
+    for name, val in overrides.items():
         text, n = re.subn(r"(\b" + re.escape(name) + r"\s+)-?\d+(?:\.\d+)?",
                           lambda m: m.group(1) + str(val), text)
         if n != 1:
@@ -274,7 +287,7 @@ def main():
     for f in ("WCONST_04.txt", "EXTRA_WCONST.txt"):
         shutil.copy(os.path.join(REPO, "INPUTS", f), os.path.join(OUT, f))
     # CL29: apply the diatom/OPA temperature + phosphorus-affinity overrides to the copy
-    _apply_wconst_overrides(os.path.join(OUT, "WCONST_04.txt"))
+    _apply_wconst_overrides(os.path.join(OUT, "WCONST_04.txt"), CL29_WCONST_OVERRIDE)
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
@@ -526,14 +539,43 @@ def _override_sed_carbonate(lines, inorg_c, tot_alk, nlayers=7):
     return lines
 
 
+def _override_sed_geometry(lines, depths, burial):
+    """Overwrite the SED_DEPTHS (7 layer values) and SED_BURRIALS rows with the CL29
+    stability geometry, preserving CRLF. Matches each block by its unit-tagged header."""
+    def _replace_run(header_test, values):
+        for i, ln in enumerate(lines):
+            if header_test(ln):
+                j, n = i + 1, 0
+                while j < len(lines) and n < len(values):
+                    try:
+                        float(lines[j].split("!")[0].strip())
+                    except ValueError:
+                        j += 1
+                        continue
+                    eol = "\r\n" if lines[j].endswith("\r\n") else "\n"
+                    lines[j] = f"        {values[n]:.6f}{eol}"
+                    n += 1
+                    j += 1
+                if n != len(values):
+                    raise SystemExit(f"sediment geometry: expected {len(values)} values")
+                return
+        raise SystemExit("sediment geometry header not found")
+    _replace_run(lambda ln: "SED_DEPTHS" in ln and "meters" in ln, depths)
+    _replace_run(lambda ln: "SED_BURRIALS" in ln and "m/day" in ln, [burial])
+    return lines
+
+
 def _write_sediment_inputs(out, enable_sediments):
     """Phase-1 sediment stand-up. When enabled, copy the 170-constant W_SED_CONST.txt
-    verbatim and author BOTTOM_SEDIMENT_MODEL_INPUT.txt from the template with
-    advanced-redox forced to 0 and an optional carbonate-IC override. No-op otherwise."""
+    (with the CL29 stability constant overrides) and author BOTTOM_SEDIMENT_MODEL_INPUT.txt
+    from the template with advanced-redox forced to 0, the CL29 stability geometry, and an
+    optional carbonate-IC override. No-op otherwise. Run SERIAL -- not OpenMP-safe."""
     if not enable_sediments:
         return
-    shutil.copy(os.path.join(REPO, "INPUTS", "W_SED_CONST.txt"),
-                os.path.join(out, "W_SED_CONST.txt"))
+    dst_const = os.path.join(out, "W_SED_CONST.txt")
+    shutil.copy(os.path.join(REPO, "INPUTS", "W_SED_CONST.txt"), dst_const)
+    if CL29_SED_CONST_OVERRIDE:
+        _apply_wconst_overrides(dst_const, CL29_SED_CONST_OVERRIDE)
     with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
               newline="") as fh:
         lines = fh.readlines()                       # newline="" preserves CRLF
@@ -543,6 +585,7 @@ def _write_sediment_inputs(out, enable_sediments):
             break
     else:
         raise SystemExit("sediment template missing '# ADVANCED REDOX SIMULATION'")
+    lines = _override_sed_geometry(lines, CL29_SED_DEPTHS, CL29_SED_BURIAL)
     if CL29_SED_CARBONATE_IC is not None:
         lines = _override_sed_carbonate(lines, *CL29_SED_CARBONATE_IC)
     with open(os.path.join(out, "BOTTOM_SEDIMENT_MODEL_INPUT.txt"), "w",

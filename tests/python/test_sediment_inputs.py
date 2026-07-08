@@ -24,11 +24,47 @@ class TestWriteSedimentInputs:
         assert not (tmp_path / "W_SED_CONST.txt").exists()
         assert not (tmp_path / "BOTTOM_SEDIMENT_MODEL_INPUT.txt").exists()
 
-    def test_enabled_copies_constants_verbatim(self, tmp_path):
+    @staticmethod
+    def _sed_consts(path):
+        c = {}
+        for ln in open(path):
+            t = ln.split()
+            if len(t) >= 3 and t[0].isdigit():
+                c[t[1]] = t[2]
+        return c
+
+    def test_enabled_applies_psi_dissolution_override(self, tmp_path):
         conv._write_sediment_inputs(str(tmp_path), True)
-        out = (tmp_path / "W_SED_CONST.txt").read_bytes()
-        src = open(os.path.join(os.getcwd(), "INPUTS", "W_SED_CONST.txt"), "rb").read()
-        assert out == src
+        out = self._sed_consts(str(tmp_path / "W_SED_CONST.txt"))
+        src = self._sed_consts(os.path.join(os.getcwd(), "INPUTS", "W_SED_CONST.txt"))
+        # PSi dissolution rates overridden for stability...
+        assert float(out["K_OXIC_DISS_PSi"]) == 0.1
+        assert float(out["K_ANOXIC_DISS_PSi"]) == 0.02
+        # ...while other constants keep their template values.
+        assert out["THETA_DISS_PSi"] == src["THETA_DISS_PSi"]
+        assert out["SOLID_PART_COEFF_PO4"] == src["SOLID_PART_COEFF_PO4"]
+
+    def test_enabled_applies_stability_geometry(self, tmp_path):
+        conv._write_sediment_inputs(str(tmp_path), True)
+        with open(tmp_path / "BOTTOM_SEDIMENT_MODEL_INPUT.txt", newline="") as fh:
+            lines = fh.readlines()
+
+        def _run(test):
+            for i, ln in enumerate(lines):
+                if test(ln):
+                    vals, j = [], i + 1
+                    while j < len(lines):
+                        try:
+                            vals.append(float(lines[j].split("!")[0].strip()))
+                        except ValueError:
+                            if vals:
+                                break
+                        j += 1
+                    return vals
+            return []
+
+        assert _run(lambda l: "SED_DEPTHS" in l and "meters" in l)[:7] == conv.CL29_SED_DEPTHS
+        assert _run(lambda l: "SED_BURRIALS" in l and "m/day" in l)[:1] == [conv.CL29_SED_BURIAL]
 
     def test_enabled_forces_redox_zero(self, tmp_path):
         conv._write_sediment_inputs(str(tmp_path), True)
