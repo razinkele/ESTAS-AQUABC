@@ -236,6 +236,34 @@ Calibrate sediment ICs/constants to measured Curonian sandy/muddy N+P fluxes; ve
 closure + N:P/guardrail validation; per-box sediment properties; CYN settling; fix the flux-output
 bug.
 
+## 11b. Phase-1 results (actual, 2026-07-08)
+
+Executed; the full 5-year run is **stable**. Key outcomes — several diverged from this
+spec's predictions:
+
+- **OpenMP is unsafe for the sediment path (new finding).** Built with `OPENMP=1` the
+  sediment run **deadlocked** (2.5 h, 0 % CPU, stuck ~day 2). The sediment/CO2SYS code is
+  not thread-safe. **Build & run SERIAL.** (§6's `OPENMP=1` runtime lever is retracted.)
+- **Carbonate ICs: no override needed.** The empirical fork (§5) resolved to *keep the
+  template `0.003`* — CO2SYS converged with 0 `pH does not converge`. The physical reading
+  was right; the fear it matched the pelagic-fragile magnitude did not materialize.
+- **The real blocker was not CO2SYS — it was `SED_PSi` runaway (unanticipated).**
+  Diatom-driven PART_Si deposits into the thin 5 mm surface layer faster than the template's
+  slow dissolution (`K_OXIC_DISS_PSi = 0.005/d`, cold-throttled) + negligible burial can
+  remove it, so `SED_PSi` grew ~linearly (10 → ~10,000) and the solver's `STRANGER` guard
+  tripped ~day 48. **Fixed by rebalancing** (converter `CL29_SED_*`): thicker surface layers
+  (0.005 → 0.05 m), 10× burial (→ 2.74e-4 m/d), 20× PSi dissolution (→ 0.1 / 0.02). `SED_PSi`
+  now plateaus ~1,350 over the full run. These are **stability values, not Curonian-Si-
+  calibrated** — that is Phase 2.
+- **`OPA CALL` debug spew removed** (the OTHER_PLANKTONIC_ALGAE analog of the NOSTOCALES
+  prints), ~2.3 GB of log over a full run.
+- **Gates passed:** full 1826-d run `simulation finished`, 0 NaN, 0 CO2SYS failures; `SED_PSi`
+  bounded; negative-mass gate PASS (40 % zeros = inactive redox vars); benthic return is a
+  finite, correctly-signed source (box-19 last-yr PO4 0.086, NH4 0.128 mg/L; water-column
+  DISS_Si 3.07, healthy). **Runtime 45.5 min serial.**
+- **Scope note confirmed:** stabilizing CL29 required *some* calibration (the Si rebalance) —
+  the clean "stabilize (P1) / calibrate (P2)" split did not fully hold, as flagged in §5.
+
 ## 12. References
 
 - `docs/CL29_Parameter_Validation.md` — P-supply root cause + confirmation.
