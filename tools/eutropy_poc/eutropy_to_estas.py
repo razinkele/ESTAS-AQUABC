@@ -76,6 +76,18 @@ CL29_WCONST_OVERRIDE = {
     "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
 }
 
+# Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
+# False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
+# so the baseline stays byte-identical. See
+# docs/superpowers/specs/2026-07-08-cl29-sediment-diagenesis-phase1-design.md.
+CL29_ENABLE_SEDIMENTS = False
+# Sediment carbonate ICs. None = use the template's values (INORG_C/TOT_ALK ~0.003,
+# a physically realistic pore-water DIC). If the staged run's CO2SYS hard-stops with
+# 'pH does not converge', set to (INORG_C, TOT_ALK) ~= (3.0, 3.1): the inflated
+# magnitude this codebase's CO2SYS empirically needs (the pelagic uses 3.0/3.1). The
+# two readings conflict; the run decides. See spec section 5.
+CL29_SED_CARBONATE_IC = None
+
 
 def _apply_wconst_overrides(path):
     """Rewrite the CL29 model constants from CL29_WCONST_OVERRIDE into a copied WCONST
@@ -479,6 +491,61 @@ def _write_master(out, state_block, links, depth, area):
     for i, v in enumerate(vels, start=1):
         write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
                  f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
+
+
+def _replace_leading_number(line, new_val):
+    """Replace a value line's numeric content with new_val, preserving indent + EOL."""
+    eol = "\r\n" if line.endswith("\r\n") else "\n"
+    stripped = line.rstrip("\r\n")
+    indent = stripped[:len(stripped) - len(stripped.lstrip())]
+    return f"{indent}{new_val}{eol}"
+
+
+def _sed_ic_block_bounds(lines):
+    """(start, end) line indices of the 24-row sediment INITIAL CONDITIONS data block."""
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith("# INIT_SED_STATE_VARS"):
+            start = i + 1
+            while start < len(lines) and (
+                    not lines[start].strip() or lines[start].lstrip().startswith("#")):
+                start += 1
+            return start, start + 24
+    raise SystemExit("sediment template missing '# INIT_SED_STATE_VARS'")
+
+
+def _override_sed_carbonate(lines, inorg_c, tot_alk, nlayers=7):
+    """Overwrite INORG_C (var 13) and TOT_ALK (var 14) IC rows with nlayers copies."""
+    start, _ = _sed_ic_block_bounds(lines)
+    eol = "\r\n" if lines[start].endswith("\r\n") else "\n"
+    def row(val):
+        return " ".join(f"{val:.6f}" for _ in range(nlayers)) + eol
+    lines[start + 12] = row(inorg_c)   # sediment state var 13 = INORG_C
+    lines[start + 13] = row(tot_alk)   # sediment state var 14 = TOT_ALK
+    return lines
+
+
+def _write_sediment_inputs(out, enable_sediments):
+    """Phase-1 sediment stand-up. When enabled, copy the 170-constant W_SED_CONST.txt
+    verbatim and author BOTTOM_SEDIMENT_MODEL_INPUT.txt from the template with
+    advanced-redox forced to 0 and an optional carbonate-IC override. No-op otherwise."""
+    if not enable_sediments:
+        return
+    shutil.copy(os.path.join(REPO, "INPUTS", "W_SED_CONST.txt"),
+                os.path.join(out, "W_SED_CONST.txt"))
+    with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
+              newline="") as fh:
+        lines = fh.readlines()                       # newline="" preserves CRLF
+    for i, ln in enumerate(lines):                   # force ADVANCED REDOX -> 0
+        if ln.lstrip().startswith("# ADVANCED REDOX SIMULATION"):
+            lines[i + 1] = _replace_leading_number(lines[i + 1], 0)
+            break
+    else:
+        raise SystemExit("sediment template missing '# ADVANCED REDOX SIMULATION'")
+    if CL29_SED_CARBONATE_IC is not None:
+        lines = _override_sed_carbonate(lines, *CL29_SED_CARBONATE_IC)
+    with open(os.path.join(out, "BOTTOM_SEDIMENT_MODEL_INPUT.txt"), "w",
+              newline="") as fh:
+        fh.writelines(lines)
 
 
 def _write_input_txt(repo, tdays):
