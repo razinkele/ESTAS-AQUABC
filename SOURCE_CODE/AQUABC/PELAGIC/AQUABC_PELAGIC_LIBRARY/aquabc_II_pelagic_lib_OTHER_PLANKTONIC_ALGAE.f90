@@ -152,11 +152,6 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     end if
 
     if (smith .eq. 1) then
-        write(6,*) 'OPA CALL: I_A=', I_A(1:min(8,nkn))
-        write(6,*) 'OPA CALL: CHLA=', CHLA(1:min(8,nkn))
-        write(6,*) 'OPA CALL: KG_OPA=', KG_OPA(1:min(8,nkn))
-        write(6,*) 'OPA CALL: DEPTH=', DEPTH(1:min(8,nkn))
-        write(6,*) 'OPA CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_OPA, DEPTH, K_E, LIM_KG_OPA_LIGHT, &
                        OPA_C_TO_CHLA, I_S_OPA, OPA_LIGHT_SAT, nkn, BETA_OPA)
     end if
