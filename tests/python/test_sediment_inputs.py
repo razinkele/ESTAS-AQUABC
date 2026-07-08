@@ -42,11 +42,31 @@ class TestWriteSedimentInputs:
 
     def test_carbonate_override_applied(self, tmp_path, monkeypatch):
         monkeypatch.setattr(conv, "CL29_SED_CARBONATE_IC", (3.0, 3.1))
+        # Independent anchor: locate the target rows in the ORIGINAL template by their
+        # trailing comment tag, NOT via _sed_ic_block_bounds (the function under test).
+        # This lets the test catch a wrong start index instead of sharing the bug.
+        tmpl = os.path.join(os.getcwd(), "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt")
+        with open(tmpl, newline="") as fh:
+            orig = fh.readlines()
+
+        def _row_index(tag):
+            for i, ln in enumerate(orig):
+                if ln.strip().endswith(tag):
+                    return i
+            raise AssertionError(f"template row {tag} not found")
+
+        i_inorg = _row_index("!INORG_C")
+        i_alk = _row_index("!TOT_ALK")
+        i_nh4 = _row_index("!SED_NH4N")
+
         conv._write_sediment_inputs(str(tmp_path), True)
         with open(tmp_path / "BOTTOM_SEDIMENT_MODEL_INPUT.txt", newline="") as fh:
-            lines = fh.readlines()
-        start, _ = conv._sed_ic_block_bounds(lines)
-        inorg = [float(x) for x in lines[start + 12].split()]
-        alk = [float(x) for x in lines[start + 13].split()]
-        assert all(v == 3.0 for v in inorg) and len(inorg) == 7
-        assert all(v == 3.1 for v in alk) and len(alk) == 7
+            out = fh.readlines()
+
+        # Overwritten rows drop the trailing comment -> 7 float tokens each.
+        inorg = [float(x) for x in out[i_inorg].split()]
+        alk = [float(x) for x in out[i_alk].split()]
+        assert len(inorg) == 7 and all(v == 3.0 for v in inorg)
+        assert len(alk) == 7 and all(v == 3.1 for v in alk)
+        # Control row (SED_NH4N) must be left untouched.
+        assert out[i_nh4] == orig[i_nh4]

@@ -504,7 +504,8 @@ def _replace_leading_number(line, new_val):
 def _sed_ic_block_bounds(lines):
     """(start, end) line indices of the 24-row sediment INITIAL CONDITIONS data block."""
     for i, ln in enumerate(lines):
-        if ln.lstrip().startswith("# INIT_SED_STATE_VARS"):
+        # Exact match: '# INIT_SED_STATE_VARS_OPTIONS' appears first and must NOT match.
+        if ln.strip() == "# INIT_SED_STATE_VARS":
             start = i + 1
             while start < len(lines) and (
                     not lines[start].strip() or lines[start].lstrip().startswith("#")):
