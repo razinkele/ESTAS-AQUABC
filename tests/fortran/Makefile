@@ -19,7 +19,7 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
@@ -142,6 +142,15 @@ test_vector_utils: test_vector_utils.f90 $(VECTOR_UTILS_SRCS)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90
 	$(FC) $(FFLAGS) -o $@ test_vector_utils.f90 *.o
+
+# Compile test_sed_typemap (Phase-2a two-type sediment profile assignment)
+# Hermetic link (explicit objects, not *.o) so stale objects in this shared
+# dir cannot leak in — the pure module only needs precision_kinds.
+ESTAS_SRC = ../../SOURCE_CODE/ESTAS
+test_sed_typemap: test_sed_typemap.f90 $(ESTAS_SRC)/mod_SED_TYPEMAP.f90
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC) -o precision_kinds.o
+	$(FC) $(FFLAGS) -c $(ESTAS_SRC)/mod_SED_TYPEMAP.f90 -o mod_SED_TYPEMAP.o
+	$(FC) $(FFLAGS) -o $@ test_sed_typemap.f90 mod_SED_TYPEMAP.o precision_kinds.o
 
 # Compile test_ammonia_chem (standalone - includes subroutine copies)
 test_ammonia_chem: test_ammonia_chem.f90
