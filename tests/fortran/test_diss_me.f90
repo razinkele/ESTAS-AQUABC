@@ -29,7 +29,8 @@ program test_diss_me
     call test_array_handling()
     call test_small_timestep()
     call test_large_timestep()
-    
+    call test_near_equilibrium_finite()
+
     ! Print summary
     print *, ""
     print *, "=========================================="
@@ -130,7 +131,48 @@ contains
             "No change when at equilibrium")
         
     end subroutine test_equilibrium_state
-    
+
+    subroutine assert_finite(value, test_name)
+        real(kind=DBL_PREC), intent(in) :: value
+        character(len=*), intent(in) :: test_name
+
+        if (value == value .and. abs(value) <= huge(value)) then
+            print '(A,A)', "  PASS: ", test_name
+            passed = passed + 1
+        else
+            print '(A,A,A,E12.5)', "  FAIL: ", test_name, " got ", value
+            failed = failed + 1
+        end if
+    end subroutine assert_finite
+
+    ! Near-equilibrium: ME_DISS_INIT a hair from ME_SOLUB_EQ drives the analytical
+    ! solution's (ME_DISS_INIT - ME_SOLUB_EQ) denominator toward zero, blowing the
+    ! solution up to +/-Inf. Output must stay finite (this reproduces the sediment
+    ! advanced-redox Fe(III) crash, where the IEEE_IS_NAN-only guard missed the Inf).
+    subroutine test_near_equilibrium_finite()
+        integer, parameter :: nkn = 1, nlayers = 1
+        real(kind=DBL_PREC), dimension(nkn,nlayers) :: TOT_ME, ME_DISS_INIT, ME_SOLUB_EQ
+        real(kind=DBL_PREC), dimension(nkn,nlayers) :: k_DISS_ME, DISS_ME_END, DISS_ME_AVG
+        real(kind=DBL_PREC) :: t
+
+        print *, "Test: Near-equilibrium stays finite (no NaN/Inf)"
+
+        TOT_ME       = 8.79D-7
+        ME_SOLUB_EQ  = 8.79D-7
+        ME_DISS_INIT = 8.79D-7 * (1.0D0 - 1.0D-9)   ! a hair below EQ -> near-singular denom
+        k_DISS_ME    = 5.5D-4
+        t            = 4.1666666666666666D-3
+
+        DISS_ME_END = 0.0D0
+        DISS_ME_AVG = 0.0D0
+
+        call CALC_DISS_ME_CONC(TOT_ME, ME_DISS_INIT, ME_SOLUB_EQ, k_DISS_ME, t, &
+                               nkn, nlayers, DISS_ME_END, DISS_ME_AVG)
+
+        call assert_finite(DISS_ME_END(1,1), "DISS_ME_END finite near equilibrium")
+        call assert_finite(DISS_ME_AVG(1,1), "DISS_ME_AVG finite near equilibrium")
+    end subroutine test_near_equilibrium_finite
+
     ! Test undersaturated case (dissolution should occur)
     subroutine test_undersaturated_dissolution()
         integer, parameter :: nkn = 1, nlayers = 1

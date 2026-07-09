@@ -1396,6 +1396,20 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         ! iron and mangese species
         ! -----------------------------------------------------------------------
 
+        ! --- Numerical stabilization (advanced redox) ---------------------------
+        ! MULT_FE_*_DISS are dissolved fractions, physical only in [0,1]. When an Fe
+        ! pool is reduced toward zero (expected under anoxia) the analytical solver's
+        ! fraction (DISS_CONC / FE) blows up to NaN/Inf; saved and reused next step it
+        ! self-propagates and aborts the run. Reset any non-finite fraction to fully
+        ! dissolved and clamp to [0,1].
+        where (MULT_FE_II_DISS  /= MULT_FE_II_DISS  .or. abs(MULT_FE_II_DISS)  > 1.0D30) MULT_FE_II_DISS  = 1.0D0
+        where (MULT_FE_III_DISS /= MULT_FE_III_DISS .or. abs(MULT_FE_III_DISS) > 1.0D30) MULT_FE_III_DISS = 1.0D0
+        MULT_FE_II_DISS  = max(0.0D0, min(1.0D0, MULT_FE_II_DISS))
+        MULT_FE_III_DISS = max(0.0D0, min(1.0D0, MULT_FE_III_DISS))
+        MULT_FE_II_PART  = 1.0D0 - MULT_FE_II_DISS
+        MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
+        ! ------------------------------------------------------------------------
+
         if(debug_stranger) then
             do j=1,num_sed_layers
                 do k= 1,nkn
@@ -1440,6 +1454,14 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
         SED_SAVED_OUTPUTS(:,:,1) = DISS_FE_II_CONC_TS_END  / FE_II
         SED_SAVED_OUTPUTS(:,:,2) = DISS_FE_III_CONC_TS_END / FE_III
+        ! Keep the saved dissolved fractions (they seed next step's ME_DISS_INIT)
+        ! finite and in [0,1] so a near-zero Fe pool cannot seed a self-propagating NaN.
+        where (SED_SAVED_OUTPUTS(:,:,1) /= SED_SAVED_OUTPUTS(:,:,1) .or. &
+               abs(SED_SAVED_OUTPUTS(:,:,1)) > 1.0D30) SED_SAVED_OUTPUTS(:,:,1) = 1.0D0
+        where (SED_SAVED_OUTPUTS(:,:,2) /= SED_SAVED_OUTPUTS(:,:,2) .or. &
+               abs(SED_SAVED_OUTPUTS(:,:,2)) > 1.0D30) SED_SAVED_OUTPUTS(:,:,2) = 1.0D0
+        SED_SAVED_OUTPUTS(:,:,1) = max(0.0D0, min(1.0D0, SED_SAVED_OUTPUTS(:,:,1)))
+        SED_SAVED_OUTPUTS(:,:,2) = max(0.0D0, min(1.0D0, SED_SAVED_OUTPUTS(:,:,2)))
         SED_SAVED_OUTPUTS(:,:,3) = MULT_MN_II_DISS(:,:)
         SED_SAVED_OUTPUTS(:,:,4) = MULT_MN_IV_DISS(:,:)
 

@@ -127,11 +127,15 @@ subroutine CALC_DISS_ME_CONC &
         DISS_ME_CONC_TS_AVG = ME_DISS_INIT
     end where
 
-    ! Check for saturation case where logarithms in both over and undersaturation solutions may give NaNs
-    ! and assume that neither dissolution nor precipitation occurs.
-    where (IEEE_IS_NAN(DISS_ME_CONC_TS_END).or.IEEE_IS_NAN(DISS_ME_CONC_TS_AVG))
+    ! Near the saturation/equilibrium singularity the over-/undersaturation analytical
+    ! solutions can make the END concentration NaN *or +/-Inf* (a denominator or log
+    ! argument approaches zero); assume neither dissolution nor precipitation occurs
+    ! there. IEEE_IS_NAN alone missed the +/-Inf case, which escaped and crashed the
+    ! sediment advanced-redox Fe(III) path -- use IEEE_IS_FINITE. Guard only END: the
+    ! analytical AVG is legitimately +/-Inf for large timesteps but is discarded and
+    ! recomputed from END on the next line, so guarding it would wrongly clobber END.
+    where (.not. ieee_is_finite(DISS_ME_CONC_TS_END))
         DISS_ME_CONC_TS_END = ME_DISS_INIT
-        DISS_ME_CONC_TS_AVG = ME_DISS_INIT
     end where
     DISS_ME_CONC_TS_AVG = 0.5 * (ME_DISS_INIT + DISS_ME_CONC_TS_END)
 end subroutine CALC_DISS_ME_CONC
