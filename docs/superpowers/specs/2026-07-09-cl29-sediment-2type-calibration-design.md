@@ -80,6 +80,17 @@ Phase 2 splits by data dependency:
 **This spec's implementation plan covers 2a.** 2b is scoped here but gets its own
 spec→plan cycle once the data lands.
 
+**Phase-2 gate — §4.1a is a pre-check, not a sub-step of calibration.** The §4.1a
+anoxic-remineralization analysis is logically *prior* to 2b: under CL29 advanced-redox = 0 it
+can pre-judge the box-19 gap-closure half of *both-must-hold* infeasible **before any calibration
+run**. Resolve it as an explicit go/no-go before committing to 2b's gap-closure effort (it lives
+in §4 for narrative flow, but decision-wise it gates 2b). Crucially it does **not** gate 2a: the
+two-type infrastructure, the per-box flux-output fix, and the measured-flux *fidelity* comparison
+are worth building regardless of the §4.1a verdict — only 2b's *gap-closure* target is exposed to
+it. If §4.1a returns "infeasible", 2a still delivers data-anchored sandy/muddy fluxes plus the
+flux-output bug fix, and the gap-closure goal converts to the §6 model-mechanism finding rather
+than being chased through runs.
+
 ## 3. Phase 2a architecture
 
 Three coordinated pieces. **Refinement from brainstorming:** the sandy vs muddy behaviour
@@ -453,8 +464,12 @@ distinct, large benthic P return closes box 19 to 47 ± 14."* Under the **CL29 c
 forces sediment advanced-redox = 0** (`eutropy_to_estas.py:592`), that mechanism for **N and P
 is largely absent**, and for P is arguably *inverted*:
 - With advanced-redox off, DON/DOP → NH4/PO4 mineralization retains **only** the `DOXY` and
-  `NO3N` pathways; the Mn/Fe/SO4/methanogenesis mineralization terms are **hard-zeroed**
-  (`:2309-2312`, `:2395-2398`). Both surviving `LIM` terms → 0 as O2 **and** NO3 vanish, so a
+  `NO3N` pathways; the Mn/Fe/SO4/methanogenesis DON/DOP mineralization terms are
+  **default-zeroed and overwritten with real rates only inside the `DO_ADVANCED_REDOX_SIMULATION
+  > 0` block** (`:2309-2312`/`:2395-2398`, gated at `:2314`/`:2400`) — so with advanced redox off
+  they stay identically zero. (The analogous DOC redox terms are *not* re-zeroed in the else
+  branch, a latent asymmetry — but DOC feeds C/O2/alkalinity, not the P budget, so it does not
+  affect this argument.) Both surviving `LIM` terms → 0 as O2 **and** NO3 vanish, so a
   deeply anoxic muddy cell **suppresses** NH4/PO4 remineralization (no sub-NO3 pathway) and
   **buries more OM**.
 - Reductive Fe-oxide P release is **disabled**: `K_SP_FEPO4` is commented out (`:1093`) and the
@@ -583,6 +598,12 @@ them from measured data but may **not** search outside them without recording a 
 | burial | 1×10⁻⁵ m/day | 1×10⁻² m/day | template/Phase-1 2.74×10⁻⁴; ±~1.5 decades |
 | particle-mixing Db0 | 0 | 1×10⁻³ m²/day | template 2.64×10⁻⁵; 0 (no fauna) → bioturbated mud |
 | IC organic pools (PON/POP/POC/PSi) | 0.1× | 10× | multiplier band around the Phase-1 seed (spin-up seed only — §3 and the IC-pools guardrail in §4) |
+
+> **Porosity caveat (§3 coupling).** In this diffusion-only model higher porosity gives *deeper*
+> O2 penetration (tortuosity `1/(1+3(1-φ))`), so pushing muddy porosity toward the 0.95 bound
+> makes mud *more* oxic — the opposite of intent. The upper bound is a physical limit, not a
+> target; a high-φ muddy solution must still pass the §4 per-type O2-penetration guardrail, which
+> is what actually keeps the search from wandering into that counterproductive region.
 
 **Global calibrated rate constants (single `W_SED_CONST`) — documented search ranges:**
 
