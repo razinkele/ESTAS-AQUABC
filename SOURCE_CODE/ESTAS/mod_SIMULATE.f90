@@ -716,7 +716,7 @@ contains
                     if (MODEL_BOTTOM_SEDIMENTS > 1) then
                         do i = 1, nkn
                             write(unit = 1023, fmt = '(F10.4,I10,36F20.10)') &
-                                  WTIME, i, FLUXES_OUTPUT_TO_WATER_COLUMN(nkn,:)
+                                  WTIME, i, FLUXES_OUTPUT_TO_WATER_COLUMN(i,:)
 
                             do j = 1, NUM_SED_LAYERS
                                 write(unit = 1021, fmt = '(F10.4,2I10,24F20.10)') &
@@ -725,7 +725,7 @@ contains
 
                             if (PRODUCE_COCOA_OUTPUTS > 0) then
                                 write(unit = 2031, fmt  = '(F10.4,2I10,2F30.8)') WTIME, i, 1, &
-                                      (FLUXES_FROM_SEDIMENTS(i, 1) + FLUXES_FROM_SEDIMENTS(i, 1)), & ! Compute N_OUT_FROM_SED
+                                      (FLUXES_FROM_SEDIMENTS(i, 1) + FLUXES_FROM_SEDIMENTS(i, 2)), & ! Compute N_OUT_FROM_SED
                                       FLUXES_FROM_SEDIMENTS(i, 5)                                    ! P_OUT_FROM_SED
 
                                 write(unit = 2032, fmt  = '(F10.4,2I10,3F40.8)') WTIME, i, 1, &
