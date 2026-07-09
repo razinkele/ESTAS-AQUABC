@@ -87,6 +87,16 @@ CL29_ENABLE_SEDIMENTS = False
 # magnitude this codebase's CO2SYS empirically needs (the pelagic uses 3.0/3.1). The
 # two readings conflict; the run decides. See spec section 5.
 CL29_SED_CARBONATE_IC = None
+# CL29 sediment ADVANCED REDOX. 0 = only the oxic + sub-oxic (NO3) DON/DOP
+# mineralization pathways (Phase-1/2a default, matching CL29 pelagic redox=0). 1 =
+# also enable the anoxic Mn/Fe/SO4/methanogenesis mineralization pathways, so deeply
+# anoxic sediment recycles N/P instead of burying it -- the mechanism needed to lift
+# box-19 benthic P toward closing the spring-diatom gap (spec section 4.1a). This
+# creates a pelagic(0)/sediment(1) redox mismatch, which the model only WARNS on (it
+# does not stop). NB: reductive Fe-oxide P release (K_SP_FEPO4) stays disabled -- it
+# is commented out in the Fortran, not a constant -- so this enables anoxic
+# *mineralization* P return, not Fe-oxide dissolution P.
+CL29_SED_ADVANCED_REDOX = 1
 # CL29 sediment STABILITY calibration (Phase 1). The template sediment config is
 # numerically unstable for CL29's diatom-driven PART_Si deposition: particulate
 # silica (SED_PSi) accumulates unbounded in the thin 5 mm surface layer and the
@@ -584,12 +594,12 @@ def _write_sediment_inputs(out, enable_sediments):
     with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
               newline="") as fh:
         lines = fh.readlines()                       # newline="" preserves CRLF
-    # Force sediment ADVANCED REDOX -> 0 to match CL29 pelagic redox (PELAGIC_MODEL_
-    # OPTIONS line 4 = 0). A pelagic/sediment mismatch only warns (not stops), so if the
-    # pelagic option ever changes to 1 this hardcoded 0 must change with it.
+    # Set sediment ADVANCED REDOX from CL29_SED_ADVANCED_REDOX. CL29 pelagic redox is 0
+    # (PELAGIC_MODEL_OPTIONS line 4); a pelagic/sediment redox mismatch only warns, not
+    # stops. See CL29_SED_ADVANCED_REDOX above for the rationale and caveats.
     for i, ln in enumerate(lines):
         if ln.lstrip().startswith("# ADVANCED REDOX SIMULATION"):
-            lines[i + 1] = _replace_leading_number(lines[i + 1], 0)
+            lines[i + 1] = _replace_leading_number(lines[i + 1], CL29_SED_ADVANCED_REDOX)
             break
     else:
         raise SystemExit("sediment template missing '# ADVANCED REDOX SIMULATION'")
