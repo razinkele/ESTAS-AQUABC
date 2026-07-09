@@ -1516,6 +1516,14 @@ contains
                 FINAL_SED_STATE_VARS(:, :, :) = 0.0D0
             end where
 
+            ! The sediment->water mapping (FLX_SED_MOD_1_TO_ALUKAS_II_VEC) only fills
+            ! the nstate pelagic columns of FLUXES_TO_WATER_COLUMN. The array is sized
+            ! (nkn, nstate+NUM_ALLOLOPATHY_STATE_VARS), so without this the allelopathy
+            ! tail (nstate+1:) carries stale values that get added to the secondary-
+            ! metabolite derivatives below, blowing them up and (via the growth-inhibition
+            ! factor) collapsing phytoplankton growth. Zero it first so the tail stays 0.
+            FLUXES_TO_WATER_COLUMN = 0.0D0
+
             call FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
                  (FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
                   FLUXES_TO_WATER_COLUMN, nkn, nstate)
