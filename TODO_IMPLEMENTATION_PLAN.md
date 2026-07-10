@@ -20,6 +20,8 @@
 
 ### 1.1 [P0] Memory Leaks in ALLELOPATHY Module
 
+> **Status:** ✅ COMPLETED (Sprint 1, 2026-02-14) — No fix needed — no leak (`mod_ALLELOPATHY.f90` alloc/dealloc correct)
+
 **File:** `SOURCE_CODE/AQUABC/PELAGIC/AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_ALLELOPATHY.f90`
 
 **Problem:** 44 local allocatable arrays are allocated at subroutine entry but never deallocated. Every call leaks memory. Over a long simulation with thousands of timesteps × spatial nodes, this accumulates into significant memory bloat.
@@ -33,6 +35,8 @@
 ---
 
 ### 1.2 [P0] Unguarded K_E Division — EUPHOTIC_DEPTH
+
+> **Status:** ✅ COMPLETED (Sprint 1, 2026-02-14) — Fixed — `K_E` guarded in CYANOBACTERIA / FIX_CYANOBACTERIA / NOSTOCALES
 
 **File:** `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90`
 
@@ -48,6 +52,8 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 ---
 
 ### 1.3 [P0] SAVE Variables — Thread Safety Risk
+
+> **Status:** ✅ COMPLETED (Sprint 1, 2026-02-14) — Documented — SAVE vars audited; no active race under current OpenMP usage
 
 **Files:**
 - `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_interface.f90` — 6 arrays with `SAVE` attribute (allocated on first call)
@@ -65,6 +71,8 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 ---
 
 ### 1.4 [P1] CO2SYS Exponential Overflow Risks
+
+> **Status:** ✅ COMPLETED (Sprint 2, 2026-02-14) — Fixed — 8 `exp()` calls wrapped with `safe_exp` in `aquabc_II_co2sys.f90`
 
 **File:** `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90`
 
@@ -199,6 +207,8 @@ real(dp), parameter :: GAS_CONST_R = 8.314D0
 
 ### 2.2 [P1] Bare Except Blocks (5 remaining)
 
+> **Status:** ✅ COMPLETED (Sprint 1, 2026-02-14) — Fixed — 5 bare `except` blocks replaced with specific exception types
+
 **File:** `shiny_app/app.py`
 
 **Problem:** 5 bare `except:` blocks catch all exceptions including `SystemExit`, `KeyboardInterrupt`, making debugging difficult and hiding real errors.
@@ -219,6 +229,8 @@ except (ValueError, FileNotFoundError, OSError) as e:
 ---
 
 ### 2.3 [P1] Duplicated Build/Rebuild Logic
+
+> **Status:** ✅ COMPLETED (Sprint 3, 2026-02-14) — Done — extracted `_execute_build_process` helper (−110 duplicated lines)
 
 **File:** `shiny_app/app.py`
 
@@ -243,6 +255,8 @@ except (ValueError, FileNotFoundError, OSError) as e:
 ---
 
 ### 2.5 [P2] Missing Unit Tests for Business Logic
+
+> **Status:** ✅ COMPLETED (Sprint 3, 2026-02-14) — Done — 4 functions extracted to `utils.py`, 28 tests added
 
 **Files:** `shiny_app/app.py` (embedded functions)
 
@@ -301,6 +315,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 3.2 [P1] Integration Tests Excluded from CI
 
+> **Status:** ✅ COMPLETED (Sprint 3, 2026-02-14) — Done — Playwright integration job added to CI (19 tests)
+
 **File:** `.github/workflows/ci.yml`
 
 **Problem:** 19 Playwright and 9 Selenium integration tests exist but don't run in CI. They require a running Shiny app instance and browser dependencies.
@@ -317,6 +333,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 3.3 [P1] No Code Coverage Tracking
 
+> **Status:** ✅ COMPLETED (Sprint 2, 2026-02-14) — Done — `pytest-cov` with CI coverage reporting
+
 **Problem:** No visibility into which code paths are tested. Can't measure improvement or identify untested critical paths.
 
 **Fix:**
@@ -329,6 +347,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 ---
 
 ### 3.4 [P2] GitHub Actions Not Pinned to SHA
+
+> **Status:** ✅ COMPLETED (Sprint 2, 2026-02-14) — Done — GitHub Actions pinned to SHA
 
 **File:** `.github/workflows/ci.yml`
 
@@ -349,6 +369,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 3.5 [P2] No Dependency Caching in CI
 
+> **Status:** ✅ COMPLETED (Sprint 2, 2026-02-14) — Done — pip caching enabled in CI
+
 **File:** `.github/workflows/ci.yml`
 
 **Problem:** Every CI run installs Python packages and potentially rebuilds Fortran from scratch. No caching of pip packages or compiled objects.
@@ -367,6 +389,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 3.6 [P2] No Pre-commit Hooks
 
+> **Status:** ✅ COMPLETED (Sprint 3, 2026-02-14) — Done — pre-commit `ruff` + file-hygiene hooks
+
 **Problem:** Developers can commit code that fails linting or has formatting issues. These are only caught in CI after push.
 
 **Fix:**
@@ -378,6 +402,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 ---
 
 ### 3.7 [P3] No Release Workflow
+
+> **Status:** ✅ COMPLETED (2026-07-10) — Done — `.github/workflows/release.yml` + `tools/extract_release_notes.sh`
 
 **Problem:** No automated process for creating tagged releases with changelogs and build artifacts.
 
@@ -496,7 +522,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 2.4 Async file I/O
 - [ ] 2.6 Centralized configuration
 - [ ] 3.1 Compiler matrix (when Intel CI available)
-- [ ] 3.7 Release workflow
+- [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
 - [ ] 4.2 CO2SYS parallelization
 - [ ] 4.3 Thread affinity documentation
 
