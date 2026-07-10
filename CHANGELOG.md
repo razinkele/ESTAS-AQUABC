@@ -16,8 +16,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Reductive Fe(III)–P coupling** as sediment constant `FE_P_REDOX_FRAC` (`W_SED_CONST` #171): scales PO₄ solid sorption by `(1−f) + f·MULT_FE_III_PART`, releasing bound P as Fe(III) is reduced under anoxia; **off (0.0) by default**. Converter knob `CL29_SED_FE_P_REDOX_FRAC`
 - **`CL29_SED_ADVANCED_REDOX` converter flag:** enables the sediment anoxic Mn/Fe/SO₄ DON/DOP mineralization pathways for the CL29 application
 - **Per-box benthic flux output:** `SEDIMENT_FLUX_OUTPUTS.out` now writes each box's own sediment→water fluxes (previously emitted one box's fluxes for every box)
-
-### Added (Shiny app & tooling)
 - **Diagnostics panel** in the Shiny app (`shiny_app/diagnostics.py`, `diagnostics_plots.py`): live process-rate and state-variable diagnostics driven by a central reactive poll, integrated into the main UI
 - **"Scientific Observatory" UI redesign**: custom dark theme via external CSS (`shiny_app/www/aquabc.css`), shinyswatch removed, dashboard restructured with a horizontal status bar (5/7 layout), full-width Parameters panel, and a light/dark theme switcher
 - **In-app getting-started tutorial** (step-by-step UI walkthrough opening in a separate window), an automated tutorial runner (`tools/run_tutorial.py`), and Playwright E2E tests that follow the tutorial steps
@@ -31,6 +29,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Integration test input (`INPUT_sediment_test.txt`) for running the coupled model with full sediment diagenesis
 - AQUABC and ESTAS PDF reference manuals (`docs/AQUABC_Reference_Manual.pdf`, `docs/ESTAS_Reference_Manual.pdf`)
 - Makefile target `make build-docs` for PDF generation via pandoc
+- Unit tests for FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, and NOSTOCALES kinetics subroutines (25 test programs, 196 assertions total)
+- Dependabot configuration (`.github/dependabot.yml`) for weekly pip and GitHub Actions dependency scanning
+- `requirements-dev.txt` for development/test Python dependencies (ruff, pytest)
+- Comprehensive AQUABC model equations reference document (`AQUABC_Model_Equations.md`)
+- `pyproject.toml` with ruff linter configuration (E, F, W, I, UP, B, S rules)
+- 46 Python unit tests for parsers (`parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`) and `safe_resolve`
+- 19 Playwright integration tests covering app startup, navigation, and all major panels
+- 9 Selenium integration tests (gracefully skip without chromedriver)
+- CI `python-lint-test` job running ruff and pytest in parallel with Fortran build
+- `CONTRIBUTING.md` with build/test/PR workflow documentation
+- Makefile convenience targets: `make test-all`, `make test-python`, `make test-fortran`, `make lint`
+
+### Changed
+- Zooplankton boundary conditions and initial-condition sets updated per the 3,560-day analysis recommendations
+- Sediment model particle mixing now uses bioturbation physics (exponential depth decay × Monod O₂ × seasonal) instead of uniform constant
+- Last-layer particle mixing boundary condition changed from hard-coded zero to proper zero-flux (Neumann) BC
+- Updated `AQUABC_Model_Equations.md` with bioturbation/bioirrigation equations (§13.8) and references
+- Cardinal Temperature Model with Inflection (CTMI, Rosso et al. 1993) replacing piecewise-exponential temperature response for phytoplankton growth
+- Synthesizing Unit nutrient colimitation (Saito et al. 2008) replacing Liebig's Law of the Minimum for all phytoplankton groups
+- Tunable Platt-style photoinhibition (BETA parameter) for light limitation in all phytoplankton groups
+- Unified precision type definitions via `precision_kinds` module
+- Compiler warning flags (`-Wall -Wextra`) for release and fast builds
+- OpenMP parallelization of pelagic kinetics nkn loop: single parallel region with chunked array slicing, ~750 line-level changes in `aquabc_II_pelagic_model.f90`, all library subroutine calls use per-thread derived type bundles, debug calls guarded with `!$omp master` barriers, serial fallback via Fortran sentinel comments
+- Bundled scalar constant arguments into derived types (`t_diatom_params`, `t_cyn_params`, `t_opa_params`, etc.) for 6 kinetics subroutines
+- Bundled environmental input arrays into `t_phyto_env` derived type in 7 phytoplankton subroutines
+- Bundled ORGANIC_CARBON_MINERALIZATION I/O arrays into 3 new shared pointer types (`t_redox_state`, `t_redox_lim`, `t_docmin_outputs`), reducing arguments from 36 to 9
+- Bundled REDOX_AND_SPECIATION I/O arrays into shared pointer types, reducing arguments from 33 to 12
+- Removed 5 dead arguments (`K_NO3_RED`, `K_MN_IV_RED`, `K_FE_III_RED`, `K_S_PLUS_6_RED`, `K_DOC_RED`) from ORGANIC_CARBON_MINERALIZATION
+- Replaced hardcoded dimension magic numbers with named constants throughout
+- Replaced tabs with spaces in 15 source files for consistent formatting
 
 ### Fixed
 - **FIX_CYN photosynthetic O₂ production omitted (HIGH):** when both `DO_NOSTOCALES` and `DO_NON_OBLIGATORY_FIXERS` were enabled, nitrogen-fixing cyanobacteria O₂ production was dropped from the dissolved-oxygen derivative (slot 5 held Nostocales only). Repurposed rate slot 19 to carry FIX_CYN O₂ production. **Changes simulated dissolved-oxygen results.**
@@ -46,49 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`FE_III_DISS` read uninitialized (correctness):** the unsaturated (`elsewhere`) branch of the Fe(III) dissolution `where` block in `AQUABC_SEDIMENT_MODEL_1` left `FE_III_DISS` unset before it was read in `SED_DOC_MINERALIZATION` (`LIM_FE_III_RED`), so advanced-redox sediment results depended on stack garbage (non-deterministic across builds). Now assigned in both branches; verified via `-finit-real=snan` (no trap) and `-O2 == -finit-local-zero` (bit-identical)
 - **Sediment advanced-redox metal-dissolution NaN crash:** dissolved Fe/Mn fractions could blow up toward a near-zero metal pool and self-propagate via saved outputs; clamped to finite `[0,1]` with an `IEEE_IS_FINITE` guard in `CALC_DISS_ME_CONC`
 - **Sediment→water flux buffer not zeroed:** stale allelopathy-tail values (cols 33–36) corrupted secondary-metabolite derivatives; now zero `FLUXES_TO_WATER_COLUMN` before the sediment-to-water mapping
-
-### Changed
-- Zooplankton boundary conditions and initial-condition sets updated per the 3,560-day analysis recommendations
-- Sediment model particle mixing now uses bioturbation physics (exponential depth decay × Monod O₂ × seasonal) instead of uniform constant
-- Last-layer particle mixing boundary condition changed from hard-coded zero to proper zero-flux (Neumann) BC
-- Updated `AQUABC_Model_Equations.md` with bioturbation/bioirrigation equations (§13.8) and references
-
-- Unit tests for FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, and NOSTOCALES kinetics subroutines (25 test programs, 196 assertions total)
-- Dependabot configuration (`.github/dependabot.yml`) for weekly pip and GitHub Actions dependency scanning
-- `requirements-dev.txt` for development/test Python dependencies (ruff, pytest)
-- Cardinal Temperature Model with Inflection (CTMI, Rosso et al. 1993) replacing piecewise-exponential temperature response for phytoplankton growth
-- Synthesizing Unit nutrient colimitation (Saito et al. 2008) replacing Liebig's Law of the Minimum for all phytoplankton groups
-- Tunable Platt-style photoinhibition (BETA parameter) for light limitation in all phytoplankton groups
-- Unified precision type definitions via `precision_kinds` module
-- Compiler warning flags (`-Wall -Wextra`) for release and fast builds
-- Comprehensive AQUABC model equations reference document (`AQUABC_Model_Equations.md`)
-
-### Changed
-- OpenMP parallelization of pelagic kinetics nkn loop: single parallel region with chunked array slicing, ~750 line-level changes in `aquabc_II_pelagic_model.f90`, all library subroutine calls use per-thread derived type bundles, debug calls guarded with `!$omp master` barriers, serial fallback via Fortran sentinel comments
-- Bundled scalar constant arguments into derived types (`t_diatom_params`, `t_cyn_params`, `t_opa_params`, etc.) for 6 kinetics subroutines
-- Bundled environmental input arrays into `t_phyto_env` derived type in 7 phytoplankton subroutines
-- Bundled ORGANIC_CARBON_MINERALIZATION I/O arrays into 3 new shared pointer types (`t_redox_state`, `t_redox_lim`, `t_docmin_outputs`), reducing arguments from 36 to 9
-- Bundled REDOX_AND_SPECIATION I/O arrays into shared pointer types, reducing arguments from 33 to 12
-- Removed 5 dead arguments (`K_NO3_RED`, `K_MN_IV_RED`, `K_FE_III_RED`, `K_S_PLUS_6_RED`, `K_DOC_RED`) from ORGANIC_CARBON_MINERALIZATION
-- Replaced hardcoded dimension magic numbers with named constants throughout
-- Replaced tabs with spaces in 15 source files for consistent formatting
-
-### Security
-- Added `safe_resolve()` path traversal protection to all Shiny app file operations (`load_file`, `save_file`, `file_info_panel`, `validate_constants_file`, observation handlers)
-- Added subprocess timeouts (120s clean, 600s build) with `kill()` on timeout to prevent hung processes
-- Added bounded output buffers to all subprocess stdout readers
-
-### Added (Developer Tooling)
-- `pyproject.toml` with ruff linter configuration (E, F, W, I, UP, B, S rules)
-- 46 Python unit tests for parsers (`parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`) and `safe_resolve`
-- 19 Playwright integration tests covering app startup, navigation, and all major panels
-- 9 Selenium integration tests (gracefully skip without chromedriver)
-- CI `python-lint-test` job running ruff and pytest in parallel with Fortran build
-- `CONTRIBUTING.md` with build/test/PR workflow documentation
-- Makefile convenience targets: `make test-all`, `make test-python`, `make test-fortran`, `make lint`
 - Fixed all 653 ruff lint warnings across `shiny_app/*.py` (whitespace, imports, type annotations, bare excepts)
-
-### Fixed
 - Fixed 3 zero-valued Monod half-saturation defaults (`K_HS_DOC_MIN_DOXY=0→1.0`, `K_HS_DON_MIN_DOXY=0→0.05`, `K_HS_DOP_MIN_DOXY=0→0.052`) that caused NaN when substrate concentration reached zero
 - 25 Fortran unit tests (196 assertions) covering kinetics subroutines (DIATOMS, CYANOBACTERIA, FIX_CYANOBACTERIA, OTHER_PLANKTONIC_ALGAE, NOSTOCALES, ZOOPLANKTON, REDOX_AND_SPECIATION, ORGANIC_CARBON_MINERALIZATION) plus utility subroutines
 - Shared test defaults module (`test_defaults.f90`) with realistic parameter populators for all derived types
@@ -112,6 +98,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fixed missing `precision_kinds` dependency in 6 test targets
 - Removed ~250 lines of dead/commented-out code across 9 source files
 - Fixed `shinywidgets` version pin (0.7.0 → 0.7.1) in `requirements.txt`
+
+### Security
+- Added `safe_resolve()` path traversal protection to all Shiny app file operations (`load_file`, `save_file`, `file_info_panel`, `validate_constants_file`, observation handlers)
+- Added subprocess timeouts (120s clean, 600s build) with `kill()` on timeout to prevent hung processes
+- Added bounded output buffers to all subprocess stdout readers
 
 ---
 
