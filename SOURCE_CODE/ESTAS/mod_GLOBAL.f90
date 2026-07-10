@@ -73,6 +73,10 @@ module GLOBAL
     ! Number of sediment layers (make it user enterable)
     integer :: NUM_SED_LAYERS
 
+    ! Number of distinct sediment profile types (e.g. 1=sandy, 2=muddy). Defaults to 1
+    ! (legacy single-profile broadcast) when the input file has no # NUM_SED_TYPES header.
+    integer :: NUM_SED_TYPES
+
     ! Switch to indicate if the effect of the bentic animals on bottom sediments
     ! will be modelled or not
     integer :: MODEL_BENTHIC_ANIMALS
@@ -160,6 +164,9 @@ module GLOBAL
 
     !Input  : Model constants for sediment model
     real(kind=DBL), allocatable, dimension(:)          :: SED_MODEL_CONSTANTS
+
+    !Input  : Per-box sediment profile-type index (1..NUM_SED_TYPES); nkn-length
+    integer, allocatable, dimension(:)                 :: SED_TYPE_PER_BOX
 
     !Input  : Output : Diagnostic variables documented in sediments
     real(kind=DBL), allocatable, dimension(:, :, :, :) :: PROCESSES_sed

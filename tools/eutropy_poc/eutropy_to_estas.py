@@ -124,6 +124,44 @@ CL29_SED_CONST_OVERRIDE = {       # W_SED_CONST constants, matched by name
     "FE_P_REDOX_FRAC":   CL29_SED_FE_P_REDOX_FRAC,  # reductive Fe(III)-P coupling (0=off)
 }
 
+# ---- Phase-2a two-type (sandy/muddy) sediment authoring --------------------------
+# Baseline geometry seeds extracted from the shipped template so BOTH per-type profile
+# dicts have a defined value for every field (Phase 1 only seeded depths + burial; the
+# template supplied porosity/density/mixing verbatim, so there was no constant to seed
+# them from). These are placeholders shared by both types until Phase 2b differentiates
+# sandy vs muddy from measured fluxes.
+CL29_SED_POROSITIES = [0.40, 0.40, 0.40, 0.40, 0.30, 0.25, 0.25]  # template SED_POROSITIES
+CL29_SED_DENSITIES  = [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75]  # template SED_DENSITIES
+CL29_SED_MIXING     = 0.0000264                                   # template surface Db0
+# Per-type profiles. Each carries all six fields {depths, porosities, densities, burial,
+# mixing, ic_overrides}. depths/burial are PER-TYPE records in the 2-type file (there is no
+# global depths/burial slot) -- CL29_SED_DEPTHS/CL29_SED_BURIAL are merely seed values copied
+# into both dicts. ic_overrides is a sparse {var_index_1based: [per-layer values]} patch
+# applied on top of the template's 24xL IC base. Seeded identical until 2b differentiates.
+CL29_SED_SANDY = {
+    "depths":       CL29_SED_DEPTHS,
+    "porosities":   CL29_SED_POROSITIES,
+    "densities":    CL29_SED_DENSITIES,
+    "burial":       CL29_SED_BURIAL,
+    "mixing":       CL29_SED_MIXING,
+    "ic_overrides": {},
+}
+CL29_SED_MUDDY = {
+    "depths":       CL29_SED_DEPTHS,
+    "porosities":   CL29_SED_POROSITIES,
+    "densities":    CL29_SED_DENSITIES,
+    "burial":       CL29_SED_BURIAL,
+    "mixing":       CL29_SED_MIXING,
+    "ic_overrides": {},
+}
+# Box -> sediment type ('sandy' -> 1, 'muddy' -> 2). A box absent from the map defaults to
+# type 1 (sandy). EMPTY by default: the empty map routes _write_sediment_inputs through the
+# unmodified Phase-1 single-profile path, keeping that output byte-identical. Populate this
+# (e.g. {19: 'muddy', ...}, with box 19 muddy per spec section 1) to activate the multi-type
+# author, which emits the extended # NUM_SED_TYPES / # SED_TYPE_PER_BOX file layout.
+CL29_SEDIMENT_TYPE = {}
+_SED_TYPE_TO_INDEX = {"sandy": 1, "muddy": 2}
+
 
 def _apply_wconst_overrides(path, overrides):
     """Rewrite named constants into a copied WCONST-style file (pelagic WCONST or
@@ -314,7 +352,7 @@ def main():
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
-    _write_sediment_inputs(OUT, CL29_ENABLE_SEDIMENTS)
+    _write_sediment_inputs(OUT, CL29_ENABLE_SEDIMENTS, CL29_SEDIMENT_TYPE)
     _write_input_txt(REPO, tdays, CL29_ENABLE_SEDIMENTS)
 
     print(f"[estas] wrote 29-box INPUTS to {OUT}/ "
@@ -593,17 +631,166 @@ def _override_sed_geometry(lines, depths, burial):
     return lines
 
 
-def _write_sediment_inputs(out, enable_sediments):
-    """Phase-1 sediment stand-up. When enabled, copy the 170-constant W_SED_CONST.txt
-    (with the CL29 stability constant overrides) and author BOTTOM_SEDIMENT_MODEL_INPUT.txt
-    from the template with advanced-redox forced to 0, the CL29 stability geometry, and an
-    optional carbonate-IC override. No-op otherwise. Run SERIAL -- not OpenMP-safe."""
+def _sed_template_number(lines, header_test):
+    """Return the float on the value line immediately after the first matching header."""
+    for i, ln in enumerate(lines):
+        if header_test(ln):
+            return float(lines[i + 1].split("!")[0].split()[0])
+    raise SystemExit("sediment template header not found")
+
+
+def _sed_ic_base(lines, nvars=24, nlayers=7):
+    """Parse the template's 24xL INIT_SED_STATE_VARS block into a list of nvars rows,
+    each a list of nlayers floats (the base every per-type IC block is composed from)."""
+    start, end = _sed_ic_block_bounds(lines)
+    return [[float(x) for x in lines[i].split()[:nlayers]] for i in range(start, end)]
+
+
+def _compose_type_ic(ic_base, ic_overrides, nlayers=7):
+    """Full 24xL IC for one type: template base, then the type's sparse ic_overrides
+    ({var_1based: [nlayers values]}), then -- if configured -- the shared carbonate-IC
+    floor (INORG_C=var 13, TOT_ALK=var 14), which applies to BOTH types (it reflects a
+    pore-water DIC/alkalinity floor CO2SYS needs, not a grain-size property)."""
+    ic = [list(row) for row in ic_base]
+    for var1, vals in ic_overrides.items():
+        if len(vals) != nlayers:
+            raise SystemExit(f"ic_overrides var {var1}: expected {nlayers} values")
+        ic[var1 - 1] = list(vals)
+    if CL29_SED_CARBONATE_IC is not None:
+        inorg_c, tot_alk = CL29_SED_CARBONATE_IC
+        ic[12] = [inorg_c] * nlayers   # var 13 = INORG_C
+        ic[13] = [tot_alk] * nlayers   # var 14 = TOT_ALK
+    return ic
+
+
+def _author_multitype_sediment(out, sediment_type):
+    """Emit the extended two-type BOTTOM_SEDIMENT_MODEL_INPUT.txt (spec section 3.1 layout):
+    preamble, # NUM_SED_TYPES + count, # SED_TYPE_PER_BOX + one integer per box, then one
+    per-type profile block {depths(L), porosities(L), densities(L), mixing(1), burial(1),
+    IC(24xL)} sandy-first muddy-second, then GLOBAL ADVECTIVE_VELOCITY and SURF_MIXLEN, then
+    the constants + output sections once. Field cardinalities and the 3/3/3/3/3/4 pre-data
+    skip records match the reader's positional skip-counts (mod_BOTTOM_SEDIMENTS)."""
+    with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
+              newline="") as fh:
+        tlines = fh.readlines()
+    eol = "\r\n" if tlines[0].endswith("\r\n") else "\n"
+
+    nlayers = int(_sed_template_number(tlines, lambda l: l.lstrip().startswith("# NUM_SED_LAYERS")))
+    adv_vel = _sed_template_number(tlines, lambda l: "ADVECTIVE_VELOCITY" in l and "m/day" in l)
+    surf_mixlen = _sed_template_number(tlines, lambda l: "SURF_MIXLEN" in l and "(m)" in l)
+    ic_base = _sed_ic_base(tlines, nvars=24, nlayers=nlayers)
+
+    profiles = [("sandy", CL29_SED_SANDY), ("muddy", CL29_SED_MUDDY)]  # type 1, type 2
+    num_types = len(profiles)
+
+    def type_index(box):
+        name = sediment_type.get(box, "sandy")
+        if name not in _SED_TYPE_TO_INDEX:
+            raise SystemExit(f"CL29_SEDIMENT_TYPE box {box}: unknown type '{name}'")
+        return _SED_TYPE_TO_INDEX[name]
+
+    L = []
+
+    def emit(s):
+        L.append(s + eol)
+
+    # Preamble: description lines + advanced-redox flag + NUM_SED_LAYERS (from template).
+    for i in range(5):
+        emit("# DESCRIPTION LINE %d" % (i + 1))
+    emit("# ADVANCED REDOX SIMULATION")
+    emit("                %d" % CL29_SED_ADVANCED_REDOX)
+    emit("# NUM_SED_LAYERS")
+    emit("        %d" % nlayers)
+
+    # Two-type header + count, then one type index per box (all NBOX boxes, one per line).
+    emit("# NUM_SED_TYPES")
+    emit("        %d" % num_types)
+    emit("# SED_TYPE_PER_BOX")
+    for box in range(1, NBOX + 1):
+        emit("        %d" % type_index(box))
+
+    # One profile block per type (sandy first, muddy second), only per-type fields.
+    for name, prof in profiles:
+        emit("# SED_DEPTHS_OPTIONS         (type %s)" % name)
+        emit("        1")
+        emit("# SED_DEPTHS          (meters)")
+        for v in prof["depths"]:
+            emit("    %.10g" % v)
+
+        emit("# SED_POROSITIES_OPTIONS")
+        emit("        1")
+        emit("# SED_POROSITIES     (unitless)")
+        for v in prof["porosities"]:
+            emit("    %.10g" % v)
+
+        emit("# SED_DENSITIES_OPTIONS")
+        emit("        1")
+        emit("# SED_DENSITIES      (g/cm^3)")
+        for v in prof["densities"]:
+            emit("    %.10g" % v)
+
+        emit("# PART_MIXING_COEFFS_OPTIONS")
+        emit("        1")
+        emit("# PART_MIXING_COEFFS (m^2/day)")
+        emit(" %.10g" % prof["mixing"])
+
+        emit("# SED_BURRIALS_OPTIONS")
+        emit("        1")
+        emit("# SED_BURRIALS       (m/day)")
+        emit(" %.10g" % prof["burial"])
+
+        emit("# INIT_SED_STATE_VARS_OPTIONS")
+        emit("        1")
+        emit("# INIT_SED_STATE_VARS")
+        emit("#    Layer 1 ... Layer %d" % nlayers)
+        for row in _compose_type_ic(ic_base, prof["ic_overrides"], nlayers):
+            emit(" ".join("%.10g" % v for v in row))
+
+    # GLOBAL advective velocity + surface mixing length (once, relocated to the tail).
+    emit("# ADVECTIVE_VELOCITY_OPTIONS")
+    emit("        1")
+    emit("# ADVECTIVE_VELOCITY (m/day)")
+    emit("    %.10g" % adv_vel)
+    emit("# SURF_MIXLEN_OPTIONS")
+    emit("        1")
+    emit("# SURF_MIXLEN        (m)")
+    emit("    %.10g" % surf_mixlen)
+
+    # Constants + output-organization sections, copied verbatim from the template tail so
+    # the reader's common (post-branch) parse is byte-for-byte what it already expects.
+    for i, ln in enumerate(tlines):
+        if ln.lstrip().startswith("# MODEL_COEFFICIENTS_FOR_BOTTOM_SEDIMENTS_OPTIONS"):
+            L.extend(tlines[i:])
+            break
+    else:
+        raise SystemExit("sediment template missing constants section")
+
+    with open(os.path.join(out, "BOTTOM_SEDIMENT_MODEL_INPUT.txt"), "w", newline="") as fh:
+        fh.writelines(L)
+
+
+def _write_sediment_inputs(out, enable_sediments, sediment_type=None):
+    """Sediment stand-up. When enabled, copy the 170-constant W_SED_CONST.txt (with the CL29
+    stability constant overrides) and author BOTTOM_SEDIMENT_MODEL_INPUT.txt. Two paths:
+
+    * sediment_type empty/None -> the unmodified Phase-1 single-profile template patch
+      (advanced-redox from config, CL29 stability geometry, optional carbonate IC). Output
+      is byte-identical to Phase 1 -- do NOT route this through the multi-type author.
+    * sediment_type non-empty  -> the two-type author emits the extended # NUM_SED_TYPES /
+      # SED_TYPE_PER_BOX layout with sandy/muddy profile blocks.
+
+    No-op when disabled. Run SERIAL -- the sediment path is not OpenMP-safe."""
     if not enable_sediments:
         return
     dst_const = os.path.join(out, "W_SED_CONST.txt")
     shutil.copy(os.path.join(REPO, "INPUTS", "W_SED_CONST.txt"), dst_const)
     if CL29_SED_CONST_OVERRIDE:
         _apply_wconst_overrides(dst_const, CL29_SED_CONST_OVERRIDE)
+
+    if sediment_type:
+        _author_multitype_sediment(out, sediment_type)
+        return
+
     with open(os.path.join(REPO, "INPUTS", "BOTTOM_SEDIMENT_MODEL_INPUT.txt"),
               newline="") as fh:
         lines = fh.readlines()                       # newline="" preserves CRLF

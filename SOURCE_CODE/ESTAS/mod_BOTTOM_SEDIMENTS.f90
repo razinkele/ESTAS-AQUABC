@@ -316,15 +316,31 @@ contains
 
 
     subroutine READ_BOTTOM_SEDIMENTS_MODEL_INPUTS(IN_FILE)
+        use SED_TYPEMAP, only: ASSIGN_SED_PROFILES_TO_BOXES
         implicit none
         integer, intent(in) :: IN_FILE
 
         integer :: i, LAYER_NO
         integer :: BOX_NO, SED_LAYER_NO, SED_VAR_NO
+        integer :: t                         ! sediment profile-type index
 
         real(kind = DBL) :: AUX_DOUBLE
         real(kind = DBL), allocatable, dimension(:, :) :: BSED_ARRAY
         character(len = 2048) :: FILE_NAME
+
+        ! Peek buffer + flag for the optional # NUM_SED_TYPES header (two-type inputs)
+        character(len = 2048) :: BUF
+        logical               :: HAS_TYPE_HEADER
+
+        ! Per-type read buffers for the multi-type (sandy/muddy) parse path. Shapes match
+        ! ASSIGN_SED_PROFILES_TO_BOXES's intent(in) dummies (TYPE_IC is var-major/layer-minor,
+        ! mirroring the legacy BSED_ARRAY(NUM_SED_VARS, NUM_SED_LAYERS) order for the transpose).
+        real(kind = DBL), allocatable, dimension(:, :)    :: TYPE_DEPTHS      ! (NUM_SED_TYPES,NUM_SED_LAYERS)
+        real(kind = DBL), allocatable, dimension(:, :)    :: TYPE_POROSITIES  ! (NUM_SED_TYPES,NUM_SED_LAYERS)
+        real(kind = DBL), allocatable, dimension(:, :)    :: TYPE_DENSITIES   ! (NUM_SED_TYPES,NUM_SED_LAYERS)
+        real(kind = DBL), allocatable, dimension(:)       :: TYPE_MIXING      ! (NUM_SED_TYPES) scalar per type
+        real(kind = DBL), allocatable, dimension(:)       :: TYPE_BURIAL      ! (NUM_SED_TYPES) scalar per type
+        real(kind = DBL), allocatable, dimension(:, :, :) :: TYPE_IC          ! (NUM_SED_TYPES,NUM_SED_VARS,NUM_SED_LAYERS)
 
         !READ DESCRIPTION LINES
         do i = 1, 5
@@ -352,6 +368,7 @@ contains
         allocate(SED_DIFFUSIONS          (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
 
         allocate(SED_BURRIALS            (nkn,NUM_SED_LAYERS)                            )
+        allocate(SED_TYPE_PER_BOX        (nkn)                                           )
         allocate(SURF_WATER_CONCS        (nkn,NUM_SED_VARS)                              )
         allocate(SED_TEMPS               (nkn,NUM_SED_LAYERS)                            )
         allocate(SED_MODEL_CONSTANTS     (NUM_SED_CONSTS)                                )
@@ -374,80 +391,204 @@ contains
         ! End of allocate AQUABC sediments arrays
         ! -----------------------------------------------------------------------------------
 
-        ! Read sediment depths
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
+        ! -----------------------------------------------------------------------------------
+        ! Detect the optional "# NUM_SED_TYPES" header that flags a multi-type (sandy/muddy)
+        ! sediment input. Legacy single-profile files have no such header, so peek one record:
+        ! if it is the header, read the type count and take the multi-type parse path below;
+        ! otherwise backspace it (the legacy geometry read re-consumes it) and fall back to
+        ! NUM_SED_TYPES = 1 with byte-for-byte unchanged legacy parsing.
+        ! -----------------------------------------------------------------------------------
+        read(IN_FILE, '(A)') BUF
+        HAS_TYPE_HEADER = (index(BUF, 'NUM_SED_TYPES') > 0)
 
-        do SED_LAYER_NO = 1, NUM_SED_LAYERS
-            read(IN_FILE, *) AUX_DOUBLE
-            SED_DEPTHS(:, SED_LAYER_NO) = AUX_DOUBLE
-        end do
+        if (HAS_TYPE_HEADER) then
+            read(IN_FILE, *) NUM_SED_TYPES
+            if (NUM_SED_TYPES < 1) then
+                write(*, *) 'READ_BOTTOM_SEDIMENTS_MODEL_INPUTS: NUM_SED_TYPES = ', &
+                    NUM_SED_TYPES, ' is invalid (must be >= 1)'
+                stop
+            end if
+        else
+            backspace(IN_FILE)
+            NUM_SED_TYPES = 1
+        end if
 
-        ! Read sediment porosities
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
+        if (HAS_TYPE_HEADER) then
+            ! -------------------------------------------------------------------------------
+            ! Multi-type parse path (a distinct record sequence, NOT a loop over the legacy
+            ! interleaved order). Reads the per-box type map, then one profile block per type
+            ! {depths, porosities, densities, particle-mixing, burial, IC}, then the GLOBAL
+            ! ADVECTIVE_VELOCITY and SURF_MIXLEN relocated to the tail. See design spec 3.1.
+            ! -------------------------------------------------------------------------------
 
-        do SED_LAYER_NO = 1, NUM_SED_LAYERS
-            read(IN_FILE, *) AUX_DOUBLE
-            SED_POROSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
-        end do
+            ! Per-box profile-type indices: one integer per line, all nkn boxes
+            read(IN_FILE, *)                              ! # SED_TYPE_PER_BOX header
+            do i = 1, nkn
+                read(IN_FILE, *) SED_TYPE_PER_BOX(i)
+                if (SED_TYPE_PER_BOX(i) < 1 .or. SED_TYPE_PER_BOX(i) > NUM_SED_TYPES) then
+                    write(*, *) 'READ_BOTTOM_SEDIMENTS_MODEL_INPUTS: box ', i, &
+                        ' has sediment type index ', SED_TYPE_PER_BOX(i), &
+                        ' out of range [1, ', NUM_SED_TYPES, ']'
+                    stop
+                end if
+            end do
 
-        ! Read sediment densities
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
+            allocate(TYPE_DEPTHS    (NUM_SED_TYPES, NUM_SED_LAYERS))
+            allocate(TYPE_POROSITIES(NUM_SED_TYPES, NUM_SED_LAYERS))
+            allocate(TYPE_DENSITIES (NUM_SED_TYPES, NUM_SED_LAYERS))
+            allocate(TYPE_MIXING    (NUM_SED_TYPES))
+            allocate(TYPE_BURIAL    (NUM_SED_TYPES))
+            allocate(TYPE_IC        (NUM_SED_TYPES, NUM_SED_VARS, NUM_SED_LAYERS))
 
-        do SED_LAYER_NO = 1, NUM_SED_LAYERS
-            read(IN_FILE, *) AUX_DOUBLE
-            SED_DENSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
-        end do
+            do t = 1, NUM_SED_TYPES
+                ! Sediment depths: 3 header/skip records + NUM_SED_LAYERS values
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                    read(IN_FILE, *) TYPE_DEPTHS(t, SED_LAYER_NO)
+                end do
 
-        ! Read advective velocities
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *) ADVECTIVE_VELOCITY
+                ! Sediment porosities: 3 header/skip records + NUM_SED_LAYERS values
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                    read(IN_FILE, *) TYPE_POROSITIES(t, SED_LAYER_NO)
+                end do
 
-        ! Read particle mixing coefficients
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *) AUX_DOUBLE
-        PART_MIXING_COEFFS(:,:,:) = AUX_DOUBLE  !m2/day
+                ! Sediment densities: 3 header/skip records + NUM_SED_LAYERS values
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                    read(IN_FILE, *) TYPE_DENSITIES(t, SED_LAYER_NO)
+                end do
 
-        ! Read sediment burials
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *) AUX_DOUBLE
-        SED_BURRIALS      (:,:)   = AUX_DOUBLE  !m/day
+                ! Particle mixing coefficient: 3 header/skip records + 1 scalar
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *) TYPE_MIXING(t)
 
-        ! Read sediment mixing length with surface water
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *) SURF_MIXLEN            !m
+                ! Sediment burial: 3 header/skip records + 1 scalar
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *) TYPE_BURIAL(t)
 
-        ! Read the initial concentrations for bottom sediments
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-        read(IN_FILE, *)
-
-        do SED_VAR_NO = 1, NUM_SED_VARS
-            read(IN_FILE, *) BSED_ARRAY(SED_VAR_NO, :)
-        end do
-
-        do BOX_NO = 1,nkn
-            do LAYER_NO = 1, NUM_SED_LAYERS
+                ! Initial conditions: 4 header/skip records + NUM_SED_VARS var rows
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
+                read(IN_FILE, *)
                 do SED_VAR_NO = 1, NUM_SED_VARS
-                    INIT_SED_STATE_VARS(BOX_NO,LAYER_NO,SED_VAR_NO) = &
-                        BSED_ARRAY(SED_VAR_NO, LAYER_NO)
+                    read(IN_FILE, *) TYPE_IC(t, SED_VAR_NO, :)
                 end do
             end do
-        end do
+
+            ! Global advective velocity: 3 header/skip records + 1 scalar (once, not per type)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) ADVECTIVE_VELOCITY
+
+            ! Global surface mixing length: 3 header/skip records + 1 scalar (once)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) SURF_MIXLEN
+
+            ! Fan the per-type profiles out to every box (the IC copy is a transpose)
+            call ASSIGN_SED_PROFILES_TO_BOXES(nkn, NUM_SED_LAYERS, NUM_SED_VARS, &
+                 SED_TYPE_PER_BOX, TYPE_DEPTHS, TYPE_POROSITIES, TYPE_DENSITIES, &
+                 TYPE_MIXING, TYPE_BURIAL, TYPE_IC, SED_DEPTHS, SED_POROSITIES, &
+                 SED_DENSITIES, SED_BURRIALS, PART_MIXING_COEFFS, INIT_SED_STATE_VARS)
+
+            deallocate(TYPE_DEPTHS, TYPE_POROSITIES, TYPE_DENSITIES, &
+                       TYPE_MIXING, TYPE_BURIAL, TYPE_IC)
+        else
+            ! -------------------------------------------------------------------------------
+            ! Legacy single-profile parse path (UNCHANGED reads: one profile broadcast to all
+            ! boxes, with ADVECTIVE_VELOCITY and SURF_MIXLEN interleaved as in the shipped file).
+            ! -------------------------------------------------------------------------------
+            SED_TYPE_PER_BOX = 1
+
+            ! Read sediment depths
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+
+            do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                read(IN_FILE, *) AUX_DOUBLE
+                SED_DEPTHS(:, SED_LAYER_NO) = AUX_DOUBLE
+            end do
+
+            ! Read sediment porosities
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+
+            do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                read(IN_FILE, *) AUX_DOUBLE
+                SED_POROSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
+            end do
+
+            ! Read sediment densities
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+
+            do SED_LAYER_NO = 1, NUM_SED_LAYERS
+                read(IN_FILE, *) AUX_DOUBLE
+                SED_DENSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
+            end do
+
+            ! Read advective velocities
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) ADVECTIVE_VELOCITY
+
+            ! Read particle mixing coefficients
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) AUX_DOUBLE
+            PART_MIXING_COEFFS(:,:,:) = AUX_DOUBLE  !m2/day
+
+            ! Read sediment burials
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) AUX_DOUBLE
+            SED_BURRIALS      (:,:)   = AUX_DOUBLE  !m/day
+
+            ! Read sediment mixing length with surface water
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *) SURF_MIXLEN            !m
+
+            ! Read the initial concentrations for bottom sediments
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+            read(IN_FILE, *)
+
+            do SED_VAR_NO = 1, NUM_SED_VARS
+                read(IN_FILE, *) BSED_ARRAY(SED_VAR_NO, :)
+            end do
+
+            do BOX_NO = 1,nkn
+                do LAYER_NO = 1, NUM_SED_LAYERS
+                    do SED_VAR_NO = 1, NUM_SED_VARS
+                        INIT_SED_STATE_VARS(BOX_NO,LAYER_NO,SED_VAR_NO) = &
+                            BSED_ARRAY(SED_VAR_NO, LAYER_NO)
+                    end do
+                end do
+            end do
+        end if
 
         ! Read the bottom sediment model constants
         read(IN_FILE, *)
