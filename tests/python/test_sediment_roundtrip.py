@@ -44,8 +44,10 @@ def _parse_multitype_sediment(path, nkn):
         return toks
 
     skip(5)                                   # 5 description lines
-    skip(1); value()                          # # ADVANCED REDOX + flag
-    skip(1); num_layers = int(value()[0])     # # NUM_SED_LAYERS + count
+    skip(1)
+    value()                          # # ADVANCED REDOX + flag
+    skip(1)
+    num_layers = int(value()[0])     # # NUM_SED_LAYERS + count
 
     # Detection slot: the extended file has the header here.
     assert "NUM_SED_TYPES" in raw[pos], "missing # NUM_SED_TYPES header"
@@ -58,19 +60,27 @@ def _parse_multitype_sediment(path, nkn):
     type_depths, type_poros, type_dens = [], [], []
     type_mixing, type_burial, type_ic = [], [], []
     for _t in range(num_types):
-        skip(3); type_depths.append([float(value()[0]) for _ in range(num_layers)])
-        skip(3); type_poros.append([float(value()[0]) for _ in range(num_layers)])
-        skip(3); type_dens.append([float(value()[0]) for _ in range(num_layers)])
-        skip(3); type_mixing.append(float(value()[0]))
-        skip(3); type_burial.append(float(value()[0]))
+        skip(3)
+        type_depths.append([float(value()[0]) for _ in range(num_layers)])
+        skip(3)
+        type_poros.append([float(value()[0]) for _ in range(num_layers)])
+        skip(3)
+        type_dens.append([float(value()[0]) for _ in range(num_layers)])
+        skip(3)
+        type_mixing.append(float(value()[0]))
+        skip(3)
+        type_burial.append(float(value()[0]))
         skip(4)                                # 4 IC skip records (incl. column header)
         ic = [[float(x) for x in value()[:num_layers]] for _ in range(NUM_SED_VARS)]
         type_ic.append(ic)
 
-    skip(3); adv_vel = float(value()[0])       # GLOBAL advective velocity
-    skip(3); surf_mixlen = float(value()[0])   # GLOBAL surface mixing length
+    skip(3)
+    adv_vel = float(value()[0])       # GLOBAL advective velocity
+    skip(3)
+    surf_mixlen = float(value()[0])   # GLOBAL surface mixing length
 
-    skip(4); const_file = value()[0]           # constants section (4 skip + filename)
+    skip(4)
+    const_file = value()[0]           # constants section (4 skip + filename)
     return dict(num_types=num_types, num_layers=num_layers, type_per_box=type_per_box,
                 type_depths=type_depths, type_poros=type_poros, type_dens=type_dens,
                 type_mixing=type_mixing, type_burial=type_burial, type_ic=type_ic,
