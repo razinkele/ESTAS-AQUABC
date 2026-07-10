@@ -91,17 +91,20 @@ CL29_WCONST_OVERRIDE = {
 # biomass (box-19 interior spring DIP stays ~0.0026 mg/L vs the boundary's ~0.011-0.017),
 # confirming the interior is severely P-starved -- P does not reach box 19.
 #
-# BUT grounding against OBSERVED Nemunas P (Bartoli/Vaiciute et al. 2018, 10.3389/fmars.2018.00434;
-# Nemunas P-export 2012-2016, 10.3390/w10091178) REFUTES a flat boost: observed river reactive P
-# is spring ~0.2 uM (~0.006 mg/L) rising to summer ~4 uM (~0.124 mg/L). vs EUTROPY boundary PO4
-# spring ~0.011-0.017 (already >= observed -- NOT underestimated) but summer ~0.009-0.040
-# (UNDERESTIMATED ~3-13x -- the observed summer P peak is missing). So the model's SPRING
-# boundary P is realistic; the spring box-19 gap is therefore NOT explained by underestimated
-# spring boundary P. Two grounded leads remain: (a) fix the missing SEASONAL summer P peak
-# (a defensible correction), which may build the P pool carried into the next spring; (b) the
-# interior under-delivery (boundary ~0.014 -> box-19 ~0.0027) points to transport/consumption
-# or a local P source, not boundary concentration. Kept at 1.0 (byte-identical); a uniform
-# boost is NOT the grounded fix.
+# GROUNDED against observed Curonian P (Aleksandrov 2025, Limnol. Freshw. Biol.,
+# 10.31951/2658-3518-2025-a-4-391; Nemunas river P, Vybernaite-Lubiene/Bartoli et al. 2018,
+# 10.3389/fmars.2018.00434 & 10.3390/w10091178). The model period 2012-2016 was the eutrophic
+# "hyperblooming" era: observed lagoon P-PO4 summer AVG ~25 ug P/L (0.025 mg/L), PEAK ~143 ug/L
+# (0.143, 2015); Nemunas river reactive P spring ~0.006 -> summer ~0.124 mg/L. (Recent
+# de-eutrophication 2019-2024 dropped summer P-PO4 to 2-3 ug/L.) vs EUTROPY boundary PO4:
+# spring ~0.011-0.017 (within observed spring range -- OK) but summer ~0.009-0.040 (at/below the
+# observed summer AVERAGE, far below peak -> UNDER-SUPPLIED ~3-15x). So the model under-supplies
+# P mainly in SUMMER; the box-19 spring bloom is too small because the P pool is under-fed. The
+# grounded fix is a SEASONAL (summer-weighted) boundary-P increase toward the observed 2012-2016
+# values -- a uniform ~5-8x boost is within the grounded summer range and closes the gap in the
+# sweep, but a flat scale is the crude proxy, not the physical correction. Secondary factor: the
+# interior under-delivery (boundary ~0.014 -> box-19 ~0.0027) = transport/consumption. Kept at
+# 1.0 (byte-identical) until a seasonal boundary-P TS is authored from the observed record.
 CL29_BOUNDARY_PO4_SCALE = 1.0
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
