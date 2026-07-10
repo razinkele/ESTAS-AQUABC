@@ -168,3 +168,4 @@
   168      SED_k_DISS_FE_III_20               0.001     ! 2016 08 21
   169      SED_THETA_k_DISS_FE_III            1.04      ! 2016 08 21
   170      SED_INIT_MULT_FE_III_DISS          0.5       ! 2016 08 21
+  171      FE_P_REDOX_FRAC                    0.0       ! Reductive Fe(III)-P coupling fraction (0=off, baseline): fraction of PO4 solid sorption released as Fe(III) is reduced under anoxia (MULT_FE_III_PART->0)

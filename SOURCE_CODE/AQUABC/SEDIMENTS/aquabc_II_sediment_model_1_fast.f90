@@ -1502,6 +1502,9 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     end if
 
 
+    ! Reductive Fe-P coupling strength FE_P_REDOX_FRAC comes from W_SED_CONST #171
+    ! (module AQUABC_BSED_MODEL_CONSTANTS, set in INIT_BSED_MODEL_CONSTANTS).
+
     ! Derivatives loop
     do TIME_LOOP = 1, NUM_SUB_TIME_STEPS
 
@@ -1529,9 +1532,13 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     ! while for other solute phase variables concentrations per
                     ! sediment total unit volume were used. Division by porosities is done now
                     ! when necessary to have concentrations per pore water or per solids?
+                ! PO4 sorption scaled by the particulate (oxic) Fe(III) fraction: a
+                ! fraction FE_P_REDOX_FRAC of the sorption capacity collapses as Fe(III)
+                ! is reduced under anoxia (MULT_FE_III_PART -> 0), releasing bound P.
                 if (j .eq. 5 ) &
                     SOLUTE_FRACTIONS(:,:, j) = & !(1.0D0 / SED_POROSITIES(:,:)) * &
-                           (1.0D0 / (1.0D0 + (SOLID_CONCS(:,:) * SOLID_PART_COEFF_PO4)))
+                           (1.0D0 / (1.0D0 + (SOLID_CONCS(:,:) * SOLID_PART_COEFF_PO4 * &
+                            ((1.0D0 - FE_P_REDOX_FRAC) + FE_P_REDOX_FRAC * MULT_FE_III_PART(:,:)))))
 
                 if (j .eq. 16) &
                     SOLUTE_FRACTIONS(:,:, j) =  MULT_FE_II_DISS(:,:)

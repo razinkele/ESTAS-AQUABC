@@ -186,6 +186,7 @@ contains
         SED_k_DISS_FE_III_20         = SED_MODEL_CONSTANTS(168)
         SED_THETA_k_DISS_FE_III      = SED_MODEL_CONSTANTS(169)
         SED_INIT_MULT_FE_III_DISS    = SED_MODEL_CONSTANTS(170)
+        FE_P_REDOX_FRAC              = SED_MODEL_CONSTANTS(171)
 
         ! Register isedi parameter for sediment transport mode selection.
         ! In ESTAS (without SHYFEM sediment transport), isedi must be 0
@@ -354,6 +355,9 @@ contains
         allocate(SURF_WATER_CONCS        (nkn,NUM_SED_VARS)                              )
         allocate(SED_TEMPS               (nkn,NUM_SED_LAYERS)                            )
         allocate(SED_MODEL_CONSTANTS     (NUM_SED_CONSTS)                                )
+        ! Default unset constants to 0 so an older W_SED_CONST.txt that omits newer
+        ! trailing entries (e.g. #171 FE_P_REDOX_FRAC) leaves them at a safe baseline.
+        SED_MODEL_CONSTANTS = 0.0D0
         allocate(PROCESSES_sed           (nkn,NUM_SED_LAYERS, NUM_SED_VARS, NDIAGVAR_sed))
         allocate(SED_DRIVING_FUNCTIONS   (NUM_SED_LAYERS, NUM_SED_DRIV)                  )
         allocate(FLUXES_TO_SEDIMENTS     (nkn,NUM_FLUXES_TO_SEDIMENTS)                   )

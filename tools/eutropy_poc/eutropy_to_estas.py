@@ -97,6 +97,18 @@ CL29_SED_CARBONATE_IC = None
 # is commented out in the Fortran, not a constant -- so this enables anoxic
 # *mineralization* P return, not Fe-oxide dissolution P.
 CL29_SED_ADVANCED_REDOX = 1
+# Reductive Fe(III)-P coupling strength (W_SED_CONST #171 FE_P_REDOX_FRAC). Fraction of the
+# sediment PO4 solid-sorption capacity released as Fe(III) is reduced under anoxia -- the
+# "iron curtain" internal-loading mechanism. 0 = redox-independent sorption (baseline).
+# A 2026-07-10 sweep (0..1, 1-yr and 5-yr) showed it lifts the benthic PO4 flux strongly
+# and monotonically (box-19 +609% summer at 1.0), but the absolute flux is ~1000x too
+# small to move water-column PO4 or diatoms in ANY of the 5 years, so it does NOT close
+# the section 4.1a spring-diatom gap. Over 5 yr the baseline flux DECLINES (2.6e-7 ->
+# ~5e-9 g P/m2/day as surface sediment P depletes), so the knob's absolute effect shrinks
+# with time even as its multiplier grows. The bottleneck is the sediment P-flux magnitude,
+# not the redox partitioning. Kept off (0.0) for CL29. If enabling for another application
+# with a larger base flux, ~0.3-0.5 is safer than the convex, twitchy top of the range.
+CL29_SED_FE_P_REDOX_FRAC = 0.0
 # CL29 sediment STABILITY calibration (Phase 1). The template sediment config is
 # numerically unstable for CL29's diatom-driven PART_Si deposition: particulate
 # silica (SED_PSi) accumulates unbounded in the thin 5 mm surface layer and the
@@ -109,6 +121,7 @@ CL29_SED_BURIAL = 0.000274        # m/day; 10x template -> spreads deposited Si 
 CL29_SED_CONST_OVERRIDE = {       # W_SED_CONST constants, matched by name
     "K_OXIC_DISS_PSi":   0.1,     # 20x template: faster particulate-Si dissolution
     "K_ANOXIC_DISS_PSi": 0.02,    # 20x template
+    "FE_P_REDOX_FRAC":   CL29_SED_FE_P_REDOX_FRAC,  # reductive Fe(III)-P coupling (0=off)
 }
 
 

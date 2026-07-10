@@ -70,6 +70,12 @@ module AQUABC_BSED_MODEL_CONSTANTS
     real(kind = DBL_PREC) SOLID_PART_COEFF_NH4
     real(kind = DBL_PREC) SOLID_PART_COEFF_PO4
 
+    !Reductive Fe(III)-P coupling fraction (W_SED_CONST #171). Fraction of the PO4 solid
+    !sorption capacity that is tied to particulate Fe(III): it collapses as Fe(III) is
+    !reduced under anoxia (MULT_FE_III_PART -> 0), releasing bound P to pore water.
+    !0 = redox-independent sorption (baseline behavior).
+    real(kind = DBL_PREC) FE_P_REDOX_FRAC
+
     real(kind = DBL_PREC) SED_PH_MIN_DOC_MIN
     real(kind = DBL_PREC) SED_PH_MIN_DOC_MAX
     real(kind = DBL_PREC) SED_PH_MIN_DON_MIN
