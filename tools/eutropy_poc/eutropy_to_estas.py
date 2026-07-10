@@ -134,31 +134,70 @@ CL29_SED_POROSITIES = [0.40, 0.40, 0.40, 0.40, 0.30, 0.25, 0.25]  # template SED
 CL29_SED_DENSITIES  = [1.75, 1.75, 1.75, 1.75, 1.75, 1.75, 1.75]  # template SED_DENSITIES
 CL29_SED_MIXING     = 0.0000264                                   # template surface Db0
 # Per-type profiles. Each carries all six fields {depths, porosities, densities, burial,
-# mixing, ic_overrides}. depths/burial are PER-TYPE records in the 2-type file (there is no
-# global depths/burial slot) -- CL29_SED_DEPTHS/CL29_SED_BURIAL are merely seed values copied
-# into both dicts. ic_overrides is a sparse {var_index_1based: [per-layer values]} patch
-# applied on top of the template's 24xL IC base. Seeded identical until 2b differentiates.
+# mixing, ic_overrides}. ic_overrides is a sparse {var_index_1based: [per-layer values]}
+# patch applied on top of the template's 24xL IC base.
+#
+# Phase-2b differentiation (2026-07-10, analytical seed per spec section 4.1 step 1). The
+# measured sandy vs muddy benthic fluxes (INPUTS/FLUXES_FOR_{SANDY,MUDDY}_SEDIMENTS.txt;
+# Petkuviene 2016) show muddy >> sandy for SOD (summer -79.9 vs -56.8 mmol/m2/d), NH4
+# (6.62 vs 0.35), and biogenic Si (6.24 vs 2.17) -- all driven by muddy's higher ORGANIC
+# loading, not porosity (which per spec section 4.2 counter-intuitively makes mud MORE oxic in
+# this diffusion model). So the differentiator is the IC organic pools (PON/POP/POC/PSi =
+# sediment vars 4/7/10/12), within the section-4.2 0.1x-10x band: SANDY keeps the template
+# base; MUDDY = 2.5x the organic pools, with modestly higher porosity/bioturbation. These
+# are a grounded SEED (right direction, in-bounds), NOT an iterated fit -- the fixed-point
+# flux-matching iteration is spec section 4.2's own cycle.
+#
+# Validation (2026-07-10, 240-d CL29 run, box 19 muddy vs sandy-box mean, summer): the seed
+# gets 3 of 4 solute DIRECTIONS right -- NH4 2.4x, SOD 1.24x (measured ~1.4x, close), PO4
+# 1.26x (all muddy>sandy, as measured). DISS_Si comes out BACKWARDS (0.30x modeled vs ~2.9x
+# measured): per spec section 4.2 the sandy/muddy Si contrast must come from biogenic-Si
+# DEPOSITION + temperature, not an IC multiplier -- raising muddy PSi + porosity transiently
+# depletes surface PSi and over-oxygenates, suppressing the Si flux. Fixing Si (and tightening
+# the others) is the deferred section-4.2 iteration, not the seed's job.
+#
+# NB (spec section 4.1a, CONFIRMED this session): this differentiation improves FIDELITY to
+# measured sandy/muddy fluxes but does NOT close the box-19 spring-diatom gap. Under CL29
+# advanced-redox=0 the muddy DIFFUSIVE PO4 flux is small and net-sink (measured spring +0.03,
+# summer -0.10 mmol/m2/d); the large muddy P release the gap needs is the separate Fe-redox/
+# hypoxia PULSE (FLUXES_FOR_MUDDY_SEDIMENTS_HYPOXIA), which advanced-redox=0 cannot produce.
+# The FE_P sweep + 5-yr runs (memory) showed the modeled benthic P is ~1000x too small to move
+# water-column PO4. Gap closure needs EXTERNAL P (river/boundary), not a sediment mechanism.
+_OM_MUDDY_FACTOR = 2.5
 CL29_SED_SANDY = {
     "depths":       CL29_SED_DEPTHS,
-    "porosities":   CL29_SED_POROSITIES,
+    "porosities":   CL29_SED_POROSITIES,      # template (leaner, lower-energy-poor sand)
     "densities":    CL29_SED_DENSITIES,
     "burial":       CL29_SED_BURIAL,
     "mixing":       CL29_SED_MIXING,
-    "ic_overrides": {},
+    "ic_overrides": {},                       # template IC base
 }
 CL29_SED_MUDDY = {
     "depths":       CL29_SED_DEPTHS,
-    "porosities":   CL29_SED_POROSITIES,
+    "porosities":   [0.55, 0.50, 0.45, 0.42, 0.35, 0.30, 0.30],  # organic mud, modestly higher
     "densities":    CL29_SED_DENSITIES,
     "burial":       CL29_SED_BURIAL,
-    "mixing":       CL29_SED_MIXING,
-    "ic_overrides": {},
+    "mixing":       8.0e-5,                    # bioturbated mud (template Db0 2.64e-5)
+    # 2.5x the template organic pools (PON/POP/POC/PSi) -> higher SOD/NH4/Si return
+    "ic_overrides": {
+        4:  [x * _OM_MUDDY_FACTOR for x in [1000.0, 1000.0, 1000.0, 1000.0, 1500.0, 1500.0, 1500.0]],  # PON
+        7:  [x * _OM_MUDDY_FACTOR for x in [10.0, 10.0, 10.0, 10.0, 130.0, 165.0, 165.0]],              # POP
+        10: [x * _OM_MUDDY_FACTOR for x in [1400.0, 1400.0, 1400.0, 1400.0, 1300.0, 1000.0, 1000.0]],   # POC
+        12: [x * _OM_MUDDY_FACTOR for x in [10.0, 10.0, 10.0, 10.0, 130.0, 165.0, 165.0]],              # PSi
+    },
 }
 # Box -> sediment type ('sandy' -> 1, 'muddy' -> 2). A box absent from the map defaults to
 # type 1 (sandy). EMPTY by default: the empty map routes _write_sediment_inputs through the
-# unmodified Phase-1 single-profile path, keeping that output byte-identical. Populate this
-# (e.g. {19: 'muddy', ...}, with box 19 muddy per spec section 1) to activate the multi-type
-# author, which emits the extended # NUM_SED_TYPES / # SED_TYPE_PER_BOX file layout.
+# unmodified Phase-1 single-profile path, keeping that output byte-identical.
+#
+# DATA-BLOCKED (2026-07-10): a realistic full 29-box assignment needs the actual Curonian
+# sediment-facies map, which is NOT derivable from the in-repo data. A depth heuristic does
+# NOT work: box 19 -- the muddy interior exemplar (spec section 1) -- is shallow (1.52 m, below
+# the 2.91 m median), so depth would misclassify it as sandy. The map is left empty (CL29 stays
+# single-type / byte-identical) until the facies map is supplied. The differentiated MUDDY
+# profile above is ready; populate e.g. {19: 'muddy', <other interior fine-sediment boxes>: ...}
+# to activate the two-type author. Validated as a direction check with {19:'muddy'} (box 19
+# shows the muddy SOD/NH4/Si signature vs sandy boxes) -- see the Phase-2b validation.
 CL29_SEDIMENT_TYPE = {}
 _SED_TYPE_TO_INDEX = {"sandy": 1, "muddy": 2}
 
