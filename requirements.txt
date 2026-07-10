@@ -1,6 +1,6 @@
 pandas==2.3.3
 plotly==6.9.0
-shiny==1.5.1
+shiny==1.6.3
 shinychat==0.6.0
-shinyswatch==0.9.0
-shinywidgets==0.7.1
+shinyswatch==0.11.0
+shinywidgets==0.8.1
