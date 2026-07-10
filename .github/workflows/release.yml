@@ -1,0 +1,97 @@
+name: Release
+
+# Publish a GitHub Release when a semver tag (vX.Y.Z) is pushed. Builds the model
+# to verify the tag compiles and its unit tests pass, extracts the matching
+# CHANGELOG.md section as release notes, and attaches the built binary.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # required to create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran make
+
+      - name: Build library and executable
+        run: |
+          make build-lib
+          make build-estas
+
+      - name: Run Fortran unit tests
+        run: make -C tests/fortran clean test
+
+      - name: Derive version and validate against CHANGELOG
+        id: ver
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Strict semver gate: reject any crafted tag before it is used in a shell
+          # command or written to an output (defends against ref-name injection).
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Tag '$TAG' is not a valid vX.Y.Z release tag"
+            exit 1
+          fi
+          version="${TAG#v}"
+          echo "tag=$TAG"          >> "$GITHUB_OUTPUT"
+          echo "version=$version"  >> "$GITHUB_OUTPUT"
+          # Guard against a forgotten pyproject bump.
+          proj="$(grep -m1 -E '^version = ' pyproject.toml | sed -E 's/.*"([^"]+)".*/\1/')"
+          if [ "$proj" != "$version" ]; then
+            echo "::warning::pyproject.toml version ($proj) does not match tag ($version)"
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          notes_file="$RUNNER_TEMP/release_notes.md"
+          bash tools/extract_release_notes.sh "$VERSION" > "$notes_file"
+          if [ -s "$notes_file" ]; then
+            echo "have_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_notes=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No CHANGELOG section for $VERSION; using auto-generated notes"
+          fi
+          echo "notes_file=$notes_file" >> "$GITHUB_OUTPUT"
+
+      - name: Package binary asset
+        id: asset
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          asset="ESTAS_II-${VERSION}-linux-x86_64"
+          cp ESTAS_II "$asset"
+          echo "path=$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          ASSET: ${{ steps.asset.outputs.path }}
+          NOTES_FILE: ${{ steps.notes.outputs.notes_file }}
+          HAVE_NOTES: ${{ steps.notes.outputs.have_notes }}
+        run: |
+          title="AQUABC $TAG"
+          if [ "$HAVE_NOTES" = "true" ]; then
+            notes_args=(--notes-file "$NOTES_FILE")
+          else
+            notes_args=(--generate-notes)
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$title" "${notes_args[@]}"
+            gh release upload "$TAG" "$ASSET" --clobber
+          else
+            gh release create "$TAG" --verify-tag --title "$title" "${notes_args[@]}" "$ASSET"
+          fi
