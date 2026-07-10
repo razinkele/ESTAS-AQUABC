@@ -76,6 +76,24 @@ CL29_WCONST_OVERRIDE = {
     "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
 }
 
+# External-P lever (section 4.1a). Multiplies the open-boundary PO4_P inflow concentration
+# (the Nemunas/lagoon boundary P load). 1.0 = EUTROPY value verbatim (byte-identical). The
+# box-19 spring-diatom gap is P-limited (interior spring DIP ~0.0027 mg/L vs a ~0.02 mg/L
+# deficit) and NO sediment mechanism can close it under CL29 advanced-redox=0 (confirmed:
+# FE_P sweep, Phase-2b measured-flux structure) -- so external P is the only remaining lever.
+# EUTROPY boundary PO4 is 0.012-0.037 mg/L; whether that is realistic for the hypertrophic
+# Nemunas-fed lagoon is the open question this knob probes.
+#
+# SWEEP RESULT (2026-07-10, 180-d spring window, box-19 spring diatom mean/peak mgC/L):
+#   x1 0.40/0.54 (baseline gap) | x2 0.53/0.84 | x5 1.00/2.24 | x10 2.18/6.28.
+# The box-19 spring diatom rises monotonically and CLOSES the observed gap (~1.5-1.9 mgC/L
+# = ~47 mg Chl/m3) at ~5-8x -- i.e. ~0.06-0.30 mg/L boundary PO4, realistic for a hypertrophic
+# Nemunas-fed lagoon. Up to x5 the added P is fully consumed into biomass (box-19 spring DIP
+# stays ~0.0026 mg/L), confirming the gap is external-P-limited. So EUTROPY's boundary PO4 is
+# plausibly UNDERESTIMATED ~5-8x, and external P -- not any sediment mechanism -- is what closes
+# the gap. Kept at 1.0 (byte-identical) because the EXACT correction needs observed Nemunas P
+# loads to ground it (do not bake in a fitted boost); ~5-8x is the model-derived requirement.
+CL29_BOUNDARY_PO4_SCALE = 1.0
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
 # so the baseline stays byte-identical. See
@@ -356,6 +374,7 @@ def main():
             vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
             for idx, (_seed, refuge) in CL29_PHYTO_REFUGE.items():  # CL29 phyto refuge
                 vec32[idx] = max(vec32[idx], refuge)
+            vec32[2] *= CL29_BOUNDARY_PO4_SCALE  # external-P lever (section 4.1a); 1.0 = verbatim
             vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
             vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
