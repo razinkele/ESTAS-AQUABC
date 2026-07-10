@@ -18,6 +18,7 @@ Run from the repository root.
 from __future__ import annotations
 
 import csv
+import math
 import os
 import re
 import shutil
@@ -106,6 +107,28 @@ CL29_WCONST_OVERRIDE = {
 # interior under-delivery (boundary ~0.014 -> box-19 ~0.0027) = transport/consumption. Kept at
 # 1.0 (byte-identical) until a seasonal boundary-P TS is authored from the observed record.
 CL29_BOUNDARY_PO4_SCALE = 1.0
+# SEASONAL summer-weighted boundary-P correction (the physically-grounded fix, vs the flat
+# CL29_BOUNDARY_PO4_SCALE proxy). Applies a day-of-year Gaussian multiplier peaking in mid-
+# summer (day ~200, sigma ~60 d): factor(doy) = 1 + (PEAK-1)*exp(-((doy-200)/60)^2). PEAK=1.0
+# = no correction (byte-identical). The observed model-period (2012-2016) Curonian summer
+# P-PO4 (~0.025 avg, ~0.12 river) is ~3-15x the EUTROPY summer boundary (~0.009-0.040); PEAK
+# ~5 lifts mid-summer boundary P into that range while leaving spring/winter ~unchanged
+# (spring is already within the observed range) -- matching the observed seasonal shape rather
+# than a uniform boost. Grounded in Aleksandrov 2025 (10.31951/2658-3518-2025-a-4-391).
+#
+# RESULT (2026-07-11, 2-yr run, PEAK=5 vs baseline): FIXES summer P realism -- box-19 yr2
+# summer PO4-P 0.009 -> 0.051 mg/L, into the observed 0.025-0.14 band -- but does NOT close the
+# box-19 SPRING diatom gap (yr1 0.40->0.44, yr2 0.33->0.37 mgC/L vs the observed ~1.5-1.9). So
+# the earlier uniform x5-8 boost only "closed" the gap by flooding SPRING with unrealistic P;
+# a physically-grounded (summer-weighted) correction does not, because observed spring P is
+# genuinely low and the summer P flushes rather than carrying to next spring. CONCLUSION: the
+# box-19 spring gap is NOT closed by any grounded external-P CONCENTRATION correction. The
+# grounded leads that remain are the spring P LOAD (flow x conc during the high-flow spring
+# flood -- concentration alone is right; the flood-driven load may be under-supplied), the
+# interior under-delivery (boundary -> box-19 transport/consumption), and/or the diatom
+# spring-niche parameters -- NOT boundary P concentration. PEAK is kept at 1.0; use it (~5) to
+# restore realistic summer P, but it is not the spring-gap fix.
+CL29_BOUNDARY_PO4_SUMMER_PEAK = 1.0
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
 # so the baseline stays byte-identical. See
@@ -386,7 +409,10 @@ def main():
             vec32 = list(bnd[di][(bi - 1) * 32:bi * 32])
             for idx, (_seed, refuge) in CL29_PHYTO_REFUGE.items():  # CL29 phyto refuge
                 vec32[idx] = max(vec32[idx], refuge)
-            vec32[2] *= CL29_BOUNDARY_PO4_SCALE  # external-P lever (section 4.1a); 1.0 = verbatim
+            # external-P lever (section 4.1a): flat scale x seasonal summer-weighted factor.
+            _doy = bdays[di] % 365.0
+            _seasonal = 1.0 + (CL29_BOUNDARY_PO4_SUMMER_PEAK - 1.0) * math.exp(-((_doy - 200.0) / 60.0) ** 2)
+            vec32[2] *= CL29_BOUNDARY_PO4_SCALE * _seasonal  # 1.0/1.0 = verbatim (byte-identical)
             vec32[19] = 3.0   # INORG_C: realistic Curonian DIC (0.0027 breaks CO2SYS)
             vec32[20] = 3.1   # TOT_ALK: realistic Curonian alkalinity
             cols.append(vec32 + [0.0, 0.0, 0.0, 0.0])
