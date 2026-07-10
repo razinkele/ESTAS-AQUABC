@@ -1344,6 +1344,11 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             MULT_FE_III_DISS = 1.0D0
             MULT_FE_III_PART = 0.0D0
         elsewhere
+            ! FE_III_DISS must be set here too: it is read downstream in
+            ! SED_DOC_MINERALIZATION (LIM_FE_III_RED). Omitting it in this (unsaturated)
+            ! branch left it stale/uninitialized -- a latent bug whose value depended on
+            ! stack layout. Mirrors the saturated branch above and the MN_IV_DISS sibling.
+            FE_III_DISS      = DISS_FE_III_CONC_TS_AVG
             MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
             MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
         end where
