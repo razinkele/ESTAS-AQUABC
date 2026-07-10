@@ -65,6 +65,7 @@ tests/fortran/test_fix_cyn
 tests/fortran/test_nostocales
 tests/fortran/test_opa
 tests/fortran/test_redox
+tests/fortran/test_sed_typemap
 tests/fortran/test_zooplankton
 tests/fortran/*.o
 tests/fortran/*.mod
