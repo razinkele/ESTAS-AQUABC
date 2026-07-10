@@ -87,12 +87,21 @@ CL29_WCONST_OVERRIDE = {
 # SWEEP RESULT (2026-07-10, 180-d spring window, box-19 spring diatom mean/peak mgC/L):
 #   x1 0.40/0.54 (baseline gap) | x2 0.53/0.84 | x5 1.00/2.24 | x10 2.18/6.28.
 # The box-19 spring diatom rises monotonically and CLOSES the observed gap (~1.5-1.9 mgC/L
-# = ~47 mg Chl/m3) at ~5-8x -- i.e. ~0.06-0.30 mg/L boundary PO4, realistic for a hypertrophic
-# Nemunas-fed lagoon. Up to x5 the added P is fully consumed into biomass (box-19 spring DIP
-# stays ~0.0026 mg/L), confirming the gap is external-P-limited. So EUTROPY's boundary PO4 is
-# plausibly UNDERESTIMATED ~5-8x, and external P -- not any sediment mechanism -- is what closes
-# the gap. Kept at 1.0 (byte-identical) because the EXACT correction needs observed Nemunas P
-# loads to ground it (do not bake in a fitted boost); ~5-8x is the model-derived requirement.
+# = ~47 mg Chl/m3) at a UNIFORM ~5-8x boost; up to x5 the added P is fully consumed into
+# biomass (box-19 interior spring DIP stays ~0.0026 mg/L vs the boundary's ~0.011-0.017),
+# confirming the interior is severely P-starved -- P does not reach box 19.
+#
+# BUT grounding against OBSERVED Nemunas P (Bartoli/Vaiciute et al. 2018, 10.3389/fmars.2018.00434;
+# Nemunas P-export 2012-2016, 10.3390/w10091178) REFUTES a flat boost: observed river reactive P
+# is spring ~0.2 uM (~0.006 mg/L) rising to summer ~4 uM (~0.124 mg/L). vs EUTROPY boundary PO4
+# spring ~0.011-0.017 (already >= observed -- NOT underestimated) but summer ~0.009-0.040
+# (UNDERESTIMATED ~3-13x -- the observed summer P peak is missing). So the model's SPRING
+# boundary P is realistic; the spring box-19 gap is therefore NOT explained by underestimated
+# spring boundary P. Two grounded leads remain: (a) fix the missing SEASONAL summer P peak
+# (a defensible correction), which may build the P pool carried into the next spring; (b) the
+# interior under-delivery (boundary ~0.014 -> box-19 ~0.0027) points to transport/consumption
+# or a local P source, not boundary concentration. Kept at 1.0 (byte-identical); a uniform
+# boost is NOT the grounded fix.
 CL29_BOUNDARY_PO4_SCALE = 1.0
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
