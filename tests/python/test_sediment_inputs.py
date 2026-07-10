@@ -66,9 +66,15 @@ class TestWriteSedimentInputs:
         assert _run(lambda l: "SED_DEPTHS" in l and "meters" in l)[:7] == conv.CL29_SED_DEPTHS
         assert _run(lambda l: "SED_BURRIALS" in l and "m/day" in l)[:1] == [conv.CL29_SED_BURIAL]
 
-    def test_enabled_forces_redox_zero(self, tmp_path):
+    def test_enabled_sets_advanced_redox_from_config(self, tmp_path):
+        # The written ADVANCED REDOX flag tracks the CL29_SED_ADVANCED_REDOX config
+        # constant (default 1 since commit 7806194 enabled anoxic Mn/Fe/SO4 pathways),
+        # not a hard-coded 0.
         conv._write_sediment_inputs(str(tmp_path), True)
-        assert _redox_flag(str(tmp_path / "BOTTOM_SEDIMENT_MODEL_INPUT.txt")) == 0
+        assert (
+            _redox_flag(str(tmp_path / "BOTTOM_SEDIMENT_MODEL_INPUT.txt"))
+            == conv.CL29_SED_ADVANCED_REDOX
+        )
 
     def test_output_names_stay_bare(self, tmp_path):
         conv._write_sediment_inputs(str(tmp_path), True)
