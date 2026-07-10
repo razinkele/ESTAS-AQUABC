@@ -394,5 +394,5 @@ For proper calibration, the allelopathy module needs:
 
 ---
 
-*Document prepared for AQUABC v0.2*  
+*Document prepared for AQUABC v0.3*  
 *Last updated: January 2026*

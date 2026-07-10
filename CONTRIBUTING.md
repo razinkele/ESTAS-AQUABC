@@ -1,4 +1,4 @@
-# Contributing to AQUABC v0.2
+# Contributing to AQUABC v0.3
 
 ## Prerequisites
 

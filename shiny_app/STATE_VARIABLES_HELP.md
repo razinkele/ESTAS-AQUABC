@@ -703,6 +703,6 @@ Some bacteria (*Sphingomonas* spp.) rapidly degrade microcystins via mlr genes (
 ---
 
 <div style="text-align: center; color: #6c757d; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
-<em>AQUABC v0.2 Documentation</em><br>
+<em>AQUABC v0.3 Documentation</em><br>
 <a href="#" onclick="document.querySelector('.offcanvas-body').scrollTop=0; return false;">↑ Back to Top</a>
 </div>

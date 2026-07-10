@@ -2445,7 +2445,7 @@ def create_ui():
             {"class": "app-header-title"},
             ui.tags.i(class_="bi bi-water me-2"),
             "AQUABC",
-            ui.tags.span("v0.2", class_="version-badge"),
+            ui.tags.span("v0.3", class_="version-badge"),
         ),
         # Right side buttons container (tutorial + changelog + help + settings)
         ui.div(
@@ -2541,7 +2541,7 @@ def create_ui():
             ui.tags.div(
                 ui.card(
                     ui.card_header("About"),
-                    ui.tags.h5("AQUABC v0.2"),
+                    ui.tags.h5("AQUABC v0.3"),
                     ui.tags.p("Aquatic Biogeochemical Model"),
                     ui.tags.p("A sophisticated water quality simulation tool with:"),
                     ui.tags.ul(
@@ -8526,7 +8526,7 @@ def server(input, output, session):
 </head>
 <body>
 <div class="diagram-header">
-  <h1>AQUABC v0.2 &mdash; Ecological Model Architecture</h1>
+  <h1>AQUABC v0.3 &mdash; Ecological Model Architecture</h1>
   <p>Interactive biogeochemical network &middot; 32 pelagic + 24 sediment + 6 macroalgae + 4 allelopathy state variables</p>
 </div>
 <div class="legend">

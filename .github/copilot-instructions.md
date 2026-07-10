@@ -1,8 +1,8 @@
-# Copilot Instructions for AQUABC v0.2
+# Copilot Instructions for AQUABC v0.3
 
 ## Project Overview
 
-AQUABC v0.2 is a water quality modelling system. The scientific core is written in Fortran 90: the **ESTAS** simulation framework drives the **AQUABC** pelagic/sediment kinetic model. A **Python Shiny** web front end provides a UI for editing inputs, running the model, and visualising `OUTPUT.csv`. Python is used only for the UI and test tooling — all numerical computation is Fortran.
+AQUABC v0.3 is a water quality modelling system. The scientific core is written in Fortran 90: the **ESTAS** simulation framework drives the **AQUABC** pelagic/sediment kinetic model. A **Python Shiny** web front end provides a UI for editing inputs, running the model, and visualising `OUTPUT.csv`. Python is used only for the UI and test tooling — all numerical computation is Fortran.
 
 ---
 

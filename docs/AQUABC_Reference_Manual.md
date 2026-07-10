@@ -1,5 +1,5 @@
 ---
-title: "AQUABC v0.2 — Ecological Model Reference Manual"
+title: "AQUABC v0.3 — Ecological Model Reference Manual"
 author: "ESTAS-AQUABC Development Team"
 date: "February 2026"
 geometry: "margin=2.5cm"
@@ -13,7 +13,7 @@ header-includes:
   - \usepackage{float}
   - \usepackage{fancyhdr}
   - \pagestyle{fancy}
-  - \fancyhead[L]{AQUABC v0.2 Reference Manual}
+  - \fancyhead[L]{AQUABC v0.3 Reference Manual}
   - \fancyhead[R]{\thepage}
   - \fancyfoot[C]{}
   - \usepackage{amsmath}
@@ -24,7 +24,7 @@ header-includes:
 
 # Introduction
 
-AQUABC v0.2 is a comprehensive aquatic biogeochemical model that simulates coupled pelagic--sediment dynamics in lakes, reservoirs, estuaries, and coastal waters. The model is designed to be embedded in hydrodynamic transport frameworks (such as ESTAS or SHYFEM) that provide advection, dispersion, and external forcing.
+AQUABC v0.3 is a comprehensive aquatic biogeochemical model that simulates coupled pelagic--sediment dynamics in lakes, reservoirs, estuaries, and coastal waters. The model is designed to be embedded in hydrodynamic transport frameworks (such as ESTAS or SHYFEM) that provide advection, dispersion, and external forcing.
 
 ## Model Architecture
 

@@ -91,7 +91,7 @@ def build_document(pdf_path):
         'AQUABC UI Integration Plan — Deep Process Rate Analysis', title_style))
     story.append(Paragraph(
         f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")} &nbsp;|&nbsp; '
-        f'ESTAS-AQUABC v0.2 &nbsp;|&nbsp; '
+        f'ESTAS-AQUABC v0.3 &nbsp;|&nbsp; '
         f'Shiny for Python (PyShiny) Framework',
         small_style))
     story.append(Spacer(1, 6*mm))

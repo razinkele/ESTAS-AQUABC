@@ -1,4 +1,4 @@
-# AQUABC v0.2 Ecological Model: Mathematical Documentation
+# AQUABC v0.3 Ecological Model: Mathematical Documentation
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@
 
 ## 1. Model Overview
 
-AQUABC v0.2 is a comprehensive aquatic biogeochemical model that simulates coupled pelagic-sediment dynamics. The model is organized as:
+AQUABC v0.3 is a comprehensive aquatic biogeochemical model that simulates coupled pelagic-sediment dynamics. The model is organized as:
 
 - **Pelagic model**: 32 state variables covering phytoplankton (5 functional groups), zooplankton, dissolved/particulate organic matter, dissolved oxygen, nutrients (N, P, Si), inorganic carbon, alkalinity, redox-sensitive metals (Fe, Mn), sulphur species, and methane.
 - **Sediment model**: 24 state variables for early diagenesis with advanced redox sequencing.

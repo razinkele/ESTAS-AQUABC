@@ -1,4 +1,4 @@
-# AQUABC v0.2 - Codebase Analysis and Frontend Implementation Plan
+# AQUABC v0.3 - Codebase Analysis and Frontend Implementation Plan
 
 **Date:** 2026-01-16
 **Analysis by:** Claude Sonnet 4.5
@@ -24,7 +24,7 @@ The model is currently controlled via text input files. The Python Shiny fronten
 ### 1.1 Directory Organization
 
 ```
-AQUABC v0.2/
+AQUABC v0.3/
 ├── SOURCE_CODE/
 │   ├── AQUABC/
 │   │   ├── PELAGIC/              # Water column biogeochemistry

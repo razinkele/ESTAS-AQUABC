@@ -1,4 +1,4 @@
-# TODO Implementation Plan — AQUABC v0.2
+# TODO Implementation Plan — AQUABC v0.3
 
 **Created:** 2026-02-13
 **Based on:** Deep audit of Fortran code, Python/Shiny app, and CI/build/test infrastructure

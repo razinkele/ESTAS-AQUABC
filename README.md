@@ -1,4 +1,4 @@
-# AQUABC v0.2 — Quick Start
+# AQUABC v0.3 — Quick Start
 
 Short README to build and run the example and reproduce local results.
 

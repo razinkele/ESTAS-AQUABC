@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AQUABC v0.2 Ecological Model – Interactive Network Diagram
+AQUABC v0.3 Ecological Model – Interactive Network Diagram
 Generates an interactive HTML diagram using pyvis.
 
 Usage (from micromamba shiny environment):
@@ -467,7 +467,7 @@ def create_ecological_model_diagram():
 
     legend_html = """
     <div class="diagram-header">
-      <h1>AQUABC v0.2 &mdash; Ecological Model Architecture</h1>
+      <h1>AQUABC v0.3 &mdash; Ecological Model Architecture</h1>
       <p>Interactive biogeochemical network &middot; 32 pelagic + 24 sediment + 6 macroalgae + 4 allelopathy state variables</p>
     </div>
     <div class="legend">

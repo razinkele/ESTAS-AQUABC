@@ -578,7 +578,7 @@ The ecological model (AQUABC) is agnostic to the transport provider — it only 
 
 # References
 
-- AQUABC v0.2 Reference Manual (companion document)
+- AQUABC v0.3 Reference Manual (companion document)
 - ESTAS-II Reference Manual (companion document)
 - Boudreau, B.P. (1997). *Diagenetic Models and Their Implementation*. Springer.
 - Chapra, S.C. (1997). *Surface Water-Quality Modeling*. McGraw-Hill.

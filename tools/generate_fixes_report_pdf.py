@@ -217,7 +217,7 @@ def generate_report():
     pdf.set_text_color(0, 0, 0)
     info_lines = [
         f"Date: {date.today().strftime('%B %d, %Y')}",
-        "Model: ESTAS-AQUABC v0.2 (Curonian Lagoon)",
+        "Model: ESTAS-AQUABC v0.3 (Curonian Lagoon)",
         "Commit: aeb15fc (main)",
         "Simulation: 3560 days (10 x 356-day repeats)",
         "Configuration: MODEL_SEDIMENTS=1, updated ICs & boundaries",

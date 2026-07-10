@@ -788,7 +788,7 @@ After a successful 30-day run:
 
 ---
 
-*This tutorial was prepared for ESTAS-AQUABC v0.2. For model equations and
+*This tutorial was prepared for ESTAS-AQUABC v0.3. For model equations and
 scientific background, see the*
 [AQUABC Reference Manual](AQUABC_Reference_Manual.md) *and*
 [ESTAS Reference Manual](ESTAS_Reference_Manual.md).

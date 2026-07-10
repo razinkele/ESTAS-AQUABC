@@ -766,7 +766,7 @@ def main():
     story.append(Paragraph('AQUABC Deep Process Rate Analysis Report', title_style))
     story.append(Paragraph(
         f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")} | '
-        f'Model: ESTAS-AQUABC v0.2 | Analysis: 16 checks | Simulation: 3560-day (10x annual repeat) | '
+        f'Model: ESTAS-AQUABC v0.3 | Analysis: 16 checks | Simulation: 3560-day (10x annual repeat) | '
         f'Boxes: {", ".join(str(b) for b in BOX_IDS)}',
         small_style))
     story.append(Spacer(1, 4*mm))

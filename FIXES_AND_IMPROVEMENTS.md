@@ -1,4 +1,4 @@
-# Fixes and Improvements — AQUABC v0.2
+# Fixes and Improvements — AQUABC v0.3
 
 ## Executive summary
 

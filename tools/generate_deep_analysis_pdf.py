@@ -561,7 +561,7 @@ def build_pdf() -> Path:
         "These investigations follow an earlier round of corrections that "
         "fixed 5 critical issues with initial conditions and boundary "
         "forcing files (DIC, ALK, ZOO_N/P, river metals).\n\n"
-        "Model: ESTAS-AQUABC v0.2 (Curonian Lagoon, 25 boxes)\n"
+        "Model: ESTAS-AQUABC v0.3 (Curonian Lagoon, 25 boxes)\n"
         "Simulation: 200 days (Julian days 6209-6574)\n"
         "36 state variables, 318 model constants\n"
         f"Date: {date.today().strftime('%d %B %Y')}"
