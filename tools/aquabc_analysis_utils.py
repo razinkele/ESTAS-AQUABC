@@ -160,8 +160,24 @@ def load_state_vars(output_dir, box_id):
         return None, None, None
     with open(fname) as f:
         header = f.readline().split()
+    names = header[1:]
+    # Defense-in-depth: analysis maps variable -> column via names.index(name) on THIS
+    # header, so wrong data is only possible if the Fortran output column order drifts.
+    # Assert it still matches STATE_VAR_NAMES so any drift fails loudly here instead of
+    # silently returning the wrong column downstream (e.g. reading DISS_ORG_P as CYN_C).
+    if names != STATE_VAR_NAMES:
+        import warnings
+        expected = set(STATE_VAR_NAMES)
+        got = set(names)
+        warnings.warn(
+            f"PELAGIC_BOX_{box_id:05d}.out header does not match STATE_VAR_NAMES -- "
+            f"column-by-name lookups may be unsafe. Missing: {sorted(expected - got)}; "
+            f"unexpected: {sorted(got - expected)}; order-changed: "
+            f"{names != STATE_VAR_NAMES and expected == got}.",
+            stacklevel=2,
+        )
     data = np.loadtxt(fname, skiprows=1)
-    return data[:, 0], data[:, 1:], header[1:]
+    return data[:, 0], data[:, 1:], names
 
 
 def compute_kinetic_deriv(rates, var_name, slot_map, derivative_signs):
