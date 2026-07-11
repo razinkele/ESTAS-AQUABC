@@ -27,6 +27,7 @@ def main():
         fh.write("# Source: ERA5 (Copernicus Climate Change Service / ECMWF).\n")
         fh.write("# Contains modified Copernicus Climate Change Service information.\n")
         fh.write("day,wind_ms\n")
+        # day index = first-appearance order; assumes the ERA5 source is gapless & chronological (2012-2016 is)
         for i, (day, vals) in enumerate(daily.items()):
             fh.write(f"{i},{sum(vals) / len(vals):.4f}\n")
     print(f"wrote {OUT}: {len(daily)} days (day 0 = {next(iter(daily))})")

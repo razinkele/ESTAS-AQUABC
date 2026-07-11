@@ -392,9 +392,11 @@ def _write_settling_velocity_files(out):
     """Write SETTLING_VELOCITY_TS_1..6.txt. Slot 1 (DIA_C) is a wind-modulated daily
     series when CL29_WIND_RESUSPENSION and wind data are present; otherwise the 2-point
     constant CL29_DIATOM_SETTLING (byte-identical to legacy). Slots 2-6 are constants."""
+    # slot3 (OPA_C)=0.05: reduced from 0.2 so motile OPA is not sunk out of its clear-water window
     vels = [CL29_DIATOM_SETTLING, 0.1, 0.05, 1.0, 0.5, 0.3]  # slot1=DIA_C
     wind = _read_wind_daily() if CL29_WIND_RESUSPENSION else None
     for i, v in enumerate(vels, start=1):
+        # `wind` truthy = enabled AND file present AND non-empty; None or [] -> constant fallback
         if i == 1 and wind:
             w = wind_modulated_settling(wind, CL29_SETTLING_W0, CL29_WIND_UHALF)
             days = list(range(len(w))) + [9999]      # sentinel holds last value past sim end

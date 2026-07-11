@@ -91,6 +91,13 @@ class TestWriteSettlingVelocityFiles:
         conv.write_ts(str(ref), "settling velocity 1 m/day", [0, 9999], [[0.1], [0.1]])
         assert got == ref.read_text()
 
+    def test_wind_enabled_but_file_absent_falls_back(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", True)
+        monkeypatch.setattr(conv, "_read_wind_daily", lambda *a, **k: None)
+        conv._write_settling_velocity_files(str(tmp_path))
+        v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
+        assert v1 == [conv.CL29_DIATOM_SETTLING, conv.CL29_DIATOM_SETTLING]
+
 
 class TestFaciesStrawman:
     def test_active_map_stays_empty(self):
