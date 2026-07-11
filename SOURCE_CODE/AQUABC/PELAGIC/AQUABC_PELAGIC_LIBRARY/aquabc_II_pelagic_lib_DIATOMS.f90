@@ -154,11 +154,6 @@ subroutine DIATOMS(params                      , &
      end if
 
      if (smith .eq. 1) then
-        write(6,*) 'DIATOMS CALL: I_A=', I_A(1:min(8,nkn))
-        write(6,*) 'DIATOMS CALL: CHLA=', CHLA(1:min(8,nkn))
-        write(6,*) 'DIATOMS CALL: KG_DIA=', KG_DIA(1:min(8,nkn))
-        write(6,*) 'DIATOMS CALL: DEPTH=', DEPTH(1:min(8,nkn))
-        write(6,*) 'DIATOMS CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_DIA, DEPTH, K_E, LIM_KG_DIA_LIGHT, &
                        DIA_C_TO_CHLA, I_S_DIA, DIA_LIGHT_SAT, nkn, BETA_DIA)
     end if

@@ -472,11 +472,6 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             FIX_CYN_DEPTH(:) = DEPTH(:)
         end where
 
-        write(6,*) 'FIX_CYANO CALL: I_A=', I_A(1:min(8,nkn))
-        write(6,*) 'FIX_CYANO CALL: CHLA=', CHLA(1:min(8,nkn))
-        write(6,*) 'FIX_CYANO CALL: KG_FIX_CYN=', KG_FIX_CYN(1:min(8,nkn))
-        write(6,*) 'FIX_CYANO CALL: DEPTH=', FIX_CYN_DEPTH(1:min(8,nkn))
-        write(6,*) 'FIX_CYANO CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_FIX_CYN, FIX_CYN_DEPTH, K_E, &
              LIM_KG_FIX_CYN_LIGHT, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
     end if

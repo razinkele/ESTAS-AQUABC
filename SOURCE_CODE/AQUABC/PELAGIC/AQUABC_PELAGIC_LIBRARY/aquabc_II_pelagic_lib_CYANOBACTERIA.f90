@@ -156,11 +156,6 @@ subroutine CYANOBACTERIA &
     end if
 
     if (smith .eq. 1) then
-        write(6,*) 'CYANO CALL: I_A=', I_A(1:min(8,nkn))
-        write(6,*) 'CYANO CALL: CHLA=', CHLA(1:min(8,nkn))
-        write(6,*) 'CYANO CALL: KG_CYN=', KG_CYN(1:min(8,nkn))
-        write(6,*) 'CYANO CALL: DEPTH=', DEPTH(1:min(8,nkn))
-        write(6,*) 'CYANO CALL: K_E=', K_E(1:min(8,nkn))
         call LIM_LIGHT(I_A, CHLA, KG_CYN, DEPTH, K_E, LIM_KG_CYN_LIGHT, &
                        CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
     end if
