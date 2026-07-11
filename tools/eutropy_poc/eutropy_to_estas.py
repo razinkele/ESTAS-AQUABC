@@ -278,6 +278,22 @@ CL29_SED_MUDDY = {
 # to activate the two-type author. Validated as a direction check with {19:'muddy'} (box 19
 # shows the muddy SOD/NH4/Si signature vs sandy boxes) -- see the Phase-2b validation.
 CL29_SEDIMENT_TYPE = {}
+
+# --- #5 PROVISIONAL sediment-facies strawman (INERT; not wired in) ------------------
+# The active map above stays EMPTY so CL29 is byte-identical until an authoritative
+# per-box facies map is supplied. This strawman is a LOW-CONFIDENCE starting point for
+# the domain expert to correct, derived from the salinity split (forcing_salt.csv):
+# marine-influenced boxes (sal ~6-7, N/strait, higher energy) -> sandy; freshwater +
+# transitional (sal ~0.1-3.7, central/southern low-energy basin) -> muddy. It is
+# demonstrably imperfect (freshwater boxes 5,6,8,9 are labelled 'sand' in the analysis
+# BOX_TYPES; freshwater != muddy) and conflicts with those (mutually inconsistent, unsourced)
+# labels. To activate two-type authoring later: CL29_SEDIMENT_TYPE = CL29_SEDIMENT_TYPE_PROVISIONAL
+# (after expert review). See docs/superpowers/specs/2026-07-11-*.md §3.
+_SANDY = (1, 4, 7, 10, 11, 12, 13, 16, 20, 22)               # marine-influenced
+CL29_SEDIMENT_TYPE_PROVISIONAL = {
+    b: ("sandy" if b in _SANDY else "muddy") for b in range(1, 30)
+}
+
 _SED_TYPE_TO_INDEX = {"sandy": 1, "muddy": 2}
 
 

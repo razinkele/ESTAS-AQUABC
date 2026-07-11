@@ -90,3 +90,18 @@ class TestWriteSettlingVelocityFiles:
         ref = tmp_path / "ref.txt"
         conv.write_ts(str(ref), "settling velocity 1 m/day", [0, 9999], [[0.1], [0.1]])
         assert got == ref.read_text()
+
+
+class TestFaciesStrawman:
+    def test_active_map_stays_empty(self):
+        # #5 stays inert -> CL29 byte-identical until the expert confirms a map.
+        assert conv.CL29_SEDIMENT_TYPE == {}
+
+    def test_provisional_covers_all_boxes(self):
+        p = conv.CL29_SEDIMENT_TYPE_PROVISIONAL
+        assert set(p) == set(range(1, 30))               # all 29 boxes
+        assert set(p.values()) <= {"sandy", "muddy"}
+        assert p[19] == "muddy"                          # interior muddy exemplar
+        # marine-influenced boxes are sandy (spec §3.2)
+        for b in (1, 4, 7, 10, 11, 12, 13, 16, 20, 22):
+            assert p[b] == "sandy"
