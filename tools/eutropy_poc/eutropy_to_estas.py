@@ -93,6 +93,16 @@ CL29_WCONST_OVERRIDE = {
 # ratio, all boxes) is the remaining step before it is a settled default.
 CL29_DIATOM_SETTLING = 0.1
 
+# Wind-modulated diatom settling (#3). When enabled, slot-1 (DIA_C) settling is
+# written as a daily series w_eff(t) = CL29_SETTLING_W0 / (1 + (U(t)/CL29_WIND_UHALF)**2)
+# from net/wind_daily.csv (ERA5). Disabled -> constant CL29_DIATOM_SETTLING (byte-identical).
+# Params pinned per spec 2026-07-11 §2.3 (do NOT re-tune here): w0=0.3 (physical), U_c=4.21
+# (half-suppression wind; fitted so annual-mean w_eff ~= 0.1, the validated level). Aseasonal
+# wind here means this preserves rather than changes the bloom -- it is a defensibility change.
+CL29_WIND_RESUSPENSION = True
+CL29_SETTLING_W0       = 0.3
+CL29_WIND_UHALF        = 4.21
+
 # External-P lever (section 4.1a). Multiplies the open-boundary PO4_P inflow concentration
 # (the Nemunas/lagoon boundary P load). 1.0 = EUTROPY value verbatim (byte-identical). The
 # box-19 spring-diatom gap is P-limited (interior spring DIP ~0.0027 mg/L vs a ~0.02 mg/L
@@ -360,6 +370,24 @@ def _read_wind_daily(path=None):
                 continue
             wind.append(float(ln.split(",")[1]))
     return wind
+
+
+def _write_settling_velocity_files(out):
+    """Write SETTLING_VELOCITY_TS_1..6.txt. Slot 1 (DIA_C) is a wind-modulated daily
+    series when CL29_WIND_RESUSPENSION and wind data are present; otherwise the 2-point
+    constant CL29_DIATOM_SETTLING (byte-identical to legacy). Slots 2-6 are constants."""
+    vels = [CL29_DIATOM_SETTLING, 0.1, 0.05, 1.0, 0.5, 0.3]  # slot1=DIA_C
+    wind = _read_wind_daily() if CL29_WIND_RESUSPENSION else None
+    for i, v in enumerate(vels, start=1):
+        if i == 1 and wind:
+            w = wind_modulated_settling(wind, CL29_SETTLING_W0, CL29_WIND_UHALF)
+            days = list(range(len(w))) + [9999]      # sentinel holds last value past sim end
+            cols = [[x] for x in w] + [[w[-1]]]
+            write_ts(os.path.join(out, "SETTLING_VELOCITY_TS_1.txt"),
+                     "settling velocity 1 m/day (wind-modulated DIA_C)", days, cols)
+        else:
+            write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
+                     f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
 
 
 # ---------------------------------------------------------------------------
@@ -698,13 +726,9 @@ def _write_master(out, state_block, links, depth, area):
     with open(os.path.join(out, "PELAGIC_INPUTS.txt"), "w") as fh:
         fh.writelines(L)
 
-    # settling velocity TS files (constant velocities, m/day)
-    # #3 is OPA_C only: reduced 0.2 -> 0.05 (motile green algae) so OPA is not sunk
-    # out of its narrow clear-water-phase window before it can accumulate.
-    vels = [CL29_DIATOM_SETTLING, 0.1, 0.05, 1.0, 0.5, 0.3]  # slot1=DIA_C (see CL29_DIATOM_SETTLING)
-    for i, v in enumerate(vels, start=1):
-        write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
-                 f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
+    # settling velocity TS files (m/day); slot 1 (DIA_C) is wind-modulated (#3),
+    # slots 2-6 constant. See _write_settling_velocity_files / CL29_WIND_RESUSPENSION.
+    _write_settling_velocity_files(out)
 
 
 def _replace_leading_number(line, new_val):

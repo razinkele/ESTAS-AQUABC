@@ -44,3 +44,49 @@ class TestReadWindDaily:
             "# comment\n# Contains modified Copernicus\nday,wind_ms\n0,5.0\n1,6.5\n"
         )
         assert conv._read_wind_daily(str(p)) == [5.0, 6.5]
+
+
+def _read_ts_values(path):
+    """Return the list of first-column values from an ESTAS TS file
+    (rows after the '# TIME AND VALUES' marker)."""
+    vals = []
+    started = False
+    with open(path) as fh:
+        for ln in fh:
+            if started:
+                parts = ln.split()
+                if len(parts) >= 2:
+                    vals.append(float(parts[1]))
+            elif ln.startswith("# TIME AND VALUES"):
+                started = True
+    return vals
+
+
+class TestWriteSettlingVelocityFiles:
+    def test_wind_mode_writes_daily_series(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", True)
+        conv._write_settling_velocity_files(str(tmp_path))
+        v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
+        assert len(v1) == 1828                      # 1827 daily + 1 sentinel
+        wind = conv._read_wind_daily()
+        expected0 = conv.wind_modulated_settling(
+            wind[:1], conv.CL29_SETTLING_W0, conv.CL29_WIND_UHALF)[0]
+        assert abs(v1[0] - expected0) < 1e-6        # day 0 matches the formula
+        assert v1[-1] == v1[-2]                      # sentinel repeats last value
+        # slots 2-6 stay 2-point constants
+        v2 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_2.txt"))
+        assert v2 == [0.1, 0.1]
+
+    def test_fallback_is_constant(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", False)
+        conv._write_settling_velocity_files(str(tmp_path))
+        v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
+        assert v1 == [conv.CL29_DIATOM_SETTLING, conv.CL29_DIATOM_SETTLING]  # 2 rows
+
+    def test_fallback_byte_identical_to_legacy(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", False)
+        conv._write_settling_velocity_files(str(tmp_path))
+        got = (tmp_path / "SETTLING_VELOCITY_TS_1.txt").read_text()
+        ref = tmp_path / "ref.txt"
+        conv.write_ts(str(ref), "settling velocity 1 m/day", [0, 9999], [[0.1], [0.1]])
+        assert got == ref.read_text()
