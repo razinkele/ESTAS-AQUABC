@@ -335,6 +335,16 @@ def write_ts(path, comment, days, cols):
             fh.write(f"{float(d):.6f} " + " ".join(f"{v:.6f}" for v in row) + "\n")
 
 
+def wind_modulated_settling(wind, w0, uhalf):
+    """Per-day net diatom settling velocity from daily wind (m/day).
+
+    w_eff = w0 / (1 + (U/uhalf)**2)  -- inverse-quadratic in wind (bottom shear
+    ~ U**2). Smooth, always positive, no floor. w0 is the calm-water (U->0) limit;
+    settling is halved at U = uhalf. See docs/superpowers/specs/2026-07-11-*.
+    """
+    return [w0 / (1.0 + (u / uhalf) ** 2) for u in wind]
+
+
 # ---------------------------------------------------------------------------
 # Template slicing: reuse the state-var and constants blocks verbatim.
 # ---------------------------------------------------------------------------
