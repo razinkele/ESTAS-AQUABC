@@ -77,6 +77,22 @@ CL29_WCONST_OVERRIDE = {
     "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
 }
 
+# Diatom settling velocity (m/day), settling-vel slot 1 (state var DIA_C). This is the ROOT
+# CAUSE of the box-19 spring-diatom gap (2026-07-11). Diagnosis chain: the gap is P-limited,
+# but external P is realistic (spring conc/flow/load all match observed, Aleksandrov 2025) and
+# it is not transport (the boundary P reaches the interior and is consumed by the bloom). The
+# binding constraint is P RETENTION: at the template 0.5 m/day, diatoms sink out of box-19's
+# ~1.5 m column in ~3 days, and with sediments off that P is LOST before it can recycle -- so
+# the realistic P flux only sustains ~0.40 mgC/L. A sweep (180-d, box-19 spring diatom
+# mean/peak): 0.5 -> 0.40/0.54; 0.1 -> 1.09/1.21; 0.02 -> 1.66/2.01, reaching the observed
+# ~1.5-1.9 as settling drops (PO4 stays pinned low -- same P, now retained + recycled).
+# 0.1 is a physically-defensible NET settling for this shallow, wind-mixed lagoon (intrinsic
+# diatom sinking ~0.5 minus resuspension); a 1-yr run keeps the succession (spring DIA peak
+# 1.21, summer DIA ~0.009 -- no summer takeover; 0 NaN). NB: this changes the CL29 baseline
+# (was implicitly 0.5) -- full 5-yr guardrail revalidation (summer cyano 96+-56, spring:summer
+# ratio, all boxes) is the remaining step before it is a settled default.
+CL29_DIATOM_SETTLING = 0.1
+
 # External-P lever (section 4.1a). Multiplies the open-boundary PO4_P inflow concentration
 # (the Nemunas/lagoon boundary P load). 1.0 = EUTROPY value verbatim (byte-identical). The
 # box-19 spring-diatom gap is P-limited (interior spring DIP ~0.0027 mg/L vs a ~0.02 mg/L
@@ -658,7 +674,7 @@ def _write_master(out, state_block, links, depth, area):
     # settling velocity TS files (constant velocities, m/day)
     # #3 is OPA_C only: reduced 0.2 -> 0.05 (motile green algae) so OPA is not sunk
     # out of its narrow clear-water-phase window before it can accumulate.
-    vels = [0.5, 0.1, 0.05, 1.0, 0.5, 0.3]
+    vels = [CL29_DIATOM_SETTLING, 0.1, 0.05, 1.0, 0.5, 0.3]  # slot1=DIA_C (see CL29_DIATOM_SETTLING)
     for i, v in enumerate(vels, start=1):
         write_ts(os.path.join(out, f"SETTLING_VELOCITY_TS_{i}.txt"),
                  f"settling velocity {i} m/day", [0, 9999], [[v], [v]])
