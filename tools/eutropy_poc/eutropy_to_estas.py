@@ -345,6 +345,23 @@ def wind_modulated_settling(wind, w0, uhalf):
     return [w0 / (1.0 + (u / uhalf) ** 2) for u in wind]
 
 
+def _read_wind_daily(path=None):
+    """Read committed daily-mean wind (day,wind_ms). Returns per-day wind list
+    (index = day), or None if the file is absent. Skips '#' comments and header."""
+    if path is None:
+        path = os.path.join(NET, "wind_daily.csv")
+    if not os.path.exists(path):
+        return None
+    wind = []
+    with open(path) as fh:
+        for ln in fh:
+            ln = ln.strip()
+            if not ln or ln.startswith("#") or ln.lower().startswith("day"):
+                continue
+            wind.append(float(ln.split(",")[1]))
+    return wind
+
+
 # ---------------------------------------------------------------------------
 # Template slicing: reuse the state-var and constants blocks verbatim.
 # ---------------------------------------------------------------------------
