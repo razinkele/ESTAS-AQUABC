@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-12
+
 ### Added
 - **CL29 wind-modulated diatom settling (#3):** `SETTLING_VELOCITY_TS_1.txt` (DIA_C) is now a daily time series `w_eff = w0/(1+(U/U_c)²)` derived from ERA5 daily wind (2012–2016), replacing the constant `CL29_DIATOM_SETTLING`. Parameters pinned to `w0 = 0.3` m/day and `U_c = 4.21` m/s (half-suppression wind, near the fine-sediment resuspension threshold). Converter-only — ESTAS already reads settling as a time series. Off-switch `CL29_WIND_RESUSPENSION = False` (or an absent wind file) restores the byte-identical constant. Ships the committed daily-wind artifact `tools/eutropy_poc/net/wind_daily.csv` (ERA5/Copernicus, attributed) and its regenerator `tools/eutropy_poc/make_wind_daily.py`. Same-binary validation shows the change reproduces the constant-0.1 behavior almost exactly (5-yr domain spring-diatom peak +0 %, summer cyano +1 %, 0 NaN): because the Nida wind is aseasonal, this is a mechanistic-defensibility change, not a change to the bloom.
 - **CL29 provisional sediment-facies strawman (#5):** inert `CL29_SEDIMENT_TYPE_PROVISIONAL` (low-confidence salinity/depth classification for the 29 boxes); the active `CL29_SEDIMENT_TYPE` stays empty (CL29 byte-identical) pending an authoritative facies map.
