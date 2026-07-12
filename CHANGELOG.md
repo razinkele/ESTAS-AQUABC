@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-12
+
+### Added
+- **End-to-end 0D regression test** (TODO 5.2): a golden-file check on the `AQUABC_PELAGIC_0D` example. `tests/regression/compare_0D.py` diffs a fresh `OUTPUT.csv` against a committed golden (`tests/regression/pelagic_0D_golden.csv`, the current-code output downsampled across the full 1096-day run) with an **exact header check** (catches column reorder/rename — the "wrong-column" bug class) plus a per-cell `rtol/atol` numeric check. Wired into the `build-and-run` CI job (`--rtol 1e-6`); the comparison logic is unit-tested in `tests/python/test_e2e_regression.py`.
+
+### Changed
+- **CI compiler/platform matrix** (TODO 3.1): the `build-and-run` job now runs under a `strategy.matrix` (`fail-fast: false`, compiler selected via job-level `env: FC`, honored by the Makefile's `ifeq ($(origin FC),default)`). gfortran/ubuntu-latest is active, with documented, ready-to-enable rows for `ifx` (Intel oneAPI) and `macos-latest`.
+
+### Fixed
+- **`tests/python/test_safe_resolve.py` collection failure:** it imported `safe_resolve` from `shiny_app.app`, which imports pandas — and the installed pandas (compiled against NumPy 1.x) crashes the import under NumPy 2.x. `safe_resolve` is a pure `os.path` helper, so it was moved to a stdlib-only `shiny_app/safe_resolve.py` (`app.py` re-exports it, backward-compatible). The full Python test suite now runs with **no exclusion (99 → 107 tests)**.
+
 ## [0.3.1] - 2026-07-12
 
 ### Added
