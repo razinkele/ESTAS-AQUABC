@@ -203,6 +203,8 @@ real(dp), parameter :: GAS_CONST_R = 8.314D0
 
 **Effort:** ~2–3 days
 
+**Status:** 🟡 PHASE 1 IN PROGRESS 2026-07-12 — non-reactive helper extraction (safe, incremental). Extracted `shiny_app/compiler_env.py` (Intel/compiler detection), `input_analysis.py` (input-file analysis + `INPUT_FILE_CATEGORIES`), `file_locators.py` (output/box discovery); app.py 8616→7925 lines. server()/create_ui() untouched; verbatim moves, F821-clean, 117 python tests. Deferred: split create_ui() into ui/ fragments, extract server() non-reactive logic, full Shiny-modules rearchitecture. Spec/plan: docs/superpowers/{specs,plans}/2026-07-12-app-py-decomposition*.md
+
 ---
 
 ### 2.2 [P1] Bare Except Blocks (5 remaining)
