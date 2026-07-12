@@ -52,7 +52,22 @@ jobs:
         run: python -m pytest tests/python/test_app_playwright.py -v --tb=short
 
   build-and-run:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    # Compiler/platform matrix. Currently gfortran-on-Ubuntu only; the structure
+    # is here so adding a compiler or OS is a one-line matrix entry once verified.
+    # fail-fast: false so one compiler's failure doesn't cancel the others.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            fc: gfortran
+          # Future entries (enable after verifying they build in CI):
+          #   - { os: ubuntu-latest, fc: ifx }        # Intel Fortran (LLVM) via Intel oneAPI apt
+          #   - { os: macos-latest,  fc: gfortran }   # needs `brew install gcc` + gfortran-<ver> on PATH
+    name: build-and-run (${{ matrix.os }}, ${{ matrix.fc }})
+    env:
+      FC: ${{ matrix.fc }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

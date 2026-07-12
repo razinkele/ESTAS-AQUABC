@@ -311,6 +311,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 **Effort:** ~1 hour
 
+**Status:** ✅ COMPLETED 2026-07-12 — `build-and-run` job converted to a `strategy.matrix` (`fail-fast: false`, `runs-on: ${{ matrix.os }}`, compiler via job-level `env: FC`). Active entry gfortran/ubuntu-latest; commented, ready-to-enable entries for `ifx` (Intel oneAPI) and `macos-latest`. The Makefile's `ifeq ($(origin FC),default)` means the exported `FC` propagates, so a new matrix row switches compilers with a one-line change.
+
 ---
 
 ### 3.2 [P1] Integration Tests Excluded from CI
