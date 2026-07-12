@@ -192,6 +192,40 @@ not the limitation ratio). This confirms P-supply as the ceiling. Box 19 still s
 of 47, so full closure needs a larger P input than ×2 or the benthic recycling source
 (option 1). The test edits were reverted; no parameter change committed.
 
+### Observation-target re-examination — summer cyano (2026-07-12)
+
+An apparent 3× summer-cyano shortfall (a whole-basin mean of ~29 mg/m³ vs 96) was
+traced to **two compounding comparison errors, not a model defect.** The Bartoli et al.
+(2018) primary text was re-read to pin down the target exactly: *"According to long-term
+monitoring data (2001–2012), monthly average chlorophyll a concentrations reach 47 ± 14
+mg m⁻³ during the spring diatom bloom and 96 ± 56 mg m⁻³ during the summer bloom."* So
+96 ± 56 is a **monthly-average, bulk (total-phytoplankton) Chl-a, with ± = 1 SD** (band
+**40–152**), from **2001–2012** monitoring — *not* a peak, *not* cyanobacteria-specific,
+and from a period earlier than the 2012–2016 model window.
+
+**The correct comparison** is therefore the model's **summer peak-month (30-day) mean of
+*total* Chl-a** (DIA + OPA + cyano, C:Chl 30 / 40) in the established bloom box (**box-19**),
+*not* a whole-basin mean of cyano-only Chl-a (which dilutes in the marine, salinity-excluded
+northern boxes and understates the bloom):
+
+| box-19 summer peak-month *total* Chl-a | yr1 | yr2 | yr3 | yr4 | yr5 | 5-yr |
+|---|---|---|---|---|---|---|
+| mg Chl m⁻³ | 75 | 72 | 55 | 40 | 55 | **60** |
+
+**Every year lies within 1 SD of the observed 96 ± 56 (40–152); there is no
+statistically-meaningful gap.** Correcting the aggregation (basin-mean → box-19) and the
+statistic (whole-summer cyano-only → bloom-month total) moves the model 29 → 60 mg/m³,
+on the low-central side of the observation but within its uncertainty. Two honest residuals:
+the model's central tendency (60) is below the observed central (96), and it is dragged
+down in later years (yr4: 40) by a **Nostocales collapse after year 2** — a genuine but
+*structural* limitation (the model has no persistent sediment akinete bank, so multi-year
+re-seeding is absent; converter-side akinete refuge / `P_FORM_AKI` fixes were tested and
+do not restore it). Restoring Nostocales is a modeling extension, not a calibration knob,
+and is not required to reproduce the observed summer bloom within uncertainty.
+
+**Takeaway for reviewers:** compare *box-19 bloom-month total Chl-a* against Bartoli's
+*monthly-mean 96 ± 56 (1 SD 40–152)* — do not use a whole-basin or cyano-only mean.
+
 ---
 
 ## References
