@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from shiny_app.app import safe_resolve
+from shiny_app.safe_resolve import safe_resolve
 
 
 @pytest.fixture

@@ -120,6 +120,12 @@ except ImportError:
         validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
     )
 
+# Path-traversal-safe filename resolution (stdlib-only, extracted for testability)
+try:
+    from shiny_app.safe_resolve import safe_resolve
+except ImportError:
+    from safe_resolve import safe_resolve
+
 # Import diagnostics panel (process rate analysis UI)
 try:
     from shiny_app.diagnostics import diagnostics_ui, diagnostics_server
@@ -154,21 +160,8 @@ INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
 
-def safe_resolve(base_dir: str, filename: str) -> str:
-    """Resolve filename under base_dir, rejecting path traversal.
-
-    Raises ValueError if the resolved path escapes base_dir.
-    """
-    if not filename or not filename.strip():
-        raise ValueError("Empty filename")
-    # Reject obvious traversal attempts before joining
-    if os.path.isabs(filename) or '..' in filename.split(os.sep):
-        raise ValueError(f"Invalid filename: {filename}")
-    resolved = os.path.realpath(os.path.join(base_dir, filename))
-    base = os.path.realpath(base_dir)
-    if not resolved.startswith(base + os.sep) and resolved != base:
-        raise ValueError(f"Path escapes base directory: {filename}")
-    return resolved
+# safe_resolve() moved to shiny_app/safe_resolve.py (imported above) so the pure
+# path-safety helper can be unit-tested without importing this whole module.
 
 # PELAGIC_BOX_COLUMNS imported from shiny_app.utils
 
