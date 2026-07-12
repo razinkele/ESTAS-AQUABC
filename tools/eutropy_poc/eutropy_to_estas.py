@@ -152,9 +152,13 @@ CL29_BOUNDARY_PO4_SCALE = 1.0
 # grounded leads that remain are the spring P LOAD (flow x conc during the high-flow spring
 # flood -- concentration alone is right; the flood-driven load may be under-supplied), the
 # interior under-delivery (boundary -> box-19 transport/consumption), and/or the diatom
-# spring-niche parameters -- NOT boundary P concentration. PEAK is kept at 1.0; use it (~5) to
-# restore realistic summer P, but it is not the spring-gap fix.
-CL29_BOUNDARY_PO4_SUMMER_PEAK = 1.0
+# spring-niche parameters -- NOT boundary P concentration.
+# ENABLED at 3.0 (2026-07-12): a PEAK sweep {1,3,5} over the full 5-yr run showed raising summer
+# P is BENEFICIAL, not harmful -- summer PO4 0.018->0.034->0.051, CYN 1.25->1.34->1.37, spring
+# diatom 1.35->1.56, succession intact, 0 NaN. (An earlier "summer-P crashes cyano" report was a
+# WRONG-COLUMN artifact -- CYN_C is col 15.) 3.0 -> summer PO4 ~0.034, matching the observed
+# 2012-2016 summer AVG (~0.025-0.034); use ~5 to target the eutrophic peak years (obs up to 0.143).
+CL29_BOUNDARY_PO4_SUMMER_PEAK = 3.0   # ENABLED 2026-07-12 (grounded summer-P realism; see note below)
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
 # so the baseline stays byte-identical. See
