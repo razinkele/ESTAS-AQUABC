@@ -1,7 +1,21 @@
 # Design: Nostocales multi-year persistence — akinete formation-timing recalibration
 
+> ## ⚠️ SUPERSEDED — DE-RISKED, INSUFFICIENT (2026-07-12)
+> This approach was **empirically de-risked and does not work.** Two 5-yr calibration sweeps:
+> - **Formation timing** (`T_FORM_AKI` 16→24): only partial — NOST yr3–5 rose from ~0 to ~0.2–0.7
+>   (vs the yr1–2 ~1.9 target), and never recurs at bloom level.
+> - **NOST growth** (`KG_NOST` 1.29→5): needs *physically indefensible* growth (bloom cyanobacteria
+>   grow slower than diatoms, not faster), and even then only **redistributes a P-capped cyano
+>   pool** (CYN↔NOST, total summer cyano unchanged).
+>
+> **Real root cause:** the multi-year Nostocales collapse is **competitive exclusion under
+> system-wide P-limitation**, not an akinete-supply / timing / growth-kinetics defect. There is no
+> defensible converter-only fix, and restoring NOST changes *none* of the validated metrics (NOST
+> is not needed for the Chl-a match, which is already within 1 SD of Bartoli 96±56). **Do not
+> implement this.** Kept as a record of the corrected root cause and the dead-end levers.
+
 - **Date:** 2026-07-12 (rewritten after in-loop review overturned the first draft)
-- **Status:** Draft (awaiting user review)
+- **Status:** **SUPERSEDED / negative result** (see banner above) — not for implementation
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** CL29 converter parameter recalibration (`CL29_WCONST_OVERRIDE`). **Converter-only,
   no Fortran, no rebuild** — with a Fortran fallback documented if calibration fails (§6).
