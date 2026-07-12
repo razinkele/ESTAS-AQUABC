@@ -94,6 +94,17 @@ jobs:
       - name: Run example tests
         run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
 
+      - name: End-to-end regression (0D output vs golden)
+        # Runs the 0D example and diffs OUTPUT.csv against the committed golden.
+        # The header check is exact (catches column reorder/rename); the numeric
+        # tolerance is moderate because the golden is gfortran-generated — loosen
+        # (or add per-compiler goldens) when the matrix gains ifx/macOS.
+        run: |
+          make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D run
+          python3 tests/regression/compare_0D.py \
+            SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/OUTPUT.csv \
+            tests/regression/pelagic_0D_golden.csv --rtol 1e-6 --atol 1e-9
+
       - name: Run Fortran unit tests
         run: make -C tests/fortran clean test
 

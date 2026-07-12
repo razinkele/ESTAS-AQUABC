@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""End-to-end regression check for the AQUABC 0D pelagic example.
+
+Compares a freshly generated OUTPUT.csv against a committed golden reference,
+catching both structural regressions (column count/name/order — the class of
+bug that silently reads the wrong column) and numerical drift beyond tolerance.
+
+The golden is downsampled (every ``stride`` data rows) to stay small; the fresh
+output is downsampled the same way before comparing, so the two align row-for-row.
+
+Standard library only (no numpy) so it runs in any CI job.
+
+Usage:
+    compare_0D.py FRESH.csv GOLDEN.csv [--stride N] [--rtol R] [--atol A]
+Exit status 0 on match, 1 on regression.
+"""
+import argparse
+import sys
+
+
+def read_csv(path):
+    """Return (header: list[str], rows: list[list[float]])."""
+    with open(path) as fh:
+        lines = [ln.strip() for ln in fh if ln.strip()]
+    header = [c.strip() for c in lines[0].split(",")]
+    rows = [[float(x) for x in ln.split(",")] for ln in lines[1:]]
+    return header, rows
+
+
+def compare(fresh_path, golden_path, stride=50, rtol=1e-9, atol=1e-12):
+    """Compare a fresh 0D output against the golden. Return (ok, message)."""
+    fh, fr = read_csv(fresh_path)
+    gh, gr = read_csv(golden_path)
+
+    # 1. Structural: identical header (names, count, order).
+    if fh != gh:
+        if len(fh) != len(gh):
+            return False, f"column COUNT differs: fresh={len(fh)} golden={len(gh)}"
+        diffs = [f"col {i}: fresh {a!r} != golden {b!r}"
+                 for i, (a, b) in enumerate(zip(fh, gh)) if a != b]
+        return False, "column HEADER differs (order/name):\n  " + "\n  ".join(diffs)
+
+    # 2. Downsample fresh to match the golden's sampling.
+    fr_s = fr[::stride]
+    if len(fr_s) != len(gr):
+        return False, (f"row COUNT after downsample differs: fresh={len(fr_s)} "
+                       f"golden={len(gr)} (stride={stride}) — run length changed?")
+
+    # 3. Numerical: cell-by-cell within tolerance; report the worst violation.
+    worst = None  # (rel, row, col, a, b)
+    for i, (ra, rb) in enumerate(zip(fr_s, gr)):
+        for j, (a, b) in enumerate(zip(ra, rb)):
+            if abs(a - b) > atol + rtol * abs(b):
+                rel = abs(a - b) / (abs(b) if b else 1.0)
+                if worst is None or rel > worst[0]:
+                    worst = (rel, i, j, a, b)
+    if worst:
+        rel, i, j, a, b = worst
+        return False, (f"numerical regression: worst rel diff {rel:.3e} at sample "
+                       f"row {i}, column {j} ({gh[j]}): fresh={a!r} golden={b!r} "
+                       f"(rtol={rtol}, atol={atol})")
+    return True, f"OK: {len(gr)} sampled rows x {len(gh)} cols match within rtol={rtol}"
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("fresh")
+    p.add_argument("golden")
+    p.add_argument("--stride", type=int, default=50)
+    p.add_argument("--rtol", type=float, default=1e-9)
+    p.add_argument("--atol", type=float, default=1e-12)
+    a = p.parse_args(argv)
+    ok, msg = compare(a.fresh, a.golden, a.stride, a.rtol, a.atol)
+    print(("PASS " if ok else "FAIL ") + msg)
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

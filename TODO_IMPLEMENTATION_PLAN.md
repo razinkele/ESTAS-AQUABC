@@ -487,6 +487,8 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 
 **Effort:** ~4–8 hours
 
+**Status:** ✅ COMPLETED 2026-07-12 — golden-file regression on the 0D pelagic example. `tests/regression/pelagic_0D_golden.csv` (current-code output downsampled every 50th row across the full 1096-day run) + `tests/regression/compare_0D.py` (stdlib tolerance diff: exact header check catches column reorder/rename, per-cell `rtol/atol` numeric check). Wired into the `build-and-run` CI job (`--rtol 1e-6`). `tests/python/test_e2e_regression.py` unit-tests the comparison logic (runs in the Python-only job) and diffs a fresh 0D output when present. Full python suite 107 passed. Note: golden is gfortran-generated; loosen tolerance / add per-compiler goldens when the matrix (3.1) gains ifx/macOS.
+
 ---
 
 ## Implementation Roadmap
