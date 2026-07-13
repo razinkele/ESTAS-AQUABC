@@ -71,9 +71,14 @@ move together into the module — no external coupling.
   - `get_output_files_from_dir(dir_name, file_format="text", root=ROOT)`
 
 Public names drop the leading underscore (`_looks_numeric`→`looks_numeric`,
-`_get_output_columns`→`get_output_columns`). Bodies move **verbatim** except: the underscore-drop,
-the const references now resolve to the module consts/params, and the two intra-cluster calls now
-reference the module functions.
+`_get_output_columns`→`get_output_columns`). Bodies move **verbatim** except these deliberate edits:
+the underscore-drop; the const references now resolve to the module consts/params; the two
+intra-cluster calls now reference the module functions; and — so the injected value actually flows —
+`get_output_files_info`'s call to the folder helper becomes
+`get_output_folder_from_config(input_txt_path=input_txt_path)` (the original called it arg-free,
+reading the closed-over local; threading the param keeps the default-arg testability meaningful and
+is behavior-identical since both default to the same module `INPUT_TXT_PATH`). `get_output_columns`'s
+call to `looks_numeric(cols[0])` needs no arg change.
 
 ## 5. Call-site wiring (11 external sites)
 
