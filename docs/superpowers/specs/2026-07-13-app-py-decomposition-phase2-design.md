@@ -144,9 +144,14 @@ One module per phase, one commit each, in order of increasing coupling: **2a `ui
    imported in-process because it pulls in `pandas`, whose installed build has a NumPy-2 ABI
    crash; `F821` statically catches an undefined name from a forgotten re-import).
 4. New per-fragment render-smoke unit tests pass (`tests/python/test_ui_<group>.py`): call each
-   fragment and assert an expected marker string appears in its rendered HTML —
-   `assert "Dashboard" in str(panel_dashboard())`.
-5. Playwright + Selenium integration tests green (the full-page render safety net).
+   fragment and assert **multiple** expected marker strings appear in its rendered HTML (nav
+   condition + ≥2 card-header titles for panels) — a single marker is too weak to catch a
+   dropped sub-element.
+5. Playwright + Selenium integration tests green **in CI's `integration-tests` job**. They are
+   **not installed locally** and `tests/python/conftest.py:10-14` `collect_ignore`s them, so
+   `pytest tests/python` does not run them here. Locally, the behavioral net is item 4 (multi-
+   marker smoke tests) plus the **mandatory verbatim-diff review (§6)** — do not report step 5 as
+   locally "passed" unless `import playwright` succeeds.
 
 Any red → stop and fix before the next phase. Each phase leaves `create_ui()` calling the
 extracted fragments, so the app renders at every commit.
@@ -163,7 +168,7 @@ render are the behavioral proof.
 
 | Risk | Mitigation |
 |---|---|
-| A fragment silently drops/reorders an element → different UI | Verbatim expression move (§6); Playwright/Selenium render the full page; smoke tests assert per-fragment markers |
+| A fragment silently drops/reorders an element → different UI | Verbatim expression move + **mandatory §6 diff review (the primary local guarantee** — Playwright/Selenium are not installed locally, only in CI); render-smoke tests assert **multiple** structural markers per fragment so a dropped sub-element fails the test |
 | Missed re-import after moving a local out → `NameError` at render | `ruff --select F821` gate (phase-1 proven); `py_compile`; import check; Playwright render |
 | Circular import (`app.py` ↔ fragment module) | Fragments import only stdlib + `shiny` + leaf modules; **never** `app.py`. The 4 `app.py`-defined consts (`COMPILERS`/`BUILD_TYPES`/`NAV_CHOICES`/`MIN_SMOOTH_WINDOW`) are passed as args, so no fragment needs an `app.py` symbol |
 | Fragment module missing a leaf-module import (e.g. `TIME_STEP_PRESETS`, `output_widget`) → `NameError` at render | Per-fragment import table (§4.2) enumerates them; `python -c "import shiny_app.ui_panels"` + the render-smoke test (§5.1, §5.4) fail immediately if one is missing |

@@ -20,8 +20,8 @@
   2. `python -c "import shiny_app.<new_module>"`
   3. `ruff check --select F821 shiny_app/app.py` → clean (missed-re-import guard; `app.py` can't be imported in-process due to a pandas NumPy-2 ABI crash)
   4. `python -m pytest tests/python -q` → all green (117 baseline + new smoke tests; no prior test regresses)
-  5. Playwright/Selenium integration tests green (`tests/python/test_app_playwright.py`) — the full-page render safety net
-- **Render-smoke tests run in-process.** Fragment modules and their leaf deps do NOT import pandas, so `from shiny_app.ui_<group> import …` + `str(fragment())` works in a plain pytest (verified). This is both the per-fragment coverage AND the module-import check.
+  5. **Behavioral coverage — read this carefully.** Playwright/Selenium are **NOT installed locally** and are silently `collect_ignore`d by `tests/python/conftest.py:10-14`, so `pytest tests/python` does **not** exercise the full-page render here (it reports "117 passed" with the browser tests excluded). Those tests run only in CI's dedicated `integration-tests` job. Therefore, **locally** the behavioral net is: (a) the in-process render-smoke tests (step 4), which MUST assert **multiple** structural markers per fragment (see Task 2 table) so a dropped/reordered sub-element fails the test — a single `nav_x` marker is insufficient; plus (b) the **mandatory per-fragment verbatim-diff review (§6 / task review) — this is not optional**, it is the primary guarantee of the byte-identical-UI invariant while automated full-page rendering is unavailable. Run `python -m pytest tests/python/test_app_playwright.py -q` locally ONLY if `python -c "import playwright"` succeeds; otherwise rely on the CI `integration-tests` job for the browser gate and do not report step 5 as "passed" locally.
+- **Render-smoke tests run in-process.** Fragment modules and their leaf deps do NOT import pandas, so `from shiny_app.ui_<group> import …` + `str(fragment())` works in a plain pytest (verified). This is both the per-fragment coverage AND the module-import check. Because it is the strongest *automated* local check, assert several stable markers per fragment, not one.
 
 ---
 
@@ -177,41 +177,46 @@ git commit -m "refactor(shiny): extract create_ui() JS blocks to ui_scripts.py (
 ```python
 from shiny_app import ui_panels
 
-# arg-free panels: name -> nav marker
+# arg-free panels: name -> MULTIPLE markers (nav condition + card headers) that must ALL appear,
+# so a verbatim move that drops/reorders a sub-card fails the test (single nav_x marker is too weak).
 ARGFREE = {
-    "panel_dashboard": "nav_dashboard",
-    "panel_model_control": "nav_model_control",
-    "panel_input_files": "nav_input_files",
-    "panel_parameters": "nav_parameters",
-    "panel_initial_conditions": "nav_initial_conditions",
-    "panel_model_options": "nav_model_options",
-    "panel_sim_config": "nav_sim_config_disabled",
-    "panel_scenarios": "nav_scenarios",
-    "panel_mass_balance": "nav_mass_balance",
-    "panel_observations": "nav_observations",
-    "panel_map": "nav_map",
-    "panel_model_structure": "nav_model_structure",
+    "panel_dashboard": ["nav_dashboard", "Dashboard", "System Status", "Simulation Config"],
+    "panel_model_control": ["nav_model_control", "Time Period", "Time Stepping", "Output Interval"],
+    "panel_input_files": ["nav_input_files", "File Browser", "File Information", "Box Network & Bathymetry"],
+    "panel_parameters": ["nav_parameters", "Parameters"],
+    "panel_initial_conditions": ["nav_initial_conditions", "Initial Conditions", "Category Info", "State Variables"],
+    "panel_model_options": ["nav_model_options", "Model Options", "Model Switches", "Extra Constants"],
+    "panel_sim_config": ["nav_sim_config_disabled"],   # tiny disabled stub — only the nav marker exists
+    "panel_scenarios": ["nav_scenarios", "Scenario Presets", "Load Scenario", "Save Current Configuration"],
+    "panel_mass_balance": ["nav_mass_balance", "Mass Balance", "Summary", "Element Details"],
+    "panel_observations": ["nav_observations", "Model Validation - Observations", "Comparison Summary", "Variable Details"],
+    "panel_map": ["nav_map", "Map Settings", "Map View", "Map Information"],
+    "panel_model_structure": ["nav_model_structure"],   # 18-line panel — nav marker only
 }
 
 
-def test_argfree_panels_render_with_their_nav_marker():
-    for name, marker in ARGFREE.items():
+def test_argfree_panels_render_with_all_markers():
+    for name, markers in ARGFREE.items():
         html = str(getattr(ui_panels, name)())
-        assert marker in html, f"{name} missing {marker!r}"
+        for m in markers:
+            assert m in html, f"{name} missing marker {m!r}"
 
 
 def test_panel_model_build_takes_consts_and_renders():
     compilers = {"gfortran": {"name": "GNU Fortran"}}
     build_types = {"release": {"name": "Release"}}
     html = str(ui_panels.panel_model_build(compilers, build_types))
-    assert "nav_model_build" in html
-    assert "GNU Fortran" in html and "Release" in html
+    for m in ("nav_model_build", "Build Configuration", "Available Executables", "GNU Fortran", "Release"):
+        assert m in html, f"panel_model_build missing {m!r}"
 
 
 def test_panel_plot_takes_min_smooth_window_and_renders():
     html = str(ui_panels.panel_plot(2))
-    assert "nav_plot" in html
+    for m in ("nav_plot", "Plot & Visualization", "Select Output Directory", "Files Summary"):
+        assert m in html, f"panel_plot missing {m!r}"
 ```
+
+> The `compilers`/`build_types` fixtures need only the `["name"]` sub-key — verified `panel_model_build` subscripts these dicts only as `v["name"]`; `nav_choices` is unpacked only as `(icon, label)`; `min_smooth_window` is used only as a scalar slider `min=`. `str(panel_input_files())` safely calls `get_input_file_categories()` at build time (returns a list, no crash in a bare env — verified).
 
 - [ ] **Step 2: Run the test — verify it fails**
 
