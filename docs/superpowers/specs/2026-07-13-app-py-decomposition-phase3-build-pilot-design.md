@@ -44,27 +44,51 @@ def assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
     ...pure branching logic...
     return cmd   # list[str]
 
-# server() — thin wrapper: resolve reactive reads (keeping the defensive try/except), delegate
+# server() — thin wrapper: RAW reactive reads only (try/except → None/""/False), then delegate.
+# The wrapper applies NO value-defaulting; the pure fn owns every default (see §4.1).
 def build_estas_command():
-    exe_name = <safe input.run_executable() read>
-    input_file = <safe input.cmd_input_file() read>  ; ...  # 6 reactive reads, unchanged
+    try: exe_name = input.run_executable()          # raw, no `or "ESTAS_II"` here
+    except Exception: exe_name = None
+    try: input_file = input.cmd_input_file()        # raw, no `or "INPUT.txt"` here
+    except Exception: input_file = None
+    ...  # const_file, binary_enabled, binary_filename, shear_file — same pattern, raw values
     return assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
                                   binary_filename, shear_file, DEFAULT_CONSTANTS_FILE)
 ```
 
 The thin wrapper keeps its **current name and 0-arg signature**, so its call sites are unchanged.
-`build_commands.py` imports **stdlib only** (`os`, `glob`) and takes `root`/defaults as arguments —
-it imports nothing from `app.py`, so no circular import.
+`build_commands.py` imports **stdlib only** (`os`, `glob`, `subprocess`, `datetime` — see §5) and
+takes `root`/defaults as arguments — it imports nothing from `app.py`, so no circular import.
 
 ## 4. The four extractions
 
 ### 4.1 `assemble_estas_command(exe_name, input_file, const_file, binary_enabled, binary_filename, shear_file, default_constants_file) -> list[str]`
-The pure branching logic of the current `build_estas_command()` (app.py 713–787): assemble
-`["./<exe>", <input>, <const>, <binary>, <shear>]` with the documented arg-count rules (binary or
-shear ⇒ needs a const file → `default_constants_file`; shear without binary ⇒ placeholder
-`PELAGIC_OUTPUT.bin`). **Wrapper:** `build_estas_command()` stays in `server()`, does the 6
-defensive `input.cmd_*()` / `input.run_executable()` reads (verbatim try/except), calls this.
-**5 call sites unchanged** (app.py 792, 1341, 4565, 4724, 5099).
+The branching logic of the current `build_estas_command()` (app.py 713–787): assemble
+`["./<exe>", <input>, <const>, <binary>, <shear>]` with the documented arg-count rules.
+
+**Boundary (critical — get this exact or behavior changes):** the wrapper does **only** the six
+defensive reactive reads and passes the **raw** resolved values through; the pure function owns
+**all** value-defaulting. Concretely:
+
+- **Wrapper `build_estas_command()`** (stays in `server()`): six reads, each
+  `try: v = input.X() except Exception: v = <falsy sentinel>` (`None`/`""`/`False`), then
+  `return assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
+  binary_filename, shear_file, DEFAULT_CONSTANTS_FILE)`. The wrapper applies **no** `or "…"`
+  defaulting itself — it hands over the raw `None`/`""`/`False`.
+- **Pure `assemble_estas_command`** owns every default, so all of it is unit-testable:
+  `exe_name or "ESTAS_II"`; `input_file or "INPUT.txt"`; `const_file or ""`;
+  `if binary_enabled and not binary_filename → "PELAGIC_OUTPUT.bin"`;
+  `if (binary or shear) and not const → default_constants_file`;
+  shear-without-binary placeholder `"PELAGIC_OUTPUT.bin"`; then the arg-count assembly.
+
+This is why the signature carries `binary_enabled` **and** the raw `binary_filename` separately (the
+switch-on-but-empty default lives in the pure fn), and why §6.3's `binary_enabled`-but-empty-name
+test targets the pure fn. Do **not** move any `or "…"` default into the wrapper — a dropped default
+would turn the not-ready path from `["./ESTAS_II", "INPUT.txt"]` into `["./None", ""]` (a silent
+behavior change `py_compile`/`F821` cannot catch).
+
+**5 call sites unchanged** (app.py 792, 1341, 4565, 4724, 5099) — the wrapper keeps its name and
+0-arg signature.
 
 ### 4.2 `get_available_executables(root) -> list[str]`
 Verbatim body of the current `get_available_executables()` (app.py 805–820), with the closed-over
@@ -118,8 +142,8 @@ build-execution machinery.
    module too, not just `app.py`: `get_executable_info`'s moved body uses `subprocess`/`datetime`, so
    F821 on `build_commands.py` is what catches a forgotten import there (F821 on `app.py` alone
    would not).
-3. New unit tests `tests/python/test_build_commands.py` pin each pure function against the ORIGINAL
-   behavior — the valuable part:
+3. New unit tests `tests/python/test_build_commands.py` pin each extracted function against the
+   ORIGINAL behavior — the valuable part:
    - `assemble_estas_command`: a table of input combinations → exact expected `list[str]`
      (0-arg default; input only; input+const; input+const+binary; +shear; binary-enabled but no
      const → default const inserted; shear but no binary → placeholder `PELAGIC_OUTPUT.bin`;
