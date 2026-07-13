@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-13
+
+### Changed
+- **`shiny_app/app.py` decomposition — phase 3 pilot (build cluster)** (TODO 2.1): extracted the non-reactive build/command logic out of the ~5,900-line `server()` into a new pure module `shiny_app/build_commands.py` — `assemble_estas_command` (command-line assembly + all value-defaulting), `get_available_executables`, `get_executable_info` (size/mtime + `file(1)` type), and `target_exe_name`. The four `server()` nested functions are now **thin wrappers** that resolve the reactive inputs and delegate; observable behavior is **unchanged** (reactive dependencies and defaulting preserved — the conditional `cmd_binary_filename` read is kept, and all 15 call sites are untouched). `build_commands.py` is stdlib-only and imports nothing from `app.py`. Adds `tests/python/test_build_commands.py` (15 unit tests pinning every command-assembly branch; **123 → 138** Python tests); `app.py` −76 lines. This pilot proves the "resolve-at-call-site, pure-helper" pattern for the remaining `server()` clusters (file-I/O, plot-prep, mass-balance, observations, scenarios), which stay deferred. Spec + plan under `docs/superpowers/{specs,plans}/2026-07-13-app-py-decomposition-phase3-build-pilot*.md`.
+
+### Added
+- **Release-doc auto-sync:** the release workflow now keeps the README `Latest release` marker in sync on every `vX.Y.Z` tag via `tools/sync_release_docs.sh` (idempotent; committed back to `main` with `[skip ci]`). README refreshed to the current state (123→138-test Python suite, the decomposed `shiny_app/` module layout). CHANGELOG remains manually curated and validated by the workflow.
+
 ## [0.3.4] - 2026-07-13
 
 ### Changed
