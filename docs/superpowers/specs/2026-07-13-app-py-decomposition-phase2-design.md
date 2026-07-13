@@ -50,13 +50,26 @@ except ImportError:      # running as a script from inside shiny_app/
     from ui_panels import panel_dashboard, panel_model_build, ...
 ```
 
-**Const handling (decided): pass-as-args.** Only two fragments reference module-level consts —
-`panel_model_build` needs `COMPILERS` + `BUILD_TYPES`, and the sidebar builder needs
-`NAV_CHOICES`. Those consts **stay defined in `app.py`** and are passed in:
-`panel_model_build(COMPILERS, BUILD_TYPES)`, `build_sidebar(NAV_CHOICES)`. The other ~24
-fragments are arg-free (matching `diagnostics_ui()`). This keeps the consts co-located with the
-app config, requires no new constants module, and makes circular imports structurally impossible
-(fragments import nothing from `app.py`).
+**Const handling (decided): pass-as-args for `app.py`-defined consts; direct leaf-module import
+for everything else.** Fragments reference two kinds of external names, which are handled
+differently:
+
+- **`app.py`-defined consts → passed as args** (a fragment importing these from `app.py` would
+  create a circular import). Exactly **three** fragments need them:
+  - `panel_model_build(compilers, build_types)` ← `COMPILERS`, `BUILD_TYPES`
+  - `build_sidebar(nav_choices)` ← `NAV_CHOICES`
+  - `panel_plot(min_smooth_window)` ← `MIN_SMOOTH_WINDOW` (defined `app.py:186`, also logged at
+    `app.py:291`, so it stays in `app.py`)
+
+  These consts **stay defined in `app.py`** and are passed at the call site
+  (`panel_model_build(COMPILERS, BUILD_TYPES)`, etc.). No new constants module.
+
+- **Leaf-module names → imported directly** by the fragment module from the same already-extracted
+  leaf module `app.py` imports them from (no `app.py` dependency, no circular import). Per §4.2's
+  import table.
+
+All other fragments are arg-free (matching `diagnostics_ui()`). Circular imports are structurally
+impossible: no fragment module imports `app.py`.
 
 **Reactive safety.** The `ui.panel_conditional(...)` bodies only *declare* UI slots by string ID
 (`ui.output_text("file_header_text")`, `ui.input_text_area("file_contents", ...)`). They never
@@ -79,9 +92,29 @@ Six functions, each returning `ui.tags.script(...)` verbatim, **zero args, zero 
 Fourteen fragment functions, each returning its `ui.panel_conditional(...)` verbatim:
 `panel_dashboard`, `panel_model_build(compilers, build_types)`, `panel_model_control`,
 `panel_input_files`, `panel_parameters`, `panel_initial_conditions`, `panel_model_options`,
-`panel_sim_config`, `panel_scenarios`, `panel_plot`, `panel_mass_balance`, `panel_observations`,
-`panel_map`, `panel_model_structure`. All arg-free **except** `panel_model_build(compilers,
-build_types)`. (`panel_diagnostics` already lives in `diagnostics.py` — untouched.)
+`panel_sim_config`, `panel_scenarios`, `panel_plot(min_smooth_window)`, `panel_mass_balance`,
+`panel_observations`, `panel_map`, `panel_model_structure`. Arg-taking:
+`panel_model_build(compilers, build_types)` and `panel_plot(min_smooth_window)`; the rest are
+arg-free. (`panel_diagnostics` already lives in `diagnostics.py` — untouched.)
+
+**`ui_panels.py` module imports** (leaf-module names the fragments reference — the module imports
+these at the top via the same `try/except ImportError` fallback `app.py` uses):
+
+| Fragment | Imports it needs |
+|---|---|
+| `panel_model_control` | `simulation_config`: `TIME_STEP_PRESETS`, `OUTPUT_INTERVAL_PRESETS` |
+| `panel_parameters` | `parameter_parser`: `PARAMETER_CATEGORIES` |
+| `panel_initial_conditions` | `ic_parser`: `STATE_VARIABLE_CATEGORIES` |
+| `panel_model_options` | `options_parser`: `OPTION_CATEGORIES` |
+| `panel_input_files` | `input_analysis`: `get_input_file_categories`; `shinywidgets`: `output_widget` |
+| `panel_plot` | `shinywidgets`: `output_widget` (+ arg `min_smooth_window`) |
+| `panel_map` | `shinywidgets`: `output_widget` |
+| `panel_model_build` | (none — consts via args `compilers`, `build_types`) |
+
+All other panels reference only `shiny.ui` + literals. The implementer must confirm the final
+import list by grepping each fragment body for free names (the `F821` gate in §5 catches a miss in
+`app.py`, but the fragment module needs its own imports right — a missing one fails the module
+import check and the render-smoke test).
 
 ### 4.3 `shiny_app/ui_chrome.py` — sidebar / header / css / offcanvas (~300 lines)
 `build_sidebar(nav_choices)` (builds the `nav_links` loop + `sidebar_content` div; returns the
@@ -126,7 +159,8 @@ render are the behavioral proof.
 |---|---|
 | A fragment silently drops/reorders an element → different UI | Verbatim expression move (§6); Playwright/Selenium render the full page; smoke tests assert per-fragment markers |
 | Missed re-import after moving a local out → `NameError` at render | `ruff --select F821` gate (phase-1 proven); `py_compile`; import check; Playwright render |
-| Circular import (`app.py` ↔ fragment module) | Fragments import only stdlib + `shiny` + leaf modules; **never** `app.py`. Consts passed as args, so no fragment needs an `app.py` symbol |
+| Circular import (`app.py` ↔ fragment module) | Fragments import only stdlib + `shiny` + leaf modules; **never** `app.py`. The 4 `app.py`-defined consts (`COMPILERS`/`BUILD_TYPES`/`NAV_CHOICES`/`MIN_SMOOTH_WINDOW`) are passed as args, so no fragment needs an `app.py` symbol |
+| Fragment module missing a leaf-module import (e.g. `TIME_STEP_PRESETS`, `output_widget`) → `NameError` at render | Per-fragment import table (§4.2) enumerates them; `python -c "import shiny_app.ui_panels"` + the render-smoke test (§5.1, §5.4) fail immediately if one is missing |
 | A "pure" move accidentally captures a reactive symbol | Verified no fragment body references `input`/`output`/`session`/`render`; the `ui.output_*`/`ui.input_*` calls are ID-string declarations, not reactive closures |
 | Panel order changes because `main_content`/`content` list is rebuilt | The composition lists stay in `create_ui()` **verbatim** — only the RHS of each entry changes from a local name to a same-named function call; order preserved exactly |
 | Running as a script (`from ui_panels`) vs module (`from shiny_app.ui_panels`) | Existing `try/except ImportError` fallback for every new import |
