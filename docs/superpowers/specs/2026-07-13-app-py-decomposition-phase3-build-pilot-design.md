@@ -131,9 +131,13 @@ build-execution machinery.
   needs `from datetime import datetime`, not `import datetime`), and the 4 functions. No `shiny`, no
   `app` import.
 - **`server()` keeps** the 4 same-named nested wrappers (thin adapters) plus the `DEFAULT_CONSTANTS_FILE`
-  local (711) and `ROOT` (module const 234). Add the re-import after the `ui_chrome` block, with the
-  `try: from shiny_app.build_commands import … / except ImportError: from build_commands import …`
-  fallback.
+  local (711) and `ROOT` (module const 234). Add the re-import after the `ui_chrome` block using the
+  **module-import form** — `try: from shiny_app import build_commands / except ImportError: import
+  build_commands` — and call `build_commands.<fn>(...)`. Do **not** use `from build_commands import
+  <names>`: two wrappers (`get_available_executables`, `get_executable_info`) keep the **same name** as
+  the function they call, so a name import would be shadowed by the wrapper (the wrapper would call
+  itself → infinite recursion). The module-import form sidesteps the collision and is used uniformly
+  by all 4 wrappers (`build_commands.assemble_estas_command(...)`, etc.).
 
 ## 6. Per-phase validation gate
 
