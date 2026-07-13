@@ -10,7 +10,6 @@ import select
 import signal
 import traceback
 import re
-import glob
 import shlex
 from datetime import datetime, date, timedelta
 
