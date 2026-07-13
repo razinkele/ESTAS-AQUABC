@@ -142,6 +142,7 @@ def parse_pelagic_inputs(inputs_dir):
     try:
         with open(path, 'r') as fh:
             lines = fh.readlines()
+        # Find INITIAL CONDITIONS section
         in_ic = False
         for line in lines:
             stripped = line.strip()
@@ -149,6 +150,7 @@ def parse_pelagic_inputs(inputs_dir):
                 in_ic = True
                 continue
             if in_ic and stripped.startswith("#"):
+                # End of IC section
                 if "MASS LOADS" in stripped:
                     break
                 continue
@@ -208,14 +210,15 @@ def parse_bathymetry(box_no, inputs_dir):
     try:
         with open(path, 'r') as fh:
             lines = fh.readlines()
+        # Skip header lines (first 3 lines: title, NUM_LAYERS, count, column headers)
         data_start = None
         for i, line in enumerate(lines):
             stripped = line.strip()
             parts = stripped.split()
             if len(parts) >= 7:
                 try:
-                    int(parts[0])
-                    float(parts[1])
+                    int(parts[0])  # layer number
+                    float(parts[1])  # upper elevation
                     data_start = i
                     break
                 except ValueError:
