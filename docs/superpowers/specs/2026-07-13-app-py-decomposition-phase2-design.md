@@ -86,7 +86,8 @@ imports `from shiny import ui`.
 Six functions, each returning `ui.tags.script(...)` verbatim, **zero args, zero deps**:
 `reload_script`, `nav_script`, `settings_script`, `help_script`, `changelog_script`,
 `theme_script`. (Current locals: `reload_js`, `nav_js`, `settings_js`, `help_js`,
-`changelog_js`, `theme_js`.)
+`changelog_js`, `theme_js`.) **Module imports: `from shiny import ui` only** — every block is a
+plain static triple-quoted string (verified: no f-strings, no name interpolation).
 
 ### 4.2 `shiny_app/ui_panels.py` — content panels (~1,100 lines)
 Fourteen fragment functions, each returning its `ui.panel_conditional(...)` verbatim:
@@ -119,7 +120,12 @@ import check and the render-smoke test).
 ### 4.3 `shiny_app/ui_chrome.py` — sidebar / header / css / offcanvas (~300 lines)
 `build_sidebar(nav_choices)` (builds the `nav_links` loop + `sidebar_content` div; returns the
 `sidebar_content` div), `app_header`, `external_css`, `settings_offcanvas`, `help_offcanvas`,
-`changelog_offcanvas`. All arg-free except `build_sidebar(nav_choices)`.
+`changelog_offcanvas`. All arg-free except `build_sidebar(nav_choices)`. **Module imports:
+`from shiny import ui` only** — verified none of these reference an `app.py`-defined or leaf-module
+name: the `"v0.3"` version strings are literals, and `help_offcanvas`/`changelog_offcanvas` embed
+no constant or file read — they declare `ui.output_ui("help_content")` / `ui.output_ui(
+"changelog_content")` ID slots the server fills. `build_sidebar`'s two f-strings interpolate only
+its own loop locals (`is_active`, `icon`).
 
 ### 4.4 What **stays** in `create_ui()` (the thin assembler)
 The composition glue only: `nav_input`/`nav_input_hidden` (5 lines), `main_content = ui.div(...)`
