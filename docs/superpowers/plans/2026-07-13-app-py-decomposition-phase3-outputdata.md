@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Behavior-preserving, not byte-identical.** Verified by unit tests + CI Playwright.
-- **The 7 functions' bodies move with these deliberate edits ONLY:** (a) drop the leading underscore from `_looks_numeric`/`_get_output_columns`; (b) add the default-arg const params to each signature; (c) inside each body, the closed-over consts become the params — `ROOT`→`root`, `OUTPUT_CSV`→`output_csv`, `INPUT_TXT_PATH`→`input_txt_path`; (d) intra-cluster calls: `_looks_numeric(...)`→`looks_numeric(...)`, and `get_output_folder_from_config()`→`get_output_folder_from_config(input_txt_path=input_txt_path)` inside `get_output_files_info`. No other logic change. (The dead local `extensions` in `get_output_files_from_dir` moves verbatim — do not "fix" it.)
+- **The 7 functions' bodies move with these deliberate edits ONLY:** (a) drop the leading underscore from `_looks_numeric`/`_get_output_columns`; (b) add the default-arg const params to each signature; (c) inside each body, the closed-over consts become the params — `ROOT`→`root`, `OUTPUT_CSV`→`output_csv`, `INPUT_TXT_PATH`→`input_txt_path`; (d) intra-cluster calls: `_looks_numeric(...)`→`looks_numeric(...)`, and `get_output_folder_from_config()`→`get_output_folder_from_config(input_txt_path=input_txt_path)` inside `get_output_files_info`; (e) **drop the three dead `extensions = [...]` assignments** in `get_output_files_from_dir` — the variable is provably never read (the loops match hardcoded `.endswith(...)` strings), so removing it is behavior-identical and avoids importing a fresh **F841** lint failure into a new module (unlike `app.py`, `output_data.py` has no F841 per-file-ignore; the reproduced code in Step 3 already omits these lines). No other logic change.
 - **`output_data.py` imports:** `os`, `logging`, `pandas as pd`; leaf imports `PELAGIC_BOX_COLUMNS`/`SimulationConfigFile` via the `try/except ImportError` fallback. No `shiny`, no `app`.
 - **Module consts before functions** so `def f(root=ROOT)` binds at import.
 - **Module-import form** in `app.py`: `try: from shiny_app import output_data / except ImportError: import output_data`; call `output_data.<fn>(...)`.
@@ -266,20 +266,17 @@ def get_output_files_from_dir(dir_name, file_format="text", root=ROOT):
     if not os.path.isdir(dir_path):
         return files
 
-    # Determine file extensions based on format
+    # Collect files matching the requested format
     if file_format == "binary":
-        extensions = [".bin"]
         # For binary, prefer PELAGIC_BOX files
         for f in sorted(os.listdir(dir_path)):
             if f.endswith(".bin") and "PELAGIC_BOX" in f and "PROCESS_RATES" not in f:
                 files[f] = f
     elif file_format == "csv":
-        extensions = [".csv"]
         for f in sorted(os.listdir(dir_path)):
             if f.endswith(".csv") and os.path.isfile(os.path.join(dir_path, f)):
                 files[f] = f
     else:  # text (.out)
-        extensions = [".out"]
         for f in sorted(os.listdir(dir_path)):
             if (f.endswith(".out") and "PELAGIC_BOX" in f
                     and "PROCESS_RATES" not in f
@@ -335,7 +332,7 @@ except ImportError:
 
 - [ ] **Step 3: Delete the 7 nested defs.** After Step 2, grep to confirm no bare references remain: `grep -nE "\b(_looks_numeric|format_elapsed|get_output_folder_from_config|get_output_files_info|_get_output_columns|get_output_directories|get_output_files_from_dir)\(" shiny_app/app.py` should show ONLY `output_data.<fn>` calls (zero bare `def`s or bare calls). Then delete each of the 7 `def` blocks:
   - `_looks_numeric` (3804–3810), `format_elapsed` (4030–4040), `get_output_folder_from_config` (3980–3989), `get_output_files_info` (3991–4028), `_get_output_columns` (3766–3802), `get_output_directories` (4664–4675), `get_output_files_from_dir` (4996–5039).
-  These are NON-contiguous (scattered through server()), so delete each block individually and re-verify the surrounding decorators/functions stay intact. Do NOT delete the `server()`-local `INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")` at 2573 (other code uses it). After deleting, re-grep to confirm zero bare `def _looks_numeric`/etc. remain and the 7 names appear ONLY as `output_data.<fn>` calls.
+  These are NON-contiguous (scattered through server()). The listed ranges are **pre-edit** line numbers — deleting top-down shifts every later range. **Delete in DESCENDING line order** (start with `get_output_files_from_dir` 4996–5039, then `get_output_directories`, … down to `_get_output_columns` 3766–3802) so each earlier range stays valid, OR re-locate each `def` by name (grep) immediately before cutting it. Delete each block individually and re-verify the surrounding decorators/functions stay intact. Do NOT delete the `server()`-local `INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")` at 2573 (other code uses it). After deleting, re-grep to confirm zero bare `def _looks_numeric`/etc. remain and the 7 names appear ONLY as `output_data.<fn>` calls.
 
 - [ ] **Step 4: Gate**
 
