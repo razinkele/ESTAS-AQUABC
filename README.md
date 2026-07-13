@@ -1,6 +1,11 @@
 # AQUABC v0.3 — Quick Start
 
+<!-- LATEST_RELEASE -->**Latest release:** [v0.3.4](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.3.4)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
+
 Short README to build and run the example and reproduce local results.
+
+> The `Latest release` line above is kept in sync automatically by the release workflow
+> (`.github/workflows/release.yml` → `tools/sync_release_docs.sh`) on every `vX.Y.Z` tag.
 
 ## Prerequisites
 - gfortran (GNU Fortran)
@@ -53,6 +58,10 @@ We added a few lightweight tests to help catch regressions:
 
 - `make test-unit-limiter` — a small Fortran unit-style test that directly exercises the FIX_CYN per-process clamp logic to ensure excessive process rates are limited and counters are recorded.
 
+- `make -C tests/fortran clean test` — the Fortran unit tests (also run in the release workflow before publishing a tag).
+
+- `python -m pytest tests/python -q` — the Python test suite (**123 tests**) covering the Shiny front end's parsers, config/IO helpers, and the extracted UI fragments. An end-to-end 0D golden-file regression lives in `tests/regression/compare_0D.py`. Browser (Playwright/Selenium) integration tests run in CI's dedicated `integration-tests` job.
+
 All tests are runnable locally from the example directory. If you'd like, I can add these to CI so `make test` runs during CI as an extra verification step.
 
 ## Python Shiny front end 🔧
@@ -61,6 +70,12 @@ A minimal Python Shiny front end is included at `shiny_app/`. It provides:
 - Build and run buttons (runs `make` targets in the repo root)
 - A browser/editor for files in `INPUTS/` (first save creates a `.bak` backup)
 - Quick plotting and preview of `OUTPUT.csv`
+
+The front end is organized into focused, unit-tested modules rather than one monolith: `app.py`
+holds the reactive `server()` and a thin `create_ui()` assembler; the non-reactive helpers live in
+`compiler_env.py`, `input_analysis.py`, `file_locators.py`, and `safe_resolve.py`; and the UI is
+composed from fragment modules `ui_scripts.py` (inline JS), `ui_panels.py` (content panels), and
+`ui_chrome.py` (sidebar/header/offcanvas). See `CHANGELOG.md` (0.3.3, 0.3.4) for the decomposition history.
 
 Quick start:
 

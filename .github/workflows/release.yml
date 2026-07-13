@@ -2,7 +2,9 @@ name: Release
 
 # Publish a GitHub Release when a semver tag (vX.Y.Z) is pushed. Builds the model
 # to verify the tag compiles and its unit tests pass, extracts the matching
-# CHANGELOG.md section as release notes, and attaches the built binary.
+# CHANGELOG.md section as release notes, attaches the built binary, and then syncs
+# the versioned docs (README release marker) back to main via tools/sync_release_docs.sh.
+# CHANGELOG.md is manually curated and validated here (not auto-generated).
 on:
   push:
     tags:
@@ -94,4 +96,25 @@ jobs:
             gh release upload "$TAG" "$ASSET" --clobber
           else
             gh release create "$TAG" --verify-tag --title "$title" "${notes_args[@]}" "$ASSET"
+          fi
+
+      - name: Sync versioned docs on main
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          # The release is published; keep the docs' release marker in sync on main.
+          # The tag was checked out detached; move to main, update the marker, and
+          # commit only if it actually changed. [skip ci] avoids a redundant CI run.
+          git fetch --no-tags origin main
+          git checkout -B main origin/main
+          bash tools/sync_release_docs.sh "$VERSION"
+          if git diff --quiet -- README.md; then
+            echo "docs already in sync for $TAG — nothing to commit"
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs: sync release marker to $TAG [skip ci]"
+            git push origin main
           fi
