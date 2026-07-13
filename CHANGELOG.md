@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-07-13
+
+### Changed
+- **`shiny_app/app.py` decomposition — phase 3, box-network cluster** (TODO 2.1): extracted the six non-reactive box-network functions from `server()` into a new module `shiny_app/box_network.py` — the three input parsers `parse_pelagic_inputs`/`parse_advective_links`/`parse_bathymetry` (now taking `inputs_dir` explicitly instead of a closed-over global) and the three Map-Display plotly figure builders `build_box_network_figure`/`build_bathymetry_figure`/`build_depths_overview` (moved verbatim). The two Map-Display render handlers now delegate to the module (7 call sites); observable behavior is **unchanged** (all six bodies confirmed character-identical to the originals; the handlers' control flow and `go.FigureWidget` wrap untouched). `box_network.py` is stdlib + plotly only and imports nothing from `app.py`. Adds `tests/python/test_box_network.py` (10 tests: parser fixtures pinning exact structures + malformed-row/missing-file paths, plus figure smoke tests; **138 → 148** Python tests); `app.py` −595 lines. Second phase-3 cluster after the build-cluster pilot (0.3.5). Spec + plan under `docs/superpowers/{specs,plans}/2026-07-13-app-py-decomposition-phase3-boxnetwork*.md`.
+
 ## [0.3.5] - 2026-07-13
 
 ### Changed
