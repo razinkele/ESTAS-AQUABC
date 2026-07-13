@@ -3,6 +3,7 @@ from shiny import ui
 
 
 def reload_script():
+    """JavaScript to handle page reload and clipboard operations."""
     return ui.tags.script("""
         Shiny.addCustomMessageHandler('reload_page', function(message) {
             console.log('Reloading page:', message);
@@ -41,6 +42,7 @@ def reload_script():
 
 
 def nav_script():
+    """JavaScript for sidebar toggle and navigation."""
     return ui.tags.script("""
         function initSidebar() {
             const toggleBtn = document.getElementById('sidebar-collapse-btn');
@@ -82,6 +84,7 @@ def nav_script():
 
 
 def settings_script():
+    """JavaScript to toggle settings offcanvas."""
     return ui.tags.script("""
         $(document).on('click', '#settings_toggle', function() {
             var offcanvas = new bootstrap.Offcanvas(document.getElementById('settingsOffcanvas'));
@@ -91,6 +94,7 @@ def settings_script():
 
 
 def help_script():
+    """JavaScript to toggle help offcanvas."""
     return ui.tags.script("""
         $(document).on('click', '#help_toggle', function() {
             var offcanvas = new bootstrap.Offcanvas(document.getElementById('helpOffcanvas'));
@@ -100,6 +104,7 @@ def help_script():
 
 
 def changelog_script():
+    """JavaScript to toggle changelog offcanvas."""
     return ui.tags.script("""
         $(document).on('click', '#changelog_toggle', function() {
             var offcanvas = new bootstrap.Offcanvas(document.getElementById('changelogOffcanvas'));
@@ -109,6 +114,7 @@ def changelog_script():
 
 
 def theme_script():
+    """JavaScript for light / dark theme toggle with localStorage persistence."""
     return ui.tags.script("""
         (function() {
             // Apply saved theme immediately (before DOM paints) to avoid flash
@@ -136,4 +142,3 @@ def theme_script():
             });
         })();
     """)
-
