@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-13
+
+### Changed
+- **`shiny_app/app.py` decomposition — phase 2** (TODO 2.1): split the ~1,566-line `create_ui()` into three declarative UI-fragment modules — `shiny_app/ui_scripts.py` (6 inline-JS blocks), `shiny_app/ui_panels.py` (14 content panels), and `shiny_app/ui_chrome.py` (sidebar, header, css, 3 offcanvas). `create_ui()` is now a **53-line** assembler that composes the fragments; the rendered UI is **byte-identical** (verified by a full render diff — 148,580 chars unchanged). The moves are verbatim (each fragment independently confirmed byte/AST-identical); the four app-level consts a fragment needs (`COMPILERS`, `BUILD_TYPES`, `NAV_CHOICES`, `MIN_SMOOTH_WINDOW`) stay in `app.py` and are passed as arguments, so the fragment modules import nothing from `app.py` (no circular imports). Adds multi-marker render-smoke tests `tests/python/test_ui_{scripts,panels,chrome}.py` (**117 → 123** Python tests). `app.py`: **7,925 → ~6,450 lines** (−1,472 net in this change). Deferred to later phases: extracting the non-reactive logic the reactive handlers call, and the full Shiny-modules rearchitecture. Spec + plan under `docs/superpowers/{specs,plans}/2026-07-13-app-py-decomposition-phase2*.md`.
+
 ## [0.3.3] - 2026-07-13
 
 ### Changed
