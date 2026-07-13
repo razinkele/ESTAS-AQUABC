@@ -203,7 +203,7 @@ real(dp), parameter :: GAS_CONST_R = 8.314D0
 
 **Effort:** ~2–3 days
 
-**Status:** 🟡 PHASE 1 IN PROGRESS 2026-07-12 — non-reactive helper extraction (safe, incremental). Extracted `shiny_app/compiler_env.py` (Intel/compiler detection), `input_analysis.py` (input-file analysis + `INPUT_FILE_CATEGORIES`), `file_locators.py` (output/box discovery); app.py 8616→7925 lines. server()/create_ui() untouched; verbatim moves, F821-clean, 117 python tests. Deferred: split create_ui() into ui/ fragments, extract server() non-reactive logic, full Shiny-modules rearchitecture. Spec/plan: docs/superpowers/{specs,plans}/2026-07-12-app-py-decomposition*.md
+**Status:** 🟡 PHASE 2 COMPLETE 2026-07-13 — `create_ui()` split shipped (verbatim moves, byte-identical render). PHASE 1 (2026-07-12): non-reactive helper extraction — `shiny_app/compiler_env.py` (Intel/compiler detection), `input_analysis.py` (input-file analysis + `INPUT_FILE_CATEGORIES`), `file_locators.py` (output/box discovery); app.py 8616→7925 lines. PHASE 2 (2026-07-13, tasks 1–3 of `refactor/app-py-phase2`): extracted `shiny_app/ui_scripts.py` (inline JS blocks: `reload_script`, `nav_script`, `settings_script`, `help_script`, `changelog_script`, `theme_script`), `shiny_app/ui_panels.py` (14 content-panel fragments: `panel_dashboard`, `panel_model_structure`, `panel_model_build`, `panel_model_control`, `panel_input_files`, `panel_parameters`, `panel_initial_conditions`, `panel_model_options`, `panel_sim_config`, `panel_scenarios`, `panel_plot`, `panel_mass_balance`, `panel_observations`, `panel_map`), and `shiny_app/ui_chrome.py` (sidebar/header/css/offcanvas: `build_sidebar`, `app_header`, `external_css`, `settings_offcanvas`, `help_offcanvas`, `changelog_offcanvas`). `create_ui()` is now a ~53-line thin assembler (was ~270 lines of inline UI). All fragments verified verbatim (byte-identical minus documented param substitutions); 123 python tests green (121 baseline + 2 for `ui_chrome`); F821-clean. Deferred: extract `server()` non-reactive logic, full Shiny-modules rearchitecture. Spec/plan: docs/superpowers/{specs,plans}/2026-07-12-app-py-decomposition*.md
 
 ---
 
@@ -516,7 +516,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 
 ### Sprint 4 — Architecture (1–2 weeks)
 - [ ] 4.1 OpenMP benchmarking
-- [ ] 2.1 Modularize app.py
+- [ ] 2.1 Modularize app.py — `create_ui()` split done (§2.1 Phase 2); `server()` extraction / Shiny-modules still open
 - [ ] 1.6 Decompose mega-subroutine
 - [ ] 5.1 Expand Fortran test coverage
 - [ ] 5.2 End-to-end regression test
