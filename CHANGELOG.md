@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-13
+
+### Changed
+- **`shiny_app/app.py` decomposition — phase 3, output-data cluster** (TODO 2.1): extracted seven pure output-file helpers from `server()` into a new module `shiny_app/output_data.py` — `looks_numeric`, `format_elapsed`, `get_output_folder_from_config`, `get_output_files_info`, `get_output_columns` (CSV/`.out`/`.bin` header reading via pandas), `get_output_directories`, and `get_output_files_from_dir`. The functions use a default-arg pattern (`root=ROOT`, `output_csv=OUTPUT_CSV`, `input_txt_path=INPUT_TXT_PATH` defaulting to self-computed module consts) so the 11 call sites stay argument-free while unit tests inject a `tmp_path`. `output_data.py` is stdlib + pandas only, importing `PELAGIC_BOX_COLUMNS`/`SimulationConfigFile` from the existing `utils`/`simulation_config` leaf modules and nothing from `app.py`. Observable behavior is **unchanged** (all seven bodies confirmed equal to the originals modulo the documented const→param edits; the reactive `reactive.Value`-backed CSV cache and the reactive neighbours `run_command`/`analyze_output_directory` were deliberately left in `server()`). Adds `tests/python/test_output_data.py` (7 tests pinning the parse/scan/format logic; **148 → 155** Python tests); `app.py` −161 lines. Third phase-3 cluster after the build pilot (0.3.5) and box-network (0.3.6). Spec + plan under `docs/superpowers/{specs,plans}/2026-07-13-app-py-decomposition-phase3-outputdata*.md`.
+
 ## [0.3.6] - 2026-07-13
 
 ### Changed
