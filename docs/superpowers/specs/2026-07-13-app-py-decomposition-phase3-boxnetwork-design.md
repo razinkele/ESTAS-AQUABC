@@ -12,7 +12,7 @@
 ## 1. Context & motivation
 
 `server()` (~5,900 lines) still holds several non-reactive clusters. The **box-network** cluster is
-six nested functions (app.py 1945–2530, ~585 lines) that parse the box-model input files and build
+six nested functions (app.py 1945–2543, ~600 lines) that parse the box-model input files and build
 the Map-Display plotly figures. Unlike the build cluster, **none of the six reads `input.*`** — the
 three parsers read fixed files under `INPUTS_DIR`; the three figure builders are already fully
 parameterized (they take parsed data). So this is a near-pure relocation with no reactive graph to
@@ -65,7 +65,8 @@ exactly (they are parse-robustness, not reactive guards).
 - `build_box_network_figure(boxes, links) -> go.Figure` (was `_build_box_network_figure`, 2053–2421).
 - `build_bathymetry_figure(box_no, layers, boxes) -> go.Figure` (was `_build_bathymetry_figure`,
   2422–2481).
-- `build_depths_overview(boxes) -> go.Figure` (was `_build_depths_overview`, 2482–2530).
+- `build_depths_overview(boxes) -> go.Figure` (was `_build_depths_overview`, 2482–2543; note line
+  2530 only *opens* `fig.update_layout(...)` — the call runs to 2542 and `return fig` is at 2543).
 
 These are **verbatim moves, no signature change**. Their hardcoded geometry/style constants
 (`BOX_GEOM`, `BOUNDARY_EDGES`, `BND_CLR`, `BND_W`) are **function-locals** (defined inside
@@ -89,7 +90,10 @@ only these calls (nothing else in the handlers):
 | `_build_depths_overview(boxes)` (2559) | `box_network.build_depths_overview(boxes)` |
 
 Add the module-import after the `build_commands` re-import block. Delete the six nested defs
-(1945–2530). `INPUTS_DIR` (module const, app.py:239) and the two handlers otherwise stay.
+(**1945–2543** — the whole run of defs ending at `_build_depths_overview`'s `return fig` on 2543,
+immediately before the blank line and `@render_widget` at 2545; deleting only to 2530 would orphan
+the tail of `update_layout(...)` and break syntax). `INPUTS_DIR` (module const, app.py:239) and the
+two handlers otherwise stay.
 
 ## 6. Validation gate
 
