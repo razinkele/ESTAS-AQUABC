@@ -635,45 +635,22 @@ def server(input, output, session):
         status_lines.append("COMMAND LINE")
         status_lines.append("─" * 40)
 
-        # Build command from already-retrieved values
-        cmd_parts = [f"./{exe_name}", input_file]
-
-        # Add constants file if set (not the default placeholder)
-        actual_const = const_file if const_file != "(model defaults)" else ""
-
-        # Check binary settings
+        # Build the command preview via the shared assembler (dedups the logic that
+        # lives in build_commands.assemble_estas_command; proven equivalent over the
+        # full input matrix). Reads keep the original try/except resolution semantics.
         try:
-            bin_enabled = input.cmd_binary_enabled()
-            bin_file = input.cmd_binary_filename() if bin_enabled else ""
-            if bin_enabled and not bin_file:
-                bin_file = "PELAGIC_OUTPUT.bin"
+            _bin_enabled = input.cmd_binary_enabled()
+            _bin_filename = input.cmd_binary_filename() if _bin_enabled else ""
         except Exception:
-            bin_enabled = False
-            bin_file = ""
-
-        # Check shear file
+            _bin_enabled = False
+            _bin_filename = ""
         try:
-            shear = input.cmd_shear_stress_file() or ""
+            _shear = input.cmd_shear_stress_file() or ""
         except Exception:
-            shear = ""
-
-        # If binary or shear is set, we need constants
-        if (bin_enabled or shear) and not actual_const:
-            actual_const = "WCONST_01.txt"
-
-        if actual_const:
-            cmd_parts.append(actual_const)
-
-            # Binary file (needed if binary enabled or shear is set)
-            if bin_enabled and bin_file:
-                cmd_parts.append(bin_file)
-            elif shear:
-                cmd_parts.append("PELAGIC_OUTPUT.bin")
-
-            # Shear file
-            if shear:
-                cmd_parts.append(shear)
-
+            _shear = ""
+        _const = const_file if const_file != "(model defaults)" else ""
+        cmd_parts = build_commands.assemble_estas_command(
+            exe_name, input_file, _const, _bin_enabled, _bin_filename, _shear, "WCONST_01.txt")
         status_lines.append(" ".join(cmd_parts))
 
         return "\n".join(status_lines)
