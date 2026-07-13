@@ -58,11 +58,21 @@ def test_target_exe_name(compiler, bt, expected):
     assert target_exe_name(compiler, bt) == expected
 
 
+def test_assemble_binary_named_and_shear():
+    # binary_enabled with an explicit name AND shear -> 5-element cmd, shear appended last
+    assert assemble_estas_command("ESTAS_II", "INPUT.txt", "C.txt", True, "OUT.bin",
+                                  "INPUTS/SHEAR.txt", DC) == \
+        ["./ESTAS_II", "INPUT.txt", "C.txt", "OUT.bin", "INPUTS/SHEAR.txt"]
+
+
 def test_get_available_executables(tmp_path):
     exe = tmp_path / "ESTAS_II"
     exe.write_text("x"); os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
-    (tmp_path / "notes.txt").write_text("x")            # not executable -> excluded
-    (tmp_path / "ESTAS_II_dir").mkdir()                 # matches AQUABC*/ESTAS_II_* but is a dir
+    (tmp_path / "notes.txt").write_text("x")            # matches no pattern -> excluded
+    (tmp_path / "ESTAS_II_dir").mkdir()                 # matches ESTAS_II_* but is a dir -> excluded
+    # matches ESTAS_II_* but the executable bit is OFF -> excluded by the os.access(X_OK) filter
+    noexec = tmp_path / "ESTAS_II_debug"
+    noexec.write_text("x"); os.chmod(noexec, os.stat(noexec).st_mode & ~stat.S_IEXEC & ~stat.S_IXGRP & ~stat.S_IXOTH)
     result = get_available_executables(str(tmp_path))
     assert result == ["ESTAS_II"]                       # only the executable file, deduped/sorted
 
