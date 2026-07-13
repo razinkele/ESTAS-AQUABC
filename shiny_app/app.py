@@ -168,6 +168,18 @@ try:
 except ImportError:
     from diagnostics import diagnostics_ui, diagnostics_server
 
+# Import UI script fragments (phase-2 create_ui() split)
+try:
+    from shiny_app.ui_scripts import (
+        reload_script, nav_script, settings_script,
+        help_script, changelog_script, theme_script,
+    )
+except ImportError:
+    from ui_scripts import (
+        reload_script, nav_script, settings_script,
+        help_script, changelog_script, theme_script,
+    )
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -425,83 +437,6 @@ for i in range(1, 5):
 
 def create_ui():
     """Create the application UI layout."""
-    # JavaScript to handle page reload and clipboard operations
-    reload_js = ui.tags.script("""
-        Shiny.addCustomMessageHandler('reload_page', function(message) {
-            console.log('Reloading page:', message);
-            setTimeout(function() {
-                window.location.reload();
-            }, 500);
-        });
-        
-        Shiny.addCustomMessageHandler('copy_to_clipboard', function(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(function() {
-                    console.log('Copying to clipboard was successful!');
-                }, function(err) {
-                    console.error('Could not copy text: ', err);
-                });
-            } else {
-                // Fallback
-                let textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-9999px";
-                textArea.style.top = "0";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    console.log('Fallback: Copying to clipboard was successful!');
-                } catch (err) {
-                    console.error('Fallback: Oops, unable to copy', err);
-                }
-                document.body.removeChild(textArea);
-            }
-        });
-    """)
-
-    # JavaScript for sidebar toggle and navigation
-    nav_js = ui.tags.script("""
-        function initSidebar() {
-            const toggleBtn = document.getElementById('sidebar-collapse-btn');
-            const sidebar = document.getElementById('custom-sidebar');
-            const navLinks = document.querySelectorAll('.custom-sidebar .nav-link');
-            
-            // Toggle sidebar collapsed state
-            if (toggleBtn && sidebar) {
-                toggleBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    sidebar.classList.toggle('collapsed');
-                };
-            }
-            
-            // Navigation link click handler
-            navLinks.forEach(function(link) {
-                link.onclick = function(e) {
-                    e.preventDefault();
-                    // Update active states
-                    navLinks.forEach(function(l) { l.classList.remove('active'); });
-                    link.classList.add('active');
-                    
-                    // Update Shiny input value
-                    var navId = link.getAttribute('data-nav-id');
-                    Shiny.setInputValue('navigation', navId);
-                };
-            });
-        }
-        
-        // Run on load and after Shiny updates
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initSidebar);
-        } else {
-            initSidebar();
-        }
-        // Also run after a short delay to catch Shiny's dynamic content
-        setTimeout(initSidebar, 500);
-    """)
-
     # Build navigation links from NAV_CHOICES
     nav_links = []
     for nav_id, (icon, label) in NAV_CHOICES.items():
@@ -1912,59 +1847,6 @@ def create_ui():
         )
     )
 
-    # JavaScript to toggle settings offcanvas
-    settings_js = ui.tags.script("""
-        $(document).on('click', '#settings_toggle', function() {
-            var offcanvas = new bootstrap.Offcanvas(document.getElementById('settingsOffcanvas'));
-            offcanvas.toggle();
-        });
-    """)
-
-    # JavaScript to toggle help offcanvas
-    help_js = ui.tags.script("""
-        $(document).on('click', '#help_toggle', function() {
-            var offcanvas = new bootstrap.Offcanvas(document.getElementById('helpOffcanvas'));
-            offcanvas.toggle();
-        });
-    """)
-
-    # JavaScript to toggle changelog offcanvas
-    changelog_js = ui.tags.script("""
-        $(document).on('click', '#changelog_toggle', function() {
-            var offcanvas = new bootstrap.Offcanvas(document.getElementById('changelogOffcanvas'));
-            offcanvas.toggle();
-        });
-    """)
-
-    # JavaScript for light / dark theme toggle with localStorage persistence
-    theme_js = ui.tags.script("""
-        (function() {
-            // Apply saved theme immediately (before DOM paints) to avoid flash
-            var saved = localStorage.getItem('aquabc-theme');
-            if (saved === 'light') {
-                document.documentElement.classList.add('light');
-            }
-
-            $(document).ready(function() {
-                function updateIcon() {
-                    var isLight = document.documentElement.classList.contains('light');
-                    var icon = document.getElementById('theme-icon');
-                    if (icon) {
-                        icon.className = isLight ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
-                    }
-                }
-                updateIcon();
-
-                $(document).on('click', '#theme-toggle-btn', function() {
-                    document.documentElement.classList.toggle('light');
-                    var isLight = document.documentElement.classList.contains('light');
-                    localStorage.setItem('aquabc-theme', isLight ? 'light' : 'dark');
-                    updateIcon();
-                });
-            });
-        })();
-    """)
-
     # Sidebar container with navigation and main content
     sidebar_container = ui.div(
         {"class": "sidebar-container"},
@@ -1974,16 +1856,16 @@ def create_ui():
 
     content = [
         external_css,
-        nav_js,
-        reload_js,
-        theme_js,
+        nav_script(),
+        reload_script(),
+        theme_script(),
         app_header,
         settings_offcanvas,
-        settings_js,
+        settings_script(),
         help_offcanvas,
-        help_js,
+        help_script(),
         changelog_offcanvas,
-        changelog_js,
+        changelog_script(),
         sidebar_container,
     ]
 
