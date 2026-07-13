@@ -1,6 +1,6 @@
 [project]
 name = "aquabc"
-version = "0.3.7"
+version = "0.3.8"
 requires-python = ">=3.10"
 
 [tool.ruff]

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-07-13
+
+### Changed
+- **Command-preview dedup:** the `status_info` panel's command-line preview re-implemented the model command-assembly logic inline (a second copy of what `shiny_app/build_commands.assemble_estas_command` already does). It now delegates to `assemble_estas_command`, removing the duplication (`shiny_app/app.py` −23 lines). Behavior is unchanged — proven identical across an exhaustive 216-combination input matrix (executable × input file × constants × binary-enabled × binary filename × shear), preserving the handler's exact input-read semantics and the `"(model defaults)"` placeholder handling.
+- **Lint cleanup of the extracted modules:** the ten finalized `shiny_app/` modules extracted during the decomposition (`build_commands`, `box_network`, `output_data`, `ui_scripts`, `ui_panels`, `diagnostics`, `diagnostics_plots`, `file_locators`, `input_analysis`, `utils`) now pass a full `ruff check` — import sorting (`I001`), unused imports (`F401`), whitespace (`W29x`), and dead locals/loop vars (`F841`/`B007`) were cleared (behavior-neutral). `app.py` is intentionally left untouched (it is still mid-decomposition, and a large cosmetic diff there would churn history on a file under active refactoring). `shiny_app/ui_scripts.py` gets a scoped `W293` ignore because those blank-line whitespaces live inside the inline-JavaScript string literals, where stripping them would alter the rendered `<script>` content. No behavior change; the full test suite (155 tests) is green.
+
 ## [0.3.7] - 2026-07-13
 
 ### Changed
