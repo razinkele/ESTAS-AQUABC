@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-13
+
+### Changed
+- **`shiny_app/app.py` decomposition — phase 1** (TODO 2.1): extracted three clusters of non-reactive, module-level helpers out of the 8,616-line monolith into focused, unit-tested modules — `shiny_app/compiler_env.py` (Intel/compiler detection), `shiny_app/input_analysis.py` (input-file analysis + `INPUT_FILE_CATEGORIES`), and `shiny_app/file_locators.py` (output/box-file discovery). `app.py` re-imports them via the existing fallback pattern; `server()`/`create_ui()` and all runtime behavior are **unchanged** — the moves are verbatim (verified byte-identical) and the Playwright integration tests pass. `app.py`: **8,616 → 7,925 lines** (−691). Adds `tests/python/test_{compiler_env,input_analysis,file_locators}.py` (117 Python tests total). Deferred to later phases: splitting `create_ui()` into `ui/` fragments, extracting the non-reactive logic the reactive handlers call, and the full Shiny-modules rearchitecture. Spec + plan under `docs/superpowers/{specs,plans}/2026-07-12-app-py-decomposition*.md`.
+
 ## [0.3.2] - 2026-07-12
 
 ### Added
