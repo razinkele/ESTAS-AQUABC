@@ -12,17 +12,14 @@ PDF reports — all inside a four-tab layout (Overview · Detailed Results ·
 Visualisations · Reports).
 """
 
+import logging
 import os
 import sys
-import logging
 import threading
-import time
 import traceback
-from pathlib import Path
 
 import pandas as pd
-import numpy as np
-from shiny import ui, reactive, render, req
+from shiny import reactive, render, ui
 
 logger = logging.getLogger("aquabc.diagnostics")
 
@@ -35,21 +32,23 @@ _tools_dir  = os.path.join(_parent_dir, "tools")
 if _tools_dir not in sys.path:
     sys.path.insert(0, _tools_dir)
 
+from aquabc_analysis_utils import BOX_TYPES, SEV_ERROR, SEV_INFO, SEV_OK, SEV_WARNING  # noqa: E402
 from deep_process_rate_analysis import run_analysis  # noqa: E402
-from aquabc_analysis_utils import BOX_IDS, BOX_TYPES, SEV_ERROR, SEV_WARNING, SEV_INFO, SEV_OK  # noqa: E402
 
 # Plot helpers
 try:
     from shiny_app.diagnostics_plots import (
-        severity_bar_chart, box_health_heatmap,
-        findings_per_check_chart, findings_per_box_chart,
-        limitation_radar,
+        box_health_heatmap,
+        findings_per_box_chart,
+        findings_per_check_chart,
+        severity_bar_chart,
     )
 except ImportError:
     from diagnostics_plots import (
-        severity_bar_chart, box_health_heatmap,
-        findings_per_check_chart, findings_per_box_chart,
-        limitation_radar,
+        box_health_heatmap,
+        findings_per_box_chart,
+        findings_per_check_chart,
+        severity_bar_chart,
     )
 
 
@@ -495,7 +494,7 @@ def diagnostics_server(input, output, session, root_dir):
         rows_data = []
         for bid in box_ids:
             errs = warns = infos = oks = 0
-            for ck, findings in results[bid].items():
+            for _ck, findings in results[bid].items():
                 if isinstance(findings, dict):
                     oks += len(findings)
                     continue

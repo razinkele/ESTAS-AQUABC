@@ -38,6 +38,10 @@ ignore = [
     "S602",   # subprocess shell=True — necessary for Intel oneAPI source
     "S605",   # starting process with shell — necessary for Intel wrapper
 ]
+"shiny_app/ui_scripts.py" = [
+    "W293",   # blank lines with whitespace live INSIDE the JS `ui.tags.script("""...""")`
+              # string literals — stripping them would alter the rendered script content
+]
 "tests/**/*.py" = ["S"]
 
 [tool.ruff.lint.isort]

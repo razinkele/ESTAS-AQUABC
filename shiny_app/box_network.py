@@ -1,6 +1,7 @@
 """Box-network input parsing + Map-Display figures (extracted from server())."""
-import os
 import logging
+import os
+
 import plotly.graph_objects as go
 
 logger = logging.getLogger("AQUABC")
@@ -13,7 +14,7 @@ def parse_pelagic_inputs(inputs_dir):
     if not os.path.isfile(path):
         return boxes
     try:
-        with open(path, 'r') as fh:
+        with open(path) as fh:
             lines = fh.readlines()
         # Find INITIAL CONDITIONS section
         in_ic = False
@@ -56,7 +57,7 @@ def parse_advective_links(inputs_dir):
     if not os.path.isfile(path):
         return links
     try:
-        with open(path, 'r') as fh:
+        with open(path) as fh:
             for line in fh:
                 stripped = line.strip()
                 if stripped.startswith("#") or not stripped:
@@ -81,7 +82,7 @@ def parse_bathymetry(box_no, inputs_dir):
     if not os.path.isfile(path):
         return layers
     try:
-        with open(path, 'r') as fh:
+        with open(path) as fh:
             lines = fh.readlines()
         # Skip header lines (first 3 lines: title, NUM_LAYERS, count, column headers)
         data_start = None
@@ -302,7 +303,7 @@ def build_box_network_figure(boxes, links):
     # ---- Draw boundary edges as thick red lines ----
     BND_CLR = 'rgba(231,76,60,0.9)'
     BND_W = 5
-    for bnd_id, box_id, side, label in BOUNDARY_EDGES:
+    for _bnd_id, box_id, side, label in BOUNDARY_EDGES:
         bx0, by0, bx1, by1 = drect(box_id)
         if side == 'top':
             lx0, ly0, lx1, ly1 = bx0, by1, bx1, by1
@@ -358,7 +359,8 @@ def build_box_network_figure(boxes, links):
     # ---- distant connections (thin dashed lines) ----
     dx, dy = [], []
     for u, v in distant_links:
-        ru = drect(u); rv = drect(v)
+        ru = drect(u)
+        rv = drect(v)
         dx.extend([(ru[0] + ru[2]) / 2, (rv[0] + rv[2]) / 2, None])
         dy.extend([(ru[1] + ru[3]) / 2, (rv[1] + rv[3]) / 2, None])
     if dx:
@@ -559,7 +561,6 @@ def build_depths_overview(boxes):
         return fig
 
     box_nos = sorted(boxes.keys())
-    depths = [boxes[b]['depth'] for b in box_nos]
     bottoms = [boxes[b]['bottom_elevation'] for b in box_nos]
     sediments = [boxes[b]['sediment'] for b in box_nos]
     colors = ['#3498db' if s == 'Sand' else '#8e6c3a' for s in sediments]

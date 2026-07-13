@@ -341,7 +341,7 @@ def analyze_input_file(filepath):
         return info
 
     try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()
 
         info["num_lines"] = len(lines)

@@ -1,14 +1,15 @@
 """Pure output-file helpers (extracted from server())."""
-import os
 import logging
+import os
+
 import pandas as pd
 
 try:
-    from shiny_app.utils import PELAGIC_BOX_COLUMNS
     from shiny_app.simulation_config import SimulationConfigFile
+    from shiny_app.utils import PELAGIC_BOX_COLUMNS
 except ImportError:
-    from utils import PELAGIC_BOX_COLUMNS
     from simulation_config import SimulationConfigFile
+    from utils import PELAGIC_BOX_COLUMNS
 
 logger = logging.getLogger("AQUABC")
 

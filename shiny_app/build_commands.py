@@ -1,6 +1,6 @@
 """Non-reactive build/command helpers (extracted from server())."""
-import os
 import glob
+import os
 import subprocess
 from datetime import datetime
 

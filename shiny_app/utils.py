@@ -3,9 +3,9 @@
 Extracted from app.py for independent testability.
 Contains file I/O helpers, model output readers, and validation logic.
 """
+import logging
 import os
 import re
-import logging
 
 import pandas as pd
 
@@ -159,7 +159,7 @@ def validate_constants_file(constants_filename):
         const_count = 0
         max_const_num = 0
 
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith('#'):

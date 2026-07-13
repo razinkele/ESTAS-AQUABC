@@ -1,18 +1,19 @@
 """Content-panel fragments for the AQUABC UI (extracted from create_ui())."""
 from shiny import ui
-from shinywidgets import output_widget   # third-party — plain import, mirrors app.py:42
+from shinywidgets import output_widget  # third-party — plain import, mirrors app.py:42
+
 try:
-    from shiny_app.simulation_config import TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS
-    from shiny_app.parameter_parser import PARAMETER_CATEGORIES
     from shiny_app.ic_parser import STATE_VARIABLE_CATEGORIES
-    from shiny_app.options_parser import OPTION_CATEGORIES
     from shiny_app.input_analysis import get_input_file_categories
+    from shiny_app.options_parser import OPTION_CATEGORIES
+    from shiny_app.parameter_parser import PARAMETER_CATEGORIES
+    from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 except ImportError:
-    from simulation_config import TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS
-    from parameter_parser import PARAMETER_CATEGORIES
     from ic_parser import STATE_VARIABLE_CATEGORIES
-    from options_parser import OPTION_CATEGORIES
     from input_analysis import get_input_file_categories
+    from options_parser import OPTION_CATEGORIES
+    from parameter_parser import PARAMETER_CATEGORIES
+    from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 
 
 def panel_dashboard():

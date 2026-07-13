@@ -13,7 +13,7 @@ def get_output_folder():
     input_file = os.path.join(ROOT, 'INPUT.txt')
     try:
         if os.path.exists(input_file):
-            with open(input_file, 'r') as f:
+            with open(input_file) as f:
                 lines = f.readlines()
             # Line 22 (1-indexed) contains OUTPUT folder
             if len(lines) >= 22:
@@ -91,7 +91,7 @@ def get_timeseries_variables(filename):
 
     variables = []
     try:
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 # Look for header line with variable names (after # and before data)

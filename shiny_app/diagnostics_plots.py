@@ -8,7 +8,6 @@ Each function returns a ``plotly.graph_objects.Figure`` ready for
 
 import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
 
 # ── colour palette ──────────────────────────────────────────────────────────
 SEV_COLOURS = {
@@ -180,7 +179,7 @@ def findings_per_box_chart(all_results):
 
     for bid in box_ids:
         per_sev = {s: 0 for s in sev_labels}
-        for ck, findings in all_results.get(bid, {}).items():
+        for _ck, findings in all_results.get(bid, {}).items():
             if isinstance(findings, dict):
                 continue
             for f in findings:
