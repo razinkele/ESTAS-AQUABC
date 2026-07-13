@@ -217,6 +217,11 @@ try:
 except ImportError:
     import box_network
 
+try:
+    from shiny_app import output_data
+except ImportError:
+    import output_data
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -3763,52 +3768,6 @@ def server(input, output, session):
         return _get_cached_data(max_rows=max_rows, file_path=file_path)
 
     # load available Y variables from output file header
-    def _get_output_columns(file_path=None, file_format=None):
-        """Get column names from an output file."""
-        target_path = file_path or OUTPUT_CSV
-        
-        # Auto-detect format
-        if file_format is None:
-            if target_path.endswith('.bin'):
-                file_format = 'binary'
-            elif target_path.endswith('.out'):
-                file_format = 'text'
-            else:
-                file_format = 'csv'
-        
-        try:
-            if file_format == 'binary':
-                # Binary files use fixed column names
-                return PELAGIC_BOX_COLUMNS
-            elif file_format == 'text':
-                # Read header from .out file
-                df = pd.read_csv(target_path, sep=r'\s+', nrows=0)
-                cols = [c.strip() for c in df.columns]
-                # Sanity check: if the first column name looks numeric, the file
-                # has no header (e.g. PROCESS_RATES).  A proper header always
-                # starts with a string like TIME_DAYS.
-                if cols and _looks_numeric(cols[0]):
-                    logger.warning(f"File appears headerless (numeric column names): {os.path.basename(target_path)}")
-                    if len(cols) == len(PELAGIC_BOX_COLUMNS):
-                        return list(PELAGIC_BOX_COLUMNS)
-                    return [f"V{i}" for i in range(len(cols))]
-                return cols
-            else:
-                # Read header from CSV
-                df = pd.read_csv(target_path, comment='#', skip_blank_lines=True, nrows=0)
-                return [c.strip() for c in df.columns]
-        except Exception as e:
-            logger.error(f"Error reading output file header: {e}")
-            return []
-    
-    def _looks_numeric(s: str) -> bool:
-        """Return True if string looks like a number (int or float)."""
-        try:
-            float(s)
-            return True
-        except (ValueError, TypeError):
-            return False
-
     @reactive.Effect
     @reactive.event(input.plot_output_file, input.output_format, input.output_dir_select)
     def _update_variable_choices():
@@ -3822,7 +3781,7 @@ def server(input, output, session):
                 ui.update_selectize("right_vars", choices=[], selected=[])
                 return
             
-            cols = _get_output_columns(file_path=selected_file, file_format=file_format)
+            cols = output_data.get_output_columns(file_path=selected_file, file_format=file_format)
             
             if cols:
                 # TIME is first column, get the rest
@@ -3977,68 +3936,6 @@ def server(input, output, session):
     _last_run_time = [None]
     _model_progress = [{"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}]
 
-    def get_output_folder_from_config():
-        """Get output folder from INPUT.txt configuration"""
-        try:
-            if os.path.exists(INPUT_TXT_PATH):
-                scf = SimulationConfigFile(INPUT_TXT_PATH)
-                if scf.parse():
-                    return scf.config.output_folder.rstrip('/')
-        except Exception as e:
-            logger.warning(f"Could not read output folder from INPUT.txt: {e}")
-        return "OUTPUTS"  # fallback
-
-    def get_output_files_info():
-        """Get info about output files in the configured output folder for progress tracking"""
-        try:
-            output_folder = get_output_folder_from_config()
-            output_dir = os.path.join(ROOT, output_folder)
-            
-            if not os.path.isdir(output_dir):
-                return {"exists": False, "size_kb": 0, "file_count": 0, "folder": output_folder}
-            
-            total_size = 0
-            file_count = 0
-            out_files = 0
-            bin_files = 0
-            
-            for fname in os.listdir(output_dir):
-                fpath = os.path.join(output_dir, fname)
-                if os.path.isfile(fpath):
-                    try:
-                        total_size += os.path.getsize(fpath)
-                        file_count += 1
-                        if fname.endswith('.out'):
-                            out_files += 1
-                        elif fname.endswith('.bin'):
-                            bin_files += 1
-                    except OSError:
-                        pass
-
-            return {
-                "exists": True,
-                "size_kb": total_size / 1024,
-                "file_count": file_count,
-                "out_files": out_files,
-                "bin_files": bin_files,
-                "folder": output_folder
-            }
-        except Exception as e:
-            logger.debug(f"Error getting output info: {e}")
-        return {"exists": False, "size_kb": 0, "file_count": 0, "folder": "OUTPUTS"}
-
-    def format_elapsed(seconds):
-        """Format elapsed time as HH:MM:SS"""
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        secs = int(seconds % 60)
-        if hours > 0:
-            return f"{hours}h {minutes}m {secs}s"
-        elif minutes > 0:
-            return f"{minutes}m {secs}s"
-        else:
-            return f"{secs}s"
-
     @reactive.effect
     @reactive.event(input.run)
     def on_run():
@@ -4180,7 +4077,7 @@ def server(input, output, session):
                     now = time.time()
                     if now - last_update >= 2.0:
                         elapsed = now - start_time
-                        output_info = get_output_files_info()
+                        output_info = output_data.get_output_files_info()
                         file_count = output_info.get("file_count", 0)
                         size_kb = output_info.get("size_kb", 0)
                         out_folder = output_info.get("folder", "OUTPUTS")
@@ -4196,7 +4093,7 @@ def server(input, output, session):
 
                         progress_msg = (
                             f"\r{spinner_char} Running... "
-                            f"Elapsed: {format_elapsed(elapsed)} | "
+                            f"Elapsed: {output_data.format_elapsed(elapsed)} | "
                             f"{out_folder}/: {file_count} files ({size_kb:.1f} KB)\n"
                         )
 
@@ -4221,7 +4118,7 @@ def server(input, output, session):
                 _log_lines.append("-" * 50 + "\n")
 
                 # Get final output info
-                final_output_info = get_output_files_info()
+                final_output_info = output_data.get_output_files_info()
                 final_files = final_output_info.get("file_count", 0)
                 final_out = final_output_info.get("out_files", 0)
                 final_bin = final_output_info.get("bin_files", 0)
@@ -4230,12 +4127,12 @@ def server(input, output, session):
 
                 if rc == 0:
                     _log_lines.append(f"✓ Model run completed successfully!\n")
-                    _log_lines.append(f"  Total time: {format_elapsed(elapsed)}\n")
+                    _log_lines.append(f"  Total time: {output_data.format_elapsed(elapsed)}\n")
                     _log_lines.append(f"  Output folder: {out_folder}/\n")
                     _log_lines.append(f"  Files: {final_files} total ({final_out} .out, {final_bin} .bin), {final_size:.1f} KB\n")
                 else:
                     _log_lines.append(f"✗ Model run failed with return code {rc}\n")
-                    _log_lines.append(f"  Total time: {format_elapsed(elapsed)}\n")
+                    _log_lines.append(f"  Total time: {output_data.format_elapsed(elapsed)}\n")
 
                 _log_lines.append("=" * 50 + "\n")
                 logger.info(f"Model run finished: rc={rc}, elapsed={elapsed:.1f}s")
@@ -4661,19 +4558,6 @@ def server(input, output, session):
             return pd.DataFrame([["error reading OUTPUT.csv", str(e)]])
 
     # ========== OUTPUT DIRECTORY MANAGEMENT ==========
-    def get_output_directories():
-        """Get list of output directories in the workspace"""
-        dirs = {}
-        # Add root OUTPUT.csv as option
-        if os.path.exists(OUTPUT_CSV):
-            dirs["ROOT"] = "OUTPUT.csv (root directory)"
-        
-        # Find OUTPUTS_* directories
-        for item in os.listdir(ROOT):
-            if item.startswith("OUTPUTS") and os.path.isdir(os.path.join(ROOT, item)):
-                dirs[item] = item
-        return dirs
-
     def analyze_output_directory(dir_name):
         """Analyze files in an output directory and return summary"""
         if dir_name == "ROOT":
@@ -4751,7 +4635,7 @@ def server(input, output, session):
     @reactive.effect
     def init_output_dirs():
         """Initialize output directory selection on startup - uses INPUT.txt value"""
-        dirs = get_output_directories()
+        dirs = output_data.get_output_directories()
         if dirs:
             # Try to get output folder from INPUT.txt config
             default_dir = "OUTPUTS"  # fallback
@@ -4781,7 +4665,7 @@ def server(input, output, session):
     @reactive.event(input.refresh_output_dirs)
     def refresh_output_dirs():
         """Refresh the list of output directories"""
-        dirs = get_output_directories()
+        dirs = output_data.get_output_directories()
         current = input.output_dir_select()
         selected = current if current in dirs else (list(dirs.keys())[0] if dirs else None)
         ui.update_select("output_dir_select", choices=dirs, selected=selected)
@@ -4790,7 +4674,7 @@ def server(input, output, session):
     @reactive.event(input.refresh_sim_output_dirs)
     def refresh_sim_output_dirs():
         """Refresh the output directory list in Model Config"""
-        dirs = get_output_directories()
+        dirs = output_data.get_output_directories()
         current = input.sim_output_dir()
         selected = current if current in dirs else (list(dirs.keys())[0] if dirs else None)
         ui.update_select("sim_output_dir", choices=dirs, selected=selected)
@@ -4993,51 +4877,6 @@ def server(input, output, session):
         )
 
     # ========== PLOT OUTPUT FILE SELECTION ==========
-    def get_output_files_from_dir(dir_name, file_format="text"):
-        """Get list of output files from the selected directory based on format.
-        
-        Args:
-            dir_name: Directory name (relative to ROOT) or "ROOT"
-            file_format: 'text' for .out, 'binary' for .bin, 'csv' for .csv
-            
-        Returns:
-            dict: {filename: display_name} for UI choices
-        """
-        files = {}
-        
-        if not dir_name:
-            return files
-        
-        if dir_name == "ROOT":
-            dir_path = ROOT
-        else:
-            dir_path = os.path.join(ROOT, dir_name)
-        
-        if not os.path.isdir(dir_path):
-            return files
-        
-        # Determine file extensions based on format
-        if file_format == "binary":
-            extensions = [".bin"]
-            # For binary, prefer PELAGIC_BOX files
-            for f in sorted(os.listdir(dir_path)):
-                if f.endswith(".bin") and "PELAGIC_BOX" in f and "PROCESS_RATES" not in f:
-                    files[f] = f
-        elif file_format == "csv":
-            extensions = [".csv"]
-            for f in sorted(os.listdir(dir_path)):
-                if f.endswith(".csv") and os.path.isfile(os.path.join(dir_path, f)):
-                    files[f] = f
-        else:  # text (.out)
-            extensions = [".out"]
-            for f in sorted(os.listdir(dir_path)):
-                if (f.endswith(".out") and "PELAGIC_BOX" in f
-                        and "PROCESS_RATES" not in f
-                        and os.path.isfile(os.path.join(dir_path, f))):
-                    files[f] = f
-        
-        return files
-
     def get_selected_output_file_path():
         """Get full path to selected output file"""
         dir_name = input.output_dir_select()
@@ -5056,7 +4895,7 @@ def server(input, output, session):
         """Update file selection when output directory or format changes"""
         dir_name = input.output_dir_select()
         file_format = input.output_format() if hasattr(input, 'output_format') else "text"
-        files = get_output_files_from_dir(dir_name, file_format)
+        files = output_data.get_output_files_from_dir(dir_name, file_format)
         
         # Select first file by default
         selected = None
@@ -5073,7 +4912,7 @@ def server(input, output, session):
         """Refresh the list of output files when format changes"""
         dir_name = input.output_dir_select()
         file_format = input.output_format() if hasattr(input, 'output_format') else "text"
-        files = get_output_files_from_dir(dir_name, file_format)
+        files = output_data.get_output_files_from_dir(dir_name, file_format)
         current = input.plot_output_file()
         selected = current if current in files else (list(files.keys())[0] if files else None)
         ui.update_select("plot_output_file", choices=files, selected=selected)
