@@ -20,8 +20,10 @@ increments (file-I/O, plot-prep, mass-balance, observations, scenarios).
 
 ## 2. Goal / non-goals
 
-- **Goal:** move the pure build/command *logic* into `shiny_app/build_commands.py` as module-level
-  functions that take plain values and return plain values — independently unit-testable, no Shiny.
+- **Goal:** move the non-reactive build/command *logic* into `shiny_app/build_commands.py` as
+  module-level functions that take plain values and return plain values — independently
+  unit-testable, no Shiny. (Three are pure; `get_executable_info` additionally shells out to
+  `file(1)` via stdlib `subprocess` — side-effecting, but still no `app`/`shiny` dependency.)
   The `server()` nested functions become thin wrappers that resolve reactive inputs and delegate.
 - **Non-goals (this pilot):** the reactive graph itself; the other 5 clusters; `_execute_build_process`
   (its subprocess execution, `_build_log_lines` mutation, and logging are interleaved — not a pure
@@ -71,10 +73,16 @@ Verbatim body of the current `get_available_executables()` (app.py 805–820), w
 **3 call sites unchanged** (918, 1046, 1060).
 
 ### 4.3 `get_executable_info(exe_name, root) -> dict`
-Verbatim body of the current `get_executable_info(exe_name)` (app.py 822–~847), with `ROOT` → the
-`root` parameter. Pure file inspection (size/mtime/exists). **Wrapper:** `get_executable_info(exe)`
-in `server()` → `return build_commands.get_executable_info(exe, ROOT)`. **4 call sites unchanged**
-(924, 968, 987, 4739).
+Verbatim body of the current `get_executable_info(exe_name)` (app.py **822–845**), with `ROOT` →
+the `root` parameter. It inspects size/mtime (`os`, `datetime.fromtimestamp(...).strftime(...)`)
+**and shells out to `file(1)`** via `subprocess.run(["file", exe_path], capture_output=True,
+text=True, timeout=5)` for type/stripped info — so it is **stdlib-side-effecting, not strictly
+pure**, but still stdlib-only with no `app`/`shiny` import, so the no-circular-import invariant
+holds. Returns `{exists, path, size, modified, file_type, stripped, has_debug}` (or
+`{exists: False}` when the path is missing). **Requires `import subprocess` and
+`from datetime import datetime` in `build_commands.py`** (see §5). **Wrapper:**
+`get_executable_info(exe)` in `server()` → `return build_commands.get_executable_info(exe, ROOT)`.
+**4 call sites unchanged** (924, 968, 987, 4739).
 
 ### 4.4 `target_exe_name(compiler, build_type) -> str`
 The pure logic of `get_target_exe_name()` (app.py 887–903): map compiler → short name
@@ -93,8 +101,11 @@ build-execution machinery.
 
 ## 5. Module layout & imports
 
-- **New:** `shiny_app/build_commands.py` — `"""Pure build/command helpers (extracted from server())."""`
-  then `import os`, `import glob`, and the 4 functions. No `shiny`, no `app` import.
+- **New:** `shiny_app/build_commands.py` — `"""Non-reactive build/command helpers (extracted from server())."""`
+  then **`import os`, `import glob`, `import subprocess`, `from datetime import datetime`** (the last
+  two are required by `get_executable_info` — §4.3; note the bare-name form `datetime.fromtimestamp`
+  needs `from datetime import datetime`, not `import datetime`), and the 4 functions. No `shiny`, no
+  `app` import.
 - **`server()` keeps** the 4 same-named nested wrappers (thin adapters) plus the `DEFAULT_CONSTANTS_FILE`
   local (711) and `ROOT` (module const 234). Add the re-import after the `ui_chrome` block, with the
   `try: from shiny_app.build_commands import … / except ImportError: from build_commands import …`
@@ -103,7 +114,10 @@ build-execution machinery.
 ## 6. Per-phase validation gate
 
 1. `python -m py_compile shiny_app/app.py`; `python -c "import shiny_app.build_commands"`.
-2. `ruff check --select F821 shiny_app/app.py` → clean (missed-re-import guard).
+2. `ruff check --select F821 shiny_app/app.py shiny_app/build_commands.py` → clean. Lint the NEW
+   module too, not just `app.py`: `get_executable_info`'s moved body uses `subprocess`/`datetime`, so
+   F821 on `build_commands.py` is what catches a forgotten import there (F821 on `app.py` alone
+   would not).
 3. New unit tests `tests/python/test_build_commands.py` pin each pure function against the ORIGINAL
    behavior — the valuable part:
    - `assemble_estas_command`: a table of input combinations → exact expected `list[str]`
@@ -113,7 +127,11 @@ build-execution machinery.
    - `target_exe_name`: gfortran/ifort/ifx/unknown × a couple of build types.
    - `get_available_executables(root)`: a `tmp_path` with an executable file, a non-executable file,
      and a matching-name dir → only the executable basename returned, sorted/deduped.
-   - `get_executable_info(exe, root)`: existing file → `{"exists": True, …}`; missing → `{"exists": False}`.
+   - `get_executable_info(exe, root)`: existing file → assert `exists is True`, correct `path`/`size`,
+     and `"file_type" in info` — do **NOT** assert exact `file_type`/`stripped`/`has_debug`, which come
+     from `file(1)` and are platform/environment-dependent (a strict equality would be flaky; guard
+     the `file`-binary-absent case too, where the `except` sets `file_type="Unknown"`); missing →
+     `{"exists": False}`.
 4. Full Python suite green (123 baseline + new tests; no regression).
 5. **Behavioral coverage caveat (as in phase 2):** Playwright/Selenium are not installed locally
    (`conftest.py` `collect_ignore`s them) — the reactive wiring runs only in CI's `integration-tests`
