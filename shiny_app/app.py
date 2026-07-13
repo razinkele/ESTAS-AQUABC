@@ -208,6 +208,11 @@ except ImportError:
         settings_offcanvas, help_offcanvas, changelog_offcanvas,
     )
 
+try:
+    from shiny_app import build_commands
+except ImportError:
+    import build_commands
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -711,80 +716,42 @@ def server(input, output, session):
     DEFAULT_CONSTANTS_FILE = "WCONST_01.txt"
 
     def build_estas_command():
-        """Build the model command based on current widget values.
+        """Build the model command from current widget values (thin wrapper).
 
-        Command line format:
-        - 0 args: uses INPUT.txt by default
-        - 1 arg:  INPUT_FILE
-        - 2 args: INPUT_FILE + PELAGIC_CONSTANTS_FILE (enables constants override)
-        - 3 args: INPUT_FILE + CONSTANTS + BINARY_OUTPUT (enables binary output)
+        Reads are raw (input-not-ready -> falsy sentinel); all defaulting lives in
+        build_commands.assemble_estas_command. Command format: 0 args uses INPUT.txt;
+        1: INPUT_FILE; 2: +CONSTANTS; 3: +BINARY; 4: +SHEAR.
         """
-        # Get selected executable - handle case where input isn't ready yet
-        exe_name = "ESTAS_II"
         try:
-            selected = input.run_executable()
-            if selected:
-                exe_name = selected
+            exe_name = input.run_executable()
         except Exception:
-            pass
-        cmd = [f"./{exe_name}"]
-
-        # Arg 1: Input file (required)
+            exe_name = None
         try:
-            input_file = input.cmd_input_file() or "INPUT.txt"
+            input_file = input.cmd_input_file()
         except Exception:
-            input_file = "INPUT.txt"
-        cmd.append(input_file)
-
-        # Get all optional args
+            input_file = None
         try:
-            const_file = input.cmd_constants_file() or ""
+            const_file = input.cmd_constants_file()
         except Exception:
-            const_file = ""
-
-        # Binary file only used if switch is enabled
+            const_file = None
         try:
             binary_enabled = input.cmd_binary_enabled()
         except Exception:
             binary_enabled = False
-
-        binary_file = ""
+        # Read the binary filename ONLY when the switch is on (preserve original reactive deps)
+        binary_filename = None
         if binary_enabled:
             try:
-                binary_file = input.cmd_binary_filename() or ""
+                binary_filename = input.cmd_binary_filename()
             except Exception:
-                binary_file = ""
-            if not binary_file:
-                binary_file = "PELAGIC_OUTPUT.bin"  # Default if switch on but name empty
-
+                binary_filename = None
         try:
-            shear_file = input.cmd_shear_stress_file() or ""
+            shear_file = input.cmd_shear_stress_file()
         except Exception:
-            shear_file = ""
-
-        # If binary or shear file is set, we need a constants file
-        if (binary_file or shear_file) and not const_file:
-            const_file = DEFAULT_CONSTANTS_FILE  # Use default
-
-        # Arg 2: Constants file
-        if not const_file:
-            return cmd  # No more args
-        cmd.append(const_file)
-
-        # If shear file is set but no binary file, we need a placeholder binary file
-        if shear_file and not binary_file:
-            binary_file = "PELAGIC_OUTPUT.bin"  # Default binary output
-
-        # Arg 3: Binary output file
-        if not binary_file:
-            return cmd  # No more args
-        cmd.append(binary_file)
-
-        # Arg 4: Shear stress file (optional)
-        if shear_file:
-            cmd.append(shear_file)
-
-        return cmd
+            shear_file = None
+        return build_commands.assemble_estas_command(
+            exe_name, input_file, const_file, binary_enabled,
+            binary_filename, shear_file, DEFAULT_CONSTANTS_FILE)
 
     @render.text
     def cmd_preview():
@@ -803,46 +770,12 @@ def server(input, output, session):
     _exe_list_version = reactive.Value(0)
 
     def get_available_executables():
-        """Scan for available executable files"""
-        executables = []
-        # Check for known executables in the project root
-        exe_patterns = ["ESTAS_II", "ESTAS_II_*", "AQUABC*"]
-        for pattern in exe_patterns:
-            for f in glob.glob(os.path.join(ROOT, pattern)):
-                if os.path.isfile(f) and os.access(f, os.X_OK):
-                    executables.append(os.path.basename(f))
-        # Also check for any pre-built executables
-        for f in ["AQUABC02GFREL", "AQUABC02INTL"]:
-            path = os.path.join(ROOT, f)
-            if os.path.isfile(path) and os.access(path, os.X_OK):
-                if f not in executables:
-                    executables.append(f)
-        return sorted(set(executables))
+        """Scan for available executable files (thin wrapper)."""
+        return build_commands.get_available_executables(ROOT)
 
     def get_executable_info(exe_name):
-        """Get information about an executable"""
-        exe_path = os.path.join(ROOT, exe_name)
-        if not os.path.exists(exe_path):
-            return {"exists": False}
-
-        info = {
-            "exists": True,
-            "path": exe_path,
-            "size": os.path.getsize(exe_path),
-            "modified": datetime.fromtimestamp(os.path.getmtime(exe_path)).strftime('%Y-%m-%d %H:%M:%S'),
-        }
-
-        # Check if stripped (no debug symbols)
-        try:
-            result = subprocess.run(["file", exe_path], capture_output=True, text=True, timeout=5)
-            info["file_type"] = result.stdout.strip()
-            info["stripped"] = "stripped" in result.stdout.lower()
-            info["has_debug"] = "not stripped" in result.stdout.lower()
-        except Exception:
-            info["file_type"] = "Unknown"
-            info["stripped"] = None
-
-        return info
+        """Get information about an executable (thin wrapper)."""
+        return build_commands.get_executable_info(exe_name, ROOT)
 
     @render.ui
     def compiler_status():
@@ -885,21 +818,13 @@ def server(input, output, session):
         return f"Flags: {flags}"
 
     def get_target_exe_name():
-        """Generate executable name based on compiler and build type"""
+        """Generate executable name based on compiler and build type (thin wrapper)."""
         try:
             compiler = input.build_compiler()
             build_type = input.build_type()
         except Exception:
             return "ESTAS_II_gf_release"
-
-        # Short compiler name
-        fc_short = {
-            "gfortran": "gf",
-            "ifort": "ifort",
-            "ifx": "ifx"
-        }.get(compiler, compiler)
-
-        return f"ESTAS_II_{fc_short}_{build_type}"
+        return build_commands.target_exe_name(compiler, build_type)
 
     @render.ui
     def target_exe_name():
