@@ -758,6 +758,8 @@ def server(input, output, session):
             exe_name, input_file, const_file, binary_enabled,
             binary_filename, shear_file, DEFAULT_CONSTANTS_FILE)
 
+    run.command_config = build_estas_command
+
     @render.text
     def cmd_preview():
         """Show preview of the command that will be executed"""
@@ -999,6 +1001,15 @@ def server(input, output, session):
     def navigate_to_model_config():
         """Navigate to the Model Config panel from dashboard"""
         state.navigate("nav_model_control")
+
+    def _current_build_config():
+        return {
+            "compiler": input.build_compiler(),
+            "build_type": input.build_type(),
+            "exe_name": get_target_exe_name(),
+            "clean_first": input.build_clean_first(),
+        }
+    run.build_config = _current_build_config
 
     @reactive.effect
     @reactive.event(input.btn_build)
@@ -2690,6 +2701,7 @@ def server(input, output, session):
 
             if save_ok:
                 sim_config_save_msg.set(f"Saved at {datetime.now().strftime('%H:%M:%S')}")
+                state.sim_config_version.set(state.sim_config_version.get() + 1)
                 ui.notification_show("Configuration saved successfully", type="message", duration=3)
                 logger.info(f"Saved simulation config: base={cfg.base_year}, "
                            f"start={cfg.simulation_start}, end={cfg.simulation_end}")
@@ -2711,7 +2723,6 @@ def server(input, output, session):
 
     # ========== OUTPUT CONFIGURATION ==========
     output_config_msg = reactive.Value("")
-    output_config_version = reactive.Value(0)  # Incremented on save to trigger dashboard refresh
     OUTPUT_INFO_FILE = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
 
     @reactive.effect
@@ -2797,7 +2808,7 @@ def server(input, output, session):
                 f.writelines(lines)
 
             # Increment version to trigger dashboard refresh
-            output_config_version.set(output_config_version.get() + 1)
+            state.output_config_version.set(state.output_config_version.get() + 1)
 
             output_config_msg.set(f"Saved: {len(selected_boxes)} boxes")
             ui.notification_show(f"Output config saved ({len(selected_boxes)} boxes)", type="message")
@@ -3747,7 +3758,7 @@ def server(input, output, session):
         # Capture current widget values (must be done in reactive context)
         skip_build = input.cmd_skip_build()
         clean_before_build = input.cmd_clean_before_build()
-        build_type = input.build_type()
+        build_type = run.build_config()["build_type"]
         estas_cmd = build_estas_command()
 
         # Build type descriptions for logging
@@ -4111,9 +4122,9 @@ def server(input, output, session):
         """Display INPUT.txt variables with labels"""
         reactive.invalidate_later(5.0)  # Refresh every 5 seconds
         # Also refresh when output config is saved
-        _ = output_config_version.get()
+        _ = state.output_config_version.get()
         # Also refresh when simulation config is saved
-        _ = sim_config_save_msg.get()
+        _ = state.sim_config_version.get()
 
         def make_row(label, value, unit=""):
             return ui.div(
@@ -4386,6 +4397,24 @@ def server(input, output, session):
         current = input.sim_output_dir()
         selected = current if current in dirs else (list(dirs.keys())[0] if dirs else None)
         ui.update_select("sim_output_dir", choices=dirs, selected=selected)
+
+    @reactive.effect
+    def _publish_output_selection():
+        """Publish the current output selection onto the shared state bus.
+
+        Coexists with the existing input.output_dir_select()/plot_output_file()/
+        output_format() reads elsewhere in this phase (Phase 0) -- consumers
+        switch to state.selected_output_* in Phases 3-4.
+        """
+        state.selected_output_dir.set(input.output_dir_select())
+        try:
+            state.selected_output_file.set(input.plot_output_file())
+        except Exception:
+            pass
+        try:
+            state.selected_output_format.set(input.output_format())
+        except Exception:
+            pass
 
     @render.text
     def sim_output_dir_info():
