@@ -69,13 +69,9 @@ def test_parameters_ui_namespaces_ids():
     # the module UI must NOT carry the nav wrapper (that stays in create_ui)
     assert "panel_conditional" not in html
     assert "input.navigation" not in html
-
-
-def test_parameters_server_is_module_server():
-    # the decorated server is callable with (id, state); we don't run a session here,
-    # just assert it's the module-wrapped server (has the shiny module marker) and importable.
-    assert callable(parameters_server)
 ```
+
+(Importability of `parameters_server` is already exercised by this file's top-level import; no separate vacuous `callable(...)` assertion.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -282,7 +278,7 @@ def parameters_server(input, output, session, state):
 - [ ] **Step 4: Run test + ruff**
 
 Run: `.venv/bin/python -m pytest tests/python/test_parameters_module.py -v && .venv/bin/python -m pytest tests/python -q`
-Expected: the 2 new tests PASS; full suite still **165 passed** (module not yet wired in — app.py unchanged).
+Expected: the new render test PASSES; full suite **166 passed** (165 + this 1 test; module not yet wired in — app.py unchanged).
 Run: `~/.local/bin/ruff check shiny_app/modules/ tests/python/test_parameters_module.py`
 Expected: All checks passed.
 
@@ -339,7 +335,7 @@ except ImportError:
 
 Run: `.venv/bin/python -m py_compile shiny_app/app.py shiny_app/ui_panels.py`
 Run: `grep -nE "panel_parameters|def load_param_file|def param_table|def save_parameters|param_file_obj" shiny_app/app.py shiny_app/ui_panels.py` → **empty** (old handlers/panel gone).
-Run: `.venv/bin/python -m pytest tests/python -q` → all pass (165 + the 2 module tests from Task 1 = **167**).
+Run: `.venv/bin/python -m pytest tests/python -q` → all pass (165 + the render test from Task 1 = **166**).
 Run: `.venv/bin/python -m py_compile tests/python/test_app_playwright.py tests/python/test_app_selenium.py` (selector edits compile).
 
 - [ ] **Step 7: Boot smoke** — launch the app and confirm the parameters tab renders with namespaced ids and no server error:
@@ -411,7 +407,7 @@ Shiny.addCustomMessageHandler('aquabc_navigate', function(msg) {
 
 - [ ] **Step 5: Verify**
 
-Run: `.venv/bin/python -m py_compile shiny_app/app.py && .venv/bin/python -m pytest tests/python -q` → 167 pass.
+Run: `.venv/bin/python -m py_compile shiny_app/app.py && .venv/bin/python -m pytest tests/python -q` → 166 pass.
 Run: `~/.local/bin/ruff check shiny_app/app_state.py tests/python/` → All checks passed.
 Boot smoke: launch the app, curl `/` and confirm `aquabc_navigate` appears in the served HTML (the handler registered); a websocket session runs `server()` with no traceback.
 
@@ -431,7 +427,7 @@ git commit -m "feat(shiny): navigate() via send_custom_message + nav_script hand
 - [ ] **Step 1: Static + unit**
 
 Run: `.venv/bin/python -m py_compile shiny_app/app.py && .venv/bin/python -c "import shiny_app.app; import shiny_app.modules.parameters"` → clean.
-Run: `.venv/bin/python -m pytest tests/python -q` → **167 passed**.
+Run: `.venv/bin/python -m pytest tests/python -q` → **166 passed**.
 Run: `~/.local/bin/ruff check shiny_app/modules/ tests/python/` → All checks passed.
 
 - [ ] **Step 2: Confirm the old parameters code is fully gone**
