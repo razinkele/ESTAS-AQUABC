@@ -1,6 +1,6 @@
 # AQUABC v0.3 — Quick Start
 
-<!-- LATEST_RELEASE -->**Latest release:** [v0.4.1](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.4.1)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
+<!-- LATEST_RELEASE -->**Latest release:** [v0.4.2](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.4.2)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
 
 Short README to build and run the example and reproduce local results.
 
