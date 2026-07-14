@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-14
+
+### Changed
+- **`shiny_app/app.py` rearchitecture — Phase 1 (pilot: `parameters` Shiny module)** (TODO 2.1): the first tab converted to a true namespaced Shiny module. New `shiny_app/modules/parameters.py` provides `parameters_ui()` (`@module.ui`, returning the panel *content* only) and `parameters_server(input, output, session, state)` (`@module.server`, the 5 handlers + 3 reactive values ported verbatim from the old inline `server()` block). `create_ui()` wraps it at app level — `ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters"))` — so the nav condition keeps referencing the **global** `navigation` input, and `server()` deletes the inline block and calls `parameters_server("parameters", state)` once. Within-tab widget ids now namespace to `parameters-*` (e.g. `parameters-param_category`); the `nav_parameters` nav id stays global. Observable behavior is **unchanged** except the id namespace (the tab's load/edit/save flow, including the dynamic `param_{id}` inputs, round-trips identically inside the module) — verified by a render-smoke unit test (`tests/python/test_parameters_module.py`, **165 → 166** tests), a live websocket boot smoke, and the Playwright/Selenium integration selectors migrated to `parameters-*`. The module is self-contained (imports only `parameter_parser` + stdlib, nothing from `app.py`) and establishes the `shiny_app/modules/` layout + `x_ui(id)`/`x_server(id, state)` pattern reused by the remaining tab conversions.
+- **`state.navigate()` upgraded to a namespace-independent mechanism.** Phase 0's `ui.update_radio_buttons("navigation", …)` only works from the app-level (global) namespace; a converted module cannot reach the global `navigation` input that way. `state.navigate` is now an async callable that does `session.send_custom_message("aquabc_navigate", …)`, handled by a new `nav_script` client handler that sets the nav input and the sidebar active-link (matching a real nav click); the two dashboard goto handlers are now `async` and `await` it (`AppState.navigate` typed `Callable[[str], Awaitable[None]]`). Proven on the still-app-level goto buttons this phase; ready for the namespaced dashboard module in a later phase. Spec + Phase-1 plan under `docs/superpowers/{specs,plans}/2026-07-14-*shiny-modules*`.
+
 ## [0.4.0] - 2026-07-14
 
 ### Changed
