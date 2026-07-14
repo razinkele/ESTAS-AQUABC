@@ -95,3 +95,82 @@ def test_execute_build_clean_first(monkeypatch):
     )
     # clean_first=True runs `make clean-lib` first (Popen called twice)
     assert "Cleaning all build artifacts" in "".join(rc.build_log_lines)
+
+
+def test_stop_no_process_message():
+    rc = RunController(root="/tmp")
+    rc.stop()
+    assert "No model is currently running." in "".join(rc.run_log_lines)
+
+
+class _KillableProc:
+    def __init__(self):
+        self._alive = True
+        self.terminated = False
+    def poll(self):
+        return None if self._alive else 0
+    def terminate(self):
+        self.terminated = True
+        self._alive = False
+    def wait(self, timeout=None):
+        return 0
+    def kill(self):
+        self._alive = False
+
+
+def test_stop_terminates_running_process():
+    rc = RunController(root="/tmp")
+    proc = _KillableProc()
+    rc.process = proc
+    rc.running = True
+    rc.stop(reset_progress=True)
+    assert proc.terminated is True
+    assert rc.process is None
+    assert rc.running is False
+    assert rc.progress["status"] == "idle"
+    assert "terminating model" in "".join(rc.run_log_lines)
+
+
+try:
+    import shiny_app.app_state as _app_state_mod
+except ImportError:      # running from inside shiny_app/
+    import app_state as _app_state_mod
+
+
+class _RunFakePopen:
+    """Fake Popen for start_run: emits one line, then exits cleanly."""
+    def __init__(self):
+        self._polls = [None, 0]        # running once, then exited
+        self._lines = ["running...\n"]
+        self.returncode = 0
+        self.stdout = self              # p.stdout.readline()/read()/fileno()
+    def poll(self):
+        return self._polls.pop(0) if self._polls else 0
+    def readline(self):
+        return self._lines.pop(0) if self._lines else ""
+    def read(self):
+        return ""
+    def fileno(self):
+        return 0
+    def wait(self):
+        return self.returncode
+
+
+def test_start_run_success_path(monkeypatch):
+    rc = RunController(root="/tmp")
+    monkeypatch.setattr(_subprocess, "Popen", lambda *a, **k: _RunFakePopen())
+    # keep the read-loop deterministic and offline
+    monkeypatch.setattr(_app_state_mod.select, "select", lambda r, w, x, t: (r, [], []))
+    monkeypatch.setattr(_app_state_mod.compiler_env, "is_intel_executable", lambda name: False)
+    monkeypatch.setattr(_app_state_mod.compiler_env, "get_run_environment", lambda: {})
+    monkeypatch.setattr(_app_state_mod.output_data, "get_output_files_info",
+                        lambda: {"file_count": 0, "out_files": 0, "bin_files": 0,
+                                 "size_kb": 0.0, "folder": "OUTPUTS"})
+    monkeypatch.setattr(_app_state_mod.output_data, "format_elapsed", lambda s: "0.0s")
+
+    rc.start_run(estas_cmd=["./ESTAS_II"], exe_name="ESTAS_II")
+
+    joined = "".join(rc.run_log_lines)
+    assert "Model run completed successfully" in joined
+    assert rc.process is None      # finally-block cleared it
+    assert rc.running is False
