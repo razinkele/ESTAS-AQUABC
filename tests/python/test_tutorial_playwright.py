@@ -750,21 +750,21 @@ class TestScenarios:
         """Scenario name text input is present."""
         goto_app(page, app)
         navigate_to(page, "nav_scenarios")
-        expect(page.locator("#new_scenario_name")).to_be_visible()
+        expect(page.locator("#scenarios-new_scenario_name")).to_be_visible()
 
     def test_save_scenario_button(self, page: Page, app: ShinyAppProc):
         """Save as New Scenario button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_scenarios")
-        expect(page.locator("#save_scenario")).to_be_visible()
+        expect(page.locator("#scenarios-save_scenario")).to_be_visible()
 
     def test_scenario_checkboxes(self, page: Page, app: ShinyAppProc):
         """Include checkboxes for Parameters, ICs, Options are present."""
         goto_app(page, app)
         navigate_to(page, "nav_scenarios")
-        expect(page.locator("#scenario_include_params")).to_be_visible()
-        expect(page.locator("#scenario_include_ics")).to_be_visible()
-        expect(page.locator("#scenario_include_options")).to_be_visible()
+        expect(page.locator("#scenarios-scenario_include_params")).to_be_visible()
+        expect(page.locator("#scenarios-scenario_include_ics")).to_be_visible()
+        expect(page.locator("#scenarios-scenario_include_options")).to_be_visible()
 
 
 # ===================================================================
