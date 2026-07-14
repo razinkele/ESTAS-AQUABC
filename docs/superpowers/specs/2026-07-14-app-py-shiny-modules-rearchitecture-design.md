@@ -182,10 +182,8 @@ return **individual cards** that `create_ui()` composes into the shared layout �
 sub-tab stacking. Module UIs that need app-level consts (`panel_model_build`→compilers/build_types,
 `panel_plot`→min_smooth_window) receive them as `@module.ui` args or import them.
 
-> **Open decision (plot / output_browser split):** because their UIs interleave, keeping them as two
-> modules (16-way) costs card-level composition in `create_ui()`. Merging them into one `plot` module
-> (15-way for the Plots tab) removes that cost but loses the single-writer isolation of the
-> output-selection bus. The spec assumes the split; flag if you'd rather merge.
+> **Decided (plot / output_browser split): keep the split.** The card-level composition cost in
+> `create_ui()` is accepted in exchange for the single-writer isolation of the output-selection bus.
 
 | # | Module `id` | Nav tab | Absorbs (theme) | Shared-state touch |
 |---|---|---|---|---|
@@ -217,11 +215,8 @@ run_control) and `get_selected_output_file_path` (plot + output_browser). They m
 share one copy. (`build_estas_command` similarly becomes the `run.command_config` reactive; the CSV
 cache is genuinely plot-private.)
 
-> **Open decision (chrome, 17):** `help_content`/`changelog_content` are two static app-level
-> renders. Making them a `chrome` module keeps `app.py`'s `server()` a *pure* assembler (its stated
-> success criterion). The alternative — leaving these two renders in `server()` as documented
-> app-level chrome — avoids a module for two static outputs but softens "pure assembler." The spec
-> assumes the module; flip to app-level if you prefer.
+> **Decided (chrome, 17): keep it a module.** `help_content`/`changelog_content` become a `chrome`
+> module so `app.py`'s `server()` stays a *pure* assembler (its stated success criterion).
 
 ## 7. Phasing & per-module validation gate
 
