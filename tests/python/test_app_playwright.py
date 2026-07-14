@@ -111,7 +111,7 @@ class TestNavigation:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_options")
-        expect(page.locator("#load_options")).to_be_visible()
+        expect(page.locator("#model_options-load_options")).to_be_visible()
 
     def test_navigate_to_plots(self, page: Page, app: ShinyAppProc):
         """Navigating to Plots shows the plotting panel."""

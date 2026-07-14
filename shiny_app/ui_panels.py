@@ -5,12 +5,10 @@ from shinywidgets import output_widget  # third-party — plain import, mirrors 
 try:
     from shiny_app.ic_parser import STATE_VARIABLE_CATEGORIES
     from shiny_app.input_analysis import get_input_file_categories
-    from shiny_app.options_parser import OPTION_CATEGORIES
     from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 except ImportError:
     from ic_parser import STATE_VARIABLE_CATEGORIES
     from input_analysis import get_input_file_categories
-    from options_parser import OPTION_CATEGORIES
     from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 
 
@@ -618,53 +616,6 @@ def panel_initial_conditions():
                     "Save modified initial conditions to file (creates backup)"
                 ),
                 ui.output_text("ic_save_status"),
-                col_widths=[3, 9]
-            )
-        )
-    )
-
-
-def panel_model_options():
-    return ui.panel_conditional(
-        "input.navigation === 'nav_model_options'",
-        ui.card(
-            ui.card_header("Model Options"),
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_select(
-                        "options_category",
-                        "Category:",
-                        choices=list(OPTION_CATEGORIES.keys()),
-                        selected="Cyanobacteria"
-                    ),
-                    "Select option category: Cyanobacteria, Zooplankton, Oxygen, etc."
-                ),
-                ui.tooltip(
-                    ui.input_action_button("load_options", "Load Options", class_="btn-secondary mt-4"),
-                    "Load model options and switches"
-                ),
-                col_widths=[10, 2]
-            ),
-            ui.tags.hr(),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Model Switches"),
-                    ui.output_ui("options_switches"),
-                    style="max-height: 400px; overflow-y: auto;"
-                ),
-                ui.card(
-                    ui.card_header("Extra Constants"),
-                    ui.output_ui("options_constants"),
-                    style="max-height: 400px; overflow-y: auto;"
-                ),
-                col_widths=[6, 6]
-            ),
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_action_button("save_options", "Save All Changes", class_="btn-success"),
-                    "Save model switches and extra constants (creates backup)"
-                ),
-                ui.output_text("options_save_status"),
                 col_widths=[3, 9]
             )
         )

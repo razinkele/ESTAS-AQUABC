@@ -356,22 +356,22 @@ class TestStep6ModelOptions:
         """Model Options page has category selector and load button."""
         goto_app(page, app)
         navigate_to(page, "nav_model_options")
-        expect(page.locator("#options_category")).to_be_visible()
-        expect(page.locator("#load_options")).to_be_visible()
+        expect(page.locator("#model_options-options_category")).to_be_visible()
+        expect(page.locator("#model_options-load_options")).to_be_visible()
 
     def test_options_categories(self, page: Page, app: ShinyAppProc):
         """Category dropdown has 6 option categories."""
         goto_app(page, app)
         navigate_to(page, "nav_model_options")
-        count = page.locator("#options_category option").count()
+        count = page.locator("#model_options-options_category option").count()
         assert count >= 6, f"Expected 6 option categories, got {count}"
 
     def test_load_cyanobacteria_options(self, page: Page, app: ShinyAppProc):
         """Loading Cyanobacteria options shows switches."""
         goto_app(page, app)
         navigate_to(page, "nav_model_options")
-        page.select_option("#options_category", "Cyanobacteria")
-        page.locator("#load_options").click()
+        page.select_option("#model_options-options_category", "Cyanobacteria")
+        page.locator("#model_options-load_options").click()
         page.wait_for_timeout(LONG_WAIT)
         # Should show Model Switches and/or Extra Constants
         body_text = page.locator("body").inner_text()
@@ -381,7 +381,7 @@ class TestStep6ModelOptions:
         """Save All Changes button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_options")
-        expect(page.locator("#save_options")).to_be_visible()
+        expect(page.locator("#model_options-save_options")).to_be_visible()
 
 
 # ===================================================================
