@@ -35,7 +35,7 @@
 - Test: `tests/python/test_run_controller.py`
 
 **Interfaces:**
-- Produces: `RunController(root: str, default_constants_file: str = "")` with attributes `process`, `running: bool`, `last_run_time`, `progress: dict`, `build_log_lines: list[str]`, `run_log_lines: list[str]`, `exe_list_version`, `active_executable`, `build_config`, `command_config` (last four default `None`, set by `server()`); method `is_running() -> bool`.
+- Produces: `RunController(root: str)` with attributes `process`, `running: bool`, `last_run_time`, `progress: dict`, `build_log_lines: list[str]`, `run_log_lines: list[str]`, `exe_list_version`, `active_executable`, `build_config`, `command_config` (last four default `None`, set by `server()`); method `is_running() -> bool`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -113,9 +113,8 @@ class RunController:
     ``command_config``) are assigned by ``server()`` after construction.
     """
 
-    def __init__(self, root: str, default_constants_file: str = ""):
+    def __init__(self, root: str):
         self.root = root
-        self.default_constants_file = default_constants_file
         self.process = None
         self.running = False
         self.last_run_time = None
@@ -203,6 +202,20 @@ def test_execute_build_failure_marker(monkeypatch):
     )
     joined = "".join(rc.build_log_lines)
     assert "Build failed with return code 2" in joined
+
+
+def test_execute_build_clean_first(monkeypatch):
+    rc = RunController(root="/tmp")
+    monkeypatch.setattr(
+        _subprocess, "Popen",
+        lambda *a, **k: _FakePopen(["cleaning\n"], returncode=0),
+    )
+    rc.execute_build(
+        compiler_path="/usr/bin/gfortran", build_type="release",
+        exe_name="ESTAS_II", clean_first=True, action_name="Rebuild",
+    )
+    # clean_first=True runs `make clean-lib` first (Popen called twice)
+    assert "Cleaning all build artifacts" in "".join(rc.build_log_lines)
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -269,7 +282,7 @@ Add the method to `RunController` (body copied verbatim from `app.py:1007-1080` 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/python/test_run_controller.py -k execute_build -v`
-Expected: PASS (2 tests).
+Expected: PASS (3 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -288,9 +301,9 @@ git commit -m "feat(shiny): RunController.execute_build (port _execute_build_pro
 
 **Interfaces:**
 - Consumes: leaf module `compiler_env` (`is_intel_executable`, `get_intel_setvars_path`, `build_intel_wrapped_command`, `get_run_environment`), `output_data` (`get_output_files_info`, `format_elapsed`); stdlib `select`, `os`, `datetime`.
-- Produces: `RunController.start_run(estas_cmd: list[str], exe_name: str, is_release: bool) -> None` (synchronous worker body — call as a thread target; sets `self.process`/`self.running`/`self.last_run_time`, appends to `self.run_log_lines`, clears them on exit) and `RunController.stop(reset_progress: bool = False) -> None` (terminate/kill the process, append status).
+- Produces: `RunController.start_run(estas_cmd: list[str], exe_name: str) -> None` (synchronous worker body — call as a thread target; sets `self.process`/`self.running`/`self.last_run_time` and appends to `self.run_log_lines` — it does **not** clear them; the one `_log_lines.clear()` stays in `on_run`'s prep) and `RunController.stop(reset_progress: bool = False) -> None` (terminate/kill the process, append status).
 
-**Port note:** `start_run` is the body of `on_run`'s inner `_work` (`app.py:3986-4123`) with `_log_lines`→`self.run_log_lines`, `_model_process[0]`→`self.process`, `_model_running[0]`→`self.running`, `_last_run_time[0]`→`self.last_run_time`, and `exe_name`/`is_release`/`estas_cmd` becoming parameters. `stop` is the shared body of `on_stop_run`/`on_dashboard_stop` (`app.py:4468-4490`) with the same renames; `reset_progress=True` also resets `self.progress` (the dashboard-stop variant, `app.py:4515`).
+**Port note:** `start_run` is the body of `on_run`'s inner `_work` (`app.py:3986-4123`) with `_log_lines`→`self.run_log_lines`, `_model_process[0]`→`self.process`, `_model_running[0]`→`self.running`, `_last_run_time[0]`→`self.last_run_time`, and `exe_name`/`estas_cmd` becoming parameters (the original's `is_release` is used only in `on_run`'s prep for a log line, so it stays in `on_run` and is **not** a `start_run` parameter). `stop` is the shared body of `on_stop_run`/`on_dashboard_stop` (`app.py:4468-4490`) with the same renames; `reset_progress=True` also resets `self.progress` (the dashboard-stop variant, `app.py:4515`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -328,12 +341,57 @@ def test_stop_terminates_running_process():
     assert rc.running is False
     assert rc.progress["status"] == "idle"
     assert "terminating model" in "".join(rc.run_log_lines)
+
+
+try:
+    import shiny_app.app_state as _app_state_mod
+except ImportError:      # running from inside shiny_app/
+    import app_state as _app_state_mod
+
+
+class _RunFakePopen:
+    """Fake Popen for start_run: emits one line, then exits cleanly."""
+    def __init__(self):
+        self._polls = [None, 0]        # running once, then exited
+        self._lines = ["running...\n"]
+        self.returncode = 0
+        self.stdout = self              # p.stdout.readline()/read()/fileno()
+    def poll(self):
+        return self._polls.pop(0) if self._polls else 0
+    def readline(self):
+        return self._lines.pop(0) if self._lines else ""
+    def read(self):
+        return ""
+    def fileno(self):
+        return 0
+    def wait(self):
+        return self.returncode
+
+
+def test_start_run_success_path(monkeypatch):
+    rc = RunController(root="/tmp")
+    monkeypatch.setattr(_subprocess, "Popen", lambda *a, **k: _RunFakePopen())
+    # keep the read-loop deterministic and offline
+    monkeypatch.setattr(_app_state_mod.select, "select", lambda r, w, x, t: (r, [], []))
+    monkeypatch.setattr(_app_state_mod.compiler_env, "is_intel_executable", lambda name: False)
+    monkeypatch.setattr(_app_state_mod.compiler_env, "get_run_environment", lambda: {})
+    monkeypatch.setattr(_app_state_mod.output_data, "get_output_files_info",
+                        lambda: {"file_count": 0, "out_files": 0, "bin_files": 0,
+                                 "size_kb": 0.0, "folder": "OUTPUTS"})
+    monkeypatch.setattr(_app_state_mod.output_data, "format_elapsed", lambda s: "0.0s")
+
+    rc.start_run(estas_cmd=["./ESTAS_II"], exe_name="ESTAS_II")
+
+    joined = "".join(rc.run_log_lines)
+    assert "Model run completed successfully" in joined
+    assert rc.process is None      # finally-block cleared it
+    assert rc.running is False
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `python -m pytest tests/python/test_run_controller.py -k stop -v`
-Expected: FAIL — `AttributeError: 'RunController' object has no attribute 'stop'`.
+Run: `python -m pytest tests/python/test_run_controller.py -k "stop or start_run" -v`
+Expected: FAIL — `AttributeError: 'RunController' object has no attribute 'stop'` / `'start_run'`.
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -377,10 +435,10 @@ Add `stop` (copied from `app.py:4468-4490` + the `4515` progress reset, renamed)
             self.run_log_lines.append("No model is currently running.\n")
 ```
 
-Add `start_run` (body of `on_run`'s `_work`, `app.py:3986-4123`, renamed; `estas_cmd`/`exe_name`/`is_release` are params):
+Add `start_run` (body of `on_run`'s `_work`, `app.py:3986-4123`, renamed; `estas_cmd`/`exe_name` are params):
 
 ```python
-    def start_run(self, estas_cmd, exe_name, is_release):
+    def start_run(self, estas_cmd, exe_name):
         """Model-run worker — call as a thread target. Ported from on_run._work."""
         start_time = time.time()
         logger.info("Run thread started")
@@ -477,7 +535,7 @@ Add `start_run` (body of `on_run`'s `_work`, `app.py:3986-4123`, renamed; `estas
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `python -m pytest tests/python/test_run_controller.py -v`
-Expected: PASS (all tests, incl. the 2 `stop` tests).
+Expected: PASS (all tests, incl. the 2 `stop` tests and `test_start_run_success_path`).
 
 - [ ] **Step 5: Commit**
 
@@ -645,7 +703,7 @@ Keep the reactive prep verbatim (it reads inputs, validates constants, appends h
 ```python
         import threading  # already imported at module top; shown for clarity
         threading.Thread(
-            target=run.start_run, args=(estas_cmd, exe_name, is_release),
+            target=run.start_run, args=(estas_cmd, exe_name),
             daemon=True, name="RunThread",
         ).start()
 ```
@@ -759,6 +817,7 @@ Leave the existing `input.output_dir_select()` reads in place for this phase (be
 - Delete `output_config_version = reactive.Value(0)` (@2793); replace its `.set(...)` (@2879) and its reader in `input_txt_variables` (@4332) with `state.output_config_version`.
 - In `save_simulation_config` (@2701-2784), after a successful save, add `state.sim_config_version.set(state.sim_config_version.get() + 1)`.
 - In `input_txt_variables` (@4332), replace the trigger read `_ = sim_config_save_msg.get()` (@4338) with `_ = state.sim_config_version.get()`.
+- **Behavior note (intentional narrowing).** `sim_config_save_msg` is `.set()` on ~7 paths (reset `""`, parse/not-found, validation error, success, save-failed, exception), so today *any* of them re-fires `input_txt_variables`; the counter bumps only on a **successful** save. This narrowing is benign and DOM-invisible: `input_txt_variables` also calls `reactive.invalidate_later(5.0)` and re-reads `INPUT.txt` from disk each render, and **none** of the dropped paths write `INPUT.txt`, so displayed content is unchanged (and the 5 s poll re-fires within seconds regardless). If exact trigger-parity is ever wanted, bump `sim_config_version` on every path that could change `INPUT.txt`.
 
 - [ ] **Step 3: Register `command_config`, `build_config`, `active_executable`**
 
@@ -778,7 +837,7 @@ Leave the existing `input.output_dir_select()` reads in place for this phase (be
 ```
 
 - In `on_build_run` (@3821), replace the direct `input.build_type()` read with `run.build_config()["build_type"]` (proves the cross-module bus; behavior-identical).
-- Where the active/built executable is set after a successful build (the `refresh_executables`/exe-selection path), set `run.active_executable.set(<exe_name>)`; where `dashboard_exe_text` (@4319) reports the exe, read `run.active_executable.get()` (falling back to the existing `input.active_executable` read if `None`, to stay behavior-identical this phase).
+- **`active_executable`: no clean producer this phase — defer the writer to Phase 4.** There is no existing "active exe" scalar: `active_executable` is only a `ui.input_select` widget, and `refresh_executables`/`init_executable_list` merely call `ui.update_select("active_executable", …)` (both manually triggered — `input.btn_refresh_executables` / init — not build-completion hooks). So in Phase 0: create `run.active_executable = reactive.Value(None)` (Task 5) as the reserved bus slot, but wire **no** writer, and keep `dashboard_exe_text` (@4319) reading `input.active_executable()` unchanged — behavior-identical. **Do not** place a `run.active_executable.set(...)` inside the build worker thread (`execute_build`/`_do_build`): that violates the "no reactive `.set()` from a worker thread" Global Constraint. The reader/writer wiring lands when `model_build`/`dashboard` convert in Phase 4.
 
 - [ ] **Step 4: Verify compile + suite**
 
@@ -834,6 +893,6 @@ git tag v0.4.0
 
 **Placeholder scan:** every code step shows full code or an exact move+rename with the target shown; no TBD/TODO. Verbatim ports name exact source line ranges + the complete rename list.
 
-**Type consistency:** `run.execute_build(compiler_path, build_type, exe_name, clean_first, action_name)` (Task 2) matches the call site (Task 5 Step 3). `run.start_run(estas_cmd, exe_name, is_release)` (Task 3) matches the thread target (Task 6 Step 2). `run.stop(reset_progress=False)` (Task 3) matches both stop handlers (Task 6 Step 3). `AppState` field names (Task 4) match the construction kwargs (Task 5 Step 2) and the publisher/reader repoints (Task 8).
+**Type consistency:** `run.execute_build(compiler_path, build_type, exe_name, clean_first, action_name)` (Task 2) matches the call site (Task 5 Step 3). `run.start_run(estas_cmd, exe_name)` (Task 3) matches the thread target (Task 6 Step 2). `run.stop(reset_progress=False)` (Task 3) matches both stop handlers (Task 6 Step 3). `AppState` field names (Task 4) match the construction kwargs (Task 5 Step 2) and the publisher/reader repoints (Task 8).
 
 **Note carried to Phase 1+ plans:** `sim_output_dir` (sim_config → output_browser) is published in Phase 0 via the output-selection effect but its *consumer* (`refresh_sim_output_dirs`) keeps its direct read until `output_browser` converts (Phase 3); flagged so the Phase 3 plan switches it to `state.selected_output_dir()`.
