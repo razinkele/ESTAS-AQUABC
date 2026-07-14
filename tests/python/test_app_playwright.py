@@ -104,7 +104,7 @@ class TestNavigation:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_initial_conditions")
-        expect(page.locator("#load_ics")).to_be_visible()
+        expect(page.locator("#initial_conditions-load_ics")).to_be_visible()
 
     def test_navigate_to_model_options(self, page: Page, app: ShinyAppProc):
         """Navigating to Model Options shows the options panel."""

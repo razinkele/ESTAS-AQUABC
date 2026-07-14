@@ -3,11 +3,9 @@ from shiny import ui
 from shinywidgets import output_widget  # third-party — plain import, mirrors app.py:42
 
 try:
-    from shiny_app.ic_parser import STATE_VARIABLE_CATEGORIES
     from shiny_app.input_analysis import get_input_file_categories
     from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 except ImportError:
-    from ic_parser import STATE_VARIABLE_CATEGORIES
     from input_analysis import get_input_file_categories
     from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 
@@ -562,62 +560,6 @@ def panel_input_files():
                 id="input_files_tabs"
             ),
             col_widths=[4, 8]
-        )
-    )
-
-
-def panel_initial_conditions():
-    return ui.panel_conditional(
-        "input.navigation === 'nav_initial_conditions'",
-        ui.card(
-            ui.card_header("Initial Conditions"),
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_select(
-                        "ic_file",
-                        "IC File:",
-                        choices=["INIT_CONC_1.txt", "INIT_CONC_2.txt"],
-                        selected="INIT_CONC_1.txt"
-                    ),
-                    "Initial concentration file for state variables"
-                ),
-                ui.tooltip(
-                    ui.input_select(
-                        "ic_category",
-                        "Category:",
-                        choices=list(STATE_VARIABLE_CATEGORIES.keys()),
-                        selected="Nutrients"
-                    ),
-                    "Select variable category: Nutrients, Phytoplankton, Oxygen, etc."
-                ),
-                ui.tooltip(
-                    ui.input_action_button("load_ics", "Load", class_="btn-secondary mt-4"),
-                    "Load initial conditions from selected file"
-                ),
-                col_widths=[5, 5, 2]
-            ),
-            ui.tags.hr(),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Category Info"),
-                    ui.output_text("ic_category_info"),
-                    fill=False
-                ),
-                ui.card(
-                    ui.card_header("State Variables"),
-                    ui.output_ui("ic_table"),
-                    style="max-height: 500px; overflow-y: auto;"
-                ),
-                col_widths=[4, 8]
-            ),
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_action_button("save_ics", "Save All Changes", class_="btn-success"),
-                    "Save modified initial conditions to file (creates backup)"
-                ),
-                ui.output_text("ic_save_status"),
-                col_widths=[3, 9]
-            )
         )
     )
 

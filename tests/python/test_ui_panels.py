@@ -6,7 +6,6 @@ ARGFREE = {
     "panel_dashboard": ["nav_dashboard", "Dashboard", "System Status", "Simulation Config"],
     "panel_model_control": ["nav_model_control", "Time Period", "Time Stepping", "Output Interval"],
     "panel_input_files": ["nav_input_files", "File Browser", "File Information", "Box Network &amp; Bathymetry"],
-    "panel_initial_conditions": ["nav_initial_conditions", "Initial Conditions", "Category Info", "State Variables"],
     "panel_sim_config": ["nav_sim_config_disabled"],   # tiny disabled stub — only the nav marker exists
     "panel_scenarios": ["nav_scenarios", "Scenario Presets", "Load Scenario", "Save Current Configuration"],
     "panel_mass_balance": ["nav_mass_balance", "Mass Balance", "Summary", "Element Details"],

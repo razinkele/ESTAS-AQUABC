@@ -310,15 +310,15 @@ class TestStep5InitialConditions:
         """Initial Conditions page has file selector, category, and load button."""
         goto_app(page, app)
         navigate_to(page, "nav_initial_conditions")
-        expect(page.locator("#ic_file")).to_be_visible()
-        expect(page.locator("#ic_category")).to_be_visible()
-        expect(page.locator("#load_ics")).to_be_visible()
+        expect(page.locator("#initial_conditions-ic_file")).to_be_visible()
+        expect(page.locator("#initial_conditions-ic_category")).to_be_visible()
+        expect(page.locator("#initial_conditions-load_ics")).to_be_visible()
 
     def test_ic_files_available(self, page: Page, app: ShinyAppProc):
         """IC file dropdown has INIT_CONC_1.txt and INIT_CONC_2.txt."""
         goto_app(page, app)
         navigate_to(page, "nav_initial_conditions")
-        text = page.locator("#ic_file").inner_text()
+        text = page.locator("#initial_conditions-ic_file").inner_text()
         assert "INIT_CONC_1" in text
         assert "INIT_CONC_2" in text
 
@@ -326,15 +326,15 @@ class TestStep5InitialConditions:
         """Category dropdown has 11 state variable categories."""
         goto_app(page, app)
         navigate_to(page, "nav_initial_conditions")
-        count = page.locator("#ic_category option").count()
+        count = page.locator("#initial_conditions-ic_category option").count()
         assert count >= 11, f"Expected 11 IC categories, got {count}"
 
     def test_load_nutrients_ic(self, page: Page, app: ShinyAppProc):
         """Loading Nutrients category shows state variable values."""
         goto_app(page, app)
         navigate_to(page, "nav_initial_conditions")
-        page.select_option("#ic_category", "Nutrients")
-        page.locator("#load_ics").click()
+        page.select_option("#initial_conditions-ic_category", "Nutrients")
+        page.locator("#initial_conditions-load_ics").click()
         page.wait_for_timeout(LONG_WAIT)
         expect(page.locator("body")).to_contain_text("Nutrient")
 
@@ -342,7 +342,7 @@ class TestStep5InitialConditions:
         """Save All Changes button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_initial_conditions")
-        expect(page.locator("#save_ics")).to_be_visible()
+        expect(page.locator("#initial_conditions-save_ics")).to_be_visible()
 
 
 # ===================================================================

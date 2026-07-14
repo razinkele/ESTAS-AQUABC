@@ -181,13 +181,13 @@ except ImportError:
 try:
     from shiny_app.ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
-        panel_initial_conditions, panel_sim_config,
+        panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
     )
 except ImportError:
     from ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
-        panel_initial_conditions, panel_sim_config,
+        panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
     )
 
@@ -242,6 +242,11 @@ try:
     from shiny_app.modules.model_options import model_options_ui, model_options_server
 except ImportError:
     from modules.model_options import model_options_ui, model_options_server
+
+try:
+    from shiny_app.modules.initial_conditions import initial_conditions_ui, initial_conditions_server
+except ImportError:
+    from modules.initial_conditions import initial_conditions_ui, initial_conditions_server
 
 # Configure logging
 logging.basicConfig(
@@ -517,7 +522,7 @@ def create_ui():
         panel_model_control(),
         panel_input_files(),
         ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters")),
-        panel_initial_conditions(),
+        ui.panel_conditional("input.navigation === 'nav_initial_conditions'", initial_conditions_ui("initial_conditions")),
         ui.panel_conditional("input.navigation === 'nav_model_options'", model_options_ui("model_options")),
         panel_sim_config(),
         panel_scenarios(),
@@ -1949,161 +1954,8 @@ def server(input, output, session):
     # Parameters tab is a Shiny module (Phase 1)
     parameters_server("parameters", state)
 
-    # ========== INITIAL CONDITIONS EDITOR ==========
-    # Reactive values for IC editing
-    ic_file_obj = reactive.Value(None)
-    ic_save_msg = reactive.Value("")
-
-    @reactive.effect
-    @reactive.event(input.load_ics, input.ic_category, input.ic_file)
-    def load_ic_file():
-        """Load IC file when category or file changes"""
-        ic_filename = input.ic_file()
-        if not ic_filename:
-            return
-
-        filepath = os.path.join(INPUTS_DIR, ic_filename)
-        if not os.path.exists(filepath):
-            logger.error(f"IC file not found: {filepath}")
-            return
-
-        logger.info(f"Loading IC file: {ic_filename}")
-        ic = ICFile(filepath)
-        if ic.parse():
-            ic_file_obj.set(ic)
-            ic_save_msg.set("")
-            logger.info(f"Loaded {len(ic.conditions)} initial conditions")
-        else:
-            logger.error("Failed to parse IC file")
-
-    @render.text
-    def ic_category_info():
-        """Display category information"""
-        category = input.ic_category()
-        ic = ic_file_obj.get()
-
-        if not category:
-            return "Select a category"
-
-        if category in STATE_VARIABLE_CATEGORIES:
-            var_ids = STATE_VARIABLE_CATEGORIES[category]
-            count = len(var_ids)
-
-            info = f"Category: {category}\n"
-            info += f"Variables: {count}\n"
-
-            if ic:
-                conditions = ic.get_conditions_by_category(category)
-                info += f"Loaded: {len(conditions)} variables"
-
-            return info
-        return "Unknown category"
-
-    @render.ui
-    def ic_table():
-        """Render IC table for editing"""
-        category = input.ic_category()
-        ic = ic_file_obj.get()
-
-        if not ic:
-            return ui.tags.div(
-                ui.tags.p("Click 'Load Initial Conditions' to load the IC file", class_="text-muted"),
-                class_="mt-2"
-            )
-
-        conditions = ic.get_conditions_by_category(category)
-
-        if not conditions:
-            return ui.tags.p(f"No variables found for category: {category}", class_="text-warning")
-
-        # Create input fields for each IC
-        ic_inputs = []
-        for cond in conditions:
-            ic_row = ui.tags.div(
-                ui.tags.div(
-                    ui.tags.strong(cond.name, class_="small"),
-                    ui.tags.br(),
-                    ui.tags.small(f"{cond.description} ({cond.units})", class_="text-muted"),
-                    class_="col-7"
-                ),
-                ui.tags.div(
-                    ui.input_numeric(
-                        f"ic_{cond.var_id}",
-                        "",
-                        value=cond.value,
-                        width="100%"
-                    ),
-                    class_="col-5"
-                ),
-                class_="row mb-2 align-items-center border-bottom pb-2"
-            )
-            ic_inputs.append(ic_row)
-
-        return ui.tags.div(
-            ui.tags.div(
-                ui.tags.small(f"Showing {len(conditions)} state variables", class_="text-muted"),
-                class_="mb-2"
-            ),
-            *ic_inputs,
-            style="max-height: 400px; overflow-y: auto;"
-        )
-
-    @reactive.effect
-    @reactive.event(input.save_ics)
-    def save_initial_conditions():
-        """Save modified initial conditions"""
-        ic = ic_file_obj.get()
-        if not ic:
-            ic_save_msg.set("Error: No IC file loaded")
-            return
-
-        # Collect all modified values
-        category = input.ic_category()
-        conditions = ic.get_conditions_by_category(category)
-
-        updates = {}
-        for cond in conditions:
-            input_id = f"ic_{cond.var_id}"
-            try:
-                new_value = input[input_id]()
-                if new_value is not None and new_value != cond.value:
-                    updates[cond.var_id] = float(new_value)
-            except Exception as e:
-                logger.debug(f"Could not get value for {input_id}: {e}")
-
-        if not updates:
-            ic_save_msg.set("No changes to save")
-            return
-
-        logger.info(f"Saving {len(updates)} IC changes")
-
-        # Apply updates
-        success_count, fail_count, messages = ic.update_conditions(updates)
-
-        # Save to file
-        save_ok, save_msg = ic.save(backup=True)
-
-        if save_ok:
-            ic_save_msg.set(f"Saved {success_count} changes at {datetime.now().strftime('%H:%M:%S')}")
-            ui.notification_show(
-                f"Successfully saved {success_count} IC changes",
-                type="message",
-                duration=3
-            )
-        else:
-            ic_save_msg.set(f"Save failed: {save_msg}")
-            ui.notification_show(
-                f"Failed to save ICs: {save_msg}",
-                type="error",
-                duration=5
-            )
-
-    @render.text
-    def ic_save_status():
-        """Display IC save status"""
-        return ic_save_msg.get()
-
-    # ========== END INITIAL CONDITIONS EDITOR ==========
+    # Initial Conditions tab is a Shiny module (Phase 2)
+    initial_conditions_server("initial_conditions", state)
 
     # Model Options tab is a Shiny module (Phase 2)
     model_options_server("model_options", state)
