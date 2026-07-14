@@ -1,9 +1,13 @@
-import os
 from shiny_app.output_data import (
-    looks_numeric, format_elapsed, get_output_folder_from_config,
-    get_output_files_info, get_output_columns, get_output_directories,
+    format_elapsed,
+    get_output_columns,
+    get_output_directories,
     get_output_files_from_dir,
+    get_output_files_info,
+    get_output_folder_from_config,
+    looks_numeric,
 )
+
 try:
     from shiny_app.utils import PELAGIC_BOX_COLUMNS
 except ImportError:
@@ -40,7 +44,8 @@ def test_get_output_directories(tmp_path):
 
 
 def test_get_output_files_from_dir_text_and_binary(tmp_path):
-    sub = tmp_path / "SUB"; sub.mkdir()
+    sub = tmp_path / "SUB"
+    sub.mkdir()
     (sub / "PELAGIC_BOX_01.out").write_text("x")       # matches text filter
     (sub / "PELAGIC_BOX_PROCESS_RATES.out").write_text("x")   # excluded (PROCESS_RATES)
     (sub / "PELAGIC_BOX_01.bin").write_text("x")       # matches binary filter

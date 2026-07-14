@@ -1,7 +1,12 @@
 import plotly.graph_objects as go
+
 from shiny_app.box_network import (
-    parse_pelagic_inputs, parse_advective_links, parse_bathymetry,
-    build_box_network_figure, build_bathymetry_figure, build_depths_overview,
+    build_bathymetry_figure,
+    build_box_network_figure,
+    build_depths_overview,
+    parse_advective_links,
+    parse_bathymetry,
+    parse_pelagic_inputs,
 )
 
 

@@ -1,6 +1,10 @@
 from shiny_app.ui_scripts import (
-    reload_script, nav_script, settings_script,
-    help_script, changelog_script, theme_script,
+    changelog_script,
+    help_script,
+    nav_script,
+    reload_script,
+    settings_script,
+    theme_script,
 )
 
 _MARKERS = [

@@ -1,9 +1,13 @@
 import os
 import stat
+
 import pytest
+
 from shiny_app.build_commands import (
-    assemble_estas_command, get_available_executables,
-    get_executable_info, target_exe_name,
+    assemble_estas_command,
+    get_available_executables,
+    get_executable_info,
+    target_exe_name,
 )
 
 DC = "WCONST_01.txt"  # default_constants_file
@@ -67,12 +71,14 @@ def test_assemble_binary_named_and_shear():
 
 def test_get_available_executables(tmp_path):
     exe = tmp_path / "ESTAS_II"
-    exe.write_text("x"); os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
+    exe.write_text("x")
+    os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
     (tmp_path / "notes.txt").write_text("x")            # matches no pattern -> excluded
     (tmp_path / "ESTAS_II_dir").mkdir()                 # matches ESTAS_II_* but is a dir -> excluded
     # matches ESTAS_II_* but the executable bit is OFF -> excluded by the os.access(X_OK) filter
     noexec = tmp_path / "ESTAS_II_debug"
-    noexec.write_text("x"); os.chmod(noexec, os.stat(noexec).st_mode & ~stat.S_IEXEC & ~stat.S_IXGRP & ~stat.S_IXOTH)
+    noexec.write_text("x")
+    os.chmod(noexec, os.stat(noexec).st_mode & ~stat.S_IEXEC & ~stat.S_IXGRP & ~stat.S_IXOTH)
     result = get_available_executables(str(tmp_path))
     assert result == ["ESTAS_II"]                       # only the executable file, deduped/sorted
 
@@ -83,7 +89,8 @@ def test_get_executable_info_missing(tmp_path):
 
 def test_get_executable_info_existing(tmp_path):
     exe = tmp_path / "ESTAS_II"
-    exe.write_text("x"); os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
+    exe.write_text("x")
+    os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
     info = get_executable_info("ESTAS_II", str(tmp_path))
     assert info["exists"] is True
     assert info["path"] == str(exe)
