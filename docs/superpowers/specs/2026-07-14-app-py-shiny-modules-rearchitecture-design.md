@@ -167,12 +167,25 @@ handled by `sim_config_version` above.)
 
 ## 6. Module inventory (17 modules)
 
-A module = one cohesive feature. The two fat nav tabs (Model Config, Plots) each host two module
-UIs stacked into their sub-tabs; `chrome` (17) is the one non-tab module — the app-level help and
+A module = one cohesive feature. `chrome` (17) is the one non-tab module — the app-level help and
 changelog offcanvas renders that belong to no nav panel. The last column is the only cross-tab
 coupling; everything else is private. A handler-by-handler pass confirmed all ~60 handlers map to
 exactly one module (the anonymous file-list effect → `input_files`; `input_txt_variables` →
 `dashboard`; `help_content`/`changelog_content` → `chrome`).
+
+**Fat-tab UI splitting differs by tab (verified against `ui_panels.py`):** `model_control` splits
+cleanly on `navset_card_tab` boundaries — sub-tab 1 → `sim_config_ui`, sub-tabs 2–3 → `run_control_ui`
+— so the outer navset stays in `create_ui()` and each module returns whole `nav_panel`s. `plot` and
+`output_browser`, however, are **interleaved within one sub-tab** (a `layout_columns` mixing
+`output_browser`'s file-preview card with `plot`'s variable/options cards), so those two module UIs
+return **individual cards** that `create_ui()` composes into the shared layout — finer-grained than
+sub-tab stacking. Module UIs that need app-level consts (`panel_model_build`→compilers/build_types,
+`panel_plot`→min_smooth_window) receive them as `@module.ui` args or import them.
+
+> **Open decision (plot / output_browser split):** because their UIs interleave, keeping them as two
+> modules (16-way) costs card-level composition in `create_ui()`. Merging them into one `plot` module
+> (15-way for the Plots tab) removes that cost but loses the single-writer isolation of the
+> output-selection bus. The spec assumes the split; flag if you'd rather merge.
 
 | # | Module `id` | Nav tab | Absorbs (theme) | Shared-state touch |
 |---|---|---|---|---|
@@ -250,7 +263,7 @@ Playwright + Selenium green; (4) boot smoke via the `run`/`verify` skill. Any re
 | A `panel_conditional` on `input.navigation` pulled inside a module → `mod-navigation`, never matches | Wrappers stay in `create_ui()`; module UIs return inner content only (§4). |
 | Output/handler id mismatch on a partial move | Conversion is atomic — UI fragment + all its handlers move together in one commit. |
 | Behavior drift during a "move" | Move verbatim, no logic edits in a conversion commit; E2E + per-tab visual smoke. |
-| Fat-tab `navset_card_tab` split across two module UIs | Outer navset stays in `create_ui()`; each module UI supplies sub-tab content; DOM diffed. |
+| Fat-tab split across two module UIs | `model_control` splits on `nav_panel` boundaries (outer navset in `create_ui()`); `plot`/`output_browser` interleave, so their module UIs return **cards** composed by `create_ui()` (§6). DOM diffed either way. |
 | `AppState`/`RunController` constructed at import → shared across sessions | Constructed inside `server()` only; never at module level. |
 | New `modules/` import cycle or script-mode failure | Modules import only stdlib + leaf modules + the shared `app_state` module, never `app.py`; established `try/except ImportError` fallback. |
 | Selenium/Playwright selector drift | Update the ~10 within-tab selectors per-commit with the renaming module; `nid()` helper centralizes; nav-level selectors unaffected. |
