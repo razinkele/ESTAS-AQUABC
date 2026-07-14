@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-14
+
+### Changed
+- **`shiny_app/app.py` rearchitecture — Phase 0 (shared-state contract)** (TODO 2.1): first phase of converting the ~5,000-line `server()` closure toward true namespaced Shiny modules. Extracts the per-session run/build state out of the `server()` closure into a new module `shiny_app/app_state.py` with two units: **`RunController`** — the run/build "session" holding the subprocess handle, the thread-appended `build_log_lines`/`run_log_lines` buffers, and the `execute_build`/`start_run`/`stop`/`is_running` methods (ported verbatim from the old `_execute_build_process`, the `on_run` worker body, and the stop handlers, modulo the documented `_box[0]`→`self.attr` renames), plus the `exe_list_version`/`active_executable`/`build_config`/`command_config` signals; and **`AppState`** — a 7-field dataclass bundling the cross-tab reactive signals (`run`, `navigate`, `selected_output_dir`/`file`/`format`, `output_config_version`, `sim_config_version`). `server()` now constructs `state = AppState(...)` once per session and every build/run/stop handler and log render delegates to `run.*`; the old closure boxes (`_execute_build_process`, `_log_lines`, `_build_log_lines`, `_model_process`/`_model_running`/`_last_run_time`/`_model_progress`, `_exe_list_version`) are removed; output-selection and config-version signals are published into `state`, and the goto handlers route through `state.navigate`. Observable behavior is **unchanged / DOM-identical** — no widget id or UI layout changed (no UI file touched), verified by the full suite plus a live websocket-session boot smoke (`server()` runs end-to-end with no traceback). The run/build engine is independently unit-testable for the first time: adds `tests/python/test_run_controller.py` (**155 → 165** Python tests). This phase publishes/registers the cross-tab bus, but its consumers switch in later phases (the `selected_*`/`command_config`/`build_config` values are written-but-not-read for now). Opens the `v0.4` series for the Shiny-modules rearchitecture. Executed via subagent-driven development (per-task TDD + review, clean whole-branch review). Spec + Phase-0 plan under `docs/superpowers/{specs,plans}/2026-07-14-*`.
+
 ## [0.3.8] - 2026-07-13
 
 ### Changed
