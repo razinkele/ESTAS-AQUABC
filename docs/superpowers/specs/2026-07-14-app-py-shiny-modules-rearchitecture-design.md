@@ -3,7 +3,7 @@
 - **Date:** 2026-07-14
 - **Status:** Draft (awaiting user review)
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
-- **Scope:** `shiny_app/`. Convert the ~5,000-line `server()` closure into 16 cohesive
+- **Scope:** `shiny_app/`. Convert the ~5,000-line `server()` closure into 17 cohesive
   `@module.ui`/`@module.server` Shiny modules behind an explicit shared-state contract, leaving
   `app.py` a thin assembler. This is the "full Shiny-modules rearchitecture" deferred in §7 of the
   2026-07-12 phase-1 decomposition design — the largest, highest-risk remaining item.
@@ -110,14 +110,21 @@ build-command assembly and run-state transitions become unit-testable for the fi
 class AppState:
     run: RunController                      # the engine above
     output_config_version: reactive.Value   # output-config save → dashboard refresh
+    sim_config_version: reactive.Value      # sim-config save → dashboard input_txt_variables refresh
     selected_output_dir: reactive.Value     # published by output_browser, read by plot/mb/obs/diag
     selected_output_file: reactive.Value    # published by output_browser, read by plot/obs
     navigate: Callable[[str], None]         # switch the global nav from inside a module
 ```
 
-That is the entire cross-tab contract — the 5-field `AppState`: the `RunController` (`run`) plus 4
-reactive signals (`output_config_version`, `selected_output_dir`, `selected_output_file`,
-`navigate`). A module needing nothing shared still takes `state` for uniformity and ignores it.
+That is the entire cross-tab contract — the 6-field `AppState`: the `RunController` (`run`) plus 5
+reactive signals (`output_config_version`, `sim_config_version`, `selected_output_dir`,
+`selected_output_file`, `navigate`). A module needing nothing shared still takes `state` for
+uniformity and ignores it.
+
+`sim_config_version` exists because the dashboard's `input_txt_variables` render re-fires when the
+simulation config is saved — the one place a "private" value (`sim_config_save_msg`) was read
+cross-tab. Rather than expose the message, `sim_config` bumps a version counter (exactly like
+`output_config_version`) that the dashboard observes.
 
 **Two patterns the contract relies on:**
 - **Publish-to-bus for cross-module input values.** The owning module publishes:
@@ -127,18 +134,23 @@ reactive signals (`output_config_version`, `selected_output_dir`, `selected_outp
   `session.send_custom_message("aquabc_navigate", {navId})`; ~3 lines added to `nav_script` handle
   it (set the nav input + active link). The custom nav is otherwise untouched.
 
-**Everything else stays private** to its module: `param_*`, `ic_*`, `options_*`, `sim_*`,
-`scenario_*`, `mb_*`, `obs_*`, `csv_cache*`, `file_list_version`, `save_status_msg`.
+**Everything else stays private** to its module: `param_*`, `ic_*`, `options_*`, `sim_config_obj`,
+`scenario_*`, `mb_*`, `obs_*`, `csv_cache*`, `file_list_version`, `save_status_msg`. (A cross-region
+read audit confirmed these stay within their cluster; the sole exception, `sim_config_save_msg`, is
+handled by `sim_config_version` above.)
 
-## 6. Module inventory (16 modules)
+## 6. Module inventory (17 modules)
 
 A module = one cohesive feature. The two fat nav tabs (Model Config, Plots) each host two module
-UIs stacked into their sub-tabs. The last column is the only cross-tab coupling; everything else is
-private.
+UIs stacked into their sub-tabs; `chrome` (17) is the one non-tab module — the app-level help and
+changelog offcanvas renders that belong to no nav panel. The last column is the only cross-tab
+coupling; everything else is private. A handler-by-handler pass confirmed all ~60 handlers map to
+exactly one module (the anonymous file-list effect → `input_files`; `input_txt_variables` →
+`dashboard`; `help_content`/`changelog_content` → `chrome`).
 
 | # | Module `id` | Nav tab | Absorbs (theme) | Shared-state touch |
 |---|---|---|---|---|
-| 1 | `dashboard` | Dashboard | status_info, run_log_mini, dashboard_* mirrors, system_status_compact, run_timer_display, quick_run, copy/goto buttons | reads `run` (logs/is_running/last_run), `exe_list_version`, `output_config_version`; calls `run.stop()`, `navigate()` |
+| 1 | `dashboard` | Dashboard | status_info, run_log_mini, dashboard_* mirrors, system_status_compact, run_timer_display, quick_run, input_txt_variables, copy/goto buttons | reads `run` (logs/is_running/last_run), `exe_list_version`, `output_config_version`, `sim_config_version`; calls `run.stop()`, `navigate()` |
 | 2 | `model_structure` | Model Structure | model_structure_iframe | — |
 | 3 | `model_build` | Model Build | build cmd/preview, compiler_status, executable list/info, on_build, on_rebuild, build_log, refresh/init executables | calls `run.execute_build()`; writes `run.exe_list_version`; `navigate()` |
 | 4 | `input_files` | Input Files | refresh/load/save file, file_info_panel, save_status, map_display | private (`file_list_version`, `save_status_msg`) |
@@ -150,31 +162,42 @@ private.
 | 10 | `observations` | Observations | scan/preview/load obs, comparison, metrics, scatter | reads `selected_output_dir/file` |
 | 11 | `map` | Map | pydeck_map, map_info | — |
 | 12 | `diagnostics` | Diagnostics | *(convert existing pseudo-module → true module)* | reads `selected_output_dir` |
-| 13 | `sim_config` | Model Config ▸ sub-tab | load/save sim config, timestep/output presets, duration/timestep/output info | private (`sim_config_*`) |
+| 13 | `sim_config` | Model Config ▸ sub-tab | load/save sim config, timestep/output presets, duration/timestep/output info | **writes** `sim_config_version` (private `sim_config_obj`) |
 | 14 | `run_control` | Model Config ▸ sub-tab | on_run, on_build_run, run_log, progress, stop, constants_validation, output-config load/save, output-dir select | calls `run.start_run()`/`run.stop()`; reads `exe_list_version`; writes `output_config_version`, `selected_output_dir`; `navigate()` |
 | 15 | `plot` | Plots ▸ sub-area | main_plot, variable-choice updates, input-timeseries, CSV cache | reads `selected_output_dir/file` (private `csv_cache*`) |
 | 16 | `output_browser` | Plots ▸ sub-area | output-dir discovery, file preview/summary, out_preview, plot-file selection | **writes** `selected_output_dir/file` (sole publisher) |
+| 17 | `chrome` | *(none — offcanvas)* | help_content, changelog_content | — |
 
 `output_browser` (16) is the single writer of the selected-output state read by 9, 10, 12, 15 —
-a one-writer/many-reader bus. **9 of 16 modules touch nothing shared**, converting cleanly.
+a one-writer/many-reader bus. **8 of 17 modules touch nothing shared** (2, 4, 5, 6, 7, 8, 11, 17),
+converting cleanly.
+
+> **Open decision (chrome, 17):** `help_content`/`changelog_content` are two static app-level
+> renders. Making them a `chrome` module keeps `app.py`'s `server()` a *pure* assembler (its stated
+> success criterion). The alternative — leaving these two renders in `server()` as documented
+> app-level chrome — avoids a module for two static outputs but softens "pure assembler." The spec
+> assumes the module; flip to app-level if you prefer.
 
 ## 7. Phasing & per-module validation gate
 
 **Contract-first is the key de-risk:** a tab conversion is atomic (all its ids namespace at once),
 but the shared plumbing can be introduced with zero behavior change first, proving it before any id
-moves. ~18 commits total; the app is runnable and shippable at every one.
+moves. ~19 commits total; the app is runnable and shippable at every one.
 
 - **Phase 0 — shared contract, zero namespacing (1 commit).** Add `RunController`, `AppState`,
   `navigate()` + the ~3-line nav-JS message handler; refactor the *still-monolithic* `server()` to
   use them (`_model_process`/`_log_lines`/`_execute_build_process` → `RunController`;
-  `input.output_dir_select`/`input.plot_output_file` → published into `AppState`; goto → `navigate()`).
-  No id changes, DOM byte-identical. Add `test_run_controller.py`.
+  `input.output_dir_select`/`input.plot_output_file` → published into `AppState`; the
+  `output_config_version` and new `sim_config_version` counters wired so `input_txt_variables` reads
+  them from `AppState`; goto → `navigate()`). No id changes, DOM byte-identical. Add
+  `test_run_controller.py`.
 - **Phase 1 — pilot module `parameters` (1 commit).** Self-contained but *has* breaking selectors
   (`#param_category`, `#load_params`), so it exercises the full loop: `@module.ui`/`@module.server`,
   the namespaced-selector test update, and a load/edit/save flow. Establishes the file layout and
   the `nid(module_id, input_id)` test helper.
-- **Phase 2 — remaining leaf modules (7 commits):** `model_structure`, `map`, `model_options`,
-  `initial_conditions`, `input_files`, `scenarios`, `sim_config`. Each touches nothing shared.
+- **Phase 2 — remaining leaf modules (8 commits):** `model_structure`, `map`, `model_options`,
+  `initial_conditions`, `input_files`, `scenarios`, `sim_config`, `chrome`. Each touches nothing
+  shared except `sim_config` (which only *writes* `sim_config_version`).
 - **Phase 3 — output-selection cluster (5 commits):** `output_browser` first (sole publisher), then
   readers `plot`, `mass_balance`, `observations`, `diagnostics` (which also converts to true-module).
 - **Phase 4 — run/build cluster, last because most coupled (3 commits):** `model_build`,
@@ -202,11 +225,12 @@ Playwright + Selenium green; (4) boot smoke via the `run`/`verify` skill. Any re
 
 ## 9. Success criteria (end state)
 
-- `app.py` is a thin assembler: `server()` = construct `state` + 16 `x_server(...)` calls; file
+- `app.py` is a thin assembler: `server()` = construct `state` + 17 `x_server(...)` calls; file
   drops from ~5,600 to a few hundred lines.
-- 16 cohesive `@module.ui`/`@module.server` modules; `diagnostics` converted.
-- Cross-tab shared surface is exactly the 5-field `AppState` (the `RunController` plus 4 reactive
-  signals); **no `input.X` crosses a module boundary** except via `AppState`.
+- 17 cohesive `@module.ui`/`@module.server` modules; `diagnostics` converted.
+- Cross-tab shared surface is exactly the 6-field `AppState` (the `RunController` plus 5 reactive
+  signals); **no `input.X` (nor private `reactive.Value`) crosses a module boundary** except via
+  `AppState`.
 - `RunController` unit-tested; per-module tests where logic warrants; all integration tests green
   with namespaced selectors; full suite green; app visually verified.
 
@@ -221,7 +245,7 @@ nav-level tests are unaffected (nav stays global).
 
 ## 11. Conventions
 
-- **File layout:** new tab modules live in a `shiny_app/modules/` subpackage (16 files would clutter
+- **File layout:** new modules live in a `shiny_app/modules/` subpackage (17 files would clutter
   the ~24-file flat dir); import fallback becomes `from shiny_app.modules.parameters import …` /
   `from modules.parameters import …`. `RunController` and `AppState` both live in
   `shiny_app/app_state.py`.
@@ -231,7 +255,7 @@ nav-level tests are unaffected (nav stays global).
 ## 12. Files touched
 
 - **New:** `shiny_app/app_state.py` (`RunController` + `AppState`); `shiny_app/modules/*.py`
-  (16 module files); `tests/python/test_run_controller.py` + per-module tests as warranted.
+  (17 module files); `tests/python/test_run_controller.py` + per-module tests as warranted.
 - **Modified (incrementally):** `shiny_app/app.py` (shrinks to assembler); `ui_scripts.py`
   (nav-JS `aquabc_navigate` handler); `shiny_app/diagnostics.py` (pseudo → true module);
   the ~10 broken integration-test selectors; `CHANGELOG.md`, `TODO_IMPLEMENTATION_PLAN.md`.
