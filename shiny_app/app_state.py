@@ -10,9 +10,9 @@ import select
 import subprocess
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Optional
 
 try:
     from shiny_app import compiler_env, output_data
@@ -204,3 +204,16 @@ class RunController:
         finally:
             self.process = None
             self.running = False
+
+
+@dataclass
+class AppState:
+    """Cross-tab reactive signal bundle. Reactive fields hold reactive.Value
+    in server(); one RunController carries the run/build session."""
+    run: RunController
+    navigate: Callable[[str], None]
+    selected_output_dir: object          # reactive.Value(str)   — published by output_browser
+    selected_output_file: object         # reactive.Value(str)   — published by output_browser
+    selected_output_format: object       # reactive.Value(str)   — published by output_browser
+    output_config_version: object        # reactive.Value(int)   — output-config save → dashboard
+    sim_config_version: object           # reactive.Value(int)   — sim-config save → dashboard

@@ -174,3 +174,22 @@ def test_start_run_success_path(monkeypatch):
     assert "Model run completed successfully" in joined
     assert rc.process is None      # finally-block cleared it
     assert rc.running is False
+
+
+try:
+    from shiny_app.app_state import AppState
+except ImportError:
+    from app_state import AppState
+
+
+def test_appstate_holds_fields():
+    rc = RunController(root="/tmp")
+    st = AppState(
+        run=rc, navigate=lambda nav_id: None,
+        selected_output_dir="OUTPUTS", selected_output_file="OUTPUT.csv",
+        selected_output_format="text", output_config_version=0, sim_config_version=0,
+    )
+    assert st.run is rc
+    assert callable(st.navigate)
+    assert st.selected_output_dir == "OUTPUTS"
+    assert st.selected_output_format == "text"
