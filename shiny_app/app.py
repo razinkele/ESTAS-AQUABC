@@ -571,7 +571,7 @@ def server(input, output, session):
     @reactive.event(input.btn_copy_dashboard_log)
     async def copy_dashboard_log():
         """Copy dashboard run log to clipboard via client-side JS"""
-        log_content = "".join(_log_lines)
+        log_content = "".join(run.run_log_lines)
         if not log_content:
             log_content = "Log is empty."
         await session.send_custom_message("copy_to_clipboard", log_content)
@@ -581,7 +581,7 @@ def server(input, output, session):
     @reactive.event(input.btn_copy_mini_log)
     async def copy_mini_log():
         """Copy mini run log to clipboard via client-side JS"""
-        log_content = "".join(_log_lines)
+        log_content = "".join(run.run_log_lines)
         if not log_content:
             log_content = "Log is empty."
         await session.send_custom_message("copy_to_clipboard", log_content)
@@ -685,11 +685,7 @@ def server(input, output, session):
         # Poll every 500ms to catch updates from background threads
         reactive.invalidate_later(0.5)
         # Return last 50 lines from shared list
-        return ''.join(_log_lines[-50:])
-
-    # Shared list for thread-safe log updates (lists are thread-safe for append)
-    # Define early so it's available for quick_run
-    _log_lines = ["Ready.\n"]
+        return ''.join(run.run_log_lines[-50:])
 
     # =========================================================================
     # ESTAS_II Command Line Parameter Controls
@@ -1145,32 +1141,32 @@ def server(input, output, session):
                 ui.tags.small("💡 Recommended: Use WCONST_04.txt", class_="text-warning")
             )
 
-    # Quick action handlers (defined early to access _log_lines)
+    # Quick action handlers (defined early to access run.run_log_lines)
     @reactive.effect
     @reactive.event(input.quick_run)
     def handle_quick_run():
         """Quick run action from dashboard"""
         logger.info("User clicked Quick Run from dashboard")
-        _log_lines.clear()
-        _log_lines.append("Starting quick run...\n")
+        run.run_log_lines.clear()
+        run.run_log_lines.append("Starting quick run...\n")
 
         # Validate required input files first
-        _log_lines.append("Validating input files...\n")
+        run.run_log_lines.append("Validating input files...\n")
         is_valid, errors, warnings = validate_required_inputs()
 
         if warnings:
             for w in warnings:
-                _log_lines.append(f"⚠ {w}\n")
+                run.run_log_lines.append(f"⚠ {w}\n")
 
         if not is_valid:
-            _log_lines.append("❌ INPUT VALIDATION FAILED:\n")
+            run.run_log_lines.append("❌ INPUT VALIDATION FAILED:\n")
             for e in errors:
-                _log_lines.append(f"  • {e}\n")
-            _log_lines.append("\nModel run aborted. Please ensure all required input files exist.\n")
+                run.run_log_lines.append(f"  • {e}\n")
+            run.run_log_lines.append("\nModel run aborted. Please ensure all required input files exist.\n")
             logger.error(f"Input validation failed: {errors}")
             return
 
-        _log_lines.append("✓ Input files validated\n")
+        run.run_log_lines.append("✓ Input files validated\n")
 
         try:
             # Capture current widget values (must be done in reactive context)
@@ -1184,26 +1180,26 @@ def server(input, output, session):
 
             exe_path = os.path.join(ROOT, exe_name)
             if not os.path.exists(exe_path):
-                _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
-                _log_lines.append("Please go to Model Build to compile the model first.\n")
+                run.run_log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
+                run.run_log_lines.append("Please go to Model Build to compile the model first.\n")
                 return
 
             # Check Intel library requirements for Intel-compiled executables
             if is_intel_executable(exe_name):
                 setvars_path = get_intel_setvars_path()
                 if setvars_path:
-                    _log_lines.append(f"ℹ️  Intel executable detected. Will source Intel environment.\n")
+                    run.run_log_lines.append(f"ℹ️  Intel executable detected. Will source Intel environment.\n")
                 else:
                     intel_available, intel_path = check_intel_libs_available()
                     if intel_available:
-                        _log_lines.append(f"ℹ️  Intel executable detected. Using runtime libs from:\n")
-                        _log_lines.append(f"   {intel_path}\n")
+                        run.run_log_lines.append(f"ℹ️  Intel executable detected. Using runtime libs from:\n")
+                        run.run_log_lines.append(f"   {intel_path}\n")
                     else:
-                        _log_lines.append("⚠️  WARNING: Intel-compiled executable selected but Intel runtime\n")
-                        _log_lines.append("   libraries (libimf.so) and setvars.sh not found.\n")
-                        _log_lines.append("   The model may fail to start. Consider:\n")
-                        _log_lines.append("   • Installing Intel oneAPI or using a gfortran executable\n")
-                        _log_lines.append("-" * 50 + "\n")
+                        run.run_log_lines.append("⚠️  WARNING: Intel-compiled executable selected but Intel runtime\n")
+                        run.run_log_lines.append("   libraries (libimf.so) and setvars.sh not found.\n")
+                        run.run_log_lines.append("   The model may fail to start. Consider:\n")
+                        run.run_log_lines.append("   • Installing Intel oneAPI or using a gfortran executable\n")
+                        run.run_log_lines.append("-" * 50 + "\n")
 
             # Validate constants file before running
             try:
@@ -1227,28 +1223,28 @@ def server(input, output, session):
             if const_file:
                 is_valid, actual_count, error_msg = validate_constants_file(const_file)
                 if not is_valid:
-                    _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
-                    _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
+                    run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
+                    run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
                     logger.error(f"Constants file validation failed: {error_msg}")
                     return
                 else:
-                    _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+                    run.run_log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
 
             # Show command before starting
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
-            _log_lines.append(f"\nCommand: {cmd_display}\n")
-            _log_lines.append("-" * 40 + "\n")
+            run.run_log_lines.append(f"\nCommand: {cmd_display}\n")
+            run.run_log_lines.append("-" * 40 + "\n")
 
         except Exception as e:
-            _log_lines.append(f"\n❌ Error preparing quick run: {e}\n")
-            _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
+            run.run_log_lines.append(f"\n❌ Error preparing quick run: {e}\n")
+            run.run_log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
             logger.error(f"Error in quick_run setup: {e}\n{traceback.format_exc()}")
             return
 
         def _work():
             start_time = time.time()
             logger.info("Quick Run thread started")
-            _log_lines.append("Starting model execution...\n")
+            run.run_log_lines.append("Starting model execution...\n")
 
             # Filter out empty strings for actual execution
             exec_cmd = [c for c in estas_cmd if c]
@@ -1287,13 +1283,13 @@ def server(input, output, session):
                     if setvars_path:
                         # Use shell command that sources Intel environment first
                         final_cmd, use_shell = build_intel_wrapped_command(exec_cmd)
-                        _log_lines.append(f"ℹ️  Sourcing Intel environment: {setvars_path}\n")
+                        run.run_log_lines.append(f"ℹ️  Sourcing Intel environment: {setvars_path}\n")
                         logger.info(f"Using Intel wrapper with setvars: {setvars_path}")
                     else:
                         # Fall back to LD_LIBRARY_PATH approach
                         run_env = get_run_environment()
                         ld_path = run_env.get("LD_LIBRARY_PATH", "NOT SET")
-                        _log_lines.append(f"LD_LIBRARY_PATH: {ld_path[:200]}...\n")
+                        run.run_log_lines.append(f"LD_LIBRARY_PATH: {ld_path[:200]}...\n")
                         logger.info(f"Starting process with LD_LIBRARY_PATH: {ld_path[:100]}...")
                 else:
                     # For non-Intel executables, use standard environment
@@ -1311,10 +1307,10 @@ def server(input, output, session):
                     shell=use_shell,
                     executable="/bin/bash" if use_shell else None
                 )
-                _model_process[0] = p
-                _model_running[0] = True
-                _last_run_time[0] = datetime.now()
-                _model_progress[0] = ({"elapsed": "00:00", "rows": 0, "size_kb": 0, "status": "running"})
+                run.process = p
+                run.running = True
+                run.last_run_time = datetime.now()
+                run.progress = ({"elapsed": "00:00", "rows": 0, "size_kb": 0, "status": "running"})
 
                 last_progress_update = time.time()
 
@@ -1326,9 +1322,9 @@ def server(input, output, session):
                             if readable:
                                 line = p.stdout.readline()
                                 if line:
-                                    _log_lines.append(line)
-                                    while len(_log_lines) > 1000:
-                                        _log_lines.pop(0)
+                                    run.run_log_lines.append(line)
+                                    while len(run.run_log_lines) > 1000:
+                                        run.run_log_lines.pop(0)
                         except Exception:
                             time.sleep(0.5)
 
@@ -1337,7 +1333,7 @@ def server(input, output, session):
                     if now - last_progress_update >= 1.0:
                         elapsed = now - start_time
                         output_info = get_csv_info()
-                        _model_progress[0] = ({
+                        run.progress = ({
                             "elapsed": format_time(elapsed),
                             "rows": output_info.get("lines", 0),
                             "size_kb": output_info.get("size_kb", 0),
@@ -1349,40 +1345,40 @@ def server(input, output, session):
                 if p.stdout:
                     remaining = p.stdout.read()
                     if remaining:
-                        _log_lines.append(remaining)
+                        run.run_log_lines.append(remaining)
 
                 p.wait()
                 rc = p.returncode
 
                 elapsed = time.time() - start_time
                 output_info = get_csv_info()
-                _log_lines.append("-" * 40 + "\n")
+                run.run_log_lines.append("-" * 40 + "\n")
                 if rc == 0:
-                    _log_lines.append(f"✓ Model run completed successfully!\n")
-                    _model_progress[0] = ({
+                    run.run_log_lines.append(f"✓ Model run completed successfully!\n")
+                    run.progress = ({
                         "elapsed": format_time(elapsed),
                         "rows": output_info.get("lines", 0),
                         "size_kb": output_info.get("size_kb", 0),
                         "status": "completed"
                     })
                 else:
-                    _log_lines.append(f"✗ Model run failed with return code {rc}\n")
-                    _model_progress[0] = ({
+                    run.run_log_lines.append(f"✗ Model run failed with return code {rc}\n")
+                    run.progress = ({
                         "elapsed": format_time(elapsed),
                         "rows": output_info.get("lines", 0),
                         "size_kb": output_info.get("size_kb", 0),
                         "status": "failed"
                     })
-                _log_lines.append(f"Total time: {format_time(elapsed)}\n")
+                run.run_log_lines.append(f"Total time: {format_time(elapsed)}\n")
                 logger.info(f"Quick Run finished: rc={rc}, elapsed={elapsed:.1f}s")
 
             except Exception as e:
-                _log_lines.append(f"\n❌ Error running model: {e}\n")
+                run.run_log_lines.append(f"\n❌ Error running model: {e}\n")
                 logger.error(f"Quick Run error: {e}")
-                _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "error"})
+                run.progress = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "error"})
             finally:
-                _model_process[0] = None
-                _model_running[0] = False
+                run.process = None
+                run.running = False
 
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
 
@@ -3704,10 +3700,10 @@ def server(input, output, session):
             logger.debug(f"Variable choices update deferred: {e}")
 
     # run commands in background and capture logs
-    # Note: _log_lines is defined earlier in server() for quick_run access
+    # Note: run.run_log_lines is defined earlier in server() for quick_run access
 
     def run_command(cmd, cwd=ROOT, env=None):
-        """Run a command and capture output to _log_lines.
+        """Run a command and capture output to run.run_log_lines.
 
         Args:
             cmd: Command list to execute
@@ -3729,24 +3725,24 @@ def server(input, output, session):
             if p.stdout:
                 for line in p.stdout:
                     logger.debug(line.strip())
-                    _log_lines.append(line)
+                    run.run_log_lines.append(line)
                     # Trim if too long
-                    while len(_log_lines) > 500:
-                        _log_lines.pop(0)
+                    while len(run.run_log_lines) > 500:
+                        run.run_log_lines.pop(0)
 
             p.wait()
             return p.returncode
         except Exception as e:
             logger.error(f"Command execution failed: {e}")
-            _log_lines.append(f"Error: {e}\n")
+            run.run_log_lines.append(f"Error: {e}\n")
             return -1
 
     @reactive.effect
     @reactive.event(input.build_run)
     def on_build_run():
         logger.info("User clicked 'Build & Run' button")
-        _log_lines.clear()
-        _log_lines.append("Starting build & run...\n")
+        run.run_log_lines.clear()
+        run.run_log_lines.append("Starting build & run...\n")
 
         # Capture current widget values (must be done in reactive context)
         skip_build = input.cmd_skip_build()
@@ -3761,7 +3757,7 @@ def server(input, output, session):
             "fast": "Fast (aggressive optimizations)"
         }
 
-        _log_lines.append(f"Build type: {build_type_desc.get(build_type, build_type)}\n")
+        run.run_log_lines.append(f"Build type: {build_type_desc.get(build_type, build_type)}\n")
 
         # Validate constants file before running
         const_file = input.cmd_constants_file() or ""
@@ -3775,12 +3771,12 @@ def server(input, output, session):
         if const_file:
             is_valid, actual_count, error_msg = validate_constants_file(const_file)
             if not is_valid:
-                _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
-                _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
+                run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
+                run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
                 logger.error(f"Constants file validation failed: {error_msg}")
                 return
             else:
-                _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+                run.run_log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
 
         def _work():
             start_time = time.time()
@@ -3798,27 +3794,27 @@ def server(input, output, session):
             if not skip_build:
                 # Clean if requested (important when switching build types)
                 if clean_before_build:
-                    _log_lines.append(f"Step {step}/{total_steps}: Cleaning previous build\n")
+                    run.run_log_lines.append(f"Step {step}/{total_steps}: Cleaning previous build\n")
                     run_command(["make", "clean-lib"], cwd=ROOT)
                     step += 1
 
-                _log_lines.append(f"Step {step}/{total_steps}: Running 'make link-data'\n")
+                run.run_log_lines.append(f"Step {step}/{total_steps}: Running 'make link-data'\n")
                 run_command(["make", "link-data"], cwd=ROOT)
                 step += 1
 
-                _log_lines.append(f"Step {step}/{total_steps}: Building library and executable (BUILD_TYPE={build_type})\n")
+                run.run_log_lines.append(f"Step {step}/{total_steps}: Building library and executable (BUILD_TYPE={build_type})\n")
                 rc = run_command(["make", f"BUILD_TYPE={build_type}", "build-estas"], cwd=ROOT)
                 if rc != 0:
-                    _log_lines.append(f"❌ Build failed with return code {rc}\n")
+                    run.run_log_lines.append(f"❌ Build failed with return code {rc}\n")
                     return
                 step += 1
             else:
-                _log_lines.append("Skipping library build (using existing libaquabc.a)\n")
+                run.run_log_lines.append("Skipping library build (using existing libaquabc.a)\n")
 
             # Run ESTAS_II with custom command line parameters
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
-            _log_lines.append(f"Step {step}/{total_steps}: Running ESTAS_II\n")
-            _log_lines.append(f"Command: {cmd_display}\n")
+            run.run_log_lines.append(f"Step {step}/{total_steps}: Running ESTAS_II\n")
+            run.run_log_lines.append(f"Command: {cmd_display}\n")
             
             # Filter out empty strings for actual execution
             exec_cmd = [c for c in estas_cmd if c]
@@ -3827,25 +3823,18 @@ def server(input, output, session):
             elapsed = time.time() - start_time
             final_msg = f"Finished with rc={rc} (total time: {elapsed:.1f}s)\n"
             logger.info(final_msg.strip())
-            _log_lines.append(final_msg)
+            run.run_log_lines.append(final_msg)
 
         threading.Thread(target=_work, daemon=True, name="BuildRunThread").start()
-
-    # Track running model process for progress monitoring
-    # Use lists as mutable containers for thread-safety (can't use reactive values from threads)
-    _model_process = [None]
-    _model_running = [False]
-    _last_run_time = [None]
-    _model_progress = [{"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}]
 
     @reactive.effect
     @reactive.event(input.run)
     def on_run():
         logger.info("User clicked 'Run' button")
-        _log_lines.clear()
-        _log_lines.append("=" * 50 + "\n")
-        _log_lines.append("Starting model run...\n")
-        _log_lines.append("=" * 50 + "\n")
+        run.run_log_lines.clear()
+        run.run_log_lines.append("=" * 50 + "\n")
+        run.run_log_lines.append("Starting model run...\n")
+        run.run_log_lines.append("=" * 50 + "\n")
 
         try:
             # Capture current widget values (must be done in reactive context)
@@ -3859,19 +3848,19 @@ def server(input, output, session):
 
             exe_path = os.path.join(ROOT, exe_name)
             if not os.path.exists(exe_path):
-                _log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
-                _log_lines.append("Please go to Model Build to compile the model first.\n")
+                run.run_log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
+                run.run_log_lines.append("Please go to Model Build to compile the model first.\n")
                 return
 
             # Check if it's a release build (stripped = no debug output)
             exe_info = get_executable_info(exe_name)
             is_release = exe_info.get("stripped", False) or not exe_info.get("has_debug", True)
 
-            _log_lines.append(f"Executable: {exe_name}\n")
+            run.run_log_lines.append(f"Executable: {exe_name}\n")
             if is_release:
-                _log_lines.append("Build type: Release (optimized, minimal console output)\n")
+                run.run_log_lines.append("Build type: Release (optimized, minimal console output)\n")
             else:
-                _log_lines.append("Build type: Debug (with diagnostic output)\n")
+                run.run_log_lines.append("Build type: Debug (with diagnostic output)\n")
 
             # Validate constants file before running
             const_file = input.cmd_constants_file() or ""
@@ -3885,176 +3874,40 @@ def server(input, output, session):
             if const_file:
                 is_valid, actual_count, error_msg = validate_constants_file(const_file)
                 if not is_valid:
-                    _log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
-                    _log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
+                    run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
+                    run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
                     logger.error(f"Constants file validation failed: {error_msg}")
                     return
                 else:
-                    _log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
+                    run.run_log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
 
             # Show command
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
-            _log_lines.append(f"\nCommand: {cmd_display}\n")
-            _log_lines.append("-" * 50 + "\n")
+            run.run_log_lines.append(f"\nCommand: {cmd_display}\n")
+            run.run_log_lines.append("-" * 50 + "\n")
 
             if is_release:
-                _log_lines.append("ℹ️  Release builds produce minimal output.\n")
-                _log_lines.append("    Progress is tracked via OUTPUT.csv file.\n")
-                _log_lines.append("-" * 50 + "\n")
+                run.run_log_lines.append("ℹ️  Release builds produce minimal output.\n")
+                run.run_log_lines.append("    Progress is tracked via OUTPUT.csv file.\n")
+                run.run_log_lines.append("-" * 50 + "\n")
 
         except Exception as e:
-            _log_lines.append(f"\n❌ Error preparing model run: {e}\n")
-            _log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
+            run.run_log_lines.append(f"\n❌ Error preparing model run: {e}\n")
+            run.run_log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
             logger.error(f"Error in on_run setup: {e}\n{traceback.format_exc()}")
             return
 
-        def _work():
-            start_time = time.time()
-            logger.info("Run thread started")
-
-            # Filter out empty strings for actual execution
-            exec_cmd = [c for c in estas_cmd if c]
-
-            try:
-                # For Intel executables, wrap command to source Intel environment
-                use_shell = False
-                final_cmd = exec_cmd
-                run_env = os.environ.copy()  # Start with current environment
-                
-                if is_intel_executable(exe_name):
-                    setvars_path = get_intel_setvars_path()
-                    if setvars_path:
-                        # Use shell command that sources Intel environment first
-                        final_cmd, use_shell = build_intel_wrapped_command(exec_cmd)
-                        _log_lines.append(f"ℹ️  Sourcing Intel environment: {setvars_path}\n")
-                        logger.info(f"Using Intel wrapper with setvars: {setvars_path}")
-                    else:
-                        # Fall back to LD_LIBRARY_PATH approach
-                        run_env = get_run_environment()
-                else:
-                    # For non-Intel executables, use standard environment
-                    run_env = get_run_environment()
-                
-                # Start the model process
-                logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
-                p = subprocess.Popen(
-                    final_cmd,
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1,
-                    env=run_env,
-                    shell=use_shell,
-                    executable="/bin/bash" if use_shell else None
-                )
-                _model_process[0] = p
-                _model_running[0] = True
-                _last_run_time[0] = datetime.now()
-
-                # Progress tracking variables
-                last_update = time.time()
-                spinner = ['|', '/', '-', '\\']
-                spinner_idx = 0
-                last_lines = 0  # Track from start of this run
-
-                # Read output in non-blocking manner with progress updates
-                while p.poll() is None:
-                    # Check for output (with timeout)
-                    if p.stdout:
-                        # Use select for non-blocking read on Unix
-                        try:
-                            readable, _, _ = select.select([p.stdout], [], [], 0.5)
-                            if readable:
-                                line = p.stdout.readline()
-                                if line:
-                                    _log_lines.append(line)
-                                    while len(_log_lines) > 500:
-                                        _log_lines.pop(0)
-                        except Exception:
-                            # Fallback: just sleep
-                            time.sleep(0.5)
-
-                    # Update progress every 2 seconds
-                    now = time.time()
-                    if now - last_update >= 2.0:
-                        elapsed = now - start_time
-                        output_info = output_data.get_output_files_info()
-                        file_count = output_info.get("file_count", 0)
-                        size_kb = output_info.get("size_kb", 0)
-                        out_folder = output_info.get("folder", "OUTPUTS")
-
-                        # Calculate files written since start
-                        new_files = file_count - last_lines if file_count > last_lines else 0
-                        if new_files > 0:
-                            last_lines = file_count
-
-                        # Update progress line (replace last progress line if exists)
-                        spinner_char = spinner[spinner_idx % len(spinner)]
-                        spinner_idx += 1
-
-                        progress_msg = (
-                            f"\r{spinner_char} Running... "
-                            f"Elapsed: {output_data.format_elapsed(elapsed)} | "
-                            f"{out_folder}/: {file_count} files ({size_kb:.1f} KB)\n"
-                        )
-
-                        # Remove old progress line and add new one
-                        if _log_lines and _log_lines[-1].startswith(("\r", "|", "/", "-", "\\")):
-                            _log_lines[-1] = progress_msg
-                        else:
-                            _log_lines.append(progress_msg)
-
-                        last_update = now
-
-                # Read any remaining output
-                if p.stdout:
-                    remaining = p.stdout.read()
-                    if remaining:
-                        _log_lines.append(remaining)
-
-                p.wait()
-                rc = p.returncode
-
-                elapsed = time.time() - start_time
-                _log_lines.append("-" * 50 + "\n")
-
-                # Get final output info
-                final_output_info = output_data.get_output_files_info()
-                final_files = final_output_info.get("file_count", 0)
-                final_out = final_output_info.get("out_files", 0)
-                final_bin = final_output_info.get("bin_files", 0)
-                final_size = final_output_info.get("size_kb", 0)
-                out_folder = final_output_info.get("folder", "OUTPUTS")
-
-                if rc == 0:
-                    _log_lines.append(f"✓ Model run completed successfully!\n")
-                    _log_lines.append(f"  Total time: {output_data.format_elapsed(elapsed)}\n")
-                    _log_lines.append(f"  Output folder: {out_folder}/\n")
-                    _log_lines.append(f"  Files: {final_files} total ({final_out} .out, {final_bin} .bin), {final_size:.1f} KB\n")
-                else:
-                    _log_lines.append(f"✗ Model run failed with return code {rc}\n")
-                    _log_lines.append(f"  Total time: {output_data.format_elapsed(elapsed)}\n")
-
-                _log_lines.append("=" * 50 + "\n")
-                logger.info(f"Model run finished: rc={rc}, elapsed={elapsed:.1f}s")
-
-            except Exception as e:
-                _log_lines.append(f"\n❌ Error running model: {e}\n")
-                logger.error(f"Model run error: {e}")
-
-            finally:
-                _model_process[0] = None
-                _model_running[0] = False
-
-        threading.Thread(target=_work, daemon=True, name="RunThread").start()
+        threading.Thread(
+            target=run.start_run, args=(estas_cmd, exe_name),
+            daemon=True, name="RunThread",
+        ).start()
 
     @render.text
     def run_log():
         # Poll every 500ms to catch updates from background threads
         reactive.invalidate_later(0.5)
         # Read from shared list (thread-safe)
-        return ''.join(_log_lines[-100:])  # Last 100 lines
+        return ''.join(run.run_log_lines[-100:])  # Last 100 lines
 
     # Note: run_log_mini is defined earlier in the server function
 
@@ -4062,7 +3915,7 @@ def server(input, output, session):
     def run_progress_bar():
         """Display progress status bar for model run"""
         reactive.invalidate_later(0.5)
-        progress = _model_progress[0]
+        progress = run.progress
         status = progress.get("status", "idle")
         elapsed = progress.get("elapsed", "")
         rows = progress.get("rows", 0)
@@ -4119,7 +3972,7 @@ def server(input, output, session):
         """Run log for Dashboard panel with scrollable output"""
         reactive.invalidate_later(0.5)
         # Show last 300 lines in the dashboard log
-        log_content = ''.join(_log_lines[-300:])
+        log_content = ''.join(run.run_log_lines[-300:])
 
         # Format the log with proper HTML styling
         return ui.tags.pre(
@@ -4133,7 +3986,7 @@ def server(input, output, session):
     def run_timer_display():
         """Large prominent timer display for dashboard"""
         reactive.invalidate_later(0.5)
-        progress = _model_progress[0]
+        progress = run.progress
         status = progress.get("status", "idle")
         elapsed = progress.get("elapsed", "00:00")
         rows = progress.get("rows", 0)
@@ -4238,7 +4091,7 @@ def server(input, output, session):
 
     @render.text
     def dashboard_status_text():
-        return "Running" if _model_running[0] else "Ready"
+        return "Running" if run.running else "Ready"
 
     @render.text
     def dashboard_exe_text():
@@ -4249,8 +4102,8 @@ def server(input, output, session):
 
     @render.text
     def dashboard_last_run_text():
-        if _last_run_time[0]:
-            return _last_run_time[0].strftime("%Y-%m-%d %H:%M")
+        if run.last_run_time:
+            return run.last_run_time.strftime("%Y-%m-%d %H:%M")
         return "Never"
 
     @render.ui
@@ -4370,7 +4223,7 @@ def server(input, output, session):
     def run_status_indicator():
         """Show running status indicator"""
         reactive.invalidate_later(1.0)
-        is_running = _model_running[0]
+        is_running = run.running
 
         if is_running:
             return ui.div(
@@ -4388,61 +4241,14 @@ def server(input, output, session):
     @reactive.effect
     @reactive.event(input.stop_run)
     def on_stop_run():
-        """Stop the running model"""
         logger.info("User clicked Stop button")
-        process = _model_process[0]
-        if process and process.poll() is None:
-            try:
-                # Try graceful termination first
-                process.terminate()
-                _log_lines.append("\n⚠️ Stop requested - terminating model...\n")
-
-                # Wait a bit for graceful shutdown
-                try:
-                    process.wait(timeout=3)
-                    _log_lines.append("Model terminated gracefully.\n")
-                except subprocess.TimeoutExpired:
-                    # Force kill if not responding
-                    process.kill()
-                    _log_lines.append("Model force killed.\n")
-
-                _model_running[0] = False
-                _model_process[0] = None
-            except Exception as e:
-                _log_lines.append(f"Error stopping model: {e}\n")
-                logger.error(f"Error stopping model: {e}")
-        else:
-            _log_lines.append("No model is currently running.\n")
+        run.stop()
 
     @reactive.effect
     @reactive.event(input.dashboard_stop)
     def on_dashboard_stop():
-        """Stop the running model from dashboard"""
         logger.info("User clicked Dashboard Stop button")
-        process = _model_process[0]
-        if process and process.poll() is None:
-            try:
-                # Try graceful termination first
-                process.terminate()
-                _log_lines.append("\n⚠️ Stop requested - terminating model...\n")
-
-                # Wait a bit for graceful shutdown
-                try:
-                    process.wait(timeout=3)
-                    _log_lines.append("Model terminated gracefully.\n")
-                except subprocess.TimeoutExpired:
-                    # Force kill if not responding
-                    process.kill()
-                    _log_lines.append("Model force killed.\n")
-
-                _model_running[0] = False
-                _model_process[0] = None
-                _model_progress[0] = ({"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"})
-            except Exception as e:
-                _log_lines.append(f"Error stopping model: {e}\n")
-                logger.error(f"Error stopping model: {e}")
-        else:
-            _log_lines.append("No model is currently running.\n")
+        run.stop(reset_progress=True)
 
     @render.table
     def out_preview():
