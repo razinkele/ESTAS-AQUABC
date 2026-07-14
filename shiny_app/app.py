@@ -992,13 +992,13 @@ def server(input, output, session):
     @reactive.event(input.goto_build)
     def navigate_to_build():
         """Navigate to the Model Build panel"""
-        ui.update_radio_buttons("navigation", selected="nav_model_build")
+        state.navigate("nav_model_build")
 
     @reactive.effect
     @reactive.event(input.goto_model_config)
     def navigate_to_model_config():
         """Navigate to the Model Config panel from dashboard"""
-        ui.update_radio_buttons("navigation", selected="nav_model_control")
+        state.navigate("nav_model_control")
 
     @reactive.effect
     @reactive.event(input.btn_build)
