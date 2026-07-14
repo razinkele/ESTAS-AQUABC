@@ -1,7 +1,7 @@
 try:
-    from shiny_app.modules.parameters import parameters_server, parameters_ui  # noqa: F401
+    from shiny_app.modules.parameters import parameters_ui
 except ImportError:
-    from modules.parameters import parameters_server, parameters_ui  # noqa: F401
+    from modules.parameters import parameters_ui
 
 
 def nid(module_id: str, input_id: str) -> str:

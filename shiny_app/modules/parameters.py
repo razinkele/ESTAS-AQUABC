@@ -17,7 +17,7 @@ except ImportError:  # running as a script from inside shiny_app/
     from parameter_parser import PARAMETER_CATEGORIES, ParameterFile
 
 logger = logging.getLogger("AQUABC")
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 
 
@@ -68,7 +68,6 @@ def parameters_server(input, output, session, state):
     # `state` is accepted for the uniform x_server(id, state) convention; the
     # parameters tab is self-contained and uses nothing from it.
     param_file_obj = reactive.Value(None)
-    param_modified = reactive.Value({})  # param_id -> new_value
     param_save_msg = reactive.Value("")
 
     @reactive.effect
@@ -86,7 +85,6 @@ def parameters_server(input, output, session, state):
         pf = ParameterFile(filepath)
         if pf.parse():
             param_file_obj.set(pf)
-            param_modified.set({})
             param_save_msg.set("")
             logger.info(f"Loaded {len(pf.parameters)} parameters")
         else:
