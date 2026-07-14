@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-15
+
+### Changed
+- **`shiny_app/app.py` rearchitecture — Phase 2 (leaf modules)** (TODO 2.1): converted seven more tabs into true namespaced `@module.ui`/`@module.server` Shiny modules under `shiny_app/modules/`, applying the Phase-1 `parameters` pilot template — `model_structure`, `map`, `model_options`, `initial_conditions`, `input_files`, `scenarios`, and `sim_config`. Each `<tab>_ui()` returns the panel *content* (the `panel_conditional` stays in `create_ui()` so `input.navigation` keeps referencing the global nav input); each `<tab>_server(input, output, session, state)` is a verbatim port of the tab's handlers + reactive values; within-tab widget ids namespace to `<tab>-*` (nav ids stay global). Modules are self-contained (stdlib + the existing leaf parsers only, nothing from `app.py`). Observable behavior is **unchanged except the id namespace** — verified by a render-smoke unit test per module (**166 → 173** Python tests), a live websocket boot smoke (all seven tabs render namespaced with zero bare-id leaks, `server()` runs clean), and the Playwright/Selenium integration selectors migrated to `<tab>-*`. Two conversions were non-standard: **`sim_config`** is a partial fat-tab extraction — its `@module.ui` returns a `nav_panel` composed into `panel_model_control`'s `navset_card_tab` while the sibling sub-tabs (Run Model, Output Config) stay inline for Phase 4, and its handlers reach the still-app-level sibling `sim_output_dir` input via `session.root_scope()` (a documented, Phase-4-flagged bridge); **`map`** uses `ipyleaflet` and **`model_structure`** re-derives its diagram `www` path for the deeper `modules/` location. `app.py` drops to ~3,800 lines (from ~5,600 at the start of the rearchitecture). Spec + Phase-2 plan under `docs/superpowers/{specs,plans}/2026-07-14-*shiny-modules*`.
+- **`chrome` decision (spec §6 refinement):** `help_content`/`changelog_content` stay app-level `@render.ui`s in `server()` rather than becoming a module, because their offcanvas container ids (`helpOffcanvas`/`changelogOffcanvas`) are referenced by JS (`getElementById`) and therefore cannot be namespaced. Total planned modules: 16 (not 17).
+
 ## [0.4.1] - 2026-07-14
 
 ### Changed
