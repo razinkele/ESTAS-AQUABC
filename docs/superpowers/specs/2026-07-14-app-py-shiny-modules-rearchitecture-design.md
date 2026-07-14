@@ -224,18 +224,23 @@ cache is genuinely plot-private.)
 but the shared plumbing can be introduced with zero behavior change first, proving it before any id
 moves. ~19 commits total; the app is runnable and shippable at every one.
 
-- **Phase 0 — shared contract, zero namespacing (1 commit).** Add `RunController`, `AppState`,
-  `navigate()` + the ~3-line nav-JS message handler; refactor the *still-monolithic* `server()` to
-  use them: `_model_process`/`_log_lines`/`_execute_build_process` → `RunController`; the `build_config`
+- **Phase 0 — shared contract, zero namespacing (1 commit).** Add `RunController`, `AppState`, and
+  `navigate()`; refactor the *still-monolithic* `server()` to use them:
+  `_model_process`/`_log_lines`/`_execute_build_process` → `RunController`; the `build_config`
   and `command_config` `reactive.Calc`s + `active_executable` registered onto `run`;
   `input.output_dir_select`/`plot_output_file`/`output_format` (and `sim_output_dir`) → published into
   `AppState`; the `output_config_version`/`sim_config_version` counters wired so `input_txt_variables`
-  reads them from `AppState`; goto → `navigate()`. No id changes, DOM byte-identical. This phase
-  proves the *entire* §5.1 audit resolution before any namespacing. Add `test_run_controller.py`.
+  reads them from `AppState`; goto → `navigate()` (wrapping the existing
+  `ui.update_radio_buttons("navigation", …)` — the namespace-independent `send_custom_message` + ~3-line
+  nav-JS handler is added in Phase 1, where namespacing first requires it). No id changes, DOM
+  byte-identical. This phase proves the §5.1 audit resolution before any namespacing. Add
+  `test_run_controller.py`. *(Detailed plan: `docs/superpowers/plans/2026-07-14-shiny-modules-phase0-shared-contract.md`.)*
 - **Phase 1 — pilot module `parameters` (1 commit).** Self-contained but *has* breaking selectors
   (`#param_category`, `#load_params`), so it exercises the full loop: `@module.ui`/`@module.server`,
   the namespaced-selector test update, and a load/edit/save flow. Establishes the file layout and
-  the `nid(module_id, input_id)` test helper.
+  the `nid(module_id, input_id)` test helper. Also upgrades `navigate()` to
+  `session.send_custom_message("aquabc_navigate", …)` + the `nav_script` handler (the first module
+  cannot reach the global `navigation` input by id).
 - **Phase 2 — remaining leaf modules (8 commits):** `model_structure`, `map`, `model_options`,
   `initial_conditions`, `input_files`, `scenarios`, `sim_config`, `chrome`. Each touches nothing
   shared except `sim_config` (which only *writes* `sim_config_version`).
