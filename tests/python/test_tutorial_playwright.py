@@ -262,15 +262,15 @@ class TestStep4Parameters:
         """Parameters page has category selector and load button."""
         goto_app(page, app)
         navigate_to(page, "nav_parameters")
-        expect(page.locator("#param_category")).to_be_visible()
-        expect(page.locator("#param_file")).to_be_visible()
-        expect(page.locator("#load_params")).to_be_visible()
+        expect(page.locator("#parameters-param_category")).to_be_visible()
+        expect(page.locator("#parameters-param_file")).to_be_visible()
+        expect(page.locator("#parameters-load_params")).to_be_visible()
 
     def test_parameter_categories_populated(self, page: Page, app: ShinyAppProc):
         """Category dropdown has all 14 parameter categories."""
         goto_app(page, app)
         navigate_to(page, "nav_parameters")
-        options = page.locator("#param_category option")
+        options = page.locator("#parameters-param_category option")
         count = options.count()
         assert count >= 14, f"Expected 14 parameter categories, got {count}"
 
@@ -278,8 +278,8 @@ class TestStep4Parameters:
         """Loading Diatoms category renders parameter inputs."""
         goto_app(page, app)
         navigate_to(page, "nav_parameters")
-        page.select_option("#param_category", "Diatoms")
-        page.locator("#load_params").click()
+        page.select_option("#parameters-param_category", "Diatoms")
+        page.locator("#parameters-load_params").click()
         page.wait_for_timeout(LONG_WAIT)
         # Category info should show something about Diatoms
         expect(page.locator("body")).to_contain_text("Diatom")
@@ -288,14 +288,14 @@ class TestStep4Parameters:
         """Save All Changes button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_parameters")
-        expect(page.locator("#save_params")).to_be_visible()
+        expect(page.locator("#parameters-save_params")).to_be_visible()
 
     def test_constants_file_selector(self, page: Page, app: ShinyAppProc):
         """Constants file dropdown includes WCONST_04.txt."""
         goto_app(page, app)
         navigate_to(page, "nav_parameters")
         page.wait_for_timeout(ACTION_WAIT)
-        options_text = page.locator("#param_file").inner_text()
+        options_text = page.locator("#parameters-param_file").inner_text()
         assert "WCONST_04" in options_text
 
 

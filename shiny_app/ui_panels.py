@@ -6,13 +6,11 @@ try:
     from shiny_app.ic_parser import STATE_VARIABLE_CATEGORIES
     from shiny_app.input_analysis import get_input_file_categories
     from shiny_app.options_parser import OPTION_CATEGORIES
-    from shiny_app.parameter_parser import PARAMETER_CATEGORIES
     from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 except ImportError:
     from ic_parser import STATE_VARIABLE_CATEGORIES
     from input_analysis import get_input_file_categories
     from options_parser import OPTION_CATEGORIES
-    from parameter_parser import PARAMETER_CATEGORIES
     from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 
 
