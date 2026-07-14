@@ -12,8 +12,6 @@ ARGFREE = {
     "panel_scenarios": ["nav_scenarios", "Scenario Presets", "Load Scenario", "Save Current Configuration"],
     "panel_mass_balance": ["nav_mass_balance", "Mass Balance", "Summary", "Element Details"],
     "panel_observations": ["nav_observations", "Model Validation - Observations", "Comparison Summary", "Variable Details"],
-    "panel_map": ["nav_map", "Map Settings", "Map View", "Map Information"],
-    "panel_model_structure": ["nav_model_structure"],   # 18-line panel — nav marker only
 }
 
 
