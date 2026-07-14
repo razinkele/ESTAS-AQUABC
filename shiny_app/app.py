@@ -222,6 +222,11 @@ try:
 except ImportError:
     import output_data
 
+try:
+    from shiny_app.app_state import RunController, AppState
+except ImportError:
+    from app_state import RunController, AppState
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -541,6 +546,24 @@ def server(input, output, session):
     logger.info(f"Session ID: {session.id if hasattr(session, 'id') else 'N/A'}")
     logger.info("=" * 60)
 
+    # --- Shared per-session state contract (Phase 0) ---
+    # navigate() wraps the proven sync mechanism the goto handlers already use
+    # (ui.update_radio_buttons on the app-level "navigation" input). Phase 1
+    # upgrades it to session.send_custom_message + a nav-JS handler once modules
+    # are namespaced and can no longer reach the global input by id.
+    state = AppState(
+        run=RunController(root=ROOT),
+        navigate=lambda nav_id: ui.update_radio_buttons("navigation", selected=nav_id),
+        selected_output_dir=reactive.Value("OUTPUTS"),
+        selected_output_file=reactive.Value(""),
+        selected_output_format=reactive.Value("text"),
+        output_config_version=reactive.Value(0),
+        sim_config_version=reactive.Value(0),
+    )
+    state.run.exe_list_version = reactive.Value(0)      # triggers executable_list() re-render
+    state.run.active_executable = reactive.Value(None)
+    run = state.run                                     # local alias for brevity
+
     # =================
     # Log Copy Handlers
     # =================
@@ -749,12 +772,6 @@ def server(input, output, session):
     # Model Build Panel - Server Logic
     # =========================================================================
 
-    # Build log storage (separate from run log) - plain list for thread safety
-    _build_log_lines = []
-
-    # Reactive value to trigger executable list refresh
-    _exe_list_version = reactive.Value(0)
-
     def get_available_executables():
         """Scan for available executable files (thin wrapper)."""
         return build_commands.get_available_executables(ROOT)
@@ -825,7 +842,7 @@ def server(input, output, session):
     def executable_list():
         """Display list of available executables with info"""
         # Depend on reactive value to trigger refresh
-        _exe_list_version.get()
+        run.exe_list_version.get()
         executables = get_available_executables()
         if not executables:
             return ui.div(ui.tags.em("No executables found. Build the model first.", class_="text-muted"))
@@ -938,22 +955,22 @@ def server(input, output, session):
     def build_log():
         """Render the build log - polls every 0.5s for updates"""
         reactive.invalidate_later(0.5)
-        if not _build_log_lines:
+        if not run.build_log_lines:
             return "Build log will appear here when you start a build..."
-        return "".join(_build_log_lines[-200:])  # Last 200 lines
+        return "".join(run.build_log_lines[-200:])  # Last 200 lines
 
     @reactive.effect
     @reactive.event(input.btn_clear_build_log)
     def clear_build_log():
         """Clear the build log"""
-        _build_log_lines.clear()
+        run.build_log_lines.clear()
 
     @reactive.effect
     @reactive.event(input.btn_refresh_executables)
     def refresh_executables():
         """Refresh the executable list"""
         # Increment to trigger re-render of executable_list UI
-        _exe_list_version.set(_exe_list_version.get() + 1)
+        run.exe_list_version.set(run.exe_list_version.get() + 1)
         executables = get_available_executables()
         choices = {e: e for e in executables} if executables else {"ESTAS_II": "ESTAS_II"}
         ui.update_select("active_executable", choices=choices)
@@ -987,98 +1004,6 @@ def server(input, output, session):
         """Navigate to the Model Config panel from dashboard"""
         ui.update_radio_buttons("navigation", selected="nav_model_control")
 
-    def _execute_build_process(compiler_path, build_type, exe_name,
-                               clean_first, action_name):
-        """Shared build/rebuild subprocess logic run inside a background thread.
-
-        Parameters
-        ----------
-        compiler_path : str
-            Full path to the Fortran compiler.
-        build_type : str
-            Build configuration (e.g. "release", "debug").
-        exe_name : str
-            Target executable name.
-        clean_first : bool
-            Whether to run ``make clean-lib`` before building.
-        action_name : str
-            Display label used in log messages ("Build" or "Rebuild").
-        """
-        start_time = time.time()
-
-        try:
-            logger.info(f"{action_name} thread started for {exe_name}")
-
-            if clean_first:
-                clean_msg = (
-                    "Cleaning all build artifacts"
-                    if action_name == "Rebuild"
-                    else "Cleaning previous build"
-                )
-                _build_log_lines.append(f"\n=== {clean_msg} ===\n")
-                p = subprocess.Popen(
-                    ["make", "clean-lib"],
-                    cwd=ROOT,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                )
-                for line in p.stdout:
-                    _build_log_lines.append(line)
-                p.wait()
-
-            build_verb = "Rebuilding" if action_name == "Rebuild" else "Building"
-            _build_log_lines.append(
-                f"\n=== {build_verb} library and executable ===\n"
-            )
-
-            cmd = [
-                "make",
-                f"FC={compiler_path}",
-                f"BUILD_TYPE={build_type}",
-                "build-named",
-            ]
-            logger.info(f"Running: {' '.join(cmd)}")
-            p = subprocess.Popen(
-                cmd,
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-            )
-
-            for line in p.stdout:
-                _build_log_lines.append(line)
-                # Trim if too long
-                if len(_build_log_lines) > 500:
-                    del _build_log_lines[:100]
-
-            p.wait()
-            elapsed = time.time() - start_time
-
-            _build_log_lines.append("-" * 50 + "\n")
-            if p.returncode == 0:
-                _build_log_lines.append(
-                    f"\u2713 {action_name} completed successfully!\n"
-                )
-                _build_log_lines.append(f"  Executable: {exe_name}\n")
-                _build_log_lines.append(f"  Time: {elapsed:.1f}s\n")
-            else:
-                _build_log_lines.append(
-                    f"\u2717 {action_name} failed with return code "
-                    f"{p.returncode}\n"
-                )
-            _build_log_lines.append("=" * 50 + "\n")
-
-            logger.info(f"{action_name} thread completed for {exe_name}")
-
-        except Exception as e:
-            logger.error(
-                f"{action_name} thread error: {e}\n{traceback.format_exc()}"
-            )
-            _build_log_lines.append(f"\nError: {e}\n")
-            _build_log_lines.append(traceback.format_exc())
-
     @reactive.effect
     @reactive.event(input.btn_build)
     def on_build():
@@ -1093,8 +1018,8 @@ def server(input, output, session):
         # Find the full path to the compiler
         compiler_path, compiler_version = find_compiler_path(compiler)
         if not compiler_path:
-            _build_log_lines.clear()
-            _build_log_lines.extend([
+            run.build_log_lines.clear()
+            run.build_log_lines.extend([
                 "=" * 50 + "\n",
                 f"ERROR: Compiler '{compiler}' not found!\n",
                 "=" * 50 + "\n",
@@ -1103,8 +1028,8 @@ def server(input, output, session):
             ])
             return
 
-        _build_log_lines.clear()
-        _build_log_lines.extend([
+        run.build_log_lines.clear()
+        run.build_log_lines.extend([
             "=" * 50 + "\n",
             f"Building: {exe_name}\n",
             "=" * 50 + "\n",
@@ -1120,7 +1045,7 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_build():
-            _execute_build_process(
+            run.execute_build(
                 compiler_path=_compiler_path,
                 build_type=_build_type,
                 exe_name=_exe_name,
@@ -1144,8 +1069,8 @@ def server(input, output, session):
         # Find the full path to the compiler
         compiler_path, compiler_version = find_compiler_path(compiler)
         if not compiler_path:
-            _build_log_lines.clear()
-            _build_log_lines.extend([
+            run.build_log_lines.clear()
+            run.build_log_lines.extend([
                 "=" * 50 + "\n",
                 f"ERROR: Compiler '{compiler}' not found!\n",
                 "=" * 50 + "\n",
@@ -1154,8 +1079,8 @@ def server(input, output, session):
             ])
             return
 
-        _build_log_lines.clear()
-        _build_log_lines.extend([
+        run.build_log_lines.clear()
+        run.build_log_lines.extend([
             "=" * 50 + "\n",
             f"Full Rebuild: {exe_name}\n",
             "=" * 50 + "\n",
@@ -1170,7 +1095,7 @@ def server(input, output, session):
         _exe_name = exe_name
 
         def _do_rebuild():
-            _execute_build_process(
+            run.execute_build(
                 compiler_path=_compiler_path,
                 build_type=_build_type,
                 exe_name=_exe_name,
