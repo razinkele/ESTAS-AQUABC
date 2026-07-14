@@ -24,8 +24,7 @@
 
 - **Create** `shiny_app/modules/__init__.py` — empty; makes `modules` a subpackage.
 - **Create** `shiny_app/modules/parameters.py` — `parameters_ui()` + `parameters_server()`. One responsibility: the parameters tab. Self-contained (imports `parameter_parser`, self-computes `INPUTS_DIR`).
-- **Create** `tests/python/nsutil.py` — `nid(module_id, input_id) -> str` namespaced-id helper (used by unit + integration tests).
-- **Create** `tests/python/test_parameters_module.py` — render-smoke test asserting `parameters_ui("parameters")` emits namespaced IDs.
+- **Create** `tests/python/test_parameters_module.py` — render-smoke test asserting `parameters_ui("parameters")` emits namespaced IDs; defines a small inline `nid(module_id, input_id)` helper (no separate module — `tests/python/` is a package, so a bare `from nsutil import` won't resolve).
 - **Modify** `shiny_app/app.py` — import the module; `create_ui()` swaps `panel_parameters()` → `panel_conditional(..., parameters_ui("parameters"))`; `server()` deletes the parameters handlers + reactive values and calls `parameters_server("parameters", state)`; `navigate()` upgraded to async `send_custom_message` and the two goto handlers made async.
 - **Modify** `shiny_app/ui_panels.py` — delete `panel_parameters()`.
 - **Modify** `shiny_app/ui_scripts.py` — add the `aquabc_navigate` custom-message handler to `nav_script`.
@@ -34,33 +33,31 @@
 
 ---
 
-### Task 1: The `parameters` module + `nid()` helper + render-smoke test
+### Task 1: The `parameters` module + render-smoke test (inline `nid`)
 
 **Files:**
 - Create: `shiny_app/modules/__init__.py`, `shiny_app/modules/parameters.py`
-- Create: `tests/python/nsutil.py`, `tests/python/test_parameters_module.py`
+- Create: `tests/python/test_parameters_module.py`
 
 **Interfaces:**
 - Consumes: `parameter_parser` (`ParameterFile`, `PARAMETER_CATEGORIES`); `shiny_app/app_state.py` `AppState` (type only — the server takes `state` but uses nothing from it this tab).
-- Produces: `parameters_ui()` (`@module.ui`; call as `parameters_ui("parameters")` → panel content with `parameters-`-namespaced ids) and `parameters_server()` (`@module.server`; call as `parameters_server("parameters", state)`); `nid(module_id, input_id) -> f"{module_id}-{input_id}"`.
+- Produces: `parameters_ui()` (`@module.ui`; call as `parameters_ui("parameters")` → panel content with `parameters-`-namespaced ids) and `parameters_server()` (`@module.server`; call as `parameters_server("parameters", state)`). (A test-local `nid(module_id, input_id)` helper lives inline in the test file.)
 
-- [ ] **Step 1: Write the `nid` helper + the failing render-smoke test**
+- [ ] **Step 1: Write the failing render-smoke test**
 
-```python
-# tests/python/nsutil.py
-def nid(module_id: str, input_id: str) -> str:
-    """DOM id of a namespaced Shiny-module input/output (Shiny joins with '-')."""
-    return f"{module_id}-{input_id}"
-```
+Note: `tests/python/` is a package (`__init__.py` present), so a bare `from nsutil import nid` does **not** resolve. The `nid` helper is therefore defined **inline** in the test file (the integration selectors below use literal `parameters-*` strings and don't need it). If a shared home is wanted once a second module's tests need it, revisit then.
 
 ```python
 # tests/python/test_parameters_module.py
-from nsutil import nid
-
 try:
     from shiny_app.modules.parameters import parameters_ui, parameters_server
 except ImportError:
     from modules.parameters import parameters_ui, parameters_server
+
+
+def nid(module_id: str, input_id: str) -> str:
+    """DOM id of a namespaced Shiny-module input/output (Shiny joins with '-')."""
+    return f"{module_id}-{input_id}"
 
 
 def test_parameters_ui_namespaces_ids():
@@ -108,9 +105,9 @@ from datetime import datetime
 from shiny import module, reactive, render, ui
 
 try:
-    from shiny_app.parameter_parser import ParameterFile, PARAMETER_CATEGORIES
+    from shiny_app.parameter_parser import PARAMETER_CATEGORIES, ParameterFile
 except ImportError:  # running as a script from inside shiny_app/
-    from parameter_parser import ParameterFile, PARAMETER_CATEGORIES
+    from parameter_parser import PARAMETER_CATEGORIES, ParameterFile
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -286,14 +283,14 @@ def parameters_server(input, output, session, state):
 
 Run: `.venv/bin/python -m pytest tests/python/test_parameters_module.py -v && .venv/bin/python -m pytest tests/python -q`
 Expected: the 2 new tests PASS; full suite still **165 passed** (module not yet wired in — app.py unchanged).
-Run: `~/.local/bin/ruff check shiny_app/modules/ tests/python/nsutil.py tests/python/test_parameters_module.py`
+Run: `~/.local/bin/ruff check shiny_app/modules/ tests/python/test_parameters_module.py`
 Expected: All checks passed.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add shiny_app/modules/ tests/python/nsutil.py tests/python/test_parameters_module.py
-git commit -m "feat(shiny): parameters Shiny module (module.ui/server) + nid test helper"
+git add shiny_app/modules/ tests/python/test_parameters_module.py
+git commit -m "feat(shiny): parameters Shiny module (module.ui/server) + render-smoke test"
 ```
 
 ---
