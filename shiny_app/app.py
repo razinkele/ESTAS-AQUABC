@@ -180,13 +180,13 @@ except ImportError:
 # Import UI content panel fragments (phase-2b create_ui() split)
 try:
     from shiny_app.ui_panels import (
-        panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
+        panel_dashboard, panel_model_build, panel_model_control,
         panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
     )
 except ImportError:
     from ui_panels import (
-        panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
+        panel_dashboard, panel_model_build, panel_model_control,
         panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
     )
@@ -247,6 +247,11 @@ try:
     from shiny_app.modules.initial_conditions import initial_conditions_ui, initial_conditions_server
 except ImportError:
     from modules.initial_conditions import initial_conditions_ui, initial_conditions_server
+
+try:
+    from shiny_app.modules.input_files import input_files_ui, input_files_server
+except ImportError:
+    from modules.input_files import input_files_ui, input_files_server
 
 # Configure logging
 logging.basicConfig(
@@ -520,7 +525,7 @@ def create_ui():
         ui.panel_conditional("input.navigation === 'nav_model_structure'", model_structure_ui("model_structure")),
         panel_model_build(COMPILERS, BUILD_TYPES),
         panel_model_control(),
-        panel_input_files(),
+        ui.panel_conditional("input.navigation === 'nav_input_files'", input_files_ui("input_files")),
         ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters")),
         ui.panel_conditional("input.navigation === 'nav_initial_conditions'", initial_conditions_ui("initial_conditions")),
         ui.panel_conditional("input.navigation === 'nav_model_options'", model_options_ui("model_options")),
@@ -1657,299 +1662,8 @@ def server(input, output, session):
                 ui.tags.pre(str(e), class_="text-muted small")
             )
 
-    # Reactive value to track file list refresh
-    file_list_version = reactive.Value(0)
-
-    # populate file list on start and when refresh button is clicked or category changes
-    @reactive.Effect
-    def _():
-        # Depend on file_list_version and category filter to trigger refresh
-        file_list_version.get()
-        category_filter = input.file_category_filter()
-
-        try:
-            all_files = sorted([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
-
-            # Apply category filter
-            if category_filter and category_filter != "All Categories":
-                filtered_files = []
-                for f in all_files:
-                    if f in INPUT_FILE_CATEGORIES:
-                        if INPUT_FILE_CATEGORIES[f].get("category") == category_filter:
-                            filtered_files.append(f)
-                    else:
-                        # For uncatalogued files, use pattern matching
-                        info = analyze_input_file(os.path.join(INPUTS_DIR, f))
-                        if info.get("category") == category_filter:
-                            filtered_files.append(f)
-                files = filtered_files
-            else:
-                files = all_files
-
-            logger.info(f"Populating file list with {len(files)} files (category: {category_filter})")
-            ui.update_select("file_select", choices=files)
-        except Exception as e:
-            logger.error(f"Error populating file list: {e}")
-
-    # Refresh file list button
-    @reactive.effect
-    @reactive.event(input.refresh_files)
-    def refresh_files():
-        logger.info("User clicked 'Refresh file list' button")
-        file_list_version.set(file_list_version.get() + 1)
-
-    # load selected file contents
-    @reactive.effect
-    @reactive.event(input.file_select)
-    def load_file():
-        f = input.file_select()
-        if not f:
-            logger.debug("load_file called but no file selected")
-            return
-        logger.info(f"Loading file: {f}")
-
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-            with open(path, 'r') as fh:
-                txt = fh.read()
-            logger.info(f"Successfully loaded {f} ({len(txt)} characters)")
-            ui.update_text_area("file_contents", value=txt)
-        except Exception as e:
-            logger.error(f"Error reading file {f}: {e}")
-            ui.update_text_area("file_contents", value=f"Error reading file: {e}")
-
-    # Render file header text
-    @render.text
-    def file_header_text():
-        f = input.file_select()
-        if not f:
-            return "File Contents"
-        return f"File Contents: {f}"
-
-    # Render file info panel - directly depends on file_select for reactivity
-    @render.ui
-    def file_info_panel():
-        f = input.file_select()
-        if not f:
-            return ui.tags.div(
-                ui.tags.p("Select a file to view its information", class_="text-muted"),
-                class_="p-2"
-            )
-
-        # Analyze the file
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-        except ValueError as e:
-            return ui.tags.div(
-                ui.tags.p(f"Invalid file: {e}", class_="text-danger"),
-                class_="p-2"
-            )
-        analysis = analyze_input_file(path)
-
-        # Build info rows
-        rows = []
-
-        # Category badge
-        category = analysis.get("category", "Unknown")
-        category_colors = {
-            "Forcing Timeseries": "primary",
-            "Meteorological Timeseries": "info",
-            "Boundary Forcing Timeseries": "success",
-            "Sediment Forcing Timeseries": "warning",
-            "Settling Velocity Timeseries": "secondary",
-            "Box Geometry": "dark",
-            "Model Constants": "danger",
-            "Model Configuration": "primary",
-            "Initial Conditions": "info",
-            "Transport Configuration": "success",
-            "Sediment Fluxes": "warning",
-            "Sediment Parameters": "secondary",
-            "Process Parameters": "dark",
-            "Boundary Conditions": "success",
-        }
-        badge_color = category_colors.get(category, "secondary")
-        rows.append(
-            ui.tags.div(
-                ui.tags.span(category, class_=f"badge bg-{badge_color}"),
-                class_="mb-2"
-            )
-        )
-
-        # Description
-        desc = analysis.get("description", "")
-        if desc:
-            rows.append(ui.tags.p(ui.tags.strong("Description: "), desc))
-
-        # Structure
-        structure = analysis.get("structure", "")
-        if structure:
-            rows.append(ui.tags.p(ui.tags.strong("Structure: "), structure))
-
-        # Model use
-        model_use = analysis.get("model_use", "")
-        if model_use:
-            rows.append(ui.tags.p(ui.tags.strong("Model Use: "), model_use))
-
-        # File statistics
-        stats = []
-        if analysis.get("num_lines"):
-            stats.append(f"Lines: {analysis['num_lines']:,}")
-        if analysis.get("num_variables"):
-            stats.append(f"Variables: {analysis['num_variables']}")
-        if analysis.get("data_size"):
-            stats.append(f"Data rows: {analysis['data_size']:,}")
-
-        if stats:
-            rows.append(ui.tags.p(ui.tags.strong("Statistics: "), " | ".join(stats)))
-
-        # Timespan (for timeseries files)
-        if analysis.get("is_timeseries") and analysis.get("time_start") is not None:
-            timespan_info = []
-            if analysis.get("date_start") and analysis.get("date_end"):
-                timespan_info.append(f"Date range: {analysis['date_start']} to {analysis['date_end']}")
-            if analysis.get("time_start") is not None and analysis.get("time_end") is not None:
-                duration = analysis['time_end'] - analysis['time_start']
-                years = duration / 365.25
-                timespan_info.append(f"Duration: {duration:.1f} days ({years:.1f} years)")
-                timespan_info.append(f"Julian days: {analysis['time_start']:.1f} - {analysis['time_end']:.1f}")
-
-            if timespan_info:
-                rows.append(
-                    ui.tags.div(
-                        ui.tags.strong("Timespan:"),
-                        ui.tags.ul(
-                            *[ui.tags.li(info) for info in timespan_info],
-                            class_="mb-0 ps-3"
-                        ),
-                        class_="mb-2"
-                    )
-                )
-
-        # Error if any
-        if analysis.get("error"):
-            rows.append(
-                ui.tags.div(
-                    ui.tags.span("Error: ", class_="text-danger"),
-                    analysis["error"],
-                    class_="text-danger"
-                )
-            )
-
-        return ui.tags.div(*rows, class_="p-2")
-
-    # Reactive value for save status feedback
-    save_status_msg = reactive.Value("")
-
-    # save file
-    @reactive.event(input.save_file)
-    def save_file():
-        f = input.file_select()
-        logger.info(f"User clicked 'Save file' button")
-        if not f:
-            logger.warning("Save attempted but no file selected")
-            save_status_msg.set("Error: No file selected")
-            return
-
-        logger.info(f"Saving file: {f}")
-        try:
-            path = safe_resolve(INPUTS_DIR, f)
-        except ValueError as e:
-            save_status_msg.set(f"Error: {e}")
-            return
-        content_length = len(input.file_contents())
-        logger.debug(f"Content length: {content_length} characters")
-
-        # Create timestamped backup
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        bak = f"{path}.{timestamp}.bak"
-        try:
-            if os.path.exists(path):
-                original_size = os.path.getsize(path)
-                shutil.copy(path, bak)
-                logger.info(f"Backup created: {os.path.basename(bak)} (original size: {original_size} bytes)")
-
-            with open(path, 'w') as fh:
-                fh.write(input.file_contents())
-
-            new_size = os.path.getsize(path)
-            save_status_msg.set(f"✓ Saved successfully at {datetime.now().strftime('%H:%M:%S')}")
-            logger.info(f"File saved successfully: {f} (new size: {new_size} bytes)")
-        except Exception as e:
-            error_msg = f"✗ Save failed: {e}"
-            save_status_msg.set(error_msg)
-            logger.error(f"Error saving file {f}: {e}", exc_info=True)
-
-    @render.text
-    def save_status():
-        return save_status_msg.get()
-
-    # ========== MAP DISPLAY TAB (Input Files) ==========
-
-    @render_widget
-    def map_display_plot():
-        """Render the Map Display plotly figure based on selected view."""
-        view = input.map_display_view()
-        box_no = int(input.map_bathymetry_box())
-
-        boxes = box_network.parse_pelagic_inputs(INPUTS_DIR)
-        if view == "Box Network":
-            links = box_network.parse_advective_links(INPUTS_DIR)
-            fig = box_network.build_box_network_figure(boxes, links)
-        elif view == "Bathymetry Profile":
-            layers = box_network.parse_bathymetry(box_no, INPUTS_DIR)
-            fig = box_network.build_bathymetry_figure(box_no, layers, boxes)
-        elif view == "Box Depths Overview":
-            fig = box_network.build_depths_overview(boxes)
-        else:
-            fig = go.Figure()
-            fig.update_layout(height=700, template='plotly_dark')
-        return go.FigureWidget(fig)
-
-    @render.ui
-    def map_display_info():
-        """Contextual info for the current map view."""
-        view = input.map_display_view()
-        if view == "Box Network":
-            return ui.tags.div(
-                ui.tags.small(
-                    ui.tags.strong("Mosaic box model: "),
-                    "Touching boxes share an advective link (water exchange). "
-                    "Dark gaps separate grid-neighbours with no connection. "
-                    "Green dashed lines = non-adjacent links (8 of 42). "
-                    "Border colour: blue = Sand, brown = Mud. "
-                    "Box numbering is an ID, not geographic order "
-                    "(e.g. Box 2 sits at the Nemunas inflow, not near Baltic). "
-                    "Hover for details.",
-                    class_="text-muted"
-                ),
-                class_="mt-2"
-            )
-        elif view == "Bathymetry Profile":
-            box_no = int(input.map_bathymetry_box())
-            boxes = box_network.parse_pelagic_inputs(INPUTS_DIR)
-            info = boxes.get(box_no, {})
-            return ui.tags.div(
-                ui.tags.small(
-                    ui.tags.strong(f"Box {box_no}: "),
-                    f"Depth {info.get('depth', 0):.1f} m, "
-                    f"{info.get('sediment', 'Unknown')} substrate. "
-                    "Horizontal bars show layer area at each elevation.",
-                    class_="text-muted"
-                ),
-                class_="mt-2"
-            )
-        elif view == "Box Depths Overview":
-            return ui.tags.div(
-                ui.tags.small(
-                    ui.tags.strong("Overview: "),
-                    "Bottom elevations for all 25 boxes. "
-                    "Blue = Sand substrate, Brown = Mud. "
-                    "Diamonds = surface water elevation.",
-                    class_="text-muted"
-                ),
-                class_="mt-2"
-            )
-        return ui.tags.div()
+    # Input Files tab is a Shiny module (Phase 2)
+    input_files_server("input_files", state)
 
     # Parameters tab is a Shiny module (Phase 1)
     parameters_server("parameters", state)

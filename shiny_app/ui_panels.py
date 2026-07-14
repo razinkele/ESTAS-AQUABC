@@ -3,10 +3,8 @@ from shiny import ui
 from shinywidgets import output_widget  # third-party — plain import, mirrors app.py:42
 
 try:
-    from shiny_app.input_analysis import get_input_file_categories
     from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 except ImportError:
-    from input_analysis import get_input_file_categories
     from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
 
 
@@ -486,80 +484,6 @@ def panel_model_control():
                 )
             ),
             id="model_control_tabs"
-        )
-    )
-
-
-def panel_input_files():
-    return ui.panel_conditional(
-        "input.navigation === 'nav_input_files'",
-        ui.layout_columns(
-            # Left column: File selection and info
-            ui.card(
-                ui.card_header("File Browser"),
-                ui.layout_columns(
-                    ui.tooltip(
-                        ui.input_select(
-                            "file_category_filter",
-                            "Filter by category:",
-                            choices=["All Categories"] + get_input_file_categories(),
-                            selected="All Categories"
-                        ),
-                        "Filter files by type: Forcing, Constants, Initial Conditions, etc."
-                    ),
-                    ui.tooltip(
-                        ui.input_action_button("refresh_files", "Refresh List", class_="btn-sm btn-secondary mt-4 w-100"),
-                        "Rescan input files directory"
-                    ),
-                    col_widths=[9, 3]
-                ),
-                ui.tooltip(
-                    ui.input_select("file_select", "Select file:", choices=[], size=12),
-                    "Click to preview file contents in the right panel"
-                ),
-                ui.tags.hr(),
-                ui.card(
-                    ui.card_header("File Information"),
-                    ui.output_ui("file_info_panel"),
-                    style="max-height: 350px; overflow-y: auto;"
-                ),
-            ),
-            # Right column: File contents + Map Display tabs
-            ui.navset_tab(
-                ui.nav_panel(
-                    "File Contents",
-                    ui.card(
-                        ui.card_header(ui.output_text("file_header_text")),
-                        ui.input_text_area("file_contents", "File contents:", value="", rows=28, width="100%"),
-                        ui.tags.small("Read-only preview. Edit files in Parameters, Initial Conditions, or Model Config tabs.", class_="text-muted")
-                    ),
-                ),
-                ui.nav_panel(
-                    "Map Display",
-                    ui.card(
-                        ui.card_header("Box Network & Bathymetry"),
-                        ui.layout_columns(
-                            ui.input_select(
-                                "map_display_view",
-                                "View:",
-                                choices=["Box Network", "Bathymetry Profile", "Box Depths Overview"],
-                                selected="Box Network"
-                            ),
-                            ui.input_select(
-                                "map_bathymetry_box",
-                                "Bathymetry box:",
-                                choices={str(i): f"Box {i}" for i in range(1, 26)},
-                                selected="1"
-                            ),
-                            col_widths=[6, 6]
-                        ),
-                        output_widget("map_display_plot", height="1000px"),
-                        ui.output_ui("map_display_info"),
-                    ),
-                ),
-                id="input_files_tabs"
-            ),
-            col_widths=[4, 8]
         )
     )
 

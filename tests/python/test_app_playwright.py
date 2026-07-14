@@ -161,7 +161,7 @@ class TestInputFiles:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_input_files")
-        select = page.locator("#file_select")
+        select = page.locator("#input_files-file_select")
         expect(select).to_be_visible()
         options = select.locator("option")
         count = options.count()
@@ -172,13 +172,13 @@ class TestInputFiles:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_input_files")
-        select = page.locator("#file_select")
+        select = page.locator("#input_files-file_select")
         first_option = select.locator("option").first
         value = first_option.get_attribute("value")
         if value:
             select.select_option(value)
             page.wait_for_timeout(1000)
-            textarea = page.locator("#file_contents")
+            textarea = page.locator("#input_files-file_contents")
             expect(textarea).to_be_visible()
 
     def test_refresh_files_button(self, page: Page, app: ShinyAppProc):
@@ -186,7 +186,7 @@ class TestInputFiles:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_input_files")
-        btn = page.locator("#refresh_files")
+        btn = page.locator("#input_files-refresh_files")
         expect(btn).to_be_visible()
         btn.click()
         page.wait_for_timeout(1000)
@@ -196,7 +196,7 @@ class TestInputFiles:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_input_files")
-        textarea = page.locator("#file_contents")
+        textarea = page.locator("#input_files-file_contents")
         expect(textarea).to_be_visible()
 
 

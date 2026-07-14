@@ -198,14 +198,14 @@ class TestStep3InputFiles:
         """File Browser with category filter and file list is present."""
         goto_app(page, app)
         navigate_to(page, "nav_input_files")
-        expect(page.locator("#file_category_filter")).to_be_visible()
-        expect(page.locator("#file_select")).to_be_visible()
+        expect(page.locator("#input_files-file_category_filter")).to_be_visible()
+        expect(page.locator("#input_files-file_select")).to_be_visible()
 
     def test_file_list_populated(self, page: Page, app: ShinyAppProc):
         """File select dropdown has files from INPUTS/."""
         goto_app(page, app)
         navigate_to(page, "nav_input_files")
-        options = page.locator("#file_select option")
+        options = page.locator("#input_files-file_select option")
         count = options.count()
         assert count > 10, f"Expected many input files, got {count}"
 
@@ -214,7 +214,7 @@ class TestStep3InputFiles:
         goto_app(page, app)
         navigate_to(page, "nav_input_files")
         expect(page.locator("body")).to_contain_text("File Contents")
-        expect(page.locator("#file_contents")).to_be_visible()
+        expect(page.locator("#input_files-file_contents")).to_be_visible()
 
     def test_map_display_tab(self, page: Page, app: ShinyAppProc):
         """Map Display tab exists for box network visualization."""
@@ -233,9 +233,9 @@ class TestStep3InputFiles:
         """Selecting PELAGIC_INPUTS.txt loads content into textarea."""
         goto_app(page, app)
         navigate_to(page, "nav_input_files")
-        page.select_option("#file_select", "PELAGIC_INPUTS.txt")
+        page.select_option("#input_files-file_select", "PELAGIC_INPUTS.txt")
         page.wait_for_timeout(ACTION_WAIT)
-        textarea = page.locator("#file_contents")
+        textarea = page.locator("#input_files-file_contents")
         # The textarea should now have some content
         value = textarea.input_value()
         assert len(value) > 0, "PELAGIC_INPUTS.txt should have content"
@@ -244,10 +244,10 @@ class TestStep3InputFiles:
         """Refresh file list button works without error."""
         goto_app(page, app)
         navigate_to(page, "nav_input_files")
-        page.locator("#refresh_files").click()
+        page.locator("#input_files-refresh_files").click()
         page.wait_for_timeout(ACTION_WAIT)
         # File list should still be populated
-        count = page.locator("#file_select option").count()
+        count = page.locator("#input_files-file_select option").count()
         assert count > 0
 
 

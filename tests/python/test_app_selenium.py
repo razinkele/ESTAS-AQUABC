@@ -154,7 +154,7 @@ class TestFileEditorSelenium:
         time.sleep(3)
         navigate_to(driver, "nav_input_files")
         wait = WebDriverWait(driver, 10)
-        select = wait.until(EC.presence_of_element_located((By.ID, "file_select")))
+        select = wait.until(EC.presence_of_element_located((By.ID, "input_files-file_select")))
         options = select.find_elements(By.TAG_NAME, "option")
         real_options = [o for o in options if o.get_attribute("value")]
         assert len(real_options) > 5, f"Expected many input files, got {len(real_options)}"
@@ -165,7 +165,7 @@ class TestFileEditorSelenium:
         time.sleep(3)
         navigate_to(driver, "nav_input_files")
         wait = WebDriverWait(driver, 10)
-        textarea = wait.until(EC.presence_of_element_located((By.ID, "file_contents")))
+        textarea = wait.until(EC.presence_of_element_located((By.ID, "input_files-file_contents")))
         assert textarea.is_displayed()
 
 
