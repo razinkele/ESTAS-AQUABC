@@ -10,7 +10,7 @@ import select
 import subprocess
 import time
 import traceback
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -211,7 +211,7 @@ class AppState:
     """Cross-tab reactive signal bundle. Reactive fields hold reactive.Value
     in server(); one RunController carries the run/build session."""
     run: RunController
-    navigate: Callable[[str], None]
+    navigate: Callable[[str], Awaitable[None]]
     selected_output_dir: object          # reactive.Value(str)   — published by output_browser
     selected_output_file: object         # reactive.Value(str)   — published by output_browser
     selected_output_format: object       # reactive.Value(str)   — published by output_browser

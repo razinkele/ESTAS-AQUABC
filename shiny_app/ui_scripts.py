@@ -71,7 +71,15 @@ def nav_script():
                 };
             });
         }
-        
+
+        Shiny.addCustomMessageHandler('aquabc_navigate', function(msg) {
+            var navId = msg.navId;
+            Shiny.setInputValue('navigation', navId);
+            document.querySelectorAll('.custom-sidebar .nav-link').forEach(function(el) {
+                el.classList.toggle('active', el.getAttribute('data-nav-id') === navId);
+            });
+        });
+
         // Run on load and after Shiny updates
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initSidebar);

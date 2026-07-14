@@ -551,14 +551,17 @@ def server(input, output, session):
     logger.info(f"Session ID: {session.id if hasattr(session, 'id') else 'N/A'}")
     logger.info("=" * 60)
 
-    # --- Shared per-session state contract (Phase 0) ---
-    # navigate() wraps the proven sync mechanism the goto handlers already use
-    # (ui.update_radio_buttons on the app-level "navigation" input). Phase 1
-    # upgrades it to session.send_custom_message + a nav-JS handler once modules
-    # are namespaced and can no longer reach the global input by id.
+    # --- Shared per-session state contract ---
+    # navigate() sends a client-global custom message handled by nav_script's
+    # aquabc_navigate handler, which sets the "navigation" input and updates
+    # the active-link highlight. This is namespace-independent, so a converted
+    # module can call it without needing to reach the global input by id.
+    async def _navigate(nav_id):
+        await session.send_custom_message("aquabc_navigate", {"navId": nav_id})
+
     state = AppState(
         run=RunController(root=ROOT),
-        navigate=lambda nav_id: ui.update_radio_buttons("navigation", selected=nav_id),
+        navigate=_navigate,
         selected_output_dir=reactive.Value("OUTPUTS"),
         selected_output_file=reactive.Value(""),
         selected_output_format=reactive.Value("text"),
@@ -997,15 +1000,15 @@ def server(input, output, session):
 
     @reactive.effect
     @reactive.event(input.goto_build)
-    def navigate_to_build():
+    async def navigate_to_build():
         """Navigate to the Model Build panel"""
-        state.navigate("nav_model_build")
+        await state.navigate("nav_model_build")
 
     @reactive.effect
     @reactive.event(input.goto_model_config)
-    def navigate_to_model_config():
+    async def navigate_to_model_config():
         """Navigate to the Model Config panel from dashboard"""
-        state.navigate("nav_model_control")
+        await state.navigate("nav_model_control")
 
     def _current_build_config():
         return {
