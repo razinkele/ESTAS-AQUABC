@@ -1,0 +1,239 @@
+# Design: `shiny_app/app.py` — true Shiny-modules rearchitecture
+
+- **Date:** 2026-07-14
+- **Status:** Draft (awaiting user review)
+- **Author:** Arturas Razinkovas-Baziukas (with Claude)
+- **Scope:** `shiny_app/`. Convert the ~5,000-line `server()` closure into 16 cohesive
+  `@module.ui`/`@module.server` Shiny modules behind an explicit shared-state contract, leaving
+  `app.py` a thin assembler. This is the "full Shiny-modules rearchitecture" deferred in §7 of the
+  2026-07-12 phase-1 decomposition design — the largest, highest-risk remaining item.
+
+## 1. Context & motivation
+
+The six prior decomposition phases (v0.3.3–v0.3.8) pulled **non-reactive** helpers out of `app.py`
+(8,616 → ~5,600 lines) into leaf modules. What remains is the reactive core: `server()` is a single
+~5,000-line closure (lines 538–5584) holding **~60 reactive handlers** and **~25 `reactive.Value`
+cells plus 4 thread-shared buffers**, all in one namespace where anything can touch anything. The
+UI is already split (`ui_panels`/`ui_chrome`/`ui_scripts`) but every widget lives in one global id
+space.
+
+The repo already contains **one** "module" — `diagnostics` — but it is a *plain-function
+pseudo-module*: `diagnostics_ui()` takes no `id` and uses manually-prefixed ids (`diag_*`), and
+`diagnostics_server(input, output, session, root_dir)` receives the **global** trio. It is
+effectively the server-only (flat-id) pattern.
+
+## 2. Goal / non-goals
+
+- **Goal:** every feature area leaves `app.py` as a true, namespaced Shiny module
+  (`@module.ui`/`@module.server`); `app.py` becomes a thin assembler; cross-tab coupling becomes an
+  explicit, minimal shared contract instead of ambient closure state.
+- **Non-goals:** changing any user-facing behavior, layout, or flow; rewriting the custom nav;
+  touching any `.f90`; reworking the leaf modules already extracted.
+- **Invariant:** at every commit the app boots, every tab renders, and every flow behaves
+  identically — guarded by the full unit suite + Playwright/Selenium + a per-tab boot smoke.
+
+## 3. Chosen approach and rejected alternatives
+
+**Chosen — Path A, true Shiny modules** (`@module.ui`/`@module.server`, automatic id namespacing),
+including converting `diagnostics` to match. Gives enforced encapsulation (a module *cannot* read
+another module's `input`), textbook-idiomatic Shiny, and collision-proof ids. Cost, accepted:
+within-tab ids namespace (`#param_category` → `#parameters-param_category`), so a handful of
+integration-test selectors and the fat-tab UI wrappers change.
+
+**Rejected — Path B, server-side logical modules** (keep flat ids, extend the `diagnostics`
+pattern). Lower risk and DOM-identical, but leaves encapsulation by-convention only; the user chose
+the idiomatic, enforced-namespacing end state after seeing this trade-off twice.
+
+**Rejected — Path C, hybrid** (B now, module.ui later). Defers the goal without reducing total work.
+
+## 4. Architecture
+
+**`app.py` end state — a thin assembler.** Keeps: imports, the startup-diagnostics block,
+module-level constants (`COMPILERS`, `BUILD_TYPES`, `NAV_CHOICES`, `ROOT`, …), `create_ui()`, and a
+`server()` that does exactly three things — construct the shared state, call each
+`x_server("<id>", state)` once, nothing else. Target: a few hundred lines.
+
+**True modules coexist with the custom nav (load-bearing rule).** The nav is a hidden global
+`input.navigation` text input + custom sidebar links (`data-nav-id`) + `panel_conditional`
+wrappers + `nav_script` JS. **This mechanism stays app-level and un-namespaced.** Each tab module
+supplies only the *content* of its panel via `@module.ui`; the `panel_conditional` wrapper stays in
+`create_ui()`:
+
+```python
+# create_ui() — app level, nav stays global:
+ui.panel_conditional("input.navigation === 'nav_parameters'",
+                     parameters_ui("parameters"))    # module UI, namespaced inside
+```
+
+The JS condition still references the un-namespaced `input.navigation` (works); `data-nav-id` links
+and their tests keep working; only widgets *inside* each panel get the `parameters-` prefix. All
+hard-coded DOM ids in the JS (`custom-sidebar`, `.nav-link`, `navigation`, the offcanvas ids,
+`theme-icon`) are app-level chrome — **namespacing touches no JS** (audited).
+
+**Per-module pattern** (generalizes the converted `diagnostics`):
+- `x_ui(id)` — `@module.ui`, returns panel *content* only (no `panel_conditional`, no nav knowledge).
+- `x_server(id, state)` — `@module.server`, receives its *namespaced* `input/output/session` plus
+  the shared `state`; registers that tab's handlers; owns its tab-local `reactive.Value`s privately.
+
+## 5. Shared-state contract
+
+Namespaced modules cannot reach across tabs, which forces the coupling to be explicit. The cross-tab
+surface shrinks from "~25 values in one closure" to two named objects.
+
+**`RunController` — the run/build engine (plain per-session class, instantiated once in `server()`).**
+The subprocess machinery is imperative + threaded, not reactive, and belongs to no single tab:
+
+```python
+class RunController:
+    def __init__(self):
+        self.process = None                        # was _model_process[0]
+        self.last_run_time = None                  # was _last_run_time[0]
+        self.build_log_lines = []                  # was _build_log_lines (thread-appended)
+        self.run_log_lines = ["Ready.\n"]          # was _log_lines (thread-appended)
+        self.exe_list_version = reactive.Value(0)  # bumped after a successful build
+    def execute_build(self, compiler_path, build_type, exe_name, ...): ...  # was _execute_build_process
+    def start_run(self, ...): ...                  # the on_run subprocess launch
+    def stop(self): ...                            # on_stop_run / on_dashboard_stop body
+    def is_running(self):
+        return self.process is not None and self.process.poll() is None
+```
+
+Threads still append to the plain-list buffers; renders still poll via `invalidate_later(0.5)` —
+behavior verbatim. The only `reactive.Value.set()` (the version bump) already runs in the reactive
+context (a `@reactive.event`), so there is no cross-thread reactive write to preserve. Side benefit:
+build-command assembly and run-state transitions become unit-testable for the first time.
+
+**`AppState` — the shared reactive bundle (dataclass, created in `server()`, passed to every module):**
+
+```python
+@dataclass
+class AppState:
+    run: RunController                      # the engine above
+    output_config_version: reactive.Value   # output-config save → dashboard refresh
+    selected_output_dir: reactive.Value     # published by output_browser, read by plot/mb/obs/diag
+    selected_output_file: reactive.Value    # published by output_browser, read by plot/obs
+    navigate: Callable[[str], None]         # switch the global nav from inside a module
+```
+
+That is the entire cross-tab contract — the 5-field `AppState`: the `RunController` (`run`) plus 4
+reactive signals (`output_config_version`, `selected_output_dir`, `selected_output_file`,
+`navigate`). A module needing nothing shared still takes `state` for uniformity and ignores it.
+
+**Two patterns the contract relies on:**
+- **Publish-to-bus for cross-module input values.** The owning module publishes:
+  `@reactive.effect: state.selected_output_dir.set(input.output_dir_select())`; consumers read
+  `state.selected_output_dir()`. One writer, many readers.
+- **`navigate()` for cross-tab goto buttons.** `state.navigate(nav_id)` calls
+  `session.send_custom_message("aquabc_navigate", {navId})`; ~3 lines added to `nav_script` handle
+  it (set the nav input + active link). The custom nav is otherwise untouched.
+
+**Everything else stays private** to its module: `param_*`, `ic_*`, `options_*`, `sim_*`,
+`scenario_*`, `mb_*`, `obs_*`, `csv_cache*`, `file_list_version`, `save_status_msg`.
+
+## 6. Module inventory (16 modules)
+
+A module = one cohesive feature. The two fat nav tabs (Model Config, Plots) each host two module
+UIs stacked into their sub-tabs. The last column is the only cross-tab coupling; everything else is
+private.
+
+| # | Module `id` | Nav tab | Absorbs (theme) | Shared-state touch |
+|---|---|---|---|---|
+| 1 | `dashboard` | Dashboard | status_info, run_log_mini, dashboard_* mirrors, system_status_compact, run_timer_display, quick_run, copy/goto buttons | reads `run` (logs/is_running/last_run), `exe_list_version`, `output_config_version`; calls `run.stop()`, `navigate()` |
+| 2 | `model_structure` | Model Structure | model_structure_iframe | — |
+| 3 | `model_build` | Model Build | build cmd/preview, compiler_status, executable list/info, on_build, on_rebuild, build_log, refresh/init executables | calls `run.execute_build()`; writes `run.exe_list_version`; `navigate()` |
+| 4 | `input_files` | Input Files | refresh/load/save file, file_info_panel, save_status, map_display | private (`file_list_version`, `save_status_msg`) |
+| 5 | `parameters` | Parameters | load/save params, param_table, category/save info | private (`param_*`) |
+| 6 | `initial_conditions` | Initial Cond. | load/save ICs, ic_table, category/save info | private (`ic_*`) |
+| 7 | `model_options` | Model Options | load/save options, switches, constants | private (`options_*`) |
+| 8 | `scenarios` | Scenarios | manager init, refresh/load/save/delete, status | private (`scenario_*`) |
+| 9 | `mass_balance` | Mass Balance | calculate, summary/details/plot | reads `selected_output_dir` |
+| 10 | `observations` | Observations | scan/preview/load obs, comparison, metrics, scatter | reads `selected_output_dir/file` |
+| 11 | `map` | Map | pydeck_map, map_info | — |
+| 12 | `diagnostics` | Diagnostics | *(convert existing pseudo-module → true module)* | reads `selected_output_dir` |
+| 13 | `sim_config` | Model Config ▸ sub-tab | load/save sim config, timestep/output presets, duration/timestep/output info | private (`sim_config_*`) |
+| 14 | `run_control` | Model Config ▸ sub-tab | on_run, on_build_run, run_log, progress, stop, constants_validation, output-config load/save, output-dir select | calls `run.start_run()`/`run.stop()`; reads `exe_list_version`; writes `output_config_version`, `selected_output_dir`; `navigate()` |
+| 15 | `plot` | Plots ▸ sub-area | main_plot, variable-choice updates, input-timeseries, CSV cache | reads `selected_output_dir/file` (private `csv_cache*`) |
+| 16 | `output_browser` | Plots ▸ sub-area | output-dir discovery, file preview/summary, out_preview, plot-file selection | **writes** `selected_output_dir/file` (sole publisher) |
+
+`output_browser` (16) is the single writer of the selected-output state read by 9, 10, 12, 15 —
+a one-writer/many-reader bus. **9 of 16 modules touch nothing shared**, converting cleanly.
+
+## 7. Phasing & per-module validation gate
+
+**Contract-first is the key de-risk:** a tab conversion is atomic (all its ids namespace at once),
+but the shared plumbing can be introduced with zero behavior change first, proving it before any id
+moves. ~18 commits total; the app is runnable and shippable at every one.
+
+- **Phase 0 — shared contract, zero namespacing (1 commit).** Add `RunController`, `AppState`,
+  `navigate()` + the ~3-line nav-JS message handler; refactor the *still-monolithic* `server()` to
+  use them (`_model_process`/`_log_lines`/`_execute_build_process` → `RunController`;
+  `input.output_dir_select`/`input.plot_output_file` → published into `AppState`; goto → `navigate()`).
+  No id changes, DOM byte-identical. Add `test_run_controller.py`.
+- **Phase 1 — pilot module `parameters` (1 commit).** Self-contained but *has* breaking selectors
+  (`#param_category`, `#load_params`), so it exercises the full loop: `@module.ui`/`@module.server`,
+  the namespaced-selector test update, and a load/edit/save flow. Establishes the file layout and
+  the `nid(module_id, input_id)` test helper.
+- **Phase 2 — remaining leaf modules (7 commits):** `model_structure`, `map`, `model_options`,
+  `initial_conditions`, `input_files`, `scenarios`, `sim_config`. Each touches nothing shared.
+- **Phase 3 — output-selection cluster (5 commits):** `output_browser` first (sole publisher), then
+  readers `plot`, `mass_balance`, `observations`, `diagnostics` (which also converts to true-module).
+- **Phase 4 — run/build cluster, last because most coupled (3 commits):** `model_build`,
+  `run_control`, `dashboard`.
+- **Phase 5 — cleanup (1 commit):** delete the dead `panel_sim_config` placeholder, collapse
+  `server()` to the thin assembler, final full suite + E2E + visual smoke, update docs/memory/CHANGELOG.
+
+**Per-module gate (every conversion commit):** (1) `py_compile` + import succeed; (2) full Python
+suite green (155 + new per-module tests); (3) that tab's selectors updated to namespaced ids,
+Playwright + Selenium green; (4) boot smoke via the `run`/`verify` skill. Any red → stop and fix.
+
+## 8. Risks & mitigations
+
+| Risk | Mitigation |
+|---|---|
+| A handler silently reads another tab's `input.X` → `None`/error once namespaced | **Pre-conversion AST/grep audit per module**: enumerate every `input.X` read, confirm each is own or in `AppState`. Phase 0 lifts the known cross-readers. |
+| A `panel_conditional` on `input.navigation` pulled inside a module → `mod-navigation`, never matches | Wrappers stay in `create_ui()`; module UIs return inner content only (§4). |
+| Output/handler id mismatch on a partial move | Conversion is atomic — UI fragment + all its handlers move together in one commit. |
+| Behavior drift during a "move" | Move verbatim, no logic edits in a conversion commit; E2E + per-tab visual smoke. |
+| Fat-tab `navset_card_tab` split across two module UIs | Outer navset stays in `create_ui()`; each module UI supplies sub-tab content; DOM diffed. |
+| `AppState`/`RunController` constructed at import → shared across sessions | Constructed inside `server()` only; never at module level. |
+| New `modules/` import cycle or script-mode failure | Modules import only stdlib + leaf modules + the shared `app_state` module, never `app.py`; established `try/except ImportError` fallback. |
+| Selenium/Playwright selector drift | Update the ~10 within-tab selectors per-commit with the renaming module; `nid()` helper centralizes; nav-level selectors unaffected. |
+| Background-thread log append vs reactive read | Buffers stay plain lists (atomic append), polled via `invalidate_later(0.5)` — ported verbatim. The one `reactive.Value.set()` is already main-context. |
+
+## 9. Success criteria (end state)
+
+- `app.py` is a thin assembler: `server()` = construct `state` + 16 `x_server(...)` calls; file
+  drops from ~5,600 to a few hundred lines.
+- 16 cohesive `@module.ui`/`@module.server` modules; `diagnostics` converted.
+- Cross-tab shared surface is exactly the 5-field `AppState` (the `RunController` plus 4 reactive
+  signals); **no `input.X` crosses a module boundary** except via `AppState`.
+- `RunController` unit-tested; per-module tests where logic warrants; all integration tests green
+  with namespaced selectors; full suite green; app visually verified.
+
+## 10. Test-migration strategy
+
+Namespaced ids are deterministic (`moduleid-inputid`) and stable, so **rewrite the ~10 broken
+selectors to their namespaced form** (option chosen over `data-testid`, whose stability payoff is
+moot here, and over a module test-harness rethink, which py-shiny does not support well and which
+would trade away E2E coverage). Each selector rewrite lands in the same commit as the module that
+renames it. Optional `nid(module_id, input_id)` helper centralizes the convention. `data-nav-id`
+nav-level tests are unaffected (nav stays global).
+
+## 11. Conventions
+
+- **File layout:** new tab modules live in a `shiny_app/modules/` subpackage (16 files would clutter
+  the ~24-file flat dir); import fallback becomes `from shiny_app.modules.parameters import …` /
+  `from modules.parameters import …`. `RunController` and `AppState` both live in
+  `shiny_app/app_state.py`.
+- **Release cadence:** map phases to a new `v0.4.x` line — Phase 0+pilot → `v0.4.0`, then a release
+  per phase — matching the frequent-small-release rhythm.
+
+## 12. Files touched
+
+- **New:** `shiny_app/app_state.py` (`RunController` + `AppState`); `shiny_app/modules/*.py`
+  (16 module files); `tests/python/test_run_controller.py` + per-module tests as warranted.
+- **Modified (incrementally):** `shiny_app/app.py` (shrinks to assembler); `ui_scripts.py`
+  (nav-JS `aquabc_navigate` handler); `shiny_app/diagnostics.py` (pseudo → true module);
+  the ~10 broken integration-test selectors; `CHANGELOG.md`, `TODO_IMPLEMENTATION_PLAN.md`.
+- **Out of scope:** `create_ui()` layout semantics (only the `panel_conditional` wrappers stay, now
+  wrapping module UIs), any `.f90`, the already-extracted leaf modules.
