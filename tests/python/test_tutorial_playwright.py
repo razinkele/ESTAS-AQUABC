@@ -401,7 +401,7 @@ class TestStep7SimulationConfig:
         """Load Configuration button exists and is clickable."""
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
-        btn = page.locator("#load_sim_config")
+        btn = page.locator("#sim_config-load_sim_config")
         expect(btn).to_be_visible()
         btn.click()
         page.wait_for_timeout(ACTION_WAIT)
@@ -410,20 +410,20 @@ class TestStep7SimulationConfig:
         """Base year, start date, end date inputs are present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
-        expect(page.locator("#sim_base_year")).to_be_visible()
+        expect(page.locator("#sim_config-sim_base_year")).to_be_visible()
 
     def test_time_stepping_inputs(self, page: Page, app: ShinyAppProc):
         """Steps/day and print interval inputs are present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
-        expect(page.locator("#sim_timesteps_per_day")).to_be_visible()
-        expect(page.locator("#sim_print_interval")).to_be_visible()
+        expect(page.locator("#sim_config-sim_timesteps_per_day")).to_be_visible()
+        expect(page.locator("#sim_config-sim_print_interval")).to_be_visible()
 
     def test_model_options_switches(self, page: Page, app: ShinyAppProc):
         """Sediment model switch and resuspension select are present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
-        expect(page.locator("#sim_resuspension")).to_be_visible()
+        expect(page.locator("#sim_config-sim_resuspension")).to_be_visible()
 
     def test_run_model_tab(self, page: Page, app: ShinyAppProc):
         """Run Model tab has executable selector, input file, and run button."""

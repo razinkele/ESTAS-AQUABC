@@ -133,11 +133,11 @@ class TestSimulationConfig:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_control")
-        btn = page.locator("#load_sim_config")
+        btn = page.locator("#sim_config-load_sim_config")
         expect(btn).to_be_visible()
         btn.click()
         page.wait_for_timeout(2000)
-        base_year = page.locator("#sim_base_year")
+        base_year = page.locator("#sim_config-sim_base_year")
         expect(base_year).to_be_visible()
 
     def test_numeric_inputs_present(self, page: Page, app: ShinyAppProc):
@@ -145,7 +145,7 @@ class TestSimulationConfig:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_control")
-        for input_id in ["sim_base_year", "sim_timesteps_per_day", "sim_print_interval"]:
+        for input_id in ["sim_config-sim_base_year", "sim_config-sim_timesteps_per_day", "sim_config-sim_print_interval"]:
             expect(page.locator(f"#{input_id}")).to_be_visible()
 
 

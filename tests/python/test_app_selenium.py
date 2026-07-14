@@ -178,9 +178,9 @@ class TestSimConfigSelenium:
         time.sleep(3)
         navigate_to(driver, "nav_model_control")
         wait = WebDriverWait(driver, 10)
-        load_btn = wait.until(EC.element_to_be_clickable((By.ID, "load_sim_config")))
+        load_btn = wait.until(EC.element_to_be_clickable((By.ID, "sim_config-load_sim_config")))
         load_btn.click()
         time.sleep(3)
-        base_year = driver.find_element(By.ID, "sim_base_year")
+        base_year = driver.find_element(By.ID, "sim_config-sim_base_year")
         value = base_year.get_attribute("value")
         assert value and int(value) >= 1900, f"Base year should be set, got: {value}"

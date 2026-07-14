@@ -3,9 +3,9 @@ from shiny import ui
 from shinywidgets import output_widget  # third-party — plain import, mirrors app.py:42
 
 try:
-    from shiny_app.simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
+    from shiny_app.modules.sim_config import sim_config_ui
 except ImportError:
-    from simulation_config import OUTPUT_INTERVAL_PRESETS, TIME_STEP_PRESETS
+    from modules.sim_config import sim_config_ui
 
 
 def panel_dashboard():
@@ -215,99 +215,8 @@ def panel_model_control():
     return ui.panel_conditional(
         "input.navigation === 'nav_model_control'",
         ui.navset_card_tab(
-            # Tab 1: Simulation Configuration
-            ui.nav_panel(
-                "Simulation Config",
-                ui.tooltip(
-                    ui.input_action_button("load_sim_config", "Load Configuration", class_="btn-secondary mb-3"),
-                    "Load settings from INPUT.txt file"
-                ),
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header("Time Period"),
-                        ui.tooltip(
-                            ui.input_numeric("sim_base_year", "Base Year:", value=1998, min=1900, max=2100),
-                            "Reference year for input forcing data (e.g., meteorology files)"
-                        ),
-                        ui.tooltip(
-                            ui.input_date("sim_start_date", "Start Date:", value="2015-01-01"),
-                            "Simulation start date (converted to day of year)"
-                        ),
-                        ui.tooltip(
-                            ui.input_date("sim_end_date", "End Date:", value="2016-01-01"),
-                            "Simulation end date (converted to day of year)"
-                        ),
-                        ui.output_text("sim_duration_info"),
-                        fill=False
-                    ),
-                    ui.card(
-                        ui.card_header("Time Stepping"),
-                        ui.tooltip(
-                            ui.input_select(
-                                "sim_timestep_preset",
-                                "Time Step:",
-                                choices=list(TIME_STEP_PRESETS.keys()),
-                                selected="6 minutes"
-                            ),
-                            "Preset time step intervals. 6 minutes (240 steps/day) is recommended."
-                        ),
-                        ui.tooltip(
-                            ui.input_numeric("sim_timesteps_per_day", "Steps/Day:", value=240, min=1, max=1440),
-                            "Number of model time steps per day. Higher values = more precision but slower."
-                        ),
-                        ui.output_text("sim_timestep_info"),
-                        fill=False
-                    ),
-                    ui.card(
-                        ui.card_header("Output Interval"),
-                        ui.tooltip(
-                            ui.input_select(
-                                "sim_output_preset",
-                                "Output Frequency:",
-                                choices=list(OUTPUT_INTERVAL_PRESETS.keys()),
-                                selected="Hourly"
-                            ),
-                            "How often to write output. More frequent = larger files."
-                        ),
-                        ui.tooltip(
-                            ui.input_numeric("sim_print_interval", "Print Interval (steps):", value=24, min=1),
-                            "Number of time steps between output writes. 24 steps = hourly at 240 steps/day."
-                        ),
-                        ui.output_text("sim_output_info"),
-                        fill=False
-                    ),
-                    col_widths=[4, 4, 4]
-                ),
-                ui.tags.hr(),
-                ui.layout_columns(
-                    ui.card(
-                        ui.card_header("Model Options"),
-                        ui.tooltip(
-                            ui.input_switch("sim_model_sediments", "Enable Sediment Model", value=False),
-                            "Enable bottom sediment diagenesis model. Increases computation time significantly."
-                        ),
-                        ui.tooltip(
-                            ui.input_select(
-                                "sim_resuspension",
-                                "Resuspension Option:",
-                                choices={"0": "Disabled", "1": "Fully Prescribed", "2": "Semi-Prescribed"},
-                                selected="2"
-                            ),
-                            "0=No resuspension, 1=Fully prescribed rates, 2=Semi-prescribed (recommended)"
-                        ),
-                        fill=False
-                    ),
-                    col_widths=[6, 6]
-                ),
-                ui.layout_columns(
-                    ui.tooltip(
-                        ui.input_action_button("save_sim_config", "Save Configuration", class_="btn-success"),
-                        "Save current settings to INPUT.txt file"
-                    ),
-                    ui.output_text("sim_config_save_status"),
-                    col_widths=[3, 9]
-                )
-            ),
+            # Tab 1: Simulation Configuration (extracted Shiny module — ids namespaced sim_config-*)
+            sim_config_ui("sim_config"),
             # Tab 2: Run Model
             ui.nav_panel(
                 "Run Model",
@@ -485,15 +394,6 @@ def panel_model_control():
             ),
             id="model_control_tabs"
         )
-    )
-
-
-def panel_sim_config():
-    # Simulation Config Panel - now integrated into Model Control
-    # (kept as empty conditional for backward compatibility with any references)
-    return ui.panel_conditional(
-        "input.navigation === 'nav_sim_config_disabled'",
-        ui.tags.div()  # Empty placeholder
     )
 
 

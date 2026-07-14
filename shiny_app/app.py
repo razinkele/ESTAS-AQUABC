@@ -181,13 +181,11 @@ except ImportError:
 try:
     from shiny_app.ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control,
-        panel_sim_config,
         panel_plot, panel_mass_balance, panel_observations,
     )
 except ImportError:
     from ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control,
-        panel_sim_config,
         panel_plot, panel_mass_balance, panel_observations,
     )
 
@@ -257,6 +255,11 @@ try:
     from shiny_app.modules.scenarios import scenarios_ui, scenarios_server
 except ImportError:
     from modules.scenarios import scenarios_ui, scenarios_server
+
+try:
+    from shiny_app.modules.sim_config import sim_config_server
+except ImportError:
+    from modules.sim_config import sim_config_server
 
 # Configure logging
 logging.basicConfig(
@@ -534,7 +537,6 @@ def create_ui():
         ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters")),
         ui.panel_conditional("input.navigation === 'nav_initial_conditions'", initial_conditions_ui("initial_conditions")),
         ui.panel_conditional("input.navigation === 'nav_model_options'", model_options_ui("model_options")),
-        panel_sim_config(),
         ui.panel_conditional("input.navigation === 'nav_scenarios'", scenarios_ui("scenarios")),
         panel_plot(MIN_SMOOTH_WINDOW),
         panel_mass_balance(),
@@ -1679,247 +1681,10 @@ def server(input, output, session):
     # Model Options tab is a Shiny module (Phase 2)
     model_options_server("model_options", state)
 
-    # ========== SIMULATION CONFIGURATION ==========
-    # Reactive values for simulation config
-    sim_config_obj = reactive.Value(None)
-    sim_config_save_msg = reactive.Value("")
-
-    # Path to INPUT.txt (in ROOT, not INPUTS)
+    # ========== SIMULATION CONFIGURATION (extracted to modules/sim_config.py) ==========
+    # Path to INPUT.txt (in ROOT, not INPUTS) — still used by init_output_dirs() below
     INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")
-
-    @reactive.effect
-    @reactive.event(input.load_sim_config)
-    def load_simulation_config_file():
-        """Load INPUT.txt simulation configuration"""
-        if not os.path.exists(INPUT_TXT_PATH):
-            logger.error(f"INPUT.txt not found: {INPUT_TXT_PATH}")
-            ui.notification_show("INPUT.txt not found", type="error")
-            return
-
-        logger.info(f"Loading simulation config: {INPUT_TXT_PATH}")
-        scf = SimulationConfigFile(INPUT_TXT_PATH)
-        if scf.parse():
-            sim_config_obj.set(scf)
-            sim_config_save_msg.set("")
-
-            # Update UI with loaded values
-            cfg = scf.config
-
-            # Base year
-            ui.update_numeric("sim_base_year", value=cfg.base_year)
-
-            # Calculate dates from days
-            try:
-                start_date = cfg.get_start_date()
-                end_date = cfg.get_end_date()
-                ui.update_date("sim_start_date", value=start_date)
-                ui.update_date("sim_end_date", value=end_date)
-            except Exception as e:
-                logger.warning(f"Could not calculate dates: {e}")
-
-            # Time stepping
-            ui.update_numeric("sim_timesteps_per_day", value=cfg.time_steps_per_day)
-
-            # Find matching preset for time steps
-            for preset_name, preset_value in TIME_STEP_PRESETS.items():
-                if preset_value == cfg.time_steps_per_day:
-                    ui.update_select("sim_timestep_preset", selected=preset_name)
-                    break
-
-            # Output interval
-            ui.update_numeric("sim_print_interval", value=cfg.print_interval)
-
-            # Find matching preset for output interval
-            output_hours = cfg.get_output_interval_hours()
-            for preset_name, preset_value in OUTPUT_INTERVAL_PRESETS.items():
-                if abs(preset_value - output_hours) < 0.1:
-                    ui.update_select("sim_output_preset", selected=preset_name)
-                    break
-
-            # Model options
-            ui.update_switch("sim_model_sediments", value=bool(cfg.model_sediments))
-            ui.update_select("sim_resuspension", selected=str(cfg.resuspension_option))
-
-            # Output directory
-            if cfg.output_folder:
-                # Remove trailing slash for matching
-                output_folder = cfg.output_folder.rstrip('/')
-                ui.update_select("sim_output_dir", selected=output_folder)
-
-            logger.info(f"Loaded simulation config: {cfg.base_year}, "
-                       f"days {cfg.simulation_start}-{cfg.simulation_end}")
-            ui.notification_show("Configuration loaded", type="message", duration=2)
-        else:
-            logger.error("Failed to parse INPUT.txt")
-            ui.notification_show("Failed to parse INPUT.txt", type="error")
-
-    @reactive.effect
-    @reactive.event(input.sim_timestep_preset)
-    def update_timesteps_from_preset():
-        """Update time steps when preset is selected"""
-        preset = input.sim_timestep_preset()
-        if preset in TIME_STEP_PRESETS:
-            ui.update_numeric("sim_timesteps_per_day", value=TIME_STEP_PRESETS[preset])
-
-    @reactive.effect
-    @reactive.event(input.sim_output_preset)
-    def update_output_from_preset():
-        """Update print interval when output preset is selected"""
-        preset = input.sim_output_preset()
-        steps_per_day = input.sim_timesteps_per_day()
-
-        if preset in OUTPUT_INTERVAL_PRESETS and steps_per_day:
-            hours = OUTPUT_INTERVAL_PRESETS[preset]
-            steps_per_hour = steps_per_day / 24.0
-            print_interval = int(round(hours * steps_per_hour))
-            ui.update_numeric("sim_print_interval", value=print_interval)
-
-    @render.text
-    def sim_duration_info():
-        """Display simulation duration info"""
-        try:
-            start = input.sim_start_date()
-            end = input.sim_end_date()
-            base_year = input.sim_base_year()
-
-            if start and end and base_year:
-                # Convert to date objects if needed
-                if isinstance(start, str):
-                    start = datetime.strptime(start, "%Y-%m-%d").date()
-                if isinstance(end, str):
-                    end = datetime.strptime(end, "%Y-%m-%d").date()
-
-                duration = (end - start).days
-                base_date = date(base_year, 1, 1)
-                start_days = (start - base_date).days
-                end_days = (end - base_date).days
-
-                return (f"Duration: {duration} days\n"
-                        f"Days from base: {start_days:.0f} - {end_days:.0f}")
-        except Exception as e:
-            logger.debug(f"Error calculating duration: {e}")
-        return "Load configuration to see details"
-
-    @render.text
-    def sim_timestep_info():
-        """Display time step info"""
-        try:
-            steps = input.sim_timesteps_per_day()
-            if steps and steps > 0:
-                dt_seconds = 86400 / steps
-                dt_minutes = dt_seconds / 60
-                return f"dt = {dt_minutes:.1f} min ({dt_seconds:.0f} sec)"
-        except Exception as e:
-            logger.debug(f"Error calculating timestep: {e}")
-        return ""
-
-    @render.text
-    def sim_output_info():
-        """Display output interval info"""
-        try:
-            steps = input.sim_timesteps_per_day()
-            interval = input.sim_print_interval()
-            if steps and interval and steps > 0:
-                hours = interval * 24.0 / steps
-                if hours >= 24:
-                    return f"Output every {hours/24:.1f} days"
-                else:
-                    return f"Output every {hours:.1f} hours"
-        except Exception as e:
-            logger.debug(f"Error calculating output info: {e}")
-        return ""
-
-    @reactive.effect
-    @reactive.event(input.save_sim_config)
-    def save_simulation_config():
-        """Save simulation configuration to INPUT.txt"""
-        scf = sim_config_obj.get()
-
-        # If not loaded yet, create new from file
-        if scf is None:
-            if os.path.exists(INPUT_TXT_PATH):
-                scf = SimulationConfigFile(INPUT_TXT_PATH)
-                if not scf.parse():
-                    sim_config_save_msg.set("Error: Could not parse INPUT.txt")
-                    return
-            else:
-                sim_config_save_msg.set("Error: INPUT.txt not found")
-                return
-
-        try:
-            cfg = scf.config
-
-            # Update base year
-            base_year = input.sim_base_year()
-            if base_year:
-                cfg.base_year = int(base_year)
-
-            # Update dates -> convert to days
-            start_date = input.sim_start_date()
-            end_date = input.sim_end_date()
-
-            if start_date:
-                if isinstance(start_date, str):
-                    start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-                cfg.set_start_date(start_date)
-
-            if end_date:
-                if isinstance(end_date, str):
-                    end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-                cfg.set_end_date(end_date)
-
-            # Time stepping
-            steps = input.sim_timesteps_per_day()
-            if steps:
-                cfg.time_steps_per_day = int(steps)
-
-            # Print interval
-            interval = input.sim_print_interval()
-            if interval:
-                cfg.print_interval = int(interval)
-
-            # Model options
-            cfg.model_sediments = 1 if input.sim_model_sediments() else 0
-            resuspension = input.sim_resuspension()
-            if resuspension:
-                cfg.resuspension_option = int(resuspension)
-
-            # Output directory
-            output_dir = input.sim_output_dir()
-            if output_dir:
-                # Ensure trailing slash for folder path
-                cfg.output_folder = output_dir if output_dir.endswith('/') else output_dir + '/'
-
-            # Validate
-            is_valid, errors = cfg.validate()
-            if not is_valid:
-                sim_config_save_msg.set(f"Validation errors: {'; '.join(errors)}")
-                ui.notification_show(f"Validation errors: {'; '.join(errors)}", type="error")
-                return
-
-            # Save
-            save_ok, save_msg = scf.save(backup=True)
-
-            if save_ok:
-                sim_config_save_msg.set(f"Saved at {datetime.now().strftime('%H:%M:%S')}")
-                state.sim_config_version.set(state.sim_config_version.get() + 1)
-                ui.notification_show("Configuration saved successfully", type="message", duration=3)
-                logger.info(f"Saved simulation config: base={cfg.base_year}, "
-                           f"start={cfg.simulation_start}, end={cfg.simulation_end}")
-            else:
-                sim_config_save_msg.set(f"Save failed: {save_msg}")
-                ui.notification_show(f"Save failed: {save_msg}", type="error")
-
-        except Exception as e:
-            logger.error(f"Error saving simulation config: {e}", exc_info=True)
-            sim_config_save_msg.set(f"Error: {e}")
-            ui.notification_show(f"Error: {e}", type="error")
-
-    @render.text
-    def sim_config_save_status():
-        """Display save status"""
-        return sim_config_save_msg.get()
-
+    sim_config_server("sim_config", state)
     # ========== END SIMULATION CONFIGURATION ==========
 
     # ========== OUTPUT CONFIGURATION ==========
