@@ -82,8 +82,8 @@ class TestNavigation:
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_parameters")
         # The load button and category selector should be visible
-        expect(page.locator("#load_params")).to_be_visible()
-        expect(page.locator("#param_category")).to_be_visible()
+        expect(page.locator("#parameters-load_params")).to_be_visible()
+        expect(page.locator("#parameters-param_category")).to_be_visible()
 
     def test_navigate_to_model_config(self, page: Page, app: ShinyAppProc):
         """Navigating to Model Config shows simulation configuration."""
@@ -212,12 +212,12 @@ class TestParameters:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_parameters")
-        btn = page.locator("#load_params")
+        btn = page.locator("#parameters-load_params")
         expect(btn).to_be_visible()
         btn.click()
         page.wait_for_timeout(3000)
         # After loading, the param_table should have parameter inputs
-        expect(page.locator("#param_category")).to_be_visible()
+        expect(page.locator("#parameters-param_category")).to_be_visible()
 
 
 # ---------------------------------------------------------------------------

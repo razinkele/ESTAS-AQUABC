@@ -570,62 +570,6 @@ def panel_input_files():
     )
 
 
-def panel_parameters():
-    return ui.panel_conditional(
-        "input.navigation === 'nav_parameters'",
-        ui.card(
-            ui.card_header("Parameters"),
-            # Top bar: file selector + category dropdown + load
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_select(
-                        "param_file",
-                        "Constants file:",
-                        choices=["WCONST_04.txt"],
-                        selected="WCONST_04.txt"
-                    ),
-                    "WCONST_04.txt contains calibrated model parameters"
-                ),
-                ui.tooltip(
-                    ui.input_select(
-                        "param_category",
-                        "Category:",
-                        choices=list(PARAMETER_CATEGORIES.keys()),
-                        selected="Diatoms"
-                    ),
-                    "Select parameter category: Diatoms, Cyanobacteria, Zooplankton, etc."
-                ),
-                ui.tooltip(
-                    ui.input_action_button("load_params", "Load", class_="btn-secondary mt-4"),
-                    "Load parameters from selected file and category"
-                ),
-                col_widths=[3, 7, 2]
-            ),
-            ui.tags.hr(),
-            # Category info as a compact inline bar
-            ui.div(
-                ui.output_text("param_category_info"),
-                style="font-size: 0.78rem; padding: 0.4rem 0.75rem; background: rgba(14, 165, 233, 0.04); border-radius: 4px; margin-bottom: 0.75rem; border: 1px solid rgba(14, 165, 233, 0.1);"
-            ),
-            # Full-width parameter table
-            ui.card(
-                ui.card_header("Parameters"),
-                ui.output_ui("param_table"),
-                style="max-height: 550px; overflow-y: auto;"
-            ),
-            # Save bar
-            ui.layout_columns(
-                ui.tooltip(
-                    ui.input_action_button("save_params", "Save All Changes", class_="btn-success"),
-                    "Save modified parameters to file (creates backup)"
-                ),
-                ui.output_text("param_save_status"),
-                col_widths=[3, 9]
-            )
-        )
-    )
-
-
 def panel_initial_conditions():
     return ui.panel_conditional(
         "input.navigation === 'nav_initial_conditions'",

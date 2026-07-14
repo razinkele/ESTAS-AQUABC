@@ -134,8 +134,8 @@ class TestNavigationSelenium:
         time.sleep(3)
         navigate_to(driver, "nav_parameters")
         wait = WebDriverWait(driver, 10)
-        wait.until(EC.presence_of_element_located((By.ID, "load_params")))
-        assert driver.find_element(By.ID, "param_category") is not None
+        wait.until(EC.presence_of_element_located((By.ID, "parameters-load_params")))
+        assert driver.find_element(By.ID, "parameters-param_category") is not None
 
     def test_navigate_to_plots(self, driver, shiny_app):
         """Navigate to Plots panel."""

@@ -183,14 +183,14 @@ except ImportError:
 try:
     from shiny_app.ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
-        panel_parameters, panel_initial_conditions, panel_model_options, panel_sim_config,
+        panel_initial_conditions, panel_model_options, panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
         panel_map, panel_model_structure,
     )
 except ImportError:
     from ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control, panel_input_files,
-        panel_parameters, panel_initial_conditions, panel_model_options, panel_sim_config,
+        panel_initial_conditions, panel_model_options, panel_sim_config,
         panel_scenarios, panel_plot, panel_mass_balance, panel_observations,
         panel_map, panel_model_structure,
     )
@@ -226,6 +226,11 @@ try:
     from shiny_app.app_state import RunController, AppState
 except ImportError:
     from app_state import RunController, AppState
+
+try:
+    from shiny_app.modules.parameters import parameters_ui, parameters_server
+except ImportError:
+    from modules.parameters import parameters_ui, parameters_server
 
 # Configure logging
 logging.basicConfig(
@@ -500,7 +505,7 @@ def create_ui():
         panel_model_build(COMPILERS, BUILD_TYPES),
         panel_model_control(),
         panel_input_files(),
-        panel_parameters(),
+        ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters")),
         panel_initial_conditions(),
         panel_model_options(),
         panel_sim_config(),
@@ -1927,163 +1932,8 @@ def server(input, output, session):
             )
         return ui.tags.div()
 
-    # ========== PARAMETER EDITOR ==========
-    # Reactive values for parameter editing
-    param_file_obj = reactive.Value(None)
-    param_modified = reactive.Value({})  # param_id -> new_value
-    param_save_msg = reactive.Value("")
-
-    @reactive.effect
-    @reactive.event(input.load_params, input.param_category, input.param_file)
-    def load_param_file():
-        """Load parameter file when category or file changes"""
-        param_filename = input.param_file()
-        if not param_filename:
-            return
-
-        filepath = os.path.join(INPUTS_DIR, param_filename)
-        if not os.path.exists(filepath):
-            logger.error(f"Parameter file not found: {filepath}")
-            return
-
-        logger.info(f"Loading parameter file: {param_filename}")
-        pf = ParameterFile(filepath)
-        if pf.parse():
-            param_file_obj.set(pf)
-            param_modified.set({})  # Clear modifications when loading
-            param_save_msg.set("")
-            logger.info(f"Loaded {len(pf.parameters)} parameters")
-        else:
-            logger.error("Failed to parse parameter file")
-
-    @render.text
-    def param_category_info():
-        """Display category information"""
-        category = input.param_category()
-        pf = param_file_obj.get()
-
-        if not category:
-            return "Select a category"
-
-        if category in PARAMETER_CATEGORIES:
-            start, end = PARAMETER_CATEGORIES[category]
-            count = end - start + 1
-
-            info = f"Category: {category}\n"
-            info += f"Parameters: {count} ({start}-{end})\n"
-
-            if pf:
-                params = pf.get_parameters_by_category(category)
-                info += f"Loaded: {len(params)} parameters"
-
-            return info
-        return "Unknown category"
-
-    @render.ui
-    def param_table():
-        """Render parameter table for editing"""
-        category = input.param_category()
-        pf = param_file_obj.get()
-
-        if not pf:
-            return ui.tags.div(
-                ui.tags.p("Click 'Load Parameters' to load the parameter file", class_="text-muted"),
-                class_="mt-2"
-            )
-
-        params = pf.get_parameters_by_category(category)
-
-        if not params:
-            return ui.tags.p(f"No parameters found for category: {category}", class_="text-warning")
-
-        # Create input fields for each parameter
-        param_inputs = []
-        for p in params:
-            param_row = ui.tags.div(
-                ui.tags.div(
-                    ui.tags.strong(p.name, class_="small"),
-                    ui.tags.br(),
-                    ui.tags.small(p.comment[:60] + "..." if len(p.comment) > 60 else p.comment, class_="text-muted"),
-                    class_="col-7"
-                ),
-                ui.tags.div(
-                    ui.input_numeric(
-                        f"param_{p.id}",
-                        "",
-                        value=p.value,
-                        width="100%"
-                    ),
-                    class_="col-5"
-                ),
-                class_="row mb-2 align-items-center border-bottom pb-2"
-            )
-            param_inputs.append(param_row)
-
-        return ui.tags.div(
-            ui.tags.div(
-                ui.tags.small(f"Showing {len(params)} parameters", class_="text-muted"),
-                class_="mb-2"
-            ),
-            *param_inputs,
-            style="max-height: 400px; overflow-y: auto;"
-        )
-
-    @reactive.effect
-    @reactive.event(input.save_params)
-    def save_parameters():
-        """Save modified parameters"""
-        pf = param_file_obj.get()
-        if not pf:
-            param_save_msg.set("Error: No parameter file loaded")
-            return
-
-        # Collect all modified values
-        category = input.param_category()
-        params = pf.get_parameters_by_category(category)
-
-        updates = {}
-        for p in params:
-            input_id = f"param_{p.id}"
-            try:
-                new_value = input[input_id]()
-                if new_value is not None and new_value != p.value:
-                    updates[p.id] = float(new_value)
-            except Exception as e:
-                logger.debug(f"Could not get value for {input_id}: {e}")
-
-        if not updates:
-            param_save_msg.set("No changes to save")
-            return
-
-        logger.info(f"Saving {len(updates)} parameter changes")
-
-        # Apply updates
-        success_count, fail_count, messages = pf.update_parameters(updates)
-
-        # Save to file
-        save_ok, save_msg = pf.save(backup=True)
-
-        if save_ok:
-            param_save_msg.set(f"Saved {success_count} changes at {datetime.now().strftime('%H:%M:%S')}")
-            ui.notification_show(
-                f"Successfully saved {success_count} parameter changes",
-                type="message",
-                duration=3
-            )
-        else:
-            param_save_msg.set(f"Save failed: {save_msg}")
-            ui.notification_show(
-                f"Failed to save parameters: {save_msg}",
-                type="error",
-                duration=5
-            )
-
-    @render.text
-    def param_save_status():
-        """Display save status"""
-        return param_save_msg.get()
-
-    # ========== END PARAMETER EDITOR ==========
+    # Parameters tab is a Shiny module (Phase 1)
+    parameters_server("parameters", state)
 
     # ========== INITIAL CONDITIONS EDITOR ==========
     # Reactive values for IC editing
