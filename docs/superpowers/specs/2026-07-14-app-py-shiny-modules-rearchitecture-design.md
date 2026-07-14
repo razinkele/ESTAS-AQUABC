@@ -215,7 +215,15 @@ run_control) and `get_selected_output_file_path` (plot + output_browser). They m
 share one copy. (`build_estas_command` similarly becomes the `run.command_config` reactive; the CSV
 cache is genuinely plot-private.)
 
-> **Decided (chrome, 17): keep it a module.** `help_content`/`changelog_content` become a `chrome`
+> **REVISED at Phase-2 implementation (2026-07-14): `chrome` is NOT a module — help/changelog stay app-level.**
+> Implementation finding: `help_content`/`changelog_content` render into the `helpOffcanvas`/`changelogOffcanvas`
+> offcanvases whose **container ids are referenced by JS** (`ui_scripts.py` `getElementById('helpOffcanvas')`),
+> so those structural ids cannot be namespaced; a `chrome` module would force the app-level `output_ui` to learn
+> the module namespace — awkward wiring for two static, cross-tab-uncoupled renders. So the two `@render.ui`s stay
+> in the thin `server()` (a documented exception to "pure assembler"). **Total modules: 16, not 17.** (Original
+> resolution below, superseded.)
+>
+> ~~**Decided (chrome, 17): keep it a module.**~~ `help_content`/`changelog_content` become a `chrome`
 > module so `app.py`'s `server()` stays a *pure* assembler (its stated success criterion).
 
 ## 7. Phasing & per-module validation gate
