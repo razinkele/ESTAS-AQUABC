@@ -102,7 +102,7 @@ Apply the recipe (id `input_files`). Import `input_analysis`, `file_locators`, `
 
 **Files:** Create `shiny_app/modules/scenarios.py`, `tests/python/test_scenarios_module.py`. Modify `app.py`, `ui_panels.py`.
 
-Apply the recipe (id `scenarios`). Import the `scenarios` leaf module (mind the name clash: the module file is `shiny_app/modules/scenarios.py` importing from `shiny_app/scenarios.py` — use the fully-qualified `try/except` import so there's no self-import/recursion, e.g. `from shiny_app.scenarios import …` / `from scenarios import …`; do NOT use a bare relative import). Port the 8 handlers + 2 reactive values (`scenario_mgr`, `scenario_status_msg`). No integration selectors to migrate.
+Apply the recipe (id `scenarios`). Import the `scenarios` leaf (mind the name clash: `shiny_app/modules/scenarios.py` importing from `shiny_app/scenarios.py`). Use the exact fully-qualified `try/except` import the current `app.py` uses so there's no self-import/recursion: `from shiny_app.scenarios import Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir` / `except ImportError: from scenarios import Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir` (verified names). Port the 8 handlers + 2 reactive values (`scenario_mgr`, `scenario_status_msg`). No integration selectors to migrate.
 
 - [ ] Steps per the recipe. **Named risk:** the module-name collision (`modules/scenarios.py` vs leaf `scenarios.py`) — verify the import resolves to the leaf and `import shiny_app.modules.scenarios` doesn't recurse (this exact hazard was called out in an earlier phase). Add an import-check to the gate: `.venv/bin/python -c "import shiny_app.modules.scenarios"`.
 - [ ] **Commit** — `refactor(shiny): scenarios Shiny module`
@@ -128,19 +128,16 @@ Apply the recipe (id `scenarios`). Import the `scenarios` leaf module (mind the 
 
 ---
 
-### Task 7: `chrome` — decision + resolution
+### Task 7: `chrome` — DECIDED: stays app-level (docs-only)
 
-**Files:** `shiny_app/app.py` (or a small module), possibly `shiny_app/ui_chrome.py`; docs.
+**Decision (user-confirmed): `help_content`/`changelog_content` stay as app-level `@render.ui`s in the thin `server()` — `chrome` is NOT a module.**
 
-**The finding:** `help_content`/`changelog_content` (app.py @1405/@1555) render into the `helpOffcanvas`/`changelogOffcanvas` offcanvases, whose **container ids are referenced by JS** (`ui_scripts.py:108/118` `getElementById('helpOffcanvas')`). Those structural ids must stay un-namespaced. Making `chrome` a true module would namespace `help_content`→`chrome-help_content`, forcing `ui_chrome`'s app-level `output_ui("help_content")` to somehow learn the namespace (it builds the offcanvas at app level) — awkward for two static, cross-tab-uncoupled renders.
+**Why:** they render into the `helpOffcanvas`/`changelogOffcanvas` offcanvases, whose **container ids are referenced by JS** (`ui_scripts.py:108/118` `getElementById('helpOffcanvas')`), so those structural ids must stay un-namespaced. A `chrome` module would namespace `help_content`→`chrome-help_content` and force `ui_chrome`'s app-level `output_ui("help_content")` to learn the module namespace — awkward wiring for two static, cross-tab-uncoupled renders. Total modules: **16** (not 17); the "pure assembler" criterion takes a documented 2-render exception.
 
-**Recommendation (default): keep `help_content`/`changelog_content` as app-level `@render.ui`s in the thin `server()` — do NOT make `chrome` a module.** This reverses the spec §6 "chrome module" resolution based on this implementation finding; the "pure assembler" success criterion takes a documented 2-render exception (total modules 17 → 16). No code change to the renders; just document the decision (update the §6 resolution + memory).
+**Files:** docs only — no code change (the two renders already live in `server()` and stay there).
 
-**Alternative (if a module is still wanted):** `chrome_ui("chrome")` returns only the two namespaced `output_ui` placeholders; `ui_chrome`'s offcanvas divs (keeping their un-namespaced structural ids + JS refs) embed `chrome_ui`'s outputs; `chrome_server("chrome", state)` registers the two renders. More wiring for zero behavioral benefit.
-
-- [ ] **Present the decision to the user** (this reverses a prior §6 choice); default to keep-app-level.
-- [ ] If keep-app-level: update spec §6 + `docs`/memory to record it; no code change. If module: apply the alternative.
-- [ ] **Commit** — `docs: chrome stays app-level (offcanvas ids are JS-referenced) — spec §6 refinement` (or the module impl).
+- [ ] Update the spec §6 chrome resolution (`docs/superpowers/specs/2026-07-14-*rearchitecture-design.md`): record that `chrome` is NOT a module (offcanvas ids are JS-referenced); help/changelog stay app-level. Update `MEMORY.md`/the rearchitecture memory (16 modules).
+- [ ] **Commit** — `docs: chrome stays app-level (offcanvas ids JS-referenced) — spec §6 refinement`
 
 ---
 
@@ -164,7 +161,7 @@ Apply the recipe (id `scenarios`). Import the `scenarios` leaf module (mind the 
 
 **Type/consistency:** every module follows `X_ui()`/`X_server(input, output, session, state)` called as `X_ui("X")`/`X_server("X", state)` (verified in Phase 1). Self-computed `ROOT`/`INPUTS_DIR` per module (consistent with repo convention).
 
-**Open decisions carried to review/user:**
-1. **chrome** (Task 7): keep app-level (recommended) vs a chrome module — reverses spec §6; needs the user's call.
+**Open decisions:**
+1. **chrome** (Task 7): **DECIDED** — stays app-level (offcanvas ids are JS-referenced); docs-only task. 16 modules total.
 2. **sim_config** (Task 6): the fat-tab structural approach is **VERIFIED sound** (empirically at plan time — a module `nav_panel` composes into an app-level navset and namespaces correctly; sibling inline nav_panels stay un-namespaced). The only carried caveat is the render-test method (must `.tagify()`, since nav objects don't `str()`-render) — folded into Task 6.
 3. Shared paths helper: evaluated and **rejected** (self-compute matches repo convention; a modules-only helper wouldn't single-source it). Noted in case the reviewer prefers otherwise.
