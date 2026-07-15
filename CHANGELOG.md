@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-15
+
+### Changed
+- **`shiny_app/app.py` rearchitecture — Phase 5 (final cleanup): the rearchitecture is complete** (TODO 2.1). This closing phase removes the dead weight left after all fifteen tabs became true Shiny modules: (1) the **unread `run.build_config`** `RunController` value — a `reactive.calc` whose only consumer, the "Build & Run" handler, was removed as dead code in Phase 4 (the cross-tab contract is now the four live values `command_config`/`constants_config`/`run_executable_name`/`active_executable` plus `exe_list_version`); (2) the now-empty **`shiny_app/ui_panels.py`** stub (all three panels it once held are modules); and (3) **~70 dead imports** in `app.py` (leaf parsers, stdlib, and viz libraries orphaned as inline handlers moved into modules), after which the `F401` per-file-ignore is dropped (the structural `E402`/`F841`/`B023`/`S602`/`S605` ignores remain). Behavior is **unchanged** — pure removals, verified by `import shiny_app.app` + `create_ui().tagify()` (the test suite does not import `app.py`, so this is the real backstop), the full suite (**178** Python tests), and a boot smoke (all 15 tabs render namespaced with zero bare-id leaks).
+- **End state (spec §9 success criteria met):** `server()` is a thin assembler — per-session `RunController`/`AppState` construction plus the two app-level chrome renders (`help_content`/`changelog_content`) and 15 `x_server("id", state)` calls, nothing else. **`shiny_app/app.py` is 756 lines, down from ~5,600** at the start of the rearchitecture. Fifteen cohesive `@module.ui`/`@module.server` modules (plus the converted `diagnostics`) live in `shiny_app/` behind the `RunController`/`AppState` contract; **no `input.X` crosses a module boundary** except via that contract or the documented `session.root_scope().make_scope("run_control")` bridge. The `v0.4.0`–`v0.4.5` series (Phases 0–5) was executed subagent-driven with per-task and whole-branch reviews, each release CI-verified including the Playwright/Selenium integration tests. Spec + phase plans under `docs/superpowers/{specs,plans}/2026-07-1[45]-*shiny-modules*`.
+
 ## [0.4.4] - 2026-07-15
 
 ### Changed
