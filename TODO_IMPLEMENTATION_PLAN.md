@@ -456,7 +456,7 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 4.4 [P2] Full-model OpenMP hang at high thread counts (NEW — found during 4.2)
 
-**Status:** 🔴 OPEN — discovered 2026-07-15. The full `ESTAS_II` executable **hangs at `OMP_NUM_THREADS=8`** on the default input (1 and 2 threads complete fine). **Pre-existing and independent of the kinetics/CO2SYS parallelization** — the stock model (CO2SYS-change stashed) hangs identically at 8 threads, and the micro-benchmark that exercises the exact kinetics+CO2SYS path does NOT hang. So the fault is in the ESTAS-specific solver/transport path (e.g. `mod_SOLVER.f90`'s separate `!$omp parallel do`, or box-network transport), not the kinetics. **Impact:** caps production `ESTAS_II` at ≤2 threads until fixed; performance work uses the micro-benchmark (`tools/benchmark_openmp.sh`), which is unaffected. **Task:** reproduce with a debug/`-fsanitize=thread` build, isolate the hanging region (likely a missing/incorrect `!$omp` clause or a shared-write race in `mod_SOLVER.f90`), fix, and confirm `ESTAS_II` scales to 8 threads. See `docs/OPENMP_PERFORMANCE.md` §"Full-model OpenMP status".
+**Status:** ✅ COMPLETE 2026-07-15 — **empty-chunk barrier deadlock in the kinetics `!$omp parallel` region** (NOT the solver/transport path as first guessed). Root cause (found via thread-id checkpoint tracing since gdb ptrace was sandbox-blocked): the `chunk = ceil(nkn/nthreads)` split left the last thread with an **empty chunk** (`nkn_local ≤ 0`) whenever `nthreads` didn't evenly divide `nkn` (e.g. nkn=25/8thr → thread 7 gets 0 nodes); that thread skipped the region's collective `!$omp barrier`s → the other threads waited for it forever (active-spin → high CPU, no output). Only bit when `nkn < nthreads` or non-divisible, which is why nkn=1000/8 worked but nkn=25/8 hung; reproduced in the micro-benchmark. Pre-existing (Phase-4 OpenMP work, independent of 4.2 — stock code hung identically). **Fix:** balanced chunk split (`base = nkn/nthreads`, first `mod(nkn,nthreads)` threads get +1 node) + `num_threads(min(nkn, omp_get_max_threads()))` cap → every thread always gets ≥1 node. Applied to both the kinetics and CO2SYS regions. Verified: `ESTAS_II` completes at 8 threads; 0D golden bit-identical; benchmark speedup unchanged (6.4× @ nkn=1000/8); @1-vs-@8 drift ≤1e-6 (output precision). See `docs/OPENMP_PERFORMANCE.md`.
 
 **Effort:** ~4–8 hours (concurrency debugging)
 
@@ -546,7 +546,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 3.1 Compiler matrix (when Intel CI available)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
 - [x] 4.2 CO2SYS parallelization — **Done** (2026-07-15; chunked across threads; nkn=1000/8thr speedup 2.84×→6.55×; see docs/OPENMP_PERFORMANCE.md)
-- [ ] 4.4 Full-model OpenMP hang @≥8 threads (NEW, found during 4.2; pre-existing, in ESTAS solver/transport path)
+- [x] 4.4 Full-model OpenMP hang @≥8 threads — **Done** (2026-07-15; empty-chunk barrier deadlock in the kinetics region; fixed via balanced chunking + thread cap; ESTAS_II now scales to 8 threads)
 - [x] 4.3 Thread affinity documentation — **Done** (2026-07-15; measured negligible on single-socket, see docs/OPENMP_PERFORMANCE.md)
 
 ---

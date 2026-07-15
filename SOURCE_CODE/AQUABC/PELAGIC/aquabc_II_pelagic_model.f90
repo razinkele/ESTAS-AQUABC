@@ -153,6 +153,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! OpenMP thread chunk variables (serial defaults: ns=1, ne=nkn)
     integer :: ns, ne, nkn_local, nthreads, tid, chunk_size
+    integer :: n_omp, rem_omp    ! capped thread count + remainder for balanced chunking (TODO 4.4)
     ! Per-thread private buffers for the OpenMP-chunked CO2SYS call (TODO 4.2)
     integer :: co2_ntps
     real(kind = DBL_PREC), allocatable, dimension(:,:) :: CO2SYS_OUT_LOCAL
@@ -404,17 +405,26 @@ subroutine AQUABC_PELAGIC_KINETICS &
         ! iteration converges to its chunk's slowest element, so chunking gives a
         ! sub-pHTol (<< 1e-4) drift. See docs/OPENMP_PERFORMANCE.md.
         ! -----------------------------------------------------------------
-        !$omp parallel default(shared) &
-        !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, co2_ntps) &
+        n_omp = 1
+        !$ n_omp = min(nkn, omp_get_max_threads())
+        !$omp parallel default(shared) num_threads(n_omp) &
+        !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, rem_omp, co2_ntps) &
         !$omp& private(CO2SYS_OUT_LOCAL, CO2SYS_HEAD_LOCAL)
         nthreads = 1
         tid = 0
         !$ nthreads = omp_get_num_threads()
         !$ tid = omp_get_thread_num()
-        chunk_size = (nkn + nthreads - 1) / nthreads
-        ns = tid * chunk_size + 1
-        ne = min(ns + chunk_size - 1, nkn)
-        nkn_local = ne - ns + 1
+        ! balanced chunk: every thread gets >= 1 node (no idle thread; TODO 4.4)
+        chunk_size = nkn / nthreads
+        rem_omp    = mod(nkn, nthreads)
+        if (tid < rem_omp) then
+            nkn_local = chunk_size + 1
+            ns = tid * nkn_local + 1
+        else
+            nkn_local = chunk_size
+            ns = rem_omp * (chunk_size + 1) + (tid - rem_omp) * chunk_size + 1
+        end if
+        ne = ns + nkn_local - 1
 
         if (nkn_local > 0) then
             co2_ntps = nkn_local
@@ -859,21 +869,33 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ne = nkn
     nkn_local = nkn
 
-    !$omp parallel default(shared) &
-    !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size) &
+    ! Cap the team to at most `nkn` threads so no thread gets an empty chunk. TODO 4.4:
+    ! a thread with an empty chunk (nkn_local<=0, from the old ceil-based split when
+    ! nkn was not a multiple of nthreads) deadlocked the collective barriers below,
+    ! hanging the model whenever nthreads did not evenly divide nkn.
+    n_omp = 1
+    !$ n_omp = min(nkn, omp_get_max_threads())
+    !$omp parallel default(shared) num_threads(n_omp) &
+    !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, rem_omp) &
     !$omp& private(ENV_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK, DOCMIN_CHUNK) &
     !$omp& private(i, k, loss, scale_loss, total_removal, allowed_rate, scale) &
     !$omp& private(allowed_rate_local, old_rate, sum_removals)
 
-    ! Compute per-thread chunk bounds
+    ! Compute per-thread chunk bounds (balanced: every thread gets >= 1 node)
     nthreads = 1
     tid = 0
     !$ nthreads = omp_get_num_threads()
     !$ tid = omp_get_thread_num()
-    chunk_size = (nkn + nthreads - 1) / nthreads
-    ns = tid * chunk_size + 1
-    ne = min(ns + chunk_size - 1, nkn)
-    nkn_local = ne - ns + 1
+    chunk_size = nkn / nthreads
+    rem_omp    = mod(nkn, nthreads)
+    if (tid < rem_omp) then
+        nkn_local = chunk_size + 1
+        ns = tid * nkn_local + 1
+    else
+        nkn_local = chunk_size
+        ns = rem_omp * (chunk_size + 1) + (tid - rem_omp) * chunk_size + 1
+    end if
+    ne = ns + nkn_local - 1
 
     if (nkn_local > 0) then
 
