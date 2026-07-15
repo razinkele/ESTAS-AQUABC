@@ -87,14 +87,14 @@ class TestStep1DashboardOverview:
     def test_quick_run_button(self, page: Page, app: ShinyAppProc):
         """Quick Run button is present on the Dashboard."""
         goto_app(page, app)
-        btn = page.locator("#quick_run")
+        btn = page.locator("#dashboard-quick_run")
         expect(btn).to_be_visible()
         expect(btn).to_contain_text("Quick Run")
 
     def test_stop_button(self, page: Page, app: ShinyAppProc):
         """Stop button is present on the Dashboard."""
         goto_app(page, app)
-        expect(page.locator("#dashboard_stop")).to_be_visible()
+        expect(page.locator("#dashboard-dashboard_stop")).to_be_visible()
 
     def test_system_status_panel(self, page: Page, app: ShinyAppProc):
         """System Status card is rendered with model info."""
@@ -514,7 +514,7 @@ class TestStep8RunSimulation:
 
         # Navigate to Dashboard and click Quick Run
         navigate_to(page, "nav_dashboard")
-        page.locator("#quick_run").click()
+        page.locator("#dashboard-quick_run").click()
 
         # Wait for run to complete — poll the run log for completion
         # 30-day run takes ~2-5 min; we allow up to 10 min
