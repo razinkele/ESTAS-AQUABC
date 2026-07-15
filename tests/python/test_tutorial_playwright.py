@@ -699,16 +699,16 @@ class TestStep11Observations:
         """Scan OBSERVATIONS Directory button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_observations")
-        expect(page.locator("#obs_scan_dir")).to_be_visible()
+        expect(page.locator("#observations-obs_scan_dir")).to_be_visible()
 
     def test_scan_and_list_files(self, page: Page, app: ShinyAppProc):
         """Scanning the OBSERVATIONS directory populates the file list."""
         goto_app(page, app)
         navigate_to(page, "nav_observations")
-        page.locator("#obs_scan_dir").click()
+        page.locator("#observations-obs_scan_dir").click()
         page.wait_for_timeout(LONG_WAIT)
         # After scanning, obs_file_select should have options
-        select = page.locator("#obs_file_select")
+        select = page.locator("#observations-obs_file_select")
         text = select.inner_text()
         assert len(text.strip()) > 0, "Observation file list should be populated after scan"
 
@@ -716,13 +716,13 @@ class TestStep11Observations:
         """Generate Sample Data button is present for testing."""
         goto_app(page, app)
         navigate_to(page, "nav_observations")
-        expect(page.locator("#generate_sample_obs")).to_be_visible()
+        expect(page.locator("#observations-generate_sample_obs")).to_be_visible()
 
     def test_load_file_button(self, page: Page, app: ShinyAppProc):
         """Load Selected File button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_observations")
-        expect(page.locator("#obs_load_file")).to_be_visible()
+        expect(page.locator("#observations-obs_load_file")).to_be_visible()
 
     def test_comparison_sections(self, page: Page, app: ShinyAppProc):
         """Comparison Summary and Variable Details sections exist."""
