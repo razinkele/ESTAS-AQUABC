@@ -1,4 +1,4 @@
-.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint build-docs
+.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint benchmark-openmp build-docs
 
 # =============================================================================
 # Compiler Configuration
@@ -349,6 +349,11 @@ test-python:
 lint:
 	@echo "Running ruff lint..."
 	$(PYTHON) -m ruff check tests/python/ shiny_app/
+
+# OpenMP performance benchmark (TODO 4.1 — see docs/OPENMP_PERFORMANCE.md)
+benchmark-openmp:
+	@echo "Running OpenMP kinetics benchmark (rebuilds the OpenMP release library)..."
+	./tools/benchmark_openmp.sh
 
 # Build PDF reference manuals from Markdown sources
 build-docs:

@@ -426,7 +426,7 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 4.1 [P2] Performance Benchmarking
 
-**Status:** OpenMP parallelization is complete (Phase 4) but not benchmarked.
+**Status:** ✅ COMPLETE 2026-07-15 — benchmarked via a micro-benchmark harness (`tools/benchmark_openmp.sh` + `SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/aquabc_II_pelagic_benchmark.f90`) that reuses the node-agnostic 0D interface to time the real `AQUABC_PELAGIC_KINETICS` `!$omp parallel` region at `OMP_NUM_THREADS=1,2,4,8` × `nkn=100/500/1000` with `omp_get_wtime()`. Results + analysis in **`docs/OPENMP_PERFORMANCE.md`**; run via `make benchmark-openmp`. Headline: speedup grows with `nkn` (negligible at nkn=100, **2.84× at nkn=1000 on 8 threads**), plateaus ~8 threads; an Amdahl fit gives **~26 % serial fraction** at nkn=1000 (the serial CO2SYS call — see 4.2). Recommend enabling OpenMP for `nkn≳500` with 2–4 threads for best efficiency; leave off for the default/CL29 small networks (<1.3×). (Intel i9-10940X, 14C/28T, gfortran 13.3.0.)
 
 **Task:**
 1. Create a benchmark script that times `AQUABC_PELAGIC_KINETICS` with `OMP_NUM_THREADS=1,2,4,8`
@@ -446,11 +446,15 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 **Fix:** Profile first. If CO2SYS takes >10% of kinetics time, parallelize its loop similarly to the main computation block.
 
+**Update 2026-07-15 (from 4.1 benchmark):** now quantitatively justified — the OpenMP benchmark measured a **~26 % serial fraction** at `nkn=1000` (Amdahl fit), which caps OpenMP scaling at ~3.9× regardless of thread count. CO2SYS (`aquabc_II_co2sys.f90`, no `!$omp`, O(`nkn`) serial before the parallel region) is the prime suspect. Parallelizing its per-node loop would lift the ceiling at large `nkn`. See `docs/OPENMP_PERFORMANCE.md`.
+
 **Effort:** ~4 hours (including profiling)
 
 ---
 
 ### 4.3 [P3] OpenMP Thread Affinity Guidance
+
+**Status:** ✅ COMPLETE 2026-07-15 — documented in `docs/OPENMP_PERFORMANCE.md` §"Thread affinity", now with *measured* effect: on the single-socket test machine `OMP_PROC_BIND=close`/`OMP_PLACES=cores` gave **no benefit** (within run-to-run noise, marginally worse — no NUMA to optimize). Settings kept as recommended practice for multi-socket/NUMA hardware, with a note to re-measure on the target deployment machine. (Done alongside 4.1.)
 
 **Task:** Document recommended `OMP_PROC_BIND` and `OMP_PLACES` settings for optimal cache behavior:
 ```bash
@@ -517,7 +521,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [x] 3.6 Pre-commit hooks — **Done** (ruff + file hygiene hooks configured)
 
 ### Sprint 4 — Architecture (1–2 weeks)
-- [ ] 4.1 OpenMP benchmarking
+- [x] 4.1 OpenMP benchmarking — **Done** (2026-07-15; `tools/benchmark_openmp.sh` + `docs/OPENMP_PERFORMANCE.md`; 2.84× @ nkn=1000/8thr, ~26% serial → 4.2)
 - [x] 2.1 Modularize app.py — **DONE** (decomposition 2026-07-12/13 → leaf modules, then the Shiny-modules rearchitecture `v0.4.0`–`v0.4.5`, 2026-07-14/15: `server()` → 15 namespaced `@module` modules behind `RunController`/`AppState`; app.py 8,012 → 786 lines; see §2.1)
 - [ ] 1.6 Decompose mega-subroutine
 - [ ] 5.1 Expand Fortran test coverage
@@ -532,7 +536,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 3.1 Compiler matrix (when Intel CI available)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
 - [ ] 4.2 CO2SYS parallelization
-- [ ] 4.3 Thread affinity documentation
+- [x] 4.3 Thread affinity documentation — **Done** (2026-07-15; measured negligible on single-socket, see docs/OPENMP_PERFORMANCE.md)
 
 ---
 
