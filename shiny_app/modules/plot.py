@@ -9,10 +9,13 @@ id namespaces uniformly to `plot-*` and the output selection stays internal
 (no cross-module bus — the dead Phase-0 `state.selected_output_*` was removed).
 
 Cross-namespace note: `init_output_dirs` also initialises `sim_output_dir`,
-a widget that lives in the sibling (still un-namespaced) "Output Config" tab.
-That single update is routed through `session.root_scope()` (the Phase-2
-sim_config pattern) so it reaches the root-scope widget instead of a
-nonexistent `plot-sim_output_dir`. Everything else is a verbatim port.
+a widget that lives in the `run_control` module's "Output Config" sub-tab.
+That single update is routed through
+`session.root_scope().make_scope("run_control")` with the bare id
+`"sim_output_dir"` so it reaches `run_control-sim_output_dir` instead of a
+nonexistent `plot-sim_output_dir` (and instead of the banned hyphenated
+literal `"run_control-sim_output_dir"`, which raises `ValueError` in
+`validate_id`). Everything else is a verbatim port.
 
 Self-contained: imports output_data, ic_parser
 (get_grouped_variable_choices/get_variable_info), utils
@@ -235,9 +238,9 @@ def plot_ui(min_smooth_window):
 
 @module.server
 def plot_server(input, output, session, state):
-    # `sim_output_dir` lives in the sibling (un-namespaced) Output Config tab;
-    # reach it through the root scope rather than this module's namespace.
-    root = session.root_scope()
+    # `sim_output_dir` lives in the run_control module's Output Config tab;
+    # reach it through session.root_scope().make_scope("run_control") + bare id.
+    rc = session.root_scope().make_scope("run_control")
 
     # CSV caching - reactive values to cache CSV data
     csv_cache = reactive.Value(None)
@@ -459,8 +462,8 @@ def plot_server(input, output, session, state):
                 default_dir = "OUTPUTS" if "OUTPUTS" in dirs else list(dirs.keys())[0]
 
             ui.update_select("output_dir_select", choices=dirs, selected=default_dir)
-            # Also update Model Config output directory (sibling un-namespaced tab)
-            ui.update_select("sim_output_dir", choices=dirs, selected=default_dir, session=root)
+            # Also update Model Config output directory (run_control module's tab)
+            ui.update_select("sim_output_dir", choices=dirs, selected=default_dir, session=rc)
 
     @reactive.effect
     @reactive.event(input.refresh_output_dirs)

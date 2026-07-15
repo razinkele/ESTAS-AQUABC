@@ -10,11 +10,15 @@ this module nav_panel into the app-level navset namespaces its inner ids to
 `state` IS used: `save_simulation_config` bumps `state.sim_config_version`
 (Phase-0 wiring), preserved here inside the module.
 
-Cross-namespace note: the `sim_output_dir` widget lives in the sibling (still
-app-level, un-namespaced) "Output Config" nav_panel. The load/save handlers
-read and update it, so those two touchpoints are routed through
-`session.root_scope()` to reach the root-scope widget instead of a nonexistent
-`sim_config-sim_output_dir`. Everything else is a verbatim port.
+Cross-namespace note: the `sim_output_dir` widget lives in the `run_control`
+module's "Output Config" nav_panel. The load/save handlers read and update
+it, so those two touchpoints are routed through
+`session.root_scope().make_scope("run_control")` (bare id `"sim_output_dir"`)
+to reach `run_control-sim_output_dir` instead of a nonexistent
+`sim_config-sim_output_dir`. The literal hyphenated id
+`"run_control-sim_output_dir"` is NOT used — it raises `ValueError` in
+`validate_id` on read, which is exactly the read-side crash this bridge form
+avoids. Everything else is a verbatim port.
 
 Self-contained: imports simulation_config and self-computes ROOT/INPUT_TXT_PATH;
 imports nothing from app.py or ui_panels.
@@ -146,9 +150,9 @@ def sim_config_server(input, output, session, state):
     sim_config_obj = reactive.Value(None)
     sim_config_save_msg = reactive.Value("")
 
-    # `sim_output_dir` lives in the sibling (un-namespaced) Output Config tab;
-    # reach it through the root scope rather than this module's namespace.
-    root = session.root_scope()
+    # `sim_output_dir` lives in the run_control module's Output Config tab;
+    # reach it through session.root_scope().make_scope("run_control") + bare id.
+    rc = session.root_scope().make_scope("run_control")
 
     @reactive.effect
     @reactive.event(input.load_sim_config)
@@ -203,11 +207,11 @@ def sim_config_server(input, output, session, state):
             ui.update_switch("sim_model_sediments", value=bool(cfg.model_sediments))
             ui.update_select("sim_resuspension", selected=str(cfg.resuspension_option))
 
-            # Output directory (widget lives in the sibling un-namespaced tab)
+            # Output directory (widget lives in the run_control module's tab)
             if cfg.output_folder:
                 # Remove trailing slash for matching
                 output_folder = cfg.output_folder.rstrip('/')
-                ui.update_select("sim_output_dir", selected=output_folder, session=root)
+                ui.update_select("sim_output_dir", selected=output_folder, session=rc)
 
             logger.info(f"Loaded simulation config: {cfg.base_year}, "
                        f"days {cfg.simulation_start}-{cfg.simulation_end}")
@@ -347,8 +351,8 @@ def sim_config_server(input, output, session, state):
             if resuspension:
                 cfg.resuspension_option = int(resuspension)
 
-            # Output directory (widget lives in the sibling un-namespaced tab)
-            output_dir = root.input.sim_output_dir()
+            # Output directory (widget lives in the run_control module's tab)
+            output_dir = rc.input.sim_output_dir()
             if output_dir:
                 # Ensure trailing slash for folder path
                 cfg.output_folder = output_dir if output_dir.endswith('/') else output_dir + '/'

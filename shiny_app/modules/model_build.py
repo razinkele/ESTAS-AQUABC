@@ -14,12 +14,13 @@ were placed in server() in Task 2, since they read this module's inputs).
 from `shiny_app.build_commands` (not duplicated); `run_control` also uses them.
 
 Cross-namespace note: `refresh_executables` and `init_executable_list` also
-update `run_executable`, a widget that lives in the sibling Run Model tab
-(still un-namespaced/inline in server() — run_control isn't converted yet).
-Those two touchpoints are routed through `session.root_scope()` (the Phase-2
-sim_config/plot pattern) with the bare id `"run_executable"`; Task 4 repoints
-them to `session.root_scope().make_scope("run_control")` once that tab claims
-the id. This module's OWN `active_executable` updates stay plain.
+update `run_executable`, a widget that now lives in the `run_control` module
+(Run Model sub-tab). Those two touchpoints are routed through
+`session.root_scope().make_scope("run_control")` with the bare id
+`"run_executable"` — a module-scoped session that namespaces the bare id to
+`run_control-run_executable` without using the banned hyphenated-literal form
+(`"run_control-run_executable"`, which raises `ValueError` in `validate_id`
+on read). This module's OWN `active_executable` updates stay plain.
 
 Self-contained: imports compiler_env (find_compiler_path/is_intel_executable/
 check_intel_libs_available) and build_commands; self-computes ROOT; owns the
@@ -351,9 +352,9 @@ def model_build_server(input, output, session, state):
         executables = get_available_executables()
         choices = {e: e for e in executables} if executables else {"ESTAS_II": "ESTAS_II"}
         ui.update_select("active_executable", choices=choices)
-        # sibling: run_executable lives in the still-inline Run Model tab
-        root = session.root_scope()
-        ui.update_select("run_executable", choices=choices, session=root)
+        # sibling: run_executable lives in the run_control module (Run Model tab)
+        rc = session.root_scope().make_scope("run_control")
+        ui.update_select("run_executable", choices=choices, session=rc)
 
     # Initialize executable list on session start (runs once)
     _exe_list_initialized = [False]
@@ -368,9 +369,9 @@ def model_build_server(input, output, session, state):
         if executables:
             choices = {e: e for e in executables}
             ui.update_select("active_executable", choices=choices)
-            # sibling: run_executable lives in the still-inline Run Model tab
-            root = session.root_scope()
-            ui.update_select("run_executable", choices=choices, session=root)
+            # sibling: run_executable lives in the run_control module (Run Model tab)
+            rc = session.root_scope().make_scope("run_control")
+            ui.update_select("run_executable", choices=choices, session=rc)
             logger.info(f"Initialized executable list with {len(executables)} executables: {executables}")
 
     @reactive.calc

@@ -4,7 +4,6 @@ from shiny_app import ui_panels
 # so a verbatim move that drops/reorders a sub-card fails the test (single nav_x marker is too weak).
 ARGFREE = {
     "panel_dashboard": ["nav_dashboard", "Dashboard", "System Status", "Simulation Config"],
-    "panel_model_control": ["nav_model_control", "Time Period", "Time Stepping", "Output Interval"],
 }
 
 

@@ -430,9 +430,9 @@ class TestStep7SimulationConfig:
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
         click_tab(page, "Run Model")
-        expect(page.locator("#run_executable")).to_be_visible()
-        expect(page.locator("#cmd_input_file")).to_be_visible()
-        expect(page.locator("#run")).to_be_visible()
+        expect(page.locator("#run_control-run_executable")).to_be_visible()
+        expect(page.locator("#run_control-cmd_input_file")).to_be_visible()
+        expect(page.locator("#run_control-run")).to_be_visible()
 
     def test_input_file_dropdown_has_30day(self, page: Page, app: ShinyAppProc):
         """Input file dropdown includes INPUT_30day.txt."""
@@ -440,7 +440,7 @@ class TestStep7SimulationConfig:
         navigate_to(page, "nav_model_control")
         click_tab(page, "Run Model")
         page.wait_for_timeout(ACTION_WAIT)
-        text = page.locator("#cmd_input_file").inner_text()
+        text = page.locator("#run_control-cmd_input_file").inner_text()
         assert "INPUT_30day" in text, f"INPUT_30day.txt not in dropdown: {text[:200]}"
 
     def test_constants_file_dropdown(self, page: Page, app: ShinyAppProc):
@@ -449,7 +449,7 @@ class TestStep7SimulationConfig:
         navigate_to(page, "nav_model_control")
         click_tab(page, "Run Model")
         page.wait_for_timeout(ACTION_WAIT)
-        text = page.locator("#cmd_constants_file").inner_text()
+        text = page.locator("#run_control-cmd_constants_file").inner_text()
         assert "WCONST_04" in text
 
     def test_command_preview(self, page: Page, app: ShinyAppProc):
@@ -458,7 +458,7 @@ class TestStep7SimulationConfig:
         navigate_to(page, "nav_model_control")
         click_tab(page, "Run Model")
         page.wait_for_timeout(ACTION_WAIT)
-        preview = page.locator("#cmd_preview")
+        preview = page.locator("#run_control-cmd_preview")
         expect(preview).to_be_visible()
         preview_text = preview.inner_text()
         assert "ESTAS" in preview_text or "INPUT" in preview_text
@@ -468,7 +468,7 @@ class TestStep7SimulationConfig:
         goto_app(page, app)
         navigate_to(page, "nav_model_control")
         click_tab(page, "Output Config")
-        expect(page.locator("#output_boxes")).to_be_visible()
+        expect(page.locator("#run_control-output_boxes")).to_be_visible()
 
     def test_select_30day_input_and_wconst04(self, page: Page, app: ShinyAppProc):
         """Tutorial config: select INPUT_30day.txt and WCONST_04.txt."""
@@ -477,13 +477,13 @@ class TestStep7SimulationConfig:
         click_tab(page, "Run Model")
         page.wait_for_timeout(ACTION_WAIT)
         # Select INPUT_30day.txt
-        page.select_option("#cmd_input_file", "INPUT_30day.txt")
+        page.select_option("#run_control-cmd_input_file", "INPUT_30day.txt")
         page.wait_for_timeout(ACTION_WAIT)
         # Select WCONST_04.txt
-        page.select_option("#cmd_constants_file", "WCONST_04.txt")
+        page.select_option("#run_control-cmd_constants_file", "WCONST_04.txt")
         page.wait_for_timeout(ACTION_WAIT)
         # Verify command preview updated
-        preview_text = page.locator("#cmd_preview").inner_text()
+        preview_text = page.locator("#run_control-cmd_preview").inner_text()
         assert "INPUT_30day" in preview_text
         assert "WCONST_04" in preview_text
 
@@ -507,9 +507,9 @@ class TestStep8RunSimulation:
         navigate_to(page, "nav_model_control")
         click_tab(page, "Run Model")
         page.wait_for_timeout(ACTION_WAIT)
-        page.select_option("#cmd_input_file", "INPUT_30day.txt")
+        page.select_option("#run_control-cmd_input_file", "INPUT_30day.txt")
         page.wait_for_timeout(ACTION_WAIT)
-        page.select_option("#cmd_constants_file", "WCONST_04.txt")
+        page.select_option("#run_control-cmd_constants_file", "WCONST_04.txt")
         page.wait_for_timeout(ACTION_WAIT)
 
         # Navigate to Dashboard and click Quick Run
@@ -538,7 +538,7 @@ class TestStep8RunSimulation:
                     raise AssertionError(f"Model run failed:\n{log_text[-500:]}")
 
             # Also check the mini run log
-            mini_log = page.locator("#run_log_mini")
+            mini_log = page.locator("#run_control-run_log_mini")
             if mini_log.count() > 0:
                 mini_text = mini_log.inner_text()
                 if "completed successfully" in mini_text.lower() or "model completed" in mini_text.lower():
