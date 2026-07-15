@@ -509,9 +509,6 @@ def create_ui():
     nav_input = ui.input_text("navigation", None, value="nav_dashboard")
     nav_input_hidden = ui.tags.div(nav_input, style="display: none;")
 
-    # === DIAGNOSTICS PANEL (built by diagnostics module) ===
-    panel_diagnostics = diagnostics_ui()
-
     # === COMBINE ALL PANELS ===
     main_content = ui.div(
         {"class": "main-content"},
@@ -529,7 +526,7 @@ def create_ui():
         ui.panel_conditional("input.navigation === 'nav_mass_balance'", mass_balance_ui("mass_balance")),
         ui.panel_conditional("input.navigation === 'nav_observations'", observations_ui("observations")),
         ui.panel_conditional("input.navigation === 'nav_map'", map_ui("map")),
-        panel_diagnostics,
+        ui.panel_conditional("input.navigation === 'nav_diagnostics'", diagnostics_ui("diagnostics")),
     )
 
     # Sidebar container with navigation and main content
@@ -2370,7 +2367,7 @@ def server(input, output, session):
     model_structure_server("model_structure", state)
 
     # ========== DIAGNOSTICS ==========
-    diagnostics_server(input, output, session, root_dir=ROOT)
+    diagnostics_server("diagnostics", state)
     # ========== END DIAGNOSTICS ==========
 
     logger.info("=" * 60)

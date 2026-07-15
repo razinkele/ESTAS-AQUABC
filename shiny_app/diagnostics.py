@@ -2,9 +2,12 @@
 """
 Diagnostics panel for the AQUABC Shiny UI.
 
-Provides ``diagnostics_ui()`` (returns a ``panel_conditional``) and
-``diagnostics_server()`` (registers all reactive/render functions for the
-Diagnostics tab).
+A true Shiny module: ``diagnostics_ui(id)`` (``@module.ui``, returns a
+``ui.card``) and ``diagnostics_server(id, state)`` (``@module.server``,
+registers all reactive/render functions for the Diagnostics tab). The
+app-level ``panel_conditional`` gating on ``input.navigation`` lives in
+``create_ui()`` in app.py, not here. ``state`` is accepted for the module
+convention but unused — this module is self-contained.
 
 The module wraps ``tools/deep_process_rate_analysis.run_analysis()`` and
 surfaces results as interactive tables, Plotly charts, and downloadable
@@ -19,7 +22,7 @@ import threading
 import traceback
 
 import pandas as pd
-from shiny import reactive, render, ui
+from shiny import module, reactive, render, ui
 
 logger = logging.getLogger("aquabc.diagnostics")
 
@@ -81,8 +84,9 @@ SEV_INV = {v: k for k, v in SEV_DISPLAY.items()}
 # ═════════════════════════════════════════════════════════════════════════════
 # UI builder
 # ═════════════════════════════════════════════════════════════════════════════
+@module.ui
 def diagnostics_ui():
-    """Return the ``panel_conditional`` for the Diagnostics nav entry."""
+    """Return the ``ui.card`` for the Diagnostics nav entry."""
 
     # ── Tab 1: Overview ─────────────────────────────────────────────────
     tab_overview = ui.nav_panel(
@@ -223,24 +227,21 @@ def diagnostics_ui():
     )
 
     # ── Assemble panel ──────────────────────────────────────────────────
-    panel = ui.panel_conditional(
-        "input.navigation === 'nav_diagnostics'",
-        ui.card(
-            ui.card_header(
-                ui.tags.i(class_="bi bi-shield-check me-2"),
-                "Process Rate Diagnostics",
-                ui.tags.span(
-                    "16 checks · 25 boxes",
-                    class_="badge bg-secondary ms-2",
-                ),
+    panel = ui.card(
+        ui.card_header(
+            ui.tags.i(class_="bi bi-shield-check me-2"),
+            "Process Rate Diagnostics",
+            ui.tags.span(
+                "16 checks · 25 boxes",
+                class_="badge bg-secondary ms-2",
             ),
-            ui.navset_card_tab(
-                tab_overview,
-                tab_detailed,
-                tab_viz,
-                tab_reports,
-                id="diag_tabs",
-            ),
+        ),
+        ui.navset_card_tab(
+            tab_overview,
+            tab_detailed,
+            tab_viz,
+            tab_reports,
+            id="diag_tabs",
         ),
     )
     return panel
@@ -333,13 +334,12 @@ def _count_severities(flat_rows):
 # ═════════════════════════════════════════════════════════════════════════════
 # Server
 # ═════════════════════════════════════════════════════════════════════════════
-def diagnostics_server(input, output, session, root_dir):
+@module.server
+def diagnostics_server(input, output, session, state):
     """Register all reactive/render functions for the Diagnostics panel.
 
-    Parameters
-    ----------
-    root_dir : str
-        Absolute path to the AQUABC project root (same as ``ROOT`` in app.py).
+    ``state`` is unused (kept for the module convention) — diagnostics is
+    self-contained and computes its own project root via ``_parent_dir``.
     """
 
     # ── Thread-safe mutable state (NOT reactive.Value) ──────────────────
@@ -383,8 +383,8 @@ def diagnostics_server(input, output, session, root_dir):
     def _init_diag_dirs():
         dirs = {}
         try:
-            for item in sorted(os.listdir(root_dir)):
-                if item.startswith("OUTPUTS") and os.path.isdir(os.path.join(root_dir, item)):
+            for item in sorted(os.listdir(_parent_dir)):
+                if item.startswith("OUTPUTS") and os.path.isdir(os.path.join(_parent_dir, item)):
                     dirs[item] = item
         except Exception:
             pass
@@ -401,7 +401,7 @@ def diagnostics_server(input, output, session, root_dir):
             return
 
         sel_dir = input.diag_output_dir()
-        output_path = os.path.join(root_dir, sel_dir)
+        output_path = os.path.join(_parent_dir, sel_dir)
         if not os.path.isdir(output_path):
             ui.notification_show(f"Directory not found: {sel_dir}", type="error", duration=3)
             return
