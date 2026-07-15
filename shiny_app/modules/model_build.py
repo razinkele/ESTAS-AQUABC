@@ -6,9 +6,9 @@ create_ui); `model_build_server(id, state)` registers the handlers ported
 verbatim from app.py: compiler_status, build_flags_info, get_target_exe_name,
 target_exe_name, executable_list, executable_info, build_log,
 clear_build_log, refresh_executables, init_executable_list (+ its
-_exe_list_initialized guard), on_build, on_rebuild — plus the `run.build_config`
-reactive.Calc registration and the `_publish_active_executable` effect (both
-were placed in server() in Task 2, since they read this module's inputs).
+_exe_list_initialized guard), on_build, on_rebuild — plus the
+`_publish_active_executable` effect (placed in server() in Task 2, since it
+reads this module's inputs).
 
 `get_available_executables`/`get_executable_info` are thin wrappers imported
 from `shiny_app.build_commands` (not duplicated); `run_control` also uses them.
@@ -373,16 +373,6 @@ def model_build_server(input, output, session, state):
             rc = session.root_scope().make_scope("run_control")
             ui.update_select("run_executable", choices=choices, session=rc)
             logger.info(f"Initialized executable list with {len(executables)} executables: {executables}")
-
-    @reactive.calc
-    def _build_config():
-        return {
-            "compiler": input.build_compiler(),
-            "build_type": input.build_type(),
-            "exe_name": get_target_exe_name(),
-            "clean_first": input.build_clean_first(),
-        }
-    run.build_config = _build_config
 
     # model_build -> dashboard: the Model Build tab's active_executable selector
     @reactive.effect

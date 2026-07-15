@@ -20,7 +20,6 @@ def test_fresh_controller_state():
     # reactive fields are wired later by server()
     assert rc.exe_list_version is None
     assert rc.active_executable is None
-    assert rc.build_config is None
     assert rc.command_config is None
 
 
@@ -197,8 +196,8 @@ def test_appstate_holds_fields():
 
 
 def test_cross_module_bridges_assignable_and_readable():
-    """Behavior-pin for the Phase-4 Task-2 contract: server() wires these five
-    attributes onto RunController (command_config/build_config/run_executable_name/
+    """Behavior-pin for the Phase-4 Task-2 contract: server() wires these four
+    attributes onto RunController (command_config/run_executable_name/
     constants_config/active_executable) so dashboard reads never touch sibling-tab
     inputs directly. Pin that they're plain assignable attrs, readable without a
     live Shiny session (reactive.Value/Calc read via reactive.isolate())."""
@@ -206,7 +205,6 @@ def test_cross_module_bridges_assignable_and_readable():
 
     # Wired later by server() (None until then) — matches RunController.__init__.
     assert rc.command_config is None
-    assert rc.build_config is None
     assert rc.active_executable is None
     # run_executable_name / constants_config are NEW bridges (Task 2, Step 3);
     # RunController doesn't pre-declare them, so they simply don't exist yet.
@@ -215,10 +213,6 @@ def test_cross_module_bridges_assignable_and_readable():
 
     # Simulate server()'s registrations (Steps 1-3 of the Task-2 brief).
     rc.command_config = reactive.calc(lambda: ["./ESTAS_II", "INPUT.txt"])
-    rc.build_config = reactive.calc(lambda: {
-        "compiler": "gfortran", "build_type": "release",
-        "exe_name": "ESTAS_II_gf_release", "clean_first": False,
-    })
     rc.run_executable_name = reactive.Value("ESTAS_II")
     rc.constants_config = reactive.calc(lambda: ("WCONST_01.txt", False, ""))
     rc.active_executable = reactive.Value("ESTAS_II_gf_release")
@@ -228,9 +222,6 @@ def test_cross_module_bridges_assignable_and_readable():
         cmd = rc.command_config()
         assert isinstance(cmd, list)
         assert cmd == ["./ESTAS_II", "INPUT.txt"]
-
-        # build_config: the build-tab config dict.
-        assert rc.build_config()["compiler"] == "gfortran"
 
         # run_executable_name: bare exe-name STRING (Run-Model tab), defaults sensibly.
         assert rc.run_executable_name() == "ESTAS_II"
