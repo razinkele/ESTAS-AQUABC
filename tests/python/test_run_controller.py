@@ -1,5 +1,7 @@
 import subprocess as _subprocess
 
+from shiny import reactive
+
 try:
     from shiny_app.app_state import RunController
 except ImportError:
@@ -192,3 +194,55 @@ def test_appstate_holds_fields():
     assert callable(st.navigate)
     assert st.output_config_version == 0
     assert st.sim_config_version == 0
+
+
+def test_cross_module_bridges_assignable_and_readable():
+    """Behavior-pin for the Phase-4 Task-2 contract: server() wires these five
+    attributes onto RunController (command_config/build_config/run_executable_name/
+    constants_config/active_executable) so dashboard reads never touch sibling-tab
+    inputs directly. Pin that they're plain assignable attrs, readable without a
+    live Shiny session (reactive.Value/Calc read via reactive.isolate())."""
+    rc = RunController(root="/tmp")
+
+    # Wired later by server() (None until then) — matches RunController.__init__.
+    assert rc.command_config is None
+    assert rc.build_config is None
+    assert rc.active_executable is None
+    # run_executable_name / constants_config are NEW bridges (Task 2, Step 3);
+    # RunController doesn't pre-declare them, so they simply don't exist yet.
+    assert not hasattr(rc, "run_executable_name")
+    assert not hasattr(rc, "constants_config")
+
+    # Simulate server()'s registrations (Steps 1-3 of the Task-2 brief).
+    rc.command_config = reactive.calc(lambda: ["./ESTAS_II", "INPUT.txt"])
+    rc.build_config = reactive.calc(lambda: {
+        "compiler": "gfortran", "build_type": "release",
+        "exe_name": "ESTAS_II_gf_release", "clean_first": False,
+    })
+    rc.run_executable_name = reactive.Value("ESTAS_II")
+    rc.constants_config = reactive.calc(lambda: ("WCONST_01.txt", False, ""))
+    rc.active_executable = reactive.Value("ESTAS_II_gf_release")
+
+    with reactive.isolate():
+        # command_config: a List[str] argv, NOT a bare executable name.
+        cmd = rc.command_config()
+        assert isinstance(cmd, list)
+        assert cmd == ["./ESTAS_II", "INPUT.txt"]
+
+        # build_config: the build-tab config dict.
+        assert rc.build_config()["compiler"] == "gfortran"
+
+        # run_executable_name: bare exe-name STRING (Run-Model tab), defaults sensibly.
+        assert rc.run_executable_name() == "ESTAS_II"
+        assert isinstance(rc.run_executable_name(), str)
+
+        # constants_config: the (const_file, binary_enabled, shear_file) triple.
+        const_file, binary_enabled, shear_file = rc.constants_config()
+        assert const_file == "WCONST_01.txt"
+        assert binary_enabled is False
+        assert shear_file == ""
+
+        # active_executable: the Model-Build tab's selector (a DIFFERENT widget
+        # from run_executable_name — must not collapse to the same value).
+        assert rc.active_executable() == "ESTAS_II_gf_release"
+        assert rc.active_executable() != rc.run_executable_name()

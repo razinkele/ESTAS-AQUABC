@@ -684,13 +684,29 @@ def server(input, output, session):
             exe_name, input_file, const_file, binary_enabled,
             binary_filename, shear_file, DEFAULT_CONSTANTS_FILE)
 
-    run.command_config = build_estas_command
+    @reactive.calc
+    def _command_config():
+        return build_estas_command()
+    run.command_config = _command_config
 
     @render.text
     def cmd_preview():
         """Show preview of the command that will be executed"""
         cmd = build_estas_command()
         return " ".join(cmd)
+
+    # run_control -> dashboard: the Run Model tab's run_executable name (bare string)
+    run.run_executable_name = reactive.Value("ESTAS_II")
+
+    @reactive.effect
+    def _publish_run_executable_name():
+        run.run_executable_name.set(input.run_executable() or "ESTAS_II")
+
+    # run_control -> dashboard: the quick-run constants-validation inputs
+    @reactive.calc
+    def _constants_config():
+        return (input.cmd_constants_file(), input.cmd_binary_enabled(), input.cmd_shear_stress_file())
+    run.constants_config = _constants_config
 
     # =========================================================================
     # Model Build Panel - Server Logic
@@ -928,14 +944,20 @@ def server(input, output, session):
         """Navigate to the Model Config panel from dashboard"""
         await state.navigate("nav_model_control")
 
-    def _current_build_config():
+    @reactive.calc
+    def _build_config():
         return {
             "compiler": input.build_compiler(),
             "build_type": input.build_type(),
             "exe_name": get_target_exe_name(),
             "clean_first": input.build_clean_first(),
         }
-    run.build_config = _current_build_config
+    run.build_config = _build_config
+
+    # model_build -> dashboard: the Model Build tab's active_executable selector
+    @reactive.effect
+    def _publish_active_executable():
+        run.active_executable.set(input.active_executable())
 
     @reactive.effect
     @reactive.event(input.btn_build)
@@ -1107,13 +1129,10 @@ def server(input, output, session):
 
         try:
             # Capture current widget values (must be done in reactive context)
-            estas_cmd = build_estas_command()
+            estas_cmd = run.command_config()
 
             # Check if executable exists
-            try:
-                exe_name = input.run_executable() or "ESTAS_II"
-            except Exception:
-                exe_name = "ESTAS_II"
+            exe_name = run.run_executable_name()
 
             exe_path = os.path.join(ROOT, exe_name)
             if not os.path.exists(exe_path):
@@ -1139,20 +1158,7 @@ def server(input, output, session):
                         run.run_log_lines.append("-" * 50 + "\n")
 
             # Validate constants file before running
-            try:
-                const_file = input.cmd_constants_file() or ""
-            except Exception:
-                const_file = ""
-
-            try:
-                binary_enabled = input.cmd_binary_enabled()
-            except Exception:
-                binary_enabled = False
-
-            try:
-                shear_file = input.cmd_shear_stress_file() or ""
-            except Exception:
-                shear_file = ""
+            const_file, binary_enabled, shear_file = run.constants_config()
 
             if not const_file and (binary_enabled or shear_file):
                 const_file = DEFAULT_CONSTANTS_FILE
@@ -1865,7 +1871,7 @@ def server(input, output, session):
 
         # Executable
         try:
-            exe_name = input.run_executable() or "ESTAS_II"
+            exe_name = run.run_executable_name()
         except Exception:
             exe_name = "ESTAS_II"
         exe_exists = os.path.exists(os.path.join(ROOT, exe_name))
@@ -1877,7 +1883,7 @@ def server(input, output, session):
 
         # Command preview
         try:
-            cmd = build_estas_command()
+            cmd = run.command_config()
             cmd_str = " ".join(cmd)
         except Exception:
             cmd_str = "(error)"
@@ -1896,7 +1902,7 @@ def server(input, output, session):
     @render.text
     def dashboard_exe_text():
         try:
-            return input.active_executable()
+            return run.active_executable()
         except Exception:
             return "ESTAS_II"
 
