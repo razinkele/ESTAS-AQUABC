@@ -31,7 +31,6 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "shiny_app/app.py" = [
-    "F401",   # unused imports — false positives from try/except import fallback pattern
     "F841",   # local variable assigned but never used (reactive side-effects)
     "B023",   # function uses loop variable — common in Shiny reactive patterns
     "E402",   # imports not at top — necessary for sys.path manipulation

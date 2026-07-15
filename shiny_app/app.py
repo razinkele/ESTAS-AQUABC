@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
 import os
 import subprocess
-import threading
 import logging
 import sys
-import shutil
-import time
-import select
-import signal
-import traceback
-import re
-import shlex
-from datetime import datetime, date, timedelta
+from datetime import datetime
 
 # Try to import markdown for help rendering
 try:
@@ -30,107 +22,15 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
-import networkx as nx
 
-from shiny import App, ui, reactive, render, req
-from shinywidgets import output_widget, render_widget
-
-# Import parameter parser (try both absolute and relative imports)
-try:
-    from shiny_app.parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
-    from shiny_app.ic_parser import (
-        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
-        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
-    )
-    from shiny_app.options_parser import (
-        ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
-        load_model_options, load_extra_constants
-    )
-    from shiny_app.simulation_config import (
-        SimulationConfigFile, SimulationConfig, load_simulation_config,
-        TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
-    )
-except ImportError:
-    # Fallback for when running from within shiny_app directory
-    from parameter_parser import ParameterFile, PARAMETER_CATEGORIES, load_parameters
-    from ic_parser import (
-        ICFile, STATE_VARIABLE_CATEGORIES, STATE_VARIABLES, get_available_ic_files,
-        get_variable_display_name, get_variable_info, get_grouped_variable_choices, CSV_COLUMN_INFO
-    )
-    from options_parser import (
-        ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
-        load_model_options, load_extra_constants
-    )
-    from simulation_config import (
-        SimulationConfigFile, SimulationConfig, load_simulation_config,
-        TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
-    )
-
-# Import scenario manager (try both paths)
-try:
-    from shiny_app.scenarios import (
-        Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir
-    )
-except ImportError:
-    from scenarios import (
-        Scenario, ScenarioManager, load_scenario_manager, get_scenarios_dir
-    )
-
-# Import utility functions (extracted for testability)
-try:
-    from shiny_app.utils import (
-        count_file_lines_fast, read_pelagic_binary, read_pelagic_text,
-        validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
-    )
-except ImportError:
-    from utils import (
-        count_file_lines_fast, read_pelagic_binary, read_pelagic_text,
-        validate_constants_file, PELAGIC_BOX_COLUMNS, REQUIRED_MODEL_CONSTANTS
-    )
-
-# Path-traversal-safe filename resolution (stdlib-only, extracted for testability)
-try:
-    from shiny_app.safe_resolve import safe_resolve
-except ImportError:
-    from safe_resolve import safe_resolve
-
-# Intel/compiler detection and run-environment helpers (stdlib-only, extracted for testability)
-try:
-    from shiny_app.compiler_env import (
-        find_compiler_path, is_intel_executable, get_intel_library_paths,
-        check_intel_libs_available, get_run_environment, get_intel_setvars_path,
-        build_intel_wrapped_command,
-    )
-except ImportError:
-    from compiler_env import (
-        find_compiler_path, is_intel_executable, get_intel_library_paths,
-        check_intel_libs_available, get_run_environment, get_intel_setvars_path,
-        build_intel_wrapped_command,
-    )
+from shiny import App, ui, reactive, render
 
 # Input-file analysis and validation helpers (stdlib-only, extracted for testability)
 try:
-    from shiny_app.input_analysis import (
-        analyze_input_file, get_input_file_categories, validate_required_inputs,
-        INPUT_FILE_CATEGORIES,
-    )
+    from shiny_app.input_analysis import INPUT_FILE_CATEGORIES
 except ImportError:
     from input_analysis import (
-        analyze_input_file, get_input_file_categories, validate_required_inputs,
         INPUT_FILE_CATEGORIES,
-    )
-
-# Output/box file discovery helpers (extracted for testability)
-try:
-    from shiny_app.file_locators import (
-        get_output_folder, find_pelagic_box_file, get_available_boxes, get_timeseries_variables,
-    )
-except ImportError:
-    from file_locators import (
-        get_output_folder, find_pelagic_box_file, get_available_boxes, get_timeseries_variables,
     )
 
 # Import diagnostics panel (process rate analysis UI)
@@ -162,21 +62,6 @@ except ImportError:
         build_sidebar, app_header, external_css,
         settings_offcanvas, help_offcanvas, changelog_offcanvas,
     )
-
-try:
-    from shiny_app import build_commands
-except ImportError:
-    import build_commands
-
-try:
-    from shiny_app import box_network
-except ImportError:
-    import box_network
-
-try:
-    from shiny_app import output_data
-except ImportError:
-    import output_data
 
 try:
     from shiny_app.app_state import RunController, AppState
@@ -305,14 +190,14 @@ logger.info(f"OUTPUT_CSV: {OUTPUT_CSV}")
 
 logger.info("=== Directory Checks ===")
 if os.path.exists(ROOT):
-    logger.info(f"✓ ROOT directory exists")
+    logger.info("✓ ROOT directory exists")
     logger.info(f"  ROOT is readable: {os.access(ROOT, os.R_OK)}")
     logger.info(f"  ROOT is writable: {os.access(ROOT, os.W_OK)}")
 else:
     logger.error(f"✗ ROOT directory does NOT exist: {ROOT}")
 
 if os.path.exists(INPUTS_DIR):
-    logger.info(f"✓ INPUTS directory exists")
+    logger.info("✓ INPUTS directory exists")
     logger.info(f"  INPUTS is readable: {os.access(INPUTS_DIR, os.R_OK)}")
     logger.info(f"  INPUTS is writable: {os.access(INPUTS_DIR, os.W_OK)}")
     try:
@@ -327,7 +212,7 @@ else:
 
 logger.info("=== Output File Checks ===")
 if os.path.exists(OUTPUT_CSV):
-    logger.info(f"✓ OUTPUT.csv exists")
+    logger.info("✓ OUTPUT.csv exists")
     file_size = os.path.getsize(OUTPUT_CSV)
     logger.info(f"  File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
     logger.info(f"  File is readable: {os.access(OUTPUT_CSV, os.R_OK)}")
@@ -349,7 +234,7 @@ if os.path.exists(OUTPUT_CSV):
         logger.warning(f"  Could not read OUTPUT.csv header: {e}")
 else:
     logger.warning(f"⚠ OUTPUT.csv does NOT exist yet: {OUTPUT_CSV}")
-    logger.info(f"  This is normal if the model hasn't been run yet")
+    logger.info("  This is normal if the model hasn't been run yet")
 
 logger.info("=== Environment ===")
 logger.info(f"Python version: {sys.version}")
@@ -866,6 +751,6 @@ if __name__ == '__main__':
     print("=" * 60)
     print("To run this app, use one of these commands:")
     print(f"  shiny run --reload {__file__}")
-    print(f"  shiny run --reload shiny_app.app:app")
-    print(f"  shiny run --reload --port 8000 shiny_app.app:app")
+    print("  shiny run --reload shiny_app.app:app")
+    print("  shiny run --reload --port 8000 shiny_app.app:app")
     print("=" * 60)
