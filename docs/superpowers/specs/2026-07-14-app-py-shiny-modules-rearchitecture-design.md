@@ -279,15 +279,37 @@ Playwright + Selenium green; (4) boot smoke via the `run`/`verify` skill. Any re
 
 ## 9. Success criteria (end state)
 
-- `app.py` is a thin assembler: `server()` = construct `state` + 17 `x_server(...)` calls; file
-  drops from ~5,600 to a few hundred lines.
-- 17 cohesive `@module.ui`/`@module.server` modules; `diagnostics` converted.
+> **ACHIEVED — released `v0.4.0`–`v0.4.5` (Phases 0–5), 2026-07-14/15, all CI-verified.** The
+> success criteria below are stated as the *actual* delivered end-state. Two counts evolved from
+> the original design during implementation and are reflected here (see the inline "REVISED" notes
+> in §5.1/§6 and the `CHANGELOG.md` entries for the reasoning): the module total is **15, not 17**
+> (`chrome` stayed app-level because its offcanvas ids are JS-referenced — §6; and `plot` +
+> `output_browser` merged in Phase 3 once the output selection proved single-tab), and `AppState`
+> is **4 fields, not 7** (the 3-field output-selection bus was removed in Phase 3 as dead once
+> `plot` absorbed `output_browser`).
+
+- `app.py` is a thin assembler: `server()` = construct `state` (`RunController` + `AppState`) +
+  the two app-level chrome renders (`help_content`/`changelog_content`) + **15** `x_server("id",
+  state)` calls; the file dropped from ~5,600 to **756 lines**.
+- **15** cohesive `@module.ui`/`@module.server` modules (`dashboard`, `model_structure`,
+  `model_build`, `input_files`, `parameters`, `initial_conditions`, `model_options`, `scenarios`,
+  `mass_balance`, `observations`, `map`, `diagnostics`, `sim_config`, `run_control`, `plot`) — with
+  `diagnostics` converted from its former pseudo-module (flat-id) form. `help_content`/
+  `changelog_content` remain app-level `@render.ui`s (not a module — their offcanvas container ids
+  are referenced from JS and cannot be namespaced).
 - Cross-tab shared surface is exactly the `RunController` (run/build session, carrying
-  `build_config`/`command_config`/`active_executable`) plus the 7-field `AppState`; **no `input.X`
-  (nor private `reactive.Value`) crosses a module boundary** — verified by the §5.1 audit — except
-  via `run`/`AppState`.
-- `RunController` unit-tested; per-module tests where logic warrants; all integration tests green
-  with namespaced selectors; full suite green; app visually verified.
+  `command_config` [a `List[str]` argv], `constants_config`, `run_executable_name`,
+  `active_executable`, and `exe_list_version`) plus the **4-field** `AppState` (`run`, `navigate`,
+  `output_config_version`, `sim_config_version`); **no `input.X` (nor private `reactive.Value`)
+  crosses a module boundary** — verified by the §5.1 audit — except via `run`/`AppState`, or the
+  documented `session.root_scope().make_scope("run_control")` bridge for the sibling
+  `sim_output_dir`/`run_executable` widgets that `run_control` owns but `plot`/`sim_config`/
+  `model_build` also touch. (`run.build_config`, specced as a model_build→run_control value, was
+  registered but its only consumer — the "Build & Run" handler — was removed as dead code in
+  Phase 4; the now-unread registration was dropped in Phase 5.)
+- `RunController` unit-tested (`tests/python/test_run_controller.py`); a render-smoke test per
+  module (`.tagify()` where the UI is nav content); all integration tests green with namespaced
+  selectors; full suite green (178 Python tests); app boot-smoke + Playwright/Selenium verified.
 
 ## 10. Test-migration strategy
 
