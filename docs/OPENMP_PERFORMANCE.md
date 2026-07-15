@@ -17,9 +17,11 @@ Covers backlog **TODO 4.1** (benchmarking), **4.2** (CO2SYS parallelization), an
 - **Recommendation:** enable OpenMP (`make OPENMP=1 …`) for runs with `nkn ≳ 500`;
   4–8 threads now scale well at large `nkn`. Still not worth it for small networks
   (`nkn ≲ 100`, e.g. the default 25-box / CL29 29-box cases).
-- **Caveat:** the full-model `ESTAS_II` executable currently **hangs at high thread
-  counts** (≥8) — a **pre-existing** issue in the ESTAS solver/transport path,
-  independent of the kinetics/CO2SYS parallelization measured here (see §Full-model).
+- **Fixed (TODO 4.4):** a **pre-existing empty-chunk barrier deadlock** hung the full
+  model whenever `nthreads` did not evenly divide `nkn` (e.g. `nkn=25`/8 threads left
+  the last thread with 0 nodes, which skipped the region's collective `!$omp barrier`s
+  and deadlocked the team). Fixed by a **balanced chunk split** + capping the team to
+  `min(nkn, threads)` so every thread gets ≥1 node — `ESTAS_II` now scales to 8 threads.
 
 ## Method
 
@@ -103,27 +105,36 @@ but the drift is far below the solver's own `pHTol = 1e-4` physical tolerance:
 - **Micro-benchmark (`nkn=1000`, replicated nodes), 1 vs 8 threads: bit-identical**
   (identical nodes converge in lockstep, so chunking cannot change iteration count).
 
-## Full-model OpenMP status (pre-existing hang at high thread counts)
+## Full-model empty-chunk barrier deadlock (TODO 4.4 — fixed)
 
-The **micro-benchmark** (real kinetics + CO2SYS) scales cleanly to 8 threads. The
-**full `ESTAS_II` executable**, however, **hangs at `OMP_NUM_THREADS=8`** on the
-default input (1 and 2 threads complete fine). This is **pre-existing and unrelated
-to 4.2** — the stock model (with the CO2SYS change stashed) hangs identically at 8
-threads, and the micro-benchmark that exercises the exact kinetics+CO2SYS path does
-*not* hang. The problem is therefore in the ESTAS-specific serial/transport/solver
-path (e.g. `mod_SOLVER.f90`'s separate `!$omp` region or the box-network transport),
-not the kinetics. It is why performance work uses the micro-benchmark. **Tracked as
-a new backlog item** (investigate/fix the full-model OpenMP hang before recommending
-`ESTAS_II` at ≥8 threads for production).
+The full `ESTAS_II` executable used to **hang whenever `nthreads` did not evenly
+divide `nkn`** — e.g. the default 25-box network on 8 threads (`nkn=25` → the old
+`chunk = ceil(25/8) = 4` scheme covered nodes 1–25 with 7 threads and left **thread 7
+with an empty chunk**, `nkn_local = -3`). A thread-by-thread checkpoint trace showed
+all 8 threads enter the kinetics `!$omp parallel` region, but the empty-chunk thread
+never reaches the region's first collective `!$omp barrier`, so the other 7 wait for
+it forever (an active-spin deadlock — hence high CPU, no progress). It only bit when
+`nkn < nthreads` or `nkn` was not a multiple of `nthreads`, which is why `nkn=1000`/8
+(all threads busy) worked while `nkn=25`/8 hung. It was **pre-existing** (the Phase-4
+OpenMP work; independent of the 4.2 CO2SYS change — the stock code hung identically),
+and reproduced in the micro-benchmark at `nkn=25`/8.
+
+**Fix:** replace the `ceil`-based split with a **balanced split** (`base = nkn /
+nthreads`, the first `mod(nkn, nthreads)` threads get one extra node) and cap the team
+with `num_threads(min(nkn, omp_get_max_threads()))`, so **every thread always gets ≥1
+node** — no empty chunk, no missed barrier. Applied to both the kinetics and the
+CO2SYS regions (`aquabc_II_pelagic_model.f90`). Verified: `ESTAS_II` completes at 8
+threads (default input); 0D golden bit-identical; the benchmark speedup is unchanged
+(6.4× at nkn=1000/8); @1-vs-@8 output drift ≤1e-6 absolute (output-precision floor).
 
 ## Recommendations
 
 | Network size | Guidance |
 |---|---|
-| `nkn ≲ 100` (default 25-box, CL29 29-box) | Leave OpenMP off; <2.5× even at 8 threads, and the full-model hang makes it moot. |
-| `nkn ≈ 500` | OpenMP worthwhile: ~3.3× at 4 threads, ~4.5× at 8 (via the kinetics path). |
+| `nkn ≲ 100` (default 25-box, CL29 29-box) | Little benefit (<2.5× even at 8 threads) — the parallel work per node is too small. |
+| `nkn ≈ 500` | OpenMP worthwhile: ~3.3× at 4 threads, ~4.5× at 8. |
 | `nkn ≳ 1000` | Enable OpenMP: 4.4× at 4 threads, 6.55× at 8. Best efficiency at 2–4 threads. |
-| any | Do not exceed physical cores (14 here); and until the full-model hang is fixed, cap `ESTAS_II` at ≤2 threads (the micro-benchmark path is unaffected). |
+| any | Do not exceed physical cores (14 here). `ESTAS_II` now scales correctly to 8 threads (the empty-chunk hang was fixed — TODO 4.4). |
 
 ## Thread affinity (TODO 4.3)
 
