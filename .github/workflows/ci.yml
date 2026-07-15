@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install ruff pytest pytest-cov
+          pip install ruff==0.15.21 pytest pytest-cov
           pip install -r shiny_app/requirements.txt
 
       - name: Lint with ruff (shiny_app + tests)
