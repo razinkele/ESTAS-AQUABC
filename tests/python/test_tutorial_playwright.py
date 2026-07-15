@@ -664,13 +664,13 @@ class TestStep10MassBalance:
         """Mass Balance page has the calculate button."""
         goto_app(page, app)
         navigate_to(page, "nav_mass_balance")
-        expect(page.locator("#calc_mass_balance")).to_be_visible()
+        expect(page.locator("#mass_balance-calc_mass_balance")).to_be_visible()
 
     def test_element_selector(self, page: Page, app: ShinyAppProc):
         """Element dropdown has N, C, P, Si."""
         goto_app(page, app)
         navigate_to(page, "nav_mass_balance")
-        text = page.locator("#mb_element").inner_text()
+        text = page.locator("#mass_balance-mb_element").inner_text()
         for element in ["Nitrogen", "Carbon", "Phosphorus", "Silicon"]:
             assert element in text, f"{element} not found in element dropdown"
 

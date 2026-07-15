@@ -5,7 +5,6 @@ from shiny_app import ui_panels
 ARGFREE = {
     "panel_dashboard": ["nav_dashboard", "Dashboard", "System Status", "Simulation Config"],
     "panel_model_control": ["nav_model_control", "Time Period", "Time Stepping", "Output Interval"],
-    "panel_mass_balance": ["nav_mass_balance", "Mass Balance", "Summary", "Element Details"],
     "panel_observations": ["nav_observations", "Model Validation - Observations", "Comparison Summary", "Variable Details"],
 }
 

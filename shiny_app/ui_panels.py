@@ -580,43 +580,6 @@ def panel_plot(min_smooth_window):
     )
 
 
-def panel_mass_balance():
-    return ui.panel_conditional(
-        "input.navigation === 'nav_mass_balance'",
-        ui.card(
-            ui.card_header("Mass Balance"),
-            ui.tooltip(
-                ui.input_action_button("calc_mass_balance", "Calculate Mass Balance", class_="btn-primary mb-3"),
-                "Calculate element mass balance from model output"
-            ),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Summary"),
-                    ui.output_table("mass_balance_summary"),
-                ),
-                ui.card(
-                    ui.card_header("Element Details"),
-                    ui.tooltip(
-                        ui.input_select(
-                            "mb_element",
-                            "Element:",
-                            choices=["Nitrogen", "Carbon", "Phosphorus", "Silicon"],
-                            selected="Nitrogen"
-                        ),
-                        "Select element for detailed mass balance breakdown"
-                    ),
-                    ui.output_ui("mass_balance_details"),
-                ),
-                col_widths=[6, 6]
-            ),
-            ui.card(
-                ui.card_header("Time Series"),
-                ui.output_ui("mass_balance_plot_ui"),
-            )
-        )
-    )
-
-
 def panel_observations():
     return ui.panel_conditional(
         "input.navigation === 'nav_observations'",

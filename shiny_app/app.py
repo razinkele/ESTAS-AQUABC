@@ -49,7 +49,6 @@ try:
         ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
         load_model_options, load_extra_constants
     )
-    from shiny_app.mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
     from shiny_app.simulation_config import (
         SimulationConfigFile, SimulationConfig, load_simulation_config,
         TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
@@ -65,7 +64,6 @@ except ImportError:
         ModelOptionsFile, ExtraConstantsFile, MODEL_OPTIONS, EXTRA_CONSTANTS, OPTION_CATEGORIES,
         load_model_options, load_extra_constants
     )
-    from mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
     from simulation_config import (
         SimulationConfigFile, SimulationConfig, load_simulation_config,
         TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
@@ -181,12 +179,12 @@ except ImportError:
 try:
     from shiny_app.ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control,
-        panel_plot, panel_mass_balance, panel_observations,
+        panel_plot, panel_observations,
     )
 except ImportError:
     from ui_panels import (
         panel_dashboard, panel_model_build, panel_model_control,
-        panel_plot, panel_mass_balance, panel_observations,
+        panel_plot, panel_observations,
     )
 
 # Import UI chrome fragments (phase-2c create_ui() split)
@@ -255,6 +253,11 @@ try:
     from shiny_app.modules.scenarios import scenarios_ui, scenarios_server
 except ImportError:
     from modules.scenarios import scenarios_ui, scenarios_server
+
+try:
+    from shiny_app.modules.mass_balance import mass_balance_ui, mass_balance_server
+except ImportError:
+    from modules.mass_balance import mass_balance_ui, mass_balance_server
 
 try:
     from shiny_app.modules.sim_config import sim_config_server
@@ -539,7 +542,7 @@ def create_ui():
         ui.panel_conditional("input.navigation === 'nav_model_options'", model_options_ui("model_options")),
         ui.panel_conditional("input.navigation === 'nav_scenarios'", scenarios_ui("scenarios")),
         panel_plot(MIN_SMOOTH_WINDOW),
-        panel_mass_balance(),
+        ui.panel_conditional("input.navigation === 'nav_mass_balance'", mass_balance_ui("mass_balance")),
         panel_observations(),
         ui.panel_conditional("input.navigation === 'nav_map'", map_ui("map")),
         panel_diagnostics,
@@ -1795,191 +1798,8 @@ def server(input, output, session):
     # Scenarios tab is a Shiny module (Phase 2)
     scenarios_server("scenarios", state)
 
-    # ========== MASS BALANCE ==========
-    # Reactive values for mass balance
-    mb_results = reactive.Value(None)
-    mb_calculator = reactive.Value(None)
-
-    @reactive.effect
-    @reactive.event(input.calc_mass_balance)
-    def calculate_mass_balance():
-        """Calculate mass balance when button is clicked"""
-        if not os.path.exists(OUTPUT_CSV):
-            logger.warning("OUTPUT.csv not found for mass balance calculation")
-            ui.notification_show(
-                "OUTPUT.csv not found. Run the model first.",
-                type="warning",
-                duration=3
-            )
-            return
-
-        logger.info("Calculating mass balance...")
-
-        # Load stoichiometry from parameters
-        param_file = os.path.join(INPUTS_DIR, "WCONST_04.txt")
-        stoich = load_stoichiometry_from_params(param_file)
-
-        # Create calculator and calculate
-        calc = MassBalanceCalculator(OUTPUT_CSV, stoich)
-        if calc.load_data():
-            results = calc.calculate_all()
-            mb_calculator.set(calc)
-            mb_results.set(results)
-            logger.info("Mass balance calculation complete")
-            ui.notification_show(
-                "Mass balance calculated successfully",
-                type="message",
-                duration=2
-            )
-        else:
-            logger.error("Failed to load data for mass balance")
-            ui.notification_show(
-                "Failed to load output data",
-                type="error",
-                duration=3
-            )
-
-    @render.table
-    def mass_balance_summary():
-        """Render mass balance summary table"""
-        results = mb_results.get()
-        if results is None:
-            return pd.DataFrame({
-                "Message": ["Click 'Calculate Mass Balance' to analyze model output"]
-            })
-
-        # Create summary table
-        data = []
-        for element, result in results.items():
-            status = "✓" if result.is_conserved() else "⚠"
-            data.append({
-                "Element": element,
-                "Initial": f"{result.initial_total:.4f}",
-                "Final": f"{result.final_total:.4f}",
-                "Change": f"{result.percent_change:+.2f}%",
-                "Status": status
-            })
-
-        return pd.DataFrame(data)
-
-    @render.ui
-    def mass_balance_details():
-        """Render detailed pool breakdown for selected element"""
-        results = mb_results.get()
-        element = input.mb_element()
-
-        if results is None or element not in results:
-            return ui.tags.p("Calculate mass balance to see details", class_="text-muted")
-
-        result = results[element]
-
-        # Create pool breakdown
-        pool_rows = []
-        for pool_name, pool_series in result.pool_breakdown.items():
-            initial = pool_series.iloc[0] if len(pool_series) > 0 else 0
-            final = pool_series.iloc[-1] if len(pool_series) > 0 else 0
-            change = final - initial
-
-            pool_row = ui.tags.div(
-                ui.tags.div(
-                    ui.tags.strong(pool_name, class_="small"),
-                    class_="col-4"
-                ),
-                ui.tags.div(
-                    ui.tags.small(f"{initial:.4f}", class_="text-muted"),
-                    class_="col-3 text-end"
-                ),
-                ui.tags.div(
-                    ui.tags.small(f"{final:.4f}", class_="text-info"),
-                    class_="col-3 text-end"
-                ),
-                ui.tags.div(
-                    ui.tags.small(
-                        f"{change:+.4f}",
-                        class_="text-success" if change >= 0 else "text-danger"
-                    ),
-                    class_="col-2 text-end"
-                ),
-                class_="row border-bottom py-1"
-            )
-            pool_rows.append(pool_row)
-
-        return ui.tags.div(
-            ui.tags.div(
-                ui.tags.div(ui.tags.strong("Pool", class_="small"), class_="col-4"),
-                ui.tags.div(ui.tags.strong("Initial", class_="small"), class_="col-3 text-end"),
-                ui.tags.div(ui.tags.strong("Final", class_="small"), class_="col-3 text-end"),
-                ui.tags.div(ui.tags.strong("Δ", class_="small"), class_="col-2 text-end"),
-                class_="row border-bottom py-1 bg-light"
-            ),
-            *pool_rows,
-            ui.tags.div(
-                ui.tags.small(
-                    f"Total change: {result.percent_change:+.2f}%",
-                    class_="text-warning" if not result.is_conserved() else "text-success"
-                ),
-                class_="mt-2"
-            ),
-            style="max-height: 300px; overflow-y: auto;"
-        )
-
-    @render.ui
-    def mass_balance_plot_ui():
-        """Render mass balance time series info"""
-        results = mb_results.get()
-        calc = mb_calculator.get()
-        element = input.mb_element()
-
-        if results is None or calc is None or element not in results:
-            return ui.tags.p("Calculate mass balance to see time series", class_="text-muted")
-
-        result = results[element]
-        time_col = calc.get_time_column()
-
-        # Show statistics
-        return ui.tags.div(
-            ui.tags.div(
-                ui.tags.div(
-                    ui.tags.small("Min", class_="text-muted"),
-                    ui.tags.br(),
-                    ui.tags.strong(f"{result.min_total:.4f}"),
-                    class_="col-3 text-center"
-                ),
-                ui.tags.div(
-                    ui.tags.small("Max", class_="text-muted"),
-                    ui.tags.br(),
-                    ui.tags.strong(f"{result.max_total:.4f}"),
-                    class_="col-3 text-center"
-                ),
-                ui.tags.div(
-                    ui.tags.small("Mean", class_="text-muted"),
-                    ui.tags.br(),
-                    ui.tags.strong(f"{result.mean_total:.4f}"),
-                    class_="col-3 text-center"
-                ),
-                ui.tags.div(
-                    ui.tags.small("Range", class_="text-muted"),
-                    ui.tags.br(),
-                    ui.tags.strong(f"{result.max_total - result.min_total:.4f}"),
-                    class_="col-3 text-center"
-                ),
-                class_="row mb-2"
-            ),
-            ui.tags.div(
-                ui.tags.small(
-                    f"Time span: {time_col.iloc[0]:.1f} - {time_col.iloc[-1]:.1f}",
-                    class_="text-muted"
-                ),
-                ui.tags.br(),
-                ui.tags.small(
-                    f"Data points: {len(result.time_series)}",
-                    class_="text-muted"
-                ),
-            ),
-            class_="p-2 border rounded"
-        )
-
-    # ========== END MASS BALANCE ==========
+    # Mass Balance tab is a Shiny module (Phase 3)
+    mass_balance_server("mass_balance", state)
 
     # ========== OBSERVATION COMPARISON ==========
     # Reactive values for observations
