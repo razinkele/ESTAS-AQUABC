@@ -69,30 +69,6 @@ except ImportError:
         TIME_STEP_PRESETS, OUTPUT_INTERVAL_PRESETS, days_to_date, date_to_days
     )
 
-# Import observation comparison (try both paths)
-try:
-    from shiny_app.observation_compare import (
-        ObservationData, ModelObservationComparison, create_sample_observations
-    )
-except ImportError:
-    from observation_compare import (
-        ObservationData, ModelObservationComparison, create_sample_observations
-    )
-
-# Import observation file loader (try both paths)
-try:
-    from shiny_app.obs_loader import (
-        scan_observations_directory, load_observation_file as load_obs_file,
-        get_file_preview, ObservationFile, LoadedObservations, 
-        get_variable_description, STATE_VARIABLE_INDEX
-    )
-except ImportError:
-    from obs_loader import (
-        scan_observations_directory, load_observation_file as load_obs_file,
-        get_file_preview, ObservationFile, LoadedObservations,
-        get_variable_description, STATE_VARIABLE_INDEX
-    )
-
 # Import scenario manager (try both paths)
 try:
     from shiny_app.scenarios import (
