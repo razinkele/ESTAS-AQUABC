@@ -33,44 +33,51 @@ The phase boundaries (pre-refactor line anchors; find by the banner comments, as
 
 | Procedure | Delimiting markers | ~Lines |
 |---|---|---|
-| `pelagic_co2sys_preprocess` | the `!$omp parallel` CO2SYS block: from the comment above `n_omp = 1` / `!$ n_omp = min(nkn, omp_get_max_threads())` preceding the CO2SYS `!$omp parallel` through its `!$omp end parallel` | 398–451 |
-| `pelagic_speciation_preprocess` | from the end of the CO2SYS block to the `! BEGIN OpenMP PARALLEL REGION` banner (line ~860) — REDOX_AND_SPECIATION, H2S, Fe/Mn fractions | 452–859 |
-| `pelagic_biology` | inside the main region, from `! D I S S O L V E D  O X Y G E N` (~902) through the ZOOPLANKTON call + N/P dissolution, ending before `ORGANIC_CARBON_MINERALIZATION`'s block (~1411) | 902–1411 |
+| `pelagic_co2sys_preprocess` | **the ENTIRE `if (RUN_CO2SYS .eq. 1) then` construct** — from that `if` (line ~382) through its matching `end if ! call co2sys` (line ~454), inclusive. This wraps the CO2SYS-input population, the CO2SYS `!$omp parallel` region, and its `!$omp end parallel`. Do **not** start at 398 — that would split the `if`/`end if` across two procedures. | 382–454 |
+| `pelagic_speciation_preprocess` | from **line ~456** (`HCO3 = HCO3 / 1000000.0`, the first statement *after* `end if ! call co2sys`) to the `! BEGIN OpenMP PARALLEL REGION` banner (line ~860) — REDOX_AND_SPECIATION, H2S, Fe/Mn fractions | 456–859 |
+| `pelagic_biology` | inside the main region, from `! D I S S O L V E D  O X Y G E N` (~903) through the ZOOPLANKTON call + N/P dissolution, ending before `ORGANIC_CARBON_MINERALIZATION`'s block (~1411) | 903–1411 |
 | `pelagic_chemistry` | from the mineralization block (~1412) through the redox kinetics, ending before `! Final calculation of derivatives` (~1878) | 1412–1878 |
-| `pelagic_derivatives` | from `! Final calculation of derivatives` (~1879) to `!$omp end parallel` (~3679) | 1879–3679 |
+| `pelagic_derivatives` | from `! Final calculation of derivatives` (~1879) **up to but NOT including `end if  ! nkn_local > 0`** (line ~3678). That outer `end if` — which closes the `if (nkn_local > 0)` at line ~900 — stays in the orchestrator, wrapping the three phase calls, immediately before `!$omp end parallel`. The block DOES include the inner CLAMP_COUNT `end if` (~3676, which closes `if (allocated(CLAMP_COUNT))` opened at ~3658). | 1879–~3677 |
+
+**Balanced-nesting rule (why the boundary table is exact):** every `if`/`do`/`select`/`where` a phase opens must be closed *inside the same phase*, and any construct opened before a phase's start or closed after its end stays in the orchestrator. Two constructs straddle phase boundaries and must be kept whole in the orchestrator: `if (RUN_CO2SYS .eq. 1)` (382→454, kept whole *inside* `pelagic_co2sys_preprocess`) and `if (nkn_local > 0)` (900→3678, whose `if` and `end if` both stay in the orchestrator around the three in-region calls). Before cutting any block, run a nesting-balance check on the exact span and confirm it nets to zero (see each task's verification).
 
 ---
 
 ## Task 1: Verification harness + baselines + `contains` scaffold
 
-**Files:**
-- Modify: `.gitignore` (add `verify_baseline/`, `INPUT_verify.txt` if not present)
-- Create/confirm: `tools/refactor_baseline.sh`, `tools/refactor_verify.sh`, `INPUT_verify.txt` (already present on branch)
-- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` — add an empty `contains` section (no procedures yet)
+**Files (all already present on branch — this task confirms + captures + scaffolds):**
+- `tools/refactor_baseline.sh`, `tools/refactor_verify.sh` — the gate harness.
+- `INPUT_verify.txt` (default, all-box output) + `INPUT_verify_ar.txt` (advanced-redox variant), and their `INPUTS/PELAGIC_INPUTS_verify*.txt`, `INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt` (all 25 boxes emit state+process output), `INPUTS/PELAGIC_MODEL_OPTIONS_advredox.txt` (ADVANCED_REDOX=1, LIGHT_EXTINCTION=1).
+- Modify: `.gitignore` (ignores `verify_baseline/`; the `INPUT_verify*` and `INPUTS/*_verify*`/`*_advredox*` config files ARE committed).
+- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` — add an empty `contains` section (no procedures yet).
+
+**Why two configs (do not drop either):** the gate's coverage rests on them. `default` enables output for **all 25 boxes** so every OpenMP thread-chunk (with nkn=25/8thr the chunks are nodes [1-4][5-7][8-10][11-13][14-16][17-19][20-22][23-25]) has monitored nodes — a private→shared bug in any chunk shows up. `advredox` sets `ADVANCED_REDOX_OPTION=1` + `LIGHT_EXTINCTION_OPTION=1`, exercising the `DO_ADVANCED_REDOX_SIMULATION>0` branches (including the REDOX/DOCMIN bundle population at ~line 1418 — the refactor's correctness crux) that the default config never runs.
 
 **Interfaces:**
-- Produces: a green `tools/refactor_verify.sh` gate and `verify_baseline/{serial,omp8}/` reference outputs that every later task diffs against.
+- Produces: a green `tools/refactor_verify.sh` gate and `verify_baseline/{default,advredox}_{serial,omp8}/` reference outputs (4 dirs × 52 `.out` files) that every later task diffs against.
 
-- [ ] **Step 1: Confirm the harness files exist and are executable**
+- [ ] **Step 1: Confirm the harness + config files exist and are executable**
 
 ```bash
-ls -l tools/refactor_baseline.sh tools/refactor_verify.sh INPUT_verify.txt
+ls -l tools/refactor_baseline.sh tools/refactor_verify.sh INPUT_verify.txt INPUT_verify_ar.txt \
+      INPUTS/PELAGIC_INPUTS_verify.txt INPUTS/PELAGIC_INPUTS_verify_ar.txt \
+      INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt INPUTS/PELAGIC_MODEL_OPTIONS_advredox.txt
 chmod +x tools/refactor_baseline.sh tools/refactor_verify.sh
 ```
 
-- [ ] **Step 2: Capture pre-refactor baselines**
+- [ ] **Step 2: Capture pre-refactor baselines (both configs × serial + omp8)**
 
 ```bash
 tools/refactor_baseline.sh
 ```
-Expected tail: `serial: 16 .out files` and `omp8: 16 .out files`.
+Expected tail: four lines `default_serial: 52 .out files`, `default_omp8: 52`, `advredox_serial: 52`, `advredox_omp8: 52`.
 
 - [ ] **Step 3: Confirm the gate PASSes on unchanged code**
 
 ```bash
 tools/refactor_verify.sh; echo "exit=$?"
 ```
-Expected: `[serial] BIT-IDENTICAL (16 files)`, `[omp8] BIT-IDENTICAL (16 files)`, `[0D golden] PASS`, `GATE: PASS`, `exit=0`.
+Expected: four `[<config>/<mode>] BIT-IDENTICAL (52 files)` lines, `[0D golden] PASS`, `GATE: PASS`, `exit=0`.
 
 - [ ] **Step 4: Add an empty `contains` section to the subroutine**
 
@@ -112,34 +119,38 @@ git commit -m "refactor(pelagic): add bit-identical verification harness + empty
 - Consumes: host arrays and `nkn` by host association.
 - Produces: internal procedure `pelagic_co2sys_preprocess()` (no arguments — the CO2SYS block runs serially and reads/writes host arrays; the `ns/ne/nkn_local/rem_omp/n_omp` it uses inside its *own* parallel region are host variables it can privatize in its own directive or declare locally).
 
-- [ ] **Step 1: Identify the block**
+- [ ] **Step 1: Identify the block — the WHOLE `if (RUN_CO2SYS .eq. 1)` construct**
 
-The self-contained CO2SYS block: the `n_omp = 1` / `!$ n_omp = min(nkn, omp_get_max_threads())` lines, the `!$omp parallel ... num_threads(n_omp)` region containing the `call CO2SYS(...)`, through its `!$omp end parallel` (pre-refactor lines ~398–451). Confirm the exact span:
+CRITICAL: the block is the **entire** `if (RUN_CO2SYS .eq. 1) then ... end if ! call co2sys` construct (pre-refactor lines ~382–454), NOT just the inner `!$omp parallel` region. It contains the CO2SYS-input population, the `!$omp parallel` region, and the closing `end if`. Extracting only the inner `!$omp` region (398–451) would leave the `if` in the orchestrator and move its `end if` — an unmatched-IF compile error. Locate both ends:
 
 ```bash
-grep -n "RUN_CO2SYS\|call CO2SYS\|!\$omp end parallel" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90 | head
+grep -n "if (RUN_CO2SYS .eq. 1) then\|end if ! call co2sys\|!\$omp end parallel" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90 | head
+# Confirm the span nests to zero (open == close):
+awk '/if \(RUN_CO2SYS \.eq\. 1\) then/{f=1} f{print} /end if ! call co2sys/{if(f)exit}' \
+  SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90 | grep -cE 'then$|end if'
 ```
 
-- [ ] **Step 2: Move the block into a `contains` procedure**
+- [ ] **Step 2: Move the whole construct into a `contains` procedure**
 
-Cut the block and paste it verbatim into the `contains` section as:
+Cut lines ~382–454 (the full `if (RUN_CO2SYS...)` through `end if ! call co2sys`) and paste verbatim:
 
 ```fortran
     subroutine pelagic_co2sys_preprocess()
         ! CO2SYS carbonate-chemistry preprocessing (TODO 1.6 — verbatim lift).
+        ! Includes the whole `if (RUN_CO2SYS .eq. 1) then ... end if` guard.
         ! Runs serially; its own !$omp parallel region chunks CO2SYS across
         ! threads. All arrays reached by host association.
-        <the moved block, unchanged>
+        <the moved block — the full if/end-if construct, unchanged>
     end subroutine pelagic_co2sys_preprocess
 ```
 
-Replace the original location with a single call:
+Replace the original location (the whole 382–454 span) with a single call:
 
 ```fortran
     call pelagic_co2sys_preprocess()
 ```
 
-Note: variables used only inside this block's own parallel region (`co2_ntps`, `CO2SYS_OUT_LOCAL`, `CO2SYS_HEAD_LOCAL`, and the chunk scalars in *its* private clause) must remain visible — either keep their host declarations (host association) or move their declarations into the procedure. Keeping host declarations is the smaller diff; do that.
+Note: variables used only inside this block's own parallel region (`co2_ntps`, `CO2SYS_OUT_LOCAL`, `CO2SYS_HEAD_LOCAL`, and the chunk scalars in *its* private clause) must remain visible — keep their host declarations (host association); that is the smaller diff.
 
 - [ ] **Step 3: Build**
 
@@ -173,12 +184,15 @@ git commit -m "refactor(pelagic): extract pelagic_co2sys_preprocess (TODO 1.6)"
 - Consumes: host arrays by host association.
 - Produces: internal procedure `pelagic_speciation_preprocess()` (no arguments — sequential; no OpenMP).
 
-- [ ] **Step 1: Identify the block**
+- [ ] **Step 1: Identify the block — starting AFTER the `RUN_CO2SYS` `end if`**
 
-The sequential aquatic-chemistry preprocessing between the end of the CO2SYS block and the `! BEGIN OpenMP PARALLEL REGION` banner: `REDOX_AND_SPECIATION`, H2S species, Fe²⁺/Fe³⁺/Mn²⁺ dissolved/particulate fractions, settling prep, saved-output guards (pre-refactor lines ~452–859).
+The sequential aquatic-chemistry preprocessing runs from the **first statement after `end if ! call co2sys`** (pre-refactor `HCO3 = HCO3 / 1000000.0`, line ~456 — this is *after* Task 2 replaced 382–454 with `call pelagic_co2sys_preprocess()`) to the `! BEGIN OpenMP PARALLEL REGION` banner (~860): `REDOX_AND_SPECIATION`, H2S species, Fe²⁺/Fe³⁺/Mn²⁺ dissolved/particulate fractions, settling prep, saved-output guards. Do **not** start at line 452 — that would sweep in the `end if ! call co2sys` (already handled by Task 2) and unbalance the nesting.
 
 ```bash
-grep -n "REDOX_AND_SPECIATION\|Calculate H2S Species\|BEGIN OpenMP PARALLEL REGION" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90
+grep -n "call pelagic_co2sys_preprocess\|REDOX_AND_SPECIATION\|BEGIN OpenMP PARALLEL REGION" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90
+# Nesting-balance the intended span (must net to zero — no orphan end-if):
+awk '/HCO3 = HCO3 \/ 1000000.0/{f=1} /BEGIN OpenMP PARALLEL REGION/{f=0} f' \
+  SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90 | grep -cE 'then$' # compare against end-if count
 ```
 
 - [ ] **Step 2: Move the block into a `contains` procedure**
@@ -197,7 +211,7 @@ Replace the original location with:
     call pelagic_speciation_preprocess()
 ```
 
-The `REDOX_STATE_CHUNK` / `REDOX_LIM_CHUNK` bundle pointer assignments that occur in this range (populated before REDOX_AND_SPECIATION) move with the block; they are host variables, still visible.
+This block populates the **plain, non-chunk** `REDOX_STATE` / `REDOX_LIM` bundles (pointer assignments feeding the serial whole-`nkn` `REDOX_AND_SPECIATION` call). They are host variables reached by host association — **no arguments** for this serial procedure. (The `_CHUNK` variants `REDOX_STATE_CHUNK`/`REDOX_LIM_CHUNK` are a *different* pair, populated later inside the parallel region — they belong to Task 5, not here.)
 
 - [ ] **Step 3: Build**
 
@@ -233,11 +247,13 @@ git commit -m "refactor(pelagic): extract pelagic_speciation_preprocess (TODO 1.
 
 - [ ] **Step 1: Identify the block**
 
-Inside the main `!$omp parallel` region: dissolved-oxygen/aeration, total phytoplankton + chlorophyll, light extinction, `ENV_CHUNK` population, and the five biology library calls (`DIATOMS`, `CYANOBACTERIA_BOUYANT`, `FIX_CYANOBACTERIA_BOUYANT`, `NOSTOCALES`, `ZOOPLANKTON`) plus N/P dissolution (pre-refactor lines ~902–1411, i.e. the body inside `if (nkn_local > 0) then` up to the mineralization block).
+Inside the main `!$omp parallel` region: dissolved-oxygen/aeration, total phytoplankton + chlorophyll, light extinction, `ENV_CHUNK` population, and the five biology library calls (`DIATOMS`, `CYANOBACTERIA_BOUYANT`, `FIX_CYANOBACTERIA_BOUYANT`, `NOSTOCALES`, `ZOOPLANKTON`) plus N/P dissolution (pre-refactor lines ~903–1411, i.e. the body inside `if (nkn_local > 0) then` up to the mineralization block — but **do not** include the `if (nkn_local > 0) then` line itself; it stays in the orchestrator).
 
 ```bash
 grep -n "D I S S O L V E D  O X Y G E N\|call DIATOMS\|call ZOOPLANKTON\|MINERALIZATION OF DOC" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90
 ```
+
+ORPHANED-DIRECTIVE HAZARD: this block contains an `!$omp critical`/`end critical` pair (guarding a negative-CHLA warning, ~lines 961–963) and **two** `!$omp barrier` / `!$omp master` … `!$omp end master` / `!$omp barrier` pairs (guarding the `DBGSTR_PEL_R_ZOO_GROWTH_01` / `DBGSTR_PEL_R_ZOO_RESP_01` debug calls, ~lines 1327–1341). Move them **verbatim** — never split a `barrier` from its matching `master`/`end master`, or truncate the block between the two barrier pairs. A mismatched barrier count across threads hangs the OMP=8 leg of the gate.
 
 - [ ] **Step 2: Determine the argument list**
 
@@ -378,23 +394,26 @@ git commit -m "refactor(pelagic): extract pelagic_chemistry (TODO 1.6)"
 - Consumes: `ns, ne, nkn_local` + referenced private scalars/bundles.
 - Produces: internal procedure `pelagic_derivatives(ns, ne, nkn_local, <referenced args>)`. This block contains orphaned `!$omp barrier`/`master`/`critical` directives — they stay verbatim and bind to the enclosing region at run time.
 
-- [ ] **Step 1: Identify the block**
+- [ ] **Step 1: Identify the block — stop BEFORE `end if  ! nkn_local > 0`**
 
-From `! Final calculation of derivatives` to the `!$omp end parallel` of the main region (pre-refactor lines ~1879–3679): derivative assembly, negativity clamping, diagnostic dumps, process-rate and saved-output writes.
+CRITICAL boundary: the block runs from `! Final calculation of derivatives` up to but **NOT including** the `end if  ! nkn_local > 0` line (pre-refactor ~3678). That `end if` closes the `if (nkn_local > 0)` opened at ~line 900 and **must stay in the orchestrator**, wrapping the three phase calls, immediately before `!$omp end parallel`. Taking the block "up to `!$omp end parallel`" (naïvely) would sweep that `end if` into the callee → unmatched-IF compile error. The block DOES include the inner CLAMP_COUNT `end if` (~3676). Locate the exact stop line:
 
 ```bash
-grep -n "Final calculation of derivatives\|!\$omp end parallel" SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90 | tail
+F=SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90
+grep -n "Final calculation of derivatives\|end if  ! nkn_local > 0\|!\$omp end parallel" "$F" | tail
+# The moved block ends at the line JUST BEFORE the "end if  ! nkn_local > 0" match.
+# Confirm the intended span nets to zero (opens == closes):
+awk '/Final calculation of derivatives/{f=1} /end if  ! nkn_local > 0/{f=0} f' "$F" \
+  | grep -cE 'then$|[^e]do |select case'   # compare against the end-* count in the same span
 ```
-Take the block from `! Final calculation of derivatives` up to (but not including) the `!$omp end parallel` — the `end parallel` stays in the orchestrator.
 
 - [ ] **Step 2: Determine the argument list**
 
 ```bash
 F=SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90
-# The block runs from "Final calculation of derivatives" to the main region's
-# "!$omp end parallel". awk from the marker to the LAST end-parallel:
+# awk from the marker to (but not including) the outer nkn_local end-if:
 for v in ns ne nkn_local ENV_CHUNK REDOX_STATE_CHUNK REDOX_LIM_CHUNK DOCMIN_CHUNK i k loss scale_loss total_removal allowed_rate scale allowed_rate_local old_rate sum_removals; do
-  n=$(awk '/Final calculation of derivatives/{f=1} f{print} /!\$omp end parallel/{if(f)exit}' "$F" | grep -wc "$v")
+  n=$(awk '/Final calculation of derivatives/{f=1} /end if  ! nkn_local > 0/{f=0} f' "$F" | grep -wc "$v")
   echo "$v = $n"
 done
 ```
@@ -414,10 +433,15 @@ The derivative-assembly + clamping code is the heaviest user of the `loss/scale/
     end subroutine pelagic_derivatives
 ```
 
-Replace the block with:
+Replace the block with just the call — and verify the orchestrator now reads exactly as the spec's target, with the `if (nkn_local > 0)` / `end if` pair (from line ~900 and ~3678) intact around the three calls:
 
 ```fortran
-        call pelagic_derivatives(ns, ne, nkn_local, <args>)
+        if (nkn_local > 0) then
+            call pelagic_biology     (ns, ne, nkn_local, ENV_CHUNK)
+            call pelagic_chemistry   (ns, ne, nkn_local, DOCMIN_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK)
+            call pelagic_derivatives (ns, ne, nkn_local, <args>)
+        end if
+    !$omp end parallel
 ```
 
 - [ ] **Step 4: Trim the host `private(...)` clause**
@@ -494,10 +518,10 @@ Use superpowers:finishing-a-development-branch to present merge options after CI
 
 ## Notes for the executor
 
-- **The gate is the whole test strategy.** There are no new unit tests; `tools/refactor_verify.sh` reporting `GATE: PASS` after each task is the pass criterion. It rebuilds both binaries, runs the 30-day 25-box config serial + OMP=8, diffs each against its own baseline, and runs the 0D golden.
-- **serial and omp8 baselines legitimately differ from each other** (~2 PROCESS_RATES files, the TODO 4.2 CO2SYS chunking drift). The gate never compares them to each other — only same-config before/after. Do not "fix" that drift.
-- **If a same-config diff appears**, stop and use superpowers:systematic-debugging. The most likely cause is a private variable reached by host association instead of passed as an argument (turns private → shared → OMP=8 diverges from serial-after). The fix is to add it to the procedure's argument list.
+- **The gate is the whole test strategy.** There are no new unit tests; `tools/refactor_verify.sh` reporting `GATE: PASS` after each task is the pass criterion. It rebuilds both binaries and, for BOTH configs (default all-box + advredox), runs the 30-day 25-box config serial + OMP=8, diffs each (config,threadmode) against its own baseline, and runs the 0D golden. A build failure aborts the gate (it never diffs a stale binary).
+- **Same-config, same-threadmode is the only comparison.** serial vs omp8 of the same config legitimately differ (a few PROCESS_RATES files, the TODO 4.2 CO2SYS chunking drift); default vs advredox differ (different science). The gate never cross-compares — only `<config>_<mode>` after vs `<config>_<mode>` before. Do not "fix" those cross-differences.
+- **If a same-config diff appears**, stop and use superpowers:systematic-debugging. The most likely cause is a private variable reached by host association instead of passed as an argument (turns private → shared → OMP=8 diverges from serial-after). The fix is to add it to the procedure's argument list. The advredox omp8 leg is the one that exercises the REDOX/DOCMIN bundle crux — watch it especially on Tasks 5–6.
 - **Line numbers shift after each extraction.** Always re-find a block by its banner-comment markers (the greps in each task), not by the pre-refactor line numbers.
 - **`intent` for shared arrays reached by host association:** none — they are not arguments. Only per-thread private data is passed, and its `intent` is `in` for `ns/ne/nkn_local` and `inout` for bundles the block updates.
-- **Bundles appear in two contexts.** `REDOX_STATE_CHUNK`/`REDOX_LIM_CHUNK` are referenced both in the serial `pelagic_speciation_preprocess` (Task 3) and in the parallel `pelagic_chemistry` (Task 5); `ENV_CHUNK` is populated in the parallel `pelagic_biology` (Task 4). This is fine and not a contradiction: in the **serial** procedures (Tasks 2–3, called before the parallel region) bundles are reached by host association (no private/shared distinction applies serially); in the **in-region** procedures (Tasks 4–6) they are passed as arguments because they are private-clause members. Each thread re-populates its private bundle inside the region — the serial population does not carry in. Verbatim code motion preserves this exactly; the arg scans in each task's Step 2 tell you which context you're in (non-zero count in the block → argument).
+- **Two DISTINCT redox bundle pairs — don't conflate them.** The **non-chunk** `REDOX_STATE`/`REDOX_LIM` are populated and consumed entirely within the *serial* `pelagic_speciation_preprocess` (Task 3, feeding the whole-`nkn` `REDOX_AND_SPECIATION` call) — reached by host association, no arguments. The **`_CHUNK`** variants `REDOX_STATE_CHUNK`/`REDOX_LIM_CHUNK`/`DOCMIN_CHUNK` are populated and consumed entirely within the *in-region* `pelagic_chemistry` (Task 5) — passed as `intent(inout)` arguments (private-clause members). They are different variables of the same type; the serial population does not carry into the region. `ENV_CHUNK` is populated + consumed in `pelagic_biology` (Task 4), passed as an argument. The Step-2 arg scan in each task is the source of truth (non-zero count in the block → argument).
 - **Validated arg predictions** (from the pre-refactor code): biology → `ENV_CHUNK`; chemistry → `DOCMIN_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK`; derivatives → the clamp scalars (`loss` etc.) as locals + whichever bundles Step 2 shows. Re-run the Step-2 scan to confirm before writing each signature.

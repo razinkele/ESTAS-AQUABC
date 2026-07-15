@@ -74,6 +74,15 @@ implementation plan):
 The main region (878–3679) also contains interleaved `!$omp barrier` + `!$omp
 master` blocks that drive collective diagnostic dumps.
 
+**Boundary caveat (exact cuts are in the plan).** The line ranges above are
+approximate content anchors, not cut points. Two `if` constructs *straddle* a
+phase boundary and must be kept whole rather than split: the CO2SYS phase is the
+entire `if (RUN_CO2SYS .eq. 1) then … end if` construct (~382–454, so the CO2SYS
+procedure owns the whole guard), and `if (nkn_local > 0) then … end if`
+(~900–3678) stays in the orchestrator wrapping the three in-region calls (its
+`end if` is NOT part of the Derivatives phase). The implementation plan pins each
+cut with a nesting-balance check.
+
 ## Target architecture
 
 The five phases become **internal `contains` procedures** of
