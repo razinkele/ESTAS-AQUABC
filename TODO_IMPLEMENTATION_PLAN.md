@@ -440,6 +440,8 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 ### 4.2 [P2] CO2SYS Parallelization
 
+**Status:** ✅ COMPLETE 2026-07-15 — profiled (gprof: CO2SYS ~15% of kinetics, >10% gate met), then parallelized the pelagic CO2SYS call by chunking its `ntps=nkn` arrays `[ns:ne]` across threads with private output buffers (`aquabc_II_pelagic_model.f90` `RUN_CO2SYS` block; `co2sys.f90` unchanged — CO2SYS is pure/stateless). **Result: 8-thread speedup at nkn=1000 jumped from 2.84× to 6.55×** (roughly doubled at large nkn; see `docs/OPENMP_PERFORMANCE.md`). Correctness: NOT bit-identical (whole-vector Newton pH converges to its chunk's slowest element) but drift is ~1000× below the solver's `pHTol=1e-4` (0D golden `nkn=1` bit-identical + passes; full model nkn=25 1-vs-2-thread max abs diff 1e-6 = output print precision, max rel 7.8e-9). Scope: pelagic call site only (the 4 sediment CO2SYS calls are a follow-up, only active with MODEL_SEDIMENTS=1).
+
 **File:** `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90`
 
 **Problem:** CO2SYS computation is currently sequential (before the parallel region). For large `nkn`, this could become the serial bottleneck (Amdahl's law).
@@ -449,6 +451,14 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 **Update 2026-07-15 (from 4.1 benchmark):** now quantitatively justified — the OpenMP benchmark measured a **~26 % serial fraction** at `nkn=1000` (Amdahl fit), which caps OpenMP scaling at ~3.9× regardless of thread count. CO2SYS (`aquabc_II_co2sys.f90`, no `!$omp`, O(`nkn`) serial before the parallel region) is the prime suspect. Parallelizing its per-node loop would lift the ceiling at large `nkn`. See `docs/OPENMP_PERFORMANCE.md`.
 
 **Effort:** ~4 hours (including profiling)
+
+---
+
+### 4.4 [P2] Full-model OpenMP hang at high thread counts (NEW — found during 4.2)
+
+**Status:** 🔴 OPEN — discovered 2026-07-15. The full `ESTAS_II` executable **hangs at `OMP_NUM_THREADS=8`** on the default input (1 and 2 threads complete fine). **Pre-existing and independent of the kinetics/CO2SYS parallelization** — the stock model (CO2SYS-change stashed) hangs identically at 8 threads, and the micro-benchmark that exercises the exact kinetics+CO2SYS path does NOT hang. So the fault is in the ESTAS-specific solver/transport path (e.g. `mod_SOLVER.f90`'s separate `!$omp parallel do`, or box-network transport), not the kinetics. **Impact:** caps production `ESTAS_II` at ≤2 threads until fixed; performance work uses the micro-benchmark (`tools/benchmark_openmp.sh`), which is unaffected. **Task:** reproduce with a debug/`-fsanitize=thread` build, isolate the hanging region (likely a missing/incorrect `!$omp` clause or a shared-write race in `mod_SOLVER.f90`), fix, and confirm `ESTAS_II` scales to 8 threads. See `docs/OPENMP_PERFORMANCE.md` §"Full-model OpenMP status".
+
+**Effort:** ~4–8 hours (concurrency debugging)
 
 ---
 
@@ -535,7 +545,8 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 2.6 Centralized configuration
 - [ ] 3.1 Compiler matrix (when Intel CI available)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
-- [ ] 4.2 CO2SYS parallelization
+- [x] 4.2 CO2SYS parallelization — **Done** (2026-07-15; chunked across threads; nkn=1000/8thr speedup 2.84×→6.55×; see docs/OPENMP_PERFORMANCE.md)
+- [ ] 4.4 Full-model OpenMP hang @≥8 threads (NEW, found during 4.2; pre-existing, in ESTAS solver/transport path)
 - [x] 4.3 Thread affinity documentation — **Done** (2026-07-15; measured negligible on single-socket, see docs/OPENMP_PERFORMANCE.md)
 
 ---

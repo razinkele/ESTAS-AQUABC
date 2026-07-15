@@ -146,6 +146,21 @@ program aquabc_II_pelagic_benchmark
         'BENCH_RESULT nkn=', nkn, ' threads=', nthreads, ' steps=', NUM_TIME_STEPS, &
         ' seconds=', elapsed, ' us_per_step=', us_per_step
 
+    ! Optional correctness dump: write the final per-node pH (a direct CO2SYS
+    ! output) to BENCH_DUMP, to compare across thread counts (chunking drift).
+    block
+        character(len=256) :: dumpfile
+        integer :: dlen, dstat, j
+        call get_environment_variable("BENCH_DUMP", dumpfile, dlen, dstat)
+        if (dstat == 0 .and. dlen > 0) then
+            open(unit=42, file=trim(dumpfile), status='replace', action='write')
+            do j = 1, nkn
+                write(42, '(I0,1X,ES24.16)') j, PH(j)
+            end do
+            close(42)
+        end if
+    end block
+
 contains
 
     integer function read_env_int(name, default_val) result(val)
