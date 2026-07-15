@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import logging
 import os
 import subprocess
-import logging
 import sys
 from datetime import datetime
 
@@ -22,8 +22,7 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 import pandas as pd
-
-from shiny import App, ui, reactive, render
+from shiny import App, reactive, render, ui
 
 # Input-file analysis and validation helpers (stdlib-only, extracted for testability)
 try:
@@ -35,97 +34,128 @@ except ImportError:
 
 # Import diagnostics panel (process rate analysis UI)
 try:
-    from shiny_app.diagnostics import diagnostics_ui, diagnostics_server
+    from shiny_app.diagnostics import diagnostics_server, diagnostics_ui
 except ImportError:
-    from diagnostics import diagnostics_ui, diagnostics_server
+    from diagnostics import diagnostics_server, diagnostics_ui
 
 # Import UI script fragments (phase-2 create_ui() split)
 try:
     from shiny_app.ui_scripts import (
-        reload_script, nav_script, settings_script,
-        help_script, changelog_script, theme_script,
+        changelog_script,
+        help_script,
+        nav_script,
+        reload_script,
+        settings_script,
+        theme_script,
     )
 except ImportError:
     from ui_scripts import (
-        reload_script, nav_script, settings_script,
-        help_script, changelog_script, theme_script,
+        changelog_script,
+        help_script,
+        nav_script,
+        reload_script,
+        settings_script,
+        theme_script,
     )
 
 # Import UI chrome fragments (phase-2c create_ui() split)
 try:
     from shiny_app.ui_chrome import (
-        build_sidebar, app_header, external_css,
-        settings_offcanvas, help_offcanvas, changelog_offcanvas,
+        app_header,
+        build_sidebar,
+        changelog_offcanvas,
+        external_css,
+        help_offcanvas,
+        settings_offcanvas,
     )
 except ImportError:
     from ui_chrome import (
-        build_sidebar, app_header, external_css,
-        settings_offcanvas, help_offcanvas, changelog_offcanvas,
+        app_header,
+        build_sidebar,
+        changelog_offcanvas,
+        external_css,
+        help_offcanvas,
+        settings_offcanvas,
     )
 
 try:
-    from shiny_app.app_state import RunController, AppState
+    from shiny_app.app_state import AppState, RunController
 except ImportError:
-    from app_state import RunController, AppState
+    from app_state import AppState, RunController
 
 try:
-    from shiny_app.modules.parameters import parameters_ui, parameters_server
+    from shiny_app.modules.parameters import parameters_server, parameters_ui
 except ImportError:
-    from modules.parameters import parameters_ui, parameters_server
+    from modules.parameters import parameters_server, parameters_ui
 
 try:
-    from shiny_app.modules.model_structure import model_structure_ui, model_structure_server
+    from shiny_app.modules.model_structure import (
+        model_structure_server,
+        model_structure_ui,
+    )
 except ImportError:
-    from modules.model_structure import model_structure_ui, model_structure_server
+    from modules.model_structure import model_structure_server, model_structure_ui
 
 try:
-    from shiny_app.modules.map import map_ui, map_server
+    from shiny_app.modules.map import map_server, map_ui
 except ImportError:
-    from modules.map import map_ui, map_server
+    from modules.map import map_server, map_ui
 
 try:
-    from shiny_app.modules.model_options import model_options_ui, model_options_server
+    from shiny_app.modules.model_options import model_options_server, model_options_ui
 except ImportError:
-    from modules.model_options import model_options_ui, model_options_server
+    from modules.model_options import model_options_server, model_options_ui
 
 try:
-    from shiny_app.modules.initial_conditions import initial_conditions_ui, initial_conditions_server
+    from shiny_app.modules.initial_conditions import (
+        initial_conditions_server,
+        initial_conditions_ui,
+    )
 except ImportError:
-    from modules.initial_conditions import initial_conditions_ui, initial_conditions_server
+    from modules.initial_conditions import (
+        initial_conditions_server,
+        initial_conditions_ui,
+    )
 
 try:
-    from shiny_app.modules.input_files import input_files_ui, input_files_server
+    from shiny_app.modules.input_files import input_files_server, input_files_ui
 except ImportError:
-    from modules.input_files import input_files_ui, input_files_server
+    from modules.input_files import input_files_server, input_files_ui
 
 try:
-    from shiny_app.modules.scenarios import scenarios_ui, scenarios_server
+    from shiny_app.modules.scenarios import scenarios_server, scenarios_ui
 except ImportError:
-    from modules.scenarios import scenarios_ui, scenarios_server
+    from modules.scenarios import scenarios_server, scenarios_ui
 
 try:
     from shiny_app.modules.model_build import (
-        BUILD_TYPES, COMPILERS, model_build_server, model_build_ui,
+        BUILD_TYPES,
+        COMPILERS,
+        model_build_server,
+        model_build_ui,
     )
 except ImportError:
     from modules.model_build import (
-        BUILD_TYPES, COMPILERS, model_build_server, model_build_ui,
+        BUILD_TYPES,
+        COMPILERS,
+        model_build_server,
+        model_build_ui,
     )
 
 try:
-    from shiny_app.modules.mass_balance import mass_balance_ui, mass_balance_server
+    from shiny_app.modules.mass_balance import mass_balance_server, mass_balance_ui
 except ImportError:
-    from modules.mass_balance import mass_balance_ui, mass_balance_server
+    from modules.mass_balance import mass_balance_server, mass_balance_ui
 
 try:
-    from shiny_app.modules.observations import observations_ui, observations_server
+    from shiny_app.modules.observations import observations_server, observations_ui
 except ImportError:
-    from modules.observations import observations_ui, observations_server
+    from modules.observations import observations_server, observations_ui
 
 try:
-    from shiny_app.modules.plot import plot_ui, plot_server
+    from shiny_app.modules.plot import plot_server, plot_ui
 except ImportError:
-    from modules.plot import plot_ui, plot_server
+    from modules.plot import plot_server, plot_ui
 
 try:
     from shiny_app.modules.sim_config import sim_config_server, sim_config_ui
@@ -219,7 +249,7 @@ if os.path.exists(OUTPUT_CSV):
     logger.info(f"  Last modified: {datetime.fromtimestamp(os.path.getmtime(OUTPUT_CSV)).strftime('%Y-%m-%d %H:%M:%S')}")
     try:
         # Try to read header
-        with open(OUTPUT_CSV, 'r') as f:
+        with open(OUTPUT_CSV) as f:
             first_line = f.readline().strip()
             logger.info(f"  Header preview: {first_line[:100]}")
         # Count lines (quick estimate)
@@ -456,10 +486,10 @@ def server(input, output, session):
                     ui.tags.p("Help file not found.", class_="text-danger"),
                     ui.tags.p(f"Expected: {help_file}", class_="text-muted small")
                 )
-            
-            with open(help_file, 'r', encoding='utf-8') as f:
+
+            with open(help_file, encoding='utf-8') as f:
                 md_content = f.read()
-            
+
             # Add custom CSS for better table and navigation styling
             table_css = """
             <style>
@@ -570,7 +600,7 @@ def server(input, output, session):
                 }
             </style>
             """
-            
+
             if MARKDOWN_AVAILABLE:
                 # Convert markdown to HTML with table extension
                 html_content = markdown.markdown(
@@ -606,10 +636,10 @@ def server(input, output, session):
                     ui.tags.p("Changelog file not found.", class_="text-warning"),
                     ui.tags.p(f"Expected: {changelog_file}", class_="text-muted small")
                 )
-            
-            with open(changelog_file, 'r', encoding='utf-8') as f:
+
+            with open(changelog_file, encoding='utf-8') as f:
                 md_content = f.read()
-            
+
             # Custom CSS for changelog styling
             changelog_css = """
             <style>
@@ -662,7 +692,7 @@ def server(input, output, session):
                 }
             </style>
             """
-            
+
             if MARKDOWN_AVAILABLE:
                 html_content = markdown.markdown(
                     md_content,
