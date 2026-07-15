@@ -13,11 +13,3 @@ def test_argfree_panels_render_with_all_markers():
         html = str(getattr(ui_panels, name)())
         for m in markers:
             assert m in html, f"{name} missing marker {m!r}"
-
-
-def test_panel_model_build_takes_consts_and_renders():
-    compilers = {"gfortran": {"name": "GNU Fortran"}}
-    build_types = {"release": {"name": "Release"}}
-    html = str(ui_panels.panel_model_build(compilers, build_types))
-    for m in ("nav_model_build", "Build Configuration", "Available Executables", "GNU Fortran", "Release"):
-        assert m in html, f"panel_model_build missing {m!r}"

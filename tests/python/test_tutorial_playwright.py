@@ -171,20 +171,20 @@ class TestStep2ModelBuild:
         """Build and Rebuild All buttons are present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_build")
-        expect(page.locator("#btn_build")).to_be_visible()
-        expect(page.locator("#btn_rebuild")).to_be_visible()
+        expect(page.locator("#model_build-btn_build")).to_be_visible()
+        expect(page.locator("#model_build-btn_rebuild")).to_be_visible()
 
     def test_build_log_output(self, page: Page, app: ShinyAppProc):
         """Build log verbatim output area is present."""
         goto_app(page, app)
         navigate_to(page, "nav_model_build")
-        expect(page.locator("#build_log")).to_be_visible()
+        expect(page.locator("#model_build-build_log")).to_be_visible()
 
     def test_executable_selection_dropdown(self, page: Page, app: ShinyAppProc):
         """Active executable dropdown exists."""
         goto_app(page, app)
         navigate_to(page, "nav_model_build")
-        expect(page.locator("#active_executable")).to_be_visible()
+        expect(page.locator("#model_build-active_executable")).to_be_visible()
 
 
 # ===================================================================

@@ -154,11 +154,11 @@ except ImportError:
 # Import UI content panel fragments (phase-2b create_ui() split)
 try:
     from shiny_app.ui_panels import (
-        panel_dashboard, panel_model_build, panel_model_control,
+        panel_dashboard, panel_model_control,
     )
 except ImportError:
     from ui_panels import (
-        panel_dashboard, panel_model_build, panel_model_control,
+        panel_dashboard, panel_model_control,
     )
 
 # Import UI chrome fragments (phase-2c create_ui() split)
@@ -227,6 +227,15 @@ try:
     from shiny_app.modules.scenarios import scenarios_ui, scenarios_server
 except ImportError:
     from modules.scenarios import scenarios_ui, scenarios_server
+
+try:
+    from shiny_app.modules.model_build import (
+        BUILD_TYPES, COMPILERS, model_build_server, model_build_ui,
+    )
+except ImportError:
+    from modules.model_build import (
+        BUILD_TYPES, COMPILERS, model_build_server, model_build_ui,
+    )
 
 try:
     from shiny_app.modules.mass_balance import mass_balance_ui, mass_balance_server
@@ -397,45 +406,8 @@ NAV_CHOICES = {
     "nav_diagnostics": ("bi-shield-check", "Diagnostics"),
 }
 
-# Build configuration options
-BUILD_TYPES = {
-    "release": {
-        "name": "Release",
-        "description": "Standard optimizations (-O2). Good balance of speed and stability.",
-        "flags_gfortran": "-O2 -march=native -mtune=native",
-        "flags_intel": "-O2 -xHost"
-    },
-    "debug": {
-        "name": "Debug",
-        "description": "Full debugging with bounds checking, backtraces, and warnings. Catches errors but runs slower.",
-        "flags_gfortran": "-g -Og -fcheck=all -fbacktrace -Wall -Wextra -pedantic -ffpe-trap=invalid,zero,overflow",
-        "flags_intel": "-g -O0 -check all -traceback -warn all -fpe0"
-    },
-    "fast": {
-        "name": "Fast",
-        "description": "Aggressive optimizations (-O3, -ffast-math). Maximum speed but may hide numerical issues.",
-        "flags_gfortran": "-O3 -march=native -mtune=native -funroll-loops -ffast-math -flto",
-        "flags_intel": "-O3 -xHost -ipo -no-prec-div -fp-model fast=2"
-    }
-}
-
-COMPILERS = {
-    "gfortran": {
-        "name": "GNU Fortran (gfortran)",
-        "command": "gfortran",
-        "description": "Free, widely available GNU Fortran compiler"
-    },
-    "ifort": {
-        "name": "Intel Fortran (ifort)",
-        "command": "ifort",
-        "description": "Intel Fortran Compiler (Classic) - requires Intel oneAPI"
-    },
-    "ifx": {
-        "name": "Intel Fortran (ifx)",
-        "command": "ifx",
-        "description": "Intel Fortran Compiler (LLVM-based) - requires Intel oneAPI"
-    }
-}
+# BUILD_TYPES/COMPILERS moved to shiny_app/modules/model_build.py (imported above)
+# so the Model Build module owns its own build-configuration data.
 
 # INTEL_COMPILER_SEARCH_PATHS and the Intel/compiler detection helpers
 # (find_compiler_path, is_intel_executable, get_intel_library_paths,
@@ -515,7 +487,7 @@ def create_ui():
         nav_input_hidden,
         panel_dashboard(),
         ui.panel_conditional("input.navigation === 'nav_model_structure'", model_structure_ui("model_structure")),
-        panel_model_build(COMPILERS, BUILD_TYPES),
+        ui.panel_conditional("input.navigation === 'nav_model_build'", model_build_ui("model_build", COMPILERS, BUILD_TYPES)),
         panel_model_control(),
         ui.panel_conditional("input.navigation === 'nav_input_files'", input_files_ui("input_files")),
         ui.panel_conditional("input.navigation === 'nav_parameters'", parameters_ui("parameters")),
@@ -709,144 +681,15 @@ def server(input, output, session):
     run.constants_config = _constants_config
 
     # =========================================================================
-    # Model Build Panel - Server Logic
+    # Executable info helper + Run Model navigation (Model Build panel logic
+    # moved to shiny_app/modules/model_build.py; get_executable_info stays here
+    # because run_executable_info/handle_quick_run (Run Model tab, still inline)
+    # also depend on it)
     # =========================================================================
-
-    def get_available_executables():
-        """Scan for available executable files (thin wrapper)."""
-        return build_commands.get_available_executables(ROOT)
 
     def get_executable_info(exe_name):
         """Get information about an executable (thin wrapper)."""
         return build_commands.get_executable_info(exe_name, ROOT)
-
-    @render.ui
-    def compiler_status():
-        """Check if selected compiler is available"""
-        compiler = input.build_compiler()
-        compiler_info = COMPILERS.get(compiler, {})
-        cmd = compiler_info.get("command", compiler)
-
-        try:
-            path, version = find_compiler_path(cmd)
-            if path:
-                # Show short path for display
-                display_path = path if len(path) < 40 else "..." + path[-37:]
-                return ui.div(
-                    ui.tags.small(f"✓ {cmd} available", class_="text-success"),
-                    ui.tags.br(),
-                    ui.tags.small(version or "Unknown version", class_="text-muted"),
-                    ui.tags.br(),
-                    ui.tags.small(display_path, class_="text-muted", style="font-size: 9px;")
-                )
-            else:
-                return ui.div(
-                    ui.tags.small(f"✗ {cmd} not found", class_="text-danger"),
-                    ui.tags.br(),
-                    ui.tags.small(compiler_info.get("description", ""), class_="text-muted")
-                )
-        except Exception as e:
-            return ui.div(ui.tags.small(f"Error checking compiler: {e}", class_="text-warning"))
-
-    @render.text
-    def build_flags_info():
-        """Show compiler flags for selected build type and compiler"""
-        build_type = input.build_type()
-        compiler = input.build_compiler()
-
-        type_info = BUILD_TYPES.get(build_type, {})
-        flag_key = "flags_intel" if compiler in ["ifort", "ifx"] else "flags_gfortran"
-        flags = type_info.get(flag_key, type_info.get("flags_gfortran", ""))
-
-        return f"Flags: {flags}"
-
-    def get_target_exe_name():
-        """Generate executable name based on compiler and build type (thin wrapper)."""
-        try:
-            compiler = input.build_compiler()
-            build_type = input.build_type()
-        except Exception:
-            return "ESTAS_II_gf_release"
-        return build_commands.target_exe_name(compiler, build_type)
-
-    @render.ui
-    def target_exe_name():
-        """Display the target executable name that will be built"""
-        exe_name = get_target_exe_name()
-        return ui.div(
-            ui.tags.code(exe_name, class_="fs-5"),
-            class_="p-2 bg-light border rounded"
-        )
-
-    @render.ui
-    def executable_list():
-        """Display list of available executables with info"""
-        # Depend on reactive value to trigger refresh
-        run.exe_list_version.get()
-        executables = get_available_executables()
-        if not executables:
-            return ui.div(ui.tags.em("No executables found. Build the model first.", class_="text-muted"))
-
-        items = []
-        for exe in executables:
-            info = get_executable_info(exe)
-            if info["exists"]:
-                # Determine build type from executable name
-                if "_debug" in exe or "_gf_debug" in exe:
-                    badge_class = "bg-warning"
-                    badge_text = "debug"
-                elif "_fast" in exe or "_gf_fast" in exe:
-                    badge_class = "bg-info"
-                    badge_text = "fast"
-                elif "_release" in exe or "_gf_release" in exe:
-                    badge_class = "bg-success"
-                    badge_text = "release"
-                else:
-                    # Default executable (no suffix) - treat as release
-                    badge_class = "bg-success"
-                    badge_text = "release"
-                
-                # Add Intel indicator
-                compiler_badge = None
-                if is_intel_executable(exe):
-                    intel_available, _ = check_intel_libs_available()
-                    if intel_available:
-                        compiler_badge = ui.tags.span("Intel", class_="badge bg-primary ms-1")
-                    else:
-                        compiler_badge = ui.tags.span("Intel ⚠", class_="badge bg-danger ms-1", 
-                                                      title="Intel runtime libraries not found")
-                
-                items.append(
-                    ui.div(
-                        ui.tags.span(exe, class_="fw-bold"),
-                        ui.tags.span(badge_text, class_=f"badge {badge_class} ms-2"),
-                        compiler_badge,
-                        ui.tags.br(),
-                        ui.tags.small(f"Modified: {info['modified']}", class_="text-muted"),
-                        ui.tags.small(f" | Size: {info['size'] / 1024:.1f} KB", class_="text-muted"),
-                        class_="mb-2 p-2 border rounded"
-                    )
-                )
-        return ui.div(*items)
-
-    @render.ui
-    def executable_info():
-        """Display info about the selected active executable"""
-        exe_name = input.active_executable()
-        info = get_executable_info(exe_name)
-
-        if not info["exists"]:
-            return ui.div(
-                ui.tags.small(f"✗ {exe_name} not found", class_="text-danger"),
-                ui.tags.br(),
-                ui.tags.small("Build the model to create this executable.", class_="text-muted")
-            )
-
-        return ui.div(
-            ui.tags.small(f"✓ Ready to run", class_="text-success"),
-            ui.tags.br(),
-            ui.tags.small(f"Last built: {info['modified']}", class_="text-muted")
-        )
 
     @render.ui
     def run_executable_info():
@@ -891,47 +734,6 @@ def server(input, output, session):
             ui.tags.small(f"✓ {build_info}, {info['size'] / 1024:.1f} KB", class_="text-success")
         )
 
-    @render.text
-    def build_log():
-        """Render the build log - polls every 0.5s for updates"""
-        reactive.invalidate_later(0.5)
-        if not run.build_log_lines:
-            return "Build log will appear here when you start a build..."
-        return "".join(run.build_log_lines[-200:])  # Last 200 lines
-
-    @reactive.effect
-    @reactive.event(input.btn_clear_build_log)
-    def clear_build_log():
-        """Clear the build log"""
-        run.build_log_lines.clear()
-
-    @reactive.effect
-    @reactive.event(input.btn_refresh_executables)
-    def refresh_executables():
-        """Refresh the executable list"""
-        # Increment to trigger re-render of executable_list UI
-        run.exe_list_version.set(run.exe_list_version.get() + 1)
-        executables = get_available_executables()
-        choices = {e: e for e in executables} if executables else {"ESTAS_II": "ESTAS_II"}
-        ui.update_select("active_executable", choices=choices)
-        ui.update_select("run_executable", choices=choices)
-
-    # Initialize executable list on session start (runs once)
-    _exe_list_initialized = [False]
-
-    @reactive.effect
-    def init_executable_list():
-        """Populate executable list on startup (runs once)"""
-        if _exe_list_initialized[0]:
-            return
-        _exe_list_initialized[0] = True
-        executables = get_available_executables()
-        if executables:
-            choices = {e: e for e in executables}
-            ui.update_select("active_executable", choices=choices)
-            ui.update_select("run_executable", choices=choices)
-            logger.info(f"Initialized executable list with {len(executables)} executables: {executables}")
-
     @reactive.effect
     @reactive.event(input.goto_build)
     async def navigate_to_build():
@@ -944,124 +746,8 @@ def server(input, output, session):
         """Navigate to the Model Config panel from dashboard"""
         await state.navigate("nav_model_control")
 
-    @reactive.calc
-    def _build_config():
-        return {
-            "compiler": input.build_compiler(),
-            "build_type": input.build_type(),
-            "exe_name": get_target_exe_name(),
-            "clean_first": input.build_clean_first(),
-        }
-    run.build_config = _build_config
-
-    # model_build -> dashboard: the Model Build tab's active_executable selector
-    @reactive.effect
-    def _publish_active_executable():
-        run.active_executable.set(input.active_executable())
-
-    @reactive.effect
-    @reactive.event(input.btn_build)
-    def on_build():
-        """Handle Build button click - builds named executable"""
-        logger.info("User clicked Build button")
-
-        compiler = input.build_compiler()
-        build_type = input.build_type()
-        clean_first = input.build_clean_first()
-        exe_name = get_target_exe_name()
-
-        # Find the full path to the compiler
-        compiler_path, compiler_version = find_compiler_path(compiler)
-        if not compiler_path:
-            run.build_log_lines.clear()
-            run.build_log_lines.extend([
-                "=" * 50 + "\n",
-                f"ERROR: Compiler '{compiler}' not found!\n",
-                "=" * 50 + "\n",
-                "Please ensure the compiler is installed and accessible.\n",
-                "For Intel compilers, check /opt/intel/oneapi/compiler/\n",
-            ])
-            return
-
-        run.build_log_lines.clear()
-        run.build_log_lines.extend([
-            "=" * 50 + "\n",
-            f"Building: {exe_name}\n",
-            "=" * 50 + "\n",
-            f"Compiler: {compiler_path}\n",
-            f"Version: {compiler_version or 'Unknown'}\n",
-            f"Build Type: {build_type}\n",
-        ])
-
-        # Capture variables for thread closure
-        _compiler_path = compiler_path
-        _build_type = build_type
-        _clean_first = clean_first
-        _exe_name = exe_name
-
-        def _do_build():
-            run.execute_build(
-                compiler_path=_compiler_path,
-                build_type=_build_type,
-                exe_name=_exe_name,
-                clean_first=_clean_first,
-                action_name="Build",
-            )
-
-        logger.info("Starting build thread")
-        threading.Thread(target=_do_build, daemon=True, name="BuildThread").start()
-
-    @reactive.effect
-    @reactive.event(input.btn_rebuild)
-    def on_rebuild():
-        """Handle Rebuild All button click - forces clean build"""
-        logger.info("User clicked Rebuild All button")
-
-        compiler = input.build_compiler()
-        build_type = input.build_type()
-        exe_name = get_target_exe_name()
-
-        # Find the full path to the compiler
-        compiler_path, compiler_version = find_compiler_path(compiler)
-        if not compiler_path:
-            run.build_log_lines.clear()
-            run.build_log_lines.extend([
-                "=" * 50 + "\n",
-                f"ERROR: Compiler '{compiler}' not found!\n",
-                "=" * 50 + "\n",
-                "Please ensure the compiler is installed and accessible.\n",
-                "For Intel compilers, check /opt/intel/oneapi/compiler/\n",
-            ])
-            return
-
-        run.build_log_lines.clear()
-        run.build_log_lines.extend([
-            "=" * 50 + "\n",
-            f"Full Rebuild: {exe_name}\n",
-            "=" * 50 + "\n",
-            f"Compiler: {compiler_path}\n",
-            f"Version: {compiler_version or 'Unknown'}\n",
-            f"Build Type: {build_type}\n",
-        ])
-
-        # Capture variables for thread closure
-        _compiler_path = compiler_path
-        _build_type = build_type
-        _exe_name = exe_name
-
-        def _do_rebuild():
-            run.execute_build(
-                compiler_path=_compiler_path,
-                build_type=_build_type,
-                exe_name=_exe_name,
-                clean_first=True,
-                action_name="Rebuild",
-            )
-
-        threading.Thread(target=_do_rebuild, daemon=True, name="RebuildThread").start()
-
     # =========================================================================
-    # End Model Build Panel - Server Logic
+    # End Executable info helper + Run Model navigation
     # =========================================================================
 
     @render.ui
@@ -1564,6 +1250,9 @@ def server(input, output, session):
                 ui.tags.p("Error loading changelog.", class_="text-danger"),
                 ui.tags.pre(str(e), class_="text-muted small")
             )
+
+    # Model Build tab is a Shiny module (Phase 4)
+    model_build_server("model_build", state)
 
     # Input Files tab is a Shiny module (Phase 2)
     input_files_server("input_files", state)

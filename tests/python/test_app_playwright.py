@@ -232,12 +232,12 @@ class TestBuildPanel:
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_build")
-        expect(page.locator("#btn_build")).to_be_visible()
-        expect(page.locator("#btn_rebuild")).to_be_visible()
+        expect(page.locator("#model_build-btn_build")).to_be_visible()
+        expect(page.locator("#model_build-btn_rebuild")).to_be_visible()
 
     def test_build_log_visible(self, page: Page, app: ShinyAppProc):
         """Build log output area is present."""
         page.goto(app.url)
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_build")
-        expect(page.locator("#build_log")).to_be_visible()
+        expect(page.locator("#model_build-build_log")).to_be_visible()
