@@ -22,8 +22,8 @@ jobs:
           pip install ruff pytest pytest-cov
           pip install -r shiny_app/requirements.txt
 
-      - name: Lint with ruff (tests only, shiny_app is WIP)
-        run: ruff check tests/python/
+      - name: Lint with ruff (shiny_app + tests)
+        run: ruff check shiny_app/ tests/python/
 
       - name: Run Python tests
         run: pytest tests/python/ -v --cov=shiny_app --cov-report=term-missing --cov-report=xml
