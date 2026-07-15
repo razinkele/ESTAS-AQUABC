@@ -186,10 +186,9 @@ def test_appstate_holds_fields():
     rc = RunController(root="/tmp")
     st = AppState(
         run=rc, navigate=lambda nav_id: None,
-        selected_output_dir="OUTPUTS", selected_output_file="OUTPUT.csv",
-        selected_output_format="text", output_config_version=0, sim_config_version=0,
+        output_config_version=0, sim_config_version=0,
     )
     assert st.run is rc
     assert callable(st.navigate)
-    assert st.selected_output_dir == "OUTPUTS"
-    assert st.selected_output_format == "text"
+    assert st.output_config_version == 0
+    assert st.sim_config_version == 0

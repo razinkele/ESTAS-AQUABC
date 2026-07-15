@@ -21,9 +21,3 @@ def test_panel_model_build_takes_consts_and_renders():
     html = str(ui_panels.panel_model_build(compilers, build_types))
     for m in ("nav_model_build", "Build Configuration", "Available Executables", "GNU Fortran", "Release"):
         assert m in html, f"panel_model_build missing {m!r}"
-
-
-def test_panel_plot_takes_min_smooth_window_and_renders():
-    html = str(ui_panels.panel_plot(2))
-    for m in ("nav_plot", "Plot &amp; Visualization", "Select Output Directory", "Files Summary"):
-        assert m in html, f"panel_plot missing {m!r}"

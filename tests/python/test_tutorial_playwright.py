@@ -572,17 +572,17 @@ class TestStep9ViewResults:
         """Output directory dropdown is present."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
-        expect(page.locator("#output_dir_select")).to_be_visible()
+        expect(page.locator("#plot-output_dir_select")).to_be_visible()
 
     def test_select_outputs_30day(self, page: Page, app: ShinyAppProc):
         """Select OUTPUTS_30day directory and verify it's accepted."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         page.wait_for_timeout(ACTION_WAIT)
-        dir_select = page.locator("#output_dir_select")
+        dir_select = page.locator("#plot-output_dir_select")
         dir_text = dir_select.inner_text()
         if "OUTPUTS_30day" in dir_text:
-            page.select_option("#output_dir_select", "OUTPUTS_30day")
+            page.select_option("#plot-output_dir_select", "OUTPUTS_30day")
             page.wait_for_timeout(ACTION_WAIT)
 
     def test_model_output_tab(self, page: Page, app: ShinyAppProc):
@@ -590,8 +590,8 @@ class TestStep9ViewResults:
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         click_tab(page, "Model Output")
-        expect(page.locator("#output_format")).to_be_visible()
-        expect(page.locator("#plot_output_file")).to_be_visible()
+        expect(page.locator("#plot-output_format")).to_be_visible()
+        expect(page.locator("#plot-plot_output_file")).to_be_visible()
 
     def test_output_file_format_options(self, page: Page, app: ShinyAppProc):
         """File format radio buttons include Text (.out)."""
@@ -606,37 +606,37 @@ class TestStep9ViewResults:
         navigate_to(page, "nav_plot")
         click_tab(page, "Model Output")
         # Selectize inputs render as div containers
-        expect(page.locator("#left_vars + .selectize-control, .selectize-input").first).to_be_visible()
+        expect(page.locator("#plot-left_vars + .selectize-control, .selectize-input").first).to_be_visible()
 
     def test_smoothing_controls(self, page: Page, app: ShinyAppProc):
         """Rolling mean checkbox and window slider are present."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         click_tab(page, "Model Output")
-        expect(page.locator("#smooth")).to_be_visible()
-        expect(page.locator("#smooth_window")).to_be_visible()
+        expect(page.locator("#plot-smooth")).to_be_visible()
+        expect(page.locator("#plot-smooth_window")).to_be_visible()
 
     def test_refresh_plot_button(self, page: Page, app: ShinyAppProc):
         """Refresh Plot button is present."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         click_tab(page, "Model Output")
-        expect(page.locator("#refresh_plot")).to_be_visible()
+        expect(page.locator("#plot-refresh_plot")).to_be_visible()
 
     def test_input_timeseries_tab(self, page: Page, app: ShinyAppProc):
         """Input Timeseries tab shows forcing file selector."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         click_tab(page, "Input Timeseries")
-        expect(page.locator("#input_ts_file")).to_be_visible()
-        expect(page.locator("#plot_input_ts")).to_be_visible()
+        expect(page.locator("#plot-input_ts_file")).to_be_visible()
+        expect(page.locator("#plot-plot_input_ts")).to_be_visible()
 
     def test_input_ts_file_options(self, page: Page, app: ShinyAppProc):
         """Input timeseries dropdown has Temperature, Salinity, Flow, etc."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
         click_tab(page, "Input Timeseries")
-        text = page.locator("#input_ts_file").inner_text()
+        text = page.locator("#plot-input_ts_file").inner_text()
         assert "Temperature" in text or "TEMP" in text
 
     def test_data_preview_tab(self, page: Page, app: ShinyAppProc):
@@ -649,7 +649,7 @@ class TestStep9ViewResults:
         """Analyze Directory button exists and is clickable."""
         goto_app(page, app)
         navigate_to(page, "nav_plot")
-        btn = page.locator("#analyze_output_dir")
+        btn = page.locator("#plot-analyze_output_dir")
         expect(btn).to_be_visible()
 
 

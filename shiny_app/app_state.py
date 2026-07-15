@@ -212,8 +212,5 @@ class AppState:
     in server(); one RunController carries the run/build session."""
     run: RunController
     navigate: Callable[[str], Awaitable[None]]
-    selected_output_dir: object          # reactive.Value(str)   — published by output_browser
-    selected_output_file: object         # reactive.Value(str)   — published by output_browser
-    selected_output_format: object       # reactive.Value(str)   — published by output_browser
     output_config_version: object        # reactive.Value(int)   — output-config save → dashboard
     sim_config_version: object           # reactive.Value(int)   — sim-config save → dashboard
