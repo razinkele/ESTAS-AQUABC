@@ -14,7 +14,7 @@
 
 - **Behavior-neutral.** Nothing a user sees changes. No id renames, no handler edits, no logic changes. Only removal of provably-dead code + lint hygiene.
 - **Use `.venv/bin/python`** for anything importing `app.py` (system `python3` lacks `networkx`).
-- **Verify every removal** with `.venv/bin/python -c "import shiny_app.app"` (clean) + `.venv/bin/python -m pytest tests/python/ -q` (full suite green). A removal that breaks either is wrong — revert it.
+- **Verify every removal** with `.venv/bin/python -c "import shiny_app.app; from shiny_app.app import create_ui; str(create_ui().tagify())"` (clean import + render) AND `.venv/bin/python -m pytest tests/python/ -q` (full suite green). **CRITICAL GOTCHA: the test suite does NOT import `shiny_app.app`** (the module tests import `shiny_app.modules.*` / `shiny_app.app_state`), so a green suite does **not** prove app.py imports — a removed-but-still-used import passes the suite and only fails at `import shiny_app.app` / `create_ui()`. The explicit import+render check is therefore MANDATORY for any app.py edit, and is the real backstop (empirically confirmed during review: a wrongly-removed `INPUT_FILE_CATEGORIES` gave `NameError` at import while the suite stayed 178-green).
 - **ruff scope for tests:** `ruff check tests/python/` (CI scope). For app.py-specific checks, use `--isolated` to bypass the per-file-ignore when detecting/verifying (e.g. `ruff check shiny_app/app.py --select F401 --isolated`). `shiny_app/modules/` stays fully gated (`ruff check shiny_app/modules/`).
 - **The rearchitecture end-state (spec §9 success criteria):** `server()` is a thin assembler (already true: state construction + 15 `x_server` calls + 2 chrome renders); 15 cohesive modules + `diagnostics`; no `input.X` crosses a module boundary except via `RunController`/`AppState`/the `make_scope` bridge. Phase 5 does not change this — it removes leftovers and records completion.
 - **Line numbers are a `v0.4.4` baseline** and shift as removals land — grep current locations by name.
@@ -110,44 +110,57 @@ git commit -m "chore(shiny): delete empty ui_panels.py stub (all panels are modu
 
 **Rationale:** app.py accumulated **70 dead imports** (F401) as inline handlers moved into modules (the modules import their own leaf parsers). It also has 6 F541 (f-strings without placeholders). Removing these lets the `F401` per-file-ignore be dropped. **Keep** the E402 (7, sys.path-ordering) + F841 (1, reactive side-effect) + B023/S602/S605 ignores — those are structural and legitimate.
 
+**⚠️ Two review-verified hazards (do NOT deviate):**
+- **`ruff --fix` only removes the ~23 UNCONDITIONAL dead imports** (stdlib/viz/widgets). It **refuses** to touch the **53 dead names inside the `try/except ImportError` fallback blocks** (it emits "consider using `importlib.util.find_spec`" and leaves them). `--unsafe-fixes` does NOT help either (verified). Those 53 must be removed **by hand**.
+- **`input_analysis` is PARTIALLY dead** — of its 4 imported names, 3 are dead but **`INPUT_FILE_CATEGORIES` is still USED** (it does not appear in the F401 list). Deleting its whole block breaks app.py with `NameError: INPUT_FILE_CATEGORIES` (verified). Every other leaf block is FULLY dead.
+
 **Files:**
 - Modify: `shiny_app/app.py`, `pyproject.toml`
 
-- [ ] **Step 1: Snapshot the dead-import list (for the diff review).**
+- [ ] **Step 1: Snapshot the dead-name list (authoritative — the removal must match it exactly).**
 ```bash
 cd /home/razinka/AQUABCv0.2
-ruff check shiny_app/app.py --select F401,F541 --isolated 2>&1 | tee /tmp/app_lint_before.txt | tail -5
+ruff check shiny_app/app.py --select F401,F541 --isolated 2>&1 | tee /tmp/app_lint_before.txt | tail -3
 echo "F401 count:"; grep -c F401 /tmp/app_lint_before.txt
 ```
-Expected: ~70 F401 + 6 F541. These are leaf-module names (`ParameterFile`, `ICFile`, `SimulationConfigFile`, …), stdlib (`threading`, `shutil`, `time`, `select`, `signal`, `traceback`, `re`, `shlex`, `date`, `timedelta`), and viz/widget imports (`numpy`, `plotly.express`, `plotly.graph_objects`, `networkx`, `shiny.req`, `output_widget`, `render_widget`) — all orphaned by moved handlers.
+Expected: 70 F401 + 6 F541. Keep this file open — the manual removals in Step 3 must remove **exactly** these names, nothing more.
 
-- [ ] **Step 2: Autofix F401 + F541, then MANUALLY review the diff.**
+- [ ] **Step 2: Autofix the UNCONDITIONAL dead imports, then review.**
 ```bash
-ruff check shiny_app/app.py --select F401,F541 --fix --isolated 2>&1 | tail -3
+ruff check shiny_app/app.py --select F401,F541 --fix --isolated 2>&1 | tail -2
 git diff --stat shiny_app/app.py
+ruff check shiny_app/app.py --select F401,F541 --isolated 2>&1 | tail -1   # ~53 conditional F401 REMAIN — expected
 ```
-**Critical review of the diff:** the imports use a `try: from shiny_app.X import … except ImportError: from X import …` fallback pattern. Confirm the autofix removed the dead name from **both** branches (or the whole `try/except` block if all its names were dead) and did NOT leave a half-empty `import ()` or an orphaned `except ImportError:` with nothing in it. If a `try`/`except` block is now malformed (empty import parens, dangling `except`), fix it by hand. **Do NOT let it remove a name that is still used** — the suite + import checks in Step 4 are the backstop, but eyeball the removed names against the Step-1 list (all should be leaf-parser/stdlib/viz names no longer referenced).
+This removes the top-level stdlib/viz/widget imports (`threading`, `shutil`, `time`, `select`, `signal`, `traceback`, `re`, `shlex`, `datetime.date`, `datetime.timedelta`, `numpy`, `plotly.express`, `plotly.graph_objects`, `networkx`, `shiny.req`, `shinywidgets.output_widget`, `shinywidgets.render_widget`, + the 6 F541). **Expect ~53 F401 to REMAIN** — those are the conditional blocks Step 3 handles. Confirm the autofix left the file parseable (`python3 -c "import ast; ast.parse(open('shiny_app/app.py').read())"`).
 
-- [ ] **Step 3: Drop the `F401` per-file-ignore for app.py.** In `pyproject.toml`, remove the `"F401",` line (and its comment) from the `"shiny_app/app.py"` per-file-ignores block. **Keep** `F841`, `B023`, `E402`, `S602`, `S605` (all still needed — verified: 7 E402 + 1 F841 remain and are legitimate). The block header comment can stay.
+- [ ] **Step 3: Manually remove the 53 conditional dead imports.** For each leaf-module `try: from shiny_app.<mod> import … except ImportError: from <mod> import …` block:
+  - **DELETE THE WHOLE `try/except` BLOCK** (both branches) for these **12 FULLY-DEAD** modules: `parameter_parser`, `ic_parser`, `options_parser`, `simulation_config`, `scenarios`, `utils`, `safe_resolve`, `compiler_env`, `file_locators`, and the three module-level imports `build_commands`, `box_network`, `output_data` (`from shiny_app import build_commands` / `import build_commands`, etc. — grep-confirmed 0 `build_commands.`/`box_network.`/`output_data.` references in app.py).
+  - **For `input_analysis` (PARTIALLY dead): edit, do NOT delete.** Remove only `analyze_input_file`, `get_input_file_categories`, `validate_required_inputs` from **both** the `try` and `except` branches; **KEEP `INPUT_FILE_CATEGORIES`** (still used). The block stays as `try: from shiny_app.input_analysis import INPUT_FILE_CATEGORIES except ImportError: from input_analysis import INPUT_FILE_CATEGORIES`.
+  - **KEEP entirely** (still used — NOT in the dead list): the `diagnostics`, `ui_scripts`, `ui_chrome`, `app_state`, and all `modules.*` import blocks.
 
-- [ ] **Step 4: Verify — import, suite, and that app.py is now F401-clean under the real config.**
+- [ ] **Step 4: Drop the `F401` per-file-ignore for app.py.** In `pyproject.toml`, remove the `"F401",` line (and its comment) from the `"shiny_app/app.py"` per-file-ignores block. **Keep** `F841`, `B023`, `E402`, `S602`, `S605` (7 E402 + 1 F841 remain and are legitimate). The block header comment can stay.
+
+- [ ] **Step 5: Verify — IMPORT+RENDER is the essential check (the suite does NOT import app.py).**
 ```bash
+# THE backstop — a wrongly-removed used import fails HERE, not in the suite:
 .venv/bin/python -c "import shiny_app.app; from shiny_app.app import create_ui; str(create_ui().tagify()); print('import + render OK')"
+ruff check shiny_app/app.py --select F401,F541 --isolated 2>&1 | tail -1   # expect "All checks passed!"
+ruff check shiny_app/app.py 2>&1 | tail -1                                  # config-aware (F401 now un-ignored): no F401/F541; E402/F841 stay suppressed
 .venv/bin/python -m pytest tests/python/ -q
-ruff check shiny_app/app.py 2>&1 | grep -E "F401|F541" && echo "!!! F401/F541 remain" || echo "clean — app.py F401/F541-free under project config"
-ruff check shiny_app/app.py 2>&1 | tail -3   # should show only the still-ignored E402/F841 are suppressed → expect "All checks passed" or only non-F401 findings
 ruff check shiny_app/modules/ tests/python/
 ```
-Expected: import + render OK; full suite green (same count — no test imported the dead names); `ruff check shiny_app/app.py` (config-aware, F401 no longer ignored) reports **no F401/F541** (E402/F841 stay suppressed by the remaining ignores); modules/tests clean.
+Expected: **import + render OK** (if this raises `NameError`, a used import was removed — restore it, esp. check `INPUT_FILE_CATEGORIES`); `--isolated` F401/F541 → "All checks passed!"; config-aware ruff clean of F401/F541; full suite green (same count); modules/tests clean. app.py should drop by ~110-120 lines (871 → ~755).
 
-- [ ] **Step 5: Commit.**
+- [ ] **Step 6: Commit.**
 ```bash
 git add shiny_app/app.py pyproject.toml
-git commit -m "refactor(shiny): remove 70 dead imports from app.py + drop F401 ignore
+git commit -m "refactor(shiny): remove ~70 dead imports from app.py + drop F401 ignore
 
-Imports orphaned as inline handlers moved into modules (modules import their
-own leaf parsers). Also fixes 6 F541. app.py is now F401/F541-clean; the
-F401 per-file-ignore is removed (E402/F841/B023/S602/S605 stay — structural)."
+Imports orphaned as inline handlers moved into modules. Autofix cleared the
+unconditional ones; the try/except-fallback leaf-import blocks removed by hand
+(input_analysis keeps INPUT_FILE_CATEGORIES, still used). Also fixes 6 F541.
+app.py is now F401/F541-clean; F401 per-file-ignore dropped (E402/F841/B023/
+S602/S605 stay — structural)."
 ```
 
 ---
@@ -179,4 +192,4 @@ F401 per-file-ignore is removed (E402/F841/B023/S602/S605 stay — structural)."
 
 **Type/name consistency:** after Task 1, references to `run.build_config` are removed from all three files together (registration, field, test) — no dangling reader. The `F401` ignore removal (Task 3) is consistent with the dead-import removal in the same commit (app.py becomes F401-clean, so the ignore is safely dropped; E402/F841 stay because 7+1 legitimate instances remain).
 
-**Risk:** the app.py autofix (Task 3) is the only non-trivial step — the try/except ImportError fallback blocks must not be left malformed. Mitigated by the manual diff review (Step 2) + the import+render+suite verification (Step 4). Everything else is a single-file deletion or a small targeted edit.
+**Risk (review-in-loop corrected Task 3 twice):** (1) `ruff --fix` removes only the ~23 unconditional dead imports and REFUSES the 53 `try/except ImportError` conditional ones (even with `--unsafe-fixes`) — so Task 3 splits into an autofix (Step 2) + a precise manual removal (Step 3), not a single autofix. (2) `input_analysis` is partially dead — `INPUT_FILE_CATEGORIES` is still used, so its block is EDITED (3 names dropped, 1 kept), not deleted; the other 12 leaf blocks are fully dead and deleted wholesale. (3) The test suite does NOT import `shiny_app.app`, so a wrongly-removed used import passes the suite and only surfaces at `import shiny_app.app`/`create_ui()` — the import+render check (Step 5) is the mandatory backstop, empirically confirmed during review (a whole-block deletion of `input_analysis` gave `NameError` at import while the suite stayed 178-green). Tasks 1 (build_config) and 2 (ui_panels) are low-risk single-purpose removals, both grep-verified during review (build_config has zero readers; ui_panels has no code importers).
