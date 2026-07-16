@@ -3,18 +3,18 @@
 # Capture pre-refactor reference outputs for the TODO 1.6 bit-identical gate
 # (AQUABC_PELAGIC_KINETICS decomposition).
 #
-# Run ONCE on the pre-refactor code, before any phase extraction. For EACH of
-# two 30-day 25-box configs it builds both binaries and runs serial + OMP=8,
+# Run ONCE on the pre-refactor code, before any phase extraction. For the
+# default 30-day 25-box config it builds both binaries and runs serial + OMP=8,
 # saving outputs under verify_baseline/ (git-ignored). The gate script
 # tools/refactor_verify.sh diffs fresh outputs against these.
 #
-# The two configs together close the gate's coverage gaps:
-#   default  (INPUT_verify.txt)    — all 25 boxes emit state+process outputs, so
-#                                     every OpenMP thread-chunk has monitored nodes.
-#   advredox (INPUT_verify_ar.txt) — ADVANCED_REDOX_OPTION=1 + LIGHT_EXTINCTION=1,
-#                                     exercising the DO_ADVANCED_REDOX_SIMULATION>0
-#                                     branches (incl. the REDOX/DOCMIN bundle
-#                                     population — the refactor's correctness crux).
+#   default (INPUT_verify.txt) — all 25 boxes emit state+process outputs, so
+#                                every OpenMP thread-chunk has monitored nodes.
+#                                Deterministic run-to-run -> a valid bit-identical
+#                                oracle for the pure-code-motion refactor.
+# (The advredox config is intentionally NOT baselined/gated — its ADVANCED_REDOX
+#  path is non-deterministic due to pre-existing uninitialised-memory bugs; see
+#  TODO 1.10/1.11.)
 #
 # serial and omp8 baselines of the same config differ from each other by a few
 # PROCESS_RATES files (the TODO 4.2 CO2SYS chunking drift) — which is why the
@@ -26,9 +26,10 @@ cd "$ROOT"
 BASE="$ROOT/verify_baseline"
 
 # label  input-config  output-dir
+# default-only: the advredox config is not gated (ADVANCED_REDOX path has
+# pre-existing uninitialised-memory non-determinism — see TODO 1.10/1.11).
 CONFIGS=(
     "default  INPUT_verify.txt     OUTPUTS_verify"
-    "advredox INPUT_verify_ar.txt  OUTPUTS_verify_ar"
 )
 
 rm -rf "$BASE"

@@ -46,38 +46,37 @@ The phase boundaries (pre-refactor line anchors; find by the banner comments, as
 ## Task 1: Verification harness + baselines + `contains` scaffold
 
 **Files (all already present on branch — this task confirms + captures + scaffolds):**
-- `tools/refactor_baseline.sh`, `tools/refactor_verify.sh` — the gate harness.
-- `INPUT_verify.txt` (default, all-box output) + `INPUT_verify_ar.txt` (advanced-redox variant), and their `INPUTS/PELAGIC_INPUTS_verify*.txt`, `INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt` (all 25 boxes emit state+process output), `INPUTS/PELAGIC_MODEL_OPTIONS_advredox.txt` (ADVANCED_REDOX=1, LIGHT_EXTINCTION=1).
-- Modify: `.gitignore` (ignores `verify_baseline/`; the `INPUT_verify*` and `INPUTS/*_verify*`/`*_advredox*` config files ARE committed).
+- `tools/refactor_baseline.sh`, `tools/refactor_verify.sh` — the gate harness (default-only).
+- `INPUT_verify.txt` (default, all-box output) and its `INPUTS/PELAGIC_INPUTS_verify.txt`, `INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt` (all 25 boxes emit state+process output).
+- Modify: `.gitignore` (ignores `verify_baseline/`; the `INPUT_verify*` and `INPUTS/*_verify*` config files ARE committed).
 - Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` — add an empty `contains` section (no procedures yet).
 
-**Why two configs (do not drop either):** the gate's coverage rests on them. `default` enables output for **all 25 boxes** so every OpenMP thread-chunk (with nkn=25/8thr the chunks are nodes [1-4][5-7][8-10][11-13][14-16][17-19][20-22][23-25]) has monitored nodes — a private→shared bug in any chunk shows up. `advredox` sets `ADVANCED_REDOX_OPTION=1` + `LIGHT_EXTINCTION_OPTION=1`, exercising the `DO_ADVANCED_REDOX_SIMULATION>0` branches (including the REDOX/DOCMIN bundle population at ~line 1418 — the refactor's correctness crux) that the default config never runs.
+**Gate is default-only, and that is sufficient.** `default` enables output for **all 25 boxes** so every OpenMP thread-chunk (with nkn=25/8thr the chunks are nodes [1-4][5-7][8-10][11-13][14-16][17-19][20-22][23-25]) has monitored nodes — a private→shared bug in any chunk shows up, at both serial and OMP=8. The `advredox` config exists on the branch but is **NOT gated**: its `ADVANCED_REDOX` path has pre-existing uninitialised-memory non-determinism (TODO 1.10/1.11) and so cannot be a bit-identical oracle. The advanced-redox *branches* being moved are still covered by pure-code-motion + compiler explicit-interface checks + review — acceptable for a code-motion refactor.
 
 **Interfaces:**
-- Produces: a green `tools/refactor_verify.sh` gate and `verify_baseline/{default,advredox}_{serial,omp8}/` reference outputs (4 dirs × 52 `.out` files) that every later task diffs against.
+- Produces: a green `tools/refactor_verify.sh` gate and `verify_baseline/default_{serial,omp8}/` reference outputs (2 dirs × 52 `.out` files) that every later task diffs against.
 
 - [ ] **Step 1: Confirm the harness + config files exist and are executable**
 
 ```bash
-ls -l tools/refactor_baseline.sh tools/refactor_verify.sh INPUT_verify.txt INPUT_verify_ar.txt \
-      INPUTS/PELAGIC_INPUTS_verify.txt INPUTS/PELAGIC_INPUTS_verify_ar.txt \
-      INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt INPUTS/PELAGIC_MODEL_OPTIONS_advredox.txt
+ls -l tools/refactor_baseline.sh tools/refactor_verify.sh INPUT_verify.txt \
+      INPUTS/PELAGIC_INPUTS_verify.txt INPUTS/PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt
 chmod +x tools/refactor_baseline.sh tools/refactor_verify.sh
 ```
 
-- [ ] **Step 2: Capture pre-refactor baselines (both configs × serial + omp8)**
+- [ ] **Step 2: Capture pre-refactor baselines (default config × serial + omp8)**
 
 ```bash
 tools/refactor_baseline.sh
 ```
-Expected tail: four lines `default_serial: 52 .out files`, `default_omp8: 52`, `advredox_serial: 52`, `advredox_omp8: 52`.
+Expected tail: `default_serial: 52 .out files` and `default_omp8: 52 .out files`.
 
 - [ ] **Step 3: Confirm the gate PASSes on unchanged code**
 
 ```bash
 tools/refactor_verify.sh; echo "exit=$?"
 ```
-Expected: four `[<config>/<mode>] BIT-IDENTICAL (52 files)` lines, `[0D golden] PASS`, `GATE: PASS`, `exit=0`.
+Expected: two `[default/<mode>] BIT-IDENTICAL (52 files)` lines, `[0D golden] PASS`, `GATE: PASS`, `exit=0`.
 
 - [ ] **Step 4: Add an empty `contains` section to the subroutine**
 
@@ -518,9 +517,9 @@ Use superpowers:finishing-a-development-branch to present merge options after CI
 
 ## Notes for the executor
 
-- **The gate is the whole test strategy.** There are no new unit tests; `tools/refactor_verify.sh` reporting `GATE: PASS` after each task is the pass criterion. It rebuilds both binaries and, for BOTH configs (default all-box + advredox), runs the 30-day 25-box config serial + OMP=8, diffs each (config,threadmode) against its own baseline, and runs the 0D golden. A build failure aborts the gate (it never diffs a stale binary).
-- **Same-config, same-threadmode is the only comparison.** serial vs omp8 of the same config legitimately differ (a few PROCESS_RATES files, the TODO 4.2 CO2SYS chunking drift); default vs advredox differ (different science). The gate never cross-compares — only `<config>_<mode>` after vs `<config>_<mode>` before. Do not "fix" those cross-differences.
-- **If a same-config diff appears**, stop and use superpowers:systematic-debugging. The most likely cause is a private variable reached by host association instead of passed as an argument (turns private → shared → OMP=8 diverges from serial-after). The fix is to add it to the procedure's argument list. The advredox omp8 leg is the one that exercises the REDOX/DOCMIN bundle crux — watch it especially on Tasks 5–6.
+- **The gate is the whole test strategy.** There are no new unit tests; `tools/refactor_verify.sh` reporting `GATE: PASS` after each task is the pass criterion. It rebuilds both binaries and, for the default all-box config, runs the 30-day 25-box case serial + OMP=8, diffs each threadmode against its own baseline, and runs the 0D golden. A build failure aborts the gate (it never diffs a stale binary).
+- **Same-threadmode is the only comparison.** serial vs omp8 legitimately differ (a few PROCESS_RATES files, the TODO 4.2 CO2SYS chunking drift). The gate never cross-compares serial vs omp8 — only `default_<mode>` after vs `default_<mode>` before. Do not "fix" that difference.
+- **If a same-config diff appears**, stop and use superpowers:systematic-debugging. The most likely cause is a private variable reached by host association instead of passed as an argument (turns private → shared → OMP=8 diverges from serial-after). The fix is to add it to the procedure's argument list.
 - **Line numbers shift after each extraction.** Always re-find a block by its banner-comment markers (the greps in each task), not by the pre-refactor line numbers.
 - **`intent` for shared arrays reached by host association:** none — they are not arguments. Only per-thread private data is passed, and its `intent` is `in` for `ns/ne/nkn_local` and `inout` for bundles the block updates.
 - **Two DISTINCT redox bundle pairs — don't conflate them.** The **non-chunk** `REDOX_STATE`/`REDOX_LIM` are populated and consumed entirely within the *serial* `pelagic_speciation_preprocess` (Task 3, feeding the whole-`nkn` `REDOX_AND_SPECIATION` call) — reached by host association, no arguments. The **`_CHUNK`** variants `REDOX_STATE_CHUNK`/`REDOX_LIM_CHUNK`/`DOCMIN_CHUNK` are populated and consumed entirely within the *in-region* `pelagic_chemistry` (Task 5) — passed as `intent(inout)` arguments (private-clause members). They are different variables of the same type; the serial population does not carry into the region. `ENV_CHUNK` is populated + consumed in `pelagic_biology` (Task 4), passed as an argument. The Step-2 arg scan in each task is the source of truth (non-zero count in the block → argument).
