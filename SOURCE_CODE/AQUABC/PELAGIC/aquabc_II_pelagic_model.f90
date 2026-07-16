@@ -381,409 +381,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     call pelagic_co2sys_preprocess()
 
-    HCO3 = HCO3 / 1000000.0
-    CO3  = CO3  / 1000000.0
-    ! -----------------------------------------------------------------
-    ! Additions made 30th November 2015 related to dissolved and solid
-    ! iron and mangese species, soon to be replaced by the
-    ! aquatic chemistry model that will be called
-    !
-    !
-    !        EXACTLY HERE
-    !
-    ! -----------------------------------------------------------------
-
-
-    ! -------------------------------------------------------------------------
-    ! New equlibrium calculations added at 25th of January 2016
-    ! This is the first version of the aquatic chemistry model that was
-    ! promissed 30th November 2015
-    ! -------------------------------------------------------------------------
-
-        ! CO2SYS_OUT_DATA(:, 21), CO2SYS_OUT_DATA(:, 22)can not be used because deallocated
-
-    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        ! Populate redox state bundle (zero-copy pointer assignment)
-        REDOX_STATE%DOXY       => DISS_OXYGEN
-        REDOX_STATE%NO3N       => NO3_N
-        REDOX_STATE%MN_IV      => MN_IV
-        REDOX_STATE%FE_III     => FE_III
-        REDOX_STATE%S_PLUS_6   => S_PLUS_6
-        REDOX_STATE%DISS_ORG_C => DISS_ORG_C
-        REDOX_STATE%S_MINUS_2  => S_MINUS_2
-        REDOX_STATE%MN_II      => MN_II
-        REDOX_STATE%FE_II      => FE_II
-        REDOX_STATE%HCO3       => HCO3
-        REDOX_STATE%CO3        => CO3
-
-        ! Populate redox limitation bundle (zero-copy pointer assignment)
-        REDOX_LIM%LIM_DOXY_RED     => LIM_DOXY_RED
-        REDOX_LIM%LIM_NO3N_RED     => LIM_NO3N_RED
-        REDOX_LIM%LIM_MN_IV_RED    => LIM_MN_IV_RED
-        REDOX_LIM%LIM_FE_III_RED   => LIM_FE_III_RED
-        REDOX_LIM%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED
-        REDOX_LIM%LIM_DOC_RED      => LIM_DOC_RED
-
-            call REDOX_AND_SPECIATION &
-            (nkn, TEMP, SALT, PH, ELEVATION, &
-             REDOX_PARAMS, REDOX_STATE, REDOX_LIM, &
-             PE, FE_II_DISS_EQ, FE_III_DISS_EQ, MN_II_DISS)
-
-        FE_III_DISS_EQ = FE_III_DISS_EQ * FE_MOLAR_MASS_MG
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 4) = FE_III_DISS_EQ
-        ! ---------------------------------------------------------------------------
-        ! Handle Fe2+ dissolution changes by Ali Ert�rk, 2 nd of july 2016
-        ! ---------------------------------------------------------------------------
-
-        ! For now, take fixed values for equlibrium and solubility constants
-        ! In future, change these to temperature and/or other environmental
-        ! variable based equations.
-        K_EQ_S_1  (:) = 8.90D-8
-        K_EQ_S_2  (:) = 1.20D-13
-        K_SP_FES  (:) = 8.00D-19
-        !K_SP_FEOH3(:) = 1.00D-36
-        !K_SP_FEPO4(:) = 9.91D-16
-
-        ! -------------------------------------------------------------------------
-        ! Calculate H2S Species
-        ! -------------------------------------------------------------------------
-
-        ! Convert sulphide to moles for aquatic chemistry calculations
-        HS2_TOT(:) = S_MINUS_2(:) / S_MOLAR_MASS_MG
-
-        H2S_DIVISOR(:) = (H_PLUS(:) * H_PLUS(:)) + &
-            (H_PLUS(:) * K_EQ_S_1(:)) + (K_EQ_S_1(:) * K_EQ_S_2(:))
-
-        FRAC_HS_MINUS_IN_H2S_TOT   (:) = (H_PLUS(:)   * K_EQ_S_1(:)) / H2S_DIVISOR(:)
-        FRAC_S_MINUS_TWO_IN_H2S_TOT(:) = (K_EQ_S_1(:) * K_EQ_S_2(:)) / H2S_DIVISOR(:)
-
-        FRAC_H2S_IN_H2S_TOT(:)         = &
-            1.0D0 - (FRAC_HS_MINUS_IN_H2S_TOT(:) + FRAC_S_MINUS_TWO_IN_H2S_TOT(:))
-
-        H2S        (:) = HS2_TOT(:) * FRAC_H2S_IN_H2S_TOT        (:)
-        HS_MINUS   (:) = HS2_TOT(:) * FRAC_HS_MINUS_IN_H2S_TOT   (:)
-        S_MINUS_TWO(:) = HS2_TOT(:) * FRAC_S_MINUS_TWO_IN_H2S_TOT(:)
-        ! -------------------------------------------------------------------------
-        ! End of calculate H2S Species
-        ! -------------------------------------------------------------------------
-
-        ! -------------------------------------------------------------------------
-        ! Changes by Ali Ert�rk (2 July 2016)
-        ! Change updated by Ali (9 August 2016)
-        ! -------------------------------------------------------------------------
-        call IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_DISS_EQ)
-        FE_II_DISS_EQ = FE_II_DISS_EQ * FE_MOLAR_MASS_MG
-
-        ! -------------------------------------------------------------------------
-        ! End of changes by Ali Ert�rk (2 July 2016)
-        ! -------------------------------------------------------------------------
-
-        if(debug_stranger) then
-            call DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
-        end if
-
-        ! -------------------------------------------------------------------------
-        ! Updated by Ali and Petras, 9 August 2016
-        !
-        ! If it is the first timestep, initialize the dissolved fraction by assuming
-        ! that the system is in equlibrum (option 1) or the dissolved fractions will
-        ! be initialized (option 2). Otherwise calculate the dissolved fractions will
-        ! be calculated by simple submodel based on the analytical solution.
-        ! -------------------------------------------------------------------------
-        where (FE_II_DISS_EQ > FE_II)
-            FE_II_DISS_EQ = FE_II
-        end where
-
-        if (FIRST_TIME_STEP > 0) then
-
-            select case (INIT_OPTION_OF_FE_II_DISS)
-
-                case(1)
-                    ! Handle the different between saturated and nonsaturated cases.
-                    ! If more Fe2+ is allowed to dissolve than the total Fe2+ present then
-                    !
-                    ! Assume unsaturated case, ie
-                    !     - Dissolved Fe2+ is equal to total Fe2+
-                    !     - Multiplier for dissolved Fe2+ is equal to 1
-                    !     - Multiplier for particulate Fe2+ is equal to 0
-                    ! otherwise
-                    !     - Dissolved Fe2+ is smaller than to total Fe2+
-                    !     - Multiplier for dissolved Fe2+ is between 0 and 1
-                    !     - Multiplier for particulate Fe2+ is between 0 and 1
-
-                    where(FE_II_DISS_EQ >= FE_II)
-                        FE_II_DISS      = FE_II
-                        MULT_FE_II_DISS = 1.0D0
-                        MULT_FE_II_PART = 0.0D0
-                    elsewhere(FE_II .lt. 1.0D-20)
-                        ! Guard against division by zero when total Fe2+ is depleted
-                        FE_II_DISS      = 0.0D0
-                        MULT_FE_II_DISS = 1.0D0
-                        MULT_FE_II_PART = 0.0D0
-                    elsewhere
-                        MULT_FE_II_DISS = FE_II_DISS_EQ / FE_II
-                        MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
-                    end where
-
-                case(2)
-                    ! Get the initial fraction of dissolved Fe2+ from model constants and
-                    ! recalculate the initial concentration accordingly.
-                    MULT_FE_II_DISS = INIT_MULT_FE_II_DISS
-                    MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
-
-            end select
-
-            call CALC_DISS_ME_CONC &
-                 (FE_II                                                    , & ! Total Fe2+
-                  (MULT_FE_II_DISS * FE_II)                                , & ! Dissolved Fe2+ from previous time step
-                  FE_II_DISS_EQ                                            , & ! Equilibrium concentration for dissolved Fe2+
-                  (k_DISS_FE_II_20 * (THETA_k_DISS_FE_II**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe2+
-                  TIME_STEP                                                , & ! Time step in days
-                  nkn                                                      , &
-                  1                                                        , & ! number of layers
-                  DISS_FE_II_CONC_TS_END                                   , & ! Estimated dissolved Fe2+ at the end of time step (for output)
-                  DISS_FE_II_CONC_TS_AVG)                                      ! Estimated avg. dissolved Fe2+ during the timestep to be used for kinetic calculations
-        else
-            call CALC_DISS_ME_CONC &
-                 (FE_II                                                    , & ! Total Fe2+
-                  (SAVED_OUTPUTS(:,1) * FE_II)                             , & ! Dissolved Fe2+ from previous time step
-                  FE_II_DISS_EQ                                            , & ! Equilibrium concentration for dissolved Fe2+
-                  (k_DISS_FE_II_20 * (THETA_k_DISS_FE_II**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe2+
-                  TIME_STEP                                                , & ! Time step in days
-                  nkn                                                      , &
-                  1                                                        , & ! number of layers
-                  DISS_FE_II_CONC_TS_END                                   , & ! Estimated dissolved Fe2+ at the end of time step (for output)
-                  DISS_FE_II_CONC_TS_AVG)                                      ! Estimated avg. dissolved Fe2+ during the timestep to be used for kinetic calculations
-        end if
-
-
-        where(DISS_FE_II_CONC_TS_AVG >= FE_II)
-            FE_II_DISS      = FE_II
-            MULT_FE_II_DISS = 1.0D0
-            MULT_FE_II_PART = 0.0D0
-        elsewhere(FE_II .lt. 1.0D-20)
-            ! Guard against division by zero when total Fe2+ is depleted
-            FE_II_DISS      = 0.0D0
-            MULT_FE_II_DISS = 1.0D0
-            MULT_FE_II_PART = 0.0D0
-        elsewhere
-            MULT_FE_II_DISS = DISS_FE_II_CONC_TS_AVG / FE_II
-            MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
-        end where
-
-        where(DISS_FE_II_CONC_TS_END >= FE_II)
-            DISS_FE_II_CONC_TS_END = FE_II
-        end where
-
-        ! -------------------------------------------------------------------------
-        ! End of calculate the dissolved and particulate fractions of Fe2+
-        ! -------------------------------------------------------------------------
-
-        ! -------------------------------------------------------------------------
-        ! Calculate the dissolved and particulate fractions of Fe3+
-        ! -------------------------------------------------------------------------
-
-        ! -------------------------------------------------------------------------
-        ! Updated by Ali and Petras, 9 August 2016
-        !
-        ! If it is the first timestep, initialize the dissolved fraction by assuming
-        ! that the system is in equlibrum (option 1) or the dissolved fractions will
-        ! be initialized (option 2). Otherwise calculate the dissolved fractions will
-        ! be calculated by simple submodel based on the analytical solution.
-        ! -------------------------------------------------------------------------
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 5) = FE_III_DISS_EQ
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 6) = FE_III
-
-        where (FE_III_DISS_EQ > FE_III)
-            FE_III_DISS_EQ = FE_III
-        end where
-
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 7) = FE_III_DISS_EQ
-
-        if (FIRST_TIME_STEP > 0) then
-
-            select case (INIT_OPTION_OF_FE_III_DISS)
-
-                case(1)
-                    ! Handle the different between saturated and nonsaturated cases.
-                    ! If more Fe3+ is allowed to dissolve than the total Fe3+ present then
-                    !
-                    ! Assume unsaturated case, ie
-                    !     - Dissolved Fe3+ is equal to total Fe3+
-                    !     - Multiplier for dissolved Fe3+ is equal to 1
-                    !     - Multiplier for particulate Fe3+ is equal to 0
-                    ! otherwise
-                    !     - Dissolved Fe3+ is smaller than to total Fe3+
-                    !     - Multiplier for dissolved Fe3+ is between 0 and 1
-                    !     - Multiplier for particulate Fe3+ is between 0 and 1
-
-                    where(FE_III_DISS_EQ >= FE_III)
-                        FE_III_DISS      = FE_III
-                        MULT_FE_III_DISS = 1.0D0
-                        MULT_FE_III_PART = 0.0D0
-                    elsewhere(FE_III .lt. 1.0D-20)
-                        ! Guard against division by zero when total Fe3+ is depleted
-                        FE_III_DISS      = 0.0D0
-                        MULT_FE_III_DISS = 1.0D0
-                        MULT_FE_III_PART = 0.0D0
-                    elsewhere
-                        MULT_FE_III_DISS = FE_III_DISS_EQ / FE_III
-                        MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
-                    end where
-
-                case(2)
-                    ! Get the initial fraction of dissolved Fe3+ from model constants and
-                    ! recalculate the initial concentration accordingly.
-                    MULT_FE_III_DISS = INIT_MULT_FE_III_DISS
-                    MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
-
-                end select
-
-
-            call CALC_DISS_ME_CONC &
-                 (FE_III                                                     , & ! Total Fe3+
-                  (MULT_FE_III_DISS * FE_III)                                , & ! Dissolved Fe3+ from previous time step
-                  FE_III_DISS_EQ                                             , & ! Equilibrium concentration for dissolved Fe3+
-                  (k_DISS_FE_III_20 * (THETA_k_DISS_FE_III**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe3+
-                  TIME_STEP                                                  , & ! Time step in days
-                  nkn                                                        , &
-                  1                                                          , & ! number of layers
-                  DISS_FE_III_CONC_TS_END                                    , & ! Estimated dissolved Fe3+ at the end of time step (for output)
-                  DISS_FE_III_CONC_TS_AVG)                                       ! Estimated avg. dissolved Fe3+ during the timestep to be used for kinetic calculations
-        else
-            call CALC_DISS_ME_CONC &
-                 (FE_III                                                     , & ! Total Fe3+
-                  (SAVED_OUTPUTS(:,2) * FE_III)                              , & ! Dissolved Fe3+ from previous time step
-                  FE_III_DISS_EQ                                             , & ! Equilibrium concentration for dissolved Fe3+
-                  (k_DISS_FE_III_20 * (THETA_k_DISS_FE_III**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe3+
-                  TIME_STEP                                                  , & ! Time step in days
-                  nkn                                                        , &
-                  1                                                          , & ! number of layers
-                  DISS_FE_III_CONC_TS_END                                    , & ! Estimated dissolved Fe3+ at the end of time step (for output)
-                  DISS_FE_III_CONC_TS_AVG)                                       ! Estimated avg. dissolved Fe3+ during the timestep to be used for kinetic calculations
-        end if
-
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 8) = DISS_FE_III_CONC_TS_AVG
-        PROCESS_RATES(1:nkn,FE_III_INDEX, 9) = DISS_FE_III_CONC_TS_END
-
-
-        where(DISS_FE_III_CONC_TS_AVG >= FE_III)
-            FE_III_DISS      = FE_III
-            MULT_FE_III_DISS = 1.0D0
-            MULT_FE_III_PART = 0.0D0
-        elsewhere(FE_III .lt. 1.0D-20)
-            ! Guard against division by zero when total Fe3+ is depleted
-            FE_III_DISS      = 0.0D0
-            MULT_FE_III_DISS = 1.0D0
-            MULT_FE_III_PART = 0.0D0
-        elsewhere
-            MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
-            MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
-        end where
-
-        where(DISS_FE_III_CONC_TS_END >= FE_III)
-            DISS_FE_III_CONC_TS_END = FE_III
-        end where
-
-
-        !MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
-        !MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
-        ! -------------------------------------------------------------------------
-        ! End of calculate the dissolved and particulate fractions of Fe3+
-        ! -------------------------------------------------------------------------
-
-        ! Handle the different between saturated and nonsaturated cases.
-        ! If more Mn2+ is allowed to dissolve than the total Mn2+ present then
-        !
-        ! Assume unsaturated case, ie
-        !     - Dissolved Mn2+ is equal to total Mn2+
-        !     - Multiplier for dissolved Mn2+ is equal to 1
-        !     - Multiplier for particulate Mn2+ is equal to 0
-        ! otherwise
-        !     - Dissolved Mn2+ is smaller than to total Mn2+
-        !     - Multiplier for dissolved Mn2+ is between 0 and 1
-        !     - Multiplier for particulate Mn2+ is between 0 and 1
-
-        where(MN_II_DISS >= MN_II)
-            MN_II_DISS      = MN_II
-            MULT_MN_II_DISS = 1.0D0
-            MULT_MN_II_PART = 0.0D0
-        elsewhere(MN_II .lt. 1.0D-20)
-            ! Guard against division by zero when total Mn2+ is depleted
-            MN_II_DISS      = 0.0D0
-            MULT_MN_II_DISS = 1.0D0
-            MULT_MN_II_PART = 0.0D0
-        elsewhere
-            MULT_MN_II_DISS = MN_II_DISS / MN_II
-            MULT_MN_II_PART = 1.0D0 - MULT_MN_II_DISS
-        end where
-
-        ! -------------------------------------------------------------------------
-        ! New equlibrium calculations added at 25th of January 2016
-        ! -------------------------------------------------------------------------
-
-        MULT_MN_IV_DISS(:)  = 0.0D0
-        MULT_MN_IV_PART(:)  = 1.0D0
-        ! -----------------------------------------------------------------------
-        ! End of additions made 30th November 2015 related to dissolved and solid
-        ! iron and mangese species
-        ! -----------------------------------------------------------------------
-
-        ! -----------------------------------------------------------------------
-        ! Introduced 26th of January 2016 to allow dissolved fractions of iron
-        ! (Fe2+ and Fe3+) and manganese (Mn2+ and Mn4+) to outside to be used
-        ! by AQUABC settling calculations
-        !
-        ! Updated by Ali and Petras 9th of August 2016
-        ! -----------------------------------------------------------------------
-        ! Guard against division by zero for saved outputs
-        where(FE_II .lt. 1.0D-20)
-            SAVED_OUTPUTS(:,1) = 1.0D0
-        elsewhere
-            SAVED_OUTPUTS(:,1) = DISS_FE_II_CONC_TS_END  / FE_II
-        end where
-        where(FE_III .lt. 1.0D-20)
-            SAVED_OUTPUTS(:,2) = 1.0D0
-        elsewhere
-            SAVED_OUTPUTS(:,2) = DISS_FE_III_CONC_TS_END / FE_III
-        end where
-        SAVED_OUTPUTS(:,3) = MULT_MN_II_DISS(:)
-        SAVED_OUTPUTS(:,4) = MULT_MN_IV_DISS(:)
-        ! -----------------------------------------------------------------------
-        ! End of additions 26th of January 2016
-        ! -----------------------------------------------------------------------
-
-        !Calculate the dissolved MN IV
-        MN_IV_DISS(:) = MN_IV(:) * MULT_MN_IV_DISS(:)
-
-        call IP_SOLUBLE_FRACTION &
-             (FE_III     , &
-              PO4_P      , &
-              K_ONE_TIP  , &
-              K_TWO_TIP  , &
-              K_THREE_TIP, &
-              PH         , &
-              nkn        , &
-              1          , &
-              DIP_OVER_IP)
-
-        SAVED_OUTPUTS(:,5) = DIP_OVER_IP(:)
-
-    else  ! NO ADVANCED REDOX
-
-        LIM_DOXY_RED = DISS_OXYGEN  / (DISS_OXYGEN + K_HS_DOXY_RED_LIM)
-
-        LIM_NO3N_RED = (NO3_N / (NO3_N + K_HS_NO3N_RED_LIM)) * &
-            (K_HS_DOXY_RED_INHB / (DISS_OXYGEN + K_HS_DOXY_RED_INHB))
-
-        DIP_OVER_IP = 1.0D0
-
-        SAVED_OUTPUTS(:,1) = 0.0D0
-        SAVED_OUTPUTS(:,2) = 0.0D0
-        SAVED_OUTPUTS(:,3) = 0.0D0
-        SAVED_OUTPUTS(:,4) = 0.0D0
-        SAVED_OUTPUTS(:,5) = 1.0D0
-    end if
+    call pelagic_speciation_preprocess()
 
     ! =========================================================================
     ! BEGIN OpenMP PARALLEL REGION
@@ -3702,5 +3300,418 @@ contains
             ! Deallocation handled by AQUABC_PELAGIC_INTERNAL cleanup
         end if ! call co2sys
     end subroutine pelagic_co2sys_preprocess
+
+    subroutine pelagic_speciation_preprocess()
+        ! Sequential aquatic-chemistry preprocessing (TODO 1.6 -- verbatim lift):
+        ! redox/speciation, H2S species, and Fe/Mn dissolved-particulate fractions.
+        ! Populates the plain (non-chunk) REDOX_STATE / REDOX_LIM bundles consumed
+        ! by the serial, whole-nkn REDOX_AND_SPECIATION call below. Runs serially;
+        ! all arrays reached by host association. (Distinct from the REDOX_STATE_CHUNK
+        ! / REDOX_LIM_CHUNK bundles populated later inside the OpenMP parallel region.)
+        HCO3 = HCO3 / 1000000.0
+        CO3  = CO3  / 1000000.0
+        ! -----------------------------------------------------------------
+        ! Additions made 30th November 2015 related to dissolved and solid
+        ! iron and mangese species, soon to be replaced by the
+        ! aquatic chemistry model that will be called
+        !
+        !
+        !        EXACTLY HERE
+        !
+        ! -----------------------------------------------------------------
+
+
+        ! -------------------------------------------------------------------------
+        ! New equlibrium calculations added at 25th of January 2016
+        ! This is the first version of the aquatic chemistry model that was
+        ! promissed 30th November 2015
+        ! -------------------------------------------------------------------------
+
+            ! CO2SYS_OUT_DATA(:, 21), CO2SYS_OUT_DATA(:, 22)can not be used because deallocated
+
+        if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+            ! Populate redox state bundle (zero-copy pointer assignment)
+            REDOX_STATE%DOXY       => DISS_OXYGEN
+            REDOX_STATE%NO3N       => NO3_N
+            REDOX_STATE%MN_IV      => MN_IV
+            REDOX_STATE%FE_III     => FE_III
+            REDOX_STATE%S_PLUS_6   => S_PLUS_6
+            REDOX_STATE%DISS_ORG_C => DISS_ORG_C
+            REDOX_STATE%S_MINUS_2  => S_MINUS_2
+            REDOX_STATE%MN_II      => MN_II
+            REDOX_STATE%FE_II      => FE_II
+            REDOX_STATE%HCO3       => HCO3
+            REDOX_STATE%CO3        => CO3
+
+            ! Populate redox limitation bundle (zero-copy pointer assignment)
+            REDOX_LIM%LIM_DOXY_RED     => LIM_DOXY_RED
+            REDOX_LIM%LIM_NO3N_RED     => LIM_NO3N_RED
+            REDOX_LIM%LIM_MN_IV_RED    => LIM_MN_IV_RED
+            REDOX_LIM%LIM_FE_III_RED   => LIM_FE_III_RED
+            REDOX_LIM%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED
+            REDOX_LIM%LIM_DOC_RED      => LIM_DOC_RED
+
+                call REDOX_AND_SPECIATION &
+                (nkn, TEMP, SALT, PH, ELEVATION, &
+                 REDOX_PARAMS, REDOX_STATE, REDOX_LIM, &
+                 PE, FE_II_DISS_EQ, FE_III_DISS_EQ, MN_II_DISS)
+
+            FE_III_DISS_EQ = FE_III_DISS_EQ * FE_MOLAR_MASS_MG
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 4) = FE_III_DISS_EQ
+            ! ---------------------------------------------------------------------------
+            ! Handle Fe2+ dissolution changes by Ali Ert�rk, 2 nd of july 2016
+            ! ---------------------------------------------------------------------------
+
+            ! For now, take fixed values for equlibrium and solubility constants
+            ! In future, change these to temperature and/or other environmental
+            ! variable based equations.
+            K_EQ_S_1  (:) = 8.90D-8
+            K_EQ_S_2  (:) = 1.20D-13
+            K_SP_FES  (:) = 8.00D-19
+            !K_SP_FEOH3(:) = 1.00D-36
+            !K_SP_FEPO4(:) = 9.91D-16
+
+            ! -------------------------------------------------------------------------
+            ! Calculate H2S Species
+            ! -------------------------------------------------------------------------
+
+            ! Convert sulphide to moles for aquatic chemistry calculations
+            HS2_TOT(:) = S_MINUS_2(:) / S_MOLAR_MASS_MG
+
+            H2S_DIVISOR(:) = (H_PLUS(:) * H_PLUS(:)) + &
+                (H_PLUS(:) * K_EQ_S_1(:)) + (K_EQ_S_1(:) * K_EQ_S_2(:))
+
+            FRAC_HS_MINUS_IN_H2S_TOT   (:) = (H_PLUS(:)   * K_EQ_S_1(:)) / H2S_DIVISOR(:)
+            FRAC_S_MINUS_TWO_IN_H2S_TOT(:) = (K_EQ_S_1(:) * K_EQ_S_2(:)) / H2S_DIVISOR(:)
+
+            FRAC_H2S_IN_H2S_TOT(:)         = &
+                1.0D0 - (FRAC_HS_MINUS_IN_H2S_TOT(:) + FRAC_S_MINUS_TWO_IN_H2S_TOT(:))
+
+            H2S        (:) = HS2_TOT(:) * FRAC_H2S_IN_H2S_TOT        (:)
+            HS_MINUS   (:) = HS2_TOT(:) * FRAC_HS_MINUS_IN_H2S_TOT   (:)
+            S_MINUS_TWO(:) = HS2_TOT(:) * FRAC_S_MINUS_TWO_IN_H2S_TOT(:)
+            ! -------------------------------------------------------------------------
+            ! End of calculate H2S Species
+            ! -------------------------------------------------------------------------
+
+            ! -------------------------------------------------------------------------
+            ! Changes by Ali Ert�rk (2 July 2016)
+            ! Change updated by Ali (9 August 2016)
+            ! -------------------------------------------------------------------------
+            call IRON_II_DISSOLUTION(HS2_TOT, PH, TOT_ALK, nkn, FE_II_DISS_EQ)
+            FE_II_DISS_EQ = FE_II_DISS_EQ * FE_MOLAR_MASS_MG
+
+            ! -------------------------------------------------------------------------
+            ! End of changes by Ali Ert�rk (2 July 2016)
+            ! -------------------------------------------------------------------------
+
+            if(debug_stranger) then
+                call DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
+            end if
+
+            ! -------------------------------------------------------------------------
+            ! Updated by Ali and Petras, 9 August 2016
+            !
+            ! If it is the first timestep, initialize the dissolved fraction by assuming
+            ! that the system is in equlibrum (option 1) or the dissolved fractions will
+            ! be initialized (option 2). Otherwise calculate the dissolved fractions will
+            ! be calculated by simple submodel based on the analytical solution.
+            ! -------------------------------------------------------------------------
+            where (FE_II_DISS_EQ > FE_II)
+                FE_II_DISS_EQ = FE_II
+            end where
+
+            if (FIRST_TIME_STEP > 0) then
+
+                select case (INIT_OPTION_OF_FE_II_DISS)
+
+                    case(1)
+                        ! Handle the different between saturated and nonsaturated cases.
+                        ! If more Fe2+ is allowed to dissolve than the total Fe2+ present then
+                        !
+                        ! Assume unsaturated case, ie
+                        !     - Dissolved Fe2+ is equal to total Fe2+
+                        !     - Multiplier for dissolved Fe2+ is equal to 1
+                        !     - Multiplier for particulate Fe2+ is equal to 0
+                        ! otherwise
+                        !     - Dissolved Fe2+ is smaller than to total Fe2+
+                        !     - Multiplier for dissolved Fe2+ is between 0 and 1
+                        !     - Multiplier for particulate Fe2+ is between 0 and 1
+
+                        where(FE_II_DISS_EQ >= FE_II)
+                            FE_II_DISS      = FE_II
+                            MULT_FE_II_DISS = 1.0D0
+                            MULT_FE_II_PART = 0.0D0
+                        elsewhere(FE_II .lt. 1.0D-20)
+                            ! Guard against division by zero when total Fe2+ is depleted
+                            FE_II_DISS      = 0.0D0
+                            MULT_FE_II_DISS = 1.0D0
+                            MULT_FE_II_PART = 0.0D0
+                        elsewhere
+                            MULT_FE_II_DISS = FE_II_DISS_EQ / FE_II
+                            MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
+                        end where
+
+                    case(2)
+                        ! Get the initial fraction of dissolved Fe2+ from model constants and
+                        ! recalculate the initial concentration accordingly.
+                        MULT_FE_II_DISS = INIT_MULT_FE_II_DISS
+                        MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
+
+                end select
+
+                call CALC_DISS_ME_CONC &
+                     (FE_II                                                    , & ! Total Fe2+
+                      (MULT_FE_II_DISS * FE_II)                                , & ! Dissolved Fe2+ from previous time step
+                      FE_II_DISS_EQ                                            , & ! Equilibrium concentration for dissolved Fe2+
+                      (k_DISS_FE_II_20 * (THETA_k_DISS_FE_II**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe2+
+                      TIME_STEP                                                , & ! Time step in days
+                      nkn                                                      , &
+                      1                                                        , & ! number of layers
+                      DISS_FE_II_CONC_TS_END                                   , & ! Estimated dissolved Fe2+ at the end of time step (for output)
+                      DISS_FE_II_CONC_TS_AVG)                                      ! Estimated avg. dissolved Fe2+ during the timestep to be used for kinetic calculations
+            else
+                call CALC_DISS_ME_CONC &
+                     (FE_II                                                    , & ! Total Fe2+
+                      (SAVED_OUTPUTS(:,1) * FE_II)                             , & ! Dissolved Fe2+ from previous time step
+                      FE_II_DISS_EQ                                            , & ! Equilibrium concentration for dissolved Fe2+
+                      (k_DISS_FE_II_20 * (THETA_k_DISS_FE_II**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe2+
+                      TIME_STEP                                                , & ! Time step in days
+                      nkn                                                      , &
+                      1                                                        , & ! number of layers
+                      DISS_FE_II_CONC_TS_END                                   , & ! Estimated dissolved Fe2+ at the end of time step (for output)
+                      DISS_FE_II_CONC_TS_AVG)                                      ! Estimated avg. dissolved Fe2+ during the timestep to be used for kinetic calculations
+            end if
+
+
+            where(DISS_FE_II_CONC_TS_AVG >= FE_II)
+                FE_II_DISS      = FE_II
+                MULT_FE_II_DISS = 1.0D0
+                MULT_FE_II_PART = 0.0D0
+            elsewhere(FE_II .lt. 1.0D-20)
+                ! Guard against division by zero when total Fe2+ is depleted
+                FE_II_DISS      = 0.0D0
+                MULT_FE_II_DISS = 1.0D0
+                MULT_FE_II_PART = 0.0D0
+            elsewhere
+                MULT_FE_II_DISS = DISS_FE_II_CONC_TS_AVG / FE_II
+                MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
+            end where
+
+            where(DISS_FE_II_CONC_TS_END >= FE_II)
+                DISS_FE_II_CONC_TS_END = FE_II
+            end where
+
+            ! -------------------------------------------------------------------------
+            ! End of calculate the dissolved and particulate fractions of Fe2+
+            ! -------------------------------------------------------------------------
+
+            ! -------------------------------------------------------------------------
+            ! Calculate the dissolved and particulate fractions of Fe3+
+            ! -------------------------------------------------------------------------
+
+            ! -------------------------------------------------------------------------
+            ! Updated by Ali and Petras, 9 August 2016
+            !
+            ! If it is the first timestep, initialize the dissolved fraction by assuming
+            ! that the system is in equlibrum (option 1) or the dissolved fractions will
+            ! be initialized (option 2). Otherwise calculate the dissolved fractions will
+            ! be calculated by simple submodel based on the analytical solution.
+            ! -------------------------------------------------------------------------
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 5) = FE_III_DISS_EQ
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 6) = FE_III
+
+            where (FE_III_DISS_EQ > FE_III)
+                FE_III_DISS_EQ = FE_III
+            end where
+
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 7) = FE_III_DISS_EQ
+
+            if (FIRST_TIME_STEP > 0) then
+
+                select case (INIT_OPTION_OF_FE_III_DISS)
+
+                    case(1)
+                        ! Handle the different between saturated and nonsaturated cases.
+                        ! If more Fe3+ is allowed to dissolve than the total Fe3+ present then
+                        !
+                        ! Assume unsaturated case, ie
+                        !     - Dissolved Fe3+ is equal to total Fe3+
+                        !     - Multiplier for dissolved Fe3+ is equal to 1
+                        !     - Multiplier for particulate Fe3+ is equal to 0
+                        ! otherwise
+                        !     - Dissolved Fe3+ is smaller than to total Fe3+
+                        !     - Multiplier for dissolved Fe3+ is between 0 and 1
+                        !     - Multiplier for particulate Fe3+ is between 0 and 1
+
+                        where(FE_III_DISS_EQ >= FE_III)
+                            FE_III_DISS      = FE_III
+                            MULT_FE_III_DISS = 1.0D0
+                            MULT_FE_III_PART = 0.0D0
+                        elsewhere(FE_III .lt. 1.0D-20)
+                            ! Guard against division by zero when total Fe3+ is depleted
+                            FE_III_DISS      = 0.0D0
+                            MULT_FE_III_DISS = 1.0D0
+                            MULT_FE_III_PART = 0.0D0
+                        elsewhere
+                            MULT_FE_III_DISS = FE_III_DISS_EQ / FE_III
+                            MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
+                        end where
+
+                    case(2)
+                        ! Get the initial fraction of dissolved Fe3+ from model constants and
+                        ! recalculate the initial concentration accordingly.
+                        MULT_FE_III_DISS = INIT_MULT_FE_III_DISS
+                        MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
+
+                    end select
+
+
+                call CALC_DISS_ME_CONC &
+                     (FE_III                                                     , & ! Total Fe3+
+                      (MULT_FE_III_DISS * FE_III)                                , & ! Dissolved Fe3+ from previous time step
+                      FE_III_DISS_EQ                                             , & ! Equilibrium concentration for dissolved Fe3+
+                      (k_DISS_FE_III_20 * (THETA_k_DISS_FE_III**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe3+
+                      TIME_STEP                                                  , & ! Time step in days
+                      nkn                                                        , &
+                      1                                                          , & ! number of layers
+                      DISS_FE_III_CONC_TS_END                                    , & ! Estimated dissolved Fe3+ at the end of time step (for output)
+                      DISS_FE_III_CONC_TS_AVG)                                       ! Estimated avg. dissolved Fe3+ during the timestep to be used for kinetic calculations
+            else
+                call CALC_DISS_ME_CONC &
+                     (FE_III                                                     , & ! Total Fe3+
+                      (SAVED_OUTPUTS(:,2) * FE_III)                              , & ! Dissolved Fe3+ from previous time step
+                      FE_III_DISS_EQ                                             , & ! Equilibrium concentration for dissolved Fe3+
+                      (k_DISS_FE_III_20 * (THETA_k_DISS_FE_III**(TEMP - 20.0D0))), & ! Dissolution rate constant for Fe3+
+                      TIME_STEP                                                  , & ! Time step in days
+                      nkn                                                        , &
+                      1                                                          , & ! number of layers
+                      DISS_FE_III_CONC_TS_END                                    , & ! Estimated dissolved Fe3+ at the end of time step (for output)
+                      DISS_FE_III_CONC_TS_AVG)                                       ! Estimated avg. dissolved Fe3+ during the timestep to be used for kinetic calculations
+            end if
+
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 8) = DISS_FE_III_CONC_TS_AVG
+            PROCESS_RATES(1:nkn,FE_III_INDEX, 9) = DISS_FE_III_CONC_TS_END
+
+
+            where(DISS_FE_III_CONC_TS_AVG >= FE_III)
+                FE_III_DISS      = FE_III
+                MULT_FE_III_DISS = 1.0D0
+                MULT_FE_III_PART = 0.0D0
+            elsewhere(FE_III .lt. 1.0D-20)
+                ! Guard against division by zero when total Fe3+ is depleted
+                FE_III_DISS      = 0.0D0
+                MULT_FE_III_DISS = 1.0D0
+                MULT_FE_III_PART = 0.0D0
+            elsewhere
+                MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
+                MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
+            end where
+
+            where(DISS_FE_III_CONC_TS_END >= FE_III)
+                DISS_FE_III_CONC_TS_END = FE_III
+            end where
+
+
+            !MULT_FE_III_DISS = DISS_FE_III_CONC_TS_AVG / FE_III
+            !MULT_FE_III_PART = 1.0D0 - MULT_FE_III_DISS
+            ! -------------------------------------------------------------------------
+            ! End of calculate the dissolved and particulate fractions of Fe3+
+            ! -------------------------------------------------------------------------
+
+            ! Handle the different between saturated and nonsaturated cases.
+            ! If more Mn2+ is allowed to dissolve than the total Mn2+ present then
+            !
+            ! Assume unsaturated case, ie
+            !     - Dissolved Mn2+ is equal to total Mn2+
+            !     - Multiplier for dissolved Mn2+ is equal to 1
+            !     - Multiplier for particulate Mn2+ is equal to 0
+            ! otherwise
+            !     - Dissolved Mn2+ is smaller than to total Mn2+
+            !     - Multiplier for dissolved Mn2+ is between 0 and 1
+            !     - Multiplier for particulate Mn2+ is between 0 and 1
+
+            where(MN_II_DISS >= MN_II)
+                MN_II_DISS      = MN_II
+                MULT_MN_II_DISS = 1.0D0
+                MULT_MN_II_PART = 0.0D0
+            elsewhere(MN_II .lt. 1.0D-20)
+                ! Guard against division by zero when total Mn2+ is depleted
+                MN_II_DISS      = 0.0D0
+                MULT_MN_II_DISS = 1.0D0
+                MULT_MN_II_PART = 0.0D0
+            elsewhere
+                MULT_MN_II_DISS = MN_II_DISS / MN_II
+                MULT_MN_II_PART = 1.0D0 - MULT_MN_II_DISS
+            end where
+
+            ! -------------------------------------------------------------------------
+            ! New equlibrium calculations added at 25th of January 2016
+            ! -------------------------------------------------------------------------
+
+            MULT_MN_IV_DISS(:)  = 0.0D0
+            MULT_MN_IV_PART(:)  = 1.0D0
+            ! -----------------------------------------------------------------------
+            ! End of additions made 30th November 2015 related to dissolved and solid
+            ! iron and mangese species
+            ! -----------------------------------------------------------------------
+
+            ! -----------------------------------------------------------------------
+            ! Introduced 26th of January 2016 to allow dissolved fractions of iron
+            ! (Fe2+ and Fe3+) and manganese (Mn2+ and Mn4+) to outside to be used
+            ! by AQUABC settling calculations
+            !
+            ! Updated by Ali and Petras 9th of August 2016
+            ! -----------------------------------------------------------------------
+            ! Guard against division by zero for saved outputs
+            where(FE_II .lt. 1.0D-20)
+                SAVED_OUTPUTS(:,1) = 1.0D0
+            elsewhere
+                SAVED_OUTPUTS(:,1) = DISS_FE_II_CONC_TS_END  / FE_II
+            end where
+            where(FE_III .lt. 1.0D-20)
+                SAVED_OUTPUTS(:,2) = 1.0D0
+            elsewhere
+                SAVED_OUTPUTS(:,2) = DISS_FE_III_CONC_TS_END / FE_III
+            end where
+            SAVED_OUTPUTS(:,3) = MULT_MN_II_DISS(:)
+            SAVED_OUTPUTS(:,4) = MULT_MN_IV_DISS(:)
+            ! -----------------------------------------------------------------------
+            ! End of additions 26th of January 2016
+            ! -----------------------------------------------------------------------
+
+            !Calculate the dissolved MN IV
+            MN_IV_DISS(:) = MN_IV(:) * MULT_MN_IV_DISS(:)
+
+            call IP_SOLUBLE_FRACTION &
+                 (FE_III     , &
+                  PO4_P      , &
+                  K_ONE_TIP  , &
+                  K_TWO_TIP  , &
+                  K_THREE_TIP, &
+                  PH         , &
+                  nkn        , &
+                  1          , &
+                  DIP_OVER_IP)
+
+            SAVED_OUTPUTS(:,5) = DIP_OVER_IP(:)
+
+        else  ! NO ADVANCED REDOX
+
+            LIM_DOXY_RED = DISS_OXYGEN  / (DISS_OXYGEN + K_HS_DOXY_RED_LIM)
+
+            LIM_NO3N_RED = (NO3_N / (NO3_N + K_HS_NO3N_RED_LIM)) * &
+                (K_HS_DOXY_RED_INHB / (DISS_OXYGEN + K_HS_DOXY_RED_INHB))
+
+            DIP_OVER_IP = 1.0D0
+
+            SAVED_OUTPUTS(:,1) = 0.0D0
+            SAVED_OUTPUTS(:,2) = 0.0D0
+            SAVED_OUTPUTS(:,3) = 0.0D0
+            SAVED_OUTPUTS(:,4) = 0.0D0
+            SAVED_OUTPUTS(:,5) = 1.0D0
+        end if
+
+    end subroutine pelagic_speciation_preprocess
 
 end subroutine AQUABC_PELAGIC_KINETICS
