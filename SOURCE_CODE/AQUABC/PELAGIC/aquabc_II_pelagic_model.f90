@@ -425,514 +425,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     if (nkn_local > 0) then
 
-    !*****************************************
-    !     D I S S O L V E D  O X Y G E N     !
-    !*****************************************
-    do k=ns,ne
-            DISS_OXYGEN_SAT(k) = DO_SATURATION(TEMP(k), SALT(k), ELEVATION(k))
-
-            if (SURFACE_BOXES(k) == 1) then !first layer
-
-                if (K_A < 0.0D0) then
-                    K_A_CALC(k) = KAWIND(WINDS(k), TEMP(k), AIRTEMP(k), DEPTH(k), 3.0D0)
-                    R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k))
-                else
-                    K_A_CALC(k) = K_A
-
-                    R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k)) * &
-                         (THETA_K_A ** (TEMP(k) - 2.0D1))
-                end if
-
-                !----------------------------------------------------------------------
-                ! 2 February 2015
-                ! New code added to account the effect of ice cover.
-                !----------------------------------------------------------------------
-                R_AERATION(k) = (1.0D0 - ice_cover(k)) * R_AERATION(k)
-                !----------------------------------------------------------------------
-                ! End of new code added to account the effect of ice cover.
-                !----------------------------------------------------------------------
-            else
-                R_AERATION(k) = 0.0D0 ! other layers
-            end if
-    end do
-
-    ! Calculate the total phytoplankton.
-    PHYT_TOT_C(ns:ne) = DIA_C(ns:ne) + CYN_C(ns:ne) + OPA_C(ns:ne) + FIX_CYN_C(ns:ne) + NOST_VEG_HET_C(ns:ne)
-
-    !**********************************!
-    !**********************************!
-    !     P H Y T O P L A N K T O N    !
-    !**********************************!
-    !**********************************!
-
-    ! total chlorophyl in micrograms
-    CHLA(ns:ne) = ((DIA_C(ns:ne)          / DIA_C_TO_CHLA    ) + (CYN_C(ns:ne) / CYN_C_TO_CHLA) + &
-            (FIX_CYN_C(ns:ne)      / FIX_CYN_C_TO_CHLA) + (OPA_C(ns:ne) / OPA_C_TO_CHLA) + &
-            (NOST_VEG_HET_C(ns:ne) / NOST_C_TO_CHLA)) * 1.0D3
-
-    ! Debug: print CHLA components for node 1 to find negative values (include time/context)
-    ! Note: Commented out to reduce log noise - uncomment for detailed CHLA debugging
-    ! write(6,'(A,F12.4,A,ES10.3)') 'DEBUG: CHLA node1: TIME=', TIME, ' DT=', TIME_STEP
-    ! write(6,'(A,5ES12.4)') '  DIA/CYN/FIX/OPA/NOST=', DIA_C(1), CYN_C(1), FIX_CYN_C(1), OPA_C(1), NOST_VEG_HET_C(1)
-
-    select case (LIGHT_EXTINCTION_OPTION)
-
-            case (0)
-                call light_kd(K_B_E(ns:ne), K_E(ns:ne), CHLA(ns:ne), nkn_local)
-
-            case (1)
-                ! Defensive guard: ensure CHLA is non-negative before fractional exponent
-                do i = ns, ne
-                    if (CHLA(i) < 0.0D0) then
-                        !$omp critical
-                        write(6,'(A,I4,A,ES12.4)') 'WARN: negative CHLA at node ', i, ' value=', CHLA(i)
-                        !$omp end critical
-                    end if
-                end do
-                chla_pos(ns:ne) = CHLA(ns:ne)
-                where (chla_pos(ns:ne) .lt. 0.0D0)
-                    chla_pos(ns:ne) = 0.0D0
-                end where
-                K_E(ns:ne) = K_B_E(ns:ne) + (8.8D-3 * chla_pos(ns:ne)) + (5.4D-2 * (chla_pos(ns:ne) ** (2.0D0 / 3.0D0)))
-
-        end select
-
-        ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
-        ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
-
-    ! Populate per-thread phytoplankton environmental input bundle
-    ENV_CHUNK%TEMP         => TEMP(ns:ne)
-    ENV_CHUNK%I_A          => I_A(ns:ne)
-    ENV_CHUNK%K_E          => K_E(ns:ne)
-    ENV_CHUNK%DEPTH        => DEPTH(ns:ne)
-    ENV_CHUNK%CHLA         => CHLA(ns:ne)
-    ENV_CHUNK%FDAY         => FDAY(ns:ne)
-    ENV_CHUNK%DISS_OXYGEN  => DISS_OXYGEN(ns:ne)
-    ENV_CHUNK%WINDS        => WINDS(ns:ne)
-
-    !********************
-    !      DIATOMS      !
-    !********************
-
-    !Calculations for diatom growth
-    call DIATOMS(DIA_PARAMS              , &
-                 ENV_CHUNK               , &
-                 DIA_LIGHT_SAT(ns:ne)           , &
-                 NH4_N(ns:ne)                   , &
-                 NO3_N(ns:ne)                   , &
-                 (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
-                 DIA_C(ns:ne)                   , &
-                 ZOO_C(ns:ne)                   , &
-                 DISS_Si(ns:ne)                 , &
-                 TIME_STEP               , &
-                 SMITH                   , &
-                 nkn_local                     , &
-                 KG_DIA(ns:ne)                  , &
-                 ALPHA_0(ns:ne)                 , &
-                 ALPHA_1(ns:ne)                 , &
-                 LIM_KG_DIA_TEMP(ns:ne)         , &
-                 LIM_KG_DIA_LIGHT(ns:ne)        , &
-                 LIM_KG_DIA_DOXY(ns:ne)         , &
-                 LIM_KG_DIA_N(ns:ne)            , &
-                 LIM_KG_DIA_P(ns:ne)            , &
-                 LIM_KG_DIA_DISS_Si(ns:ne)      , &
-                 LIM_KG_DIA_NUTR(ns:ne)         , &
-                 LIM_KG_DIA(ns:ne)              , &
-                 R_DIA_GROWTH(ns:ne)            , &
-                 R_DIA_MET(ns:ne)               , &
-                 R_DIA_RESP(ns:ne)              , &
-                 R_DIA_EXCR(ns:ne)              , &
-                 R_DIA_INT_RESP(ns:ne)          , &
-                 KD_DIA(ns:ne)                  , &
-                 FAC_HYPOX_DIA_D(ns:ne)         , &
-                 R_DIA_DEATH(ns:ne)             , &
-                 PREF_NH4N_DIA(ns:ne))
-
-    ! Consider the effect of growth inhibition which is supplied from outside
-    ! by external models
-    R_DIA_GROWTH(ns:ne) = R_DIA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_DIA(ns:ne)
-
-    !**************************************
-    ! NON-NITROGEN FIXING CYANOBACTERIA   !
-    !*************************************
-
-    !Calculations for non-fixing cyanobacteria growth
-    call CYANOBACTERIA_BOUYANT &
-         (CYN_PARAMS              , &
-          ENV_CHUNK               , &
-          CYN_LIGHT_SAT(ns:ne)           , &
-          NH4_N(ns:ne)                   , &
-          NO3_N(ns:ne)                   , &
-          DISS_ORG_N(ns:ne)              , &
-          (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , &
-          CYN_C(ns:ne)                   , &
-          ZOO_C(ns:ne)                   , &
-          TIME_STEP               , &
-          SMITH                   , &
-          nkn_local                     , &
-          KG_CYN(ns:ne)                  , &
-          ALPHA_0(ns:ne)                 , &
-          ALPHA_1(ns:ne)                 , &
-          LIM_KG_CYN_TEMP(ns:ne)         , &
-          LIM_KG_CYN_LIGHT(ns:ne)        , &
-          LIM_KG_CYN_DOXY(ns:ne)         , &
-          LIM_KG_CYN_N(ns:ne)            , &
-          LIM_KG_CYN_P(ns:ne)            , &
-          LIM_KG_CYN_NUTR(ns:ne)         , &
-          LIM_KG_CYN(ns:ne)              , &
-          R_CYN_GROWTH(ns:ne)            , &
-          R_CYN_MET(ns:ne)               , &
-          R_CYN_RESP(ns:ne)              , &
-          R_CYN_EXCR(ns:ne)              , &
-          R_CYN_INT_RESP(ns:ne)          , &
-          KD_CYN(ns:ne)                  , &
-          FAC_HYPOX_CYN_D(ns:ne)         , &
-          R_CYN_DEATH(ns:ne)             , &
-          PREF_DIN_DON_CYN(ns:ne)        , &
-          PREF_NH4N_CYN(ns:ne))
-
-    ! Consider the effect of growth inhibition which is supplied from outside
-    ! by external models
-    R_CYN_GROWTH(ns:ne) = R_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_CYN(ns:ne)
-
-
-    !********************************
-    ! NITROGEN FIXING CYANOBACTERIA !
-    !********************************
-    if (DO_NON_OBLIGATORY_FIXERS > 0) then
-        call FIX_CYANOBACTERIA_BOUYANT  &
-               (FIX_CYN_PARAMS               , &
-                ENV_CHUNK                    , &
-                TIME_STEP                    , &
-                SMITH                        , &
-                nkn_local                          , &
-                NH4_N(ns:ne)                        , &
-                NO3_N(ns:ne)                        , &
-                DISS_ORG_N(ns:ne)                   , &
-                (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))        , &
-                FIX_CYN_C(ns:ne)                    , &
-                FIX_CYN_LIGHT_SAT(ns:ne)            , &
-                ALPHA_0(ns:ne)                      , &
-                ALPHA_1(ns:ne)                      , &
-                KG_FIX_CYN(ns:ne)                   , &
-                LIM_KG_FIX_CYN_LIGHT(ns:ne)         , &
-                LIM_KG_FIX_CYN_TEMP(ns:ne)          , &
-                LIM_KG_FIX_CYN_DOXY(ns:ne)          , &
-                LIM_KG_NON_FIX_CYN_N(ns:ne)         , &
-                LIM_KG_NON_FIX_CYN_P(ns:ne)         , &
-                LIM_KG_NON_FIX_CYN_NUTR(ns:ne)      , &
-                LIM_KG_FIX_FIX_CYN_N(ns:ne)         , &
-                LIM_KG_FIX_FIX_CYN_P(ns:ne)         , &
-                LIM_KG_FIX_FIX_CYN_NUTR(ns:ne)      , &
-                LIM_KG_NON_FIX_CYN(ns:ne)           , &
-                LIM_KG_FIX_FIX_CYN(ns:ne)           , &
-                R_NON_FIX_CYN_GROWTH(ns:ne)         , &
-                R_FIX_FIX_CYN_GROWTH(ns:ne)         , &
-                R_FIX_CYN_GROWTH(ns:ne)             , &
-                R_FIX_CYN_MET(ns:ne)                , &
-                R_FIX_CYN_RESP(ns:ne)               , &
-                R_FIX_CYN_EXCR(ns:ne)               , &
-                R_FIX_CYN_INT_RESP(ns:ne)           , &
-                KD_FIX_CYN(ns:ne)                   , &
-                FAC_HYPOX_FIX_CYN_D(ns:ne)          , &
-                R_FIX_CYN_DEATH(ns:ne)              , &
-                PREF_NH4N_DON_FIX_CYN(ns:ne))
-
-        ! Consider the effect of growth inhibition which is supplied from outside
-        ! by external models
-        R_FIX_CYN_GROWTH(ns:ne)     = R_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
-        R_NON_FIX_CYN_GROWTH(ns:ne) = R_NON_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
-        R_FIX_FIX_CYN_GROWTH(ns:ne) = R_FIX_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
-    else
-        FIX_CYN_C(ns:ne) = 0.0D0
-        R_NON_FIX_CYN_GROWTH(ns:ne) = 0.0D0
-        R_FIX_FIX_CYN_GROWTH(ns:ne) = 0.0D0
-        R_FIX_CYN_GROWTH(ns:ne) = 0.0D0
-        R_FIX_CYN_MET(ns:ne) = 0.0D0
-        R_FIX_CYN_RESP(ns:ne) = 0.0D0
-        R_FIX_CYN_EXCR(ns:ne) = 0.0D0
-        R_FIX_CYN_INT_RESP(ns:ne) = 0.0D0
-        R_FIX_CYN_DEATH(ns:ne) = 0.0D0
-    end if
-
-
-    !*****************************
-    ! OTHER PLANKTONIC ALGAE     !
-    !*****************************
-    call OTHER_PLANKTONIC_ALGAE &
-           (OPA_PARAMS              , &
-            ENV_CHUNK               , &
-            OPA_LIGHT_SAT(ns:ne)           , &
-            NH4_N(ns:ne)                   , &
-            NO3_N(ns:ne)                   , &
-            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
-            OPA_C(ns:ne)                   , &
-            ZOO_C(ns:ne)                   , &
-            TIME_STEP               , &
-            SMITH                   , &
-            nkn_local                     , &
-            KG_OPA(ns:ne)                  , &
-            ALPHA_0(ns:ne)                 , &
-            ALPHA_1(ns:ne)                 , &
-            LIM_KG_OPA_TEMP(ns:ne)         , &
-            LIM_KG_OPA_LIGHT(ns:ne)        , &
-            LIM_KG_OPA_DOXY(ns:ne)         , &
-            LIM_KG_OPA_N(ns:ne)            , &
-            LIM_KG_OPA_P(ns:ne)            , &
-            LIM_KG_OPA_NUTR(ns:ne)         , &
-            LIM_KG_OPA(ns:ne)              , &
-            R_OPA_GROWTH(ns:ne)            , &
-            R_OPA_MET(ns:ne)               , &
-            R_OPA_RESP(ns:ne)              , &
-            R_OPA_EXCR(ns:ne)              , &
-            R_OPA_INT_RESP(ns:ne)          , &
-            KD_OPA(ns:ne)                  , &
-            FAC_HYPOX_OPA_D(ns:ne)         , &
-            R_OPA_DEATH(ns:ne)             , &
-            PREF_NH4N_OPA(ns:ne))
-
-        R_OPA_GROWTH(ns:ne) = R_OPA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_OPA(ns:ne)
-    !******************************!
-    !******************************!
-    !          NOSTOCALES          !
-    !******************************!
-    !******************************!
-
-
-    if (DO_NOSTOCALES > 0) then
-
-        ! Calls to the routines that should be incorporated to NOSTOCALES
-        call DOP_DIP_PREFS(PREF_DIP_DOP_NOST(ns:ne), (frac_avail_DOP * DISS_ORG_P(ns:ne)), &
-              (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne)) , KHS_DP_NOST_VEG_HET, nkn_local)
-
-        call DIN_DON_PREFS &
-             (PREF_DIN_DON_NOST(ns:ne), NH4_N(ns:ne), DISS_ORG_N(ns:ne), &
-              frac_avail_DON_NOST, NO3_N(ns:ne), KHS_DN_NOST_VEG_HET, nkn_local)
-
-        call AMMONIA_PREFS &
-            (PREF_NH4N_NOST(ns:ne), (NH4_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), &
-             (NO3_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), KHS_DN_NOST_VEG_HET, nkn_local)
-
-        call NOSTOCALES &
-           (NOST_PARAMS                       , &
-            ENV_CHUNK                         , &
-            TIME_STEP                         , &
-            DAY_OF_YEAR                       , &
-            SMITH                             , &
-            nkn_local                               , &
-            NOST_LIGHT_SAT(ns:ne)                    , &
-            (NH4_N(ns:ne) + NO3_N(ns:ne))                   , &
-            frac_avail_DON_NOST * DISS_ORG_N(ns:ne)  , &
-            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne) + frac_avail_DOP * DISS_ORG_P(ns:ne)) , &
-            NOST_VEG_HET_C(ns:ne)                    , &
-            NOST_AKI_C(ns:ne)                        , &
-            KG_NOST_VEG_HET(ns:ne)                   , &
-            LIM_KG_NOST_VEG_HET_LIGHT(ns:ne)         , &
-            LIM_KG_NOST_VEG_HET_TEMP(ns:ne)          , &
-            LIM_KG_NOST_VEG_HET_DOXY(ns:ne)          , &
-            LIM_KG_NOST_VEG_HET_N(ns:ne)             , &
-            LIM_KG_NOST_VEG_HET_P(ns:ne)             , &
-            LIM_KG_NOST_VEG_HET_FIX(ns:ne)           , &
-            LIM_KG_NOST_VEG_HET_NON_FIX(ns:ne)       , &
-            R_NOST_VEG_HET_GROWTH(ns:ne)             , &
-            R_NOST_VEG_HET_FIX_GROWTH(ns:ne)         , &
-            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne)     , &
-            R_NOST_VEG_HET_MET(ns:ne)                , &
-            R_NOST_VEG_HET_RESP(ns:ne)               , &
-            R_NOST_VEG_HET_EXCR(ns:ne)               , &
-            R_NOST_VEG_HET_INT_RESP(ns:ne)           , &
-            KD_NOST_VEG_HET(ns:ne)                   , &
-            FAC_HYPOX_NOST_VEG_HET_D(ns:ne)          , &
-            R_NOST_VEG_HET_DEATH(ns:ne)              , &
-            R_DENS_MORT_NOST_VEG_HET(ns:ne)          , &
-            R_GERM_NOST_AKI(ns:ne)                   , &
-            R_FORM_NOST_AKI(ns:ne)                   , &
-            R_LOSS_AKI(ns:ne)                        , &
-            R_MORT_AKI(ns:ne))
-
-            ! Consider the effect of growth inhibition which is supplied from outside
-            ! by external models
-            R_NOST_VEG_HET_GROWTH(ns:ne) = &
-                R_NOST_VEG_HET_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
-
-            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) = &
-                R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
-
-            R_NOST_VEG_HET_FIX_GROWTH(ns:ne) = &
-                R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
-    else
-        R_NOST_VEG_HET_GROWTH(ns:ne)    = 0.0D0
-        R_NOST_VEG_HET_MET(ns:ne)       = 0.0D0
-        R_NOST_VEG_HET_RESP(ns:ne)      = 0.0D0
-        R_NOST_VEG_HET_EXCR(ns:ne)      = 0.0D0
-        R_NOST_VEG_HET_INT_RESP(ns:ne)  = 0.0D0
-        R_NOST_VEG_HET_DEATH(ns:ne)     = 0.0D0
-        R_DENS_MORT_NOST_VEG_HET(ns:ne) = 0.0D0
-        R_GERM_NOST_AKI(ns:ne)          = 0.0D0
-        R_FORM_NOST_AKI(ns:ne)          = 0.0D0
-        R_LOSS_AKI(ns:ne)               = 0.0D0
-        R_MORT_AKI(ns:ne)               = 0.0D0
-    end if
-
-
-    !******************************!
-    !******************************!
-    !     Z O O P L A N K T O N    !
-    !******************************!
-    !******************************!
-    call ZOOPLANKTON &
-           (ZOO_PARAMS                       , &
-            ENV_CHUNK                        , &
-            DIA_C(ns:ne)                         , &
-            CYN_C(ns:ne)                         , &
-            OPA_C(ns:ne)                         , &
-            FIX_CYN_C(ns:ne)                     , &
-            NOST_VEG_HET_C(ns:ne)                , &
-            DET_PART_ORG_C(ns:ne)                , &
-            ZOO_C(ns:ne)                         , &
-            TIME_STEP                     , &
-            nkn_local                           , &
-            KG_ZOO(ns:ne)                        , &
-            KG_ZOO_DIA(ns:ne)                    , &
-            KG_ZOO_CYN(ns:ne)                    , &
-            KG_ZOO_OPA(ns:ne)                    , &
-            KG_ZOO_FIX_CYN(ns:ne)                , &
-            KG_ZOO_NOST_VEG_HET(ns:ne)           , &
-            KG_ZOO_DET_PART_ORG_C(ns:ne)         , &
-            KD_ZOO(ns:ne)                        , &
-            FOOD_FACTOR_ZOO_DIA(ns:ne)           , &
-            FOOD_FACTOR_ZOO_CYN(ns:ne)           , &
-            FOOD_FACTOR_ZOO_OPA(ns:ne)           , &
-            FOOD_FACTOR_ZOO_FIX_CYN(ns:ne)       , &
-            FOOD_FACTOR_ZOO_NOST_VEG_HET(ns:ne)  , &
-            FOOD_FACTOR_ZOO_DET_PART_ORG_C(ns:ne), &
-            R_ZOO_FEEDING_DIA(ns:ne)             , &
-            R_ZOO_FEEDING_CYN(ns:ne)             , &
-            R_ZOO_FEEDING_FIX_CYN(ns:ne)         , &
-            R_ZOO_FEEDING_NOST_VEG_HET(ns:ne)    , &
-            R_ZOO_FEEDING_OPA(ns:ne)             , &
-            R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne)  , &
-            R_ZOO_INT_RESP(ns:ne)                , &
-            R_ZOO_RESP(ns:ne)                    , &
-            R_ZOO_EX_DON(ns:ne)                  , &
-            R_ZOO_EX_DOP(ns:ne)                  , &
-            R_ZOO_EX_DOC(ns:ne)                  , &
-            R_ZOO_DEATH(ns:ne)                   , &
-            ACTUAL_ZOO_N_TO_C(ns:ne)             , &
-            ACTUAL_ZOO_P_TO_C(ns:ne)             , &
-            R_ZOO_GROWTH(ns:ne)                  , &
-            FAC_HYPOX_ZOO_D(ns:ne))
-
-    R_ZOO_FEEDING_DIA(ns:ne) = &
-        R_ZOO_FEEDING_DIA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    R_ZOO_FEEDING_CYN(ns:ne) = &
-        R_ZOO_FEEDING_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    R_ZOO_FEEDING_FIX_CYN(ns:ne) = &
-        R_ZOO_FEEDING_FIX_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) = &
-        R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    R_ZOO_FEEDING_OPA(ns:ne) = &
-        R_ZOO_FEEDING_OPA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) = &
-        R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
-
-    if (ZOOP_OPTION_1 > 0) then
-        ! Compute actual stoichiometric ratios with minimum enforcement
-        ! to prevent unrealistic drift below 50% of target ratio
-        ACTUAL_ZOO_N_TO_C(ns:ne) = max(ZOO_N(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
-                                       0.5D0 * ZOO_PARAMS%ZOO_N_TO_C)
-        ACTUAL_ZOO_P_TO_C(ns:ne) = max(ZOO_P(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
-                                       0.5D0 * ZOO_PARAMS%ZOO_P_TO_C)
-    end if
-
-    !$omp barrier
-    !$omp master
-    if(debug_stranger) then
-        call DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
-    end if
-    !$omp end master
-    !$omp barrier
-
-    !$omp barrier
-    !$omp master
-    if(debug_stranger) then
-        call DBGSTR_PEL_R_ZOO_RESP_01(TIME, nkn, nstate, node_active, error)
-    end if
-    !$omp end master
-    !$omp barrier
-
-
-    !*********************************************************************!
-    !     D E A T H   O R G A N I C     P A R T I C L E S    DISSOLUTION !
-    !*********************************************************************!
-
-    call ORGANIC_CARBON_DISSOLUTION &
-           (FAC_PHYT_DET_PART_ORG_C     , &
-            KDISS_DET_PART_ORG_C_20     , &
-            THETA_KDISS_DET_PART_ORG_C  , &
-            KHS_POC_DISS_SAT            , &
-            nkn_local                         , &
-            TEMP(ns:ne)                        , &
-            DET_PART_ORG_C(ns:ne)              , &
-            PHYT_TOT_C(ns:ne)                  , &
-            LIM_PHYT_DISS_DET_PART_ORG_C(ns:ne), &
-            R_DET_PART_ORG_C_DISSOLUTION(ns:ne))
-
-    ACTUAL_DET_N_TO_C(ns:ne) = DET_PART_ORG_N(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
-    ACTUAL_DET_P_TO_C(ns:ne) = DET_PART_ORG_P(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
-
-    ! Nitrogen dissolution
-
-    ! Accerelation of hydrolysis when DIN is scarce
-    LIM_N_DISS_DET_PART_ORG_N(ns:ne) = KHS_DISS_N / (KHS_DISS_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
-    LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne) = LIM_N_DISS_DET_PART_ORG_N(ns:ne) * FAC_PHYT_DET_PART_ORG_N * PHYT_TOT_C(ns:ne)
-
-    R_DET_PART_ORG_N_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_N_20 + LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne)) * &
-       (THETA_KDISS_DET_PART_ORG_N ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_N(ns:ne) * &
-       (KHS_PON_DISS_SAT/(DET_PART_ORG_N(ns:ne) + KHS_PON_DISS_SAT))
-
-    ! Phosphorus dissolution
-
-    ! Accerelation of hydrolysis when DIP is scarce
-    LIM_P_DISS_DET_PART_ORG_P(ns:ne) = KHS_DISS_P / (KHS_DISS_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
-    LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne) = LIM_P_DISS_DET_PART_ORG_P(ns:ne) * FAC_PHYT_DET_PART_ORG_P * PHYT_TOT_C(ns:ne)
-
-    R_DET_PART_ORG_P_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_P_20 + LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne)) * &
-       (THETA_KDISS_DET_PART_ORG_P ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_P(ns:ne) * &
-       (KHS_POP_DISS_SAT/(DET_PART_ORG_P(ns:ne) + KHS_POP_DISS_SAT))
-
-    !Diatom total respiration rate
-    R_DIA_TOT_RESP(ns:ne)               = R_DIA_RESP(ns:ne)                + R_DIA_INT_RESP(ns:ne)
-
-    !Non-fixing cyanobacteria total respiration rate
-    R_CYN_TOT_RESP(ns:ne)               = R_CYN_RESP(ns:ne)                + R_CYN_INT_RESP(ns:ne)
-
-    !Other planktonic algae total respiration rate
-    R_OPA_TOT_RESP(ns:ne)               = R_OPA_RESP(ns:ne)                + R_OPA_INT_RESP(ns:ne)
-
-    !Nitrogen fixing cyanobacteria total respiration rate
-    R_FIX_CYN_TOT_RESP(ns:ne)           = R_FIX_CYN_RESP(ns:ne)            + R_FIX_CYN_INT_RESP(ns:ne)
-
-    !Nostacles
-    R_NOST_VEG_HET_TOT_RESP(ns:ne)      = R_NOST_VEG_HET_RESP(ns:ne)       + R_NOST_VEG_HET_INT_RESP(ns:ne)
-
-    !Zooplankton total respiration rate
-    R_ZOO_TOT_RESP(ns:ne)               = R_ZOO_INT_RESP(ns:ne)            + R_ZOO_RESP(ns:ne)
-
-
-    !*********************************************************************!
-    !     SILICON                                                         !
-    !*********************************************************************!
-
-    !Dissolution rate of biogenic silicon
-    R_PART_Si_DISS(ns:ne) = KDISS_PART_SI_20 * &
-            (THETA_KDISS_PART_SI ** (TEMP(ns:ne) - 2.0D1)) * PART_SI(ns:ne)
-
+    call pelagic_biology(ns, ne, nkn_local, ENV_CHUNK)
 
     !*********************************************************************!
     !     MINERALIZATION OF DOC, DON, DOP whith bacteria are not modelled.
@@ -3713,5 +3206,525 @@ contains
         end if
 
     end subroutine pelagic_speciation_preprocess
+
+    subroutine pelagic_biology(ns, ne, nkn_local, ENV_CHUNK)
+        ! Phytoplankton growth + zooplankton grazing phase (TODO 1.6 -- verbatim lift).
+        ! Shared (nkn) arrays reached by host association; per-thread PRIVATE-clause
+        ! data (chunk bounds + the phyto-env bundle) are passed as arguments per the
+        ! plan's Global Constraints (a private var read via host association in a
+        ! called procedure would silently resolve to the shared original -> race).
+        integer,           intent(in)    :: ns, ne, nkn_local
+        type(t_phyto_env), intent(inout) :: ENV_CHUNK
+        integer :: i, k   ! local loop indices (auto-private per thread)
+
+    !*****************************************
+    !     D I S S O L V E D  O X Y G E N     !
+    !*****************************************
+    do k=ns,ne
+            DISS_OXYGEN_SAT(k) = DO_SATURATION(TEMP(k), SALT(k), ELEVATION(k))
+
+            if (SURFACE_BOXES(k) == 1) then !first layer
+
+                if (K_A < 0.0D0) then
+                    K_A_CALC(k) = KAWIND(WINDS(k), TEMP(k), AIRTEMP(k), DEPTH(k), 3.0D0)
+                    R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k))
+                else
+                    K_A_CALC(k) = K_A
+
+                    R_AERATION(k) = K_A_CALC(k) * (DISS_OXYGEN_SAT(k) - DISS_OXYGEN(k)) * &
+                         (THETA_K_A ** (TEMP(k) - 2.0D1))
+                end if
+
+                !----------------------------------------------------------------------
+                ! 2 February 2015
+                ! New code added to account the effect of ice cover.
+                !----------------------------------------------------------------------
+                R_AERATION(k) = (1.0D0 - ice_cover(k)) * R_AERATION(k)
+                !----------------------------------------------------------------------
+                ! End of new code added to account the effect of ice cover.
+                !----------------------------------------------------------------------
+            else
+                R_AERATION(k) = 0.0D0 ! other layers
+            end if
+    end do
+
+    ! Calculate the total phytoplankton.
+    PHYT_TOT_C(ns:ne) = DIA_C(ns:ne) + CYN_C(ns:ne) + OPA_C(ns:ne) + FIX_CYN_C(ns:ne) + NOST_VEG_HET_C(ns:ne)
+
+    !**********************************!
+    !**********************************!
+    !     P H Y T O P L A N K T O N    !
+    !**********************************!
+    !**********************************!
+
+    ! total chlorophyl in micrograms
+    CHLA(ns:ne) = ((DIA_C(ns:ne)          / DIA_C_TO_CHLA    ) + (CYN_C(ns:ne) / CYN_C_TO_CHLA) + &
+            (FIX_CYN_C(ns:ne)      / FIX_CYN_C_TO_CHLA) + (OPA_C(ns:ne) / OPA_C_TO_CHLA) + &
+            (NOST_VEG_HET_C(ns:ne) / NOST_C_TO_CHLA)) * 1.0D3
+
+    ! Debug: print CHLA components for node 1 to find negative values (include time/context)
+    ! Note: Commented out to reduce log noise - uncomment for detailed CHLA debugging
+    ! write(6,'(A,F12.4,A,ES10.3)') 'DEBUG: CHLA node1: TIME=', TIME, ' DT=', TIME_STEP
+    ! write(6,'(A,5ES12.4)') '  DIA/CYN/FIX/OPA/NOST=', DIA_C(1), CYN_C(1), FIX_CYN_C(1), OPA_C(1), NOST_VEG_HET_C(1)
+
+    select case (LIGHT_EXTINCTION_OPTION)
+
+            case (0)
+                call light_kd(K_B_E(ns:ne), K_E(ns:ne), CHLA(ns:ne), nkn_local)
+
+            case (1)
+                ! Defensive guard: ensure CHLA is non-negative before fractional exponent
+                do i = ns, ne
+                    if (CHLA(i) < 0.0D0) then
+                        !$omp critical
+                        write(6,'(A,I4,A,ES12.4)') 'WARN: negative CHLA at node ', i, ' value=', CHLA(i)
+                        !$omp end critical
+                    end if
+                end do
+                chla_pos(ns:ne) = CHLA(ns:ne)
+                where (chla_pos(ns:ne) .lt. 0.0D0)
+                    chla_pos(ns:ne) = 0.0D0
+                end where
+                K_E(ns:ne) = K_B_E(ns:ne) + (8.8D-3 * chla_pos(ns:ne)) + (5.4D-2 * (chla_pos(ns:ne) ** (2.0D0 / 3.0D0)))
+
+        end select
+
+        ! Debug print: K_E and DEPTH for troubleshooting NaNs (commented to reduce log noise)
+        ! write(6,'(A,3ES12.4)') 'DEBUG: K_E(1)/DEPTH(1)/CHLA(1)=', K_E(1), DEPTH(1), CHLA(1)
+
+    ! Populate per-thread phytoplankton environmental input bundle
+    ENV_CHUNK%TEMP         => TEMP(ns:ne)
+    ENV_CHUNK%I_A          => I_A(ns:ne)
+    ENV_CHUNK%K_E          => K_E(ns:ne)
+    ENV_CHUNK%DEPTH        => DEPTH(ns:ne)
+    ENV_CHUNK%CHLA         => CHLA(ns:ne)
+    ENV_CHUNK%FDAY         => FDAY(ns:ne)
+    ENV_CHUNK%DISS_OXYGEN  => DISS_OXYGEN(ns:ne)
+    ENV_CHUNK%WINDS        => WINDS(ns:ne)
+
+    !********************
+    !      DIATOMS      !
+    !********************
+
+    !Calculations for diatom growth
+    call DIATOMS(DIA_PARAMS              , &
+                 ENV_CHUNK               , &
+                 DIA_LIGHT_SAT(ns:ne)           , &
+                 NH4_N(ns:ne)                   , &
+                 NO3_N(ns:ne)                   , &
+                 (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
+                 DIA_C(ns:ne)                   , &
+                 ZOO_C(ns:ne)                   , &
+                 DISS_Si(ns:ne)                 , &
+                 TIME_STEP               , &
+                 SMITH                   , &
+                 nkn_local                     , &
+                 KG_DIA(ns:ne)                  , &
+                 ALPHA_0(ns:ne)                 , &
+                 ALPHA_1(ns:ne)                 , &
+                 LIM_KG_DIA_TEMP(ns:ne)         , &
+                 LIM_KG_DIA_LIGHT(ns:ne)        , &
+                 LIM_KG_DIA_DOXY(ns:ne)         , &
+                 LIM_KG_DIA_N(ns:ne)            , &
+                 LIM_KG_DIA_P(ns:ne)            , &
+                 LIM_KG_DIA_DISS_Si(ns:ne)      , &
+                 LIM_KG_DIA_NUTR(ns:ne)         , &
+                 LIM_KG_DIA(ns:ne)              , &
+                 R_DIA_GROWTH(ns:ne)            , &
+                 R_DIA_MET(ns:ne)               , &
+                 R_DIA_RESP(ns:ne)              , &
+                 R_DIA_EXCR(ns:ne)              , &
+                 R_DIA_INT_RESP(ns:ne)          , &
+                 KD_DIA(ns:ne)                  , &
+                 FAC_HYPOX_DIA_D(ns:ne)         , &
+                 R_DIA_DEATH(ns:ne)             , &
+                 PREF_NH4N_DIA(ns:ne))
+
+    ! Consider the effect of growth inhibition which is supplied from outside
+    ! by external models
+    R_DIA_GROWTH(ns:ne) = R_DIA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_DIA(ns:ne)
+
+    !**************************************
+    ! NON-NITROGEN FIXING CYANOBACTERIA   !
+    !*************************************
+
+    !Calculations for non-fixing cyanobacteria growth
+    call CYANOBACTERIA_BOUYANT &
+         (CYN_PARAMS              , &
+          ENV_CHUNK               , &
+          CYN_LIGHT_SAT(ns:ne)           , &
+          NH4_N(ns:ne)                   , &
+          NO3_N(ns:ne)                   , &
+          DISS_ORG_N(ns:ne)              , &
+          (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , &
+          CYN_C(ns:ne)                   , &
+          ZOO_C(ns:ne)                   , &
+          TIME_STEP               , &
+          SMITH                   , &
+          nkn_local                     , &
+          KG_CYN(ns:ne)                  , &
+          ALPHA_0(ns:ne)                 , &
+          ALPHA_1(ns:ne)                 , &
+          LIM_KG_CYN_TEMP(ns:ne)         , &
+          LIM_KG_CYN_LIGHT(ns:ne)        , &
+          LIM_KG_CYN_DOXY(ns:ne)         , &
+          LIM_KG_CYN_N(ns:ne)            , &
+          LIM_KG_CYN_P(ns:ne)            , &
+          LIM_KG_CYN_NUTR(ns:ne)         , &
+          LIM_KG_CYN(ns:ne)              , &
+          R_CYN_GROWTH(ns:ne)            , &
+          R_CYN_MET(ns:ne)               , &
+          R_CYN_RESP(ns:ne)              , &
+          R_CYN_EXCR(ns:ne)              , &
+          R_CYN_INT_RESP(ns:ne)          , &
+          KD_CYN(ns:ne)                  , &
+          FAC_HYPOX_CYN_D(ns:ne)         , &
+          R_CYN_DEATH(ns:ne)             , &
+          PREF_DIN_DON_CYN(ns:ne)        , &
+          PREF_NH4N_CYN(ns:ne))
+
+    ! Consider the effect of growth inhibition which is supplied from outside
+    ! by external models
+    R_CYN_GROWTH(ns:ne) = R_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_CYN(ns:ne)
+
+
+    !********************************
+    ! NITROGEN FIXING CYANOBACTERIA !
+    !********************************
+    if (DO_NON_OBLIGATORY_FIXERS > 0) then
+        call FIX_CYANOBACTERIA_BOUYANT  &
+               (FIX_CYN_PARAMS               , &
+                ENV_CHUNK                    , &
+                TIME_STEP                    , &
+                SMITH                        , &
+                nkn_local                          , &
+                NH4_N(ns:ne)                        , &
+                NO3_N(ns:ne)                        , &
+                DISS_ORG_N(ns:ne)                   , &
+                (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))        , &
+                FIX_CYN_C(ns:ne)                    , &
+                FIX_CYN_LIGHT_SAT(ns:ne)            , &
+                ALPHA_0(ns:ne)                      , &
+                ALPHA_1(ns:ne)                      , &
+                KG_FIX_CYN(ns:ne)                   , &
+                LIM_KG_FIX_CYN_LIGHT(ns:ne)         , &
+                LIM_KG_FIX_CYN_TEMP(ns:ne)          , &
+                LIM_KG_FIX_CYN_DOXY(ns:ne)          , &
+                LIM_KG_NON_FIX_CYN_N(ns:ne)         , &
+                LIM_KG_NON_FIX_CYN_P(ns:ne)         , &
+                LIM_KG_NON_FIX_CYN_NUTR(ns:ne)      , &
+                LIM_KG_FIX_FIX_CYN_N(ns:ne)         , &
+                LIM_KG_FIX_FIX_CYN_P(ns:ne)         , &
+                LIM_KG_FIX_FIX_CYN_NUTR(ns:ne)      , &
+                LIM_KG_NON_FIX_CYN(ns:ne)           , &
+                LIM_KG_FIX_FIX_CYN(ns:ne)           , &
+                R_NON_FIX_CYN_GROWTH(ns:ne)         , &
+                R_FIX_FIX_CYN_GROWTH(ns:ne)         , &
+                R_FIX_CYN_GROWTH(ns:ne)             , &
+                R_FIX_CYN_MET(ns:ne)                , &
+                R_FIX_CYN_RESP(ns:ne)               , &
+                R_FIX_CYN_EXCR(ns:ne)               , &
+                R_FIX_CYN_INT_RESP(ns:ne)           , &
+                KD_FIX_CYN(ns:ne)                   , &
+                FAC_HYPOX_FIX_CYN_D(ns:ne)          , &
+                R_FIX_CYN_DEATH(ns:ne)              , &
+                PREF_NH4N_DON_FIX_CYN(ns:ne))
+
+        ! Consider the effect of growth inhibition which is supplied from outside
+        ! by external models
+        R_FIX_CYN_GROWTH(ns:ne)     = R_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
+        R_NON_FIX_CYN_GROWTH(ns:ne) = R_NON_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
+        R_FIX_FIX_CYN_GROWTH(ns:ne) = R_FIX_FIX_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_FIX_CYN(ns:ne)
+    else
+        FIX_CYN_C(ns:ne) = 0.0D0
+        R_NON_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_CYN_GROWTH(ns:ne) = 0.0D0
+        R_FIX_CYN_MET(ns:ne) = 0.0D0
+        R_FIX_CYN_RESP(ns:ne) = 0.0D0
+        R_FIX_CYN_EXCR(ns:ne) = 0.0D0
+        R_FIX_CYN_INT_RESP(ns:ne) = 0.0D0
+        R_FIX_CYN_DEATH(ns:ne) = 0.0D0
+    end if
+
+
+    !*****************************
+    ! OTHER PLANKTONIC ALGAE     !
+    !*****************************
+    call OTHER_PLANKTONIC_ALGAE &
+           (OPA_PARAMS              , &
+            ENV_CHUNK               , &
+            OPA_LIGHT_SAT(ns:ne)           , &
+            NH4_N(ns:ne)                   , &
+            NO3_N(ns:ne)                   , &
+            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne))   , & ! Change, 6 July 2016, original call was PO4P
+            OPA_C(ns:ne)                   , &
+            ZOO_C(ns:ne)                   , &
+            TIME_STEP               , &
+            SMITH                   , &
+            nkn_local                     , &
+            KG_OPA(ns:ne)                  , &
+            ALPHA_0(ns:ne)                 , &
+            ALPHA_1(ns:ne)                 , &
+            LIM_KG_OPA_TEMP(ns:ne)         , &
+            LIM_KG_OPA_LIGHT(ns:ne)        , &
+            LIM_KG_OPA_DOXY(ns:ne)         , &
+            LIM_KG_OPA_N(ns:ne)            , &
+            LIM_KG_OPA_P(ns:ne)            , &
+            LIM_KG_OPA_NUTR(ns:ne)         , &
+            LIM_KG_OPA(ns:ne)              , &
+            R_OPA_GROWTH(ns:ne)            , &
+            R_OPA_MET(ns:ne)               , &
+            R_OPA_RESP(ns:ne)              , &
+            R_OPA_EXCR(ns:ne)              , &
+            R_OPA_INT_RESP(ns:ne)          , &
+            KD_OPA(ns:ne)                  , &
+            FAC_HYPOX_OPA_D(ns:ne)         , &
+            R_OPA_DEATH(ns:ne)             , &
+            PREF_NH4N_OPA(ns:ne))
+
+        R_OPA_GROWTH(ns:ne) = R_OPA_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_OPA(ns:ne)
+    !******************************!
+    !******************************!
+    !          NOSTOCALES          !
+    !******************************!
+    !******************************!
+
+
+    if (DO_NOSTOCALES > 0) then
+
+        ! Calls to the routines that should be incorporated to NOSTOCALES
+        call DOP_DIP_PREFS(PREF_DIP_DOP_NOST(ns:ne), (frac_avail_DOP * DISS_ORG_P(ns:ne)), &
+              (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne)) , KHS_DP_NOST_VEG_HET, nkn_local)
+
+        call DIN_DON_PREFS &
+             (PREF_DIN_DON_NOST(ns:ne), NH4_N(ns:ne), DISS_ORG_N(ns:ne), &
+              frac_avail_DON_NOST, NO3_N(ns:ne), KHS_DN_NOST_VEG_HET, nkn_local)
+
+        call AMMONIA_PREFS &
+            (PREF_NH4N_NOST(ns:ne), (NH4_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), &
+             (NO3_N(ns:ne) * PREF_DIN_DON_NOST(ns:ne)), KHS_DN_NOST_VEG_HET, nkn_local)
+
+        call NOSTOCALES &
+           (NOST_PARAMS                       , &
+            ENV_CHUNK                         , &
+            TIME_STEP                         , &
+            DAY_OF_YEAR                       , &
+            SMITH                             , &
+            nkn_local                               , &
+            NOST_LIGHT_SAT(ns:ne)                    , &
+            (NH4_N(ns:ne) + NO3_N(ns:ne))                   , &
+            frac_avail_DON_NOST * DISS_ORG_N(ns:ne)  , &
+            (PO4_P(ns:ne) * DIP_OVER_IP(ns:ne) + frac_avail_DOP * DISS_ORG_P(ns:ne)) , &
+            NOST_VEG_HET_C(ns:ne)                    , &
+            NOST_AKI_C(ns:ne)                        , &
+            KG_NOST_VEG_HET(ns:ne)                   , &
+            LIM_KG_NOST_VEG_HET_LIGHT(ns:ne)         , &
+            LIM_KG_NOST_VEG_HET_TEMP(ns:ne)          , &
+            LIM_KG_NOST_VEG_HET_DOXY(ns:ne)          , &
+            LIM_KG_NOST_VEG_HET_N(ns:ne)             , &
+            LIM_KG_NOST_VEG_HET_P(ns:ne)             , &
+            LIM_KG_NOST_VEG_HET_FIX(ns:ne)           , &
+            LIM_KG_NOST_VEG_HET_NON_FIX(ns:ne)       , &
+            R_NOST_VEG_HET_GROWTH(ns:ne)             , &
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne)         , &
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne)     , &
+            R_NOST_VEG_HET_MET(ns:ne)                , &
+            R_NOST_VEG_HET_RESP(ns:ne)               , &
+            R_NOST_VEG_HET_EXCR(ns:ne)               , &
+            R_NOST_VEG_HET_INT_RESP(ns:ne)           , &
+            KD_NOST_VEG_HET(ns:ne)                   , &
+            FAC_HYPOX_NOST_VEG_HET_D(ns:ne)          , &
+            R_NOST_VEG_HET_DEATH(ns:ne)              , &
+            R_DENS_MORT_NOST_VEG_HET(ns:ne)          , &
+            R_GERM_NOST_AKI(ns:ne)                   , &
+            R_FORM_NOST_AKI(ns:ne)                   , &
+            R_LOSS_AKI(ns:ne)                        , &
+            R_MORT_AKI(ns:ne))
+
+            ! Consider the effect of growth inhibition which is supplied from outside
+            ! by external models
+            R_NOST_VEG_HET_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
+
+            R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_NON_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
+
+            R_NOST_VEG_HET_FIX_GROWTH(ns:ne) = &
+                R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_NOST(ns:ne)
+    else
+        R_NOST_VEG_HET_GROWTH(ns:ne)    = 0.0D0
+        R_NOST_VEG_HET_MET(ns:ne)       = 0.0D0
+        R_NOST_VEG_HET_RESP(ns:ne)      = 0.0D0
+        R_NOST_VEG_HET_EXCR(ns:ne)      = 0.0D0
+        R_NOST_VEG_HET_INT_RESP(ns:ne)  = 0.0D0
+        R_NOST_VEG_HET_DEATH(ns:ne)     = 0.0D0
+        R_DENS_MORT_NOST_VEG_HET(ns:ne) = 0.0D0
+        R_GERM_NOST_AKI(ns:ne)          = 0.0D0
+        R_FORM_NOST_AKI(ns:ne)          = 0.0D0
+        R_LOSS_AKI(ns:ne)               = 0.0D0
+        R_MORT_AKI(ns:ne)               = 0.0D0
+    end if
+
+
+    !******************************!
+    !******************************!
+    !     Z O O P L A N K T O N    !
+    !******************************!
+    !******************************!
+    call ZOOPLANKTON &
+           (ZOO_PARAMS                       , &
+            ENV_CHUNK                        , &
+            DIA_C(ns:ne)                         , &
+            CYN_C(ns:ne)                         , &
+            OPA_C(ns:ne)                         , &
+            FIX_CYN_C(ns:ne)                     , &
+            NOST_VEG_HET_C(ns:ne)                , &
+            DET_PART_ORG_C(ns:ne)                , &
+            ZOO_C(ns:ne)                         , &
+            TIME_STEP                     , &
+            nkn_local                           , &
+            KG_ZOO(ns:ne)                        , &
+            KG_ZOO_DIA(ns:ne)                    , &
+            KG_ZOO_CYN(ns:ne)                    , &
+            KG_ZOO_OPA(ns:ne)                    , &
+            KG_ZOO_FIX_CYN(ns:ne)                , &
+            KG_ZOO_NOST_VEG_HET(ns:ne)           , &
+            KG_ZOO_DET_PART_ORG_C(ns:ne)         , &
+            KD_ZOO(ns:ne)                        , &
+            FOOD_FACTOR_ZOO_DIA(ns:ne)           , &
+            FOOD_FACTOR_ZOO_CYN(ns:ne)           , &
+            FOOD_FACTOR_ZOO_OPA(ns:ne)           , &
+            FOOD_FACTOR_ZOO_FIX_CYN(ns:ne)       , &
+            FOOD_FACTOR_ZOO_NOST_VEG_HET(ns:ne)  , &
+            FOOD_FACTOR_ZOO_DET_PART_ORG_C(ns:ne), &
+            R_ZOO_FEEDING_DIA(ns:ne)             , &
+            R_ZOO_FEEDING_CYN(ns:ne)             , &
+            R_ZOO_FEEDING_FIX_CYN(ns:ne)         , &
+            R_ZOO_FEEDING_NOST_VEG_HET(ns:ne)    , &
+            R_ZOO_FEEDING_OPA(ns:ne)             , &
+            R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne)  , &
+            R_ZOO_INT_RESP(ns:ne)                , &
+            R_ZOO_RESP(ns:ne)                    , &
+            R_ZOO_EX_DON(ns:ne)                  , &
+            R_ZOO_EX_DOP(ns:ne)                  , &
+            R_ZOO_EX_DOC(ns:ne)                  , &
+            R_ZOO_DEATH(ns:ne)                   , &
+            ACTUAL_ZOO_N_TO_C(ns:ne)             , &
+            ACTUAL_ZOO_P_TO_C(ns:ne)             , &
+            R_ZOO_GROWTH(ns:ne)                  , &
+            FAC_HYPOX_ZOO_D(ns:ne))
+
+    R_ZOO_FEEDING_DIA(ns:ne) = &
+        R_ZOO_FEEDING_DIA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    R_ZOO_FEEDING_CYN(ns:ne) = &
+        R_ZOO_FEEDING_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    R_ZOO_FEEDING_FIX_CYN(ns:ne) = &
+        R_ZOO_FEEDING_FIX_CYN(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) = &
+        R_ZOO_FEEDING_NOST_VEG_HET(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    R_ZOO_FEEDING_OPA(ns:ne) = &
+        R_ZOO_FEEDING_OPA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) = &
+        R_ZOO_FEEDING_DET_PART_ORG_C(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
+
+    if (ZOOP_OPTION_1 > 0) then
+        ! Compute actual stoichiometric ratios with minimum enforcement
+        ! to prevent unrealistic drift below 50% of target ratio
+        ACTUAL_ZOO_N_TO_C(ns:ne) = max(ZOO_N(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
+                                       0.5D0 * ZOO_PARAMS%ZOO_N_TO_C)
+        ACTUAL_ZOO_P_TO_C(ns:ne) = max(ZOO_P(ns:ne) / max(ZOO_C(ns:ne), MIN_CONCENTRATION), &
+                                       0.5D0 * ZOO_PARAMS%ZOO_P_TO_C)
+    end if
+
+    !$omp barrier
+    !$omp master
+    if(debug_stranger) then
+        call DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
+    end if
+    !$omp end master
+    !$omp barrier
+
+    !$omp barrier
+    !$omp master
+    if(debug_stranger) then
+        call DBGSTR_PEL_R_ZOO_RESP_01(TIME, nkn, nstate, node_active, error)
+    end if
+    !$omp end master
+    !$omp barrier
+
+
+    !*********************************************************************!
+    !     D E A T H   O R G A N I C     P A R T I C L E S    DISSOLUTION !
+    !*********************************************************************!
+
+    call ORGANIC_CARBON_DISSOLUTION &
+           (FAC_PHYT_DET_PART_ORG_C     , &
+            KDISS_DET_PART_ORG_C_20     , &
+            THETA_KDISS_DET_PART_ORG_C  , &
+            KHS_POC_DISS_SAT            , &
+            nkn_local                         , &
+            TEMP(ns:ne)                        , &
+            DET_PART_ORG_C(ns:ne)              , &
+            PHYT_TOT_C(ns:ne)                  , &
+            LIM_PHYT_DISS_DET_PART_ORG_C(ns:ne), &
+            R_DET_PART_ORG_C_DISSOLUTION(ns:ne))
+
+    ACTUAL_DET_N_TO_C(ns:ne) = DET_PART_ORG_N(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
+    ACTUAL_DET_P_TO_C(ns:ne) = DET_PART_ORG_P(ns:ne) / max(DET_PART_ORG_C(ns:ne), MIN_CONCENTRATION)
+
+    ! Nitrogen dissolution
+
+    ! Accerelation of hydrolysis when DIN is scarce
+    LIM_N_DISS_DET_PART_ORG_N(ns:ne) = KHS_DISS_N / (KHS_DISS_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
+    LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne) = LIM_N_DISS_DET_PART_ORG_N(ns:ne) * FAC_PHYT_DET_PART_ORG_N * PHYT_TOT_C(ns:ne)
+
+    R_DET_PART_ORG_N_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_N_20 + LIM_PHY_N_DISS_DET_PART_ORG_N(ns:ne)) * &
+       (THETA_KDISS_DET_PART_ORG_N ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_N(ns:ne) * &
+       (KHS_PON_DISS_SAT/(DET_PART_ORG_N(ns:ne) + KHS_PON_DISS_SAT))
+
+    ! Phosphorus dissolution
+
+    ! Accerelation of hydrolysis when DIP is scarce
+    LIM_P_DISS_DET_PART_ORG_P(ns:ne) = KHS_DISS_P / (KHS_DISS_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
+    LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne) = LIM_P_DISS_DET_PART_ORG_P(ns:ne) * FAC_PHYT_DET_PART_ORG_P * PHYT_TOT_C(ns:ne)
+
+    R_DET_PART_ORG_P_DISSOLUTION(ns:ne) = (KDISS_DET_PART_ORG_P_20 + LIM_PHY_P_DISS_DET_PART_ORG_P(ns:ne)) * &
+       (THETA_KDISS_DET_PART_ORG_P ** (TEMP(ns:ne) - 2.0D1)) * DET_PART_ORG_P(ns:ne) * &
+       (KHS_POP_DISS_SAT/(DET_PART_ORG_P(ns:ne) + KHS_POP_DISS_SAT))
+
+    !Diatom total respiration rate
+    R_DIA_TOT_RESP(ns:ne)               = R_DIA_RESP(ns:ne)                + R_DIA_INT_RESP(ns:ne)
+
+    !Non-fixing cyanobacteria total respiration rate
+    R_CYN_TOT_RESP(ns:ne)               = R_CYN_RESP(ns:ne)                + R_CYN_INT_RESP(ns:ne)
+
+    !Other planktonic algae total respiration rate
+    R_OPA_TOT_RESP(ns:ne)               = R_OPA_RESP(ns:ne)                + R_OPA_INT_RESP(ns:ne)
+
+    !Nitrogen fixing cyanobacteria total respiration rate
+    R_FIX_CYN_TOT_RESP(ns:ne)           = R_FIX_CYN_RESP(ns:ne)            + R_FIX_CYN_INT_RESP(ns:ne)
+
+    !Nostacles
+    R_NOST_VEG_HET_TOT_RESP(ns:ne)      = R_NOST_VEG_HET_RESP(ns:ne)       + R_NOST_VEG_HET_INT_RESP(ns:ne)
+
+    !Zooplankton total respiration rate
+    R_ZOO_TOT_RESP(ns:ne)               = R_ZOO_INT_RESP(ns:ne)            + R_ZOO_RESP(ns:ne)
+
+
+    !*********************************************************************!
+    !     SILICON                                                         !
+    !*********************************************************************!
+
+    !Dissolution rate of biogenic silicon
+    R_PART_Si_DISS(ns:ne) = KDISS_PART_SI_20 * &
+            (THETA_KDISS_PART_SI ** (TEMP(ns:ne) - 2.0D1)) * PART_SI(ns:ne)
+
+    end subroutine pelagic_biology
 
 end subroutine AQUABC_PELAGIC_KINETICS
