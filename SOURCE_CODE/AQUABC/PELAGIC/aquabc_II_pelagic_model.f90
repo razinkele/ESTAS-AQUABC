@@ -379,79 +379,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     ! Allocation moved to AQUABC_PELAGIC_INTERNAL initialization for performance
 
-    if (RUN_CO2SYS .eq. 1) then
-        CO2SYS_PAR1         (1:nkn) = TOT_ALK(1:nkn) * 1.0D6
-        CO2SYS_PAR2         (1:nkn) = INORG_C(1:nkn) * 1.0D6
-        CO2SYS_PAR1TYPE     (1:nkn) = 1
-        CO2SYS_PAR2TYPE     (1:nkn) = 2
-        CO2SYS_SALT         (1:nkn) = SALT(1:nkn)
-        CO2SYS_TEMPIN       (1:nkn) = TEMP(1:nkn)
-        CO2SYS_TEMPOUT      (1:nkn) = 0.0D0  !Does not matter for this case
-        CO2SYS_PRESIN       (1:nkn) = 0.0D0  !Does not matter for this case
-        CO2SYS_PRESOUT      (1:nkn) = 0.0D0  !Does not matter for this case
-        CO2SYS_SI           (1:nkn) = (Diss_SI(1:nkn) / 28.0855D0) * 1.0D3
-        CO2SYS_PO4          (1:nkn) = (PO4_P  (1:nkn) / 30.9737D0) * 1.0D3
-        CO2SYS_pHSCALEIN    (1:nkn) = 1
-        CO2SYS_K1K2CONSTANTS(1:nkn) = 4 !CO2SYS_K1K2CONSTANTS(1:nkn) = 4
-        CO2SYS_KSO4CONSTANTS(1:nkn) = 1
-
-        ! -----------------------------------------------------------------
-        ! OpenMP parallelization of the CO2SYS carbonate-chemistry solver (TODO 4.2).
-        ! CO2SYS is a pure function of its arguments (no SAVE / module state), so
-        ! each thread runs it on its own [ns:ne] node-slice with PRIVATE output
-        ! buffers, then scatters the results into the disjoint slice of the shared
-        ! output arrays. Static block schedule matches the main kinetics region.
-        ! NOTE: not bit-identical to the serial run — the whole-vector Newton pH
-        ! iteration converges to its chunk's slowest element, so chunking gives a
-        ! sub-pHTol (<< 1e-4) drift. See docs/OPENMP_PERFORMANCE.md.
-        ! -----------------------------------------------------------------
-        n_omp = 1
-        !$ n_omp = min(nkn, omp_get_max_threads())
-        !$omp parallel default(shared) num_threads(n_omp) &
-        !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, rem_omp, co2_ntps) &
-        !$omp& private(CO2SYS_OUT_LOCAL, CO2SYS_HEAD_LOCAL)
-        nthreads = 1
-        tid = 0
-        !$ nthreads = omp_get_num_threads()
-        !$ tid = omp_get_thread_num()
-        ! balanced chunk: every thread gets >= 1 node (no idle thread; TODO 4.4)
-        chunk_size = nkn / nthreads
-        rem_omp    = mod(nkn, nthreads)
-        if (tid < rem_omp) then
-            nkn_local = chunk_size + 1
-            ns = tid * nkn_local + 1
-        else
-            nkn_local = chunk_size
-            ns = rem_omp * (chunk_size + 1) + (tid - rem_omp) * chunk_size + 1
-        end if
-        ne = ns + nkn_local - 1
-
-        if (nkn_local > 0) then
-            co2_ntps = nkn_local
-            call CO2SYS(CO2SYS_PAR1(ns:ne)         , CO2SYS_PAR2(ns:ne)         , CO2SYS_PAR1TYPE(ns:ne) , &
-                        CO2SYS_PAR2TYPE(ns:ne)     , CO2SYS_SALT(ns:ne)         , CO2SYS_TEMPIN(ns:ne)   , &
-                        CO2SYS_TEMPOUT(ns:ne)      , CO2SYS_PRESIN(ns:ne)       , CO2SYS_PRESOUT(ns:ne)  , &
-                        CO2SYS_SI(ns:ne)           , CO2SYS_PO4(ns:ne)          , CO2SYS_pHSCALEIN(ns:ne), &
-                        CO2SYS_K1K2CONSTANTS(ns:ne), CO2SYS_KSO4CONSTANTS(ns:ne), CO2SYS_OUT_LOCAL       , &
-                        CO2SYS_HEAD_LOCAL          , &
-                        co2_ntps)
-
-            pH         (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 18)
-            K_ONE_TIP  (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 75)
-            K_TWO_TIP  (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 76)
-            K_THREE_TIP(ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 77)
-            H2CO3      (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 23)
-            H_PLUS     (ns:ne) = 10.0D0 ** (-CO2SYS_OUT_LOCAL(1:nkn_local, 18))
-            HCO3       (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 21)
-            CO3        (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 22)
-
-            if (allocated(CO2SYS_OUT_LOCAL))  deallocate(CO2SYS_OUT_LOCAL)
-            if (allocated(CO2SYS_HEAD_LOCAL)) deallocate(CO2SYS_HEAD_LOCAL)
-        end if
-        !$omp end parallel
-
-        ! Deallocation handled by AQUABC_PELAGIC_INTERNAL cleanup
-    end if ! call co2sys
+    call pelagic_co2sys_preprocess()
 
     HCO3 = HCO3 / 1000000.0
     CO3  = CO3  / 1000000.0
@@ -3694,5 +3622,85 @@ contains
     ! Phase procedures extracted from the monolithic body (TODO 1.6).
     ! Shared (nkn) arrays are reached by host association; only per-thread
     ! private data is passed as arguments. See the plan's Global Constraints.
+
+    subroutine pelagic_co2sys_preprocess()
+        ! CO2SYS carbonate-chemistry preprocessing (TODO 1.6 — verbatim lift).
+        ! Includes the whole `if (RUN_CO2SYS .eq. 1) then ... end if` guard.
+        ! Runs serially; its own !$omp parallel region chunks CO2SYS across
+        ! threads. All arrays reached by host association.
+        if (RUN_CO2SYS .eq. 1) then
+            CO2SYS_PAR1         (1:nkn) = TOT_ALK(1:nkn) * 1.0D6
+            CO2SYS_PAR2         (1:nkn) = INORG_C(1:nkn) * 1.0D6
+            CO2SYS_PAR1TYPE     (1:nkn) = 1
+            CO2SYS_PAR2TYPE     (1:nkn) = 2
+            CO2SYS_SALT         (1:nkn) = SALT(1:nkn)
+            CO2SYS_TEMPIN       (1:nkn) = TEMP(1:nkn)
+            CO2SYS_TEMPOUT      (1:nkn) = 0.0D0  !Does not matter for this case
+            CO2SYS_PRESIN       (1:nkn) = 0.0D0  !Does not matter for this case
+            CO2SYS_PRESOUT      (1:nkn) = 0.0D0  !Does not matter for this case
+            CO2SYS_SI           (1:nkn) = (Diss_SI(1:nkn) / 28.0855D0) * 1.0D3
+            CO2SYS_PO4          (1:nkn) = (PO4_P  (1:nkn) / 30.9737D0) * 1.0D3
+            CO2SYS_pHSCALEIN    (1:nkn) = 1
+            CO2SYS_K1K2CONSTANTS(1:nkn) = 4 !CO2SYS_K1K2CONSTANTS(1:nkn) = 4
+            CO2SYS_KSO4CONSTANTS(1:nkn) = 1
+
+            ! -----------------------------------------------------------------
+            ! OpenMP parallelization of the CO2SYS carbonate-chemistry solver (TODO 4.2).
+            ! CO2SYS is a pure function of its arguments (no SAVE / module state), so
+            ! each thread runs it on its own [ns:ne] node-slice with PRIVATE output
+            ! buffers, then scatters the results into the disjoint slice of the shared
+            ! output arrays. Static block schedule matches the main kinetics region.
+            ! NOTE: not bit-identical to the serial run — the whole-vector Newton pH
+            ! iteration converges to its chunk's slowest element, so chunking gives a
+            ! sub-pHTol (<< 1e-4) drift. See docs/OPENMP_PERFORMANCE.md.
+            ! -----------------------------------------------------------------
+            n_omp = 1
+            !$ n_omp = min(nkn, omp_get_max_threads())
+            !$omp parallel default(shared) num_threads(n_omp) &
+            !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, rem_omp, co2_ntps) &
+            !$omp& private(CO2SYS_OUT_LOCAL, CO2SYS_HEAD_LOCAL)
+            nthreads = 1
+            tid = 0
+            !$ nthreads = omp_get_num_threads()
+            !$ tid = omp_get_thread_num()
+            ! balanced chunk: every thread gets >= 1 node (no idle thread; TODO 4.4)
+            chunk_size = nkn / nthreads
+            rem_omp    = mod(nkn, nthreads)
+            if (tid < rem_omp) then
+                nkn_local = chunk_size + 1
+                ns = tid * nkn_local + 1
+            else
+                nkn_local = chunk_size
+                ns = rem_omp * (chunk_size + 1) + (tid - rem_omp) * chunk_size + 1
+            end if
+            ne = ns + nkn_local - 1
+
+            if (nkn_local > 0) then
+                co2_ntps = nkn_local
+                call CO2SYS(CO2SYS_PAR1(ns:ne)         , CO2SYS_PAR2(ns:ne)         , CO2SYS_PAR1TYPE(ns:ne) , &
+                            CO2SYS_PAR2TYPE(ns:ne)     , CO2SYS_SALT(ns:ne)         , CO2SYS_TEMPIN(ns:ne)   , &
+                            CO2SYS_TEMPOUT(ns:ne)      , CO2SYS_PRESIN(ns:ne)       , CO2SYS_PRESOUT(ns:ne)  , &
+                            CO2SYS_SI(ns:ne)           , CO2SYS_PO4(ns:ne)          , CO2SYS_pHSCALEIN(ns:ne), &
+                            CO2SYS_K1K2CONSTANTS(ns:ne), CO2SYS_KSO4CONSTANTS(ns:ne), CO2SYS_OUT_LOCAL       , &
+                            CO2SYS_HEAD_LOCAL          , &
+                            co2_ntps)
+
+                pH         (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 18)
+                K_ONE_TIP  (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 75)
+                K_TWO_TIP  (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 76)
+                K_THREE_TIP(ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 77)
+                H2CO3      (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 23)
+                H_PLUS     (ns:ne) = 10.0D0 ** (-CO2SYS_OUT_LOCAL(1:nkn_local, 18))
+                HCO3       (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 21)
+                CO3        (ns:ne) = CO2SYS_OUT_LOCAL(1:nkn_local, 22)
+
+                if (allocated(CO2SYS_OUT_LOCAL))  deallocate(CO2SYS_OUT_LOCAL)
+                if (allocated(CO2SYS_HEAD_LOCAL)) deallocate(CO2SYS_HEAD_LOCAL)
+            end if
+            !$omp end parallel
+
+            ! Deallocation handled by AQUABC_PELAGIC_INTERNAL cleanup
+        end if ! call co2sys
+    end subroutine pelagic_co2sys_preprocess
 
 end subroutine AQUABC_PELAGIC_KINETICS
