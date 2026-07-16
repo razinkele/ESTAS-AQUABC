@@ -3689,4 +3689,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*                                           *'
     !*********************************************'
 
+contains
+
+    ! Phase procedures extracted from the monolithic body (TODO 1.6).
+    ! Shared (nkn) arrays are reached by host association; only per-thread
+    ! private data is passed as arguments. See the plan's Global Constraints.
+
 end subroutine AQUABC_PELAGIC_KINETICS
