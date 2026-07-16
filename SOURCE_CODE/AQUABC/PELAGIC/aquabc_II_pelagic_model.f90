@@ -427,472 +427,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     call pelagic_biology(ns, ne, nkn_local, ENV_CHUNK)
 
-    !*********************************************************************!
-    !     MINERALIZATION OF DOC, DON, DOP whith bacteria are not modelled.
-    !     Called abiotic in the sense of modelling method
-    !*********************************************************************!
-
-    !Algal dependent mineralisation rate
-
-    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        ! Populate per-thread DOC mineralization outputs bundle
-        DOCMIN_CHUNK%LIM_PHYT_AMIN_DOC          => LIM_PHYT_AMIN_DOC(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOXY     => R_ABIOTIC_DOC_MIN_DOXY(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_NO3N     => R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_MN_IV    => R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_FE_III   => R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_S_PLUS_6 => R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
-        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOC      => R_ABIOTIC_DOC_MIN_DOC(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOXY       => PH_CORR_DOC_MIN_DOXY(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_NO3N       => PH_CORR_DOC_MIN_NO3N(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_MN_IV      => PH_CORR_DOC_MIN_MN_IV(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_FE_III     => PH_CORR_DOC_MIN_FE_III(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_S_PLUS_6   => PH_CORR_DOC_MIN_S_PLUS_6(ns:ne)
-        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOC        => PH_CORR_DOC_MIN_DOC(ns:ne)
-
-        ! Populate per-thread redox state and limitation bundles
-        REDOX_STATE_CHUNK%DOXY       => DISS_OXYGEN(ns:ne)
-        REDOX_STATE_CHUNK%NO3N       => NO3_N(ns:ne)
-        REDOX_STATE_CHUNK%MN_IV      => MN_IV(ns:ne)
-        REDOX_STATE_CHUNK%FE_III     => FE_III(ns:ne)
-        REDOX_STATE_CHUNK%S_PLUS_6   => S_PLUS_6(ns:ne)
-        REDOX_STATE_CHUNK%DISS_ORG_C => DISS_ORG_C(ns:ne)
-        REDOX_STATE_CHUNK%S_MINUS_2  => S_MINUS_2(ns:ne)
-        REDOX_STATE_CHUNK%MN_II      => MN_II(ns:ne)
-        REDOX_STATE_CHUNK%FE_II      => FE_II(ns:ne)
-        REDOX_STATE_CHUNK%HCO3       => HCO3(ns:ne)
-        REDOX_STATE_CHUNK%CO3        => CO3(ns:ne)
-
-        REDOX_LIM_CHUNK%LIM_DOXY_RED     => LIM_DOXY_RED(ns:ne)
-        REDOX_LIM_CHUNK%LIM_NO3N_RED     => LIM_NO3N_RED(ns:ne)
-        REDOX_LIM_CHUNK%LIM_MN_IV_RED    => LIM_MN_IV_RED(ns:ne)
-        REDOX_LIM_CHUNK%LIM_FE_III_RED   => LIM_FE_III_RED(ns:ne)
-        REDOX_LIM_CHUNK%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED(ns:ne)
-        REDOX_LIM_CHUNK%LIM_DOC_RED      => LIM_DOC_RED(ns:ne)
-
-        call ORGANIC_CARBON_MINERALIZATION &
-                (nkn_local                   , &
-                 TEMP(ns:ne)                        , &
-                 PH(ns:ne)                          , &
-                 PHYT_TOT_C(ns:ne)                  , &
-                 DOCMIN_PARAMS               , &
-                 REDOX_PARAMS                , &
-                 REDOX_STATE_CHUNK           , &
-                 REDOX_LIM_CHUNK             , &
-                 DOCMIN_CHUNK)
-    else
-        where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOC)
-            LIM_PHYT_AMIN_DOC(ns:ne) = FAC_PHYT_AMIN_DOC * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOC)
-        elsewhere
-            LIM_PHYT_AMIN_DOC(ns:ne) = 0.D0
-        end where
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DOC_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_DOXY, PH_MAX_DOC_MIN_DOXY, nkn_local)
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DOC_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_NO3N, PH_MAX_DOC_MIN_NO3N, nkn_local)
-
-        R_ABIOTIC_DOC_MIN_DOXY(ns:ne) = &
-            (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC(ns:ne)) * &
-            (THETA_K_MIN_DOC_DOXY ** (TEMP(ns:ne) - 2.0D1)) * LIM_DOXY_RED(ns:ne) * &
-            PH_CORR_DOC_MIN_DOXY(ns:ne) * &
-            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_DOXY)) * DISS_ORG_C(ns:ne)
-
-        R_ABIOTIC_DOC_MIN_NO3N(ns:ne) = &
-            K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_NO3N_RED(ns:ne) * PH_CORR_DOC_MIN_NO3N(ns:ne) * &
-            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_NO3N)) * DISS_ORG_C(ns:ne)
-
-        R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)    = 0.0D0
-        R_ABIOTIC_DOC_MIN_FE_III(ns:ne)   = 0.0D0
-        R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne) = 0.0D0
-        R_ABIOTIC_DOC_MIN_DOC(ns:ne)      = 0.0D0
-    end if
-
-    ! Accerelation of mineralisation when DIN is scarce
-    LIM_N_AMIN_DON(ns:ne) = KHS_AMIN_N / (KHS_AMIN_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
-
-    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DON)
-        LIM_PHY_N_AMIN_DON(ns:ne) = LIM_N_AMIN_DON(ns:ne) * FAC_PHYT_AMIN_DON * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DON)
-    elsewhere
-        LIM_PHY_N_AMIN_DON(ns:ne) = 0.D0
-    end where
-
-    ! -------------------------------------------------------------------------
-    ! DON mineralization compatible with redox cycle
-    ! -------------------------------------------------------------------------
-
-    ! 28 January 2016, the following commented lines are replaced in order to be
-    ! compitable with the redox sequence
-
-    !(1 - frac_avail_DON) counts fraction available for minerasilation bybacteria
-    !frac_avail_DON - fraction available for cyanobacteria
-
-    call CALCULATE_PH_CORR &
-         (PH_CORR_DON_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_DOXY, PH_MAX_DON_MIN_DOXY, nkn_local)
-
-    call CALCULATE_PH_CORR &
-         (PH_CORR_DON_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_NO3N, PH_MAX_DON_MIN_NO3N, nkn_local)
-
-    where(DISS_ORG_N(ns:ne) .le. 0.D0)
-        LIM_DON_DON(ns:ne) = 0.D0
-    elsewhere
-        LIM_DON_DON(ns:ne) = DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOXY)
-    end where
-
-    R_ABIOTIC_DON_MIN_DOXY(ns:ne) = &
-        (K_MIN_DON_DOXY_20 + LIM_PHY_N_AMIN_DON(ns:ne)) * &
-        (THETA_K_MIN_DON_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
-        LIM_DOXY_RED(ns:ne) * PH_CORR_DON_MIN_DOXY(ns:ne) * &
-        LIM_DON_DON(ns:ne) * &
-        DISS_ORG_N(ns:ne) !(1.0D0 - frac_avail_DON)
-
-    ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
-    ! rate calculation differs
-    R_ABIOTIC_DON_MIN_NO3N(ns:ne) = &
-        K_MIN_DON_NO3N_20  * (THETA_K_MIN_DON_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
-        LIM_NO3N_RED(ns:ne) * PH_CORR_DON_MIN_NO3N(ns:ne) * &
-        (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_NO3N)) * DISS_ORG_N(ns:ne)
-
-    R_ABIOTIC_DON_MIN_MN_IV(ns:ne)    = 0.0D0
-    R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = 0.0D0
-    R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = 0.0D0
-    R_ABIOTIC_DON_MIN_DOC(ns:ne)      = 0.0D0
-
-    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_MN_IV(ns:ne)   , PH(ns:ne), PH_MIN_DON_MIN_MN_IV   , &
-              PH_MAX_DON_MIN_MN_IV   , nkn_local)
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_FE_III(ns:ne)  , PH(ns:ne), PH_MIN_DON_MIN_FE_III  , &
-              PH_MAX_DON_MIN_FE_III  , nkn_local)
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_S_PLUS_6(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_S_PLUS_6, &
-              PH_MAX_DON_MIN_S_PLUS_6, nkn_local)
-
-        call CALCULATE_PH_CORR &
-             (PH_CORR_DON_MIN_DOC(ns:ne)     , PH(ns:ne), PH_MIN_DON_MIN_DOC     , &
-              PH_MAX_DON_MIN_DOC     , nkn_local)
-
-        R_ABIOTIC_DON_MIN_MN_IV(ns:ne)   = &
-            K_MIN_DON_MN_IV_20     * (THETA_K_MIN_DON_MN_IV    ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_MN_IV_RED(ns:ne) * PH_CORR_DON_MIN_MN_IV(ns:ne) * &
-            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_MN_IV)) * DISS_ORG_N(ns:ne)
-
-        R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = &
-            K_MIN_DON_FE_III_20    * (THETA_K_MIN_DON_FE_III   ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_FE_III_RED(ns:ne) * PH_CORR_DON_MIN_FE_III(ns:ne) * &
-            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_FE_III)) * DISS_ORG_N(ns:ne)
-
-        R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = &
-            K_MIN_DON_S_PLUS_6_20  * (THETA_K_MIN_DON_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DON_MIN_S_PLUS_6(ns:ne) * &
-            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_S_PLUS_6)) * DISS_ORG_N(ns:ne)
-
-        R_ABIOTIC_DON_MIN_DOC(ns:ne)      = &
-            (K_MIN_DON_DOC_20      * (THETA_K_MIN_DON_DOC      ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_DOC_RED(ns:ne) * PH_CORR_DON_MIN_DOC(ns:ne) * &
-            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOC)) * DISS_ORG_N(ns:ne))
-    end if
-
-
-    ! -------------------------------------------------------------------------
-    ! End of DON mineralization compatible with redox cycle
-    ! -------------------------------------------------------------------------
-
-    ! Accerelation of mineralisation when DIP is scarce
-    LIM_P_AMIN_DOP(ns:ne) = KHS_AMIN_P / (KHS_AMIN_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
-
-
-
-    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOP)
-        LIM_PHY_P_AMIN_DOP(ns:ne) = LIM_P_AMIN_DOP(ns:ne) * FAC_PHYT_AMIN_DOP * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOP)
-    elsewhere
-        LIM_PHY_P_AMIN_DOP(ns:ne) = 0.D0
-    end where
-
-    ! -------------------------------------------------------------------------
-    ! DOP mineralization compatible with redox cycle
-    ! -------------------------------------------------------------------------
-
-    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_DOXY, PH_MAX_DOP_MIN_DOXY, nkn_local)
-    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_NO3N, PH_MAX_DOP_MIN_NO3N, nkn_local)
-
-    where (DISS_ORG_P(ns:ne) .le. 0.D0 .and. K_HS_DOP_MIN_DOXY .le. 0.D0)
-        LIM_DISS_ORG_P(ns:ne) = 1.D0
-    elsewhere
-        LIM_DISS_ORG_P(ns:ne) = (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOXY))
-    end where
-
-    !$omp critical
-    if(any(DISS_ORG_P(ns:ne) .le. 0.D0)) then
-     print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
-     print *, 'PELAGIC MODEL: Warning, some DISS_ORG_P <= 0'
-     print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
-    end if
-    !$omp end critical
-
-    R_ABIOTIC_DOP_MIN_DOXY(ns:ne) = &
-        (K_MIN_DOP_DOXY_20 + LIM_PHY_P_AMIN_DOP(ns:ne)) * (THETA_K_MIN_DOP_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
-        LIM_DOXY_RED(ns:ne) * PH_CORR_DOP_MIN_DOXY(ns:ne) * LIM_DISS_ORG_P(ns:ne) * &
-        DISS_ORG_P(ns:ne)
-
-    ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
-    ! rate calculation differs
-    R_ABIOTIC_DOP_MIN_NO3N(ns:ne) = &
-        K_MIN_DOP_NO3N_20  * (THETA_K_MIN_DOP_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
-        LIM_NO3N_RED(ns:ne) * PH_CORR_DOP_MIN_NO3N(ns:ne) * (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_NO3N)) * &
-        DISS_ORG_P(ns:ne)
-
-    R_ABIOTIC_DOP_MIN_MN_IV(ns:ne)    = 0.0D0
-    R_ABIOTIC_DOP_MIN_FE_III(ns:ne)   = 0.0D0
-    R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = 0.0D0
-    R_ABIOTIC_DOP_MIN_DOC(ns:ne)      = 0.0D0
-
-    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_MN_IV(ns:ne), PH(ns:ne), &
-             PH_MIN_DOP_MIN_MN_IV, PH_MAX_DOP_MIN_MN_IV, nkn_local)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_FE_III(ns:ne), PH(ns:ne), &
-             PH_MIN_DOP_MIN_FE_III, PH_MAX_DOP_MIN_FE_III, nkn_local)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_S_PLUS_6(ns:ne), PH(ns:ne), &
-             PH_MIN_DOP_MIN_S_PLUS_6, PH_MAX_DOP_MIN_S_PLUS_6, nkn_local)
-        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOC(ns:ne), PH(ns:ne), &
-             PH_MIN_DOP_MIN_DOC, PH_MAX_DOP_MIN_DOC, nkn_local)
-
-        R_ABIOTIC_DOP_MIN_MN_IV(ns:ne) = &
-            K_MIN_DOP_MN_IV_20  * (THETA_K_MIN_DOP_MN_IV ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_MN_IV_RED(ns:ne) * PH_CORR_DOP_MIN_MN_IV(ns:ne) * &
-            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_MN_IV)) * DISS_ORG_P(ns:ne)
-
-        R_ABIOTIC_DOP_MIN_FE_III(ns:ne) = &
-            K_MIN_DOP_FE_III_20  * (THETA_K_MIN_DOP_FE_III ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_FE_III_RED(ns:ne) * PH_CORR_DOP_MIN_FE_III(ns:ne) * &
-            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_FE_III)) * DISS_ORG_P(ns:ne)
-
-        R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = &
-            K_MIN_DOP_S_PLUS_6_20  * (THETA_K_MIN_DOP_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
-            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DOP_MIN_S_PLUS_6(ns:ne) * &
-            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_S_PLUS_6)) * DISS_ORG_P(ns:ne)
-
-        R_ABIOTIC_DOP_MIN_DOC(ns:ne) = &
-            (K_MIN_DOP_DOC_20  * (THETA_K_MIN_DOP_DOC ** (TEMP(ns:ne) - 2.0D1)) * &
-             LIM_DOC_RED(ns:ne) * PH_CORR_DOP_MIN_DOC(ns:ne) * &
-            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOC)) * DISS_ORG_P(ns:ne))
-    end if
-    ! -------------------------------------------------------------------------
-    ! End of DOP mineralization compatible with redox cycle
-    ! -------------------------------------------------------------------------
-
-    !*******************************************************************************************!
-    !     Nitrification of ammonia by bacteria are not modelled.
-    !     Called abiotic in the sense of modelling method
-    !*******************************************************************************************!
-    LIM_NITR_OXY(ns:ne) = DISS_OXYGEN(ns:ne) / (KHS_NITR_OXY + DISS_OXYGEN(ns:ne))
-    LIM_NITR_NH4_N(ns:ne) = NH4_N(ns:ne) / (KHS_NITR_NH4_N + NH4_N(ns:ne))
-
-    call CALCULATE_PH_CORR(PH_CORR_NITR_NH4(ns:ne), PH(ns:ne), PH_NITR_NH4_MIN, PH_NITR_NH4_MAX, nkn_local)
-
-    R_ABIOTIC_NITR(ns:ne) = K_NITR_20 * LIM_NITR_OXY(ns:ne) * LIM_NITR_NH4_N(ns:ne) * &
-                     PH_CORR_NITR_NH4(ns:ne) * (THETA_K_NITR ** (TEMP(ns:ne) - 2.0D1)) * NH4_N(ns:ne)
-
-    ! -------------------------------------------------------------------------
-    ! DENITRIFICATION
-    ! -------------------------------------------------------------------------
-
-    ! Introduced 28 January 2016 by Ali
-    !
-    ! [CH2O] + 4/5[NO3N-] -----> 1/2[N2] + [CO2]
-    !
-    ! Therefore, for each gram of DOC, that is mineralized over denitrification
-    ! process,
-    !
-    !  - 14/(12 * 1.25) = 0.93 grams of NO3N is converted to N2
-    !  - 1 gram of carbondioxide carbon is produced
-
-    R_DENITRIFICATION(ns:ne) = 0.93D0 * R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
-    ! -------------------------------------------------------------------------
-    ! END OF DENITRIFICATION
-    ! -------------------------------------------------------------------------
-
-
-    ! -------------------------------------------------------------------------
-    ! MANGANESE REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! Introduced 29 January 2016 by Ali
-    !
-    ! [CH2O] + 2[MN_IV] -----> [CO2] + 2[MN_II]
-    !
-    ! Therefore, for each gram of DOC, that is mineralized over denitrification
-    ! process,
-    !
-    !  - (2*52)/12 = 8.66 grams of manganese IV is reduced to manganese II
-    !  - 1 gram of carbondioxide carbon is produced
-
-    R_MN_IV_REDUCTION(ns:ne) = 8.66D0 * R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
-    ! -------------------------------------------------------------------------
-    ! END OF MANGANESE REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! -------------------------------------------------------------------------
-    ! IRON REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! Introduced 29 January 2016 by Ali
-    !
-    ! [CH2O] + 4[FE_III] -----> [CO2] + 4[FE_II]
-    !
-    ! Therefore, for each gram of DOC, that is mineralized over denitrification
-    ! process,
-    !
-    !  - (4*56)/12 = 18.66 grams of iron III is reduced to iron II
-    !  - 1 gram of carbondioxide carbon is produced
-
-    R_FE_III_REDUCTION(ns:ne) = 18.66D0 * R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
-    ! -------------------------------------------------------------------------
-    ! END OF IRON REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! -------------------------------------------------------------------------
-    ! SULPHATE REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! Introduced 28 January 2016 by Ali
-    !
-    ! [CH2O] + 1/2[SO4--] -----> [CO2] + 1/2[S--]
-    !
-    ! Therefore, for each gram of DOC, that is mineralized over denitrification
-    ! process,
-    !
-    !  - (32/2)/12 = 1.33 grams of S_PLUS_6 is converted to S_MINUS_2
-    !  - 1 gram of carbondioxide is produced
-
-    R_SULPHATE_REDUCTION(ns:ne) = 1.33D0 * R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
-    ! -------------------------------------------------------------------------
-    ! END OF SULPHATE REDUCTION
-    ! -------------------------------------------------------------------------
-
-    ! -------------------------------------------------------------------------
-    ! METHANOGENESIS
-    ! -------------------------------------------------------------------------
-
-    ! Introduced 29 January 2016 by Ali
-    !
-    ! [CH2O]  -----> 1/2[CH4] + 1/2[CO2]
-    !
-    ! Therefore, for each gram of DOC, that is mineralized over denitrification
-    ! process,
-    !
-    !  - 0.5 grams of methane carbon is produced from DON
-    !  - 0.5 grams of carbondioxide carbon is produced
-
-    R_METHANOGENESIS(ns:ne) = 0.5D0 * R_ABIOTIC_DOC_MIN_DOC(ns:ne)
-    ! -------------------------------------------------------------------------
-    ! END OF METHANOGENESIS
-    ! -------------------------------------------------------------------------
-
-    !*********************************************************************!
-    !     VOLATILIZATION OF UNIONIZED AMMONI.
-    !*********************************************************************!
-    call AMMONIA_VOLATILIZATION(R_AMMONIA_VOLATIL(ns:ne), NH4_N(ns:ne), pH(ns:ne), TEMP(ns:ne), K_A_CALC(ns:ne), nkn_local)
-
-    !----------------------------------------------------------------------
-    ! 2 February 2015
-    ! New code added to account the effect of ice cover.
-    !----------------------------------------------------------------------
-    R_AMMONIA_VOLATIL(ns:ne) = R_AMMONIA_VOLATIL(ns:ne) * (1.0D0 - ice_cover(ns:ne))
-
-    where (R_AMMONIA_VOLATIL(ns:ne) < 0.0D0)
-        R_AMMONIA_VOLATIL(ns:ne) = 0.0D0
-    end where
-
-    !----------------------------------------------------------------------
-    ! End of new code added to account the effect of ice cover.
-    !----------------------------------------------------------------------
-
-    ! ---------------------------------------------------------------------
-    ! Changes by Ali Ert�rk, 6 th of July 2016
-    !
-    ! Following lines are commented
-    ! ---------------------------------------------------------------------
-
-    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
-        ! New kinetic rate calculations added 9 September 2015
-        ! For now, no temparature corrections. Effect on temperature and other
-        ! environmental conditions may be included after more detailed investigations
-
-        ! Updated in 25th January 2016 where only dissolved fractions are allowed to be oxidized or reduced
-
-        ! Iron
-        if(iron_oxidation .eq. 0) then
-            !simple formulation, k_OX_FE_II is calibration parameter
-            where (DISS_OXYGEN(ns:ne) < 1)
-                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
-            elsewhere
-                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
-            end where
-        end if
-
-        if(iron_oxidation .eq. 1) then
-            ! In the future include several options for heavy metal oxidation and possibly reduction
-            ! Morgen and Lahav (2007) formulation. No calibration
-            call IRON_II_OXIDATION(FE_II_DISS(ns:ne), DISS_OXYGEN(ns:ne), &
-                 PH(ns:ne), TEMP(ns:ne), SALT(ns:ne), ELEVATION(ns:ne), &
-                 nkn_local, R_FE_II_OXIDATION(ns:ne))
-            ! ---------------------------------------------------------------------
-            ! End of changes by Ali Ert�rk, 6 th of July 2016
-            ! ---------------------------------------------------------------------
-        end if
-        ! 29 January 2016
-        ! Following commented lines are replaced by the new redox sequence based DOC
-        ! DOC mineralization it is the next visit of Ali and the redox sequences as described
-        ! by Van Chappen and Wang 2015 and Katsev papers are now included.
-
-        ! Manganese
-        where (DISS_OXYGEN(ns:ne) < 1)
-            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0))* MN_II(ns:ne)
-        elsewhere
-            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * MN_II(ns:ne)
-        end where
-
-        ! 29 January 2016
-        ! Following commented lines are replaced by the new redox sequence based DOC
-        ! mineralization it is the next visit of Ali and the redox sequences as described
-        ! by Van Chappen and Wang 2015 and Katsev papers are now included.
-
-        ! End of new kinetic rate calculations added 9 September 2015
-
-        ! -------------------------------------------------------------------------------
-        ! 29 January 2016 KINETICS OF NEW STATE VARIABLES
-        ! -------------------------------------------------------------------------------
-        K_A_CH4(ns:ne) = K_A_CALC(ns:ne) * 1.188D0
-        K_A_H2S(ns:ne) = K_A_CALC(ns:ne) * 0.984D0
-        CH4_SAT(ns:ne) = 0.0D0 ! Assume that no methane is present in the atmosphere
-        H2S_SAT(ns:ne) = 0.0D0 ! Assume that no H2S(ns:ne) is present in the atmosphere
-
-        CH4_ATM_EXCHANGE(ns:ne) = K_A_CH4(ns:ne) * (CH4_SAT(ns:ne) - CH4_C(ns:ne))
-        H2S_ATM_EXCHANGE(ns:ne) = K_A_H2S(ns:ne) * (H2S_SAT(ns:ne) - (H2S(ns:ne) * 32000.D0))
-
-        R_METHANE_OXIDATION(ns:ne) = &
-            k_OX_CH4 * (THETA_k_OX_CH4 ** (TEMP(ns:ne) - 20.0D0)) * CH4_C(ns:ne) * &
-            (DISS_OXYGEN(ns:ne) / (k_HS_OX_CH4_DOXY + DISS_OXYGEN(ns:ne)))
-
-        R_SULPHIDE_OXIDATION(ns:ne) = &
-            k_OX_H2S * (THETA_k_OX_H2S ** (TEMP(ns:ne) - 20.0D0)) * S_MINUS_2(ns:ne) * &
-            (DISS_OXYGEN(ns:ne) / (k_HS_OX_H2S_DOXY + DISS_OXYGEN(ns:ne)))
-    else
-        R_FE_II_OXIDATION(ns:ne)    = 0.0D0
-        R_MN_II_OXIDATION(ns:ne)    = 0.0D0
-        R_SULPHIDE_OXIDATION(ns:ne) = 0.0D0
-        R_METHANE_OXIDATION(ns:ne)  = 0.0D0
-    end if
-    ! -------------------------------------------------------------------------
-    ! END OF KINETICS OF NEW STATE VARIABLES
-    ! -------------------------------------------------------------------------
+    call pelagic_chemistry(ns, ne, nkn_local, DOCMIN_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK)
 
     !------------------------------------------------------------------------------------------------
     ! Final calculation of derivatives
@@ -3726,5 +3261,487 @@ contains
             (THETA_KDISS_PART_SI ** (TEMP(ns:ne) - 2.0D1)) * PART_SI(ns:ne)
 
     end subroutine pelagic_biology
+
+    subroutine pelagic_chemistry(ns, ne, nkn_local, DOCMIN_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK)
+        ! Mineralization / nitrification / denitrification / volatilization / redox
+        ! kinetics phase (TODO 1.6 -- verbatim lift). Shared (nkn) arrays reached by
+        ! host association; per-thread PRIVATE-clause bundles are passed as
+        ! arguments per the plan's Global Constraints (a private var read via host
+        ! association in a called procedure would silently resolve to the shared
+        ! original -> race).
+        integer,                intent(in)    :: ns, ne, nkn_local
+        type(t_docmin_outputs), intent(inout) :: DOCMIN_CHUNK
+        type(t_redox_state),    intent(inout) :: REDOX_STATE_CHUNK
+        type(t_redox_lim),      intent(inout) :: REDOX_LIM_CHUNK
+
+    !*********************************************************************!
+    !     MINERALIZATION OF DOC, DON, DOP whith bacteria are not modelled.
+    !     Called abiotic in the sense of modelling method
+    !*********************************************************************!
+
+    !Algal dependent mineralisation rate
+
+    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+        ! Populate per-thread DOC mineralization outputs bundle
+        DOCMIN_CHUNK%LIM_PHYT_AMIN_DOC          => LIM_PHYT_AMIN_DOC(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOXY     => R_ABIOTIC_DOC_MIN_DOXY(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_NO3N     => R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_MN_IV    => R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_FE_III   => R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_S_PLUS_6 => R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
+        DOCMIN_CHUNK%R_ABIOTIC_DOC_MIN_DOC      => R_ABIOTIC_DOC_MIN_DOC(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOXY       => PH_CORR_DOC_MIN_DOXY(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_NO3N       => PH_CORR_DOC_MIN_NO3N(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_MN_IV      => PH_CORR_DOC_MIN_MN_IV(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_FE_III     => PH_CORR_DOC_MIN_FE_III(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_S_PLUS_6   => PH_CORR_DOC_MIN_S_PLUS_6(ns:ne)
+        DOCMIN_CHUNK%PH_CORR_DOC_MIN_DOC        => PH_CORR_DOC_MIN_DOC(ns:ne)
+
+        ! Populate per-thread redox state and limitation bundles
+        REDOX_STATE_CHUNK%DOXY       => DISS_OXYGEN(ns:ne)
+        REDOX_STATE_CHUNK%NO3N       => NO3_N(ns:ne)
+        REDOX_STATE_CHUNK%MN_IV      => MN_IV(ns:ne)
+        REDOX_STATE_CHUNK%FE_III     => FE_III(ns:ne)
+        REDOX_STATE_CHUNK%S_PLUS_6   => S_PLUS_6(ns:ne)
+        REDOX_STATE_CHUNK%DISS_ORG_C => DISS_ORG_C(ns:ne)
+        REDOX_STATE_CHUNK%S_MINUS_2  => S_MINUS_2(ns:ne)
+        REDOX_STATE_CHUNK%MN_II      => MN_II(ns:ne)
+        REDOX_STATE_CHUNK%FE_II      => FE_II(ns:ne)
+        REDOX_STATE_CHUNK%HCO3       => HCO3(ns:ne)
+        REDOX_STATE_CHUNK%CO3        => CO3(ns:ne)
+
+        REDOX_LIM_CHUNK%LIM_DOXY_RED     => LIM_DOXY_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_NO3N_RED     => LIM_NO3N_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_MN_IV_RED    => LIM_MN_IV_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_FE_III_RED   => LIM_FE_III_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_S_PLUS_6_RED => LIM_S_PLUS_6_RED(ns:ne)
+        REDOX_LIM_CHUNK%LIM_DOC_RED      => LIM_DOC_RED(ns:ne)
+
+        call ORGANIC_CARBON_MINERALIZATION &
+                (nkn_local                   , &
+                 TEMP(ns:ne)                        , &
+                 PH(ns:ne)                          , &
+                 PHYT_TOT_C(ns:ne)                  , &
+                 DOCMIN_PARAMS               , &
+                 REDOX_PARAMS                , &
+                 REDOX_STATE_CHUNK           , &
+                 REDOX_LIM_CHUNK             , &
+                 DOCMIN_CHUNK)
+    else
+        where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOC)
+            LIM_PHYT_AMIN_DOC(ns:ne) = FAC_PHYT_AMIN_DOC * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOC)
+        elsewhere
+            LIM_PHYT_AMIN_DOC(ns:ne) = 0.D0
+        end where
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DOC_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_DOXY, PH_MAX_DOC_MIN_DOXY, nkn_local)
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DOC_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOC_MIN_NO3N, PH_MAX_DOC_MIN_NO3N, nkn_local)
+
+        R_ABIOTIC_DOC_MIN_DOXY(ns:ne) = &
+            (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC(ns:ne)) * &
+            (THETA_K_MIN_DOC_DOXY ** (TEMP(ns:ne) - 2.0D1)) * LIM_DOXY_RED(ns:ne) * &
+            PH_CORR_DOC_MIN_DOXY(ns:ne) * &
+            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_DOXY)) * DISS_ORG_C(ns:ne)
+
+        R_ABIOTIC_DOC_MIN_NO3N(ns:ne) = &
+            K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_NO3N_RED(ns:ne) * PH_CORR_DOC_MIN_NO3N(ns:ne) * &
+            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_NO3N)) * DISS_ORG_C(ns:ne)
+
+        R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)    = 0.0D0
+        R_ABIOTIC_DOC_MIN_FE_III(ns:ne)   = 0.0D0
+        R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne) = 0.0D0
+        R_ABIOTIC_DOC_MIN_DOC(ns:ne)      = 0.0D0
+    end if
+
+    ! Accerelation of mineralisation when DIN is scarce
+    LIM_N_AMIN_DON(ns:ne) = KHS_AMIN_N / (KHS_AMIN_N + (NH4_N(ns:ne) + NO3_N(ns:ne)))
+
+    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DON)
+        LIM_PHY_N_AMIN_DON(ns:ne) = LIM_N_AMIN_DON(ns:ne) * FAC_PHYT_AMIN_DON * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DON)
+    elsewhere
+        LIM_PHY_N_AMIN_DON(ns:ne) = 0.D0
+    end where
+
+    ! -------------------------------------------------------------------------
+    ! DON mineralization compatible with redox cycle
+    ! -------------------------------------------------------------------------
+
+    ! 28 January 2016, the following commented lines are replaced in order to be
+    ! compitable with the redox sequence
+
+    !(1 - frac_avail_DON) counts fraction available for minerasilation bybacteria
+    !frac_avail_DON - fraction available for cyanobacteria
+
+    call CALCULATE_PH_CORR &
+         (PH_CORR_DON_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_DOXY, PH_MAX_DON_MIN_DOXY, nkn_local)
+
+    call CALCULATE_PH_CORR &
+         (PH_CORR_DON_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_NO3N, PH_MAX_DON_MIN_NO3N, nkn_local)
+
+    where(DISS_ORG_N(ns:ne) .le. 0.D0)
+        LIM_DON_DON(ns:ne) = 0.D0
+    elsewhere
+        LIM_DON_DON(ns:ne) = DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOXY)
+    end where
+
+    R_ABIOTIC_DON_MIN_DOXY(ns:ne) = &
+        (K_MIN_DON_DOXY_20 + LIM_PHY_N_AMIN_DON(ns:ne)) * &
+        (THETA_K_MIN_DON_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_DOXY_RED(ns:ne) * PH_CORR_DON_MIN_DOXY(ns:ne) * &
+        LIM_DON_DON(ns:ne) * &
+        DISS_ORG_N(ns:ne) !(1.0D0 - frac_avail_DON)
+
+    ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
+    ! rate calculation differs
+    R_ABIOTIC_DON_MIN_NO3N(ns:ne) = &
+        K_MIN_DON_NO3N_20  * (THETA_K_MIN_DON_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_NO3N_RED(ns:ne) * PH_CORR_DON_MIN_NO3N(ns:ne) * &
+        (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_NO3N)) * DISS_ORG_N(ns:ne)
+
+    R_ABIOTIC_DON_MIN_MN_IV(ns:ne)    = 0.0D0
+    R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = 0.0D0
+    R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = 0.0D0
+    R_ABIOTIC_DON_MIN_DOC(ns:ne)      = 0.0D0
+
+    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DON_MIN_MN_IV(ns:ne)   , PH(ns:ne), PH_MIN_DON_MIN_MN_IV   , &
+              PH_MAX_DON_MIN_MN_IV   , nkn_local)
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DON_MIN_FE_III(ns:ne)  , PH(ns:ne), PH_MIN_DON_MIN_FE_III  , &
+              PH_MAX_DON_MIN_FE_III  , nkn_local)
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DON_MIN_S_PLUS_6(ns:ne), PH(ns:ne), PH_MIN_DON_MIN_S_PLUS_6, &
+              PH_MAX_DON_MIN_S_PLUS_6, nkn_local)
+
+        call CALCULATE_PH_CORR &
+             (PH_CORR_DON_MIN_DOC(ns:ne)     , PH(ns:ne), PH_MIN_DON_MIN_DOC     , &
+              PH_MAX_DON_MIN_DOC     , nkn_local)
+
+        R_ABIOTIC_DON_MIN_MN_IV(ns:ne)   = &
+            K_MIN_DON_MN_IV_20     * (THETA_K_MIN_DON_MN_IV    ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_MN_IV_RED(ns:ne) * PH_CORR_DON_MIN_MN_IV(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_MN_IV)) * DISS_ORG_N(ns:ne)
+
+        R_ABIOTIC_DON_MIN_FE_III(ns:ne)   = &
+            K_MIN_DON_FE_III_20    * (THETA_K_MIN_DON_FE_III   ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_FE_III_RED(ns:ne) * PH_CORR_DON_MIN_FE_III(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_FE_III)) * DISS_ORG_N(ns:ne)
+
+        R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) = &
+            K_MIN_DON_S_PLUS_6_20  * (THETA_K_MIN_DON_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DON_MIN_S_PLUS_6(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_S_PLUS_6)) * DISS_ORG_N(ns:ne)
+
+        R_ABIOTIC_DON_MIN_DOC(ns:ne)      = &
+            (K_MIN_DON_DOC_20      * (THETA_K_MIN_DON_DOC      ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_DOC_RED(ns:ne) * PH_CORR_DON_MIN_DOC(ns:ne) * &
+            (DISS_ORG_N(ns:ne) / (DISS_ORG_N(ns:ne) + K_HS_DON_MIN_DOC)) * DISS_ORG_N(ns:ne))
+    end if
+
+
+    ! -------------------------------------------------------------------------
+    ! End of DON mineralization compatible with redox cycle
+    ! -------------------------------------------------------------------------
+
+    ! Accerelation of mineralisation when DIP is scarce
+    LIM_P_AMIN_DOP(ns:ne) = KHS_AMIN_P / (KHS_AMIN_P + DIP_OVER_IP(ns:ne)*PO4_P(ns:ne))
+
+
+
+    where (PHYT_TOT_C(ns:ne) .gt. K_MIN_PHYT_AMIN_DOP)
+        LIM_PHY_P_AMIN_DOP(ns:ne) = LIM_P_AMIN_DOP(ns:ne) * FAC_PHYT_AMIN_DOP * (PHYT_TOT_C(ns:ne) - K_MIN_PHYT_AMIN_DOP)
+    elsewhere
+        LIM_PHY_P_AMIN_DOP(ns:ne) = 0.D0
+    end where
+
+    ! -------------------------------------------------------------------------
+    ! DOP mineralization compatible with redox cycle
+    ! -------------------------------------------------------------------------
+
+    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOXY(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_DOXY, PH_MAX_DOP_MIN_DOXY, nkn_local)
+    call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_NO3N(ns:ne), PH(ns:ne), PH_MIN_DOP_MIN_NO3N, PH_MAX_DOP_MIN_NO3N, nkn_local)
+
+    where (DISS_ORG_P(ns:ne) .le. 0.D0 .and. K_HS_DOP_MIN_DOXY .le. 0.D0)
+        LIM_DISS_ORG_P(ns:ne) = 1.D0
+    elsewhere
+        LIM_DISS_ORG_P(ns:ne) = (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOXY))
+    end where
+
+    !$omp critical
+    if(any(DISS_ORG_P(ns:ne) .le. 0.D0)) then
+     print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
+     print *, 'PELAGIC MODEL: Warning, some DISS_ORG_P <= 0'
+     print *, 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW'
+    end if
+    !$omp end critical
+
+    R_ABIOTIC_DOP_MIN_DOXY(ns:ne) = &
+        (K_MIN_DOP_DOXY_20 + LIM_PHY_P_AMIN_DOP(ns:ne)) * (THETA_K_MIN_DOP_DOXY ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_DOXY_RED(ns:ne) * PH_CORR_DOP_MIN_DOXY(ns:ne) * LIM_DISS_ORG_P(ns:ne) * &
+        DISS_ORG_P(ns:ne)
+
+    ! No phytoplankton or cyanobacteria when there is no oxygen so mineralization
+    ! rate calculation differs
+    R_ABIOTIC_DOP_MIN_NO3N(ns:ne) = &
+        K_MIN_DOP_NO3N_20  * (THETA_K_MIN_DOP_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
+        LIM_NO3N_RED(ns:ne) * PH_CORR_DOP_MIN_NO3N(ns:ne) * (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_NO3N)) * &
+        DISS_ORG_P(ns:ne)
+
+    R_ABIOTIC_DOP_MIN_MN_IV(ns:ne)    = 0.0D0
+    R_ABIOTIC_DOP_MIN_FE_III(ns:ne)   = 0.0D0
+    R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = 0.0D0
+    R_ABIOTIC_DOP_MIN_DOC(ns:ne)      = 0.0D0
+
+    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_MN_IV(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_MN_IV, PH_MAX_DOP_MIN_MN_IV, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_FE_III(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_FE_III, PH_MAX_DOP_MIN_FE_III, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_S_PLUS_6(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_S_PLUS_6, PH_MAX_DOP_MIN_S_PLUS_6, nkn_local)
+        call CALCULATE_PH_CORR(PH_CORR_DOP_MIN_DOC(ns:ne), PH(ns:ne), &
+             PH_MIN_DOP_MIN_DOC, PH_MAX_DOP_MIN_DOC, nkn_local)
+
+        R_ABIOTIC_DOP_MIN_MN_IV(ns:ne) = &
+            K_MIN_DOP_MN_IV_20  * (THETA_K_MIN_DOP_MN_IV ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_MN_IV_RED(ns:ne) * PH_CORR_DOP_MIN_MN_IV(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_MN_IV)) * DISS_ORG_P(ns:ne)
+
+        R_ABIOTIC_DOP_MIN_FE_III(ns:ne) = &
+            K_MIN_DOP_FE_III_20  * (THETA_K_MIN_DOP_FE_III ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_FE_III_RED(ns:ne) * PH_CORR_DOP_MIN_FE_III(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_FE_III)) * DISS_ORG_P(ns:ne)
+
+        R_ABIOTIC_DOP_MIN_S_PLUS_6(ns:ne) = &
+            K_MIN_DOP_S_PLUS_6_20  * (THETA_K_MIN_DOP_S_PLUS_6 ** (TEMP(ns:ne) - 2.0D1)) * &
+            LIM_S_PLUS_6_RED(ns:ne) * PH_CORR_DOP_MIN_S_PLUS_6(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_S_PLUS_6)) * DISS_ORG_P(ns:ne)
+
+        R_ABIOTIC_DOP_MIN_DOC(ns:ne) = &
+            (K_MIN_DOP_DOC_20  * (THETA_K_MIN_DOP_DOC ** (TEMP(ns:ne) - 2.0D1)) * &
+             LIM_DOC_RED(ns:ne) * PH_CORR_DOP_MIN_DOC(ns:ne) * &
+            (DISS_ORG_P(ns:ne) / (DISS_ORG_P(ns:ne) + K_HS_DOP_MIN_DOC)) * DISS_ORG_P(ns:ne))
+    end if
+    ! -------------------------------------------------------------------------
+    ! End of DOP mineralization compatible with redox cycle
+    ! -------------------------------------------------------------------------
+
+    !*******************************************************************************************!
+    !     Nitrification of ammonia by bacteria are not modelled.
+    !     Called abiotic in the sense of modelling method
+    !*******************************************************************************************!
+    LIM_NITR_OXY(ns:ne) = DISS_OXYGEN(ns:ne) / (KHS_NITR_OXY + DISS_OXYGEN(ns:ne))
+    LIM_NITR_NH4_N(ns:ne) = NH4_N(ns:ne) / (KHS_NITR_NH4_N + NH4_N(ns:ne))
+
+    call CALCULATE_PH_CORR(PH_CORR_NITR_NH4(ns:ne), PH(ns:ne), PH_NITR_NH4_MIN, PH_NITR_NH4_MAX, nkn_local)
+
+    R_ABIOTIC_NITR(ns:ne) = K_NITR_20 * LIM_NITR_OXY(ns:ne) * LIM_NITR_NH4_N(ns:ne) * &
+                     PH_CORR_NITR_NH4(ns:ne) * (THETA_K_NITR ** (TEMP(ns:ne) - 2.0D1)) * NH4_N(ns:ne)
+
+    ! -------------------------------------------------------------------------
+    ! DENITRIFICATION
+    ! -------------------------------------------------------------------------
+
+    ! Introduced 28 January 2016 by Ali
+    !
+    ! [CH2O] + 4/5[NO3N-] -----> 1/2[N2] + [CO2]
+    !
+    ! Therefore, for each gram of DOC, that is mineralized over denitrification
+    ! process,
+    !
+    !  - 14/(12 * 1.25) = 0.93 grams of NO3N is converted to N2
+    !  - 1 gram of carbondioxide carbon is produced
+
+    R_DENITRIFICATION(ns:ne) = 0.93D0 * R_ABIOTIC_DOC_MIN_NO3N(ns:ne)
+    ! -------------------------------------------------------------------------
+    ! END OF DENITRIFICATION
+    ! -------------------------------------------------------------------------
+
+
+    ! -------------------------------------------------------------------------
+    ! MANGANESE REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! Introduced 29 January 2016 by Ali
+    !
+    ! [CH2O] + 2[MN_IV] -----> [CO2] + 2[MN_II]
+    !
+    ! Therefore, for each gram of DOC, that is mineralized over denitrification
+    ! process,
+    !
+    !  - (2*52)/12 = 8.66 grams of manganese IV is reduced to manganese II
+    !  - 1 gram of carbondioxide carbon is produced
+
+    R_MN_IV_REDUCTION(ns:ne) = 8.66D0 * R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)
+    ! -------------------------------------------------------------------------
+    ! END OF MANGANESE REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! -------------------------------------------------------------------------
+    ! IRON REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! Introduced 29 January 2016 by Ali
+    !
+    ! [CH2O] + 4[FE_III] -----> [CO2] + 4[FE_II]
+    !
+    ! Therefore, for each gram of DOC, that is mineralized over denitrification
+    ! process,
+    !
+    !  - (4*56)/12 = 18.66 grams of iron III is reduced to iron II
+    !  - 1 gram of carbondioxide carbon is produced
+
+    R_FE_III_REDUCTION(ns:ne) = 18.66D0 * R_ABIOTIC_DOC_MIN_FE_III(ns:ne)
+    ! -------------------------------------------------------------------------
+    ! END OF IRON REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! -------------------------------------------------------------------------
+    ! SULPHATE REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! Introduced 28 January 2016 by Ali
+    !
+    ! [CH2O] + 1/2[SO4--] -----> [CO2] + 1/2[S--]
+    !
+    ! Therefore, for each gram of DOC, that is mineralized over denitrification
+    ! process,
+    !
+    !  - (32/2)/12 = 1.33 grams of S_PLUS_6 is converted to S_MINUS_2
+    !  - 1 gram of carbondioxide is produced
+
+    R_SULPHATE_REDUCTION(ns:ne) = 1.33D0 * R_ABIOTIC_DOC_MIN_S_PLUS_6(ns:ne)
+    ! -------------------------------------------------------------------------
+    ! END OF SULPHATE REDUCTION
+    ! -------------------------------------------------------------------------
+
+    ! -------------------------------------------------------------------------
+    ! METHANOGENESIS
+    ! -------------------------------------------------------------------------
+
+    ! Introduced 29 January 2016 by Ali
+    !
+    ! [CH2O]  -----> 1/2[CH4] + 1/2[CO2]
+    !
+    ! Therefore, for each gram of DOC, that is mineralized over denitrification
+    ! process,
+    !
+    !  - 0.5 grams of methane carbon is produced from DON
+    !  - 0.5 grams of carbondioxide carbon is produced
+
+    R_METHANOGENESIS(ns:ne) = 0.5D0 * R_ABIOTIC_DOC_MIN_DOC(ns:ne)
+    ! -------------------------------------------------------------------------
+    ! END OF METHANOGENESIS
+    ! -------------------------------------------------------------------------
+
+    !*********************************************************************!
+    !     VOLATILIZATION OF UNIONIZED AMMONI.
+    !*********************************************************************!
+    call AMMONIA_VOLATILIZATION(R_AMMONIA_VOLATIL(ns:ne), NH4_N(ns:ne), pH(ns:ne), TEMP(ns:ne), K_A_CALC(ns:ne), nkn_local)
+
+    !----------------------------------------------------------------------
+    ! 2 February 2015
+    ! New code added to account the effect of ice cover.
+    !----------------------------------------------------------------------
+    R_AMMONIA_VOLATIL(ns:ne) = R_AMMONIA_VOLATIL(ns:ne) * (1.0D0 - ice_cover(ns:ne))
+
+    where (R_AMMONIA_VOLATIL(ns:ne) < 0.0D0)
+        R_AMMONIA_VOLATIL(ns:ne) = 0.0D0
+    end where
+
+    !----------------------------------------------------------------------
+    ! End of new code added to account the effect of ice cover.
+    !----------------------------------------------------------------------
+
+    ! ---------------------------------------------------------------------
+    ! Changes by Ali Ert�rk, 6 th of July 2016
+    !
+    ! Following lines are commented
+    ! ---------------------------------------------------------------------
+
+    if (DO_ADVANCED_REDOX_SIMULATION > 0) then
+        ! New kinetic rate calculations added 9 September 2015
+        ! For now, no temparature corrections. Effect on temperature and other
+        ! environmental conditions may be included after more detailed investigations
+
+        ! Updated in 25th January 2016 where only dissolved fractions are allowed to be oxidized or reduced
+
+        ! Iron
+        if(iron_oxidation .eq. 0) then
+            !simple formulation, k_OX_FE_II is calibration parameter
+            where (DISS_OXYGEN(ns:ne) < 1)
+                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
+            elsewhere
+                R_FE_II_OXIDATION(ns:ne)  = k_OX_FE_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * FE_II(ns:ne)
+            end where
+        end if
+
+        if(iron_oxidation .eq. 1) then
+            ! In the future include several options for heavy metal oxidation and possibly reduction
+            ! Morgen and Lahav (2007) formulation. No calibration
+            call IRON_II_OXIDATION(FE_II_DISS(ns:ne), DISS_OXYGEN(ns:ne), &
+                 PH(ns:ne), TEMP(ns:ne), SALT(ns:ne), ELEVATION(ns:ne), &
+                 nkn_local, R_FE_II_OXIDATION(ns:ne))
+            ! ---------------------------------------------------------------------
+            ! End of changes by Ali Ert�rk, 6 th of July 2016
+            ! ---------------------------------------------------------------------
+        end if
+        ! 29 January 2016
+        ! Following commented lines are replaced by the new redox sequence based DOC
+        ! DOC mineralization it is the next visit of Ali and the redox sequences as described
+        ! by Van Chappen and Wang 2015 and Katsev papers are now included.
+
+        ! Manganese
+        where (DISS_OXYGEN(ns:ne) < 1)
+            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * DISS_OXYGEN(ns:ne) * (10.0D0 ** (PH(ns:ne) - 7.0D0))* MN_II(ns:ne)
+        elsewhere
+            R_MN_II_OXIDATION(ns:ne)  = k_OX_MN_II * (10.0D0 ** (PH(ns:ne) - 7.0D0)) * MN_II(ns:ne)
+        end where
+
+        ! 29 January 2016
+        ! Following commented lines are replaced by the new redox sequence based DOC
+        ! mineralization it is the next visit of Ali and the redox sequences as described
+        ! by Van Chappen and Wang 2015 and Katsev papers are now included.
+
+        ! End of new kinetic rate calculations added 9 September 2015
+
+        ! -------------------------------------------------------------------------------
+        ! 29 January 2016 KINETICS OF NEW STATE VARIABLES
+        ! -------------------------------------------------------------------------------
+        K_A_CH4(ns:ne) = K_A_CALC(ns:ne) * 1.188D0
+        K_A_H2S(ns:ne) = K_A_CALC(ns:ne) * 0.984D0
+        CH4_SAT(ns:ne) = 0.0D0 ! Assume that no methane is present in the atmosphere
+        H2S_SAT(ns:ne) = 0.0D0 ! Assume that no H2S(ns:ne) is present in the atmosphere
+
+        CH4_ATM_EXCHANGE(ns:ne) = K_A_CH4(ns:ne) * (CH4_SAT(ns:ne) - CH4_C(ns:ne))
+        H2S_ATM_EXCHANGE(ns:ne) = K_A_H2S(ns:ne) * (H2S_SAT(ns:ne) - (H2S(ns:ne) * 32000.D0))
+
+        R_METHANE_OXIDATION(ns:ne) = &
+            k_OX_CH4 * (THETA_k_OX_CH4 ** (TEMP(ns:ne) - 20.0D0)) * CH4_C(ns:ne) * &
+            (DISS_OXYGEN(ns:ne) / (k_HS_OX_CH4_DOXY + DISS_OXYGEN(ns:ne)))
+
+        R_SULPHIDE_OXIDATION(ns:ne) = &
+            k_OX_H2S * (THETA_k_OX_H2S ** (TEMP(ns:ne) - 20.0D0)) * S_MINUS_2(ns:ne) * &
+            (DISS_OXYGEN(ns:ne) / (k_HS_OX_H2S_DOXY + DISS_OXYGEN(ns:ne)))
+    else
+        R_FE_II_OXIDATION(ns:ne)    = 0.0D0
+        R_MN_II_OXIDATION(ns:ne)    = 0.0D0
+        R_SULPHIDE_OXIDATION(ns:ne) = 0.0D0
+        R_METHANE_OXIDATION(ns:ne)  = 0.0D0
+    end if
+    ! -------------------------------------------------------------------------
+    ! END OF KINETICS OF NEW STATE VARIABLES
+    ! -------------------------------------------------------------------------
+
+
+    end subroutine pelagic_chemistry
 
 end subroutine AQUABC_PELAGIC_KINETICS
