@@ -121,20 +121,24 @@ EUPHOTIC_DEPTH(ns:ne) = 4.61D0 / max(K_E(ns:ne), 1.0D-20)
 
 ### 1.6 [P2] Mega-Subroutine Decomposition
 
-**File:** `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` (~3600 lines)
+**Status:** ✅ COMPLETE 2026-07-16. `AQUABC_PELAGIC_KINETICS` decomposed into a thin
+orchestrator + **five internal `contains` procedures** via pure code motion:
+`pelagic_co2sys_preprocess`, `pelagic_speciation_preprocess`, `pelagic_biology`,
+`pelagic_chemistry`, `pelagic_derivatives`. Shared `(nkn)` arrays reached by host
+association; per-thread private data (bundles/scalars) passed as arguments (the
+OpenMP correctness rule); the `if (nkn_local > 0)` guard + the two straddling `if`
+constructs kept whole in the orchestrator. **Byte-for-byte identical output** —
+gated after every extraction by `tools/refactor_verify.sh` (default all-box config,
+serial + OMP=8 bit-identical over 52 files + 0D golden). Adversarially reviewed
+plan (Workflow, 11 findings fixed) → subagent-driven execution (5 extraction tasks,
+each independently reviewed byte-identical). Spec/plan:
+`docs/superpowers/specs|plans/2026-07-15-pelagic-kinetics-decomposition*`.
 
-**Problem:** `AQUABC_PELAGIC_KINETICS` is a single ~3400-line subroutine. This makes it hard to navigate, test, and maintain. The OpenMP parallelization added further complexity.
+**Note:** the advanced-redox verify config surfaced two pre-existing model bugs
+(TODO 1.10 constants OOB, 1.11 advanced-redox uninitialised memory) — filed
+separately; the decomposition proceeded on the deterministic default-only gate.
 
-**Suggested decomposition:**
-1. Extract sequential preprocessing (CO2SYS, clamping, K_E) into `pelagic_preprocess()`
-2. Extract biology block (phytoplankton + zooplankton calls) into `pelagic_biology(ns, ne, ...)`
-3. Extract chemistry block (mineralization, redox, nitrification, volatilization) into `pelagic_chemistry(ns, ne, ...)`
-4. Extract derivative assembly into `pelagic_derivatives(ns, ne, ...)`
-5. Keep OpenMP region in the main subroutine as orchestrator
-
-**Risk:** This is a large refactor. Should be done carefully with before/after output comparison.
-
-**Effort:** ~1–2 days
+**Effort:** ~1–2 days (as estimated)
 
 ---
 
@@ -596,7 +600,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 ### Sprint 4 — Architecture (1–2 weeks)
 - [x] 4.1 OpenMP benchmarking — **Done** (2026-07-15; `tools/benchmark_openmp.sh` + `docs/OPENMP_PERFORMANCE.md`; 2.84× @ nkn=1000/8thr, ~26% serial → 4.2)
 - [x] 2.1 Modularize app.py — **DONE** (decomposition 2026-07-12/13 → leaf modules, then the Shiny-modules rearchitecture `v0.4.0`–`v0.4.5`, 2026-07-14/15: `server()` → 15 namespaced `@module` modules behind `RunController`/`AppState`; app.py 8,012 → 786 lines; see §2.1)
-- [ ] 1.6 Decompose mega-subroutine
+- [x] 1.6 Decompose mega-subroutine — **Done** (2026-07-16; 5 `contains` procedures, byte-identical, gate-verified; found bugs 1.10/1.11)
 - [ ] 5.1 Expand Fortran test coverage
 - [x] 5.2 End-to-end regression test — **Done** (2026-07-12, 0D pelagic golden-file regression wired into CI; see §5.2)
 

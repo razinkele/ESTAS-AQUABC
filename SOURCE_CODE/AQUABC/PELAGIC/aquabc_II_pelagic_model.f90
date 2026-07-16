@@ -146,7 +146,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
 
-    integer :: i,k
+    integer :: i
 
     ! OpenMP thread chunk variables (serial defaults: ns=1, ne=nkn)
     integer :: ns, ne, nkn_local, nthreads, tid, chunk_size
@@ -401,7 +401,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !$omp parallel default(shared) num_threads(n_omp) &
     !$omp& private(ns, ne, nkn_local, tid, nthreads, chunk_size, rem_omp) &
     !$omp& private(ENV_CHUNK, REDOX_STATE_CHUNK, REDOX_LIM_CHUNK, DOCMIN_CHUNK) &
-    !$omp& private(i, k)
+    !$omp& private(i)
 
     ! Compute per-thread chunk bounds (balanced: every thread gets >= 1 node)
     nthreads = 1
