@@ -228,34 +228,75 @@ default. Spec/plan: `docs/superpowers/*/2026-07-16-model-constants-oob-fix*`.
 
 ### 1.11 [P1] Advanced-redox uninitialised-memory non-determinism
 
-**Files:** `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_internal.f90` (working-array
-allocation block ~866–1114), `SOURCE_CODE/ESTAS/mod_AQUATIC_MODEL.f90:197`
-(`PROCESS_RATES` allocation), and — residual, unlocated — likely an uninitialised
-local in the redox **library** routines (`ORGANIC_CARBON_MINERALIZATION` /
-`REDOX_AND_SPECIATION`).
+**File:** `SOURCE_CODE/ESTAS/mod_SOLVER.f90:743` (a local `FLAGS` declaration inside
+`CALC_DERIV` that shadowed the global `FLAGS`).
 
-**Status:** 🔴 OPEN (partially root-caused) — found 2026-07-16.
+**Status:** ✅ COMPLETE 2026-07-17 (found 2026-07-16 during TODO 1.6). A **one-line
+fix**; the default (advanced-redox-off) path is byte-identical, advanced-redox output
+changes (it was previously garbage-dependent).
 
-**Problem:** With `ADVANCED_REDOX_OPTION=1`, the model is **non-deterministic
-run-to-run** (same binary, same inputs, ~50–60% of launches diverge by ~1 ULP that
-amplifies through the nonlinear integration). Root cause: uninitialised heap
-allocatables read-before-write in the advanced-redox path (valgrind
-`--track-origins`). The default (`ADVANCED_REDOX=0`) path is deterministic — it does
-not exercise these arrays. Depends on TODO 1.10 being fixed first (the constants OOB
-otherwise masks/confounds this).
+**Problem:** With `ADVANCED_REDOX_SIMULATION=1`, the model was **non-deterministic
+run-to-run** (same binary, same inputs). The default path is deterministic.
 
-**Progress (uncommitted, reverted this session):** zero-initialising the 246
-`internal.f90` working arrays (`source=0.0d0`) + `PROCESS_RATES`/`SAVED_OUTPUTS`/
-`DERIVATIVES`/`FLUXES_*` (`mod_AQUATIC_MODEL`) reduced divergence from 100% → ~60% but
-did **not** eliminate it. A residual source manifests only at long runtime (30-day)
-under release optimisation and is invisible to a 1-day valgrind pass — likely a
-stack local inside the redox library routines.
+**Corrected diagnosis (the original framing above was WRONG on every count).** It was
+NOT "~1 ULP amplifying through the nonlinear integration", NOT the 246 `internal.f90`
+working arrays, and NOT a stack local in the redox library. The real cause:
 
-**Fix:** re-do the zero-inits above (they are genuine fixes), then hunt the residual
-with a long-run valgrind and/or a `-finit-real=snan` + `-ffpe-trap=invalid` build
-(traps uninitialised local-real reads). Dedicated multi-pass debugging effort.
+`CALC_DERIV` (`mod_SOLVER.f90`, 667–1596) declared a **local** `FLAGS` at line 743
+(`integer, dimension(PELAGIC_BOX_MODEL_DATA % NUM_FLAGS) :: FLAGS`) which **shadowed
+the global allocatable `FLAGS`** from `GLOBAL`. Both initialisations inside
+`CALC_DERIV` — `FLAGS = 0` (:803) and `FLAGS = PELAGIC_BOXES(1) % FLAGS` (:1314) —
+therefore filled a *discarded local copy*. The **global** `FLAGS` (allocated
+`mod_AQUATIC_MODEL.f90:196`, and the array `PELAGIC_KINETICS` actually hands to
+AQUABC at `mod_PELAGIC_ECOLOGY.f90:1465`) was **never assigned by anything**. AQUABC
+then read straight out of that garbage (`aquabc_II_pelagic_model.f90:360-364`):
+`FIRST_TIME_STEP = FLAGS(3)`, `INIT_OPTION_OF_FE_II_DISS = FLAGS(4)`,
+`INIT_OPTION_OF_FE_III_DISS = FLAGS(5)`.
 
-**Effort:** ~1–2 days (concurrency-style uninitialised-memory hunt).
+**Why every symptom fits:** `FIRST_TIME_STEP`/`INIT_OPTION_*` are consumed **only**
+inside the advanced-redox block (`if (FIRST_TIME_STEP > 0)` at :650 and :765, and the
+`select case (INIT_OPTION_OF_FE_II_DISS)` at :652 which has **no `default`**) — hence
+advredox-only. The garbage drives a **binary branch**, so the model produced exactly
+**two** reproducible output states (not diffuse float noise), ~30–40% split. It is
+**not** a data race: it reproduces identically at `OMP_NUM_THREADS=1`.
+
+**Why the old lead was a red herring:** the earlier "zero-init the 246 arrays →
+divergence 100%→60%" result never touched `FLAGS`; it merely perturbed the heap
+layout, shifting how often the garbage `FLAGS(3)` landed >0. A fix that moves a
+*probability* rather than removing a symptom means the bug was perturbed, not fixed.
+Also note `-finit-real=snan` provably does **not** initialise allocatables (only stack
+locals), so the planned snan hunt could never have found this.
+
+**Fix:** delete the shadowing local declaration at `mod_SOLVER.f90:743` so the existing
+`FLAGS = 0` / `FLAGS = PELAGIC_BOXES(1) % FLAGS` assignments fill the global array, as
+the code always intended.
+
+**Verified:** advredox 30-day **40/40 runs byte-identical** (20 @ 25 threads + 20 @ 1
+thread, same hash both arms; previously 2 states every time); advredox full-year 365-day
+**5/5 byte-identical**; `tools/refactor_verify.sh` **GATE: PASS** (default serial + omp8
+bit-identical, 0D golden PASS) — the default production path is unaffected.
+
+**Advanced-redox results CHANGE** and need scientific review: previously the branches
+were chosen by heap garbage; now `FLAGS(3)` is a correct first-timestep flag and
+`FLAGS(4)/(5) = 2` (set at `mod_PELAGIC_ECOLOGY.f90:263-264`) correctly select
+`case(2)`. CL29 runs advanced redox, so its numbers move.
+
+**Latent defects found but deliberately NOT bundled here (separate follow-ups):**
+1. `aquabc_II_pelagic_model.f90` — the final `elsewhere` of the Fe2+ `where` blocks
+   (:676 first-timestep, :726 every-timestep) sets `MULT_FE_II_DISS` but never
+   `FE_II_DISS`; same for Fe3+ (:787, :837). Dormant today (the mask always hits
+   branch 1 or 2 — adding the assignments was verified byte-identical), but it is UB
+   if chemistry ever pushes nodes into that branch. `FE_III_DISS` is write-only in the
+   pelagic path, so its instances are harmless.
+2. `DBGSTR_PEL_FE_II_DISS_01` (`:635`) reads `FE_II_DISS` **before** it is assigned
+   (:717), on every timestep (the internal arrays are allocated/deallocated per call).
+   Benign today — it only prints — but it ends in a bare `stop`, so if that garbage
+   ever holds a NaN/Inf bit pattern the model aborts outright. This is the one
+   remaining valgrind context (origin `aquabc_II_pelagic_internal.f90:1031`). Note
+   `debug_stranger = .true.` is hardcoded at `aquabc_II_pelagic_model.f90:244`, so
+   these debug checks run in release builds.
+
+**Effort:** ~1 day (vs ~1–2 days estimated).
 
 ---
 
@@ -619,7 +660,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 1.8 Named physics constants
 - [ ] 1.9 IOSTAT error handling
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
-- [ ] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — partially root-caused; found during 1.6
+- [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)
 - [ ] 2.4 Async file I/O
 - [ ] 2.6 Centralized configuration
 - [ ] 3.1 Compiler matrix (when Intel CI available)
