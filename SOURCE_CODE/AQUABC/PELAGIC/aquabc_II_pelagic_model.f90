@@ -632,7 +632,7 @@ contains
             ! -------------------------------------------------------------------------
 
             if(debug_stranger) then
-                call DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
+                call DBGSTR_PEL_FE_II_DISS_EQ_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
             end if
 
             ! -------------------------------------------------------------------------
@@ -674,6 +674,9 @@ contains
                             MULT_FE_II_DISS = 1.0D0
                             MULT_FE_II_PART = 0.0D0
                         elsewhere
+                            ! Saturated case: dissolved Fe2+ sits at its equilibrium
+                            ! solubility, keeping FE_II_DISS = MULT_FE_II_DISS * FE_II.
+                            FE_II_DISS      = FE_II_DISS_EQ
                             MULT_FE_II_DISS = FE_II_DISS_EQ / FE_II
                             MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
                         end where
@@ -720,6 +723,12 @@ contains
                 MULT_FE_II_DISS = 1.0D0
                 MULT_FE_II_PART = 0.0D0
             elsewhere
+                ! Saturated case: dissolved Fe2+ is the timestep-average dissolved
+                ! concentration, keeping the invariant FE_II_DISS = MULT_FE_II_DISS *
+                ! FE_II that the other two branches maintain. Without this assignment
+                ! FE_II_DISS keeps whatever the freshly allocated (uninitialised) array
+                ! held, and is then read by IRON_II_OXIDATION below.
+                FE_II_DISS      = DISS_FE_II_CONC_TS_AVG
                 MULT_FE_II_DISS = DISS_FE_II_CONC_TS_AVG / FE_II
                 MULT_FE_II_PART = 1.0D0 - MULT_FE_II_DISS
             end where

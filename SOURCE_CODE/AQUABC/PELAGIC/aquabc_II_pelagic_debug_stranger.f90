@@ -54,7 +54,12 @@ subroutine DBGSTR_PEL_GEN_01(STATE_VARIABLES, nkn, nstate, node_active, error)
 end subroutine DBGSTR_PEL_GEN_01
 
 
-subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
+! Checks FE_II_DISS_EQ -- the equilibrium (solubility) output of IRON_II_DISSOLUTION,
+! which is computed immediately before this is called. It deliberately does NOT check
+! FE_II_DISS: that array is not assigned until later in pelagic_speciation_preprocess,
+! so reading it here would test freshly allocated, uninitialised memory (and this
+! routine stops the model when it finds NaN/Inf).
+subroutine DBGSTR_PEL_FE_II_DISS_EQ_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node_active, error)
     use AQUABC_PELAGIC_INTERNAL
     implicit none
 
@@ -71,7 +76,7 @@ subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node
 
     integer :: STRANGERSD
 
-    if (STRANGERSD(FE_II_DISS,VALUE_strange,nkn).eq.1) then
+    if (STRANGERSD(FE_II_DISS_EQ,VALUE_strange,nkn).eq.1) then
         print *, '========================================'
         nstrange = count(VALUE_strange)
         allocate(STRANGERS    (nstrange))
@@ -81,7 +86,7 @@ subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node
 
         do k=1,nkn
             if(VALUE_strange(k)) then
-                STRANGERS    (j) = FE_II_DISS(k)
+                STRANGERS    (j) = FE_II_DISS_EQ(k)
                 NODES_STRANGE(j) = node_active(k)
                 j=j+1
             end if
@@ -89,7 +94,7 @@ subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node
 
         print *, 'PELAGIC KINETICS: '
         write(*,*) 'TIME          : ', TIME
-        write(*,*) 'FE_II_DISS is NaN or Inf:'
+        write(*,*) 'FE_II_DISS_EQ is NaN or Inf:'
         print *, 'NODE_NUMBERS=',NODES_STRANGE
         print *, 'VALUES=',STRANGERS
 
@@ -104,7 +109,7 @@ subroutine DBGSTR_PEL_FE_II_DISS_01(STATE_VARIABLES, PH, TIME, nkn, nstate, node
         deallocate(NODES_STRANGE)
         stop
     end if
-end subroutine DBGSTR_PEL_FE_II_DISS_01
+end subroutine DBGSTR_PEL_FE_II_DISS_EQ_01
 
 
 subroutine DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)

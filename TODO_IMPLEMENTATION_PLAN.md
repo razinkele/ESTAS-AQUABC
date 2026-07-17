@@ -228,8 +228,13 @@ default. Spec/plan: `docs/superpowers/*/2026-07-16-model-constants-oob-fix*`.
 
 ### 1.11 [P1] Advanced-redox uninitialised-memory non-determinism
 
-**File:** `SOURCE_CODE/ESTAS/mod_SOLVER.f90:743` (a local `FLAGS` declaration inside
-`CALC_DERIV` that shadowed the global `FLAGS`).
+**Files:** `SOURCE_CODE/ESTAS/mod_SOLVER.f90:743` (a local `FLAGS` declaration inside
+`CALC_DERIV` that shadowed the global `FLAGS` — **the non-determinism itself**), plus
+two further defects fixed alongside (see below):
+`SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` (`FE_II_DISS` unassigned in
+the saturated `where` branch) and
+`SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_debug_stranger.f90` (debug checker read
+the wrong variable → latent spurious `stop`).
 
 **Status:** ✅ COMPLETE 2026-07-17 (found 2026-07-16 during TODO 1.6). A **one-line
 fix**; the default (advanced-redox-off) path is byte-identical, advanced-redox output
@@ -281,20 +286,52 @@ were chosen by heap garbage; now `FLAGS(3)` is a correct first-timestep flag and
 `FLAGS(4)/(5) = 2` (set at `mod_PELAGIC_ECOLOGY.f90:263-264`) correctly select
 `case(2)`. CL29 runs advanced redox, so its numbers move.
 
-**Latent defects found but deliberately NOT bundled here (separate follow-ups):**
-1. `aquabc_II_pelagic_model.f90` — the final `elsewhere` of the Fe2+ `where` blocks
-   (:676 first-timestep, :726 every-timestep) sets `MULT_FE_II_DISS` but never
-   `FE_II_DISS`; same for Fe3+ (:787, :837). Dormant today (the mask always hits
-   branch 1 or 2 — adding the assignments was verified byte-identical), but it is UB
-   if chemistry ever pushes nodes into that branch. `FE_III_DISS` is write-only in the
-   pelagic path, so its instances are harmless.
-2. `DBGSTR_PEL_FE_II_DISS_01` (`:635`) reads `FE_II_DISS` **before** it is assigned
-   (:717), on every timestep (the internal arrays are allocated/deallocated per call).
-   Benign today — it only prints — but it ends in a bare `stop`, so if that garbage
-   ever holds a NaN/Inf bit pattern the model aborts outright. This is the one
-   remaining valgrind context (origin `aquabc_II_pelagic_internal.f90:1031`). Note
-   `debug_stranger = .true.` is hardcoded at `aquabc_II_pelagic_model.f90:244`, so
-   these debug checks run in release builds.
+**Two further defects fixed alongside (both in the same branch):**
+
+**(a) `FE_II_DISS` never assigned in the saturated branch** —
+`aquabc_II_pelagic_model.f90`, the final `elsewhere` of the Fe2+ `where` blocks (:676
+first-timestep, :726 every-timestep) set `MULT_FE_II_DISS` but never `FE_II_DISS`,
+breaking the invariant `FE_II_DISS = MULT_FE_II_DISS * FE_II` that the other two
+branches maintain. **The FLAGS fix ACTIVATED this**: with `FLAGS(4)` garbage the
+`select case` branched at random, but with `FLAGS(4) = 2` correctly selecting
+`case(2)`, the saturated branch now fires and `FE_II_DISS` was read uninitialised by
+`IRON_II_OXIDATION` (:1892) → `R_FE_II_OXIDATION` → `PROCESS_RATES(...,13)` → written
+to `*_PROCESS_RATES.out`. Fix: assign `FE_II_DISS = FE_II_DISS_EQ` (:676) and
+`FE_II_DISS = DISS_FE_II_CONC_TS_AVG` (:726). **Impact is diagnostic-only**: the
+`*_PROCESS_RATES.out` hash changes (`9d0927b1` → `d9772e63`) while the state-variable
+output `PELAGIC_BOX_00005.out` is unchanged (`18ead76a`) — the garbage never reached
+the trajectory. It was *deterministic* garbage (same heap block reused each timestep),
+so it did not cause divergence. Fe3+ (:787, :837) has the identical hole but
+`FE_III_DISS` is write-only in the pelagic path, so it is harmless and left alone.
+
+**(b) `DBGSTR_PEL_FE_II_DISS_01` checked the wrong variable** — it ran
+`STRANGERSD(FE_II_DISS, ...)` at :635, but `FE_II_DISS` is not assigned until :717, so
+it tested freshly allocated uninitialised memory **every timestep** (the internal
+arrays are allocated/deallocated per call). Since the routine ends in a bare `stop`,
+NaN/Inf-shaped garbage would have aborted the model outright — a latent crash that had
+simply never been hit. The intent is unambiguous: the call sits immediately after
+`IRON_II_DISSOLUTION` (:627) computes `FE_II_DISS_EQ`, and the routine prints
+`HS2_TOT`/`PH`/`TOT_ALK` as "Related variables" — exactly that call's *inputs*. The
+`_EQ` was simply dropped. Fix: check `FE_II_DISS_EQ`, and rename the routine to
+`DBGSTR_PEL_FE_II_DISS_EQ_01` so the name cannot invite the same confusion back. The
+`stop` is kept — it is correct fail-fast behaviour on a *genuine* NaN. Note
+`debug_stranger = .true.` is hardcoded at `:244`, so these checks do run in release
+builds. (`node_active` is NOT a problem: `aquabc_II_pelagic_model.f90:240-242` sets
+`node_active(i) = i` before every DBGSTR call, so the `NODES_STRANGE` indexing is
+correct — ESTAS's own uninitialised `node_active` is harmlessly overwritten there.)
+
+**Combined verification (all three fixes):** advredox 30-day **fully deterministic
+across ALL 16 output files** — 24 runs (12 @ 25 threads + 12 @ 1 thread), 1
+whole-output state; valgrind (`-O0`, advredox) **18 contexts / 10,610 errors → 2
+contexts / 26 errors**, with zero heap-allocation origins and zero
+`write_pelagic_output` contexts remaining; `tools/refactor_verify.sh` **GATE: PASS**.
+
+**Still open (pre-existing, NOT this bug):** the 2 remaining valgrind contexts are
+uninitialised reads in `aquabc_II_pelagic_lib_NOSTACALES.f90:166` and `:356` (origin: a
+**stack** allocation in `MAIN__`), reached via `pelagic_biology`. This is in the
+biology path and therefore independent of advanced redox; the default path is
+nonetheless byte-identical/deterministic, so it does not currently perturb results.
+Worth its own follow-up.
 
 **Effort:** ~1 day (vs ~1–2 days estimated).
 
