@@ -326,12 +326,34 @@ whole-output state; valgrind (`-O0`, advredox) **18 contexts / 10,610 errors →
 contexts / 26 errors**, with zero heap-allocation origins and zero
 `write_pelagic_output` contexts remaining; `tools/refactor_verify.sh` **GATE: PASS**.
 
-**Still open (pre-existing, NOT this bug):** the 2 remaining valgrind contexts are
-uninitialised reads in `aquabc_II_pelagic_lib_NOSTACALES.f90:166` and `:356` (origin: a
-**stack** allocation in `MAIN__`), reached via `pelagic_biology`. This is in the
-biology path and therefore independent of advanced redox; the default path is
-nonetheless byte-identical/deterministic, so it does not currently perturb results.
-Worth its own follow-up.
+**(c) `DAY_OF_YEAR` read before it was ever computed (FIXED 2026-07-17)** — the last 2
+valgrind contexts were `aquabc_II_pelagic_lib_NOSTACALES.f90:166`
+(`if (DAY_OF_YEAR .lt. 1)`) and `:356` (the akinete-formation `where`), origin: a
+**stack** allocation in `MAIN__`. Cause: in `mod_SIMULATE.f90`, `SOLVE` **consumes**
+`DAY_OF_YEAR` at the *top* of the timestep loop (:301 → AQUABC → `NOSTOCALES`), but it
+is only **produced** at the *bottom* of each iteration (:401-405). Because `TIME`
+advances at :393 *before* that computation, the stored value is already correct for the
+next iteration's `TIME` — so iterations 2+ were fine and there is **no lag**. Only the
+**first iteration of each repeat** read it unset: uninitialised on `REPEAT_NO 1`, or
+stale from the previous repeat when `NUM_REPEATS > 1` (latent; `INPUT.txt` uses 1).
+Fix: seed `WTIME`/`DAY_OF_YEAR` just before the `do while` loop, using the same formula
+as the in-loop computation.
+
+**Pure memory-safety fix — production output byte-identical (GATE: PASS).** This was
+*not* expected: nostocales IS enabled in the default config
+(`PELAGIC_MODEL_OPTIONS.txt`, "CONSIDER HETEROCYST WITH AKINETES" = 1). It is harmless
+today only because `NOST_VEG_HET_C`'s initial condition is **0.00 in every box**, and
+the rates `DAY_OF_YEAR` gates are multiplied by that biomass
+(`R_FORM_NOST_AKI = AKI_FORM * NOST_VEG_HET_C`, `:362`) — so on timestep 1, the only
+one that read garbage, everything it influenced was multiplied by zero. It would bite
+immediately if nostocales ever started with non-zero biomass (a warm-start/restart run
+or changed ICs). `DAY_OF_YEAR`'s only consumer in AQUABC is the `NOSTOCALES` call
+(`aquabc_II_pelagic_model.f90:1254`).
+
+**Advanced-redox path is now valgrind-CLEAN: 0 errors from 0 contexts** (was 18
+contexts / 10,610 errors after the FLAGS fix alone). Determinism re-confirmed after
+this fix: 20 runs × all 16 files (10 @ 25 threads + 10 @ 1 thread), 1 whole-output
+state.
 
 **Effort:** ~1 day (vs ~1–2 days estimated).
 
