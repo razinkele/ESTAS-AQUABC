@@ -592,7 +592,7 @@ def _write_master(out, state_block, links, depth, area):
     L.append("# DESCRIPTION Curonian Lagoon 29-box (EUTROPY-derived)\n")
     L += ["# DESRIPTION LINE %d\n" % i for i in range(2, 6)]
     L.append(_hdr("NUM_PELAGIC_STATE_VARS", NSTATE))
-    L.append(_hdr("NUM_MODEL_CONSTANTS", 318))
+    L.append(_hdr("NUM_MODEL_CONSTANTS", 323))
     L.append(_hdr("NUM_PELAGIC_BASINS", NBOX))
     L.append(_hdr("NUM_BATHYMETRIES", NBOX))
     L.append(_hdr("NUM_PELAGIC_BOXES", NBOX))

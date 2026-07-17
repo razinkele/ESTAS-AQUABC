@@ -17,7 +17,7 @@ module GLOBAL
 
 
     ! Number of pelagic model constants
-    integer, parameter :: nconst                        = 318
+    integer, parameter :: nconst                        = 323
 
     ! Number of driving functions must be 10
     integer, parameter :: n_driving_functions           = 10

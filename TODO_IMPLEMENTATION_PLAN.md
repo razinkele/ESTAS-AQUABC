@@ -193,26 +193,36 @@ real(dp), parameter :: GAS_CONST_R = 8.314D0
 `INPUTS/PELAGIC_INPUTS.txt:9` + `INPUTS_CL29/PELAGIC_INPUTS.txt:9` (`NUM_MODEL_CONSTANTS = 318`),
 data files `INPUTS/WCONST_04.txt` (323 constants).
 
-**Status:** 🔴 OPEN — found 2026-07-16 while building the TODO 1.6 verification gate.
+**Status:** ✅ COMPLETE 2026-07-17 (found 2026-07-16 during TODO 1.6). A **pure
+memory-safety fix** — production output is byte-identical.
 
-**Problem:** `WCONST_04.txt` contains **323** model constants — indices 319–323 are
-the `BETA_*` photoinhibition parameters (added Feb 2026, fully wired into the code
-via `para_get_value` in `aquabc_II_pelagic_model_constants.f90`). But the hardcoded
-`nconst = 318` (and the input files' `NUM_MODEL_CONSTANTS = 318`) were never bumped.
-`READ_MODEL_CONSTANTS` (`mod_UTILS_01.f90`) does `MODEL_CONSTANTS(CONSTANT_NO) = value`,
-so reading constants 319–323 writes **out of bounds** of the 318-element array
-(confirmed by `-fcheck=all`: "Index 319 … above upper bound of 318"), corrupting
-adjacent memory and reading the `BETA_*` constants as garbage.
+**Problem:** `WCONST_04.txt` contains **323** model constants but `nconst` (and the
+input `NUM_MODEL_CONSTANTS`) were declared **318**. `READ_MODEL_CONSTANTS`
+(`mod_UTILS_01.f90`) does `MODEL_CONSTANTS(CONSTANT_NO) = value` for every file line,
+so constants 319–323 (the `BETA_*` photoinhibition params) are written **out of
+bounds** of the 318-element array — an OOB *write* (undefined behavior, flagged by
+`-fcheck=all`: "Index 319 … above upper bound of 318").
 
-**Fix (verified working):** set `nconst = 323` in **both** code files AND
-`NUM_MODEL_CONSTANTS = 323` in the input files. Then the array is correctly sized,
-the `NUM_MODEL_CONSTANTS == nconst` compatibility check passes, and `BETA_* = 0.0`
-(photoinhibition off) is read correctly. **CAVEAT — needs scientific sign-off:** the
-fix **changes default/production model output** (garbage `BETA_*` → correct 0.0), so a
-domain scientist must confirm the corrected results and decide whether past results
-need re-running. The 0D golden is unaffected (separate `data/const_CL.txt`).
+**Corrected diagnosis (adversarial plan review + verification):** the initial
+"garbage `BETA_*` distorts production output" framing was WRONG. The ESTAS/production
+constant-unpacking (`mod_PELAGIC_ECOLOGY.f90` `INIT_PELAGIC_MODEL_CONSTANTS`) stops at
+index 318 and **never reads `BETA_*` from 319–323** (only the 0D-path routine in
+`aquabc_II_pelagic_model_constants.f90` does). So `BETA_*` were never consumed from
+the OOB slots on production — they hold their static-zero `0.0`. Verified empirically:
+the fix leaves the default run **byte-for-byte identical** (0/52 files).
 
-**Effort:** ~1 hour to apply + verify; the sign-off / re-validation is the real work.
+**Fix:** `nconst 318→323` in `mod_GLOBAL.f90:20` + `aquabc_II_pelagic_interface.f90:75`,
+and `NUM_MODEL_CONSTANTS 318→323` in the input configs **and the generator**
+`tools/eutropy_poc/eutropy_to_estas.py:595` (else a regenerated CL29 config reverts).
+`WCONST_04.txt` unchanged. Verified: byte-identical (default serial+omp8 gate + 0D
+golden), `-fcheck` OOB gone, full-year run stable + deterministic. NO scientific
+sign-off needed (no output change).
+
+**Separate future observation (NOT fixed here):** `BETA_*` photoinhibition is not
+wired into the ESTAS path at all — harmless today since `BETA=0` is the intended
+default. Spec/plan: `docs/superpowers/*/2026-07-16-model-constants-oob-fix*`.
+
+**Effort:** ~1 hour (as estimated).
 
 ---
 
@@ -608,7 +618,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [ ] 1.7 Sediment model variable cleanup
 - [ ] 1.8 Named physics constants
 - [ ] 1.9 IOSTAT error handling
-- [ ] 1.10 [P1] Model-constants OOB (NUM_MODEL_CONSTANTS 318 vs 323) — fix verified, needs scientific sign-off (changes output); found during 1.6
+- [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
 - [ ] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — partially root-caused; found during 1.6
 - [ ] 2.4 Async file I/O
 - [ ] 2.6 Centralized configuration

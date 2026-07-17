@@ -6,7 +6,7 @@
 # NUM_PELAGIC_STATE_VARS
                   36
 # NUM_MODEL_CONSTANTS
-                 318
+                 323
 # NUM_PELAGIC_BASINS
                   25
 # NUM_BATHYMETRIES
