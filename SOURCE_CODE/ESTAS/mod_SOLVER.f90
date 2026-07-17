@@ -740,7 +740,12 @@ contains
         real(kind = DBL), &
             dimension(PELAGIC_BOX_MODEL_DATA % NUM_MODEL_CONSTANTS)    :: MODEL_CONSTANTS
 
-        integer, dimension(PELAGIC_BOX_MODEL_DATA % NUM_FLAGS) :: FLAGS
+        ! NOTE: FLAGS is deliberately NOT declared local here. It is the global
+        ! allocatable from GLOBAL, allocated in READ_AQUATIC_MODEL_INPUTS, and it is
+        ! what PELAGIC_KINETICS hands to AQUABC. A local declaration here would shadow
+        ! it, so the "FLAGS = 0" and "FLAGS = PELAGIC_BOXES(1) % FLAGS" assignments
+        ! below would fill a discarded copy and leave the global uninitialised --
+        ! making FIRST_TIME_STEP (= FLAGS(3)) read garbage in the advanced-redox path.
 
         !SEDIMENT DIAGENESIS MODEL REALETED DECLARATIONS
         integer :: PROCESS_RATE_BEGIN_NO
