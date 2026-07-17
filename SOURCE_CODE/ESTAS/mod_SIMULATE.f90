@@ -295,6 +295,23 @@ contains
                 end if
             end if
 
+            ! Seed DAY_OF_YEAR for the first iteration below. SOLVE (-> AQUABC
+            ! PELAGIC_KINETICS -> NOSTOCALES) CONSUMES DAY_OF_YEAR at the top of the
+            ! loop, but it is only PRODUCED at the bottom of each iteration (after TIME
+            ! has advanced, so the stored value is the correct day for the next
+            ! iteration's TIME). Without this seed the very first iteration reads it
+            ! unset: uninitialised on REPEAT_NO 1, or stale from the previous repeat
+            ! when NUM_REPEATS > 1.
+            WTIME = TIME + &
+                ((AQUATIC_MODEL_DATA % SIMULATION_END - &
+                  AQUATIC_MODEL_DATA % SIMULATION_START) * real(REPEAT_NO - 1))
+
+            AQUATIC_MODEL_DATA % DAY_OF_YEAR = &
+                CALCULATE_DAY_OF_YEAR(WTIME, AQUATIC_MODEL_DATA % BASE_YEAR)
+
+            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % DAY_OF_YEAR = &
+                AQUATIC_MODEL_DATA % DAY_OF_YEAR
+
             do while (TIME <= AQUATIC_MODEL_DATA % SIMULATION_END)
 
                 !Solve mass balance equations
