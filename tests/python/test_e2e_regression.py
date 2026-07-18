@@ -83,6 +83,27 @@ class TestCompareLogic:
         ok, msg = compare_0D.compare(str(b), str(a), stride=1)
         assert not ok and "row COUNT" in msg
 
+    def test_numeric_warn_demotes_numeric_drift(self, tmp_path):
+        # numeric drift is non-fatal under --numeric-warn (macOS cross-platform FP)
+        a = tmp_path / "a.csv"
+        b = tmp_path / "b.csv"
+        _write_csv(a, self.HEADER, self.ROWS)
+        drifted = [row[:] for row in self.ROWS]
+        drifted[3][2] *= 1.001                       # 0.1% change
+        _write_csv(b, self.HEADER, drifted)
+        ok, msg = compare_0D.compare(str(b), str(a), stride=1, rtol=1e-9,
+                                     numeric_warn=True)
+        assert ok and "tolerated" in msg
+
+    def test_numeric_warn_still_fails_structural(self, tmp_path):
+        # structural regressions stay FATAL even with --numeric-warn
+        a = tmp_path / "a.csv"
+        b = tmp_path / "b.csv"
+        _write_csv(a, self.HEADER, self.ROWS)
+        _write_csv(b, ["TIME", "B", "A"], self.ROWS)   # column reorder
+        ok, msg = compare_0D.compare(str(b), str(a), stride=1, numeric_warn=True)
+        assert not ok and "HEADER" in msg
+
 
 class TestModelOutputRegression:
     def test_golden_present(self):

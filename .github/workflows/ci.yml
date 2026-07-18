@@ -62,9 +62,10 @@ jobs:
         include:
           - os: ubuntu-latest
             fc: gfortran
+          - os: macos-latest
+            fc: gfortran
           # Future entries (enable after verifying they build in CI):
           #   - { os: ubuntu-latest, fc: ifx }        # Intel Fortran (LLVM) via Intel oneAPI apt
-          #   - { os: macos-latest,  fc: gfortran }   # needs `brew install gcc` + gfortran-<ver> on PATH
     name: build-and-run (${{ matrix.os }}, ${{ matrix.fc }})
     env:
       FC: ${{ matrix.fc }}
@@ -72,10 +73,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Install dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y gfortran make
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # Ensure a bare `gfortran` exists on PATH so the whole toolchain behaves
+          # exactly as on Linux with FC=gfortran. GitHub's macOS runners ship
+          # gfortran only as a versioned binary (e.g. gfortran-14), and the 0D
+          # example Makefile hardcodes `gfortran`, so if there's no bare `gfortran`
+          # we symlink the newest gfortran-<ver> into Homebrew's bin (on PATH).
+          # NOTE: macOS ships BSD sort (no `-V`); pick the newest with a portable
+          # numeric sort on the version field.
+          if ! command -v gfortran >/dev/null 2>&1; then
+            brew list gcc >/dev/null 2>&1 || brew install gcc
+            GF=$(ls "$(brew --prefix)"/bin/gfortran-* 2>/dev/null \
+                  | sed 's:.*/::' | sort -t- -k2 -n | tail -1)
+            [ -n "$GF" ] || { echo "ERROR: no gfortran-<ver> found after brew install gcc"; exit 1; }
+            ln -sf "$(command -v "$GF")" "$(brew --prefix)/bin/gfortran"
+          fi
+          command -v gfortran >/dev/null 2>&1 || { echo "ERROR: gfortran not on PATH"; exit 1; }
+          gfortran --version | head -1
 
       - name: Link data (repo-root convenience)
         run: make link-data
@@ -96,29 +118,35 @@ jobs:
 
       - name: End-to-end regression (0D output vs golden)
         # Runs the 0D example and diffs OUTPUT.csv against the committed golden.
-        # The header check is exact (catches column reorder/rename); the numeric
-        # tolerance is moderate because the golden is gfortran-generated — loosen
-        # (or add per-compiler goldens) when the matrix gains ifx/macOS.
+        # The header/structure check (column count/name/order, row count) is exact
+        # on every platform. The golden is gfortran-on-Ubuntu-x86 generated, so on
+        # macOS (ARM64, different libm) the *numeric* check is demoted to a warning
+        # via --numeric-warn while the structural check stays fatal.
         run: |
           make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D run
+          EXTRA=""
+          if [ "$RUNNER_OS" = "macOS" ]; then EXTRA="--numeric-warn"; fi
           python3 tests/regression/compare_0D.py \
             SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/OUTPUT.csv \
-            tests/regression/pelagic_0D_golden.csv --rtol 1e-6 --atol 1e-9
+            tests/regression/pelagic_0D_golden.csv --rtol 1e-6 --atol 1e-9 $EXTRA
 
       - name: Run Fortran unit tests
         run: make -C tests/fortran clean test
 
       - name: Install ftnchek
+        if: runner.os == 'Linux'   # ftnchek is apt-only; Linux static-analysis
         run: |
           sudo apt-get update
           sudo apt-get install -y ftnchek
 
       - name: Run ftnchek (Fortran static checks)
+        if: runner.os == 'Linux'
         run: |
           # Run ftnchek across all Fortran sources, save full output to a report
           find SOURCE_CODE -name "*.f90" -print0 | xargs -0 ftnchek -usage -truncation -f90 -portability -pretty -columns=132 > ftnchek_report.txt 2>&1 || true
 
       - name: Summarize ftnchek results
+        if: runner.os == 'Linux'
         run: |
           echo "--- ftnchek report summary (first 40 matches of 'Error near line') ---"
           grep -n "Error near line" ftnchek_report.txt | head -n 40 || true
@@ -126,12 +154,14 @@ jobs:
           tail -n 20 ftnchek_report.txt || true
 
       - name: Upload ftnchek report
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ftnchek-report
           path: ftnchek_report.txt
 
       - name: Filter ftnchek and fail on unexpected lines
+        if: runner.os == 'Linux'
         run: |
           bash tools/filter_ftnchek.sh ftnchek_report.txt > tools/ftnchek_unexpected.txt
           # If unexpected lines exist, print them and fail the job
@@ -140,6 +170,7 @@ jobs:
           fi
 
       - name: Upload filtered ftnchek output
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ftnchek-unexpected
