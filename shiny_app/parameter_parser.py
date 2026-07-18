@@ -7,6 +7,11 @@ Provides structured access to 318+ model parameters organized by category.
 
 import logging
 import os
+
+try:
+    from shiny_app.config import DEFAULT_CONSTANTS_FILE
+except ImportError:
+    from config import DEFAULT_CONSTANTS_FILE
 import re
 import shutil
 from dataclasses import dataclass
@@ -378,7 +383,7 @@ def test_parser():
     # Get the INPUTS directory relative to this file
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
-    test_file = os.path.join(root_dir, "INPUTS", "WCONST_04.txt")
+    test_file = os.path.join(root_dir, "INPUTS", DEFAULT_CONSTANTS_FILE)
 
     if not os.path.exists(test_file):
         print(f"Test file not found: {test_file}")

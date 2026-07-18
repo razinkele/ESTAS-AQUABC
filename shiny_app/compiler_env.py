@@ -4,6 +4,11 @@ import os
 import shlex
 import subprocess
 
+try:
+    from shiny_app.config import SUBPROCESS_PROBE_TIMEOUT
+except ImportError:
+    from config import SUBPROCESS_PROBE_TIMEOUT
+
 logger = logging.getLogger("AQUABC")
 
 # Common Intel oneAPI compiler installation paths to search
@@ -27,12 +32,12 @@ def find_compiler_path(compiler_name):
     """
     # First try PATH via 'which'
     try:
-        result = subprocess.run(["which", compiler_name], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["which", compiler_name], capture_output=True, text=True, timeout=SUBPROCESS_PROBE_TIMEOUT)
         if result.returncode == 0:
             path = result.stdout.strip()
             # Get version
             try:
-                ver_result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=5)
+                ver_result = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=SUBPROCESS_PROBE_TIMEOUT)
                 version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
             except Exception:
                 version = None
@@ -47,7 +52,7 @@ def find_compiler_path(compiler_name):
             if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
                 # Get version
                 try:
-                    ver_result = subprocess.run([full_path, "--version"], capture_output=True, text=True, timeout=5)
+                    ver_result = subprocess.run([full_path, "--version"], capture_output=True, text=True, timeout=SUBPROCESS_PROBE_TIMEOUT)
                     version = ver_result.stdout.split('\n')[0] if ver_result.returncode == 0 else None
                 except Exception:
                     version = None

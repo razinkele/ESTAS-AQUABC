@@ -22,6 +22,11 @@ if _parent_dir not in sys.path:
     sys.path.insert(0, _parent_dir)
 
 import pandas as pd
+
+try:
+    from shiny_app.config import LINE_COUNT_TIMEOUT
+except ImportError:
+    from config import LINE_COUNT_TIMEOUT
 from shiny import App, reactive, render, ui
 
 # Input-file analysis and validation helpers (stdlib-only, extracted for testability)
@@ -254,7 +259,7 @@ if os.path.exists(OUTPUT_CSV):
             logger.info(f"  Header preview: {first_line[:100]}")
         # Count lines (quick estimate)
         try:
-            result = subprocess.run(['wc', '-l', OUTPUT_CSV], capture_output=True, text=True, timeout=2)
+            result = subprocess.run(['wc', '-l', OUTPUT_CSV], capture_output=True, text=True, timeout=LINE_COUNT_TIMEOUT)
             if result.returncode == 0:
                 line_count = result.stdout.split()[0]
                 logger.info(f"  Line count: {line_count}")

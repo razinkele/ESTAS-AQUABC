@@ -488,21 +488,37 @@ except (ValueError, FileNotFoundError, OSError) as e:
 
 ### 2.6 [P3] Hardcoded Configuration Values
 
-**File:** `shiny_app/app.py`
+**Status:** ✅ COMPLETE 2026-07-18 — pragmatic subset (the app's dual-import pattern
+made full centralization a net negative).
 
-**Problem:** File paths, default values, timeout durations, and UI constants are scattered as string literals throughout the code.
+**Problem:** Timeout durations and default filenames were scattered as magic literals
+across `shiny_app/`.
 
-**Fix:** Create `config.py` with centralized configuration:
-```python
-class AppConfig:
-    BUILD_TIMEOUT = 600
-    CLEAN_TIMEOUT = 120
-    RUN_LOG_BUFFER_SIZE = 200 * 1024
-    DEFAULT_CONSTANTS_FILE = "WCONST_04.txt"
-    ...
-```
+**Constraint that shaped the fix:** the app imports siblings via a
+`try: from shiny_app.X ... except ImportError: from X ...` dual-import (it runs both
+as a package and with `shiny_app/` on `sys.path`; tests import package-style). So every
+`config.py` consumer needs that ~3-line block — which for a one-line constant (e.g.
+each module's self-contained `ROOT`) is *more* boilerplate + coupling than the
+duplication it removes.
 
-**Effort:** ~1–2 hours
+**Fix (`shiny_app/config.py`, stdlib leaf module):** centralized the values where a
+named constant is a clear net win:
+- **Subprocess timeouts** (the flagship): `PROCESS_SHUTDOWN_TIMEOUT`, `LINE_COUNT_TIMEOUT`,
+  `SUBPROCESS_PROBE_TIMEOUT` (dedups 3 identical `timeout=5` in compiler_env + 1 in
+  build_commands), `PDF_REPORT_TIMEOUT`, `DEEP_PDF_REPORT_TIMEOUT` — wired across
+  compiler_env, build_commands, app_state, diagnostics, app.
+- **`DEFAULT_CONSTANTS_FILE = "WCONST_04.txt"`** — wired to its 4 `os.path.join` code
+  sites in mass_balance, parameter_parser, scenarios.
+
+**Deliberately left in place** (documented in `config.py`): the per-module one-line
+`ROOT` idiom (5 files — trivial, self-contained), and `INPUT.txt`/`PELAGIC_INPUTS.txt`
+literals (mostly dict keys / labels / single `ROOT`-relative uses where a shared
+constant adds dual-import boilerplate without net benefit).
+
+**Verified:** `ruff` clean on all touched files; full python suite **178 passed**; the
+mandatory `import shiny_app.app; create_ui().tagify()` backstop passes.
+
+**Effort:** ~1–2 hours (as estimated).
 
 ---
 
@@ -756,7 +772,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
 - [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)
 - [ ] 2.4 Async file I/O
-- [ ] 2.6 Centralized configuration
+- [x] 2.6 Centralized configuration — **Done** (2026-07-18; `shiny_app/config.py` — named subprocess timeouts + `DEFAULT_CONSTANTS_FILE`, wired across 8 files; ROOT/other filenames deliberately left per the app's dual-import cost; 178 tests + create_ui backstop pass)
 - [ ] 3.1 Compiler matrix (when Intel CI available)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
 - [x] 4.2 CO2SYS parallelization — **Done** (2026-07-15; chunked across threads; nkn=1000/8thr speedup 2.84×→6.55×; see docs/OPENMP_PERFORMANCE.md)
