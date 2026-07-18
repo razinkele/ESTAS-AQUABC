@@ -19,7 +19,8 @@ subroutine REDOX_AND_SPECIATION &
 
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_TYPES, only: t_redox_params, t_redox_lim, t_redox_state
-    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, MN_MOLAR_MASS_MG, S_MOLAR_MASS_MG
+    use AQUABC_PHYSICAL_CONSTANTS, only: FE_MOLAR_MASS_MG, MN_MOLAR_MASS_MG, S_MOLAR_MASS_MG, &
+                                         CELSIUS_TO_KELVIN
     use, intrinsic :: IEEE_ARITHMETIC
     implicit none
 
@@ -278,7 +279,7 @@ subroutine REDOX_AND_SPECIATION &
 
     !where((FE_III_SALT_NO == 2).or.(FE_III_SALT_NO == 3))
     !for a while assume that iron 3+ solubity is only related to Fe(OH3)
-        TEMP_K = TEMP + 273.15D0
+        TEMP_K = TEMP + CELSIUS_TO_KELVIN
 
         LOG_KW = &
             -2.839710D2 + (1.3323D4 / TEMP_K) - (5.069842D-2 * TEMP_K) + &
