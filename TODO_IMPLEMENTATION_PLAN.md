@@ -768,14 +768,41 @@ export OMP_PLACES=cores
 
 ### 5.1 [P2] Fortran Test Coverage Expansion
 
-**Current:** 26 test programs (0 failures, verified 2026-07-05) covering phytoplankton, zooplankton, redox/speciation, organic-carbon mineralization, iron and dissolved-metal chemistry, pH correction, ammonia chemistry, light extinction, allelopathy, sediment bioturbation, and utilities.
+**Status:** ✅ CO2SYS covered 2026-07-18 — and the new test immediately **found and
+fixed a real bug** in production carbonate chemistry (see below).
 
-**Missing coverage:**
-- CO2SYS (complex equilibrium chemistry — high bug risk, still untested)
-- Main sediment diagenesis model (`aquabc_II_sediment_model_1_fast.f90`) — bioturbation is tested, but the solute/kinetics core is not
-- End-to-end integrated pelagic + sediment run (see 5.2)
+**Current:** 27 test programs (0 failures) — the 26 prior + **`test_co2sys`** (13
+checks) covering the CDIAC carbonate solver.
 
-Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemistry, dissolved metals, and pH correction now have dedicated test programs (`test_allelopathy`, `test_light`, `test_ammonia_chem`, `test_iron_ii`, `test_diss_me`, `test_ph_corr`) — they are no longer coverage gaps.
+**CO2SYS (`aquabc_II_co2sys.f90`) — DONE.** `tests/fortran/test_co2sys.f90` uses a
+three-layer strategy (no external oracle is wired into the build): (1) internal
+round-trip consistency over the DIC-based pairings the model uses — `(TA,DIC)`↔`(pH,DIC)`;
+(2) physical / mass-balance invariants — `DIC = CO2+HCO3+CO3`, pH range, `dpH/dDIC<0`,
+`dpCO2/dT>0`, `OmegaCa>OmegaAr>1`, Revelle range, **borate alkalinity > 0** (a dedicated
+guard for the bug below); (3) a characterization anchor (S=35, T=25 °C, TA=2300,
+DIC=2000, K1K2=4, KSO4=1, total scale) pinned to values **cross-validated against
+PyCO2SYS 1.8** (pH 8.045, pCO2 397 µatm, Ω_Ar 3.39).
+
+**🐞 Bug found + fixed (KB=0 → wrong carbonate chemistry).** The Dickson-1990 boron
+constant formula had a **misplaced parenthesis** (`(...)*(logTempK + 0.053105*sqrSal*TempK)`
+instead of `(...)*logTempK + 0.053105*sqrSal*TempK`), making `lnKB ≈ −1.7e4` so `KB`
+underflowed to 0. That dropped borate alkalinity (~91 µmol/kg) from the alkalinity
+budget, misassigning it to the carbonate system → **pH off by +0.16, pCO2 off by −35%,
+Ω off by ~40%** vs PyCO2SYS. Fixed; the corrected output now matches PyCO2SYS to ~1e-4.
+This changes model output wherever CO2SYS runs (pelagic pH/CO2/saturation; sediment
+carbonate), so the **0D golden was regenerated** (`pelagic_0D_golden.csv`; worst 0D
+change ~10 % in NO3N via pH→nitrification coupling; output finite/sane, no NaN).
+
+**Follow-up noted (latent, low priority):** the CO2SYS **input pairings the model does
+NOT use** — `(TA,pH)`, `(pH,pCO2)`, `(TA,pCO2)` — are separately buggy (return garbage
+or crash with `DEALLOCATE unallocated 'denom'` at `aquabc_II_co2sys.f90:3711`). They are
+deliberately excluded from `test_co2sys` and left for a future fix if those paths are
+ever needed; the model only calls `(TA,DIC)`.
+
+**Still missing (unchanged):** the main sediment diagenesis core
+(`aquabc_II_sediment_model_1_fast.f90`) — a ~30-arg monolith needing large fixtures;
+covered at the integration level by the 0D golden + byte-identical gate. End-to-end
+integrated run is done via 5.2.
 
 **Effort:** ~1 day per subroutine
 
@@ -822,7 +849,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [x] 4.1 OpenMP benchmarking — **Done** (2026-07-15; `tools/benchmark_openmp.sh` + `docs/OPENMP_PERFORMANCE.md`; 2.84× @ nkn=1000/8thr, ~26% serial → 4.2)
 - [x] 2.1 Modularize app.py — **DONE** (decomposition 2026-07-12/13 → leaf modules, then the Shiny-modules rearchitecture `v0.4.0`–`v0.4.5`, 2026-07-14/15: `server()` → 15 namespaced `@module` modules behind `RunController`/`AppState`; app.py 8,012 → 786 lines; see §2.1)
 - [x] 1.6 Decompose mega-subroutine — **Done** (2026-07-16; 5 `contains` procedures, byte-identical, gate-verified; found bugs 1.10/1.11)
-- [ ] 5.1 Expand Fortran test coverage
+- [x] 5.1 Expand Fortran test coverage — **CO2SYS done** (2026-07-18; `test_co2sys.f90`, 13 checks, PyCO2SYS-validated) — and it **found + fixed a real KB=0 carbonate-chemistry bug** (0D golden regenerated). Sediment-core unit test still deferred (large-fixture monolith)
 - [x] 5.2 End-to-end regression test — **Done** (2026-07-12, 0D pelagic golden-file regression wired into CI; see §5.2)
 
 ### Backlog (as time permits)

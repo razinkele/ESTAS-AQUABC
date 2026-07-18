@@ -1631,9 +1631,14 @@ contains
             lnKBtop = (-8966.9D0 - 2890.53D0 * sqrSal) - (77.942D0 * Sal) + &
                       (1.728D0 * sqrSal * Sal) -( 0.0996D0 * (Sal**2))
 
+            ! NOTE: the last two terms below were previously mis-parenthesised as
+            !   (...)*(logTempK + 0.053105*sqrSal*TempK), which made lnKB ~ -1.7e4
+            ! (KB underflowed to 0, dropping borate alkalinity and corrupting the
+            ! whole carbonate system). Per Dickson (1990) the 0.053105*sqrSal*TempK
+            ! term is a SEPARATE additive term, not inside the logTempK factor.
             lnKB = (lnKBtop / TempK) + (148.0248D0 + 137.1942D0 * sqrSal) + &
                    (1.62142D0 * Sal) + (-24.4344D0 - 25.085D0 * sqrSal - 0.2474D0 * Sal) * &
-                   (logTempK + 0.053105D0 * sqrSal * TempK)
+                   logTempK + (0.053105D0 * sqrSal * TempK)
 
             ! This is on the total pH scale in mol/kg-SW convert to SWS pH scale
             KB = exp(lnKB) / SWStoTOT;
