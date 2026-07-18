@@ -144,16 +144,47 @@ separately; the decomposition proceeded on the deterministic default-only gate.
 
 ### 1.7 [P2] Sediment Model Variable Declarations
 
+**Status:** ✅ COMPLETE 2026-07-18 — scoped after measuring the *actual* dead-code state.
+
 **File:** `SOURCE_CODE/AQUABC/SEDIMENTS/aquabc_II_sediment_model_1_fast.f90`
+(one 3,613-line subroutine, 321 declared locals).
 
-**Problem:** ~315 variable declarations at the top of the main sediment subroutine. Many may be unused after previous cleanups.
+**Reality vs the original triage:** the "many may be unused" hypothesis was **outdated**.
+`gfortran -Wunused-variable` (verified to fire by planting a probe var) reports
+**zero** never-referenced locals — prior cleanup passes already removed those. The only
+remaining dead category is **write-only** variables (assigned but never read), which
+gfortran's `-Wunused-but-set-variable` does **not** reliably detect for Fortran. A
+custom read/write usage analyzer surfaced 15 candidates; 3 were false positives
+(output dummy args `FINAL_SED_STATE_VARS`, `SED_OUTPUTS`, `SED_BURRIAL_RATE_OUTPUTS` —
+writing to them is their purpose), leaving **12 genuine write-only locals**, each
+hand-verified (every occurrence is a comment, the declaration, or an LHS assignment —
+never a read).
 
-**Fix:**
-- Run unused variable detection: `gfortran -Wunused-variable`
-- Remove confirmed unused declarations
-- Consider grouping related variables into derived types (similar to Phase 2 pelagic refactoring)
+**Fix (scope: "remove stale, keep+annotate chemistry"):** the 12 split into two kinds:
+- **Removed (3 stale leftovers, no coherent feature):** `CA`, `MG` (calcium/magnesium
+  copied from `INIT_SED_STATE_VARS(20/21)`, "Introduced 27 January 2016", never used
+  since) and `CONSIDER_CO2_REARATION` (integer flag = 1, self-labelled "not used yet").
+  Declarations + dead assignments deleted.
+- **Kept + annotated (9 disabled-chemistry scaffolding):** `H2S`, `HS_MINUS`,
+  `S_MINUS_TWO` (sulfide speciation), `K_SP_FES`, `FE_II_DISS` (FeS-solubility equilib.,
+  consumer commented out near L1140), `MULT_FE_II_PART`, `MULT_MN_II_PART`,
+  `MULT_MN_IV_PART` (Fe/Mn particulate fractions), `ALPHA_PO4` (PO4 speciation α). These
+  are coherent scaffolding for currently-disabled redox chemistry (the maintainer's
+  active area), so they are retained with a `[WO]` tag on each declaration + a header
+  NOTE block explaining the write-only status and why gfortran can't flag them.
 
-**Effort:** ~2–4 hours
+**Deliberately NOT done:** (a) removing the 9 chemistry vars — they preserve intent for
+disabled features (see the [WO] header); (b) removing the 2 unused *dummy arguments*
+(`SED_MODEL_CONSTANTS`, `SED_DRIVING_FUNCTIONS` — the latter "not used yet") — those are
+public-interface placeholders and removing them is a breaking API change; (c) derived-type
+grouping — a large refactor disproportionate to a cleanup, deferred.
+
+**Verified:** byte-identical against a **fresh** default-config baseline (serial + OMP=8,
+52 `.out` files each) — removing write-only vars + their pure assignments changes no
+output — plus the 0D golden regression. (The gate's `verify_baseline/` had to be
+re-captured because 1.8 shifted default output ~1e-6.)
+
+**Effort:** ~2–3 hours (within the ~2–4 h estimate).
 
 ---
 
@@ -766,7 +797,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [x] 5.2 End-to-end regression test — **Done** (2026-07-12, 0D pelagic golden-file regression wired into CI; see §5.2)
 
 ### Backlog (as time permits)
-- [ ] 1.7 Sediment model variable cleanup
+- [x] 1.7 Sediment model variable cleanup — **Done** (2026-07-18; compiler-unused already 0; removed 3 stale write-only locals CA/MG/CONSIDER_CO2_REARATION, kept+tagged 9 disabled-chemistry scaffolding vars `[WO]`; byte-identical vs fresh baseline + 0D golden)
 - [x] 1.8 Named physics constants — **Done** (2026-07-18; only real magic number was 273.15 → `CELSIUS_TO_KELVIN`; surfaced + fixed a latent single-precision Kelvin-offset bug in DO_SATURATION/CO2SYS; ~1e-6 intended output change, 0D golden regenerated)
 - [x] 1.9 IOSTAT error handling — **Done** (2026-07-18; `OPEN_INPUT_FILE` helper guards all 24 input `status='OLD'` opens → clean message + nonzero `error stop` on missing/unreadable file; byte-identical when files exist; per-read content checks deliberately out of scope)
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])

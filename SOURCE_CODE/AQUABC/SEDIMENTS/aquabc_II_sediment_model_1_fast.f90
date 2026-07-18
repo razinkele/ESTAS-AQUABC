@@ -171,8 +171,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     ! End of new state variables added 10 September 2015
 
     ! New state variables added 27 January 2016
-    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: CA
-    real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: MG
     real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: S_PLUS_6
     real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: S_MINUS_2
     real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: CH4_C
@@ -391,7 +389,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: FRACTION_DIVISOR_TIP
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_H2PO4
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_HPO4
-    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_PO4
+    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALPHA_PO4  ![WO] PO4 speciation alpha (computed, never read)
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: PHOSPHATE_EQ_CONSTANT
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_GAINED_BY_PHOSPHATE_CONS
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS) :: ALK_LOST_BY_PHOSPHATE_GEN
@@ -412,7 +410,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
     integer :: CONSIDER_ALKALNITY_DERIVATIVE
     integer :: CONSIDER_INORG_C_DERIVATIVE
-    integer :: CONSIDER_CO2_REARATION
     !End of new variables for DIC and ALK
 
     double precision getpar    !function to getn isedi value
@@ -427,14 +424,14 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     ! they will be used in settlin calculations. Job by Petras and his fellows.
     ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_FE_II_DISS  !Dissolved fraction of FE_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_FE_II_PART  !Particulate fraction of FE_II
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_FE_II_PART  !Particulate fraction of FE_II [WO]
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_FE_III_DISS !Dissolved fraction of FE_III
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_FE_III_PART !Particulate fraction of FE_III
 
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_II_DISS  !Dissolved fraction of MN_II
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_II_PART  !Particulate fraction of MN_II
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_II_PART  !Particulate fraction of MN_II [WO]
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_IV_DISS  !Dissolved fraction of MN_IV
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_IV_PART  !Particulate fraction of MN_IV
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: MULT_MN_IV_PART  !Particulate fraction of MN_IV [WO]
     ! -------------------------------------------------------------------------
     ! End of variables added 30 November 2015 for dissolved and particulate
     ! species of FE_II, FE_III, MN_II, MN_IV
@@ -462,18 +459,31 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     ! FE_III_DISS                 : Dissolved Fe3+
     ! FE_III_PART                 : Particulate Fe3+
 
+    ! -------------------------------------------------------------------------
+    ! NOTE (TODO 1.7): the declarations tagged "[WO]" (here and above) are
+    ! WRITE-ONLY - computed but never read anywhere in this subroutine. They are
+    ! deliberately retained (not deleted) as scaffolding for currently-disabled
+    ! chemistry, so the intent is preserved for whoever finishes these features:
+    !   - sulfide speciation     : H2S, HS_MINUS, S_MINUS_TWO
+    !   - FeS-solubility equilib.: K_SP_FES, FE_II_DISS (consumer is commented
+    !                              out near L1140; FE_II_DISS just gets = FE_II)
+    !   - Fe/Mn particulate frac.: MULT_FE_II_PART, MULT_MN_II_PART, MULT_MN_IV_PART
+    !   - PO4 speciation alpha   : ALPHA_PO4
+    ! gfortran's -Wunused-variable cannot flag these (they are assigned), so the
+    ! tag is the only signal. Removing an assignment above changes no output.
+    ! -------------------------------------------------------------------------
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: K_EQ_S_1
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: K_EQ_S_2
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: K_SP_FES
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: K_SP_FES  ![WO] FeS solubility (disabled)
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: HS2_TOT
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: H2S_DIVISOR
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FRAC_H2S_IN_H2S_TOT
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FRAC_HS_MINUS_IN_H2S_TOT
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FRAC_S_MINUS_TWO_IN_H2S_TOT
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: H2S
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: HS_MINUS
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: S_MINUS_TWO
-    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_II_DISS
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: H2S  ![WO] sulfide speciation (disabled)
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: HS_MINUS  ![WO] sulfide speciation (disabled)
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: S_MINUS_TWO  ![WO] sulfide speciation (disabled)
+    real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_II_DISS  ![WO] FeS equilibrium (disabled)
     real(kind = DBL_PREC), dimension(nkn, NUM_SED_LAYERS) :: FE_III_DISS
     ! -------------------------------------------------------------------------
     ! End of variables added 25 January 2016 for a simple version of equlibrium
@@ -623,7 +633,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
 
     CONSIDER_ALKALNITY_DERIVATIVE = 1
     CONSIDER_INORG_C_DERIVATIVE   = 1
-    CONSIDER_CO2_REARATION        = 1 ! not used yet
 
     error = 0                     !indicator of presence of stranger9
     debug_stranger = .true.
@@ -853,8 +862,6 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     FE_III   (:,:) = INIT_SED_STATE_VARS(:,:, 17) !Introduced 10th of September 2015
     MN_II    (:,:) = INIT_SED_STATE_VARS(:,:, 18) !Introduced 10th of September 2015
     MN_IV    (:,:) = INIT_SED_STATE_VARS(:,:, 19) !Introduced 10th of September 2015
-    CA       (:,:) = INIT_SED_STATE_VARS(:,:, 20) !Introduced 27th of January 2016
-    MG       (:,:) = INIT_SED_STATE_VARS(:,:, 21) !Introduced 27th of January 2016
     S_PLUS_6 (:,:) = INIT_SED_STATE_VARS(:,:, 22) !Introduced 27th of January 2016
     S_MINUS_2(:,:) = INIT_SED_STATE_VARS(:,:, 23) !Introduced 27th of January 2016
     CH4_C    (:,:) = INIT_SED_STATE_VARS(:,:, 24) !Introduced 27th of January 2016
