@@ -19,7 +19,7 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
@@ -53,6 +53,10 @@ VECTOR_UTILS_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 $(CORE_UTILS)/VECTOR_
 
 # Shared sources for kinetics tests
 PHYS_CONST_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_physical_constants.f90
+CO2SYS_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 \
+    $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90 \
+    $(PHYS_CONST_SRC) \
+    $(AQUABC_SRC)/CO2SYS/aquabc_II_co2sys.f90
 TEST_DEFAULTS_SRC = test_defaults.f90
 # Trimmed auxiliary file for tests (avoids GLOBAL module dependency)
 TEST_AUX_SUBSET = test_pelagic_aux_subset.f90
@@ -277,6 +281,15 @@ test_bioturbation: test_bioturbation.f90 $(SEDIMENT_SRC)/aquabc_II_sediment_biot
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(SEDIMENT_SRC)/aquabc_II_sediment_bioturbation.f90
 	$(FC) $(FFLAGS) -o $@ test_bioturbation.f90 *.o
+
+# Compile test_co2sys (carbonate-system solver; module order matters)
+test_co2sys: test_co2sys.f90 $(CO2SYS_SRCS)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC) -o precision_kinds.o
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 -o mod_AQUABC_II_GLOBAL.o
+	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC) -o aquabc_physical_constants.o
+	$(FC) $(FFLAGS) -c $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90 -o VECTOR_MATRIX_UTILS.o
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/CO2SYS/aquabc_II_co2sys.f90 -o aquabc_II_co2sys.o
+	$(FC) $(FFLAGS) -o $@ test_co2sys.f90 aquabc_II_co2sys.o VECTOR_MATRIX_UTILS.o aquabc_physical_constants.o mod_AQUABC_II_GLOBAL.o precision_kinds.o
 
 # Run all tests
 .PHONY: test

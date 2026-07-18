@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **CO2SYS carbonate chemistry — KB=0 bug (found by new test coverage, TODO 5.1).** The Dickson (1990) boron-constant formula in `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90` had a **misplaced parenthesis** — `(-24.4344 - 25.085·√S - 0.2474·S)·(logTempK + 0.053105·√S·TempK)` instead of `(…)·logTempK + 0.053105·√S·TempK` per Dickson 1990. This drove `lnKB ≈ −1.7e4`, so the boric-acid dissociation constant **KB underflowed to 0**, dropping borate alkalinity (~91 µmol/kg at S=35) from the alkalinity budget and misassigning it to the carbonate system. Effect at the canonical case (S=35, T=25 °C, TA=2300, DIC=2000, K1K2=4, KSO4=1, total scale): **pH 8.21→8.045, pCO₂ 260→397 µatm, Ω_aragonite 4.72→3.39** — the corrected values now match **PyCO2SYS 1.8** to ~1e-4. This changes model output wherever CO2SYS runs (pelagic pH / CO₂ flux / calcite-aragonite saturation, and the sediment carbonate system); the **0D regression golden was regenerated** (`tests/regression/pelagic_0D_golden.csv`; worst 0D shift ~10 % in NO3N via the pH→nitrification coupling, output finite and physically sane). Surfaced by the new **`tests/fortran/test_co2sys.f90`** (13 checks: round-trip consistency, mass-balance closure, physical invariants, a borate-alkalinity regression guard, and a PyCO2SYS-validated anchor). Latent bugs in the CO2SYS input pairings the model does *not* use — `(TA,pH)`, `(pH,pCO₂)`, `(TA,pCO₂)` — are documented for a future fix (TODO 5.1).
+
 ## [0.4.5] - 2026-07-15
 
 ### Changed
