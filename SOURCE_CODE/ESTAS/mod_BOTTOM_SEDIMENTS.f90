@@ -597,9 +597,9 @@ contains
         read(IN_FILE, *)
         read(IN_FILE, *) FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+             'bottom-sediment model input')
 
         call READ_MODEL_CONSTANTS(SED_MODEL_CONSTANTS, IN_FILE + 1)
         close(IN_FILE + 1)

@@ -45,10 +45,9 @@ contains
             read(unit = IN_FILE, fmt = *) AUX_INTEGER_1, AUX_STRING
             RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
 
-            open(unit   = IN_FILE + 1, &
-                 file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-                          trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
-                 status = 'OLD')
+            call OPEN_INPUT_FILE(IN_FILE + 1, &
+                 trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
+                 'resuspension input')
 
             call INITIALIZE_TIME_SERIE    (RESUSPENSION_TS(RESUSPENSION_TS_NO))
             call READ_TIME_SERIE_FROM_FILE(RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
@@ -135,10 +134,9 @@ contains
             read(unit = IN_FILE, fmt = *) AUX_INTEGER_1, AUX_STRING
             RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
 
-            open(unit   = IN_FILE + 1, &
-                 file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-                          trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
-                 status = 'OLD')
+            call OPEN_INPUT_FILE(IN_FILE + 1, &
+                 trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
+                 'resuspension input')
 
             call INITIALIZE_TIME_SERIE    (RESUSPENSION_TS(RESUSPENSION_TS_NO))
             call READ_TIME_SERIE_FROM_FILE(RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
@@ -175,10 +173,9 @@ contains
                 trim(adjustl(CRITICAL_SHEAR_STRESS_FILENAME))
         end if
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-                      trim(adjustl(CRITICAL_SHEAR_STRESS_FILENAME)), &
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(CRITICAL_SHEAR_STRESS_FILENAME)), &
+             'resuspension input')
 
         do i = 1, nkn
             read(unit = IN_FILE + 1, fmt = *) AUX_INTEGER_1, AUX_DBL_1
