@@ -45,8 +45,9 @@ subroutine IP_SOLUBLE_FRACTION &
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: K_3_FE     ! Fe3+ + 3H2O <-> Fe(OH)3 + 3H+    (10^-13.8)
     real(kind = DBL_PREC), dimension(nkn, nlayers) :: K_4_FE     ! Fe3+ + 4H2O <-> Fe(OH)4- + 4H+   (10^-22.7)
 
-    ! FePO4 solubility product (Stumm and Morgan, 1996): log Ksp ~ -26.4
-    KS0        = 10.0D0 ** (-26.4D0)
+    ! FePO4 solubility product: log10(Ksp) from AQUABC_II_GLOBAL (runtime-configurable
+    ! via PELAGIC_MODEL_OPTIONS.txt; default -26.4 = crystalline FePO4, Stumm & Morgan 1996).
+    KS0        = 10.0D0 ** FEPO4_KSP_LOG10
     ! Fe(III) stepwise/overall hydrolysis constants at 25 C
     K_1_FE     = 10.0D0 ** (-3.05D0)
     K_2_FE     = 10.0D0 ** (-6.31D0)

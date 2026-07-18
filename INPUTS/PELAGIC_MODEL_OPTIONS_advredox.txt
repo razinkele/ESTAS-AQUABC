@@ -14,5 +14,7 @@
             1
 # TEMPERATURE_MODEL (0=plateau, 1=CTMI)
             0
+# FEPO4_KSP_LOG10 (log10 FePO4 solubility product; default -26.4; larger = weaker P-binding)
+        -26.4
 # CYN_ALLELOPATHY_FILE_NAME
 ALLELOPATHIC_INFORMATION.txt
