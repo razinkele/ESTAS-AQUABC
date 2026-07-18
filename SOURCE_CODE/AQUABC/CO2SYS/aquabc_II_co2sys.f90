@@ -1308,7 +1308,7 @@ contains
                 RGasConstant, TB, TF, TS, TempK, RT, logTempK, Pbar, TempK100, lnK0, K0, KS, &
                 fH, K1, K2, KW, KB, KF, KP1, KP2, KP3, KSi, &
                 FugFac, VPFac)
-        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp, CELSIUS_TO_KELVIN
         implicit none
 
         ! Argument list
@@ -1446,7 +1446,7 @@ contains
         real(kind = DBL_PREC), allocatable, dimension(:) :: VPSWWP
         ! End of auxillary variables
 
-        TempK   = TempC + 273.15
+        TempK   = TempC + CELSIUS_TO_KELVIN
         RT      = RGasConstant * TempK
 
         logTempK = log(TempK)
@@ -4393,7 +4393,7 @@ contains
                 RGasConstant, TB, TF, TS, TempK, RT, logTempK, Pbar, TempK100, lnK0, K0, KS, &
                 fH, K1, K2, KW, KB, KF, KP1, KP2, KP3, KSi, &
                 FugFac, VPFac)
-        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
+        use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp, CELSIUS_TO_KELVIN
         implicit none
 
         ! '***********************************************************************

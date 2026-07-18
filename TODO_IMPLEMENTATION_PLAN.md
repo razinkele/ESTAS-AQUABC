@@ -159,18 +159,34 @@ separately; the decomposition proceeded on the deterministic default-only gate.
 
 ### 1.8 [P3] Magic Numbers in Physics Constants
 
-**Files:** Various, especially `aquabc_II_co2sys.f90`, sediment model
+**Status:** ✅ COMPLETE 2026-07-18 — surfaced (and fixed) a latent precision bug.
 
-**Problem:** Scattered numeric literals (e.g., `273.15`, `1013.25`, `8.314`) without named constants.
+**Reality vs the original triage:** the backlog's example literals `1013.25` and `8.314`
+do **not** exist in the code; the only universal-physics magic number is `273.15`
+(Kelvin offset), and a named constant `CELSIUS_TO_KELVIN = 273.15D0` already exists in
+`AQUABC_PHYSICAL_CONSTANTS`. 273.15 appeared 5 live times: 2 as `273.15D0` (double) in
+the pelagic/sediment `REDOX_AND_SPECIATION`, and **3 as bare `273.15` (single) in
+double-precision temperature math** — `aquabc_II_pelagic_lib_DO_SATURATION` (`T_KELVIN`),
+`aquabc_II_sediment_lib_DO_SATURATION`, and `aquabc_II_co2sys` (`TempK`). The single-form
+literals were a **latent single-precision bug**: a REAL(4) `273.15` (≈273.14999) used in
+REAL(8) temperature conversions.
 
-**Fix:** Define named constants in `aquabc_II_pelagic_model_constants.f90`:
-```fortran
-real(dp), parameter :: KELVIN_OFFSET = 273.15D0
-real(dp), parameter :: STD_ATM_MBAR = 1013.25D0
-real(dp), parameter :: GAS_CONST_R = 8.314D0
-```
+**Fix:** all 5 replaced with `CELSIUS_TO_KELVIN` (added the symbol to the two REDOX
+`only:` lists and CO2SYS's, and a `use ... only: CELSIUS_TO_KELVIN` to the two
+DO_SATURATION subroutines). This removes the magic number **and** fixes the precision.
 
-**Effort:** ~1 hour
+**Output impact (intended):** the two double-form swaps are byte-identical; the three
+single→double swaps change O2-saturation / CO2SYS-dependent output by a **precision-level
+~1e-6** (max rel diff 9.6e-7, toward the exact value). Not byte-identical, so the 0D
+golden `tests/regression/pelagic_0D_golden.csv` was **regenerated** (526 sampled rows,
+5592 cells nudged ≤1e-6, header/structure unchanged). The gate's local `verify_baseline`
+is now stale (pre-change) and would need re-capture for future refactor checks.
+
+**Verified:** 0D golden compare PASS at rtol 1e-9 vs a fresh run; `pytest
+tests/python/test_e2e_regression.py` 8/8; the change magnitude brackets between rtol
+1e-7 (fail) and 1e-6 (pass), confirming precision-only.
+
+**Effort:** ~1 hour (as estimated).
 
 ---
 
@@ -735,7 +751,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 
 ### Backlog (as time permits)
 - [ ] 1.7 Sediment model variable cleanup
-- [ ] 1.8 Named physics constants
+- [x] 1.8 Named physics constants — **Done** (2026-07-18; only real magic number was 273.15 → `CELSIUS_TO_KELVIN`; surfaced + fixed a latent single-precision Kelvin-offset bug in DO_SATURATION/CO2SYS; ~1e-6 intended output change, 0D golden regenerated)
 - [x] 1.9 IOSTAT error handling — **Done** (2026-07-18; `OPEN_INPUT_FILE` helper guards all 24 input `status='OLD'` opens → clean message + nonzero `error stop` on missing/unreadable file; byte-identical when files exist; per-read content checks deliberately out of scope)
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
 - [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)

@@ -2,6 +2,7 @@
 !subroutine DO_SATURATION_MAT
 
 subroutine DO_SATURATION_MAT(T, S, H, nkn, NUM_SED_LAYERS, CS)
+    use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN
     implicit none
 
     !Water temperature (in Celcius)
@@ -41,7 +42,7 @@ subroutine DO_SATURATION_MAT(T, S, H, nkn, NUM_SED_LAYERS, CS)
     !A constant
     double precision, dimension(nkn, NUM_SED_LAYERS) :: THETA
 
-    T_KELVIN = T + 273.15
+    T_KELVIN = T + CELSIUS_TO_KELVIN
     H_FEET = H / 0.3048D0
 
     !Calculate the effect of temperature on dissolved oxygen saturation
