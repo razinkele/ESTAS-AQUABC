@@ -603,7 +603,25 @@ Start with gfortran-only matrix (documenting the intent to add Intel later when 
 
 **Effort:** ~1 hour
 
-**Status:** ✅ COMPLETED 2026-07-12 — `build-and-run` job converted to a `strategy.matrix` (`fail-fast: false`, `runs-on: ${{ matrix.os }}`, compiler via job-level `env: FC`). Active entry gfortran/ubuntu-latest; commented, ready-to-enable entries for `ifx` (Intel oneAPI) and `macos-latest`. The Makefile's `ifeq ($(origin FC),default)` means the exported `FC` propagates, so a new matrix row switches compilers with a one-line change.
+**Status:** ✅ matrix structure 2026-07-12; ✅ **macOS/gfortran entry activated 2026-07-18**.
+Intel (`ifx`/`ifort`) still deferred — needs licensed oneAPI runners, out of reach here.
+
+- **2026-07-12:** `build-and-run` converted to a `strategy.matrix` (`fail-fast: false`,
+  `runs-on: ${{ matrix.os }}`, compiler via job-level `env: FC`), gfortran/ubuntu-latest
+  active, macOS/ifx entries commented.
+- **2026-07-18:** enabled `{os: macos-latest, fc: gfortran}`. Portability handling:
+  (1) OS-split "Install dependencies" — macOS ensures a **bare `gfortran`** on PATH
+  (symlinks the newest `gfortran-<ver>` from Homebrew if only versioned binaries exist,
+  using a BSD-`sort`-safe numeric sort), so the whole toolchain — including the 0D
+  example Makefile that hardcodes `gfortran` — works as on Linux; (2) the 6 `ftnchek`
+  steps are gated `if: runner.os == 'Linux'` (ftnchek is apt-only); (3) the 0D golden
+  compare runs `--numeric-warn` on macOS — the **header/structure check stays fatal on
+  both platforms**, but the *numeric* check is demoted to a warning on macOS because the
+  golden is gfortran-on-Ubuntu-x86 and won't reproduce bit-for-bit on ARM64. The 27
+  deterministic Fortran unit tests run strict on both and are the primary macOS
+  portability assertion. `compare_0D.py` gained the `--numeric-warn` flag (2 new unit
+  tests). Could not be validated on a local macOS box (Linux dev), so designed
+  conservatively; first CI run on macOS is the real proof.
 
 ---
 
@@ -860,7 +878,7 @@ integrated run is done via 5.2.
 - [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)
 - [x] 2.4 Async file I/O — **Done** (2026-07-18; 3 heavy button-triggered handlers in mass_balance/observations moved off the event loop via `@reactive.extended_task` + `asyncio.to_thread`; 183 tests incl. 5 new + async-guard; create_ui backstop pass)
 - [x] 2.6 Centralized configuration — **Done** (2026-07-18; `shiny_app/config.py` — named subprocess timeouts + `DEFAULT_CONSTANTS_FILE`, wired across 8 files; ROOT/other filenames deliberately left per the app's dual-import cost; 178 tests + create_ui backstop pass)
-- [ ] 3.1 Compiler matrix (when Intel CI available)
+- [x] 3.1 Compiler matrix — **gfortran + macOS/ubuntu active** (2026-07-18; macOS entry enabled with bare-gfortran resolution, Linux-only ftnchek, and `--numeric-warn` cross-platform golden). Intel `ifx`/`ifort` still deferred (needs licensed oneAPI runners)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
 - [x] 4.2 CO2SYS parallelization — **Done** (2026-07-15; chunked across threads; nkn=1000/8thr speedup 2.84×→6.55×; see docs/OPENMP_PERFORMANCE.md)
 - [x] 4.4 Full-model OpenMP hang @≥8 threads — **Done** (2026-07-15; empty-chunk barrier deadlock in the kinetics region; fixed via balanced chunking + thread cap; ESTAS_II now scales to 8 threads)
