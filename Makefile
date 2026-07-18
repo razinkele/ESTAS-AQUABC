@@ -35,6 +35,16 @@ LIBAQUABC = $(BUILDDIR)/libaquabc.a
 
 BUILD_TYPE ?= release
 
+# gfortran's `-march=native` is x86-centric; on Apple-Silicon GCC it resolves to an
+# unknown `apple-m1` target and aborts the build (f951: unknown value 'apple-m1').
+# Enable native-arch tuning only where it is known-good (i.e. not macOS). Linux/x86
+# keeps -march=native -mtune=native, so its output is unchanged.
+ifeq ($(shell uname -s),Darwin)
+    GF_NATIVE_FLAGS =
+else
+    GF_NATIVE_FLAGS = -march=native -mtune=native
+endif
+
 # =============================================================================
 # OpenMP Configuration
 # =============================================================================
@@ -92,10 +102,10 @@ ifeq ($(FC_BASE),gfortran)
         # This can produce different results for exp(), log(), and trig functions,
         # and may affect Michaelis-Menten kinetics, light limitation, and DO
         # saturation calculations. Use BUILD_TYPE=release for validated results.
-        FFLAGS = -O3 -march=native -mtune=native -funroll-loops -ffast-math -flto -Wall -Wextra -fimplicit-none
+        FFLAGS = -O3 $(GF_NATIVE_FLAGS) -funroll-loops -ffast-math -flto -Wall -Wextra -fimplicit-none
         BUILD_DESC = Fast (-O3, -ffast-math, LTO, warnings)
     else
-        FFLAGS = -O2 -march=native -mtune=native -Wall -Wextra -fimplicit-none
+        FFLAGS = -O2 $(GF_NATIVE_FLAGS) -Wall -Wextra -fimplicit-none
         BUILD_DESC = Release (-O2, native arch, warnings)
     endif
 else ifeq ($(FC_BASE),ifort)
