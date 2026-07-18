@@ -1072,7 +1072,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     use GLOBAL
     use ALLELOPATHY
-    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
 
     implicit none
 
@@ -1144,9 +1144,16 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! GROWTH_AT_TEMP reads. The trailing CYN_ALLELOPATHY_FILE_NAME lines (if present)
     ! are consumed harmlessly here; the file is closed right after this routine.
     USE_CTMI_TEMP = .false.
+    FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
+
+    ! FePO4 solubility product log10(Ksp), read gracefully so option files without
+    ! this line keep the default (-26.4). Must sit immediately after TEMPERATURE_MODEL
+    ! in the file and before the trailing CYN_ALLELOPATHY_FILE_NAME lines.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) FEPO4_KSP_LOG10
 900 continue
     if (USE_CTMI_TEMP) then
         write(*,*) 'Temperature model: CTMI (Cardinal Temperature Model).'
