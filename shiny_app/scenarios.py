@@ -14,6 +14,11 @@ Date: 2026-01-17
 import json
 import logging
 import os
+
+try:
+    from shiny_app.config import DEFAULT_CONSTANTS_FILE
+except ImportError:
+    from config import DEFAULT_CONSTANTS_FILE
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -267,7 +272,7 @@ class ScenarioManager:
 
         # Capture parameters
         if include_params:
-            param_path = os.path.join(self.inputs_dir, "WCONST_04.txt")
+            param_path = os.path.join(self.inputs_dir, DEFAULT_CONSTANTS_FILE)
             if os.path.exists(param_path):
                 pf = ParameterFile(param_path)
                 if pf.parse():
@@ -337,7 +342,7 @@ class ScenarioManager:
 
         # Apply parameters
         if scenario.parameters:
-            param_path = os.path.join(self.inputs_dir, "WCONST_04.txt")
+            param_path = os.path.join(self.inputs_dir, DEFAULT_CONSTANTS_FILE)
             if os.path.exists(param_path):
                 pf = ParameterFile(param_path)
                 if pf.parse():

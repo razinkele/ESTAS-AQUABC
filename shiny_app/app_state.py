@@ -10,6 +10,11 @@ import select
 import subprocess
 import time
 import traceback
+
+try:
+    from shiny_app.config import PROCESS_SHUTDOWN_TIMEOUT
+except ImportError:
+    from config import PROCESS_SHUTDOWN_TIMEOUT
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -96,7 +101,7 @@ class RunController:
                 process.terminate()
                 self.run_log_lines.append("\n⚠️ Stop requested - terminating model...\n")
                 try:
-                    process.wait(timeout=3)
+                    process.wait(timeout=PROCESS_SHUTDOWN_TIMEOUT)
                     self.run_log_lines.append("Model terminated gracefully.\n")
                 except subprocess.TimeoutExpired:
                     process.kill()

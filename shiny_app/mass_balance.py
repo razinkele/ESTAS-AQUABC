@@ -10,6 +10,11 @@ Calculates and tracks mass balance for key elements:
 
 import logging
 import os
+
+try:
+    from shiny_app.config import DEFAULT_CONSTANTS_FILE
+except ImportError:
+    from config import DEFAULT_CONSTANTS_FILE
 from dataclasses import dataclass
 
 import pandas as pd
@@ -390,7 +395,7 @@ def test_mass_balance():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     root_dir = os.path.dirname(script_dir)
     output_csv = os.path.join(root_dir, "OUTPUT.csv")
-    param_file = os.path.join(root_dir, "INPUTS", "WCONST_04.txt")
+    param_file = os.path.join(root_dir, "INPUTS", DEFAULT_CONSTANTS_FILE)
 
     print(f"Testing mass balance with: {output_csv}")
     print("=" * 60)

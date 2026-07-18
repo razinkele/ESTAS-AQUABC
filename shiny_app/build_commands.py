@@ -2,6 +2,11 @@
 import glob
 import os
 import subprocess
+
+try:
+    from shiny_app.config import SUBPROCESS_PROBE_TIMEOUT
+except ImportError:
+    from config import SUBPROCESS_PROBE_TIMEOUT
 from datetime import datetime
 
 
@@ -85,7 +90,7 @@ def get_executable_info(exe_name, root):
 
     # Check if stripped (no debug symbols)
     try:
-        result = subprocess.run(["file", exe_path], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(["file", exe_path], capture_output=True, text=True, timeout=SUBPROCESS_PROBE_TIMEOUT)
         info["file_type"] = result.stdout.strip()
         info["stripped"] = "stripped" in result.stdout.lower()
         info["has_debug"] = "not stripped" in result.stdout.lower()

@@ -21,6 +21,11 @@ import sys
 import threading
 import traceback
 
+try:
+    from shiny_app.config import DEEP_PDF_REPORT_TIMEOUT, PDF_REPORT_TIMEOUT
+except ImportError:
+    from config import DEEP_PDF_REPORT_TIMEOUT, PDF_REPORT_TIMEOUT
+
 import pandas as pd
 from shiny import module, reactive, render, ui
 
@@ -679,7 +684,7 @@ def diagnostics_server(input, output, session, state):
                     subprocess.run(
                         [sys.executable, gen_script],
                         cwd=_parent_dir,
-                        capture_output=True, timeout=60,
+                        capture_output=True, timeout=PDF_REPORT_TIMEOUT,
                     )
                     _diag_state["pdf_msg"] = "✓ Results PDF saved to docs/AQUABC_Analysis_Results_Report.pdf"
                 else:
@@ -705,7 +710,7 @@ def diagnostics_server(input, output, session, state):
                     subprocess.run(
                         [sys.executable, gen_script],
                         cwd=_parent_dir,
-                        capture_output=True, timeout=120,
+                        capture_output=True, timeout=DEEP_PDF_REPORT_TIMEOUT,
                     )
                     _diag_state["pdf_msg"] = "✓ Deep analysis PDF saved to docs/Deep_Process_Rate_Analysis_Report.pdf"
                 else:
