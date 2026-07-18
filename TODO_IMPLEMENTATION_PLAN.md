@@ -491,13 +491,42 @@ except (ValueError, FileNotFoundError, OSError) as e:
 
 ### 2.4 [P2] Blocking I/O in Reactive Handlers
 
-**File:** `shiny_app/app.py`
+**Status:** ✅ COMPLETE 2026-07-18 — scoped to the genuine event-loop-freeze sites.
 
-**Problem:** File reads (parameter loading, IC loading, config parsing) are synchronous and block the event loop. For large files or slow filesystems, this freezes the UI.
+**Files:** `shiny_app/modules/mass_balance.py`, `shiny_app/modules/observations.py`
+(the reactive handlers moved out of `app.py` in the module rearchitecture).
 
-**Fix:** Use `@reactive.extended_task` or async file I/O for long operations. Short file reads (<1KB) can stay synchronous.
+**Problem:** A few reactive handlers did a full `OUTPUT.csv` read **plus** heavy pandas
+computation synchronously on the Shiny event loop, freezing the whole UI (all sessions)
+for large model outputs.
 
-**Effort:** ~4 hours
+**What was actually blocking (measured, not assumed):** exactly **3 button-triggered
+handlers** — `mass_balance.calculate_mass_balance`, and `observations`'
+`load_observation_file` (upload) + `generate_sample_observations`. Everything else is
+already fine: `plot` uses bounded `nrows=` reads + caches its one full read; `dashboard`
+only stats/previews; the config-file parsers read KB-sized files (which the TODO itself
+says stay synchronous).
+
+**Fix — `@reactive.extended_task` + `asyncio.to_thread`.** Each heavy handler split into:
+(1) a module-level *pure blocking helper* (`_compute_mass_balance_blocking`,
+`_compare_blocking`, `_sample_and_compare_blocking`) doing only the read+compute;
+(2) an `async` `@reactive.extended_task` that runs the helper via `asyncio.to_thread`
+(**crucial**: `extended_task` requires an async fn and runs it as an asyncio task *on
+the loop* — a plain `async def` doing blocking pandas would still freeze it, so the work
+must be pushed to a worker thread); (3) a launch effect (button event + precondition
+check) that invokes the task; (4) a collect effect that reads `.status()`/`.result()`,
+publishes the reactive Values, and does the notifications/`update_select`. A lightweight
+busy indicator ("running in background") shows in each tab's summary output while the
+task runs.
+
+**Verified:** ruff clean; full python suite **183 passed** (178 + 5 new in
+`tests/python/test_async_io_helpers.py` — blocking-helper return-shape contracts, the
+`_compare_blocking` missing-file guard, and a static `ast` check that **all 3**
+extended_task targets are `async` — the invariant that prevents a sync→`TypeError` at
+session construction); `create_ui().tagify()` backstop passes; CI Playwright
+integration-tests construct the tasks on session connect.
+
+**Effort:** ~4 hours (as estimated).
 
 ---
 
@@ -802,7 +831,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 - [x] 1.9 IOSTAT error handling — **Done** (2026-07-18; `OPEN_INPUT_FILE` helper guards all 24 input `status='OLD'` opens → clean message + nonzero `error stop` on missing/unreadable file; byte-identical when files exist; per-read content checks deliberately out of scope)
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
 - [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)
-- [ ] 2.4 Async file I/O
+- [x] 2.4 Async file I/O — **Done** (2026-07-18; 3 heavy button-triggered handlers in mass_balance/observations moved off the event loop via `@reactive.extended_task` + `asyncio.to_thread`; 183 tests incl. 5 new + async-guard; create_ui backstop pass)
 - [x] 2.6 Centralized configuration — **Done** (2026-07-18; `shiny_app/config.py` — named subprocess timeouts + `DEFAULT_CONSTANTS_FILE`, wired across 8 files; ROOT/other filenames deliberately left per the app's dual-import cost; 178 tests + create_ui backstop pass)
 - [ ] 3.1 Compiler matrix (when Intel CI available)
 - [x] 3.7 Release workflow — **Done** (2026-07-10, `.github/workflows/release.yml` + `tools/extract_release_notes.sh`)
