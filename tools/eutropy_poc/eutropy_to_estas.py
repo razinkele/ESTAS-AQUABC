@@ -330,6 +330,46 @@ def _set_temperature_model_ctmi(path):
         lines.append("            1\n")
     with open(path, "w") as fh:
         fh.writelines(lines)
+
+
+def _set_advanced_redox_on(path):
+    """CL29 runs the full advanced-redox cycle (Fe/Mn/S/CH4): set ADVANCED REDOX
+    SIMULATION = 1 in the copied PELAGIC_MODEL_OPTIONS.txt."""
+    with open(path) as fh:
+        lines = fh.readlines()
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("# ADVANCED REDOX"):
+            lines[i + 1] = "            1\n"
+            break
+    with open(path, "w") as fh:
+        fh.writelines(lines)
+
+
+def _set_fepo4_ksp(path, log10_ksp):
+    """CL29 uses an effective water-column FePO4 solubility (log10 Ksp) weaker than
+    the crystalline -26.4, so advanced-redox iron-phosphate binding does not
+    spuriously suppress the Fe3+-rich marine-box blooms. Sets FEPO4_KSP_LOG10;
+    inserts it right after TEMPERATURE_MODEL (the reader's expected position) if the
+    template lacks it."""
+    with open(path) as fh:
+        lines = fh.readlines()
+    value = f"        {log10_ksp}\n"
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("# FEPO4_KSP_LOG10"):
+            lines[i + 1] = value
+            break
+    else:
+        for i, ln in enumerate(lines):
+            if ln.strip().startswith("# TEMPERATURE_MODEL"):
+                lines[i + 2:i + 2] = ["# FEPO4_KSP_LOG10\n", value]
+                break
+        else:
+            lines.append("# FEPO4_KSP_LOG10\n")
+            lines.append(value)
+    with open(path, "w") as fh:
+        fh.writelines(lines)
+
+
 NBND = 5
 BND_TO_BOX = {1: 12, 2: 24, 3: 24, 4: 3, 5: 3}   # from Eutropy From_-N_To_j
 
@@ -527,6 +567,12 @@ def main():
                 os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"))
     # CL29 opts into CTMI (its temperature constants are recalibrated for it)
     _set_temperature_model_ctmi(os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"))
+    # CL29 runs the full advanced-redox cycle (Fe/Mn/S/CH4) with an effective
+    # water-column FePO4 solubility (log10 Ksp -25, weaker than the crystalline
+    # -26.4) so the iron-phosphate binding does not spuriously suppress the
+    # marine-box phytoplankton blooms. See docs / session on the FePO4 Ksp sweep.
+    _set_advanced_redox_on(os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"))
+    _set_fepo4_ksp(os.path.join(OUT, "PELAGIC_MODEL_OPTIONS.txt"), -25.0)
     # output info: one row PER BOX (state-var / process-rate / mass-balance flags)
     with open(os.path.join(OUT, "PELAGIC_OUTPUT_INFORMATION_FILE.txt"), "w") as fh:
         fh.write("#  BOX_NO   STATE_VAR_OUT   PROCESS_RATE_OUT   MASS_BALANCE_OUT\n")
