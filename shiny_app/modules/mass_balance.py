@@ -15,6 +15,7 @@ this module never shadows or self-imports the leaf. Verified (no recursion):
 `.venv/bin/python -c "import shiny_app.modules.mass_balance"` -> prints
 without RecursionError/ImportError.
 """
+import asyncio
 import logging
 import os
 
@@ -30,6 +31,21 @@ logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
+
+
+def _compute_mass_balance_blocking(output_csv, param_file):
+    """Pure read + compute for the mass-balance tab (TODO 2.4).
+
+    Runs in a worker thread (via ``asyncio.to_thread``) so the full-CSV read and
+    the pandas calculation never block the Shiny event loop. Returns
+    ``(calculator, results)`` on success, or ``None`` if the output failed to load.
+    """
+    stoich = load_stoichiometry_from_params(param_file)
+    calc = MassBalanceCalculator(output_csv, stoich)
+    if not calc.load_data():
+        return None
+    results = calc.calculate_all()
+    return calc, results
 
 
 @module.ui
@@ -74,10 +90,15 @@ def mass_balance_server(input, output, session, state):
     mb_results = reactive.Value(None)
     mb_calculator = reactive.Value(None)
 
+    @reactive.extended_task
+    async def compute_task(output_csv, param_file):
+        """Run the blocking read+compute off the event loop (TODO 2.4)."""
+        return await asyncio.to_thread(_compute_mass_balance_blocking, output_csv, param_file)
+
     @reactive.effect
     @reactive.event(input.calc_mass_balance)
-    def calculate_mass_balance():
-        """Calculate mass balance when button is clicked"""
+    def launch_mass_balance():
+        """Launch the backgrounded mass-balance calculation on button click."""
         if not os.path.exists(OUTPUT_CSV):
             logger.warning("OUTPUT.csv not found for mass balance calculation")
             ui.notification_show(
@@ -88,34 +109,43 @@ def mass_balance_server(input, output, session, state):
             return
 
         logger.info("Calculating mass balance...")
-
-        # Load stoichiometry from parameters
         param_file = os.path.join(INPUTS_DIR, "WCONST_04.txt")
-        stoich = load_stoichiometry_from_params(param_file)
+        compute_task(OUTPUT_CSV, param_file)
 
-        # Create calculator and calculate
-        calc = MassBalanceCalculator(OUTPUT_CSV, stoich)
-        if calc.load_data():
-            results = calc.calculate_all()
-            mb_calculator.set(calc)
-            mb_results.set(results)
-            logger.info("Mass balance calculation complete")
-            ui.notification_show(
-                "Mass balance calculated successfully",
-                type="message",
-                duration=2
-            )
-        else:
+    @reactive.effect
+    def collect_mass_balance():
+        """Publish the background result once the task finishes."""
+        status = compute_task.status()
+        if status == "error":
+            logger.error("Mass balance computation failed in background task")
+            ui.notification_show("Failed to load output data", type="error", duration=3)
+            return
+        if status != "success":
+            return  # "initial" / "running": nothing to collect yet
+
+        outcome = compute_task.result()
+        if outcome is None:
             logger.error("Failed to load data for mass balance")
-            ui.notification_show(
-                "Failed to load output data",
-                type="error",
-                duration=3
-            )
+            ui.notification_show("Failed to load output data", type="error", duration=3)
+            return
+
+        calc, results = outcome
+        mb_calculator.set(calc)
+        mb_results.set(results)
+        logger.info("Mass balance calculation complete")
+        ui.notification_show(
+            "Mass balance calculated successfully",
+            type="message",
+            duration=2
+        )
 
     @render.table
     def mass_balance_summary():
         """Render mass balance summary table"""
+        if compute_task.status() == "running":
+            return pd.DataFrame({
+                "Message": ["Calculating mass balance… (running in background)"]
+            })
         results = mb_results.get()
         if results is None:
             return pd.DataFrame({

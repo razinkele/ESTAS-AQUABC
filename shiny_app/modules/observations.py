@@ -6,6 +6,7 @@ registers the handlers, ported verbatim from app.py. Self-contained: imports
 the `observation_compare` and `obs_loader` leaf modules and self-computes
 ROOT/OUTPUT_CSV; imports nothing from app.py.
 """
+import asyncio
 import logging
 import os
 
@@ -27,6 +28,42 @@ except ImportError:  # running as a script from inside shiny_app/
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
+
+
+def _compare_blocking(output_csv, obs):
+    """Build the model-vs-observation comparison + metrics (TODO 2.4).
+
+    Runs in a worker thread (via ``asyncio.to_thread``) so the full OUTPUT.csv
+    read and the metric computation never block the Shiny event loop. Returns
+    ``(comparison, metrics)``, or ``(None, None)`` if OUTPUT.csv is absent.
+    """
+    if not os.path.exists(output_csv):
+        return None, None
+    comparison = ModelObservationComparison(output_csv, obs)
+    comparison.load_model_data()
+    metrics = comparison.calculate_all_metrics()
+    return comparison, metrics
+
+
+def _sample_and_compare_blocking(output_csv):
+    """Generate sample observations from OUTPUT.csv and build the comparison (TODO 2.4).
+
+    Runs in a worker thread; the two full OUTPUT.csv reads (sampling + model load)
+    and the metric computation stay off the event loop. Returns a result dict:
+    ``{"ok": True, "obs", "comparison", "metrics", "n"}`` on success, else
+    ``{"ok": False, "reason": "empty"|"load", "msg"?}``.
+    """
+    sample_df = create_sample_observations(output_csv, noise_level=0.1, sample_fraction=0.1)
+    if len(sample_df) == 0:
+        return {"ok": False, "reason": "empty"}
+    obs = ObservationData()
+    success, msg = obs.load_from_dataframe(sample_df)
+    if not success:
+        return {"ok": False, "reason": "load", "msg": msg}
+    comparison = ModelObservationComparison(output_csv, obs)
+    comparison.load_model_data()
+    metrics = comparison.calculate_all_metrics()
+    return {"ok": True, "obs": obs, "comparison": comparison, "metrics": metrics, "n": len(sample_df)}
 
 
 @module.ui
@@ -109,6 +146,62 @@ def observations_server(input, output, session, state):
     obs_files_list = reactive.Value([])  # List of ObservationFile objects
     obs_loaded_file = reactive.Value(None)  # Currently loaded observation file
     obs_file_preview = reactive.Value(None)  # Preview data for selected file
+
+    # --- Background tasks for the heavy OUTPUT.csv comparison (TODO 2.4) ---
+    @reactive.extended_task
+    async def compare_task(output_csv, obs):
+        """Off-loop model-vs-observation comparison for the upload path."""
+        return await asyncio.to_thread(_compare_blocking, output_csv, obs)
+
+    @reactive.extended_task
+    async def sample_task(output_csv):
+        """Off-loop sample-generation + comparison for the sample-data path."""
+        return await asyncio.to_thread(_sample_and_compare_blocking, output_csv)
+
+    @reactive.effect
+    def collect_comparison():
+        """Publish the upload-path comparison once its background task finishes."""
+        status = compare_task.status()
+        if status == "error":
+            logger.error("Observation comparison failed in background task")
+            ui.notification_show("Failed to compare with model output", type="error")
+            return
+        if status != "success":
+            return
+        comparison, metrics = compare_task.result()
+        if comparison is None:
+            return  # OUTPUT.csv absent: observations still loaded, just no comparison
+        obs_comparison_obj.set(comparison)
+        obs_metrics_results.set(metrics)
+        logger.info(f"Calculated metrics for {len(metrics)} variables")
+
+    @reactive.effect
+    def collect_sample():
+        """Publish the sample-path result once its background task finishes."""
+        status = sample_task.status()
+        if status == "error":
+            logger.error("Sample observation generation failed in background task")
+            ui.notification_show("Failed to generate sample data", type="error")
+            return
+        if status != "success":
+            return
+        res = sample_task.result()
+        if not res["ok"]:
+            if res["reason"] == "empty":
+                ui.notification_show("Failed to generate sample data", type="error")
+            else:
+                ui.notification_show(f"Error: {res.get('msg', '')}", type="error")
+            return
+        obs = res["obs"]
+        obs_data_obj.set(obs)
+        ui.update_select("obs_variable", choices=obs.variables,
+                       selected=obs.variables[0] if obs.variables else None)
+        obs_comparison_obj.set(res["comparison"])
+        obs_metrics_results.set(res["metrics"])
+        ui.notification_show(
+            f"Generated {res['n']} sample observations with {len(obs.variables)} variables",
+            type="message"
+        )
 
     @reactive.effect
     @reactive.event(input.obs_scan_dir)
@@ -284,7 +377,7 @@ def observations_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.obs_file)
     def load_observation_file():
-        """Load uploaded observation file"""
+        """Load uploaded observation file, then compare in the background."""
         file_info = input.obs_file()
         if file_info is None or len(file_info) == 0:
             return
@@ -292,80 +385,46 @@ def observations_server(input, output, session, state):
         file_path = file_info[0]["datapath"]
         logger.info(f"Loading observation file: {file_info[0]['name']}")
 
+        # The uploaded file is small (user field data); loading it stays on the
+        # event loop. Only the OUTPUT.csv comparison below is offloaded (TODO 2.4).
         obs = ObservationData()
         success, msg = obs.load_csv(file_path)
 
-        if success:
-            obs_data_obj.set(obs)
-            logger.info(f"Loaded observations: {len(obs.variables)} variables")
-
-            # Update variable selector
-            ui.update_select("obs_variable", choices=obs.variables,
-                           selected=obs.variables[0] if obs.variables else None)
-
-            # Create comparison
-            if os.path.exists(OUTPUT_CSV):
-                comparison = ModelObservationComparison(OUTPUT_CSV, obs)
-                comparison.load_model_data()
-                obs_comparison_obj.set(comparison)
-
-                # Calculate all metrics
-                metrics = comparison.calculate_all_metrics()
-                obs_metrics_results.set(metrics)
-                logger.info(f"Calculated metrics for {len(metrics)} variables")
-
-            ui.notification_show(f"Loaded {len(obs.variables)} observation variables", type="message")
-        else:
+        if not success:
             logger.error(f"Failed to load observations: {msg}")
             ui.notification_show(f"Error: {msg}", type="error")
+            return
+
+        obs_data_obj.set(obs)
+        logger.info(f"Loaded observations: {len(obs.variables)} variables")
+        ui.update_select("obs_variable", choices=obs.variables,
+                       selected=obs.variables[0] if obs.variables else None)
+        ui.notification_show(f"Loaded {len(obs.variables)} observation variables", type="message")
+
+        # Offload the heavy model comparison (full OUTPUT.csv read + metrics).
+        compare_task(OUTPUT_CSV, obs)
 
     @reactive.effect
     @reactive.event(input.generate_sample_obs)
     def generate_sample_observations():
-        """Generate sample observation data for testing"""
+        """Launch background sample-data generation + comparison."""
         if not os.path.exists(OUTPUT_CSV):
             ui.notification_show("OUTPUT.csv not found. Run the model first.", type="warning")
             return
 
         logger.info("Generating sample observations...")
-
-        # Create sample observations (10% of data, 10% noise)
-        sample_df = create_sample_observations(OUTPUT_CSV, noise_level=0.1, sample_fraction=0.1)
-
-        if len(sample_df) == 0:
-            ui.notification_show("Failed to generate sample data", type="error")
-            return
-
-        # Load into observation data
-        obs = ObservationData()
-        success, msg = obs.load_from_dataframe(sample_df)
-
-        if success:
-            obs_data_obj.set(obs)
-
-            # Update variable selector
-            ui.update_select("obs_variable", choices=obs.variables,
-                           selected=obs.variables[0] if obs.variables else None)
-
-            # Create comparison
-            comparison = ModelObservationComparison(OUTPUT_CSV, obs)
-            comparison.load_model_data()
-            obs_comparison_obj.set(comparison)
-
-            # Calculate all metrics
-            metrics = comparison.calculate_all_metrics()
-            obs_metrics_results.set(metrics)
-
-            ui.notification_show(
-                f"Generated {len(sample_df)} sample observations with {len(obs.variables)} variables",
-                type="message"
-            )
-        else:
-            ui.notification_show(f"Error: {msg}", type="error")
+        # Sampling reads OUTPUT.csv and the comparison reads it again; both plus
+        # metric computation run off the event loop (TODO 2.4).
+        sample_task(OUTPUT_CSV)
 
     @render.table
     def obs_comparison_summary():
         """Render comparison summary table"""
+        if compare_task.status() == "running" or sample_task.status() == "running":
+            return pd.DataFrame({
+                "Message": ["Comparing with model output… (running in background)"]
+            })
+
         comparison = obs_comparison_obj.get()
 
         if comparison is None:
