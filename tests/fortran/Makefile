@@ -27,7 +27,7 @@ PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
 SEDIMENT_SRC = $(AQUABC_SRC)/SEDIMENTS
 
 # Source dependencies for each test
-DO_SAT_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DO_SATURATION.f90
+DO_SAT_SRCS = $(PHYS_CONST_SRC) $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DO_SATURATION.f90
 CHLA_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CHLA.f90
 PARA_AQUA_SRCS = $(CORE_UTILS)/STRING_UTILS.f90
 SETTLING_SRCS = $(PELAGIC_LIB)/aquabc_II_pelagic_lib_SETTLING.f90
