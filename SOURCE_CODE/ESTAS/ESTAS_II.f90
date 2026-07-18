@@ -23,18 +23,18 @@ program ESTAS_II
     NUM_COMMAND_ARGUMENTS = command_argument_count();
 
     if (NUM_COMMAND_ARGUMENTS < 1) then
-        open(unit = 10, file = 'INPUT.txt', status = 'OLD')
+        call OPEN_INPUT_FILE(10, 'INPUT.txt', 'top-level run configuration')
     else
         select case (NUM_COMMAND_ARGUMENTS)
             case (1)
                 call get_command_argument(1, INPUT_FILE_NAME)
-                open(unit = 10, file = trim(adjustl(INPUT_FILE_NAME)), status = 'OLD')
+                call OPEN_INPUT_FILE(10, trim(adjustl(INPUT_FILE_NAME)), 'top-level run configuration')
                 
             case (2)
                 call get_command_argument(1, INPUT_FILE_NAME)
                 call get_command_argument(2, PELAGIC_CONSTANTS_FILE_NAME)
                 
-                open(unit = 10, file = trim(adjustl(INPUT_FILE_NAME)), status = 'OLD')
+                call OPEN_INPUT_FILE(10, trim(adjustl(INPUT_FILE_NAME)), 'top-level run configuration')
                 USE_PELAGIC_CONSTANTS_FILE_NAME = 1
 
             case (3)
@@ -42,7 +42,7 @@ program ESTAS_II
                 call get_command_argument(2, PELAGIC_CONSTANTS_FILE_NAME)
                 call get_command_argument(3, BINARY_PELAGIC_OUTPUT_FILE_NAME)
                 
-                open(unit = 10, file = trim(adjustl(INPUT_FILE_NAME)), status = 'OLD')
+                call OPEN_INPUT_FILE(10, trim(adjustl(INPUT_FILE_NAME)), 'top-level run configuration')
                 USE_PELAGIC_CONSTANTS_FILE_NAME    = 1
                 PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT = 1
 
@@ -52,7 +52,7 @@ program ESTAS_II
                 call get_command_argument(3, BINARY_PELAGIC_OUTPUT_FILE_NAME)
                 call get_command_argument(4, CRITICAL_SHEAR_STRESS_FILENAME)
 
-                open(unit = 10, file = trim(adjustl(INPUT_FILE_NAME)), status = 'OLD')
+                call OPEN_INPUT_FILE(10, trim(adjustl(INPUT_FILE_NAME)), 'top-level run configuration')
                 USE_PELAGIC_CONSTANTS_FILE_NAME    = 1
                 PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT = 1
                 CRIT_SHEAR_FNAME_FROM_OUTSIDE      = 1

@@ -168,9 +168,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     read(IN_FILE, *)
     read(IN_FILE, *) FILE_NAME
 
-    open(unit   = IN_FILE + 1, &
-         file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-         status = 'OLD')
+    call OPEN_INPUT_FILE(IN_FILE + 1, &
+         trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+         'pelagic model input')
 
     call READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
@@ -184,9 +184,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     read(IN_FILE, *)
     read(IN_FILE, *) FILE_NAME
 
-    open(unit   = IN_FILE + 1, &
-         file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-         status = 'OLD')
+    call OPEN_INPUT_FILE(IN_FILE + 1, &
+         trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+         'pelagic model input')
 
     read(IN_FILE + 1, *)
 
@@ -279,9 +279,7 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
             end if
         end if
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(constants_path), &
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, trim(constants_path), 'pelagic model input')
 
         call READ_MODEL_CONSTANTS &
              (PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(:, i), IN_FILE + 1)
@@ -296,9 +294,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     read(IN_FILE, *)
     read(IN_FILE, *) FILE_NAME
 
-    open(unit   = IN_FILE + 1, &
-         file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-         status = 'OLD')
+    call OPEN_INPUT_FILE(IN_FILE + 1, &
+         trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+         'pelagic model input')
 
     call READ_EXTRA_PELAGIC_MODEL_CONSTS(IN_FILE)
 
@@ -361,9 +359,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
 
         read(IN_FILE, *) BATHYMETRY_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call READ_BATHYMETRY_DATA_FROM_FILE &
              (PELAGIC_BOX_MODEL_DATA % BATHYMETRIES(BATHYMETRY_NO), IN_FILE + 1)
@@ -693,9 +691,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     do i = 1, NUM_PELAGIC_INIT_COND_SETS
         read(unit = IN_FILE, fmt = *) PELAGIC_INIT_COND_SET_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)),&
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call READ_INITIAL_CONCENTRATIONS &
              (PELAGIC_BOX_MODEL_DATA % &
@@ -711,9 +709,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     do i = 1, NUM_FLOW_TS
         read(unit = IN_FILE, fmt = *) FLOW_TS_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)),&
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call INITIALIZE_TIME_SERIE(PELAGIC_BOX_MODEL_DATA % FLOWS(FLOW_TS_NO))
 
@@ -730,9 +728,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     do i = 1, NUM_MIXING_TS
         read(unit = IN_FILE, fmt = *) MIXING_TS_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)),&
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call INITIALIZE_TIME_SERIE &
                  (PELAGIC_BOX_MODEL_DATA % MIXING_EXCHANGES(MIXING_TS_NO))
@@ -751,9 +749,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     do i = 1, NUM_SETTLING_VELOCITIES
         read(unit = IN_FILE, fmt = *) SETTLING_VELOCITY_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)),&
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call INITIALIZE_TIME_SERIE &
                  (PELAGIC_BOX_MODEL_DATA % SETTLING_VELOCITIES(SETTLING_VELOCITY_NO))
@@ -772,9 +770,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     do i = 1, NUM_FORCING_TS
         read(unit = IN_FILE, fmt = *) FORCING_TS_NO, FILE_NAME
 
-        open(unit   = IN_FILE + 1, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)),&
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 1, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER))//trim(adjustl(FILE_NAME)), &
+             'pelagic model input')
 
         call INITIALIZE_TIME_SERIE &
              (PELAGIC_BOX_MODEL_DATA % FORCING_TS(FORCING_TS_NO))

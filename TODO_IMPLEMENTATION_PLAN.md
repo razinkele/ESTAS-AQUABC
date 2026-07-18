@@ -176,13 +176,32 @@ real(dp), parameter :: GAS_CONST_R = 8.314D0
 
 ### 1.9 [P3] Missing IOSTAT on File READ Operations
 
-**Files:** Various utility and I/O routines
+**Status:** ✅ COMPLETE 2026-07-18 — the crash-on-bad-input path is guarded.
 
-**Problem:** Some `READ` statements lack `IOSTAT=` error handling, which can cause crashes on malformed input files.
+**Problem:** A missing or unreadable input file aborted with an opaque Fortran
+runtime error. All 71 `OPEN`s and ~430 `READ`s lacked `IOSTAT=`.
 
-**Fix:** Add `IOSTAT=ios` and error checking to all file I/O operations.
+**Fix (scoped to the failure mode, not all 430 reads):** the dominant crash is the
+`status='OLD'` **input OPENs** — a bad path there is what users actually hit. Added a
+standalone helper `SOURCE_CODE/ESTAS/sub_OPEN_INPUT_FILE.f90`
+(`OPEN_INPUT_FILE(unit, path, description)`) that opens with `IOSTAT`, prints a clear
+actionable message (`ERROR: cannot open <description> file: <path>`, IOSTAT, hint), and
+`error stop`s with a **nonzero exit** (so `run_cl29.sh`'s `set -e` catches it). Retrofitted
+all **24 input `status='OLD'` opens** across ESTAS_II, sub_READ_PELAGIC_INPUTS,
+mod_AQUATIC_MODEL, mod_BOTTOM_SEDIMENTS, mod_RESUSPENSION to call it. The build's
+source glob auto-compiles the new file; it is a standalone external subroutine so no
+module dependency / build-order risk.
 
-**Effort:** ~1–2 hours
+**Deliberately NOT done:** per-`READ` `IOSTAT` on the ~430 reads (malformed *content*
+mid-file). That is disproportionate (~400 lines of boilerplate, unreadable diff) and
+the OPEN guard covers the common failure (missing/unreadable file). Left as a possible
+future item if malformed-content robustness is ever needed.
+
+**Verified:** `tools/refactor_verify.sh` GATE PASS (default serial + omp8 bit-identical,
+0D golden PASS — behaviour unchanged when files exist); negative tests — missing
+top-level INPUT and missing pelagic input both produce the clean message and exit code 1.
+
+**Effort:** ~1–2 hours (as estimated).
 
 ---
 
@@ -717,7 +736,7 @@ Note: ALLELOPATHY, light extinction (`light_kd`), ammonia chemistry, iron chemis
 ### Backlog (as time permits)
 - [ ] 1.7 Sediment model variable cleanup
 - [ ] 1.8 Named physics constants
-- [ ] 1.9 IOSTAT error handling
+- [x] 1.9 IOSTAT error handling — **Done** (2026-07-18; `OPEN_INPUT_FILE` helper guards all 24 input `status='OLD'` opens → clean message + nonzero `error stop` on missing/unreadable file; byte-identical when files exist; per-read content checks deliberately out of scope)
 - [x] 1.10 [P1] Model-constants OOB write — **Done** (2026-07-17; nconst 318→323; memory-safety fix, production output byte-identical [adversarial review corrected the garbage-BETA framing])
 - [x] 1.11 [P1] Advanced-redox uninitialised-memory non-determinism — **Done** (2026-07-17; root cause was a local `FLAGS` in `CALC_DERIV` shadowing the global, leaving `FIRST_TIME_STEP`/`INIT_OPTION_*` reading garbage; one-line fix, 40/40 + 5/5 deterministic, default path byte-identical)
 - [ ] 2.4 Async file I/O

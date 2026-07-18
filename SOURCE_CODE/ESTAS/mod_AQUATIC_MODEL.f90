@@ -114,9 +114,9 @@ contains
 
 
 
-        open(unit   = IN_FILE + 2, &
-             file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
-             status = 'OLD')
+        call OPEN_INPUT_FILE(IN_FILE + 2, &
+             trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+             'model input')
 
         !Read the pelagic model output folder
         read(unit = IN_FILE, fmt = *)
@@ -408,10 +408,9 @@ contains
                         'Resuspension will be considered as in Option 1'
 
                     !Open the resuspension model input file
-                    open(unit   = IN_FILE + 2, &
-                         file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-                                              trim(adjustl(FILE_NAME)), &
-                         status = 'OLD')
+                    call OPEN_INPUT_FILE(IN_FILE + 2, &
+                         trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                         'model input')
 
                     !Read the resuspension model inputs
                     call READ_RESUSPENSION_FILE_OPTION_1(IN_FILE + 2)
@@ -426,10 +425,9 @@ contains
                         'Resuspension will be considered as in Option 2'
 
                     !Open the resuspension model input file
-                    open(unit   = IN_FILE + 2, &
-                         file   = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // &
-                                              trim(adjustl(FILE_NAME)), &
-                         status = 'OLD')
+                    call OPEN_INPUT_FILE(IN_FILE + 2, &
+                         trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                         'model input')
 
                     call READ_RESUSPENSION_FILE_OPTION_2(IN_FILE + 2)
                     close(IN_FILE + 2)
@@ -480,10 +478,9 @@ contains
             do i = 1, NUM_PRESCRIBED_SEDIMENT_FLUX_SETS
                 read(unit = IN_FILE, fmt = *) FILE_NAME
 
-                open(unit   = IN_FILE + 2, &
-                     file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // &
-                              trim(adjustl(FILE_NAME)), &
-                     status = 'OLD')
+                call OPEN_INPUT_FILE(IN_FILE + 2, &
+                     trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                     'model input')
 
                 call READ_BOTTOM_SEDS_FLUXES_INPUTS &
                          (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA, IN_FILE + 2, i)
@@ -503,10 +500,9 @@ contains
             read(unit = IN_FILE, fmt = *)
             read(unit = IN_FILE, fmt = *) FILE_NAME
 
-            open(unit   = IN_FILE + 2, &
-                 file   = trim(adjustl(PELAGIC_INPUT_FOLDER)) // &
-                          trim(adjustl(FILE_NAME)), &
-                 status = 'OLD')
+            call OPEN_INPUT_FILE(IN_FILE + 2, &
+                 trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                 'model input')
 
             call READ_BOTTOM_SEDIMENTS_MODEL_INPUTS(IN_FILE + 2)
 
