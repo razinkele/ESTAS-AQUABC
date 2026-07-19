@@ -29,7 +29,10 @@ from eutropy_to_aquabc import (  # shared mapping/defaults  # noqa: E402
 EU = os.path.expanduser("~/eutropy/input")
 OUT = os.path.join(os.path.dirname(__file__), "net")
 BASE_DATE = _dt.date(2012, 1, 1)
-MAX_DAY = 1826            # 2012-2017 (EUTROPY calibrated period)
+# Last day index to extract (day 0 = 2012-01-01). Default spans the full EUTROPY
+# forcing record 2012-2022 (day 4017 = 2022-12-31); the earlier CL29 build capped
+# at 1826 (2012-2016, the EUTROPY-calibrated window). Override via CL29_MAX_DAY.
+MAX_DAY = int(os.environ.get("CL29_MAX_DAY", "4017"))
 NBOX = 29
 BOUNDARIES = 5
 
