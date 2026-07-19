@@ -782,6 +782,37 @@ export OMP_PLACES=cores
 
 ---
 
+### 4.5 [P2] Serial solver optimizations — `PELAGIC_SOLVER` (profiled 2026-07-19)
+
+Profiled the box-model solver (`SOURCE_CODE/ESTAS/mod_SOLVER.f90`) with gprof on the
+25-box verify config (serial, 7,201 timesteps). Surprising result: **~40% of runtime is
+solver overhead, not biochemistry** (`CALC_DERIV` self 23%, basin geometry ~20%, CO2SYS
+~18%, settling 7%, kinetics-proper only 4%). Two byte-identical wins, deferred:
+
+- **[P2] Cache box geometry (~20%, byte-identical on hold-volume runs).** `UPDATE_TIME_FUNCS`
+  (mod_SOLVER.f90:~482–543) recomputes each box's surface elevation via an *iterative*
+  volume→elevation root-find (~34 `CALCULATE_VOLUME` evals/box/step), plus surface/bottom
+  areas — every timestep. These are pure functions of `VOLUME` + fixed bathymetry, so when
+  `ESTAS_HOLD_VOLUME=1` (which CL29 requires) they are **constant for the whole run** and
+  the recompute is 100% wasted. Cache after step 1 (byte-identical); warm-start the
+  root-find from the previous step in variable-volume mode.
+- **[P3] Hoist O(nkn²) array-zeroing out of the per-box loop (byte-identical).**
+  `CALC_DERIV` lines ~804–808 zero whole module arrays (`PROCESS_RATES` is `nkn×36×30`)
+  *inside* the `do i=1,nkn` loop → each zeroed `nkn` times. Move the 5 whole-array zeros
+  above the loop. Attacks the 23% `CALC_DERIV` self-time; grows as nkn².
+- Plus trivial byte-identical cleanups: a dead local `MODEL_CONSTANTS` array (passed to a
+  routine that ignores it), two redundant re-zeroing loops (~996–1002, ~1139–1145), and a
+  few loop-invariant subexpressions.
+
+Also surfaced (and one FIXED): the **RK2 settling-suppression double-apply** — fixed
+2026-07-19 (see CHANGELOG; RK2 is currently dead code so no live impact). Still open: a
+fragile `SETTLING_VELOCITY_FACTORS` caller/callee shape mismatch (works by luck).
+
+**Effort:** ~half a day for the geometry cache + zeroing hoist + cleanups (one
+byte-identical PR, verified against the 0D golden with no regeneration).
+
+---
+
 ## 5. Testing Improvements
 
 ### 5.1 [P2] Fortran Test Coverage Expansion

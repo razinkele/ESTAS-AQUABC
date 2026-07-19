@@ -16,6 +16,14 @@ module PELAGIC_SOLVER
     real(kind = DBL), allocatable, dimension(:)   :: DISPERSION_COEFFS
     real(kind = DBL), allocatable, dimension(:)   :: INTERFACE_AREAS
     real(kind = DBL), allocatable, dimension(:,:) :: SETTLING_VELOCITIES
+    ! Pristine (un-suppressed) copy of SETTLING_VELOCITIES, used only by the RK2
+    ! path. CALC_DERIV applies the CHLA settling-suppression to SETTLING_VELOCITIES
+    ! IN PLACE, but UPDATE_TIME_FUNCS (which recomputes the fresh velocities) runs
+    ! only once per RK2 step; without restoring the fresh values before stage 2 the
+    ! two CALC_DERIV calls would compound the suppression (stage 2 would suppress an
+    ! already-suppressed velocity). The Euler path (one CALC_DERIV/step) never uses
+    ! this and is unaffected.
+    real(kind = DBL), allocatable, dimension(:,:) :: SETTLING_VELOCITIES_FRESH
     real(kind = DBL), allocatable, dimension(:)   :: SURFACE_AREAS
     real(kind = DBL), allocatable, dimension(:)   :: BOTTOM_AREAS
     real(kind = DBL), allocatable, dimension(:,:) :: MASS_LOADS
@@ -99,6 +107,7 @@ contains
                 stop
             end if
             allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS), stat=i)
+            allocate(SETTLING_VELOCITIES_FRESH(NUM_PELAGIC_BOXES, NUM_PELAGIC_STATE_VARS), stat=i)
             allocate(MASS_LOADS         (NUM_MASS_LOADS      , NUM_PELAGIC_STATE_VARS), stat=i)
             allocate(MASS_WITHDRAWALS   (NUM_MASS_WITHDRAWALS, NUM_PELAGIC_STATE_VARS), stat=i)
             allocate(FLOWS              (NUM_PELAGIC_ADVECTIVE_LINKS), stat=i)
@@ -308,6 +317,12 @@ contains
                   BOTTOM_AREAS, MASS_LOADS, MASS_WITHDRAWALS , &
                   PRESCRIBED_SEDIMENT_FLUXES)
 
+            ! Preserve the fresh (un-suppressed) settling velocities. CALC_DERIV
+            ! suppresses SETTLING_VELOCITIES in place, so stage 2 must be restored
+            ! to this baseline to avoid compounding the suppression (see the
+            ! SETTLING_VELOCITIES_FRESH declaration).
+            SETTLING_VELOCITIES_FRESH = SETTLING_VELOCITIES
+
             do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
                 STATE_VARIABLES(i, :) = &
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
@@ -365,6 +380,10 @@ contains
                     STATE_VARIABLES(i, :) = &
                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
                 end do
+
+                ! Restore fresh settling velocities so stage 2's CHLA suppression
+                ! applies once (from the fresh base), not on top of stage 1's.
+                SETTLING_VELOCITIES = SETTLING_VELOCITIES_FRESH
 
                 call CALC_DERIV &
                      (PELAGIC_BOX_MODEL_DATA, TIME + TIME_STEP, TIME_STEP          , &
@@ -1608,6 +1627,7 @@ contains
         if (allocated(DISPERSION_COEFFS))   deallocate(DISPERSION_COEFFS)
         if (allocated(INTERFACE_AREAS))     deallocate(INTERFACE_AREAS)
         if (allocated(SETTLING_VELOCITIES)) deallocate(SETTLING_VELOCITIES)
+        if (allocated(SETTLING_VELOCITIES_FRESH)) deallocate(SETTLING_VELOCITIES_FRESH)
         if (allocated(SURFACE_AREAS))       deallocate(SURFACE_AREAS)
         if (allocated(BOTTOM_AREAS))        deallocate(BOTTOM_AREAS)
         if (allocated(MASS_LOADS))          deallocate(MASS_LOADS)
