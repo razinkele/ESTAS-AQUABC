@@ -35,6 +35,15 @@ module PELAGIC_SOLVER
     ! on a prescribed volume time-series); default off preserves existing runs.
     logical, save :: HOLD_VOLUME_CONSTANT = .false.
 
+    ! Geometry cache (TODO 4.5): box surface elevation / depth / surface & bottom
+    ! areas are a deterministic function of box VOLUME + the fixed bathymetry. The
+    ! recompute in UPDATE_TIME_FUNCS uses an iterative CALCULATE_SURFACE_ELEVATION
+    ! root-find that is ~20% of runtime and is entirely redundant when the volumes
+    ! do not change (e.g. ESTAS_HOLD_VOLUME=1). We recompute only when a volume
+    ! differs bit-for-bit from the last computation; otherwise the persisted outputs
+    ! are already correct, so the result is byte-identical.
+    real(kind = DBL), allocatable, dimension(:), save :: LAST_GEOM_VOLUMES
+
 contains
 
     subroutine SOLVE(PELAGIC_BOX_MODEL_DATA        , &
@@ -474,6 +483,7 @@ contains
         !Geometry related
         integer :: BATHYMETRY_NO
         integer :: BOX_NO
+        logical :: RECOMPUTE_GEOMETRY
 
         !Advection related
         integer :: FLOW_TS_NO
@@ -500,7 +510,20 @@ contains
             end do
         end do
 
-        !UPDATE GEOMETRY
+        !UPDATE GEOMETRY -- recompute only when a box volume changed (TODO 4.5)
+        RECOMPUTE_GEOMETRY = .true.
+        if (allocated(LAST_GEOM_VOLUMES)) then
+            RECOMPUTE_GEOMETRY = .false.
+            do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME /= &
+                    LAST_GEOM_VOLUMES(i)) then
+                    RECOMPUTE_GEOMETRY = .true.
+                    exit
+                end if
+            end do
+        end if
+
+        if (RECOMPUTE_GEOMETRY) then
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_BASINS
             do j = PELAGIC_BOX_MODEL_DATA % BASINS(i) % NUM_PELAGIC_BOXES, 1, -1
 
@@ -560,6 +583,16 @@ contains
             BOTTOM_AREAS(i)   = CALCULATE_SURFACE_AREA &
                  (PELAGIC_BOX_MODEL_DATA % BATHYMETRIES(BATHYMETRY_NO), BOTTOM_ELEVATION)
         end do
+
+            ! Record the volumes this geometry corresponds to, so the next call can
+            ! skip the recompute when nothing changed (byte-identical; see the
+            ! LAST_GEOM_VOLUMES declaration).
+            if (.not. allocated(LAST_GEOM_VOLUMES)) &
+                allocate(LAST_GEOM_VOLUMES(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES))
+            do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                LAST_GEOM_VOLUMES(i) = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+            end do
+        end if   ! RECOMPUTE_GEOMETRY
 
         !UPDATE OPEN BOUNDARY TIME SERIES FOR THE PELAGIC BOX MODEL
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_OPEN_BOUNDARIES
@@ -811,6 +844,16 @@ contains
         ! ---------------------------------------------------------------------------
 
         !Initialize the derivatives from previous calculations to zero
+        ! These five whole-array resets are loop-invariant (not indexed by the box
+        ! loop and not written inside it), so hoist them out -- they were zeroed nkn
+        ! times each, O(nkn^2) write traffic (PROCESS_RATES is nkn x 36 x 30).
+        ! Byte-identical (TODO 4.5).
+        MODEL_CONSTANTS   = 0.0D0
+        DRIVING_FUNCTIONS = 0.0D0
+        PROCESS_RATES     = 0.0D0
+        SAVED_OUTPUTS     = 0.0D0
+        FLAGS             = 0
+
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
             PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, DERIV_NO) = 0.0D0
 
@@ -819,12 +862,6 @@ contains
 
             PELAGIC_BOX_MODEL_DATA % TEMP_ADVECTION_DERIVS (i, DERIV_NO) = 0.0D0
             PELAGIC_BOX_MODEL_DATA % TEMP_DISPERSION_DERIVS(i, DERIV_NO) = 0.0D0
-
-            MODEL_CONSTANTS   = 0.0D0
-            DRIVING_FUNCTIONS = 0.0D0
-            PROCESS_RATES     = 0.0D0
-            SAVED_OUTPUTS     = 0.0D0
-            FLAGS             = 0
 
             do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
 
@@ -1628,6 +1665,7 @@ contains
         if (allocated(INTERFACE_AREAS))     deallocate(INTERFACE_AREAS)
         if (allocated(SETTLING_VELOCITIES)) deallocate(SETTLING_VELOCITIES)
         if (allocated(SETTLING_VELOCITIES_FRESH)) deallocate(SETTLING_VELOCITIES_FRESH)
+        if (allocated(LAST_GEOM_VOLUMES))   deallocate(LAST_GEOM_VOLUMES)
         if (allocated(SURFACE_AREAS))       deallocate(SURFACE_AREAS)
         if (allocated(BOTTOM_AREAS))        deallocate(BOTTOM_AREAS)
         if (allocated(MASS_LOADS))          deallocate(MASS_LOADS)
