@@ -1,0 +1,24 @@
+# Lithuanian EPA monitoring station -> CL29 (29-box CuLPy) model box mapping.
+#
+# Boxes read by inspection from the user-supplied georeferenced raster
+# 29boxesNew_modified.tif (EPSG:3346 / LKS94), confirmed visually 2026-07-19.
+# The join key used by ingest_epa_observations.py is the bare station number
+# (the "LTK" prefix stripped): LTK3B -> 3B, matching the older EPA sheets whose
+# station column already uses the bare codes.
+#
+# easting/northing are the station coordinates in EPSG:3346 (metres); region is a
+# coarse along-lagoon grouping (Strait / Northern / Central).
+station,box,region,easting,northing
+LTK1,7,Strait,320397,6179134
+LTK2,7,Strait,319194,6177275
+LTK3,11,Strait,319599,6173032
+LTK3B,11,Strait,320601,6173603
+LTK3DT,11,Strait,320070,6173554
+LTK4,20,Northern,320600,6166341
+LTK5,17,Northern,318676,6159711
+LTK6,15,Northern,319625,6151272
+LTK7B,19,Northern,324503,6152970
+LTK8,15,Northern,317879,6145968
+LTK12,14,Central,320251,6136769
+LTK10,23,Central,311238,6133996
+LTK14,25,Central,316146,6129694
