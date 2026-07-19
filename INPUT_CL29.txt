@@ -8,7 +8,7 @@
 # SIMULATION_START
             0.0
 # SIMULATION_END
-         1826.0
+         4016.0
 # NUM_REPEATS
               1
 # TIME_STEPS_PER_DAY

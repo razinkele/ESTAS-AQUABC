@@ -9,8 +9,10 @@ table, bathymetries, 1044-row settling block, 100 advective links, 5x36 open
 boundaries, per-box forcing) is generated from the already-daily-resampled
 EUTROPY data in tools/eutropy_poc/net/.
 
-Time base: day index 0..1826 (2012-01-01 .. 2016-12-31), used consistently in
-the TS files and INPUT_CL29.txt so ESTAS interpolation lines up.
+Time base: day index 0..N-1 (day 0 = 2012-01-01), taken from the length of the
+net/ forcing matrices, so the TS files and INPUT_CL29.txt SIMULATION_END line up
+with whatever period eutropy_to_aquabc_network.py extracted (see its CL29_MAX_DAY
+/ MAX_DAY; the default spans the full 2012-2022 EUTROPY record).
 
 Run from the repository root.
 """
