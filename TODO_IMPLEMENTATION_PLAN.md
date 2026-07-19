@@ -784,32 +784,36 @@ export OMP_PLACES=cores
 
 ### 4.5 [P2] Serial solver optimizations — `PELAGIC_SOLVER` (profiled 2026-07-19)
 
-Profiled the box-model solver (`SOURCE_CODE/ESTAS/mod_SOLVER.f90`) with gprof on the
-25-box verify config (serial, 7,201 timesteps). Surprising result: **~40% of runtime is
-solver overhead, not biochemistry** (`CALC_DERIV` self 23%, basin geometry ~20%, CO2SYS
-~18%, settling 7%, kinetics-proper only 4%). Two byte-identical wins, deferred:
+**Status:** ✅ two byte-identical wins landed 2026-07-19 (geometry cache + zeroing hoist);
+minor cleanups still open.
 
-- **[P2] Cache box geometry (~20%, byte-identical on hold-volume runs).** `UPDATE_TIME_FUNCS`
-  (mod_SOLVER.f90:~482–543) recomputes each box's surface elevation via an *iterative*
-  volume→elevation root-find (~34 `CALCULATE_VOLUME` evals/box/step), plus surface/bottom
-  areas — every timestep. These are pure functions of `VOLUME` + fixed bathymetry, so when
-  `ESTAS_HOLD_VOLUME=1` (which CL29 requires) they are **constant for the whole run** and
-  the recompute is 100% wasted. Cache after step 1 (byte-identical); warm-start the
-  root-find from the previous step in variable-volume mode.
-- **[P3] Hoist O(nkn²) array-zeroing out of the per-box loop (byte-identical).**
-  `CALC_DERIV` lines ~804–808 zero whole module arrays (`PROCESS_RATES` is `nkn×36×30`)
-  *inside* the `do i=1,nkn` loop → each zeroed `nkn` times. Move the 5 whole-array zeros
-  above the loop. Attacks the 23% `CALC_DERIV` self-time; grows as nkn².
-- Plus trivial byte-identical cleanups: a dead local `MODEL_CONSTANTS` array (passed to a
-  routine that ignores it), two redundant re-zeroing loops (~996–1002, ~1139–1145), and a
-  few loop-invariant subexpressions.
+Profiled `SOURCE_CODE/ESTAS/mod_SOLVER.f90` with gprof on the 25-box verify config
+(serial, 7,201 timesteps). gprof pointed at basin geometry (~20%) and `CALC_DERIV` self
+(23%) — **but the ~20% geometry figure turned out to be a profiling artifact**: gprof adds
+per-call overhead to the basin functions, which are called *millions* of times, inflating
+their apparent share. The real (non-pg) payoff is smaller.
 
-Also surfaced (and one FIXED): the **RK2 settling-suppression double-apply** — fixed
-2026-07-19 (see CHANGELOG; RK2 is currently dead code so no live impact). Still open: a
-fragile `SETTLING_VELOCITY_FACTORS` caller/callee shape mismatch (works by luck).
+**Done (byte-identical, verified 0-diff on the verify config, both normal and
+`ESTAS_HOLD_VOLUME=1` modes):**
+- **Box-geometry cache.** `UPDATE_TIME_FUNCS` recomputes each box's surface elevation via
+  an iterative volume→elevation root-find every timestep. It now recomputes only when a
+  box `VOLUME` differs bit-for-bit from the last computation (`LAST_GEOM_VOLUMES`). In hold
+  mode the cache hits 7,200/7,201 steps (recompute=1). Byte-identical (outputs persist, so
+  a skip keeps the identical cached values).
+- **Hoisted the O(nkn²) array-zeroing.** Moved the 5 loop-invariant whole-array resets
+  (`MODEL_CONSTANTS`/`DRIVING_FUNCTIONS`/`PROCESS_RATES`[nkn×36×30]/`SAVED_OUTPUTS`/`FLAGS`)
+  out of `CALC_DERIV`'s per-box loop (they were zeroed nkn times each).
+- **Measured:** ~11% faster serial (verify+hold best-of-3: 15.49s → 13.81s). Not the ~25–30%
+  projected from the inflated gprof numbers — honest result. Verified byte-identical vs a
+  fresh main baseline; Fortran unit tests pass.
 
-**Effort:** ~half a day for the geometry cache + zeroing hoist + cleanups (one
-byte-identical PR, verified against the 0D golden with no regeneration).
+**Still open (low value, deferred):** the trivial cleanups — a dead local `MODEL_CONSTANTS`
+array (passed to a routine that ignores it), two redundant re-zeroing loops, a few
+loop-invariant subexpressions — and the fragile `SETTLING_VELOCITY_FACTORS` caller/callee
+shape mismatch (works by luck).
+
+Also surfaced + FIXED earlier: the **RK2 settling-suppression double-apply** (2026-07-19,
+PR #36; RK2 is dead code so no live impact).
 
 ---
 
