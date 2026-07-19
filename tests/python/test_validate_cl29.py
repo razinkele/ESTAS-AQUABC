@@ -92,3 +92,28 @@ def test_metrics_returns_none_when_no_overlap():
     model = _model_df(days=100)
     obs = pd.DataFrame({"date": [dt.date(2020, 1, 1)], "value": [1.0]})
     assert val.metrics(model, obs, "NH4_N") is None
+
+
+def test_add_derived_totals_and_chla():
+    df = pd.DataFrame({
+        "NH4_N": [0.1], "NO3_N": [0.5], "DISS_ORG_N": [0.2],
+        "DET_PART_ORG_N": [0.1], "ZOO_N": [0.05],
+        "PO4_P": [0.02], "DISS_ORG_P": [0.01], "DET_PART_ORG_P": [0.005],
+        "ZOO_P": [0.002], "DIA_C": [1.0],  # only diatom carbon present
+    })
+    out = val.add_derived(df)
+    # TN = inorganic+organic+detr+zoo + N:C*phyto_C = 0.95 + 0.22*1.0
+    assert out["TN"].iloc[0] == pytest.approx(1.17)
+    # TP = 0.037 + 0.024*1.0
+    assert out["TP"].iloc[0] == pytest.approx(0.061)
+    # Chl-a = 1000 * DIA_C / 30  (ug/L)
+    assert out["CHLA"].iloc[0] == pytest.approx(1000.0 / 30.0)
+
+
+def test_add_derived_tolerates_missing_pools():
+    # A minimal frame (as from a stripped .out) must not raise; absent pools -> 0.
+    df = pd.DataFrame({"NO3_N": [0.5], "DIA_C": [0.0]})
+    out = val.add_derived(df)
+    assert out["TN"].iloc[0] == pytest.approx(0.5)
+    assert out["TP"].iloc[0] == pytest.approx(0.0)
+    assert out["CHLA"].iloc[0] == pytest.approx(0.0)
