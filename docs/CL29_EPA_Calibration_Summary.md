@@ -17,7 +17,7 @@ Curonian Lagoon configuration (CL29).*
 | change | effect | status |
 |---|---|---|
 | **Denitrification** `K_MIN_DOC_NO3N_20` 0.025 → 1.0 | NO3 bias +0.31 → +0.06 (RMSE −31%), TN +0.80 → +0.39; DO improved | merged (PR #42) |
-| **Summer-P boost** `CL29_BOUNDARY_PO4_SUMMER_PEAK` 3.0 → 2.0 | TP +0.019 → +0.013; de-eutrophication-aware for the fuller record | open (PR #43) |
+| **Summer-P boost** `CL29_BOUNDARY_PO4_SUMMER_PEAK` 3.0 → 2.0 | TP +0.019 → +0.013; de-eutrophication-aware for the fuller record | merged (PR #43) |
 
 The denitrification calibration is mechanistically grounded: the Curonian Lagoon is a
 documented strong-denitrification N sink (Bartoli et al. 2021 measured spring
@@ -29,10 +29,16 @@ problem, not over-loading.
 
 ## Residuals — characterized, not "fixed"
 
-Every remaining misfit traces to **one root: the model's diatoms do not concentrate
-their growing-season nutrient uptake enough** (near-aseasonal metabolism), which is
-**entangled with the box-19/cyanobacteria succession** the model was deliberately tuned
-for and therefore cannot be pushed without weakening the defining summer cyano bloom.
+Every remaining misfit traces to one of **two structural roots**, neither fixable by a
+few parameters without breaking a calibrated fit:
+
+1. **The model's diatoms do not concentrate their growing-season nutrient uptake
+   enough** (near-aseasonal metabolism), entangled with the box-19/cyanobacteria
+   succession the model was deliberately tuned for — so it cannot be pushed without
+   weakening the defining summer cyano bloom.
+2. **Organic-matter (esp. organic-N) turnover is too slow** — the model recycles
+   organic pools back to the inorganic forms too slowly, so newly-added N cannot reach
+   the denitrification sink (see the FIX_CYN finding below).
 
 - **PO4** — mild residual over-supply + weak removal; no clean lever (a detrital-P
   burial loss shaves only ~0.008 and costs chlorophyll).
@@ -43,6 +49,16 @@ for and therefore cannot be pushed without weakening the defining summer cyano b
   drawdown*, i.e. the same diatom-uptake issue.
 - **DO** — seasonally realistic (winter-high/summer-low), with a modest winter
   over-estimate (model 15.3 vs obs 12.1) from excess winter production.
+- **N₂-fixation (FIX_CYN)** — the model's N-fixation is ~12× too low (0.026 vs measured
+  ~0.31 mg N m⁻³ h⁻¹ in summer, though the seasonal shape is right). It is tunable up
+  (`KG_FIX_CYN`, `K_FIX`), but realistic fixation adds nitrogen that the N budget cannot
+  absorb: a joint fixation + denitrification config recovers NO3 (the stronger sink takes
+  the new inorganic N) yet leaves **TN elevated (+0.39 → +0.81)**, because the fixed N
+  lands in organic/biomass pools that turn over too slowly to reach denitrification, and
+  realistic fixation requires realistic FIX_CYN biomass whose N is unavoidable. No
+  parameter set matches N-fixation, NO3 *and* TN simultaneously — the clean fix needs
+  root #2 (faster organic-N turnover), so this was **not adopted** (it would trade a
+  validated concentration for an unvalidated process rate).
 
 Process-rate comparison against the 2015 measurements confirms the mechanism: model
 winter GPP is ~9× the measured, and summer remineralization/N-uptake are ~5–8× too low —
@@ -79,9 +95,14 @@ the seasonal amplitude of metabolism is collapsed relative to reality.
 
 ## Open threads
 
-- **FIX_CYN calibration** against the measured 2015 N₂-fixation rates (0.18–0.27, up to
-  1.2 mg N m⁻³ h⁻¹) — closes the nitrogen budget alongside the denitrification sink.
+- **Organic-N (and organic-matter) turnover** — the structural root behind the FIX_CYN
+  coupling; faster mineralization/nitrification (or organic-N burial) would let fixed and
+  regenerated N reach the denitrification sink, and is a prerequisite for adopting
+  realistic N-fixation.
 - **pH validation** using the 2015 DIC/alkalinity chemistry (also reconciles the
   `INORG_C` CO₂SYS units convention).
-- **Sediment facies map** — a real Curonian sandy/muddy map would enable spatially
-  variable P/Si burial; currently data-blocked.
+- **Sediment facies map** — a real Curonian sandy/muddy per-box map would enable
+  spatially variable P/Si burial. Only the box→type assignment is missing (the measured
+  sandy/muddy fluxes and the converter plumbing already exist); currently data-blocked on
+  a georeferenced grain-size/facies map (e.g. Lithuanian Geological Survey; Gulbinskas &
+  Trimonis; the erosional/accumulation zones of Mėžinė et al. 2019).
