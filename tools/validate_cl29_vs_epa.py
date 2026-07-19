@@ -6,10 +6,12 @@ observations produced by ``ingest_epa_observations.py`` (the tidy CSV), over the
 model's simulated window, and reports per (box, variable) fit metrics — count,
 observed/model means, bias, RMSE, correlation — plus optional comparison plots.
 
-Only the five EPA variables that map to a *direct* model state variable are
-compared: NH4->NH4_N, NO3->NO3_N, PO4->PO4_P, DO->DISS_OXYGEN, Si->DISS_Si. The
-derived diagnostics (pH, Tot_N, Tot_P, Chl_a) are not in the per-box .out — they
-require pool summation with the model's stoichiometry and are left as follow-up.
+Five EPA variables map to a *direct* model state variable (NH4->NH4_N, NO3->NO3_N,
+PO4->PO4_P, DO->DISS_OXYGEN, Si->DISS_Si). Three more (Tot_N, Tot_P, Chl_a) are not
+state variables but are reconstructed from the pool variables using the CL29
+WCONST_04 stoichiometry -- the same pool definition the Shiny mass_balance module
+uses, extended to the Nostocales pools present in CL29 (see add_derived). pH is
+still deferred (it needs a CO2SYS solve from INORG_C + TOT_ALK).
 
 Model time: ``PELAGIC_BOX_*.out`` column TIME_DAYS is days since Jan 1 of the run
 BASE_YEAR (INPUT_CL29.txt); e.g. TIME_DAYS 0.0 == 2012-01-01 for the CL29 config.
@@ -30,20 +32,53 @@ import sys
 import numpy as np
 import pandas as pd
 
-# EPA tidy variable key -> model .out column (the direct-comparison set).
-MODEL_COL = {
+# EPA tidy variable key -> model .out state-variable column (direct comparison).
+DIRECT_COL = {
     "NH4": "NH4_N", "NO3": "NO3_N", "PO4": "PO4_P",
     "DO": "DISS_OXYGEN", "Si": "DISS_Si",
 }
+# Stoichiometry for the derived totals, from INPUTS_CL29/WCONST_04.txt: every
+# group carries N:C 0.22, P:C 0.024; C:Chl-a is 30 (diatoms, OPA) or 40 (cyano,
+# fixing cyano, Nostocales). Chl-a excludes dormant akinetes (AKI_C).
+N_TO_C, P_TO_C = 0.22, 0.024
+PHYTO_C = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C", "NOST_VEG_HET_C", "AKI_C"]
+C_TO_CHLA = {"DIA_C": 30.0, "CYN_C": 40.0, "FIX_CYN_C": 40.0,
+             "OPA_C": 30.0, "NOST_VEG_HET_C": 40.0}
+# EPA key -> comparison column: a direct .out column, or a derived column of the
+# same name added by add_derived().
+MODEL_COL = {**DIRECT_COL, "TN": "TN", "TP": "TP", "CHLA": "CHLA"}
+
+
+def _col(df, name):
+    """Column as a float Series, or zeros if the model output lacks it."""
+    return (df[name].astype(float) if name in df.columns
+            else pd.Series(0.0, index=df.index))
+
+
+def add_derived(df):
+    """Add Tot_N (mg N/L), Tot_P (mg P/L), Chl_a (ug/L) columns from the pools.
+
+    Tot_N/Tot_P sum the inorganic, dissolved-organic, detrital, zooplankton and
+    phytoplankton (carbon x N:C or P:C) pools; Chl_a sums each phytoplankton
+    carbon pool divided by its C:Chl ratio (x1000 for mg/L -> ug/L).
+    """
+    phyto_c = sum((_col(df, c) for c in PHYTO_C), pd.Series(0.0, index=df.index))
+    df["TN"] = (_col(df, "NH4_N") + _col(df, "NO3_N") + _col(df, "DISS_ORG_N")
+                + _col(df, "DET_PART_ORG_N") + _col(df, "ZOO_N") + N_TO_C * phyto_c)
+    df["TP"] = (_col(df, "PO4_P") + _col(df, "DISS_ORG_P")
+                + _col(df, "DET_PART_ORG_P") + _col(df, "ZOO_P") + P_TO_C * phyto_c)
+    df["CHLA"] = 1000.0 * sum((_col(df, c) / r for c, r in C_TO_CHLA.items()),
+                              pd.Series(0.0, index=df.index))
+    return df
 
 
 def load_box_output(path, base_year):
-    """Load a PELAGIC_BOX_*.out into a DataFrame with a real ``date`` column."""
+    """Load a PELAGIC_BOX_*.out into a DataFrame with ``date`` + derived columns."""
     df = pd.read_csv(path, sep=r"\s+")
     base = dt.date(base_year, 1, 1)
     df["date"] = df["TIME_DAYS"].map(
         lambda d: base + dt.timedelta(days=float(d)))
-    return df
+    return add_derived(df)
 
 
 def box_number(path):
