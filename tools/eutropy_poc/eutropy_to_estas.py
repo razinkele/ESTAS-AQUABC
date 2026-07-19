@@ -77,6 +77,14 @@ CL29_WCONST_OVERRIDE = {
     "OPA_OPT_TEMP_LR": 10.0, "OPA_OPT_TEMP_UR": 17.0, "KAPPA_OPA_OVER_OPT_TEMP": 23.0,
     "KHS_DIP_OPA": 0.006,
     "KAPPA_NOST_VEG_HET_OVER_OPT_TEMP": 33.0,
+    # Water-column denitrification rate (DOC mineralisation with NO3 as the electron
+    # acceptor). Calibrated 2026-07-19 against the EPA 2012-2022 observations: the
+    # template default 0.025 leaves NO3/TN ~2x high (the lagoon's dominant N sink is
+    # under-represented -- boundaries were verified realistic, so the bias is weak
+    # removal, not over-loading). 1.0 brings NO3 bias +0.31->+0.06 (RMSE -31%) and
+    # TN +0.80->+0.39 across all 9 boxes, with DO slightly improved and Chl-a ~5% low.
+    # (PO4/Si stay high -- their sinks are sediment burial/Fe-binding, MODEL_SEDIMENTS=0.)
+    "K_MIN_DOC_NO3N_20": 1.0,
 }
 
 # Diatom settling velocity (m/day), settling-vel slot 1 (state var DIA_C). This is the ROOT
