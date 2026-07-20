@@ -8,6 +8,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-20
+
+Headline: a full **CL29 (29-box Curonian Lagoon) calibration & validation toolchain**
+against the Lithuanian EPA monitoring archive and 2015 experimental process-rate data,
+plus a **CO2SYS carbonate-chemistry correctness fix**, **OpenMP parallelization** of the
+pelagic kinetics, a batch of **memory-safety fixes**, and the **`AQUABC_PELAGIC_KINETICS`
+decomposition**.
+
+### Added
+- **CL29 EPA calibration & validation toolchain.** `tools/ingest_epa_observations.py`
+  (+ `tools/epa_station_to_box.csv`) turns the EPA archive (~70k samples, 1984–2021) into
+  tidy observations + per-station `.dates`, resolving per-era units/speciation (µg vs mg;
+  dissolved-N ion-basis pre-2008 → nitrogen) from cross-era value continuity (#38).
+  `tools/validate_cl29_vs_epa.py` scores a CL29 run against the observations per
+  (box, variable) for 8 variables, three of them (Tot_N/Tot_P/Chl-a) reconstructed from
+  the state-variable pools, with time-series plots (#39, #40). The CL29 run was **extended
+  from 2012–2016 to the full 2012–2022 EUTROPY forcing record**, ~6×-ing the EPA overlap
+  (#41). `docs/CL29_EPA_Calibration_Summary.md` documents the whole arc (#44).
+- **OpenMP parallelization** of `AQUABC_PELAGIC_KINETICS` and the CO2SYS call (TODO 4.1–4.4):
+  a micro-benchmark harness + `docs/OPENMP_PERFORMANCE.md`, CO2SYS chunked across threads
+  (8-thread speed-up 2.84× → 6.55× at nkn=1000), an empty-chunk barrier-deadlock fix, and
+  thread-affinity guidance. Build with `make OPENMP=1 build-estas`.
+- **macOS/gfortran CI** entry in the `build-and-run` matrix, with a `--numeric-warn`
+  cross-platform tolerance for the 0D golden (TODO 3.1, #35).
+- **CO2SYS Fortran test coverage** — `tests/fortran/test_co2sys.f90` (13 round-trip /
+  invariant / PyCO2SYS-validated checks) (#34).
+- **`run_cl29.sh`** wrapper that bakes in `ESTAS_HOLD_VOLUME=1`, fixing the CL29 day-~449
+  negative-mass volume crash (EUTROPY flows are not per-box volume-conserving) (#26).
+
+### Changed
+- **CL29 nitrogen calibration** — water-column denitrification `K_MIN_DOC_NO3N_20`
+  0.025 → 1.0 (converter override), correcting a ~2× NO3/TN over-prediction versus EPA
+  (NO3 bias +0.31 → +0.06). Mechanistically grounded — the lagoon is a documented
+  strong-denitrification N sink (#42).
+- **CL29 summer-P boost** `CL29_BOUNDARY_PO4_SUMMER_PEAK` 3.0 → 2.0, de-eutrophication-aware
+  for the fuller 2012–2022 record (#43).
+- **`AQUABC_PELAGIC_KINETICS` decomposition** (TODO 1.6) — a 3,642-line mega-subroutine
+  became a 394-line orchestrator plus five `contains` procedures, byte-identical.
+- **Shiny non-blocking I/O** (TODO 2.4) — the three heaviest `OUTPUT.csv` read+compute
+  handlers moved off the event loop via `@reactive.extended_task` + `asyncio.to_thread` (#33).
+- **Centralized configuration** — subprocess timeouts + default constants filename into
+  `shiny_app/config.py` (TODO 2.6, #31); sediment write-only-variable cleanup (TODO 1.7, #32).
+- **Serial solver performance** — box-geometry cache + hoisting the O(nkn²) per-box array
+  zeroing to linear, byte-identical (#37).
+- **Advanced-redox configurability** — runtime FePO4 solubility (`FEPO4_KSP_LOG10`) and the
+  reductive Fe(III)-P coupling (`FE_P_REDOX_FRAC`, W_SED_CONST #171) (#27, #28).
+
 ### Fixed
 - **RK2 solver double-applied the CHLA settling suppression (latent).** `CALC_DERIV`
   (`SOURCE_CODE/ESTAS/mod_SOLVER.f90`) applies the chlorophyll-based settling-suppression
@@ -22,6 +69,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Found during a profiling-driven solver optimization review (see the deferred
   `PELAGIC_SOLVER` perf items in `TODO_IMPLEMENTATION_PLAN.md`).
 - **CO2SYS carbonate chemistry — KB=0 bug (found by new test coverage, TODO 5.1).** The Dickson (1990) boron-constant formula in `SOURCE_CODE/AQUABC/CO2SYS/aquabc_II_co2sys.f90` had a **misplaced parenthesis** — `(-24.4344 - 25.085·√S - 0.2474·S)·(logTempK + 0.053105·√S·TempK)` instead of `(…)·logTempK + 0.053105·√S·TempK` per Dickson 1990. This drove `lnKB ≈ −1.7e4`, so the boric-acid dissociation constant **KB underflowed to 0**, dropping borate alkalinity (~91 µmol/kg at S=35) from the alkalinity budget and misassigning it to the carbonate system. Effect at the canonical case (S=35, T=25 °C, TA=2300, DIC=2000, K1K2=4, KSO4=1, total scale): **pH 8.21→8.045, pCO₂ 260→397 µatm, Ω_aragonite 4.72→3.39** — the corrected values now match **PyCO2SYS 1.8** to ~1e-4. This changes model output wherever CO2SYS runs (pelagic pH / CO₂ flux / calcite-aragonite saturation, and the sediment carbonate system); the **0D regression golden was regenerated** (`tests/regression/pelagic_0D_golden.csv`; worst 0D shift ~10 % in NO3N via the pH→nitrification coupling, output finite and physically sane). Surfaced by the new **`tests/fortran/test_co2sys.f90`** (13 checks: round-trip consistency, mass-balance closure, physical invariants, a borate-alkalinity regression guard, and a PyCO2SYS-validated anchor). Latent bugs in the CO2SYS input pairings the model does *not* use — `(TA,pH)`, `(pH,pCO₂)`, `(TA,pCO₂)` — are documented for a future fix (TODO 5.1).
+- **Model-constants out-of-bounds write** (TODO 1.10) — a `NUM_MODEL_CONSTANTS` mismatch
+  let the constants reader write past the end of the array; memory-safety fix, production
+  output byte-identical (#23).
+- **Advanced-redox non-determinism** (TODO 1.11) — a local `FLAGS` in `CALC_DERIV` shadowed
+  the global, leaving `FIRST_TIME_STEP` / init-option flags reading stack garbage so runs
+  diverged; one-line fix, now deterministic across runs (#24).
+- **Nostocales `DAY_OF_YEAR` uninitialised read** — corrected the day-of-year seasonality
+  input to the Nostocales module (#25).
+- **Kelvin-offset single-precision loss** (TODO 1.8) — the only real magic number (273.15)
+  became a named `CELSIUS_TO_KELVIN` constant, fixing a latent precision bug in
+  DO-saturation / CO2SYS (~1e-6 intended output change, 0D golden regenerated) (#30).
+- **Missing `IOSTAT` on input opens** (TODO 1.9) — an `OPEN_INPUT_FILE` helper guards the
+  input-file opens so a missing/unreadable file gives a clean message + nonzero stop
+  instead of a raw runtime crash; byte-identical when files exist (#29).
+
+### Dependencies
+- Dependabot bumps: numpy (≥2.2.6,<3.0), networkx (≥3.4.2,<4.0), pre-commit (≥4.6.0),
+  pytest-cov (≥7.1.0) (#18–#21).
 
 ## [0.4.5] - 2026-07-15
 

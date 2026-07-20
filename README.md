@@ -1,4 +1,4 @@
-# AQUABC v0.3 — Quick Start
+# AQUABC v0.5 — Quick Start
 
 <!-- LATEST_RELEASE -->**Latest release:** [v0.4.5](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.4.5)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
 
