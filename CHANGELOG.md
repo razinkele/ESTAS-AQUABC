@@ -19,6 +19,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   is not yet exercised in CI (no Intel/oneAPI runner — Intel oneAPI is free and can be
   wired via the `intel/oneapi` setup action when desired).
 
+### Added
+- **Intel oneAPI (`ifx`) CI job** (`build-intel`) — installs the free Intel Fortran
+  compiler from Intel's apt repo on a stock `ubuntu-latest` runner and builds the library
+  + ESTAS engine with `ifx`, both serial and OpenMP, verifying the Intel `-fp-model
+  precise` / `-heap-arrays` flags actually compile and link. Closes the "Intel path
+  unverified" caveat and the Intel half of TODO 3.1.
+
 ## [0.5.1] - 2026-07-20
 
 ### Changed

@@ -64,8 +64,8 @@ jobs:
             fc: gfortran
           - os: macos-latest
             fc: gfortran
-          # Future entries (enable after verifying they build in CI):
-          #   - { os: ubuntu-latest, fc: ifx }        # Intel Fortran (LLVM) via Intel oneAPI apt
+          # Intel ifx is verified by the dedicated `build-intel` job below (it needs a
+          # different install + `setvars.sh` sourcing, so it does not fit this matrix).
     name: build-and-run (${{ matrix.os }}, ${{ matrix.fc }})
     env:
       FC: ${{ matrix.fc }}
@@ -178,3 +178,37 @@ jobs:
 
       - name: Check simulation finished
         run: grep -q "simulation finished" run.log
+
+  # Intel oneAPI Fortran (ifx) build. Intel oneAPI is free (no license) and installs from
+  # Intel's apt repo on a stock ubuntu-latest runner — no special hardware. This verifies
+  # the code and the Intel `-fp-model precise` / `-heap-arrays` flags compile and link with
+  # ifx, serial and with OpenMP. Build-only: the 0D example Makefile hardcodes gfortran, so
+  # the ifx path builds the library + ESTAS engine (which respect FC); a run-smoke could be
+  # added once an ifx-buildable small config lands in the checkout.
+  build-intel:
+    runs-on: ubuntu-latest
+    name: build-intel (ifx, oneAPI)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install Intel oneAPI Fortran (ifx)
+        run: |
+          wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+          sudo apt-get install -y intel-oneapi-compiler-fortran make
+
+      - name: Build library + ESTAS with ifx (serial + OpenMP)
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          set -e
+          IFX="$(command -v ifx)"     # full path so the Makefile's IFX_LIB_PATH resolves
+          "$IFX" --version | head -1
+          echo "== serial release build (verifies -fp-model precise) =="
+          make FC="$IFX" build-estas
+          echo "== OpenMP build (verifies -qopenmp -heap-arrays) =="
+          make FC="$IFX" clean-all
+          make FC="$IFX" OPENMP=1 build-estas
