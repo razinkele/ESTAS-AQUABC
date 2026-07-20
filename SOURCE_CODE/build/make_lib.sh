@@ -61,6 +61,22 @@ case "$FC_BASE" in
         ;;
 esac
 
+# ifx/ifort HANG (instead of erroring in milliseconds like gfortran) when a source is compiled
+# before a module it USEs has been built. The multi-pass build below deliberately attempts
+# sources before their deps exist and defers the failures, so guard each Intel compile with a
+# timeout: a hung speculative attempt is killed and deferred, then succeeds once its deps are
+# built. The module-first ordering below already prevents the known hangs, so this is a
+# generous safety net that normally never fires. Tunable via IFX_COMPILE_TIMEOUT (seconds).
+SPEC_PREFIX=""
+case "$FC_BASE" in
+    ifort*|ifx*)
+        if command -v timeout >/dev/null 2>&1; then
+            SPEC_PREFIX="timeout ${IFX_COMPILE_TIMEOUT:-300}"
+            echo "Intel compiler: guarding speculative compiles with '$SPEC_PREFIX'"
+        fi
+        ;;
+esac
+
 # Use local temp file for error output (avoid /tmp permission issues)
 COMPILE_ERR="./compile_err.txt"
 echo "Module flag: $MOD_FLAG"
@@ -76,40 +92,67 @@ rm -f *.o *.mod libaquabc.a
 total_srcs=$(echo "$SRCS" | wc -w)
 echo "Found $total_srcs Fortran source files to compile"
 
-# Try compiling sources in multiple passes to resolve module dependencies automatically
-remaining="$SRCS"
-compiled_any=1
+# Split sources: files that DEFINE a module vs "leaf" files that only contain external
+# procedures (and a program) and USE modules while defining none — so nothing depends on them.
+# Compiling every module first, then the leaf files, guarantees a leaf file never sees a
+# not-yet-built module. That is what makes ifx/ifort hang (see SPEC_PREFIX above); gfortran is
+# unaffected and the order is valid for it too. A module statement is `module NAME` on its own
+# line — the regex excludes `module procedure` and `end module`.
+MOD_SRCS=""
+LEAF_SRCS=""
+for src in $SRCS; do
+  if grep -iqE '^[[:space:]]*module[[:space:]]+[a-z_0-9]+[[:space:]]*(!.*)?$' "$src"; then
+    MOD_SRCS="$MOD_SRCS $src"
+  else
+    LEAF_SRCS="$LEAF_SRCS $src"
+  fi
+done
+echo "Module-defining sources: $(echo "$MOD_SRCS" | wc -w), leaf sources: $(echo "$LEAF_SRCS" | wc -w)"
+
+# Multi-pass compile of a group of sources: retry deferred files until no more progress, so
+# module dependencies resolve automatically. Uses/sets the shared globals pass, total_compiled
+# and UNRESOLVED (leftover sources). Not using `local` — this script targets POSIX /bin/sh.
 pass=1
 total_compiled=0
-
-while [ -n "$remaining" ] && [ "$compiled_any" -eq 1 ]; do
-  echo ""
-  echo "=== Compilation pass $pass ==="
-  compiled_any=0
-  new_remaining=""
-  compiled_count=0
-  for src in $remaining; do
-    base=$(basename "$src" .f90)
-    if [ -f "$base.o" ]; then
-      continue
-    fi
-    echo "Compiling: $src"
-    if $FC -c $FFLAGS $MOD_FLAG -o "$base.o" "$src" >"$COMPILE_ERR" 2>&1; then
-      if [ -s "$COMPILE_ERR" ]; then
-         cat "$COMPILE_ERR"
+compile_group() {
+  remaining="$1"
+  group_any=1
+  while [ -n "$remaining" ] && [ "$group_any" -eq 1 ]; do
+    echo ""
+    echo "=== Compilation pass $pass ==="
+    group_any=0
+    new_remaining=""
+    compiled_count=0
+    for src in $remaining; do
+      base=$(basename "$src" .f90)
+      if [ -f "$base.o" ]; then
+        continue
       fi
-      compiled_any=1
-      compiled_count=$((compiled_count + 1))
-      total_compiled=$((total_compiled + 1))
-    else
-      echo "  -> Deferred (missing dependencies)"
-      new_remaining="$new_remaining $src"
-    fi
+      echo "Compiling: $src"
+      if $SPEC_PREFIX $FC -c $FFLAGS $MOD_FLAG -o "$base.o" "$src" >"$COMPILE_ERR" 2>&1; then
+        if [ -s "$COMPILE_ERR" ]; then
+           cat "$COMPILE_ERR"
+        fi
+        group_any=1
+        compiled_count=$((compiled_count + 1))
+        total_compiled=$((total_compiled + 1))
+      else
+        echo "  -> Deferred (missing dependencies or timed-out speculative compile)"
+        new_remaining="$new_remaining $src"
+      fi
+    done
+    echo "Pass $pass: compiled $compiled_count file(s), total: $total_compiled/$total_srcs"
+    remaining="$new_remaining"
+    pass=$((pass + 1))
   done
-  echo "Pass $pass: compiled $compiled_count file(s), total: $total_compiled/$total_srcs"
-  remaining="$new_remaining"
-  pass=$((pass + 1))
-done
+  UNRESOLVED="$remaining"
+}
+
+# Phase 1: all module-defining files. Phase 2: leaf files — by now every module exists, so no
+# leaf compile can hang on a missing module — plus any module file that somehow didn't resolve.
+compile_group "$MOD_SRCS"
+compile_group "$LEAF_SRCS $UNRESOLVED"
+remaining="$UNRESOLVED"
 
 if [ -n "$remaining" ]; then
   echo "" >&2
