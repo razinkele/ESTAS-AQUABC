@@ -21,14 +21,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 - **Intel oneAPI (`ifx`) CI job** (`build-intel`) — installs the free Intel Fortran
-  compiler from Intel's apt repo on a stock `ubuntu-latest` runner and builds the library
-  + ESTAS engine with `ifx` (debug `-O0`, OpenMP), verifying the code and the
-  `-qopenmp -heap-arrays` flags compile and link and asserting the release flags (incl.
-  `-fp-model precise`) are wired. Closes the "Intel path unverified" caveat and the Intel
-  half of TODO 3.1. **Known issue found:** `ifx` pathologically hangs optimizing this
-  multi-pass library at `-O2` (>35 min, effectively unbounded), so the `-O2` ifx release
-  build is not exercised in CI (a `timeout-minutes` guard protects the job) and remains
-  impractical until the offending pattern is isolated.
+  compiler from Intel's apt repo on a stock `ubuntu-latest` runner and confirms the
+  toolchain works and that the new Intel flags (`-fp-model precise`, `-qopenmp`,
+  `-heap-arrays`) are valid and wired (it compiles + runs a trivial OpenMP unit with the
+  exact release flag set, and asserts `show-config` carries `-fp-model precise`). Addresses
+  the Intel half of TODO 3.1. **Known issue found:** `ifx` pathologically hangs optimizing
+  this multi-pass library at `-O2` (>35 min, effectively unbounded) and exceeds a 25-min
+  timeout even at `-O0` — so a full ifx build of the AQUABC code is impractical in CI and
+  is left as a best-effort manual path until the offending pattern is isolated.
 
 ## [0.5.1] - 2026-07-20
 
