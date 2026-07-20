@@ -201,14 +201,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y intel-oneapi-compiler-fortran make
 
-      - name: Build library + ESTAS with ifx (serial + OpenMP)
+      - name: Build library + ESTAS with ifx (OpenMP release)
         run: |
           source /opt/intel/oneapi/setvars.sh
           set -e
           IFX="$(command -v ifx)"     # full path so the Makefile's IFX_LIB_PATH resolves
           "$IFX" --version | head -1
-          echo "== serial release build (verifies -fp-model precise) =="
-          make FC="$IFX" build-estas
-          echo "== OpenMP build (verifies -qopenmp -heap-arrays) =="
-          make FC="$IFX" clean-all
+          # A single OpenMP release build exercises BOTH new Intel flag sets at once:
+          # -fp-model precise (from the release flags) and -qopenmp -heap-arrays. Building
+          # once keeps the job tractable — ifx is slow to optimize this library at -O2.
           make FC="$IFX" OPENMP=1 build-estas
