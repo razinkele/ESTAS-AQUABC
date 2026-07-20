@@ -121,8 +121,11 @@ else ifeq ($(FC_BASE),ifort)
         FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2 -warn all
         BUILD_DESC = Fast (-O3, IPO, fast math, warnings)
     else
-        FFLAGS = -O2 -xHost -warn all
-        BUILD_DESC = Release (-O2, host arch, warnings)
+        # -fp-model precise: value-safe FP. Intel defaults to -fp-model fast=1 at -O2,
+        # which reorders/contracts FP and diverges from the gfortran release build and
+        # the bit-reproducible 0D golden. `precise` matches gfortran's conservative -O2.
+        FFLAGS = -O2 -xHost -fp-model precise -warn all
+        BUILD_DESC = Release (-O2, host arch, precise FP, warnings)
     endif
 else ifeq ($(FC_BASE),ifx)
     COMPILER_NAME = Intel Fortran LLVM (ifx)
@@ -138,8 +141,11 @@ else ifeq ($(FC_BASE),ifx)
         FFLAGS = -O3 -xHost -ipo -no-prec-div -fp-model fast=2 -warn all
         BUILD_DESC = Fast (-O3, IPO, fast math, warnings)
     else
-        FFLAGS = -O2 -xHost -warn all
-        BUILD_DESC = Release (-O2, host arch, warnings)
+        # -fp-model precise: value-safe FP. Intel defaults to -fp-model fast=1 at -O2,
+        # which reorders/contracts FP and diverges from the gfortran release build and
+        # the bit-reproducible 0D golden. `precise` matches gfortran's conservative -O2.
+        FFLAGS = -O2 -xHost -fp-model precise -warn all
+        BUILD_DESC = Release (-O2, host arch, precise FP, warnings)
     endif
 else
     # Unknown compiler - use generic flags
@@ -156,14 +162,19 @@ else
     endif
 endif
 
-# Append OpenMP flags if enabled
+# Append OpenMP flags if enabled.
+# Intel: -heap-arrays moves large/temporary automatic arrays off the (small) per-thread
+# OpenMP stacks onto the heap, avoiding segfaults from the per-thread kinetics buffers;
+# the runtime alternative is a large OMP_STACKSIZE. gfortran manages this itself.
+# NB: the Intel path is currently unverified in CI (no Intel/oneAPI runner yet) — Intel
+# oneAPI is free, so this can be wired via the intel/oneapi setup action when desired.
 ifeq ($(OPENMP),1)
     ifeq ($(FC_BASE),gfortran)
         FFLAGS += -fopenmp
     else ifeq ($(FC_BASE),ifort)
-        FFLAGS += -qopenmp
+        FFLAGS += -qopenmp -heap-arrays
     else ifeq ($(FC_BASE),ifx)
-        FFLAGS += -qopenmp
+        FFLAGS += -qopenmp -heap-arrays
     endif
 endif
 

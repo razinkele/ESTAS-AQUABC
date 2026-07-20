@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Intel (`ifx`/`ifort`) release build now uses value-safe floating point.** The release
+  flags gained **`-fp-model precise`** — Intel defaults to `-fp-model fast=1` at `-O2`,
+  which reorders/contracts FP and would diverge from the gfortran release build and the
+  bit-reproducible 0D golden (`fast` mode keeps `-fp-model fast=2` deliberately). Also
+  added **`-heap-arrays`** to the Intel OpenMP flags so the large per-thread kinetics
+  buffers live on the heap instead of overflowing the smaller OpenMP thread stacks
+  (runtime alternative: a large `OMP_STACKSIZE`). gfortran is unaffected. The Intel path
+  is not yet exercised in CI (no Intel/oneAPI runner — Intel oneAPI is free and can be
+  wired via the `intel/oneapi` setup action when desired).
+
 ## [0.5.1] - 2026-07-20
 
 ### Changed
