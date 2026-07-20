@@ -64,8 +64,8 @@ jobs:
             fc: gfortran
           - os: macos-latest
             fc: gfortran
-          # Future entries (enable after verifying they build in CI):
-          #   - { os: ubuntu-latest, fc: ifx }        # Intel Fortran (LLVM) via Intel oneAPI apt
+          # Intel ifx is verified by the dedicated `build-intel` job below (it needs a
+          # different install + `setvars.sh` sourcing, so it does not fit this matrix).
     name: build-and-run (${{ matrix.os }}, ${{ matrix.fc }})
     env:
       FC: ${{ matrix.fc }}
@@ -178,3 +178,45 @@ jobs:
 
       - name: Check simulation finished
         run: grep -q "simulation finished" run.log
+
+  # Intel oneAPI Fortran (ifx) toolchain check. Intel oneAPI is free (no license) and
+  # installs from Intel's apt repo on a stock ubuntu-latest runner — no special hardware.
+  # Confirms the toolchain installs and that the new Intel flags (-fp-model precise,
+  # -qopenmp, -heap-arrays) are valid + wired. It deliberately does NOT compile the full
+  # AQUABC library with ifx: ifx hangs optimizing this multi-pass library at -O2 and blows
+  # past a 25-min timeout even at -O0, so a full ifx build is impractical for CI.
+  build-intel:
+    runs-on: ubuntu-latest
+    name: build-intel (ifx toolchain, oneAPI)
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install Intel oneAPI Fortran (ifx)
+        run: |
+          wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update
+          sudo apt-get install -y intel-oneapi-compiler-fortran make
+
+      - name: Verify ifx toolchain + Intel flag set (fast smoke)
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          set -eo pipefail
+          IFX="$(command -v ifx)"
+          "$IFX" --version | head -1
+          # Assert the Makefile wires -fp-model precise into the ifx release flags:
+          make FC="$IFX" BUILD_TYPE=release show-config | grep -- '-fp-model precise'
+          # And that ifx actually accepts + links + runs the full release+OpenMP flag set:
+          printf 'program t\n!$omp parallel\nprint *,"ok"\n!$omp end parallel\nend program\n' > t.f90
+          "$IFX" -O2 -xHost -fp-model precise -qopenmp -heap-arrays t.f90 -o t
+          OMP_NUM_THREADS=2 ./t
+          # NOTE: we do NOT compile the full AQUABC library with ifx here — ifx
+          # pathologically hangs optimizing this multi-pass library at -O2 (>35 min,
+          # unbounded) and exceeds a 25-min timeout even at -O0. Fully building the code
+          # with ifx is therefore a known-impractical, best-effort path done manually, not
+          # in CI. This job confirms the (free) Intel toolchain installs and that the new
+          # -fp-model precise / -qopenmp / -heap-arrays flags are valid and wired.

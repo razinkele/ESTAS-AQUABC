@@ -8,6 +8,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Intel (`ifx`/`ifort`) release build now uses value-safe floating point.** The release
+  flags gained **`-fp-model precise`** — Intel defaults to `-fp-model fast=1` at `-O2`,
+  which reorders/contracts FP and would diverge from the gfortran release build and the
+  bit-reproducible 0D golden (`fast` mode keeps `-fp-model fast=2` deliberately). Also
+  added **`-heap-arrays`** to the Intel OpenMP flags so the large per-thread kinetics
+  buffers live on the heap instead of overflowing the smaller OpenMP thread stacks
+  (runtime alternative: a large `OMP_STACKSIZE`). gfortran is unaffected. The Intel path
+  is not yet exercised in CI (no Intel/oneAPI runner — Intel oneAPI is free and can be
+  wired via the `intel/oneapi` setup action when desired).
+
+### Added
+- **Intel oneAPI (`ifx`) CI job** (`build-intel`) — installs the free Intel Fortran
+  compiler from Intel's apt repo on a stock `ubuntu-latest` runner and confirms the
+  toolchain works and that the new Intel flags (`-fp-model precise`, `-qopenmp`,
+  `-heap-arrays`) are valid and wired (it compiles + runs a trivial OpenMP unit with the
+  exact release flag set, and asserts `show-config` carries `-fp-model precise`). Addresses
+  the Intel half of TODO 3.1. **Known issue found:** `ifx` pathologically hangs optimizing
+  this multi-pass library at `-O2` (>35 min, effectively unbounded) and exceeds a 25-min
+  timeout even at `-O0` — so a full ifx build of the AQUABC code is impractical in CI and
+  is left as a best-effort manual path until the offending pattern is isolated.
+
 ## [0.5.1] - 2026-07-20
 
 ### Changed
