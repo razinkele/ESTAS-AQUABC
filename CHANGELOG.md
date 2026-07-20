@@ -22,9 +22,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - **Intel oneAPI (`ifx`) CI job** (`build-intel`) — installs the free Intel Fortran
   compiler from Intel's apt repo on a stock `ubuntu-latest` runner and builds the library
-  + ESTAS engine with `ifx`, both serial and OpenMP, verifying the Intel `-fp-model
-  precise` / `-heap-arrays` flags actually compile and link. Closes the "Intel path
-  unverified" caveat and the Intel half of TODO 3.1.
+  + ESTAS engine with `ifx` (debug `-O0`, OpenMP), verifying the code and the
+  `-qopenmp -heap-arrays` flags compile and link and asserting the release flags (incl.
+  `-fp-model precise`) are wired. Closes the "Intel path unverified" caveat and the Intel
+  half of TODO 3.1. **Known issue found:** `ifx` pathologically hangs optimizing this
+  multi-pass library at `-O2` (>35 min, effectively unbounded), so the `-O2` ifx release
+  build is not exercised in CI (a `timeout-minutes` guard protects the job) and remains
+  impractical until the offending pattern is isolated.
 
 ## [0.5.1] - 2026-07-20
 

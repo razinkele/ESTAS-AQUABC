@@ -180,14 +180,15 @@ jobs:
         run: grep -q "simulation finished" run.log
 
   # Intel oneAPI Fortran (ifx) build. Intel oneAPI is free (no license) and installs from
-  # Intel's apt repo on a stock ubuntu-latest runner — no special hardware. This verifies
-  # the code and the Intel `-fp-model precise` / `-heap-arrays` flags compile and link with
-  # ifx, serial and with OpenMP. Build-only: the 0D example Makefile hardcodes gfortran, so
-  # the ifx path builds the library + ESTAS engine (which respect FC); a run-smoke could be
-  # added once an ifx-buildable small config lands in the checkout.
+  # Intel's apt repo on a stock ubuntu-latest runner — no special hardware. Verifies the
+  # code + the -qopenmp/-heap-arrays flags compile and link with ifx, and asserts the
+  # release flags (incl. -fp-model precise) are wired. Builds at -O0 (debug): ifx hangs
+  # optimizing this multi-pass library at -O2, so the -O2 release build is not run in CI.
+  # Build-only — the 0D example Makefile hardcodes gfortran.
   build-intel:
     runs-on: ubuntu-latest
     name: build-intel (ifx, oneAPI)
+    timeout-minutes: 25   # safety net: ifx can hang optimizing this library at -O2
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -201,13 +202,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y intel-oneapi-compiler-fortran make
 
-      - name: Build library + ESTAS with ifx (OpenMP release)
+      - name: Build library + ESTAS with ifx (debug + OpenMP)
         run: |
           source /opt/intel/oneapi/setvars.sh
-          set -e
+          set -eo pipefail
           IFX="$(command -v ifx)"     # full path so the Makefile's IFX_LIB_PATH resolves
           "$IFX" --version | head -1
-          # A single OpenMP release build exercises BOTH new Intel flag sets at once:
-          # -fp-model precise (from the release flags) and -qopenmp -heap-arrays. Building
-          # once keeps the job tractable — ifx is slow to optimize this library at -O2.
-          make FC="$IFX" OPENMP=1 build-estas
+          # Assert the release flags are wired for ifx (incl. -fp-model precise) — instant,
+          # no compile:
+          make FC="$IFX" BUILD_TYPE=release show-config | grep -- '-fp-model precise'
+          # ...then actually COMPILE at -O0. ifx pathologically hangs optimizing this
+          # multi-pass library at -O2 (>35 min, effectively unbounded), so CI builds debug
+          # to verify the code and the -qopenmp -heap-arrays flags compile/link with ifx in
+          # bounded time. (The -O2 ifx release build is a known-slow path, not for CI.)
+          make FC="$IFX" BUILD_TYPE=debug OPENMP=1 build-estas
