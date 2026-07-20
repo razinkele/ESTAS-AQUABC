@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-20
+
+### Changed
+- **README rewritten to a best-practice structure** — CI / release / license badges, a
+  project overview and component map, a **development-status** section (per-component
+  maturity plus the CL29 calibration state), a documentation index, and
+  contributing / license / citation pointers. Corrects stale content (the `make test`
+  target name → `make test-all`; the "306/318 constants" note) and preserves the
+  auto-synced `LATEST_RELEASE` marker.
+
 ## [0.5.0] - 2026-07-20
 
 Headline: a full **CL29 (29-box Curonian Lagoon) calibration & validation toolchain**
