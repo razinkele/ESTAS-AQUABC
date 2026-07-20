@@ -1368,7 +1368,11 @@ subroutine PELAGIC_KINETICS &
 
     real(kind = DBL), intent(in)    :: TIME
     real(kind = DBL), intent(in)    :: TIME_STEP
-    real(kind = DBL), intent(inout) :: AQUABC_CALLED_BEFORE
+    ! Integer flag (0/1), never used arithmetically here — only forwarded to
+    ! AQUABC_PELAGIC_KINETICS, whose dummy is integer, and it originates from the integer
+    ! GLOBAL::CALLED_BEFORE. Was real(DBL), which ifx rejects as a type mismatch (error #6633)
+    ! against the integer actual argument; gfortran only tolerated it via an implicit interface.
+    integer, intent(inout) :: AQUABC_CALLED_BEFORE
 
     real(kind = DBL), dimension(nkn, nstate)           :: AQUABC_DERIVATIVES
     real(kind = DBL), dimension(nkn, nstate)           :: AQUABC_STATE_VARIABLES
