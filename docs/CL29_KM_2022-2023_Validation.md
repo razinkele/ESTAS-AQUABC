@@ -19,12 +19,23 @@ dropped by the ingester.
 
 ## Model run
 
-- CL29 default configuration built with the **v0.5.2** release binary, `ESTAS_HOLD_VOLUME=1`
-  (`run_cl29.sh`), 240 steps/day.
-- Model calendar: **2012-01-01 → 2022-12-30** (`SIMULATION_END = 4016` days).
-- **The model window overlaps only the 2022 observations.** The results below are therefore
-  the 2022 subset (scored `n ≈ 161` per nutrient); the **2023 observations are ingested and
-  ready** and will validate once the run is extended past day 4016.
+CL29 default configuration built with the **v0.5.2** release binary, `ESTAS_HOLD_VOLUME=1`,
+240 steps/day. Two runs are scored:
+
+1. **2022 — real forcing.** Model calendar **2012-01-01 → 2022-12-30** (`SIMULATION_END = 4016`).
+   The EUTROPY-derived forcing (flows + boundary loads) ends here, so this run validates the
+   **2022** observations.
+2. **2023 — climatological forcing.** EUTROPY carries no 2023 forcing, so a real 2023 hindcast
+   is impossible. `tools/extend_cl29_forcing_climatology.py` appends a synthetic 2023 to every
+   time-series input, filling each 2023 day with the **2012-2022 mean seasonal cycle** for that
+   calendar day-of-year (`INPUT_CL29_2023clim.txt`, `SIMULATION_END = 4382 = 2023-12-31`). The
+   extension is a clean *append* — this run's 2012-2022 output is **identical** to run 1 (the
+   2022 metrics below reproduce exactly), so only the 2023 tail is new.
+
+> **The 2023 run is NOT a hindcast.** A climatological year carries the mean seasonal cycle but
+> none of 2023's inter-annual anomalies (river discharge, boundary loads, weather). The 2023
+> scores therefore test the model's *typical-year* response against the 2023 observations
+> (seasonal structure), not the reproduction of 2023-specific events.
 
 ## Method
 
@@ -48,6 +59,26 @@ Units: N/P/Si in **mg/L**, Chl-a in **µg/L**. `r` is the range of the per-box c
 | TP   | 161 | +0.013 | 0.032 | +0.10 … +0.97 | slightly over-predicted |
 | Chl-a | 91 | +9.48 | 30.2 | −0.70 … +0.54 | over-predicted |
 
+## Results — 2023 (climatological forcing, obs-weighted)
+
+The 2023 observations scored against the climatologically-extended run (same metrics).
+
+| Variable | n | bias | RMSE | vs 2022 |
+|---|---:|---:|---:|---|
+| NH4  | 179 | +0.004 | 0.052 | still essentially unbiased |
+| NO3  | 179 | −0.236 | 0.675 | still under-predicted |
+| PO4  | 178 | +0.033 | 0.047 | still over-predicted |
+| Si   | 179 | +0.71 | 1.22 | still over-predicted |
+| TN   | 179 | +0.387 | 0.714 | still over-predicted |
+| TP   | 179 | +0.022 | 0.034 | still over-predicted |
+| Chl-a | 102 | +3.78 | 28.8 | over-predicted, smaller than 2022's +9.5 |
+
+The 2023 (climatological) scores reproduce the **same bias structure** as 2022 — NH4 unbiased,
+NO3 under-predicted, everything else over-predicted — confirming the model's structural biases
+are robust across a typical seasonal cycle. Because the forcing is climatological, this mainly
+tells us the 2023 observations broadly resembled a typical year; it does **not** attribute
+2023-specific anomalies.
+
 ## Interpretation
 
 The KM 2022 data **corroborates the EPA-based finding** that CL29 is boundary-input dominated
@@ -68,16 +99,25 @@ baseline for the calibration levers already identified in the EPA summary.
 ## Reproduce
 
 ```sh
-./run_cl29.sh                                   # produces OUTPUTS_CL29/ (or reuse an existing run)
-python3 tools/ingest_km_observations.py --out-dir /tmp/km
+python3 tools/ingest_km_observations.py --out-dir /tmp/km       # nutrients + Chl-a obs
+
+# --- 2022 (real forcing) ---
+./run_cl29.sh                                                   # -> OUTPUTS_CL29/ (or reuse)
 python3 tools/validate_cl29_vs_epa.py \
     --outputs OUTPUTS_CL29 --obs /tmp/km/km_observations_tidy.csv --base-year 2012
+
+# --- 2023 (climatological forcing) ---
+python3 tools/extend_cl29_forcing_climatology.py                # -> INPUTS_CL29_2023clim/
+ESTAS_HOLD_VOLUME=1 ./ESTAS_II INPUT_CL29_2023clim.txt          # -> OUTPUTS_CL29_2023clim/
+awk -F, 'NR==1 || $4 ~ /^2023-/' /tmp/km/km_observations_tidy.csv > /tmp/km_2023.csv
+python3 tools/validate_cl29_vs_epa.py \
+    --outputs OUTPUTS_CL29_2023clim --obs /tmp/km_2023.csv --base-year 2012
 ```
 
 ## Caveats and next steps
 
-- **Model window** ends 2022-12-30, so only 2022 is scored; extend `SIMULATION_END` past 2023
-  to validate the ingested 2023 observations.
+- **The 2023 run uses climatological, not real, forcing** (EUTROPY ends 2022-12-31). A true
+  2023 hindcast awaits real 2023 flows + boundary loads (from EUTROPY or another source).
 - **LTK3A → box 11** is inferred from its "Klaipėdos sąsiauris" water-body and proximity to
   LTK3/LTK3B; confirm against `29boxesNew_modified.tif`.
 - The 2023 files are MHTML "web page" exports (handled by the ingester's decimal-comma and
