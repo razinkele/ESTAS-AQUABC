@@ -157,7 +157,8 @@ the 11-year record.
 | EPA 2012–2021 | 0.039 → **0.0135** (−66%) | +0.028 → −0.000 |
 
 No early-era (2012–2016) PO4 collapse. **But the EPA regression guard failed** — the 30×
-dissolution cut induces system-wide P-limitation:
+dissolution cut induces system-wide P-limitation (ΔRMSE % below are computed from the
+full-precision metrics; the RMSE columns are rounded to 2–3 sig figs):
 
 | EPA var | RMSE before → after | ΔRMSE | note |
 |---|---|---|---|
