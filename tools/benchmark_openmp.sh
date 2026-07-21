@@ -20,8 +20,8 @@ BUILD="$ROOT/SOURCE_CODE/build"
 FC="${FC:-gfortran}"
 RESULTS="$ROOT/tools/benchmark_openmp_results.txt"
 
-THREADS="1 2 4 8"
-NKNS="100 500 1000"
+THREADS="${THREADS:-1 2 4 8}"     # override e.g. THREADS="1 2 4 8 16"
+NKNS="${NKNS:-100 500 1000}"
 # timesteps per nkn (targets a ~2-4 s single-thread baseline; overridden by --quick)
 declare -A STEPS=( [100]=3000 [500]=600 [1000]=300 )
 if [[ "${1:-}" == "--quick" ]]; then
@@ -33,8 +33,13 @@ echo "host cores (nproc): $(nproc)   compiler: $FC"
 
 echo "-- building OpenMP release library --"
 make -C "$ROOT" OPENMP=1 FC="$FC" BUILD_TYPE=release build-lib >/dev/null
-echo "-- compiling benchmark driver (-fopenmp -O3) --"
-( cd "$BENCH_DIR" && "$FC" -fopenmp -O3 -march=native -I"$BUILD" \
+# compiler-appropriate optimized OpenMP driver flags (ifx has no -march=native -> -xHost)
+case "$(basename "$FC")" in
+  ifx*|ifort*) DRV_FLAGS="-qopenmp -O3 -xHost" ;;
+  *)           DRV_FLAGS="-fopenmp -O3 -march=native" ;;
+esac
+echo "-- compiling benchmark driver ($DRV_FLAGS) --"
+( cd "$BENCH_DIR" && "$FC" $DRV_FLAGS -I"$BUILD" \
     aquabc_II_pelagic_benchmark.f90 -L"$BUILD" -laquabc -o benchmark_openmp )
 
 run_one() {  # nkn threads steps  [extra env]  -> echoes the BENCH_RESULT line

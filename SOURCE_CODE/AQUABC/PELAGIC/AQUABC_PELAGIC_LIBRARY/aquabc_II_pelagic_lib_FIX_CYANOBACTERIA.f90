@@ -67,7 +67,7 @@ subroutine FIX_CYANOBACTERIA  &
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
+    real(kind = DBL_PREC), dimension(nkn), intent(inout) :: FIX_CYN_LIGHT_SAT  ! LIM_LIGHT writes it (matches DIA/CYN/OPA)
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -350,7 +350,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DON
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: PO4_P
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_C
-    real(kind = DBL_PREC), dimension(nkn), intent(in) :: FIX_CYN_LIGHT_SAT
+    real(kind = DBL_PREC), dimension(nkn), intent(inout) :: FIX_CYN_LIGHT_SAT  ! LIM_LIGHT writes it (matches DIA/CYN/OPA)
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
