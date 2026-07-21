@@ -110,7 +110,8 @@ def test_load_station_box_real_csv():
     assert sb["1"]["box"] == 7 and sb["1"]["label"] == "LTK1"
     assert sb["3B"]["box"] == 11
     assert sb["3DT"]["box"] == 11
-    assert sb["14"]["box"] == 25
+    assert sb["3A"]["box"] == 11             # gpkg-confirmed (was inferred)
+    assert sb["14"]["box"] == 9              # gpkg point-in-polygon fix (was mis-read as 25)
     assert "#" not in "".join(sb)  # comment lines skipped
 
 
