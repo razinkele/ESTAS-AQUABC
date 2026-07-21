@@ -145,10 +145,52 @@ within noise, marginally worse). Expected: no NUMA on a single socket, so bindin
 only removes the scheduler's freedom. Keep the settings documented for
 **multi-socket / NUMA** hardware, and re-measure on the target deployment machine.
 
+## Cross-compiler comparison — gfortran vs ifx (2026-07-21)
+
+Same kinetics micro-benchmark, same 28-core host, run with both toolchains at their optimized
+release+OpenMP flags: **gfortran 13.3.0** (driver `-fopenmp -O3 -march=native`) vs **ifx 2026.1.0**
+(driver `-qopenmp -O3 -xHost`). Reproduce with `THREADS="1 2 4 8 16" FC=<compiler> tools/benchmark_openmp.sh`.
+
+**Single-thread throughput (µs/step) — pure code generation:**
+
+| nkn | gfortran | ifx | ifx faster |
+|---|---:|---:|---:|
+| 100 | 555 | 417 | 1.33× |
+| 500 | 3633 | 2021 | 1.80× |
+| 1000 | 9639 | 4923 | **1.96×** |
+
+**ifx generates up to ~2× faster serial code** — its auto-vectorization of the per-node kinetics
+loop is markedly better, and the advantage grows with the workload.
+
+**Strong scaling, `nkn=1000` (speedup vs each compiler's own 1-thread):**
+
+| threads | gfortran | ifx |
+|---|---:|---:|
+| 1 | 1.00× | 1.00× |
+| 2 | 2.38× | 1.91× |
+| 4 | 4.47× | 2.93× |
+| 8 | **7.03×** | 3.71× |
+| 16 | 6.65× | **3.83×** |
+
+gfortran scales *further* (7× vs 3.7×) — but only because its slower serial baseline leaves more
+headroom; ifx is already ~2× ahead at 1 thread. The two converge in **absolute** time: at 8
+threads both sit near 1350–1370 µs/step. gfortran plateaus/regresses past 8 threads (memory-bound),
+while ifx keeps a slight gain to 16.
+
+**Best absolute (nkn=1000):** ifx **1284 µs/step @16t** (fastest overall) vs gfortran 1371 @8t — a
+~6 % edge to ifx, at **~2× the compile time** (release+OpenMP library: gfortran ~32 s, ifx ~60 s).
+
+**Takeaways.** For serial or few-core runs, ifx's codegen is a clear win (~2×). With ≥8 cores the
+gap closes and gfortran+OpenMP matches ifx in absolute throughput. ifx is marginally fastest at high
+thread counts but costs ~2× the build. (Building the library with the stricter local ifx 2026.1.0
+also surfaced a latent `intent(in)` vs `inout` mismatch on the FIX_CYN light-saturation argument —
+fixed in the same change, matching the DIA/CYN/OPA declarations, so the ifx library builds cleanly.)
+
 ## Reproducing
 
 ```bash
 make benchmark-openmp                 # full sweep (~1 min): threads {1,2,4,8} x nkn {100,500,1000} + affinity
+THREADS="1 2 4 8 16" FC=ifx tools/benchmark_openmp.sh   # cross-compiler / more threads
 tools/benchmark_openmp.sh --quick     # fast smoke run
 ```
 
