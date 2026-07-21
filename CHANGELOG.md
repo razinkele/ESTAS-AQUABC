@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-21
+
 ### Fixed
 - **Full Intel `ifx` build now works (release+OpenMP `build-estas` in ~66 s, debug `-O0`
   in ~20 s) and is exercised in CI.** The long-suspected "ifx hangs" was **not** the `-O2`
