@@ -1,5 +1,7 @@
 # CL29 PEST-posterior promotion — Implementation Plan
 
+> 🪦 **OUTCOME: ABANDONED (2026-07-21).** Executed through Task 4 (the gate run). Tasks 1–2 shipped the reusable `tools/compare_validation_runs.py`; Task 3's converter edit was validated then **reverted**. The gate failed on the EPA window: `KDISS`=0.118 closes PO4 but induces P-limitation that regresses NH4/NO3/Si/Chl-a, and the planned `K_MIN`→1.0 fallback (Tasks 6) does not help (the regression is `KDISS`-driven, not `K_MIN`-driven) — a nonstationarity mismatch between the 2022 low-P calibration and the 2012–16 eutrophic era. Tasks 5–8 were superseded by a revert + negative-result write-up. See `docs/CL29_KM_2022-2023_Validation.md` § "Promotion attempt (abandoned)".
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Promote the two defensible PEST posteriors (`KDISS_DET_PART_ORG_P_20`=0.118, `K_MIN_DOC_NO3N_20`=1.13) into the CL29 converter default, and prove with a measured before/after run that PO4 over-prediction closes without regressing the broader EPA fit.

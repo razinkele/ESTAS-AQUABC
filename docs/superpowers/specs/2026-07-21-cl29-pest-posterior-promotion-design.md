@@ -1,7 +1,7 @@
 # CL29 PEST-posterior promotion — design
 
 **Date:** 2026-07-21
-**Status:** Design (rev. 2, after adversarial in-loop review) — awaiting user review
+**Status:** 🪦 ABANDONED after validation (2026-07-21). The promotion was implemented and validated with a measured two-run before/after (KM-2022 + EPA-2012-2021), then **reverted**: `KDISS`=0.118 closes PO4 in both windows but induces P-limitation that regresses EPA NH4/NO3/Si/Chl-a — the 2022 posteriors do not transfer to the 11-year record (nonstationarity). No default change shipped. The reusable `tools/compare_validation_runs.py` and the negative-result write-up (`docs/CL29_KM_2022-2023_Validation.md`, "Promotion attempt (abandoned)") were retained. See that section for the numbers.
 **Author:** Arturas Razinkovas-Baziukas (with Claude)
 **Scope:** `tools/eutropy_poc/eutropy_to_estas.py` (converter default) + `docs/CL29_KM_2022-2023_Validation.md`. No Fortran changes.
 
