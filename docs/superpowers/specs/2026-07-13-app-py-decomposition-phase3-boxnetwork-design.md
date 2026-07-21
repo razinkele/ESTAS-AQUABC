@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` decomposition — phase 3, box-network cluster
 
 - **Date:** 2026-07-13
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.3.6 (`bbf0762`); `shiny_app/box_network.py` + `test_box_network.py` present. §8 deferred items all subsequently completed.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Extract the box-network **input parsers** and **figure builders** from
   `server()` into a new module `shiny_app/box_network.py`. **No change to the reactive graph or

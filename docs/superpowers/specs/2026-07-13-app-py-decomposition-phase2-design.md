@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` decomposition — phase 2 (`create_ui()` fragment split)
 
 - **Date:** 2026-07-13
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.3.4 (`210367b`). ⚠️ **Partially superseded:** this spec's headline deliverable `shiny_app/ui_panels.py` (and `tests/python/test_ui_panels.py`) was later **deleted** (`0f22e03`) when the panels became `@module.ui` modules under `shiny_app/modules/` in the Shiny-modules rearchitecture (`2026-07-14-app-py-shiny-modules-rearchitecture-design.md`). `ui_scripts.py` and `ui_chrome.py` remain. Follow the rearchitecture spec for the panels' current home.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Split the ~1,566-line `create_ui()` function into declarative UI
   fragment functions in focused modules. **No change to the reactive graph, the UI structure,

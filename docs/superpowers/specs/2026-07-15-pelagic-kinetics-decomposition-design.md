@@ -2,7 +2,7 @@
 
 **Backlog item:** 1.6 [P2] Mega-Subroutine Decomposition
 **Date:** 2026-07-15
-**Status:** Design approved — ready for implementation plan
+**Status:** ✅ Implemented — byte-identical decomposition merged (`e8af28e`): 394-line orchestrator + 5 `contains` procedures. Surfaced bugs 1.10 (model-constants OOB, PR #23) and 1.11 (FLAGS shadowing, PR #24), both fixed & merged.
 
 ## Goal
 

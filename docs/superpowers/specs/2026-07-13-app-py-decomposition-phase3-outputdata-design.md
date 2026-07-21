@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` decomposition — phase 3, output-data cluster
 
 - **Date:** 2026-07-13
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.3.7 (`8a190ae`); `shiny_app/output_data.py` + `test_output_data.py` present. NOTE: §8's "deferred" items were all completed afterward (command-logic dedup `2bb5d9f`, box_network lint `f4823d1`, mass-balance/observations/scenarios → Shiny modules).
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Extract seven pure output-file helpers from `server()` into a new module
   `shiny_app/output_data.py`. **No change to the reactive graph or observable behavior.**

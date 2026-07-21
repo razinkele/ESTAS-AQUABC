@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` decomposition — phase 1 (non-reactive helper extraction)
 
 - **Date:** 2026-07-12
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.3.3 (`6d6ab83`); modules `compiler_env.py`/`input_analysis.py`/`file_locators.py` + tests all present. §7 deferred roadmap (create_ui split, server-helper extraction, Shiny modules) all delivered in later phases.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Extract non-reactive, module-level helper functions out of the
   8,616-line `app.py` into focused, unit-testable modules. **No change to the reactive graph.**

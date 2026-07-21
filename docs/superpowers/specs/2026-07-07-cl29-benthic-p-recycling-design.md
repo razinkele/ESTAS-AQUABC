@@ -1,7 +1,7 @@
 # CL29 Benthic Phosphorus Subsidy — Design Spec
 
 **Date:** 2026-07-07 (rev. 2, after adversarial review loop)
-**Status:** Design (under review), pending implementation plan
+**Status:** 🪦 SUPERSEDED — never implemented. The prescribed-benthic-flux approach was rejected in favour of full sediment diagenesis (lineage `3dc7e53`→`274c45c`); the external-P-subsidy idea later resurfaced as the boundary-PO4 lever (`CL29_BOUNDARY_PO4_SUMMER_PEAK`), not this flux machinery. Kept as historical record only.
 **Goal:** Add a measurement-anchored benthic phosphorus source to the CL29 (Curonian
 Lagoon, 29-box) AQUABC application so the P-supply-limited spring diatom bloom can
 approach observed magnitudes, using the model's existing prescribed-sediment-flux
