@@ -1,7 +1,7 @@
 # CL29 Full Sediment Diagenesis — Phase 1: Stand Up & Stabilize
 
 **Date:** 2026-07-08 (rev. 2, after adversarial review loop)
-**Status:** Design (under review), pending implementation plan
+**Status:** ✅ Implemented & stable (Phase 1) — toggle `CL29_ENABLE_SEDIMENTS` + `_write_sediment_inputs` landed (`274c45c`, `ef0e612`; stability calib `eda0150`; results `21709b9`). Stable 1826-day clean-checkout run, 0 NaN / 0 CO2SYS-fail (see §11b). Off by default. **Correction:** the `OPENMP=1` recommendation in §5/§6/§9 is RETRACTED — see §11b: the sediment path is not thread-safe, **build & run SERIAL**.
 **Goal:** Enable the full coupled sediment diagenesis model (`MODEL_SEDIMENTS = 2`) for the
 CL29 29-box application with a uniform sediment profile, and get a **stable, clean-checkout,
 5-year run** — the foundation the later calibration phase builds on.

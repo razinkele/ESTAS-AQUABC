@@ -1,7 +1,7 @@
 # Design: Wind-modulated diatom settling (#3) + provisional sediment-facies aid (#5)
 
 - **Date:** 2026-07-11
-- **Status:** Draft (awaiting user review)
+- **Status:** 🟡 Part A (wind settling, #3) shipped — released v0.3.1 (`wind_modulated_settling` in the converter, `net/wind_daily.csv`, tests `ca253bd`). Part B (sediment facies, #5) is **inert/data-blocked** — needs an expert box→facies map (`CL29_SEDIMENT_TYPE={}`); a provisional strawman exists but is expert-gated.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** CL29 Curonian Lagoon application; converter-only (`tools/eutropy_poc/eutropy_to_estas.py`). No Fortran changes.
 

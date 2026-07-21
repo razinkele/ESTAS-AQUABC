@@ -1,5 +1,7 @@
 # CL29 PEST++ calibration setup — design
 
+**Status:** ✅ Implemented + calibration converged. PR #54 (`932ed32`) built the files; the full `pestpp-ies` run (50 reals × 3 iters) converged Φ 4058→1287 (std 1344→2.6), recorded in `docs/CL29_KM_2022-2023_Validation.md` (PR #56). The "actual calibration is a compute job the user runs" framing below was fulfilled. **Open follow-up:** the converged posteriors (`KDISS_DET_PART_ORG_P_20≈0.118`, `KG_DIA_OPT_TEMP≈5.45`) are **not yet promoted** into the CL29 converter default (`CL29_WCONST_OVERRIDE`); `KHS_DSi_DIA` & `KD_DIA_20` came back non-identifiable and need Si/Chl obs to constrain, or dropping.
+
 **Goal.** Feed the ingested KM (Curonian Lagoon) observations into a runnable PEST++
 calibration of the 29-box CL29 model, targeting the biases documented in
 `docs/CL29_KM_2022-2023_Validation.md` (PO4/Si/Chl-a over-prediction, NO3 under-prediction).

@@ -2,7 +2,7 @@
 
 **Backlog item:** 1.10 [P1] Model-constants array out-of-bounds
 **Date:** 2026-07-16
-**Status:** Design approved (reframed after adversarial plan review) — ready for implementation
+**Status:** ✅ Shipped — merged in PR #23 (`23dbab2`); `nconst` 318→323 (`mod_GLOBAL.f90`, `interface.f90`, `PELAGIC_INPUTS.txt`, converter). TODO 1.10 marked complete (`dd45226`). Non-goal deferred: BETA_* photoinhibition still not wired into the ESTAS constant-unpacking path (harmless — BETA=0 default).
 
 ## Problem
 

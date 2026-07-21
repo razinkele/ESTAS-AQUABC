@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` decomposition — phase 3 pilot (build-cluster logic extraction)
 
 - **Date:** 2026-07-13
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.3.5 (`58f9476`); `shiny_app/build_commands.py` + `test_build_commands.py` present. §4.5-deferred `_execute_build_process` later delivered as `RunController.execute_build`.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Extract the **non-reactive build/command logic** that `server()`'s
   handlers call into a new pure module `shiny_app/build_commands.py`, leaving the reactive

@@ -1,7 +1,7 @@
 # Runtime per-application temperature-model selection (plateau vs CTMI)
 
 **Date:** 2026-07-06
-**Status:** Approved design
+**Status:** ✅ Shipped — merged in PR #15 (`83f1073`); `USE_CTMI_TEMP` runtime flag live (`mod_AQUABC_II_GLOBAL.f90`, reader in `mod_PELAGIC_ECOLOGY.f90`, `INPUTS/PELAGIC_MODEL_OPTIONS.txt`). CL29 opts in via the converter.
 
 ## Problem
 

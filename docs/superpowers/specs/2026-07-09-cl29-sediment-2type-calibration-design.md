@@ -1,7 +1,7 @@
 # CL29 Sediment Phase 2 — Two-Type (Sandy/Muddy) Infrastructure + Calibration
 
 **Date:** 2026-07-09
-**Status:** Design (under review), pending implementation plan
+**Status:** 🟡 Phase 2a implemented; Phase 2b data-blocked. Two-type reader (`mod_BOTTOM_SEDIMENTS.f90`, `84fe0ba`), typemap (`mod_SED_TYPEMAP.f90` + `test_sed_typemap`, `ca35e84`), per-box flux-output fix (`81beef5`) and the multi-type converter author all landed. Phase 2b (sandy/muddy flux-fidelity calibration) is **blocked on an expert box→facies map** — depth is not a valid proxy (box 19 is shallow-but-muddy). **Stale premise:** the spec fixes "advanced-redox=0", but CL29 now ships advanced-redox=1 (`FEPO4_KSP_LOG10=-25`); the §4.1a NO-GO conclusion still holds — external boundary-P is the gap-closure lever, not sediment.
 **Goal:** Calibrate the CL29 sediment diagenesis so its benthic N/P/Si fluxes match measured
 Curonian sandy/muddy data **and** the box-19 spring diatom bloom reaches the observed
 ~47 mg/m³ — replacing the Phase-1 stability values with data-anchored ones, and giving

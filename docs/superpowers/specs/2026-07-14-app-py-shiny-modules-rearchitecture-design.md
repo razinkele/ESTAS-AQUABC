@@ -1,7 +1,7 @@
 # Design: `shiny_app/app.py` — true Shiny-modules rearchitecture
 
 - **Date:** 2026-07-14
-- **Status:** Draft (awaiting user review)
+- **Status:** ✅ Shipped — released v0.4.0–v0.4.5. 15 true `@module.ui`/`@module.server` modules; `app.py` a thin assembler. §9 carries the "ACHIEVED" end-state. Minor drift: §9 says "756 lines" — that was the v0.4.5 figure; ~791 after later cosmetic edits. And `diagnostics.py` (a converted module) lives in `shiny_app/` root, not `shiny_app/modules/`.
 - **Author:** Arturas Razinkovas-Baziukas (with Claude)
 - **Scope:** `shiny_app/`. Convert the ~5,000-line `server()` closure into 17 cohesive
   `@module.ui`/`@module.server` Shiny modules behind an explicit shared-state contract, leaving
