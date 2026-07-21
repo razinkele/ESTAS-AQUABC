@@ -140,7 +140,10 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                                                                 ! with indices order required by hydrodynamics
     real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_SAVED_OUTPUTS) :: SED_SAVED_OUTPUTS
     integer, dimension(NUM_SED_FLAGS) :: SED_FLAGS
-    real(kind=DBL_PREC), optional  , dimension(nkn, NUM_SED_LAYERS, NUM_SED_VARS) :: SED_BURRIAL_RATE_OUTPUTS
+    ! Not optional: the sole caller always passes it and the write below (under switch_burial
+    ! /= 0) is not present()-guarded. The `optional` attribute forced every caller to carry an
+    ! explicit interface, which the external call in mod_SOLVER lacks (ifx error #8055).
+    real(kind=DBL_PREC),             dimension(nkn, NUM_SED_LAYERS, NUM_SED_VARS) :: SED_BURRIAL_RATE_OUTPUTS
     !integer            , intent(in), optional :: ADVANCED_REDOX_OPTION
     integer            , intent(in) :: ADVANCED_REDOX_OPTION
 

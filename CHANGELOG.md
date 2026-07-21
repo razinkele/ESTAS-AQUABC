@@ -9,26 +9,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Fixed
+- **Full Intel `ifx` build now works (release+OpenMP `build-estas` in ~66 s, debug `-O0`
+  in ~20 s) and is exercised in CI.** The long-suspected "ifx hangs" was **not** the `-O2`
+  optimizer — the whole library compiles at `-O2` in ~1 minute once its modules exist. The
+  real cause was `SOURCE_CODE/build/make_lib.sh`'s *speculative multi-pass* build: it
+  attempts every source and defers whatever fails because a `use`d module isn't built yet.
+  gfortran fails such an attempt in milliseconds, so the passes converge; `ifx`'s front end
+  instead **hangs** when a whole-module `use` target is missing, so the build stalled
+  indefinitely. Fixed by compiling all module-defining files **before** the leaf files
+  (external procedures that define no module, so nothing depends on them) — a leaf file can
+  then never see a missing module — plus a per-file Intel compile timeout
+  (`IFX_COMPILE_TIMEOUT`, default 300 s) as a safety net. gfortran output is unchanged
+  (0D golden regression identical).
+- **Three latent standard-conformance bugs gfortran tolerated but `ifx` rejects**, surfaced
+  once the build no longer hung — all behaviour-preserving (0D golden unchanged):
+  - `PELAGIC_KINETICS` dummy `AQUABC_CALLED_BEFORE` was `real(DBL)` while the actual argument
+    is the integer `GLOBAL::CALLED_BEFORE` (forwarded to an integer dummy) — retyped to
+    `integer` (ifx #6633; also removed a second latent real→int mismatch downstream).
+  - `AQUABC_SEDIMENT_MODEL_1`'s `SED_BURRIAL_RATE_OUTPUTS` was `optional` — never
+    `present()`-tested, always passed, and written unconditionally — so `optional` was both
+    unnecessary and a latent crash risk; removed, which also dropped the explicit-interface
+    requirement the external caller lacked (ifx #8055).
+  - `DO_SATURATION`/`KAWIND` in `aquabc_II_pelagic_model` were declared as bare `real`
+    scalars but are external functions — added the `external` attribute (ifx #6410).
 - **Intel (`ifx`/`ifort`) release build now uses value-safe floating point.** The release
   flags gained **`-fp-model precise`** — Intel defaults to `-fp-model fast=1` at `-O2`,
   which reorders/contracts FP and would diverge from the gfortran release build and the
   bit-reproducible 0D golden (`fast` mode keeps `-fp-model fast=2` deliberately). Also
   added **`-heap-arrays`** to the Intel OpenMP flags so the large per-thread kinetics
   buffers live on the heap instead of overflowing the smaller OpenMP thread stacks
-  (runtime alternative: a large `OMP_STACKSIZE`). gfortran is unaffected. The Intel path
-  is not yet exercised in CI (no Intel/oneAPI runner — Intel oneAPI is free and can be
-  wired via the `intel/oneapi` setup action when desired).
+  (runtime alternative: a large `OMP_STACKSIZE`). gfortran is unaffected.
 
 ### Added
-- **Intel oneAPI (`ifx`) CI job** (`build-intel`) — installs the free Intel Fortran
-  compiler from Intel's apt repo on a stock `ubuntu-latest` runner and confirms the
-  toolchain works and that the new Intel flags (`-fp-model precise`, `-qopenmp`,
-  `-heap-arrays`) are valid and wired (it compiles + runs a trivial OpenMP unit with the
-  exact release flag set, and asserts `show-config` carries `-fp-model precise`). Addresses
-  the Intel half of TODO 3.1. **Known issue found:** `ifx` pathologically hangs optimizing
-  this multi-pass library at `-O2` (>35 min, effectively unbounded) and exceeds a 25-min
-  timeout even at `-O0` — so a full ifx build of the AQUABC code is impractical in CI and
-  is left as a best-effort manual path until the offending pattern is isolated.
+- **Intel oneAPI (`ifx`) full-build CI job** (`build-intel`) — installs the free Intel
+  Fortran compiler from Intel's apt repo on a stock `ubuntu-latest` runner and builds the
+  whole AQUABC library + `ESTAS_II` engine at release+OpenMP and the library at debug
+  `-O0`, asserting the artifacts exist and that `show-config` carries `-fp-model precise`.
+  Completes the Intel half of TODO 3.1.
 
 ## [0.5.1] - 2026-07-20
 

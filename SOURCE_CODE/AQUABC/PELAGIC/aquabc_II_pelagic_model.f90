@@ -168,9 +168,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     !*                                           *'
     !*********************************************'
 
-    !FUNCTIONS
-    real(kind = DBL_PREC) :: DO_SATURATION
-    real(kind = DBL_PREC) :: KAWIND
+    !FUNCTIONS  (external — defined in aquabc_II_pelagic_auxillary.f90). The `external`
+    ! attribute is required: without it ifx reads a bare `real :: DO_SATURATION` as a scalar
+    ! variable and rejects DO_SATURATION(...) as an invalid array/function reference (#6410).
+    real(kind = DBL_PREC), external :: DO_SATURATION
+    real(kind = DBL_PREC), external :: KAWIND
 
     integer :: CO2SYS_NUM_SAMPLES
     integer :: RUN_CO2SYS
