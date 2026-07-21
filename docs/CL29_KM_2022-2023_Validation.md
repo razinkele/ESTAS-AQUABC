@@ -96,35 +96,43 @@ and over-predicts the standing nutrient and chlorophyll pools (see
 These are the **default configuration**, not a fresh PEST calibration; the numbers are a
 baseline for the calibration levers already identified in the EPA summary.
 
-## Demonstration calibration (`pestpp-ies`)
+## Calibration (`pestpp-ies`)
 
-A first pass at calibrating the five `pest/` parameters (PR #54) against the 2022 obs, run
-with `pestpp-ies` as a **reduced** ensemble — **12 realizations × 1 iteration**, parallel over
-12 cores (~49 min) — to exercise the harness end-to-end. This is a demonstration, **not a
-converged posterior**; the committed `pest/cl29.pst` (50 reals × 3 iterations) on dedicated
-hardware would refine it.
+The five `pest/` parameters (PR #54) were calibrated against the 2022 obs with `pestpp-ies` —
+the full committed ensemble, **50 realizations × 3 iterations**, parallelized over 24 cores
+(~3.3 h). **The ensemble converged.**
 
-Objective function Φ across the ensemble:
+Objective function Φ across the 50-member ensemble:
 
 | iteration | mean Φ | std | min | max |
 |---|---:|---:|---:|---:|
-| 0 (initial ensemble) | 4434 | 1142 | 2935 | 6806 |
-| 1 (after the iES update) | **1711** | 333 | **1382** | 2405 |
+| 0 (initial) | 4058 | 1344 | 1587 | 7429 |
+| 1 | 1448 | 158 | 1300 | 2035 |
+| 2 | 1292 | 3.2 | 1284 | 1299 |
+| 3 (final) | **1287** | **2.6** | 1281 | 1293 |
 
-Mean Φ fell **61 %** in one iteration and the ensemble spread tightened 3.4×. The parameter
-ensemble means moved to correct the documented biases:
+Mean Φ fell **68 %** (4058 → 1287) and the ensemble spread collapsed from std 1344 to **2.6** —
+a converged posterior, not just a nudge.
 
-| parameter | initial | calibrated | direction & effect |
-|---|---:|---:|---|
-| `K_MIN_DOC_NO3N_20` (denitrification) | 1.79 | 0.41 | ↓ less N removal → raises NO3 (was under-predicted) |
-| `KDISS_DET_PART_ORG_P_20` (POP dissolution) | 3.95 | 0.33 | ↓ less P release → lowers PO4 (over-predicted) |
-| `KHS_DSi_DIA` (diatom Si half-sat) | 0.018 | 0.0069 | ↓ easier Si uptake → lowers Si (over-predicted) |
-| `KG_DIA_OPT_TEMP` (diatom growth) | 3.63 | 4.79 | ↑ more uptake |
-| `KD_DIA_20` (diatom mortality) | 0.19 | 0.068 | ↓ |
+Calibrated parameters (initial → final ensemble mean ± posterior std):
 
-Every shift moves in the direction that corrects a documented bias — a reassuring sign that
-the parameters and observations are wired correctly. The calibrated values are a
-demonstration, not a recommended parameter set; run the full ensemble to trust them.
+| parameter | initial | **final** | ±std | identifiability |
+|---|---:|---:|---:|---|
+| `KDISS_DET_PART_ORG_P_20` (POP dissolution → PO4) | 4.10 | **0.118** | ±0.004 | tightly constrained — 35× lower; the dominant PO4 fix |
+| `KG_DIA_OPT_TEMP` (diatom growth → Si/biomass) | 3.58 | **5.45** | ±0.25 | well constrained — ↑ uptake |
+| `K_MIN_DOC_NO3N_20` (denitrification → NO3) | 1.55 | **1.13** | ±0.07 | well constrained — ↓ raises NO3 |
+| `KHS_DSi_DIA` (diatom Si half-sat) | 0.018 | 0.036 | ±0.023 | **not identified** (posterior ≈ value) |
+| `KD_DIA_20` (diatom mortality) | 0.171 | 0.174 | ±0.016 | essentially unchanged |
+
+The data strongly identifies **two levers**: cutting **POP → PO4 dissolution 35×** — the
+tightest-constrained parameter, so the model's excess PO4 came from too-fast organic-P
+remineralization — and **raising diatom growth** (more Si/nutrient uptake); denitrification
+comes down modestly to lift the under-predicted NO3. The diatom Si half-saturation and mortality
+are **not identifiable** by these observations (their posteriors are as wide as the value /
+essentially unchanged), so the Si correction rides on diatom growth rather than the half-sat.
+
+These calibrated the **2022** window; re-running the validation with this parameter set to
+confirm the biases actually close is the next step.
 
 ## Reproduce
 
