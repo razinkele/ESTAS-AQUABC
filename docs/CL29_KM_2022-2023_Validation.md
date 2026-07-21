@@ -10,7 +10,7 @@ monitoring newly ingested from the AAA *2014-2023_BJ duomenys extrahuoti* extrac
 |---|---|
 | Source | `curonian/DATA/2014-2023_BJ duomenys extrahuoti` — KM hydrochemistry (`Hidrocheminiai tyrimai`) + KM chlorophyll-a (`Biologiniai tyrimai`) |
 | Ingester | `tools/ingest_km_observations.py` (→ `km_observations_tidy.csv` + `KM_<station>_box<box>.dates`) |
-| Station→box | the EPA `LTK→box` map (`tools/epa_station_to_box.csv`; northings verified to match), plus the new `LTK3A→11` (inferred, pending TIFF confirmation) |
+| Station→box | the `LTK→box` map (`tools/epa_station_to_box.csv`), **verified by point-in-polygon against the 29-box vector layer `curonian/b29polys.gpkg`** (EPSG:3346, 2026-07-21) |
 | Coverage | **3401 measurements**, obs window **2022-02-23 → 2023-11-15**, **9 boxes** (7, 11, 14, 15, 17, 19, 20, 23, 25) |
 | Variables | NH4, NO3, NO2, PO4, TN, TP, DIN, Si, **Chl-a** (+ BOD7, TSS carried as auxiliary) |
 
@@ -156,10 +156,13 @@ python3 tools/validate_cl29_vs_epa.py \
 
 - **The 2023 run uses climatological, not real, forcing** (EUTROPY ends 2022-12-31). A true
   2023 hindcast awaits real 2023 flows + boundary loads (from EUTROPY or another source).
-- **LTK3A → box 11** confirmed against `29boxesNew_modified.tif`: LTK3/LTK3B sit on the box-11
-  outline and LTK3A is a boundary point at box 11's south-east edge (just north of box 20). Its
-  "Klaipėdos sąsiauris" (strait) water-body class matches box 11, not box 20's northern-lagoon
-  class, so box 11 is the water-body-consistent assignment.
+- **Station→box rechecked against the vector layer `b29polys.gpkg`** (point-in-polygon,
+  2026-07-21): 13 of 14 stations matched the earlier visual raster read; **`LTK14` was
+  corrected from box 25 → box 9** (it sits ~1.5 km *inside* box 9; box 25 is ~1.9 km away),
+  and the previously-inferred **`LTK3A → box 11` is now spatially confirmed**. The LTK14 fix
+  changes the aggregate 2022 metrics negligibly (e.g. Si bias 0.56 → 0.54, Chl-a 9.5 → 9.4),
+  so the tables above and the calibration below — computed before the fix — still stand at the
+  shown precision.
 - The 2023 files are MHTML "web page" exports (handled by the ingester's decimal-comma and
   truncated-header logic); the 2022 files are clean `.xls`.
 - Reconstructed TN/TP/Chl-a depend on the pool stoichiometry above.
