@@ -51,7 +51,7 @@ by component:
 | ESTAS transport driver | **Stable** |
 | OpenMP parallelization | **Opt-in** (`make OPENMP=1 build-estas`) — ~6.5× at 8 threads for large networks; see `docs/OPENMP_PERFORMANCE.md` |
 | Python Shiny front end | **Stable** — 15 namespaced modules; browser integration tests in CI |
-| Continuous integration | **Stable** — gfortran on Ubuntu + macOS, Python lint/unit/integration, and a 0D golden-file regression |
+| Continuous integration | **Stable** — gfortran on Ubuntu + macOS **and a full Intel `ifx` (oneAPI) build**, Python lint/unit/integration, and a 0D golden-file regression |
 | Sediment diagenesis | **Experimental** — advanced redox runs but is off by default; a per-box facies map is data-blocked |
 | CL29 Curonian Lagoon application | **Calibrated & validated** — see below |
 
@@ -63,8 +63,8 @@ turnover), not open defects. The full arc — tooling, calibrations, and what wa
 with evidence — is in [`docs/CL29_EPA_Calibration_Summary.md`](docs/CL29_EPA_Calibration_Summary.md).
 
 **Known limitations / future work:** spatially variable sediment P/Si burial (needs a
-Curonian grain-size/facies map); realistic N₂-fixation (coupled to organic-N turnover);
-Intel `ifx`/`ifort` CI (needs licensed runners). Tracked in `TODO_IMPLEMENTATION_PLAN.md`.
+Curonian grain-size/facies map); realistic N₂-fixation (coupled to organic-N turnover).
+Tracked in `TODO_IMPLEMENTATION_PLAN.md`.
 
 ## Prerequisites
 
