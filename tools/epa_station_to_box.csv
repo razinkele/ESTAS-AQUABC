@@ -13,10 +13,12 @@ LTK1,7,Strait,320397,6179134
 LTK2,7,Strait,319194,6177275
 LTK3,11,Strait,319599,6173032
 # LTK3A appears only in the 2022-2023 KM hydrochem extract, not the older EPA sheets.
-# Box 11 is INFERRED from its "Klaipėdos sąsiauris" water-body label and proximity to
-# LTK3/LTK3B (same strait cluster); coords are placeholders from that cluster (the join
-# uses the code, not coords). TODO: confirm box + coords against 29boxesNew_modified.tif.
-LTK3A,11,Strait,320100,6173032
+# Box 11 confirmed against 29boxesNew_modified.tif (2026-07-21): LTK3/LTK3B sit on the box-11
+# outline; LTK3A lies at box 11's south-east edge (a boundary point, just N of box 20). Its
+# "Klaipėdos sąsiauris" (strait) water-body class matches box 11 (LTK3/LTK3B), not box 20's
+# northern-lagoon class — so box 11 is the water-body-consistent assignment. Coords below are
+# the station's real LKS94 (EPSG:3346) position from the KM extract.
+LTK3A,11,Strait,321359,6171614
 LTK3B,11,Strait,320601,6173603
 LTK3DT,11,Strait,320070,6173554
 LTK4,20,Northern,320600,6166341

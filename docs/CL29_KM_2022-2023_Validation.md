@@ -118,8 +118,10 @@ python3 tools/validate_cl29_vs_epa.py \
 
 - **The 2023 run uses climatological, not real, forcing** (EUTROPY ends 2022-12-31). A true
   2023 hindcast awaits real 2023 flows + boundary loads (from EUTROPY or another source).
-- **LTK3A → box 11** is inferred from its "Klaipėdos sąsiauris" water-body and proximity to
-  LTK3/LTK3B; confirm against `29boxesNew_modified.tif`.
+- **LTK3A → box 11** confirmed against `29boxesNew_modified.tif`: LTK3/LTK3B sit on the box-11
+  outline and LTK3A is a boundary point at box 11's south-east edge (just north of box 20). Its
+  "Klaipėdos sąsiauris" (strait) water-body class matches box 11, not box 20's northern-lagoon
+  class, so box 11 is the water-body-consistent assignment.
 - The 2023 files are MHTML "web page" exports (handled by the ingester's decimal-comma and
   truncated-header logic); the 2022 files are clean `.xls`.
 - Reconstructed TN/TP/Chl-a depend on the pool stoichiometry above.
