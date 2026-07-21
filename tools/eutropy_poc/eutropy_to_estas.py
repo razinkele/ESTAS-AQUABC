@@ -81,24 +81,10 @@ CL29_WCONST_OVERRIDE = {
     # acceptor). Calibrated 2026-07-19 against the EPA 2012-2022 observations: the
     # template default 0.025 leaves NO3/TN ~2x high (the lagoon's dominant N sink is
     # under-represented -- boundaries were verified realistic, so the bias is weak
-    # removal, not over-loading). 1.0 brings NO3 bias +0.31->+0.06 (RMSE -31%) and TN
-    # +0.80->+0.39 across all 9 boxes (these figures are the EPA-at-1.0 evaluation). The
-    # pestpp-ies KM-2022 calibration (PR #54/#56, Phi 4058->1287) refined it to 1.13
-    # +/-0.07 -- consistent to ~1.9 sigma across two independent windows, so 1.13 is the
-    # cross-validated value.
-    "K_MIN_DOC_NO3N_20": 1.13,
-    # POP -> PO4 dissolution rate. Template default 3.48/day (e-fold ~7 h) is implausibly
-    # fast and drives the CL29 PO4 over-prediction. pestpp-ies (PR #54/#56) puts the
-    # posterior at 0.118 +/-0.004 -- the tightest-constrained parameter (99.9% variance
-    # reduction), e-fold ~8.5 d, closing PO4 in BOTH the KM-2022 and EPA windows. It also
-    # partly compensates the disabled sediment-P burial sink (MODEL_SEDIMENTS=0).
-    "KDISS_DET_PART_ORG_P_20": 0.118,
-    # NOT promoted (evaluated, rejected): KG_DIA_OPT_TEMP (posterior 5.45) WORSENS Si
-    # (+0.56->+1.20), flips Chl-a to under-prediction, and degrades NH4 -- with no
-    # biogenic-Si burial sink (MODEL_SEDIMENTS=0), raising diatom growth recycles more Si,
-    # not less. KD_DIA_20 is identified but r=0.84-correlated with KG, so it can't be split
-    # off. KHS_DSi_DIA is non-identifiable (posterior wider than prior). See
-    # docs/superpowers/specs/2026-07-21-cl29-pest-posterior-promotion-design.md.
+    # removal, not over-loading). 1.0 brings NO3 bias +0.31->+0.06 (RMSE -31%) and
+    # TN +0.80->+0.39 across all 9 boxes, with DO slightly improved and Chl-a ~5% low.
+    # (PO4/Si stay high -- their sinks are sediment burial/Fe-binding, MODEL_SEDIMENTS=0.)
+    "K_MIN_DOC_NO3N_20": 1.0,
 }
 
 # Diatom settling velocity (m/day), settling-vel slot 1 (state var DIA_C). This is the ROOT
