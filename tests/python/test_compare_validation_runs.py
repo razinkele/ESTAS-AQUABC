@@ -69,3 +69,28 @@ def test_zero_baseline_rmse_is_regression(tmp_path):
     _write(base, [["1", "NH4", "10", "0", "0", "0.0", "0.0", "0.9"]])
     _write(prom, [["1", "NH4", "10", "0", "0", "0.5", "0.5", "0.9"]])
     assert _run(base, prom, "NH4").returncode != 0
+
+
+def test_guard_case_insensitive(tmp_path):
+    # guard is upper-cased internally; a mixed-case CSV var like "Si" must still match "Si" guard
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
+    _write(base, [["1", "Si", "10", "0", "0", "0.0", "1.0", "0.9"]])
+    _write(prom, [["1", "Si", "10", "0", "0", "0.0", "5.0", "0.9"]])
+    r = _run(base, prom, "Si")
+    assert r.returncode != 0
+    assert "Si" in r.stdout
+
+
+def test_zero_baseline_bias_is_regression(tmp_path):
+    # RMSE flat, but bias appears from ~0 (0.0 -> 0.5) with no sign flip — must still flag
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
+    _write(base, [["1", "NH4", "10", "0", "0", "0.0", "1.0", "0.9"]])
+    _write(prom, [["1", "NH4", "10", "0", "0", "0.5", "1.0", "0.9"]])
+    assert _run(base, prom, "NH4").returncode != 0
+
+
+def test_help_does_not_crash(tmp_path):
+    # the "(%)" help string previously crashed argparse's HelpFormatter on --help
+    r = subprocess.run([sys.executable, str(TOOL), "--help"], capture_output=True, text=True)
+    assert r.returncode == 0
+    assert "usage" in r.stdout.lower()

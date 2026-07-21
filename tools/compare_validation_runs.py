@@ -41,12 +41,14 @@ def rmse_rise_pct(base, prom):
 
 
 def bias_regressed(b_bias, q_bias, tol_pct):
-    """True if bias sign-flips into non-trivial error, or |bias| grows beyond tol_pct."""
+    """True if bias sign-flips into non-trivial error, |bias| appears from ~0, or grows beyond tol_pct."""
     if abs(q_bias) < 1e-9:
         return False
-    if b_bias * q_bias < 0:                                    # sign flip into real bias
+    if b_bias * q_bias < 0:                        # sign flip into real bias
         return True
-    return abs(b_bias) > 1e-6 and abs(q_bias) > abs(b_bias) * (1 + tol_pct / 100.0)
+    if abs(b_bias) <= 1e-6:                         # bias appeared where there was ~none
+        return abs(q_bias) > 1e-6
+    return abs(q_bias) > abs(b_bias) * (1 + tol_pct / 100.0)
 
 
 def main(argv=None):
@@ -55,7 +57,7 @@ def main(argv=None):
     p.add_argument("promoted")
     p.add_argument("--no-regress", default="", help="comma list of vars held to the guard")
     p.add_argument("--max-rise", type=float, default=5.0,
-                   help="max allowed RMSE/|bias| rise (%)")
+                   help="max allowed RMSE/|bias| rise (%%)")
     a = p.parse_args(argv)
 
     base = aggregate(read_metrics(a.baseline))
@@ -70,12 +72,12 @@ def main(argv=None):
         q = prom.get(v)
         if not b or not q:
             print(f"{v:6}  (only in one run — cannot compare)")
-            if v in guard:
+            if v.upper() in guard:
                 failures.append((v, "missing in one run"))
             continue
         d = rmse_rise_pct(b["rmse"], q["rmse"])
         flag = ""
-        if v in guard and (d > a.max_rise or bias_regressed(b["bias"], q["bias"], a.max_rise)):
+        if v.upper() in guard and (d > a.max_rise or bias_regressed(b["bias"], q["bias"], a.max_rise)):
             flag = "  <-- REGRESSION"
             failures.append((v, f"dRMSE {d:+.1f}%, bias {b['bias']:+.3g}->{q['bias']:+.3g}"))
         print(f"{v:6} {b['n']:>5} {b['rmse']:>10.4g} {q['rmse']:>10.4g} {d:>+8.1f} "
