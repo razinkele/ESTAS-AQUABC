@@ -23,6 +23,8 @@ import ingest_km_observations as km  # noqa: E402
     ("bendras fosforas", "TP"),
     ("azotas mineralinis", "DIN"),
     ("silicis", "Si"),
+    ("Chlorofilas a", "CHLA"),
+    ("chlorofilas a", "CHLA"),
     ("biocheminis deguonies suvartojimas per 7 par", "BOD7"),
     ("suspenduotos (skendinčios) medžiagos", "TSS"),
     ("  NITRATŲ  AZOTAS ", "NO3"),          # case / whitespace robust
@@ -61,6 +63,19 @@ def test_resolve_columns():
     assert lut["value"] == "Parametro tyrimo rezultatas"
     assert lut["date"] == " Tyrimų data nuo"
     assert lut["depth"] == "Vandens gylis nuo"
+
+
+def test_resolve_value_by_content_when_header_truncated():
+    # MHTML export: headers truncated by display:none spans so the value header ("Parame")
+    # can't be told from param by name — value must be resolved by content (numeric,
+    # non-unit, first after param).
+    df = pd.DataFrame(
+        [["LTK1", "chlorofilas a", "18.67", "µg/l", "2023-01-04"]],
+        columns=["MV kodas", "Parametro pa", "Parame", "Matav", "Tyrimų data"])
+    lut = km._resolve_columns(df)
+    assert lut["param"] == "Parametro pa"
+    assert lut["value"] == "Parame"     # by content, not name
+    assert lut["unit"] == "Matav"
 
 
 # --- end-to-end ingest on a synthetic frame --------------------------------------
@@ -124,6 +139,20 @@ def test_write_dates_only_model_vars(tmp_path):
     assert vals[2 + (17 - 1)] == "-1"              # Si absent here -> missing
     # NO2 is auxiliary (no model index) -> it never lands in any column
     assert "0.01" not in vals
+
+
+def test_ingest_chla_to_index_59(tmp_path):
+    df = _frame([
+        ["LTK1", "Chlorofilas a", "18.67", "µg/l", "2022-02-23 00:00:00", "0.5"],
+    ])
+    rows = km.ingest_file(df, "chla.xls", STATION_BOX, _fresh_stats())
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["variable"] == "CHLA" and r["model_index"] == 59
+    assert r["value"] == pytest.approx(18.67)
+    km.write_dates(rows, str(tmp_path))
+    vals = (tmp_path / "KM_1_box7.dates").read_text().splitlines()[1].split()
+    assert vals[2 + (59 - 1)] == "18.67"     # CHLA -> model index 59
 
 
 def test_write_dates_averages_depths(tmp_path):

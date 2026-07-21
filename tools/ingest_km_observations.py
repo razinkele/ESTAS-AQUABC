@@ -2,8 +2,9 @@
 """Ingest the Curonian Lagoon (KM) hydrochemistry extract into box-aligned AQUABC obs.
 
 Reads the *Kuršių marios* (KM) hydrochemistry workbooks in
-``curonian/DATA/2014-2023_BJ duomenys extrahuoti/Hidrocheminiai tyrimai`` and emits the
-same two products as ``ingest_epa_observations.py``, so the result plugs directly into
+``curonian/DATA/2014-2023_BJ duomenys extrahuoti/Hidrocheminiai tyrimai`` **and** the KM
+chlorophyll-a workbooks in the sibling ``Biologiniai tyrimai`` folder, and emits the same
+two products as ``ingest_epa_observations.py``, so the result plugs directly into
 ``validate_cl29_vs_epa.py`` and the Shiny observations module:
 
   * ``km_observations_tidy.csv`` — one row per (station, date, depth, variable), carrying
@@ -63,6 +64,7 @@ PARAM_RULES = [
     (("bendras", "azot"), "TN"),   # azotas bendras         -> TN  (mg/l)
     (("bendras", "fosfor"), "TP"), # bendras fosforas       -> TP  (mg/l)
     (("silic",), "Si"),            # silicis                -> Si  (element, assumed)
+    (("chlorofil",), "CHLA"),      # chlorofilas a          -> CHLA (µg/L = model units)
     (("biochemin",), "BOD7"),      # BOD7                    -> aux
     (("suspend",), "TSS"),         # suspended solids        -> aux
     (("skendin",), "TSS"),         # skendinčios medžiagos   -> aux
@@ -80,12 +82,17 @@ TIDY_FIELDS = ["station", "box", "region", "date", "depth", "variable", "model_i
 # `display:none` spans ("Parametro pavadinimas" -> "Parametro pavadin").
 COLUMN_KEYS = {
     "station": ["mv kodas"],
-    "param":   ["parametro pavadin"],
+    "param":   ["parametro pa"],   # short: matches full "…pavadinimas" and truncated "Parametro pa"
     "value":   ["parametro tyri", "rezultat"],
-    "unit":    ["matavimo vien"],
+    "unit":    ["matavimo vien", "matav"],
     "date":    ["data nuo", "tyrimų dat", "tyrimu dat"],
     "depth":   ["gylis", "horizontas"],
 }
+
+
+def _looks_unit(s):
+    s = str(s).lower()
+    return "/l" in s or s.strip() in {"mg", "µg", "ug"}
 
 
 def map_param(name):
@@ -110,14 +117,32 @@ def parse_date(raw):
 
 
 def _resolve_columns(df):
-    """Map logical column names to the actual (Lithuanian) DataFrame columns."""
+    """Map logical column names to the actual (Lithuanian) DataFrame columns.
+
+    Header-based first; then a content-based fallback for the value column, because the
+    MHTML exports truncate headers so aggressively ("Parametro tyrimo rezultatas" ->
+    "Parame") that value can't be told from param by name. The layout is always
+    ..., param, [LOQ], value, units, ..., so value is the first mostly-numeric,
+    non-unit column after param.
+    """
     lut = {}
-    lowered = {str(c).strip().lower(): c for c in df.columns}
+    lowered = [(str(c).strip().lower(), c) for c in df.columns]
     for logical, keys in COLUMN_KEYS.items():
         for want in keys:
-            hit = next((orig for low, orig in lowered.items() if want in low), None)
+            hit = next((orig for low, orig in lowered if want in low), None)
             if hit is not None:
                 lut[logical] = hit
+                break
+    cols = list(df.columns)
+    if "param" in lut and "value" not in lut:
+        pos = cols.index(lut["param"])
+        for c in cols[pos + 1:]:
+            sample = [s for s in df[c].dropna().astype(str).head(20) if s.strip()]
+            if not sample or any(_looks_unit(s) for s in sample):
+                continue
+            numeric = sum(1 for s in sample if clean_value(s) == clean_value(s))  # not NaN
+            if numeric >= max(1, len(sample) // 2):
+                lut["value"] = c
                 break
     return lut
 
@@ -270,15 +295,20 @@ def print_summary(rows, stats, dates_written):
 
 def main(argv=None):
     here = os.path.dirname(os.path.abspath(__file__))
-    default_dir = os.path.join(
-        here, "..", "..", "curonian", "DATA", "2014-2023_BJ duomenys extrahuoti",
-        "Hidrocheminiai tyrimai")
+    extract = os.path.join(
+        here, "..", "..", "curonian", "DATA", "2014-2023_BJ duomenys extrahuoti")
+    default_dir = os.path.join(extract, "Hidrocheminiai tyrimai")
+    default_bio = os.path.join(extract, "Biologiniai tyrimai")
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data-dir", default=default_dir,
                    help="folder holding the KM hydrochemistry workbooks")
     p.add_argument("--glob", default="*KM*.xls*",
-                   help="filename glob for KM lagoon files (default: '*KM*.xls*')")
+                   help="filename glob for KM hydrochem files (default: '*KM*.xls*')")
+    p.add_argument("--bio-dir", default=default_bio,
+                   help="folder holding the KM biology (chlorophyll-a) workbooks")
+    p.add_argument("--bio-glob", default="*hlorofil*KM*.xls*",
+                   help="filename glob for KM chlorophyll-a files (empty to skip biology)")
     p.add_argument("--stations", default=os.path.join(here, "epa_station_to_box.csv"),
                    help="station->box map (shared with the EPA ingester)")
     p.add_argument("--out-dir", default=here,
@@ -291,9 +321,13 @@ def main(argv=None):
     stats = {"kept": 0, "blank_values": 0, "bad_dates": 0,
              "unmapped_stations": defaultdict(int), "unmapped_params": defaultdict(int),
              "skipped_files": []}
-    files = sorted(glob.glob(os.path.join(a.data_dir, a.glob)))
+    sources = [(a.data_dir, a.glob)]
+    if a.bio_glob:
+        sources.append((a.bio_dir, a.bio_glob))
+    files = [f for d, g in sources for f in sorted(glob.glob(os.path.join(d, g)))]
     if not files:
-        print(f"No files matched {a.glob!r} in {a.data_dir}", file=sys.stderr)
+        print(f"No files matched {[g for _, g in sources]} in {[d for d, _ in sources]}",
+              file=sys.stderr)
         return 1
     rows = []
     for f in files:
