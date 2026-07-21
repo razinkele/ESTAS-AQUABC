@@ -96,6 +96,36 @@ and over-predicts the standing nutrient and chlorophyll pools (see
 These are the **default configuration**, not a fresh PEST calibration; the numbers are a
 baseline for the calibration levers already identified in the EPA summary.
 
+## Demonstration calibration (`pestpp-ies`)
+
+A first pass at calibrating the five `pest/` parameters (PR #54) against the 2022 obs, run
+with `pestpp-ies` as a **reduced** ensemble — **12 realizations × 1 iteration**, parallel over
+12 cores (~49 min) — to exercise the harness end-to-end. This is a demonstration, **not a
+converged posterior**; the committed `pest/cl29.pst` (50 reals × 3 iterations) on dedicated
+hardware would refine it.
+
+Objective function Φ across the ensemble:
+
+| iteration | mean Φ | std | min | max |
+|---|---:|---:|---:|---:|
+| 0 (initial ensemble) | 4434 | 1142 | 2935 | 6806 |
+| 1 (after the iES update) | **1711** | 333 | **1382** | 2405 |
+
+Mean Φ fell **61 %** in one iteration and the ensemble spread tightened 3.4×. The parameter
+ensemble means moved to correct the documented biases:
+
+| parameter | initial | calibrated | direction & effect |
+|---|---:|---:|---|
+| `K_MIN_DOC_NO3N_20` (denitrification) | 1.79 | 0.41 | ↓ less N removal → raises NO3 (was under-predicted) |
+| `KDISS_DET_PART_ORG_P_20` (POP dissolution) | 3.95 | 0.33 | ↓ less P release → lowers PO4 (over-predicted) |
+| `KHS_DSi_DIA` (diatom Si half-sat) | 0.018 | 0.0069 | ↓ easier Si uptake → lowers Si (over-predicted) |
+| `KG_DIA_OPT_TEMP` (diatom growth) | 3.63 | 4.79 | ↑ more uptake |
+| `KD_DIA_20` (diatom mortality) | 0.19 | 0.068 | ↓ |
+
+Every shift moves in the direction that corrects a documented bias — a reassuring sign that
+the parameters and observations are wired correctly. The calibrated values are a
+demonstration, not a recommended parameter set; run the full ensemble to trust them.
+
 ## Reproduce
 
 ```sh
