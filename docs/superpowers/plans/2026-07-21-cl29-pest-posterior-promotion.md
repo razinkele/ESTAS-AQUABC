@@ -29,7 +29,7 @@ Makes the gate auditable and reproducible instead of eyeballed. Reads two `valid
 - Test: `tests/python/test_compare_validation_runs.py`
 
 **Interfaces:**
-- Consumes: two CSVs with header `box,var,n,obs_mean,model_mean,bias,rmse,r` (the format `validate_cl29_vs_epa.py:write_metrics_csv` emits — confirmed at `tools/validate_cl29_vs_epa.py:179`).
+- Consumes: two CSVs with header `box,variable,n,obs_mean,model_mean,bias,rmse,r` — the exact `fieldnames` `validate_cl29_vs_epa.py:write_metrics_csv` emits (verified at `tools/validate_cl29_vs_epa.py:178`; the column is `variable`, NOT `var` — `var` is only the console-print header at line 155).
 - Produces: `aggregate(rows) -> dict[var] -> {"n","rmse","bias"}` (obs-weighted: `rmse=sqrt(Σ rmse²·n / Σn)`, `bias=Σ bias·n / Σn`), matching the validator's own per-variable summary (`validate_cl29_vs_epa.py:164-173`). CLI: `compare_validation_runs.py BASELINE.csv PROMOTED.csv --no-regress NH4,DO,TP --max-rise 5`.
 
 - [ ] **Step 1: Write the failing test**
@@ -47,9 +47,22 @@ TOOL = Path(__file__).resolve().parents[2] / "tools" / "compare_validation_runs.
 def _write(path, rows):
     with open(path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["box", "var", "n", "obs_mean", "model_mean", "bias", "rmse", "r"])
+        # EXACT header validate_cl29_vs_epa.py:write_metrics_csv emits — column is "variable"
+        w.writerow(["box", "variable", "n", "obs_mean", "model_mean", "bias", "rmse", "r"])
         for r in rows:
             w.writerow(r)
+
+
+def rows_to_csv(tmp_path, rows):
+    p = tmp_path / "m.csv"
+    _write(p, rows)
+    return str(p)
+
+
+def _run(base, prom, guard):
+    return subprocess.run([sys.executable, str(TOOL), str(base), str(prom),
+                           "--no-regress", guard, "--max-rise", "5"],
+                          capture_output=True, text=True)
 
 
 def test_aggregate_obs_weighted(tmp_path):
@@ -63,33 +76,36 @@ def test_aggregate_obs_weighted(tmp_path):
     assert abs(agg["PO4"]["bias"] - (0.5 * 10 + 0.1 * 30) / 40) < 1e-9
 
 
-def rows_to_csv(tmp_path, rows):
-    p = tmp_path / "m.csv"
-    _write(p, rows)
-    return str(p)
-
-
-def test_guard_fails_on_regression(tmp_path):
-    base = tmp_path / "base.csv"
-    prom = tmp_path / "prom.csv"
+def test_guard_fails_on_rmse_regression(tmp_path):
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
     _write(base, [["1", "NH4", "10", "0", "0", "0.0", "1.00", "0.9"]])
     _write(prom, [["1", "NH4", "10", "0", "0", "0.0", "1.20", "0.9"]])  # +20% RMSE
-    r = subprocess.run([sys.executable, str(TOOL), str(base), str(prom),
-                        "--no-regress", "NH4", "--max-rise", "5"],
-                       capture_output=True, text=True)
+    r = _run(base, prom, "NH4")
     assert r.returncode != 0
     assert "NH4" in r.stdout
 
 
 def test_guard_passes_within_tolerance(tmp_path):
-    base = tmp_path / "base.csv"
-    prom = tmp_path / "prom.csv"
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
     _write(base, [["1", "NH4", "10", "0", "0", "0.0", "1.00", "0.9"]])
     _write(prom, [["1", "NH4", "10", "0", "0", "0.0", "1.03", "0.9"]])  # +3%
-    r = subprocess.run([sys.executable, str(TOOL), str(base), str(prom),
-                        "--no-regress", "NH4", "--max-rise", "5"],
-                       capture_output=True, text=True)
-    assert r.returncode == 0
+    assert _run(base, prom, "NH4").returncode == 0
+
+
+def test_guard_fails_on_bias_growth(tmp_path):
+    # RMSE flat, but |bias| grows 15x — a real directional error the RMSE guard misses
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
+    _write(base, [["1", "NH4", "10", "0", "0", "0.002", "1.00", "0.9"]])
+    _write(prom, [["1", "NH4", "10", "0", "0", "0.031", "1.00", "0.9"]])
+    assert _run(base, prom, "NH4").returncode != 0
+
+
+def test_zero_baseline_rmse_is_regression(tmp_path):
+    # perfect-fit baseline (RMSE 0) -> positive RMSE must be flagged, not treated as 0%
+    base, prom = tmp_path / "b.csv", tmp_path / "p.csv"
+    _write(base, [["1", "NH4", "10", "0", "0", "0.0", "0.0", "0.9"]])
+    _write(prom, [["1", "NH4", "10", "0", "0", "0.5", "0.5", "0.9"]])
+    assert _run(base, prom, "NH4").returncode != 0
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -104,8 +120,9 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'compare_validation_run
 """Compare two CL29 validation_metrics.csv runs (baseline vs promoted).
 
 Aggregates per-variable obs-weighted RMSE + bias exactly as validate_cl29_vs_epa.py's
-own summary does, prints a before/after/delta table, and applies a one-sided
-regression guard: exit non-zero if any --no-regress variable's RMSE rises > --max-rise %.
+own summary does, prints a before/after/delta table, and applies a one-sided regression
+guard: exit non-zero if any --no-regress variable regresses > --max-rise % on RMSE OR on
+|bias| (or its bias sign-flips into non-trivial error).
 """
 from __future__ import annotations
 
@@ -123,7 +140,7 @@ def read_metrics(path):
 def aggregate(rows):
     by = {}
     for r in rows:
-        v = r["var"]
+        v = r["variable"]          # validate_cl29_vs_epa.py CSV column is "variable"
         by.setdefault(v, []).append((int(r["n"]), float(r["rmse"]), float(r["bias"])))
     out = {}
     for v, recs in by.items():
@@ -134,12 +151,29 @@ def aggregate(rows):
     return out
 
 
+def rmse_rise_pct(base, prom):
+    """% RMSE rise; a rise from a perfect-fit (0) baseline to >0 is a regression (inf)."""
+    if base > 0:
+        return 100.0 * (prom - base) / base
+    return float("inf") if prom > 0 else 0.0
+
+
+def bias_regressed(b_bias, q_bias, tol_pct):
+    """True if bias sign-flips into non-trivial error, or |bias| grows beyond tol_pct."""
+    if abs(q_bias) < 1e-9:
+        return False
+    if b_bias * q_bias < 0:                                    # sign flip into real bias
+        return True
+    return abs(b_bias) > 1e-6 and abs(q_bias) > abs(b_bias) * (1 + tol_pct / 100.0)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("baseline")
     p.add_argument("promoted")
     p.add_argument("--no-regress", default="", help="comma list of vars held to the guard")
-    p.add_argument("--max-rise", type=float, default=5.0, help="max allowed RMSE rise (%)")
+    p.add_argument("--max-rise", type=float, default=5.0,
+                   help="max allowed RMSE/|bias| rise (%)")
     a = p.parse_args(argv)
 
     base = aggregate(read_metrics(a.baseline))
@@ -152,21 +186,22 @@ def main(argv=None):
     for v in sorted(set(base) | set(prom)):
         b = base.get(v);  q = prom.get(v)
         if not b or not q:
-            print(f"{v:6} {'--':>5}  (only in one run)")
+            print(f"{v:6}  (only in one run — cannot compare)")
+            if v in guard:
+                failures.append((v, "missing in one run"))
             continue
-        d = 100.0 * (q["rmse"] - b["rmse"]) / b["rmse"] if b["rmse"] else 0.0
+        d = rmse_rise_pct(b["rmse"], q["rmse"])
         flag = ""
-        if v in guard and d > a.max_rise:
+        if v in guard and (d > a.max_rise or bias_regressed(b["bias"], q["bias"], a.max_rise)):
             flag = "  <-- REGRESSION"
-            failures.append((v, d))
+            failures.append((v, f"dRMSE {d:+.1f}%, bias {b['bias']:+.3g}->{q['bias']:+.3g}"))
         print(f"{v:6} {b['n']:>5} {b['rmse']:>10.4g} {q['rmse']:>10.4g} {d:>+8.1f} "
               f"{b['bias']:>+10.3g} {q['bias']:>+10.3g}{flag}")
 
     if failures:
-        print("\nGUARD FAILED: " + ", ".join(f"{v} +{d:.1f}%" for v, d in failures))
+        print("\nGUARD FAILED: " + "; ".join(f"{v} ({why})" for v, why in failures))
         return 1
-    print("\nGuard passed (no --no-regress variable rose > "
-          f"{a.max_rise:.0f}%).")
+    print(f"\nGuard passed (no --no-regress variable regressed > {a.max_rise:.0f}%).")
     return 0
 
 
@@ -177,7 +212,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `python -m pytest tests/python/test_compare_validation_runs.py -q`
-Expected: PASS (4 passed).
+Expected: PASS (5 passed).
 
 - [ ] **Step 5: Lint + commit**
 
@@ -332,21 +367,23 @@ python tools/validate_cl29_vs_epa.py --obs epa_observations_out/epa_observations
 - [ ] **Step 3: Apply the guard (KM target + EPA regression)**
 
 ```bash
-echo "== KM 2022 (target: PO4 should close) =="
+S=/tmp/claude-1000/-home-razinka-AQUABCv0-2/a90c26f7-fa97-44bc-ac88-a9300f279f47/scratchpad/promotion
+echo "== KM 2022 (target: PO4 should close; before/after table only, no gate here) =="
 python tools/compare_validation_runs.py $S/base_km/validation_metrics.csv \
-    $S/prom_km/validation_metrics.csv --no-regress NH4 --max-rise 5
-echo "== EPA 2012-2021 (guard: NH4/DO/TP must not rise >5%) =="
+    $S/prom_km/validation_metrics.csv --max-rise 5
+echo "== EPA 2012-2021 (GATE: NH4/DO/TP must not regress >5% on RMSE OR |bias|) =="
 python tools/compare_validation_runs.py $S/base_epa/validation_metrics.csv \
     $S/prom_epa/validation_metrics.csv --no-regress NH4,DO,TP --max-rise 5
 ```
+(The KM call omits `--no-regress` — per the spec the regression guard is EPA-only; on KM the tool just prints the before/after table.)
 
 - [ ] **Step 4: Evaluate against the success criteria (record the numbers)**
 
 Pass requires ALL of:
-- **KM PO4** bias magnitude drops toward ≈0 (from ~+0.025).
-- **EPA PO4** RMSE/|bias| drops (PO4 over-predicted on EPA too).
-- **EPA NH4/DO/TP guard PASSES** (compare tool exit 0 on the EPA call).
-- **NO3/TN diagnostic:** note EPA NO3 and TN ΔRMSE%. If either rose > 5% → go to Task 6 (K_MIN fallback). Otherwise keep 1.13.
+- **KM PO4 closes:** pooled RMSE drops AND the per-box bias distribution tightens toward 0. Judge on pooled RMSE + the validator's per-box table, NOT pooled |bias| alone — opposite-sign per-box biases can cancel to a near-zero pooled bias without any real improvement (a near-zero pooled bias is necessary, not sufficient).
+- **EPA PO4** RMSE and |bias| drop (PO4 over-predicted on EPA too).
+- **EPA NH4/DO/TP guard PASSES** — compare tool exit 0 on the EPA call. The tool now flags a regression on RMSE **or** on |bias|/sign, so a bias-only degradation in a high-scatter variable is caught.
+- **NO3/TN diagnostic:** read EPA NO3 and TN from the EPA compare table (ΔRMSE% and the bias columns). If either regressed > 5% → go to Task 6 (K_MIN fallback). Otherwise keep 1.13.
 - **Early-era check:** scan the EPA per-box table for 2012–2016 PO4 — a modest under-prediction is acceptable, a collapse (near-zero modeled PO4) is not; note it.
 
 Write the KM and EPA before/after per-variable tables into the scratchpad log — Task 5 pastes them into the doc.
@@ -393,7 +430,11 @@ scored on the committed KM CSV and freshly-ingested EPA obs.
 Outcome: <one line — PO4 closed; guard passed/failed; K_MIN kept at 1.13 / reverted to 1.0>.
 ```
 
-- [ ] **Step 2: Fix the pre-promotion prose so the doc isn't self-contradictory.** In the **Interpretation** section (the "PO4, Si, TN and Chl-a are over-predicted … NO3 under-predicted" paragraph), append: `— these describe the pre-promotion default; see "Post-promotion validation" for the calibrated result.` Change the closing next-step line of `## Calibration (pestpp-ies)` ("re-running the validation … is the next step") to past tense noting it is now done.
+- [ ] **Step 2: Reconcile all four spec anchors so the doc isn't self-contradictory.**
+  - (a) **2022 Results bias table:** add a header note directly above it — `_(pre-promotion default config; see "Post-promotion validation" for the calibrated result)_`.
+  - (b) **2023 Results table:** no numeric edit — the KM-2023 typical-year run is deferred (see plan Notes), so it stays a pre-promotion record; add a one-line note saying so.
+  - (c) **Interpretation prose** (the "PO4, Si, TN and Chl-a are over-predicted … NO3 under-predicted" paragraph): append `— these describe the pre-promotion default; see "Post-promotion validation" for the calibrated result.`
+  - (d) **Next-step line** at the end of `## Calibration (pestpp-ies)` ("re-running the validation … is the next step"): change to past tense noting it is now done, pointing at the new subsection.
 
 - [ ] **Step 3: Add the point-initial reconciliation note** next to the Calibration "initial" column (values 4.10/3.58/1.55/…): `> "initial" = iteration-0 ensemble mean (stochastic draw); the point-initials the control file used are 3.48 / 3.70 / 1.0 / 0.013 / 0.12 (pest/cl29.pst).`
 
@@ -415,16 +456,19 @@ git commit -m "docs: post-promotion CL29 validation (both windows) + reconcile p
 
 - [ ] **Step 1: Revert K_MIN to 1.0**, keeping KDISS=0.118. Set `"K_MIN_DOC_NO3N_20": 1.0,` and update its comment to note "PEST 1.13 tried but reverted: it regressed EPA NO3/TN by X% — KDISS is the only promoted lever."
 
-- [ ] **Step 2: Re-run + re-score EPA only** (KDISS unaffected NO3 little; but confirm):
+- [ ] **Step 2: Re-run + re-score BOTH windows** (K_MIN affects the whole run, so the KM table must be refreshed too — KM PO4 is unchanged since KDISS is untouched, but KM/EPA NO3 and TN change):
 
 ```bash
+S=/tmp/claude-1000/-home-razinka-AQUABCv0-2/a90c26f7-fa97-44bc-ac88-a9300f279f47/scratchpad/promotion
 python tools/eutropy_poc/eutropy_to_estas.py && ./run_cl29.sh
 python tools/validate_cl29_vs_epa.py --obs epa_observations_out/epa_observations_tidy.csv \
     --outputs OUTPUTS_CL29 --base-year 2012 --no-plots --out $S/prom_epa_kmin10
+python tools/validate_cl29_vs_epa.py --obs pest/km_observations_tidy.csv \
+    --outputs OUTPUTS_CL29 --base-year 2012 --no-plots --out $S/prom_km_kmin10
 python tools/compare_validation_runs.py $S/base_epa/validation_metrics.csv \
     $S/prom_epa_kmin10/validation_metrics.csv --no-regress NH4,DO,TP,NO3,TN --max-rise 5
 ```
-Expected: guard now passes.
+Expected: guard now passes. Refresh BOTH doc tables (KM + EPA) from the `*_kmin10` metrics — re-scoring EPA alone would leave the KM table describing a K_MIN=1.13 config that no longer ships.
 
 - [ ] **Step 3: Update the doc's post-promotion outcome line** to reflect K_MIN=1.0, and amend the Task 3 commit's values in the doc table.
 
@@ -442,7 +486,7 @@ git commit -m "fix(converter): revert K_MIN to 1.0 — 1.13 regressed EPA NO3/TN
 **Files:**
 - Modify: `docs/superpowers/specs/2026-07-21-cl29-pest-calibration-design.md` (header), `CHANGELOG.md`
 
-- [ ] **Step 1: Close the open-follow-up in the calibration spec header.** In `2026-07-21-cl29-pest-calibration-design.md`, change the `**Open follow-up:**` sentence to note the promotion landed (KDISS=0.118 + K_MIN=<final value>) with a pointer to this plan; the two non-identifiable params remain out of scope.
+- [ ] **Step 1: Close the open-follow-up in the calibration spec header.** In `2026-07-21-cl29-pest-calibration-design.md`, change the `**Open follow-up:**` sentence to note the promotion landed (KDISS=0.118 + K_MIN=<final value>) with a pointer to this plan. Be precise about the un-promoted params — do NOT lump them as "non-identifiable": `KG_DIA_OPT_TEMP` / `KD_DIA_20` were **evaluated and rejected** (KG worsens Si/Chl-a/NH4; KD is r=0.84-tied to KG), while only `KHS_DSi_DIA` is **genuinely non-identifiable**.
 
 - [ ] **Step 2: Add a CHANGELOG line** under `## [Unreleased]`:
 
@@ -456,11 +500,11 @@ git commit -m "fix(converter): revert K_MIN to 1.0 — 1.13 regressed EPA NO3/TN
 - [ ] **Step 3: Confirm scope boundaries held** (no edits expected):
 
 ```bash
-git status --short                         # STAGED/tracked-modified: only converter, both docs, CHANGELOG, Task-1 tool/test
-git diff --stat pest/cl29.pst              # MUST be empty (frozen)
-grep -l KDISS_DET_PART_ORG_P_20 docs/PAPER_VS_CODE_ANALYSIS.md  # names only; do NOT edit values
+git status --porcelain                     # tracked-modified: only converter, both docs, CHANGELOG, Task-1 tool/test
+git status --porcelain pest/cl29.pst       # MUST be empty (frozen — catches BOTH staged and unstaged)
+grep -c KG_DIA_OPT_TEMP docs/PAPER_VS_CODE_ANALYSIS.md  # the rejected param appears by NAME only there; do NOT edit its value
 ```
-Expected: `pest/cl29.pst` unchanged. Untracked run artifacts (`INPUTS_CL29/`, `OUTPUTS_CL29/`, `epa_observations_out/`, scratchpad metrics) are gitignored/expected — they must NOT be committed; only the files listed above are staged.
+Expected: `pest/cl29.pst` line is empty (unchanged). The `grep -c` returns a nonzero count (the name is present as documentation) — confirming there is nothing to edit there, since the *promoted* params (KDISS/K_MIN) don't appear in that file at all. Untracked run artifacts (`INPUTS_CL29/`, `OUTPUTS_CL29/`, `epa_observations_out/`, scratchpad metrics) are gitignored/expected — they must NOT be committed; only the tracked files listed above are staged.
 
 - [ ] **Step 4: Full converter/pest test sweep**
 
