@@ -131,8 +131,58 @@ comes down modestly to lift the under-predicted NO3. The diatom Si half-saturati
 are **not identifiable** by these observations (their posteriors are as wide as the value /
 essentially unchanged), so the Si correction rides on diatom growth rather than the half-sat.
 
-These calibrated the **2022** window; re-running the validation with this parameter set to
-confirm the biases actually close is the next step.
+These calibrated the **2022** window. The identified levers were then promotion-tested against
+both windows — see **Promotion attempt** below.
+
+> **Note (2026-07-22 correction).** The "raising diatom growth corrects Si" claim above is
+> **wrong** — verified against the ensemble output during the promotion test: raising
+> `KG_DIA_OPT_TEMP` *doubles* the Si over-prediction and flips Chl-a to under-prediction,
+> because with `MODEL_SEDIMENTS=0` there is no biogenic-Si burial sink, so more diatom growth
+> recycles more Si to dissolved. `KD_DIA_20` is in fact identified (89% variance reduction) and
+> r=0.84-correlated with `KG`; only `KHS_DSi_DIA` is genuinely non-identifiable.
+
+## Promotion attempt (2026-07-21) — abandoned
+
+The two defensible levers (`KDISS_DET_PART_ORG_P_20`=0.118, `K_MIN_DOC_NO3N_20`=1.13) were
+promoted into the converter default and validated with a **measured two-run before/after** on one
+gfortran+OpenMP binary (baseline vs promoted), scored on the committed KM CSV and freshly-ingested
+EPA obs. The promotion was then **reverted** — the 2022-calibrated posteriors do not transfer to
+the 11-year record.
+
+**PO4 (the target) closes cleanly in both windows:**
+
+| window | PO4 RMSE before → after | PO4 bias before → after |
+|---|---|---|
+| KM 2022 | 0.041 → **0.011** (−73%) | +0.025 → −0.000 |
+| EPA 2012–2021 | 0.039 → **0.0135** (−66%) | +0.028 → −0.000 |
+
+No early-era (2012–2016) PO4 collapse. **But the EPA regression guard failed** — the 30×
+dissolution cut induces system-wide P-limitation (ΔRMSE % below are computed from the
+full-precision metrics; the RMSE columns are rounded to 2–3 sig figs):
+
+| EPA var | RMSE before → after | ΔRMSE | note |
+|---|---|---|---|
+| NH4 | 0.060 → 0.081 | **+36 %** | less N uptake → NH4 accumulates |
+| NO3 | 0.505 → 0.657 | **+30 %** | bias +0.065 → +0.254 (more over-predicted) |
+| Si  | 1.49 → 2.03 | **+36 %** | less diatom uptake |
+| TN  | 1.10 → 1.24 | +13 % | |
+| Chl-a | bias −2.5 → **−13.9** | — | P-limited growth collapse |
+
+**Why the planned `K_MIN`→1.0 fallback does not help.** `K_MIN` is denitrification — it *lowers*
+NO3 — yet EPA NO3 rose. So the NO3 (and NH4, Si) regression is **`KDISS`-driven** P-limitation,
+not `K_MIN`-driven; `K_MIN`=1.13 was *masking* part of the NO3 rise, and NH4 is untouched by
+`K_MIN`, so a `KDISS`-only promotion would fail the guard too.
+
+**Root cause — nonstationarity.** `KDISS`=0.118 fits the **2022 de-eutrophicated low-P regime**
+(on KM-2022 NO3 *improves*), but the same cut is wrong for the **2012–2016 hyperbloom era** (EPA
+NO3 *regresses*) — the summer P-PO4 record itself shifted from ~25 µg/L (2012–16, peak 143 in
+2015) to 2–3 µg/L (2019–24). A single time-invariant dissolution rate cannot represent both. The
+PO4 over-prediction is real, but the fix belongs in a regime-aware or structural change (a
+biogenic-Si / sediment-P sink), not a constant calibrated on one low-P year.
+
+The reusable before/after comparator built for this test —
+`tools/compare_validation_runs.py` (per-variable obs-weighted RMSE/bias diff + one-sided
+regression guard) — is retained for future calibration work.
 
 ## Reproduce
 

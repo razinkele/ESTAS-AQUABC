@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **`tools/compare_validation_runs.py`** — per-variable obs-weighted RMSE/bias diff between two
+  `validate_cl29_vs_epa.py` runs, with a one-sided regression guard (a named variable fails if
+  RMSE or |bias| rises beyond a threshold, or its bias sign-flips). Reusable for before/after
+  calibration testing.
+
+### Investigated (no model-behaviour change)
+- **CL29 PEST-posterior promotion — validated and abandoned.** Promoting the 2022-calibrated
+  `KDISS_DET_PART_ORG_P_20`=0.118 + `K_MIN_DOC_NO3N_20`=1.13 into the converter default was tested
+  with a measured two-run before/after and **reverted**: `KDISS` closes PO4 over-prediction in both
+  windows but induces P-limitation that regresses the EPA 2012–2021 fit (NH4/NO3/Si/Chl-a) — the
+  posteriors do not transfer across the 2012–16 hyperbloom vs 2022 low-P regimes (nonstationarity).
+  Documented in `docs/CL29_KM_2022-2023_Validation.md`; no default changed.
+
 ## [0.5.2] - 2026-07-21
 
 ### Fixed
