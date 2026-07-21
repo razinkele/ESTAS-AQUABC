@@ -183,8 +183,12 @@ while ifx keeps a slight gain to 16.
 **Takeaways.** For serial or few-core runs, ifx's codegen is a clear win (~2×). With ≥8 cores the
 gap closes and gfortran+OpenMP matches ifx in absolute throughput. ifx is marginally fastest at high
 thread counts but costs ~2× the build. (Building the library with the stricter local ifx 2026.1.0
-also surfaced a latent `intent(in)` vs `inout` mismatch on the FIX_CYN light-saturation argument —
-fixed in the same change, matching the DIA/CYN/OPA declarations, so the ifx library builds cleanly.)
+also surfaced a latent bug: `FIX_CYN_LIGHT_SAT` was declared `intent(in)` but `LIM_LIGHT`
+(itself `intent(out)`) *writes* it — it is a pure output the caller reads into `PROCESS_RATES`,
+never read before write — so it is now correctly `intent(out)`. gfortran and CI's older ifx
+tolerated the mismatch; the local ifx 2026.1.0 rejects it (`#6780`). The DIA/CYN/OPA siblings
+share the same pure-output pattern with an imprecise `intent(inout)` declaration but do not error;
+NOSTOCALES genuinely reads its light-sat before writing, so its `intent(inout)` is correct.)
 
 ## Reproducing
 
