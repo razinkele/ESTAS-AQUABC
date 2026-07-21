@@ -1,0 +1,11 @@
+# PEST(++) run artifacts (regenerable)
+model_obs.out
+cl29.*.csv
+cl29.*.par
+cl29.*.obs
+cl29.*.rei
+cl29.rec
+cl29.rmr
+cl29.log
+*.rns
+worker_*/
