@@ -12,6 +12,11 @@ station,box,region,easting,northing
 LTK1,7,Strait,320397,6179134
 LTK2,7,Strait,319194,6177275
 LTK3,11,Strait,319599,6173032
+# LTK3A appears only in the 2022-2023 KM hydrochem extract, not the older EPA sheets.
+# Box 11 is INFERRED from its "Klaipėdos sąsiauris" water-body label and proximity to
+# LTK3/LTK3B (same strait cluster); coords are placeholders from that cluster (the join
+# uses the code, not coords). TODO: confirm box + coords against 29boxesNew_modified.tif.
+LTK3A,11,Strait,320100,6173032
 LTK3B,11,Strait,320601,6173603
 LTK3DT,11,Strait,320070,6173554
 LTK4,20,Northern,320600,6166341
