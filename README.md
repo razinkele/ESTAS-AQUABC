@@ -42,7 +42,7 @@ validated against long-term monitoring data.
 
 ## Development status
 
-**Current release:** v0.5.0. AQUABC is under active research development; maturity varies
+**Current release:** v0.6.0. AQUABC is under active research development; maturity varies
 by component:
 
 | Component | Status |
