@@ -118,6 +118,13 @@ def get_run_environment():
         logger.info(f"Set LD_LIBRARY_PATH with {len(intel_paths)} Intel paths: {new_paths[:100]}...")
     else:
         logger.warning("No Intel library paths found!")
+    # Cap OpenMP threads for the small box-model problems (Standard 25 / CL29 29 nodes).
+    # With OMP_NUM_THREADS unset, an OpenMP-built ESTAS grabs every core; for such a tiny
+    # nkn the per-timestep thread spawn/sync overhead swamps the compute -> ~180x slower
+    # than a small count (measured on the 29-box CL29: sim-day 131 in 15s at 4 threads vs
+    # 0.7 at 28). 4 is the empirical peak; a user-set OMP_NUM_THREADS is respected. A serial
+    # (non-OpenMP) binary ignores this. See docs/OPENMP_PERFORMANCE.md.
+    env.setdefault("OMP_NUM_THREADS", str(min(4, os.cpu_count() or 1)))
     return env
 
 
