@@ -27,3 +27,19 @@ def test_build_intel_wrapped_command_returns_tuple():
     assert isinstance(out, tuple)
     assert len(out) == 2
     assert isinstance(out[1], bool)
+
+
+def test_get_run_environment_caps_omp_threads_when_unset(monkeypatch):
+    # An OpenMP-built ESTAS_II with OMP_NUM_THREADS unset defaults to ALL cores,
+    # which is ~180x slower for the small (25-29 box) problems than a small count.
+    # get_run_environment must cap it to a sane small default.
+    monkeypatch.delenv("OMP_NUM_THREADS", raising=False)
+    env = compiler_env.get_run_environment()
+    n = int(env["OMP_NUM_THREADS"])
+    assert 1 <= n <= 4
+
+
+def test_get_run_environment_respects_user_omp_threads(monkeypatch):
+    # An explicit user setting must not be overridden.
+    monkeypatch.setenv("OMP_NUM_THREADS", "12")
+    assert compiler_env.get_run_environment()["OMP_NUM_THREADS"] == "12"

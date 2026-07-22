@@ -17,6 +17,14 @@ Covers backlog **TODO 4.1** (benchmarking), **4.2** (CO2SYS parallelization), an
 - **Recommendation:** enable OpenMP (`make OPENMP=1 …`) for runs with `nkn ≳ 500`;
   4–8 threads now scale well at large `nkn`. Still not worth it for small networks
   (`nkn ≲ 100`, e.g. the default 25-box / CL29 29-box cases).
+- **⚠️ Small-`nkn` + many threads is CATASTROPHIC, not just "not worth it."** On the
+  29-box CL29, an OpenMP binary reaches sim-day **131 in 15s at 4 threads but only 0.7
+  at 28** (~180× slower) — for such a tiny `nkn` the per-timestep thread spawn/sync
+  overhead swamps the compute. So an OpenMP binary run with `OMP_NUM_THREADS` **unset**
+  (defaults to all cores) crawls. The Shiny app therefore **caps the run env to
+  `OMP_NUM_THREADS = min(4, cores)`** (`shiny_app/compiler_env.py:get_run_environment`,
+  respecting a user-set value) — the empirical peak for these box models. Serial
+  (non-OpenMP) binaries ignore it and already run 1-thread.
 - **Fixed (TODO 4.4):** a **pre-existing empty-chunk barrier deadlock** hung the full
   model whenever `nthreads` did not evenly divide `nkn` (e.g. `nkn=25`/8 threads left
   the last thread with 0 nodes, which skipped the region's collective `!$omp barrier`s
