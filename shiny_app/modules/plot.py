@@ -238,6 +238,7 @@ def plot_ui(min_smooth_window):
 
 @module.server
 def plot_server(input, output, session, state):
+    run = state.run
     # `sim_output_dir` lives in the run_control module's Output Config tab;
     # reach it through session.root_scope().make_scope("run_control") + bare id.
     rc = session.root_scope().make_scope("run_control")
@@ -742,7 +743,7 @@ def plot_server(input, output, session, state):
             num_vars = analysis.get("num_variables", 0)
             if num_vars > 0:
                 # Create box choices (1-indexed)
-                boxes = {str(i): f"Box {i}" for i in range(1, min(num_vars + 1, 26))}
+                boxes = {str(i): f"Box {i}" for i in range(1, min(num_vars + 1, run.current_setup().box_count + 1))}
                 ui.update_selectize("input_ts_boxes", choices=boxes, selected=["1"])
 
     @render.text

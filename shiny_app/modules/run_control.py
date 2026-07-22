@@ -354,6 +354,15 @@ def run_control_server(input, output, session, state):
                          choices={f: (f + " (default)" if f == st.input_file else f) for f in files},
                          selected=st.input_file)
 
+    @reactive.effect
+    def _sync_output_boxes_to_setup():
+        n = run.current_setup().box_count
+        with reactive.isolate():
+            keep = [b for b in (input.output_boxes() or []) if b.isdigit() and int(b) <= n]
+        ui.update_checkbox_group("output_boxes",
+                                 choices={str(i): f"Box {i}" for i in range(1, n + 1)},
+                                 selected=keep)
+
     @render.text
     def cmd_preview():
         """Show preview of the command that will be executed"""
@@ -588,12 +597,12 @@ def run_control_server(input, output, session, state):
 
     # ========== OUTPUT CONFIGURATION ==========
     output_config_msg = reactive.Value("")
-    OUTPUT_INFO_FILE = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
 
     @reactive.effect
     @reactive.event(input.load_output_config)
     def load_output_config():
         """Load current output configuration from file"""
+        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
         try:
             if not os.path.exists(OUTPUT_INFO_FILE):
                 output_config_msg.set("Output config file not found")
@@ -646,6 +655,7 @@ def run_control_server(input, output, session, state):
     @reactive.event(input.save_output_config)
     def save_output_config():
         """Save output configuration to file"""
+        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
         try:
             selected_boxes = set(input.output_boxes() or [])
             output_types = set(input.output_types() or [])
@@ -657,7 +667,7 @@ def run_control_server(input, output, session, state):
             # Build new file content
             lines = ["#     PELAGIC BOX NO      PRODUCE_PEL_STATE_VAR_OUTPUTS     PRODUCE_PEL_PROCESS_RATE_OUTPUTS     PRODUCE_PEL_MASS_BALANCE_OUTPUTS\n"]
 
-            for box in range(1, 26):
+            for box in range(1, run.current_setup().box_count + 1):
                 box_str = str(box)
                 if box_str in selected_boxes:
                     sv = "1" if state_vars_enabled else "0"

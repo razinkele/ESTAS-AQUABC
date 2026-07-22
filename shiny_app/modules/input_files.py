@@ -397,7 +397,7 @@ def input_files_server(input, output, session, state):
             return ui.tags.div(
                 ui.tags.small(
                     ui.tags.strong("Overview: "),
-                    "Bottom elevations for all 25 boxes. "
+                    "Bottom elevations for all boxes. "
                     "Blue = Sand substrate, Brown = Mud. "
                     "Diamonds = surface water elevation.",
                     class_="text-muted"
