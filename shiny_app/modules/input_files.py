@@ -369,9 +369,23 @@ def input_files_server(input, output, session, state):
     @render.ui
     def map_display_info():
         """Contextual info for the current map view."""
+        # The map (below) always reads the Standard INPUTS_DIR / 25-box
+        # BOX_GEOM; under a non-standard setup (e.g. CL29) it's a
+        # reference-only view — no CL29-specific viewer is wired yet.
+        notice = ui.TagList()
+        if state.run.current_setup().id != "standard":
+            notice = ui.tags.div(
+                ui.tags.small(
+                    "Showing Standard-model reference data; the CL29-specific view is not yet wired.",
+                    class_="text-warning"
+                ),
+                class_="mb-2"
+            )
+
         view = input.map_display_view()
         if view == "Box Network":
             return ui.tags.div(
+                notice,
                 ui.tags.small(
                     ui.tags.strong("Mosaic box model: "),
                     "Touching boxes share an advective link (water exchange). "
@@ -390,6 +404,7 @@ def input_files_server(input, output, session, state):
             boxes = box_network.parse_pelagic_inputs(INPUTS_DIR)
             info = boxes.get(box_no, {})
             return ui.tags.div(
+                notice,
                 ui.tags.small(
                     ui.tags.strong(f"Box {box_no}: "),
                     f"Depth {info.get('depth', 0):.1f} m, "
@@ -401,6 +416,7 @@ def input_files_server(input, output, session, state):
             )
         elif view == "Box Depths Overview":
             return ui.tags.div(
+                notice,
                 ui.tags.small(
                     ui.tags.strong("Overview: "),
                     "Bottom elevations for all boxes. "
@@ -410,4 +426,4 @@ def input_files_server(input, output, session, state):
                 ),
                 class_="mt-2"
             )
-        return ui.tags.div()
+        return notice

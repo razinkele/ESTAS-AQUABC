@@ -472,7 +472,7 @@ def build_box_network_figure(boxes, links):
         shapes=shapes,
         annotations=annotations,
         title=dict(
-            text='AQUABC Box Model — Curonian Lagoon (25 Pelagic Boxes)',
+            text='AQUABC Box Model — Curonian Lagoon (Pelagic Boxes)',
             font=dict(size=14)),
         showlegend=True,
         legend=dict(x=0.72, y=0.99, bgcolor='rgba(0,0,0,0.35)',

@@ -238,7 +238,7 @@ def diagnostics_ui():
             ui.tags.i(class_="bi bi-shield-check me-2"),
             "Process Rate Diagnostics",
             ui.tags.span(
-                "16 checks · 25 boxes",
+                "16 checks",
                 class_="badge bg-secondary ms-2",
             ),
         ),

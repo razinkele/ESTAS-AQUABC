@@ -25,6 +25,7 @@ INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 def initial_conditions_ui():
     return ui.card(
         ui.card_header("Initial Conditions"),
+        ui.output_ui("setup_notice"),
         ui.layout_columns(
             ui.tooltip(
                 ui.input_select(
@@ -77,10 +78,25 @@ def initial_conditions_ui():
 
 @module.server
 def initial_conditions_server(input, output, session, state):
-    # `state` is accepted for the uniform x_server(id, state) convention; the
-    # initial_conditions tab is self-contained and uses nothing from it.
+    # This tab always reads/writes the Standard INPUTS/ dir (module-level
+    # INPUTS_DIR), regardless of `state.run.current_setup()`; under a
+    # non-standard setup (e.g. CL29) it is a reference-only view, flagged by
+    # setup_notice() below (deferred: no CL29-specific viewer wired yet).
     ic_file_obj = reactive.Value(None)
     ic_save_msg = reactive.Value("")
+
+    @render.ui
+    def setup_notice():
+        """Flag that this panel always shows the Standard-model INPUTS/, not the active setup's."""
+        if state.run.current_setup().id != "standard":
+            return ui.div(
+                ui.tags.small(
+                    "Showing Standard-model reference data; the CL29-specific view is not yet wired.",
+                    class_="text-warning"
+                ),
+                class_="mb-2"
+            )
+        return ui.TagList()
 
     @reactive.effect
     @reactive.event(input.load_ics, input.ic_category, input.ic_file)
