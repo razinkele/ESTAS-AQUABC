@@ -63,19 +63,31 @@ def test_is_available_requires_the_sentinel_file(tmp_path):
     root = tmp_path
     (root / "INPUTS").mkdir()
     assert s.is_available(s.get_setup("standard"), str(root)) is False   # no PELAGIC_INPUTS.txt
+    (root / "INPUTS" / "WCONST.txt").write_text("x")                     # decoy: non-empty, still unavailable
+    assert s.is_available(s.get_setup("standard"), str(root)) is False   # kills a non-emptiness impl
     (root / "INPUTS" / "PELAGIC_INPUTS.txt").write_text("x")
     assert s.is_available(s.get_setup("standard"), str(root)) is True
     assert s.is_available(s.get_setup("cl29"), str(root)) is False        # no INPUTS_CL29/
 
 
-def test_input_files_for_matches_by_declared_folder(tmp_path):
+def test_input_files_for_matches_real_comment_format(tmp_path):
     root = tmp_path
-    (root / "INPUT.txt").write_text("# PELAGIC MODEL INPUT FOLDER\nINPUTS/\n")
-    (root / "INPUT_CL29.txt").write_text("# PELAGIC MODEL INPUT FOLDER\nINPUTS_CL29/\n")
-    (root / "INPUT_30day.txt").write_text("# PELAGIC MODEL INPUT FOLDER\nINPUTS/\n")
+    hdr = '# PELAGIC MODEL INPUT FOLDER write the folder always "/" in the end\n'   # real trailing text
+    (root / "INPUT.txt").write_text(hdr + "INPUTS/\n")
+    (root / "INPUT_CL29.txt").write_text(hdr + "INPUTS_CL29/\n")
+    (root / "INPUT_30day.txt").write_text(hdr + "INPUTS/\n")
     std = s.input_files_for(s.get_setup("standard"), str(root))
     assert set(std) == {"INPUT.txt", "INPUT_30day.txt"}
     assert s.input_files_for(s.get_setup("cl29"), str(root)) == ["INPUT_CL29.txt"]
+
+
+def test_input_files_for_against_real_repo():
+    repo = str(Path(__file__).resolve().parents[2])
+    std = s.input_files_for(s.get_setup("standard"), repo)
+    assert "INPUT.txt" in std and "INPUT_30day.txt" in std   # real Standard configs stay visible
+    assert "INPUT_CL29.txt" not in std                        # CL29 config excluded from Standard
+    cl29 = s.input_files_for(s.get_setup("cl29"), repo)
+    assert "INPUT_CL29.txt" in cl29
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -169,7 +181,7 @@ def input_files_for(setup, root):
 
 - [ ] **Step 4: Run tests + lint**
 
-Run: `python -m pytest tests/python/test_setups.py -q` → 4 passed.
+Run: `python -m pytest tests/python/test_setups.py -q` → 5 passed.
 Run: `ruff check shiny_app/setups.py tests/python/test_setups.py` → clean.
 
 - [ ] **Step 5: Commit**
@@ -193,14 +205,18 @@ git commit -m "feat(shiny): setup registry (Standard + CL29) — setups.py"
 
 - [ ] **Step 1: RunController placeholder defaults to Standard**
 
-In `shiny_app/app_state.py` `RunController.__init__`, next to `self.command_config = None`, add:
-
+Add a **module-level** dual import at the top of `app_state.py` (match its existing try/except import style — do not put a bare packaged import inside `__init__`, it breaks when the app runs as a script from inside `shiny_app/`):
 ```python
-        # current_setup: () -> Setup ; placeholder degrades to Standard until run_control assigns it
-        from shiny_app.setups import default_setup as _default_setup
+try:
+    from shiny_app.setups import default_setup as _default_setup
+except ImportError:
+    from setups import default_setup as _default_setup
+```
+Then in `RunController.__init__`, next to `self.command_config = None`, add:
+```python
+        # current_setup: () -> Setup ; degrades to Standard until run_control assigns the reactive
         self.current_setup = lambda: _default_setup()
 ```
-(If `app_state.py` imports modules relative, use `from setups import default_setup as _default_setup` matching the file's existing import style — check the top of `app_state.py`.)
 
 - [ ] **Step 2: Add the setup selector to the Run Control UI**
 
@@ -224,7 +240,6 @@ In `run_control_server`, after `run.command_config = _command_config` (line ~331
         return setups.get_setup(input.setup_select() or "standard")
     run.current_setup = _current_setup
 
-    @output
     @render.ui
     def setup_availability():
         st = _current_setup()
@@ -345,26 +360,29 @@ Change both `output_data.get_output_files_info()` calls (lines 164, 189) to:
 ```
 (same for `final_output_info` at 189).
 
-- [ ] **Step 4: `run_control` passes the captured setup env + input file to the thread**
+- [ ] **Step 4: `run_control` guards availability + passes the captured setup env/input to the thread**
 
-In `run_control.py` `on_run` (the handler that starts the thread at ~530), before constructing the thread, capture plain values, then extend `args`:
+In `run_control.py` `on_run` (the handler that starts the thread at ~530), before constructing the thread, capture the setup as a plain value, **guard availability** (spec §5: unavailable selection is prevented), then extend the thread `args`:
 ```python
         st = run.current_setup()
-        ...
+        if not setups.is_available(st, ROOT):
+            run.run_log_lines.append(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}\n")
+            return
+        # ... existing command build ...
         threading.Thread(
             target=run.start_run, args=(estas_cmd, exe_name, dict(st.env), st.input_file),
-            daemon=True, name="ModelRunThread").start()
+            daemon=True, name="RunThread").start()
 ```
-(Read lines 525-533 for the exact existing call and keep its daemon/name.)
+(Read lines 525-533 for the exact existing call; keep its `daemon=True` and the existing `name="RunThread"` — do not rename the thread.)
 
-- [ ] **Step 5: Dashboard Quick Run — same merge + tracker**
+- [ ] **Step 5: Dashboard Quick Run — env merge only**
 
-In `dashboard.py handle_quick_run`, before spawning the thread (before line ~417), capture `cur = run.current_setup()` as a plain value. Inside `_work` (after the `run_env = get_run_environment()` reassignments at ~324/330, before `subprocess.Popen` at ~333) insert:
+In `dashboard.py handle_quick_run`, capture `cur = run.current_setup()` as a plain value **before** `def _work` (so the closure captures the value, not a reactive read inside the thread). Inside `_work`, after the `run_env = get_run_environment()` reassignments (~324/330) and **before** `subprocess.Popen` (~333), insert — and this is the ONLY change here:
 ```python
                 if cur.env:
                     run_env.update(cur.env)
 ```
-And where `_work` computes/reports the output folder (it uses `get_output_files_info` or an inline `OUTPUTS` — read ~340-400), pass `input_txt_path=os.path.join(ROOT, cur.input_file)`. Capture `cur` in the closure (define it in `handle_quick_run` before `def _work`).
+Do **not** add output-folder/tracker plumbing: `_work` tracks progress via `get_csv_info()` on a fixed `OUTPUT_CSV`, not an output folder, so there is nothing to make setup-aware (and `OUTPUT.csv` is a Non-goal). Also guard availability at the top of `handle_quick_run` (before building the command): `cur = run.current_setup(); if not setups.is_available(cur, ROOT): run.run_log_lines.append(f"⚠ … {cur.unavailable_hint}\n"); return`.
 
 - [ ] **Step 6: Run tests + lint**
 
@@ -387,27 +405,20 @@ git commit -m "feat(shiny): inject setup env (ESTAS_HOLD_VOLUME) on both run pat
 - Modify: `shiny_app/modules/input_files.py` (box-selector effect + copy string)
 - Modify: `shiny_app/modules/plot.py` (box cap line 745)
 
-- [ ] **Step 1: Box selectors follow `current_setup` via an update-effect**
+- [ ] **Step 1: The output-box selector follows `current_setup` (preserving selection)**
 
-The selectors at `run_control.py:198` (`output_boxes` checkbox group) and `input_files.py:95` (`map_bathymetry_box` select) are built statically. Leave the static default (`range(1, 26)`) but add, in each module's server, a `reactive.effect` keyed on `state.run.current_setup()`:
-
-`run_control_server`:
+The `output_boxes` checkbox group at `run_control.py:198` is built statically with a **committed default** `selected=["5","6","8","9","14","17","25"]` (`:199`). Add in `run_control_server` a `reactive.effect` keyed on `run.current_setup()`. **Critical:** an `update_checkbox_group` with no `selected` clears every box — on the first Standard flush that would wipe the committed 7-box default (a user who Saves Output Config without re-picking then writes 0 boxes), violating the byte-identical Global Constraint. Preserve the current selection, reading it under `reactive.isolate` so re-selecting is not a self-dependency:
 ```python
     @reactive.effect
     def _sync_output_boxes_to_setup():
         n = run.current_setup().box_count
+        with reactive.isolate():
+            keep = [b for b in (input.output_boxes() or []) if b.isdigit() and int(b) <= n]
         ui.update_checkbox_group("output_boxes",
-                                 choices={str(i): f"Box {i}" for i in range(1, n + 1)})
+                                 choices={str(i): f"Box {i}" for i in range(1, n + 1)},
+                                 selected=keep)
 ```
-`input_files_server` (bind `run = state.run` at the top first):
-```python
-    @reactive.effect
-    def _sync_box_choices_to_setup():
-        n = state.run.current_setup().box_count
-        ui.update_select("map_bathymetry_box",
-                         choices={str(i): f"Box {i}" for i in range(1, n + 1)})
-```
-(input_files' server currently declares it "uses nothing from state" at :112-113 — update that comment.)
+**Do NOT touch `input_files.py:95` (`map_bathymetry_box`)** — it feeds the box-network map, a **deferred/guarded 25-box surface** (spec Non-goals). Driving it to 29 would offer boxes the 25-box map can't render; leave it at 25.
 
 - [ ] **Step 2: Output-config writer uses box_count + the setup's inputs dir**
 
@@ -419,7 +430,7 @@ In `plot.py:745`, change `range(1, min(num_vars + 1, 26))` → `range(1, min(num
 
 - [ ] **Step 4: Copy string**
 
-`input_files.py:400` "all 25 boxes" → derive from `state.run.current_setup().box_count` in that render (or make it generic "all boxes").
+`input_files.py:400` "all 25 boxes" is in the map-display surface (deferred/guarded) — make it generic ("all boxes") rather than box_count-derived.
 
 - [ ] **Step 5: Verify + commit**
 
@@ -440,12 +451,12 @@ git commit -m "feat(shiny): box selectors + output-config writer follow the setu
 
 - [ ] **Step 1: Output-dir dropdowns follow the setup**
 
-Each of these seeds an output-dir dropdown from `INPUT.txt`/`OUTPUTS`; add a `reactive.effect` keyed on `current_setup` that `ui.update_select`s the dropdown's selected value to `current_setup().output_dir`:
-- `plot.py` `init_output_dirs` (~440-466): after it lists dirs, select `state.run.current_setup().output_dir` (note `output_dir_select` is written cross-namespace via `session=rc` — preserve that).
-- `diagnostics.py` (~108/392/408, `diag_output_dir` default `"OUTPUTS"`): add the effect selecting `current_setup().output_dir` (confirm diagnostics_server receives `state`; if it lacks `state.run`, thread it — read `diagnostics.py` server signature first).
-- `dashboard.py`: wherever it resolves the output folder for its cards, use `current_setup().output_dir` / pass the setup's input_file to `get_output_files_info`.
+Add a `reactive.effect` keyed **only on `current_setup`** (never reading the dropdown's own value — that self-triggers and fights the user) that `ui.update_select`s the dropdown's selected value to `current_setup().output_dir`, once per setup change:
+- `plot.py` `init_output_dirs` (~440-466): select `state.run.current_setup().output_dir` (note **`sim_output_dir`** is the id written cross-namespace via `session=rc` at ~466 — preserve that; `output_dir_select` is plot's own id).
+- `diagnostics.py` (`diag_output_dir` default `"OUTPUTS"`, ~108/392/408): add the effect selecting `current_setup().output_dir`. `diagnostics_server` already receives `state` (confirmed).
+- `dashboard.py`: the system-status / input-variable cards read `INPUT.txt` (path ~:577) and the `INPUTS` literal (~:645) — point those at `current_setup().input_file` (ROOT-joined) and `current_setup().inputs_dir` so the cards reflect CL29. (Dashboard has **no** output-folder card — do not invent one.)
 
-Each effect must guard on availability (only auto-select if the dir exists) and must not fight a user's manual selection more than once per setup change (seed on setup change, not on every flush).
+Each effect guards on availability (auto-select only if the dir exists) and seeds on setup change only — do NOT read `input.output_dir_select()`/`input.diag_output_dir()` inside it (self-dependency).
 
 - [ ] **Step 2: Input browser reads the setup's inputs dir**
 
@@ -464,21 +475,21 @@ git commit -m "feat(shiny): primary results + input browser resolve dirs from th
 ### Task 6: Guards + notices for the deferred surface
 
 **Files:**
-- Modify: `shiny_app/modules/scenarios.py` (disable under non-standard)
-- Modify: `shiny_app/modules/parameters.py`, `initial_conditions.py`, `model_options.py`, `shiny_app/box_network.py` (notice)
-- Modify: copy strings `box_network.py:475`, `diagnostics.py:240`
+- Modify: `shiny_app/modules/scenarios.py` (disable apply under non-standard)
+- Modify: `shiny_app/modules/parameters.py`, `initial_conditions.py`, `model_options.py`, `input_files.py` (map-display notice)
+- Modify: copy strings `box_network.py:475`, `diagnostics.py:240` (static → generic)
 
-- [ ] **Step 1: Disable scenarios under a non-standard setup**
+- [ ] **Step 1: Disable scenario *apply* under a non-standard setup**
 
-`scenarios.py` reads AND writes `INPUTS/` (`load_scenario_manager(INPUTS_DIR)` ~:118). Guard: in `scenarios_server`, when `state.run.current_setup().id != "standard"`, render a notice ("Scenario editing is available for the Standard model only.") and make the apply/save handlers no-op (early return with a log line). Do NOT let any write reach `INPUTS/` when a non-standard setup is active.
+`scenarios.py` overwrites `INPUTS/` only via **`load_selected_scenario`** (the Load button → `apply_scenario`, which rewrites WCONST/ICs/options in `INPUTS/`). `save_new_scenario`/`delete_scenario` write to `shiny_app/scenarios/` (setup-independent, safe). Guard: in `scenarios_server`, when `state.run.current_setup().id != "standard"`, render a notice ("Scenario editing is available for the Standard model only.") and **early-return in `load_selected_scenario`** (defensively also in `save_new_scenario`/`delete_scenario`) with a log line — so no scenario apply can overwrite `INPUTS/` while CL29 is active.
 
 - [ ] **Step 2: Secondary-viewer notice**
 
-In `parameters.py`, `initial_conditions.py`, `model_options.py`, and the box-network map (`box_network.py` / its module), when `current_setup().id != "standard"`, prepend a one-line notice to the panel: "Showing Standard-model reference data; the CL29-specific view is not yet wired." (These keep reading `INPUTS/` / the 25-box `BOX_GEOM` — the notice makes the limitation honest.) Confirm each server receives `state`; thread it where missing.
+In `parameters.py`, `initial_conditions.py`, `model_options.py`, and the **Map Display** render in `input_files.py` (`map_display_info` — the map lives here; `box_network.py`/`map.py` are pure helpers with no reactive context, so the notice cannot go there), when `current_setup().id != "standard"`, prepend a one-line notice: "Showing Standard-model reference data; the CL29-specific view is not yet wired." (These keep reading `INPUTS/` / the 25-box `BOX_GEOM` — the notice makes the limitation honest.) All four servers already receive `state`.
 
 - [ ] **Step 3: Copy strings**
 
-`box_network.py:475` title "(25 Pelagic Boxes)" and `diagnostics.py:240` "25 boxes" → derive from `current_setup().box_count` where a reactive is available, else make generic ("Pelagic Boxes"). Low priority — do the cheap ones.
+`box_network.py:475` title "(25 Pelagic Boxes)" and `diagnostics.py:240` "25 boxes" are in **static (non-reactive) contexts** — they cannot read `current_setup()`. Make them generic ("Pelagic Boxes" / drop the count) rather than box_count-derived. Low priority.
 
 - [ ] **Step 4: Verify + commit**
 
@@ -522,4 +533,5 @@ Body: the registry; Tier-1 (CL29 runs correctly, both paths, box-count, writer);
 - **Import style:** `shiny_app/` files use a try/except dual import (`from shiny_app.X import …` / `from X import …`). Match the file you edit; `setups` must import the same way (add to both branches if a file uses the pattern).
 - **Reactive vs thread:** anything read inside a `threading.Thread` target or `_work` closure must be captured as a plain value first (setups, ids, dirs). The env/input-file capture in Task 3 is the template.
 - **Don't touch `OUTPUT.csv` readers** (`observations.py`, `mass_balance.py`, plot CSV-preview) — a separate fixed artifact, out of scope (Non-goal).
+- **Quick-Run pre-validation** (`validate_required_inputs`, `dashboard.py:205`) reads `INPUTS/BATHYMETRY_{1..25}` — under CL29 it validates the Standard `INPUTS/` (whose 1..25 exist), so it passes but isn't CL29-specific. Acceptable for this tier — the Task-3 unavailable-setup run-guard covers the genuinely-missing-inputs case; full CL29 pre-validation is deferred.
 - Tiers are ordered so the branch is runnable-correct after Task 3 and visually-correct after Task 5; guards (Task 6) prevent wrong/destructive secondary behavior.
