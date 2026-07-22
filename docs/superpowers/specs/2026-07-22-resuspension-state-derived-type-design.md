@@ -26,8 +26,10 @@ resuspension`) — **19 variables**. Why this slice:
 - **A dedicated owning module already exists** (`mod_RESUSPENSION.f90`, `use GLOBAL` only) — it
   already allocates and reads every one of these arrays; only their *declarations* live in GLOBAL.
 - **No deallocation sites** — allocated once, live for the program; nothing to reroute on teardown.
-- **Byte-identical is directly verifiable**: the Standard setup runs `Resuspension:
-  Semi-Prescribed`, which exercises this exact code path, so a Standard run diff is a real gate.
+- **Byte-identical is directly verifiable (for the option-2 subset)**: the Standard setup runs
+  `Resuspension: Semi-Prescribed` (= `RESUSPENSION_OPTION 2`), which exercises the option-2 path, so
+  a Standard run diff is a real gate for those members. The 5 option-1-only members are
+  compiler-checked only — see the gate-coverage caveat in Testing.
 
 The 19 members (verbatim from `mod_GLOBAL.f90:253–271`):
 
@@ -114,19 +116,35 @@ byte-identical semantics.
    ⚠️ **Do not touch the local `RESUSPENSION_TS_NO`** (an `integer` loop index at
    `mod_RESUSPENSION.f90:12,44,52,53,104,133,141,142`) — it merely resembles `RESUSPENSION_TS`.
 3. **`mod_AQUATIC_MODEL.f90`** — already `use RESUSPENSION`; rewrite bare refs to `resusp%MEMBER`.
-4. **`mod_SOLVER.f90`** (module `PELAGIC_SOLVER`) — add `use RESUSPENSION`; rewrite bare refs to
-   `resusp%MEMBER`. ⚠️ **Leave these same-prefixed locals alone** (not GLOBAL members): the scalar
+4. **`mod_SOLVER.f90`** (module `PELAGIC_SOLVER`) — add `use RESUSPENSION, only: resusp` (the
+   `only:` keeps the module's public reader subroutines and its `GLOBAL` re-export out of the
+   solver's namespace — both new consumers only ever dereference `resusp%MEMBER`); rewrite bare refs
+   to `resusp%MEMBER`. ⚠️ **Leave these same-prefixed locals alone** (not GLOBAL members): the scalar
    `RESUSPENSION_VELOCITY` (`:813,1452,1467`), the array `RESUSPENSION_CONCENTRATIONS`
    (`:815-816,1459,1467`), and the scalar `SHEAR_STRESS` (`:818,1213,1218`).
-5. **`ESTAS_II.f90`** — add `use RESUSPENSION`; rewrite the 3 refs
+5. **`ESTAS_II.f90`** — add `use RESUSPENSION, only: resusp`; rewrite the 3 refs
    (`CRITICAL_SHEAR_STRESS_FILENAME`, `CRIT_SHEAR_FNAME_FROM_OUTSIDE`) to `resusp%…`.
 
-**Rename discipline:** the edit is a symbol-scoped rename of exactly the 19 declared members, not a
-regex substring replace — the look-alikes flagged above (`RESUSPENSION_TS_NO`,
-`RESUSPENSION_VELOCITY`, `RESUSPENSION_CONCENTRATIONS`, `SHEAR_STRESS`, `SHUT_DOWN_SETTLING`) are
-false-positive matches that a non-word-boundary find/replace would corrupt. Total: 122 whole-word
-reference sites across the 5 files (GLOBAL 19 decls, `mod_RESUSPENSION` 48, `mod_AQUATIC_MODEL` 36,
-`mod_SOLVER` 16, `ESTAS_II` 3).
+**Rename discipline:** the edit renames exactly the 19 declared member *tokens* — nothing else.
+Two false-positive classes must be left untouched:
+
+1. **Substring look-alikes** a non-word-boundary replace would corrupt: `RESUSPENSION_TS_NO`,
+   `RESUSPENSION_VELOCITY`, `RESUSPENSION_CONCENTRATIONS`, `SHEAR_STRESS`, `SHUT_DOWN_SETTLING`.
+   Longer `RESUSP`-root identifiers in the edited files — the local `RESUSP_CANDIDATE_PATH`
+   (`mod_AQUATIC_MODEL.f90:35`) and the subroutines `READ_RESUSPENSION_FILE_OPTION_1/_2` — are
+   automatically out of scope because no member name is a substring of them; renaming *only* the 19
+   exact member tokens leaves them alone by construction.
+2. **Exact member names inside string literals** — these DO match a word-boundary replace (a quote
+   and a space are word boundaries) yet must NOT be rewritten: `RESUSPENSION_OPTION` inside stdout
+   labels at `mod_AQUATIC_MODEL.f90:286/299/422/439` and `RESUSPENSION_INPUT_FOLDER` inside the
+   error string at `:394` (5 sites). ⚠️ They are `write(unit = *)` to **stdout**, not `OUTPUTS/` box
+   files, so the byte-identical gate **cannot** catch their corruption — prefer a true
+   symbol-scoped/AST rename, or hand-verify these 5 sites stay verbatim.
+
+Reference-site count (advisory only — a clean compile under `implicit none` is the real completeness
+gate, since a stale bare reference becomes undeclared): **128 whole-word member occurrences** across
+the 5 files — GLOBAL 19 decls, `mod_RESUSPENSION` 48, `mod_AQUATIC_MODEL` 42 (= 5 string literals
+above + 37 code refs to rewrite), `mod_SOLVER` 16, `ESTAS_II` 3.
 
 ### No circular `use`
 
@@ -146,48 +164,93 @@ uses it.)
 - **Do not "fix" the pre-existing `CONSIDER_RESUSPENSION` read-before-write.** The in-loop review
   found a latent bug: on the `MODEL_BOTTOM_SED_PRESET` path in `READ_AQUATIC_MODEL_INPUTS`
   (`mod_AQUATIC_MODEL.f90:318-338`, sets `RESUSPENSION_OPTION = 0`), the `select case` at
-  `mod_AQUATIC_MODEL.f90:402` has no `case(0)`, so `CONSIDER_RESUSPENSION` is never assigned before
-  it is read at `mod_AQUATIC_MODEL.f90:493` / `mod_SOLVER.f90:1440`. It is harmless *only* because
-  an uninitialized module scalar lands in zeroed BSS and 0 means "no resuspension." This bug is
-  **unaffected by the move** (a scalar component of a module-scope derived type zero-inits
-  identically — verified empirically with gfortran at `-O0/-O2/-O2 -march=native`), and adding
-  `= 0` to the type would silently *change behavior* (fix a latent bug), which is out of scope for
-  a byte-identical refactor. Note it; leave it. (Filing it as its own follow-up is fine.)
+  `mod_AQUATIC_MODEL.f90:402` has no `case(0)` and no `case default`, so `CONSIDER_RESUSPENSION` is
+  never assigned before it is read at `mod_AQUATIC_MODEL.f90:493` and `mod_SOLVER.f90:1440`. The two
+  reads are benign for *different* reasons: the `:1440` solver read is value-independent (its inner
+  `select case (RESUSPENSION_OPTION)` has only `case(1)`, and `RESUSPENSION_OPTION` is 0 on this
+  path, so a garbage value still no-ops), whereas the `:493` read is benign **only** because the
+  value is 0 — a garbage `> 0` there with a bottom-sediment preset `> 1` would hit the `STOP` at
+  `:497` and spuriously abort. Both rely on an uninitialized module scalar landing in zeroed BSS.
+  This bug is **unaffected by the move**: the scalar becomes a component of the module-scope
+  instance `resusp`, which — because `resuspension_t` has allocatable components — is a statically
+  default-initialized aggregate whose uninitialized scalar holes the compiler still zero-fills into
+  loader-zeroed static storage (verified empirically with **gfortran** at `-O0/-O2/-O2 -march=native`;
+  ifx is asserted, not empirically checked, and neither gate config below exercises this path — see
+  the residual-gap note in Testing). Adding `= 0` to the type would change **no observable output**
+  (already 0 via BSS on the only unassigned path; overwritten on every other) — it would merely
+  remove a standards-level undefined read. It is left out on **scope-discipline** grounds (a
+  byte-identical refactor does not fix latent bugs), not because it changes behavior. Note it; leave
+  it. (Filing it as its own follow-up is fine.)
 
 ## In-loop review hardening (2026-07-22)
 
 Three adversarial reviewers verified this design against the actual source:
-- **Blast radius** — independently re-derived: exactly the 5 files named, 122 whole-word reference
-  sites, zero stragglers, zero `use GLOBAL, only:` clauses naming any of the 19, `use RESUSPENSION`
-  confirmed already present in `mod_AQUATIC_MODEL`. → produced the do-not-touch look-alike list.
+- **Blast radius** — independently re-derived: exactly the 5 files named, 128 whole-word member
+  occurrences (see Rename discipline), zero stragglers, zero `use GLOBAL, only:` clauses naming any
+  of the 19, `use RESUSPENSION` confirmed already present in `mod_AQUATIC_MODEL`. → produced the
+  do-not-touch look-alike list.
 - **Byte-identical semantics** — no SAVE/persistence, EQUIVALENCE/COMMON/NAMELIST/DATA, pointer/
-  target/associate, or finalization hazard (`TIME_SERIE` has only pointer components, no `FINAL`);
-  kind/len/dimension fidelity of the type checked term-by-term; scalar-element actual args
-  (`resusp%RESUSPENSION_TS(idx)`) pass by reference identically. → surfaced the `SHUT_DOWN_SETTLING`
-  carve-out and the pre-existing bug above.
+  target/associate, or finalization hazard (`TIME_SERIE` has integer-scalar and pointer components
+  only — no allocatable components, no `FINAL`, and no default initialization, since the pointers
+  lack `=> null()`); kind/len/dimension fidelity of the type checked term-by-term; scalar-element
+  actual args (`resusp%RESUSPENSION_TS(idx)`) pass by reference identically. → surfaced the
+  `SHUT_DOWN_SETTLING` carve-out and the pre-existing bug above.
 - **Build order / compiler matrix** — the multi-pass `make_lib.sh` resolves forward references by
   construction; the new `PELAGIC_SOLVER→RESUSPENSION` and `ESTAS_II→RESUSPENSION` edges are the same
   shape as the already ifx-CI-green `mod_AQUATIC_MODEL→RESUSPENSION` edge; no module cycle; no
   existing `resusp`/`resuspension_t` symbol to collide with; `mod_RESUSPENSION` already linked.
+
+### Second adversarial review (workflow, 2026-07-22)
+
+A 6-dimension multi-agent workflow re-derived every claim above against the source and verified each
+finding independently. It **confirmed all correctness claims** (no build cycle, term-by-term
+byte-identical semantics, correct look-alike carve-outs, correct latent-bug analysis; zero findings
+refuted). The surviving issues were all **gate-coverage / documentation** gaps the earlier pass
+missed, and are now folded in above: the byte-identical `OUTPUTS/` diff is blind to the 5
+option-1-only members, the stdout string literals, and the write-only/dead members (→ Testing step 4
+manual-diff control); the reference count mixed occurrence/line bases (→ corrected to 128
+occurrences); the `CONSIDER_RESUSPENSION` zero-init claim was gfortran-only and uncovered by either
+gate config (→ softened, residual gap noted); the `= 0` rationale was reworded to scope-discipline;
+and the two new consumers now take `use RESUSPENSION, only: resusp`.
 
 ## Testing / verification
 
 The gate is **byte-identical model output**, since this is a behavior-preserving refactor:
 
 1. **Build** the library + `ESTAS_II` cleanly (`make clean-all && make build-estas`) — the compiler
-   catches any missed reference or name clash (every relocated symbol must resolve through
-   `resusp%…`).
-2. **Fortran unit tests**: `make test` — must stay green.
-3. **Byte-identical run gate (primary):**
+   catches any *missed* reference or name clash (a stale bare reference is undeclared under
+   `implicit none` → hard error). It does **not** catch a *wrong same-type* rename (a swap between
+   two identically-typed members) — that is what the manual-diff control in step 4 is for.
+2. **Fortran unit tests**: `make test` — must stay green. ⚠️ This is a **build-health check only**:
+   the Fortran units exercise the AQUABC pelagic library, and none compiles or links any of the 5
+   refactored ESTAS files, so `make test` gives **zero** coverage of the moved subsystem.
+3. **Byte-identical run gate (primary):** build serial (default `make build-estas`; do **not** use
+   `OPENMP=1` for the gate), identical compiler/flags on both sides. Optionally confirm the baseline
+   is bit-reproducible run-to-run first (self-diff = 0) so a 0-diff is trustworthy.
    - Baseline: with the **pre-change** binary, run the Standard setup to completion; snapshot the
      full `OUTPUTS/` tree.
    - Post-change: rebuild, run the identical Standard input; diff `OUTPUTS/` **bit-for-bit** (max
-     |Δ| = 0 across all box files). Standard exercises `Resuspension: Semi-Prescribed`, so this
-     directly validates the refactored path.
-   - Secondary: a CL29 run (`Resuspension: Off`) must also stay bit-identical (trivially, the code
-     is skipped) — a cheap regression check that the move didn't perturb allocation/order.
-4. **CI**: the existing matrix (gfortran ubuntu/macOS + ifx oneAPI) must go green — this also
-   guards the `use`-ordering / module-dependency change across compilers.
+     |Δ| = 0 across all box files). Standard runs `Resuspension: Semi-Prescribed` (= option 2), so
+     this validates the **option-2 subset** of the subsystem.
+   - Secondary: a CL29 run (`Resuspension: Off`, option 0) must also stay bit-identical (trivially,
+     the code is skipped) — a cheap regression check that the move didn't perturb allocation/order.
+4. **Gate-coverage caveat + compensating control.** The byte-identical gate only sees members whose
+   value reaches an `OUTPUTS/` box file on the option-0 / option-2 paths. It is **blind** to:
+   - the **5 option-1-only members** (`FRAC_RESUSPENSION_AREAS`, `RESUSPENSION_CONC_TS_NOS`,
+     `RESUSPENSION_CONC_TS_VAR_NOS`, `RESUSPENSION_VEL_TS_NOS`, `RESUSPENSION_VEL_TS_VAR_NOS`) — no
+     committed input selects `RESUSPENSION_OPTION 1`, and the two type-identical pairs among them
+     would survive a wrong same-type swap silently;
+   - the **stdout string literals** (§Rename discipline) — not in `OUTPUTS/`;
+   - `RESUSPENSION_OUTPUT_FOLDER` (write-only: echoed, never opened for output) and
+     `RESUSPENSION_INPUT_FILE_NAME` (dead — 0 refs).
+   Compensating control: **hand-diff the pre/post rename of these members line-by-line** (they are
+   few and localized), since the run gate cannot. A future option-1 fixture run would close the
+   option-1 gap properly.
+5. **CI**: the existing matrix (gfortran ubuntu/macOS + ifx oneAPI) must go green — this also guards
+   the `use`-ordering / module-dependency change across compilers. Note CI does **not** exercise the
+   `MODEL_BOTTOM_SED_PRESET` read-before-write path on either compiler; the pre-refactor code
+   already relies on the same BSS-zero property there and is ifx-CI-green, so the move *preserves*
+   (does not introduce) that reliance.
 
 ## Rollout
 
