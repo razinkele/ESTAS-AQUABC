@@ -223,6 +223,13 @@ def model_options_server(input, output, session, state):
     @reactive.event(input.save_options)
     def save_model_options():
         """Save modified model options"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Model-options save blocked: active setup is '%s', not 'standard' "
+                "(would overwrite Standard's INPUTS/)", state.run.current_setup().id
+            )
+            options_save_msg.set("Model-options editing is available for the Standard model only.")
+            return
         mof = options_file_obj.get()
         ecf = extra_const_file_obj.get()
         category = input.options_category()

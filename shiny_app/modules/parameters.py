@@ -166,6 +166,13 @@ def parameters_server(input, output, session, state):
     @reactive.event(input.save_params)
     def save_parameters():
         """Save modified parameters"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Parameter save blocked: active setup is '%s', not 'standard' "
+                "(would overwrite Standard's INPUTS/)", state.run.current_setup().id
+            )
+            param_save_msg.set("Parameter editing is available for the Standard model only.")
+            return
         pf = param_file_obj.get()
         if not pf:
             param_save_msg.set("Error: No parameter file loaded")

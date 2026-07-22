@@ -196,6 +196,13 @@ def initial_conditions_server(input, output, session, state):
     @reactive.event(input.save_ics)
     def save_initial_conditions():
         """Save modified initial conditions"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "IC save blocked: active setup is '%s', not 'standard' "
+                "(would overwrite Standard's INPUTS/)", state.run.current_setup().id
+            )
+            ic_save_msg.set("Initial-condition editing is available for the Standard model only.")
+            return
         ic = ic_file_obj.get()
         if not ic:
             ic_save_msg.set("Error: No IC file loaded")
