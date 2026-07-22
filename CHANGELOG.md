@@ -17,6 +17,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   availability notice when a setup's inputs are absent. UI-only; no model-behaviour change, and the
   Run Model tab selector is unchanged.
 
+### Changed
+- **Resuspension global state encapsulated into a derived type** (`SOURCE_CODE/ESTAS/`). The
+  19-variable sediment-resuspension / shear-stress subsystem was lifted out of the `GLOBAL`
+  god-module into a `resuspension_t` derived type with a single module-scoped instance `resusp`,
+  owned by `mod_RESUSPENSION` (which already allocated and read every one of them); `GLOBAL`'s
+  allocatable count drops 55 → 44. Behaviour-preserving: the Standard (option-2) run is
+  **byte-identical** to pre-change output, the rename is a provable pure-prefix of the 19 members
+  (verified by strip-and-compare on every consumer file), CL29 (option-0) runs to completion, and
+  the Fortran unit tests stay green. First bounded slice of the deferred `GLOBAL` de-globalisation
+  (`FORTRAN_IMPLEMENTATION_PLAN.md` §8.1 Task 5.1). Design + two-round adversarial review:
+  `docs/superpowers/specs/2026-07-22-resuspension-state-derived-type-design.md`.
+
 ## [0.6.0] - 2026-07-22
 
 > 🎉 **Released — [AQUABC v0.6.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.6.0)**

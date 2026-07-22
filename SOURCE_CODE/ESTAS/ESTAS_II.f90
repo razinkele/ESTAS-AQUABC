@@ -1,5 +1,6 @@
 program ESTAS_II
     use GLOBAL
+    use RESUSPENSION, only: resusp
     use AQUATIC_MODEL
     !use INITIALIZE_AQUATIC_MODEL
     use SIMULATE
@@ -18,7 +19,7 @@ program ESTAS_II
 
     ! These variables will be read from external file
     PRODUCE_COCOA_OUTPUTS         = 0
-    CRIT_SHEAR_FNAME_FROM_OUTSIDE = 0
+    resusp%CRIT_SHEAR_FNAME_FROM_OUTSIDE = 0
     
     NUM_COMMAND_ARGUMENTS = command_argument_count();
 
@@ -50,12 +51,12 @@ program ESTAS_II
                 call get_command_argument(1, INPUT_FILE_NAME)
                 call get_command_argument(2, PELAGIC_CONSTANTS_FILE_NAME)
                 call get_command_argument(3, BINARY_PELAGIC_OUTPUT_FILE_NAME)
-                call get_command_argument(4, CRITICAL_SHEAR_STRESS_FILENAME)
+                call get_command_argument(4, resusp%CRITICAL_SHEAR_STRESS_FILENAME)
 
                 call OPEN_INPUT_FILE(10, trim(adjustl(INPUT_FILE_NAME)), 'top-level run configuration')
                 USE_PELAGIC_CONSTANTS_FILE_NAME    = 1
                 PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT = 1
-                CRIT_SHEAR_FNAME_FROM_OUTSIDE      = 1
+                resusp%CRIT_SHEAR_FNAME_FROM_OUTSIDE      = 1
         end select
     end if
 

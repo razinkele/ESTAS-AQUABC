@@ -3,6 +3,34 @@ module RESUSPENSION
 
     implicit none
 
+    ! Sediment-resuspension / shear-stress state, encapsulated out of the GLOBAL
+    ! god-module. Behaviour-preserving move — see
+    ! docs/superpowers/specs/2026-07-22-resuspension-state-derived-type-design.md.
+    ! TIME_SERIE and DBL are in scope via `use GLOBAL`.
+    type, public :: resuspension_t
+        integer :: NUM_RESUSPENSION_TS
+        integer :: RESUSPENSION_OPTION
+        integer :: CONSIDER_RESUSPENSION
+        integer,               allocatable, dimension(:)    :: ACTIVATE_RESUSPENSIONS
+        real(kind = DBL),      allocatable, dimension(:)    :: FRAC_RESUSPENSION_AREAS
+        integer,               allocatable, dimension(:, :) :: RESUSPENSION_CONC_TS_NOS
+        integer,               allocatable, dimension(:, :) :: RESUSPENSION_CONC_TS_VAR_NOS
+        integer,               allocatable, dimension(:)    :: RESUSPENSION_VEL_TS_NOS
+        integer,               allocatable, dimension(:)    :: RESUSPENSION_VEL_TS_VAR_NOS
+        character(len = 2048)                               :: RESUSPENSION_INPUT_FILE_NAME
+        character(len = 2048), allocatable, dimension(:)    :: RESUSPENSION_TS_FILE_NAMES
+        type(TIME_SERIE),      allocatable, dimension(:)    :: RESUSPENSION_TS
+        character(len = 2048)                               :: RESUSPENSION_INPUT_FOLDER
+        character(len = 2048)                               :: RESUSPENSION_OUTPUT_FOLDER
+        real(kind = DBL),      allocatable, dimension(:)    :: BOX_CRITICAL_SHEAR_STRESSES
+        character(len = 2048)                               :: CRITICAL_SHEAR_STRESS_FILENAME
+        integer                                             :: CRIT_SHEAR_FNAME_FROM_OUTSIDE
+        integer,               allocatable, dimension(:)    :: SHEAR_STRESS_TS_NOS
+        integer,               allocatable, dimension(:)    :: SHEAR_STRESS_TS_VAR_NOS
+    end type resuspension_t
+
+    type(resuspension_t), public :: resusp
+
 contains
 
     subroutine READ_RESUSPENSION_FILE_OPTION_1(IN_FILE)
@@ -16,12 +44,12 @@ contains
 
         character(len = 2048) :: AUX_STRING
 
-        allocate(ACTIVATE_RESUSPENSIONS      (nkn))
-        allocate(RESUSPENSION_VEL_TS_NOS     (nkn))
-        allocate(RESUSPENSION_VEL_TS_VAR_NOS (nkn))
-        allocate(RESUSPENSION_CONC_TS_NOS    (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(RESUSPENSION_CONC_TS_VAR_NOS(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(FRAC_RESUSPENSION_AREAS     (nkn))
+        allocate(resusp%ACTIVATE_RESUSPENSIONS      (nkn))
+        allocate(resusp%RESUSPENSION_VEL_TS_NOS     (nkn))
+        allocate(resusp%RESUSPENSION_VEL_TS_VAR_NOS (nkn))
+        allocate(resusp%RESUSPENSION_CONC_TS_NOS    (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(resusp%RESUSPENSION_CONC_TS_VAR_NOS(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(resusp%FRAC_RESUSPENSION_AREAS     (nkn))
 
         SUM_ACTIVE_BOXES = 0
 
@@ -34,23 +62,24 @@ contains
 
         ! Read the number of resuspension time series
         read(unit = IN_FILE, fmt = *)
-        read(unit = IN_FILE, fmt = *) NUM_RESUSPENSION_TS
-        allocate(RESUSPENSION_TS_FILE_NAMES(NUM_RESUSPENSION_TS))
-        allocate(RESUSPENSION_TS           (NUM_RESUSPENSION_TS))
+        read(unit = IN_FILE, fmt = *) resusp%NUM_RESUSPENSION_TS
+        allocate(resusp%RESUSPENSION_TS_FILE_NAMES(resusp%NUM_RESUSPENSION_TS))
+        allocate(resusp%RESUSPENSION_TS           (resusp%NUM_RESUSPENSION_TS))
 
         ! Read the resuspension file names
         read(unit = IN_FILE, fmt = *)
 
-        do RESUSPENSION_TS_NO = 1, NUM_RESUSPENSION_TS
+        do RESUSPENSION_TS_NO = 1, resusp%NUM_RESUSPENSION_TS
             read(unit = IN_FILE, fmt = *) AUX_INTEGER_1, AUX_STRING
-            RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
+            resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
 
             call OPEN_INPUT_FILE(IN_FILE + 1, &
-                 trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
+                 trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // &
+                 trim(adjustl(resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
                  'resuspension input')
 
-            call INITIALIZE_TIME_SERIE    (RESUSPENSION_TS(RESUSPENSION_TS_NO))
-            call READ_TIME_SERIE_FROM_FILE(RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
+            call INITIALIZE_TIME_SERIE    (resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO))
+            call READ_TIME_SERIE_FROM_FILE(resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
             close(IN_FILE + 1)
         end do
 
@@ -69,10 +98,10 @@ contains
                 AUX_INTEGER_2 = 0
             end if
 
-            ACTIVATE_RESUSPENSIONS     (AUX_INTEGER_1) = AUX_INTEGER_2
-            FRAC_RESUSPENSION_AREAS    (AUX_INTEGER_1) = AUX_DBL_1
-            RESUSPENSION_VEL_TS_NOS    (AUX_INTEGER_1) = AUX_INTEGER_3
-            RESUSPENSION_VEL_TS_VAR_NOS(AUX_INTEGER_1) = AUX_INTEGER_4
+            resusp%ACTIVATE_RESUSPENSIONS     (AUX_INTEGER_1) = AUX_INTEGER_2
+            resusp%FRAC_RESUSPENSION_AREAS    (AUX_INTEGER_1) = AUX_DBL_1
+            resusp%RESUSPENSION_VEL_TS_NOS    (AUX_INTEGER_1) = AUX_INTEGER_3
+            resusp%RESUSPENSION_VEL_TS_VAR_NOS(AUX_INTEGER_1) = AUX_INTEGER_4
 
             SUM_ACTIVE_BOXES = SUM_ACTIVE_BOXES + AUX_INTEGER_2
         end do
@@ -86,8 +115,8 @@ contains
                 read(unit = IN_FILE, fmt = *) &
                      AUX_INTEGER_1, AUX_INTEGER_2, AUX_INTEGER_3, AUX_INTEGER_4
 
-                RESUSPENSION_CONC_TS_NOS    (AUX_INTEGER_1, AUX_INTEGER_2) = AUX_INTEGER_3
-                RESUSPENSION_CONC_TS_VAR_NOS(AUX_INTEGER_1, AUX_INTEGER_2) = AUX_INTEGER_4
+                resusp%RESUSPENSION_CONC_TS_NOS    (AUX_INTEGER_1, AUX_INTEGER_2) = AUX_INTEGER_3
+                resusp%RESUSPENSION_CONC_TS_VAR_NOS(AUX_INTEGER_1, AUX_INTEGER_2) = AUX_INTEGER_4
             end do
         end do
 
@@ -105,7 +134,7 @@ contains
         real(kind = DBL) :: AUX_DBL_1
         character(len = 2048) :: AUX_STRING
 
-        allocate (BOX_CRITICAL_SHEAR_STRESSES(nkn))
+        allocate (resusp%BOX_CRITICAL_SHEAR_STRESSES(nkn))
 
         ! Read the info lines
         read(unit = IN_FILE, fmt = *)
@@ -116,30 +145,31 @@ contains
 
         ! Read the number of resuspension time series
         read(unit = IN_FILE, fmt = *)
-        read(unit = IN_FILE, fmt = *) NUM_RESUSPENSION_TS
+        read(unit = IN_FILE, fmt = *) resusp%NUM_RESUSPENSION_TS
 
         write(unit = *, fmt = *) &
-            'Number of resuspension time series : ', NUM_RESUSPENSION_TS
+            'Number of resuspension time series : ', resusp%NUM_RESUSPENSION_TS
 
-        allocate(RESUSPENSION_TS_FILE_NAMES(NUM_RESUSPENSION_TS))
-        allocate(RESUSPENSION_TS           (NUM_RESUSPENSION_TS))
-        allocate(ACTIVATE_RESUSPENSIONS    (nkn))
-        allocate(SHEAR_STRESS_TS_NOS       (nkn))
-        allocate(SHEAR_STRESS_TS_VAR_NOS   (nkn))
+        allocate(resusp%RESUSPENSION_TS_FILE_NAMES(resusp%NUM_RESUSPENSION_TS))
+        allocate(resusp%RESUSPENSION_TS           (resusp%NUM_RESUSPENSION_TS))
+        allocate(resusp%ACTIVATE_RESUSPENSIONS    (nkn))
+        allocate(resusp%SHEAR_STRESS_TS_NOS       (nkn))
+        allocate(resusp%SHEAR_STRESS_TS_VAR_NOS   (nkn))
 
         ! Read the resuspension time serie file names
         read(unit = IN_FILE, fmt = *)
 
-        do RESUSPENSION_TS_NO = 1, NUM_RESUSPENSION_TS
+        do RESUSPENSION_TS_NO = 1, resusp%NUM_RESUSPENSION_TS
             read(unit = IN_FILE, fmt = *) AUX_INTEGER_1, AUX_STRING
-            RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
+            resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
 
             call OPEN_INPUT_FILE(IN_FILE + 1, &
-                 trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
+                 trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // &
+                 trim(adjustl(resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
                  'resuspension input')
 
-            call INITIALIZE_TIME_SERIE    (RESUSPENSION_TS(RESUSPENSION_TS_NO))
-            call READ_TIME_SERIE_FROM_FILE(RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
+            call INITIALIZE_TIME_SERIE    (resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO))
+            call READ_TIME_SERIE_FROM_FILE(resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
             close(IN_FILE + 1)
         end do
 
@@ -158,28 +188,28 @@ contains
                 AUX_INTEGER_2 = 0
             end if
 
-            ACTIVATE_RESUSPENSIONS (AUX_INTEGER_1) = AUX_INTEGER_2
-            SHEAR_STRESS_TS_NOS    (AUX_INTEGER_1) = AUX_INTEGER_3
-            SHEAR_STRESS_TS_VAR_NOS(AUX_INTEGER_1) = AUX_INTEGER_4
+            resusp%ACTIVATE_RESUSPENSIONS (AUX_INTEGER_1) = AUX_INTEGER_2
+            resusp%SHEAR_STRESS_TS_NOS    (AUX_INTEGER_1) = AUX_INTEGER_3
+            resusp%SHEAR_STRESS_TS_VAR_NOS(AUX_INTEGER_1) = AUX_INTEGER_4
         end do
 
         ! Read the critical shear stress filename
-        if (CRIT_SHEAR_FNAME_FROM_OUTSIDE < 1) then
+        if (resusp%CRIT_SHEAR_FNAME_FROM_OUTSIDE < 1) then
             read(unit = IN_FILE, fmt = *)
-            read(unit = IN_FILE, fmt = *) CRITICAL_SHEAR_STRESS_FILENAME
+            read(unit = IN_FILE, fmt = *) resusp%CRITICAL_SHEAR_STRESS_FILENAME
 
             write(unit = *, fmt = *) &
                 'Critical shear stress filename : ', &
-                trim(adjustl(CRITICAL_SHEAR_STRESS_FILENAME))
+                trim(adjustl(resusp%CRITICAL_SHEAR_STRESS_FILENAME))
         end if
 
         call OPEN_INPUT_FILE(IN_FILE + 1, &
-             trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(CRITICAL_SHEAR_STRESS_FILENAME)), &
+             trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(resusp%CRITICAL_SHEAR_STRESS_FILENAME)), &
              'resuspension input')
 
         do i = 1, nkn
             read(unit = IN_FILE + 1, fmt = *) AUX_INTEGER_1, AUX_DBL_1
-            BOX_CRITICAL_SHEAR_STRESSES(AUX_INTEGER_1) = AUX_DBL_1
+            resusp%BOX_CRITICAL_SHEAR_STRESSES(AUX_INTEGER_1) = AUX_DBL_1
         end do
 
     end subroutine READ_RESUSPENSION_FILE_OPTION_2

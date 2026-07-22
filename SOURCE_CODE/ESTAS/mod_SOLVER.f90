@@ -1,6 +1,7 @@
 module PELAGIC_SOLVER
 
     use GLOBAL
+    use RESUSPENSION, only: resusp
     use PELAGIC_BOX_MODEL
     use PELAGIC_ECOLOGY
     use AQUABC_PELAGIC_MODEL_CONSTANTS
@@ -1205,17 +1206,17 @@ contains
             do BOX_NO = 1, PELAGIC_BOX_MODEL_DATA % BASINS(BASIN_NO) % NUM_PELAGIC_BOXES
                 i = PELAGIC_BOX_MODEL_DATA % BASINS(BASIN_NO) % PELAGIC_BOXES(BOX_NO)
 
-                if (RESUSPENSION_OPTION == 2) then
-                    if (ACTIVATE_RESUSPENSIONS(i) > 0) then
+                if (resusp%RESUSPENSION_OPTION == 2) then
+                    if (resusp%ACTIVATE_RESUSPENSIONS(i) > 0) then
                         SHUT_DOWN_SETTLING = 0
 
                         ! Get the shear stress from the box
                         SHEAR_STRESS = &
                             VALUE_FROM_TIME_SERIE &
-                                (RESUSPENSION_TS(SHEAR_STRESS_TS_NOS(i)), TIME, &
-                                 SHEAR_STRESS_TS_VAR_NOS(i))
+                                (resusp%RESUSPENSION_TS(resusp%SHEAR_STRESS_TS_NOS(i)), TIME, &
+                                 resusp%SHEAR_STRESS_TS_VAR_NOS(i))
 
-                        if (SHEAR_STRESS > BOX_CRITICAL_SHEAR_STRESSES(i)) then
+                        if (SHEAR_STRESS > resusp%BOX_CRITICAL_SHEAR_STRESSES(i)) then
                             SHUT_DOWN_SETTLING = 1
                         end if
                     end if
@@ -1437,33 +1438,33 @@ contains
         !DERIVATIVES = 0.0D0
 
         ! Account for resuspension derivatives
-        if (CONSIDER_RESUSPENSION > 0) then
+        if (resusp%CONSIDER_RESUSPENSION > 0) then
 
-            select case (RESUSPENSION_OPTION)
+            select case (resusp%RESUSPENSION_OPTION)
 
                 ! Resuspension option 1
                 case(1)
 
                     ! Loop of pegalic boxes
                     do i = 1, nkn
-                        if (ACTIVATE_RESUSPENSIONS(i) > 0) then
+                        if (resusp%ACTIVATE_RESUSPENSIONS(i) > 0) then
 
                             ! Get the resuspension velocity (in m/days)
                             RESUSPENSION_VELOCITY = &
                                 VALUE_FROM_TIME_SERIE &
-                                    (RESUSPENSION_TS(RESUSPENSION_VEL_TS_NOS(i)), TIME, &
-                                     RESUSPENSION_VEL_TS_VAR_NOS(i))
+                                    (resusp%RESUSPENSION_TS(resusp%RESUSPENSION_VEL_TS_NOS(i)), TIME, &
+                                     resusp%RESUSPENSION_VEL_TS_VAR_NOS(i))
 
                             ! Get the resuspension concentration for each state variable
                             do j = 1, nstate
                                 RESUSPENSION_CONCENTRATIONS(j) = &
                                     VALUE_FROM_TIME_SERIE &
-                                        (RESUSPENSION_TS(RESUSPENSION_CONC_TS_NOS(i,j)), &
-                                         TIME, RESUSPENSION_CONC_TS_VAR_NOS(i, j))
+                                        (resusp%RESUSPENSION_TS(resusp%RESUSPENSION_CONC_TS_NOS(i,j)), &
+                                         TIME, resusp%RESUSPENSION_CONC_TS_VAR_NOS(i, j))
                             end do
 
                             DERIVATIVES(i,:) = DERIVATIVES(i,:) + &
-                                (FRAC_RESUSPENSION_AREAS(i) * SURFACE_AREAS(i) * &
+                                (resusp%FRAC_RESUSPENSION_AREAS(i) * SURFACE_AREAS(i) * &
                                  RESUSPENSION_VELOCITY * RESUSPENSION_CONCENTRATIONS(:))
                         end if
                     end do

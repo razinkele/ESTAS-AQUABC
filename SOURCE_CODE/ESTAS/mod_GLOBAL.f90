@@ -248,27 +248,12 @@ module GLOBAL
     real(kind = DBL) :: USER_ENTERED_K_B_E
 
     ! -----------------------------------------------------------------------------------
-    ! Variables related to sediment resuspension
+    ! Sediment-resuspension / shear-stress state moved to the derived type `resusp`
+    ! (type resuspension_t) in module RESUSPENSION — see
+    ! docs/superpowers/specs/2026-07-22-resuspension-state-derived-type-design.md.
     ! -----------------------------------------------------------------------------------
-    integer :: NUM_RESUSPENSION_TS
-    integer :: RESUSPENSION_OPTION
-    integer :: CONSIDER_RESUSPENSION
-    integer         , allocatable, dimension(:)      :: ACTIVATE_RESUSPENSIONS
-    real(kind = DBL), allocatable, dimension(:)      :: FRAC_RESUSPENSION_AREAS
-    integer         , allocatable, dimension(:, :)   :: RESUSPENSION_CONC_TS_NOS
-    integer         , allocatable, dimension(:, :)   :: RESUSPENSION_CONC_TS_VAR_NOS
-    integer         , allocatable, dimension(:)      :: RESUSPENSION_VEL_TS_NOS
-    integer         , allocatable, dimension(:)      :: RESUSPENSION_VEL_TS_VAR_NOS
-    character(len = 2048)                            :: RESUSPENSION_INPUT_FILE_NAME
-    character(len = 2048), allocatable, dimension(:) :: RESUSPENSION_TS_FILE_NAMES
-    type(TIME_SERIE)     , allocatable, dimension(:) :: RESUSPENSION_TS
-    character(len = 2048)                            :: RESUSPENSION_INPUT_FOLDER
-    character(len = 2048)                            :: RESUSPENSION_OUTPUT_FOLDER
-    real(kind = DBL), allocatable, dimension(:)      :: BOX_CRITICAL_SHEAR_STRESSES
-    character(len = 2048)                            :: CRITICAL_SHEAR_STRESS_FILENAME
-    integer                                          :: CRIT_SHEAR_FNAME_FROM_OUTSIDE
-    integer         , allocatable, dimension(:)      :: SHEAR_STRESS_TS_NOS
-    integer         , allocatable, dimension(:)      :: SHEAR_STRESS_TS_VAR_NOS
+    ! SHUT_DOWN_SETTLING is a *settling* control (not a resuspension variable), so it
+    ! stays here in GLOBAL; it is referenced bare by mod_AQUATIC_MODEL and mod_SOLVER.
     integer                                          :: SHUT_DOWN_SETTLING
     ! -----------------------------------------------------------------------------------
     ! End of variables related to sediment resuspension

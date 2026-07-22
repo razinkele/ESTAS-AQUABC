@@ -282,8 +282,8 @@ contains
         ! Option 3 : Full water column - sediment coupling
 
         read(unit = IN_FILE, fmt = *)
-        read(unit = IN_FILE, fmt = *) RESUSPENSION_OPTION
-        write(unit = *, fmt = *) 'RESUSPENSION_OPTION : ', RESUSPENSION_OPTION
+        read(unit = IN_FILE, fmt = *) resusp%RESUSPENSION_OPTION
+        write(unit = *, fmt = *) 'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
         SHUT_DOWN_SETTLING = 0
         MODEL_BOTTOM_SED_PRESET = .false.
@@ -293,10 +293,10 @@ contains
         ! the default behavior for backward compatibility with lightweight runs.
         MODEL_BOTTOM_SEDIMENTS = 0
 
-        if (RESUSPENSION_OPTION < 1) then
-            CONSIDER_RESUSPENSION = 0
+        if (resusp%RESUSPENSION_OPTION < 1) then
+            resusp%CONSIDER_RESUSPENSION = 0
             write(unit = *, fmt = *) &
-                  'RESUSPENSION_OPTION : ', RESUSPENSION_OPTION
+                  'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
             write(unit = *, fmt = *) 'Resuspension will not be considered'
         else
@@ -322,9 +322,9 @@ contains
                 if (iostat_tmp == 0) then
                     MODEL_BOTTOM_SED_PRESET = .true.
                     write(unit = *, fmt = *) 'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
-                    RESUSPENSION_OPTION = 0
+                    resusp%RESUSPENSION_OPTION = 0
                 else
-                    RESUSPENSION_INPUT_FOLDER = TMP_STR
+                    resusp%RESUSPENSION_INPUT_FOLDER = TMP_STR
                 end if
             else if (len_trim(TMP_STR) > 0 .and. verify(TMP_STR, '0123456789') == 0) then
                 ! Multi-digit numeric string
@@ -332,26 +332,26 @@ contains
                 if (iostat_tmp == 0) then
                     MODEL_BOTTOM_SED_PRESET = .true.
                     write(unit = *, fmt = *) 'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
-                    RESUSPENSION_OPTION = 0
+                    resusp%RESUSPENSION_OPTION = 0
                 else
-                    RESUSPENSION_INPUT_FOLDER = TMP_STR
+                    resusp%RESUSPENSION_INPUT_FOLDER = TMP_STR
                 end if
             else
-                RESUSPENSION_INPUT_FOLDER = TMP_STR
+                resusp%RESUSPENSION_INPUT_FOLDER = TMP_STR
             end if
 
             if (.not. MODEL_BOTTOM_SED_PRESET) then
                 ! Ensure trailing slash (portable, works with gfortran and ifort)
-                if (len_trim(RESUSPENSION_INPUT_FOLDER) > 0) then
-                    nlen = len_trim(RESUSPENSION_INPUT_FOLDER)
-                    LASTCHAR = RESUSPENSION_INPUT_FOLDER(nlen:nlen)
+                if (len_trim(resusp%RESUSPENSION_INPUT_FOLDER) > 0) then
+                    nlen = len_trim(resusp%RESUSPENSION_INPUT_FOLDER)
+                    LASTCHAR = resusp%RESUSPENSION_INPUT_FOLDER(nlen:nlen)
                     if (LASTCHAR /= '/' .and. LASTCHAR /= '\\') then
-                        RESUSPENSION_INPUT_FOLDER = trim(RESUSPENSION_INPUT_FOLDER) // '/'
+                        resusp%RESUSPENSION_INPUT_FOLDER = trim(resusp%RESUSPENSION_INPUT_FOLDER) // '/'
                     end if
                 end if
 
                 write(unit = *, fmt = *) &
-                      'RESUSPENSION INPUT FOLDER : ', trim(adjustl(RESUSPENSION_INPUT_FOLDER))
+                      'RESUSPENSION INPUT FOLDER : ', trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER))
             end if
             if (.not. MODEL_BOTTOM_SED_PRESET) then
                 !Read the resuspension model input file name
@@ -360,56 +360,56 @@ contains
 
                 !Read the resuspension model output folder
                 read(unit = IN_FILE, fmt = *)
-                read(unit = IN_FILE, fmt = *) RESUSPENSION_OUTPUT_FOLDER
+                read(unit = IN_FILE, fmt = *) resusp%RESUSPENSION_OUTPUT_FOLDER
 
                 ! Ensure trailing slash (portable, works with gfortran and ifort)
-                if (len_trim(RESUSPENSION_OUTPUT_FOLDER) > 0) then
-                        nlen = len_trim(RESUSPENSION_OUTPUT_FOLDER)
-                        LASTCHAR = RESUSPENSION_OUTPUT_FOLDER(nlen:nlen)
+                if (len_trim(resusp%RESUSPENSION_OUTPUT_FOLDER) > 0) then
+                        nlen = len_trim(resusp%RESUSPENSION_OUTPUT_FOLDER)
+                        LASTCHAR = resusp%RESUSPENSION_OUTPUT_FOLDER(nlen:nlen)
                         if (LASTCHAR /= '/' .and. LASTCHAR /= '\\') then
-                            RESUSPENSION_OUTPUT_FOLDER = trim(RESUSPENSION_OUTPUT_FOLDER) // '/'
+                            resusp%RESUSPENSION_OUTPUT_FOLDER = trim(resusp%RESUSPENSION_OUTPUT_FOLDER) // '/'
                         end if
                     end if
                 write(unit = *, fmt = *) &
                       'RESUSPENSION OUTPUT FOLDER : ', &
-                      trim(adjustl(RESUSPENSION_OUTPUT_FOLDER))
+                      trim(adjustl(resusp%RESUSPENSION_OUTPUT_FOLDER))
 
                 ! Verify the resuspension input file exists. If not, try PELAGIC_INPUT_FOLDER as a fallback.
-                RESUSP_CANDIDATE_PATH = trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME))
+                RESUSP_CANDIDATE_PATH = trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME))
                 inquire(file = trim(RESUSP_CANDIDATE_PATH), exist = exists)
                 if (.not. exists) then
                     write(unit = *, fmt = *) 'Warning: Resuspension input file "' // &
                          trim(adjustl(FILE_NAME)) // '"'
                     write(unit = *, fmt = *) ' not found in folder "' // &
-                         trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // '"'
+                         trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // '"'
                     write(unit = *, fmt = *) 'Trying PELAGIC_INPUT_FOLDER.'
                     RESUSP_CANDIDATE_PATH = trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME))
                     inquire(file = trim(RESUSP_CANDIDATE_PATH), exist = exists)
                     if (exists) then
                         write(unit = *, fmt = *) 'Info: Found resuspension file in PELAGIC_INPUT_FOLDER: ' // &
                              trim(adjustl(RESUSP_CANDIDATE_PATH))
-                        RESUSPENSION_INPUT_FOLDER = trim(PELAGIC_INPUT_FOLDER)
+                        resusp%RESUSPENSION_INPUT_FOLDER = trim(PELAGIC_INPUT_FOLDER)
                     else
                         write(unit = *, fmt = *) 'Error: Resuspension file "' // &
                              trim(adjustl(FILE_NAME)) // '" not found in either RESUSPENSION_INPUT_FOLDER or PELAGIC_INPUT_FOLDER.'
                         write(unit = *, fmt = *) 'Skipping resuspension.'
-                        CONSIDER_RESUSPENSION = 0
-                        RESUSPENSION_OPTION = 0
+                        resusp%CONSIDER_RESUSPENSION = 0
+                        resusp%RESUSPENSION_OPTION = 0
                     end if
                 end if
             end if
 
-            select case (RESUSPENSION_OPTION)
+            select case (resusp%RESUSPENSION_OPTION)
 
                 case (1)
-                    CONSIDER_RESUSPENSION = 1
+                    resusp%CONSIDER_RESUSPENSION = 1
 
                     write(unit = *, fmt = *) &
                         'Resuspension will be considered as in Option 1'
 
                     !Open the resuspension model input file
                     call OPEN_INPUT_FILE(IN_FILE + 2, &
-                         trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                         trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
                          'model input')
 
                     !Read the resuspension model inputs
@@ -417,26 +417,26 @@ contains
                     close(IN_FILE + 2)
 
                 case (2)
-                    CONSIDER_RESUSPENSION = 1
+                    resusp%CONSIDER_RESUSPENSION = 1
                     write(unit = *, fmt = *) &
-                          'RESUSPENSION_OPTION : ', RESUSPENSION_OPTION
+                          'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
                     write(unit = *, fmt = *) &
                         'Resuspension will be considered as in Option 2'
 
                     !Open the resuspension model input file
                     call OPEN_INPUT_FILE(IN_FILE + 2, &
-                         trim(adjustl(RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                         trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
                          'model input')
 
                     call READ_RESUSPENSION_FILE_OPTION_2(IN_FILE + 2)
                     close(IN_FILE + 2)
 
                 case (3)
-                    CONSIDER_RESUSPENSION = 0
+                    resusp%CONSIDER_RESUSPENSION = 0
 
                     write(unit = *, fmt = *) &
-                        'RESUSPENSION_OPTION : ', RESUSPENSION_OPTION
+                        'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
                     write(unit = *, fmt = *) &
                          'Resuspension will not be considered'
@@ -490,7 +490,7 @@ contains
         end if
 
         if (MODEL_BOTTOM_SEDIMENTS > 1) then
-            if (CONSIDER_RESUSPENSION > 0) then
+            if (resusp%CONSIDER_RESUSPENSION > 0) then
                 write(unit = *, fmt = *) &
                       'Bottom sediments are not coupled with resuspension ' // &
                       'in this version of ESTAS-AQUABC. Program halted.'
