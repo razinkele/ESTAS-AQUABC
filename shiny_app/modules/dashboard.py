@@ -182,6 +182,36 @@ def dashboard_ui():
 def dashboard_server(input, output, session, state):
     run = state.run
 
+    # ---------------------------------------------------------------
+    # Setup selector sync: Dashboard <-> Run Model tab.
+    # Single source of truth is run.current_setup (a reactive.calc over
+    # run_control's input.setup_select). The Dashboard's dash_setup_select
+    # is a mirror kept in sync through the run_control scope bridge.
+    # Each effect updates the OTHER widget only when the value differs,
+    # so a change converges in one hop and never loops.
+    # ---------------------------------------------------------------
+    rc = session.root_scope().make_scope("run_control")
+
+    @reactive.effect
+    def _dash_setup_to_run_control():
+        """Dashboard selector drives run_control's authoritative setup_select."""
+        chosen = input.dash_setup_select()
+        if not chosen:
+            return
+        with reactive.isolate():
+            current = rc.input.setup_select()
+        if chosen != current:
+            ui.update_select("setup_select", selected=chosen, session=rc)
+
+    @reactive.effect
+    def _run_control_to_dash_setup():
+        """Mirror the authoritative current setup back into the Dashboard selector."""
+        target = run.current_setup().id
+        with reactive.isolate():
+            shown = input.dash_setup_select()
+        if target != shown:
+            ui.update_select("dash_setup_select", selected=target)
+
     # =================
     # Log Copy Handlers
     # =================
