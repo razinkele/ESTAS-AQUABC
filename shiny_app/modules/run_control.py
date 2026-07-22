@@ -56,12 +56,13 @@ import traceback
 from shiny import module, reactive, render, ui
 
 try:
-    from shiny_app import build_commands, output_data
+    from shiny_app import build_commands, output_data, setups
     from shiny_app.compiler_env import check_intel_libs_available, is_intel_executable
     from shiny_app.utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
     import build_commands
     import output_data
+    import setups
     from compiler_env import check_intel_libs_available, is_intel_executable
     from utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 
@@ -82,6 +83,12 @@ def run_control_ui():
             ui.card(
                 {"class": "run-params-compact"},
                 ui.card_header("Run Parameters"),
+
+                # Setup selection
+                ui.input_select("setup_select", "Setup:",
+                                choices={s.id: s.name for s in setups.list_setups()},
+                                selected="standard"),
+                ui.output_ui("setup_availability"),
 
                 # Build options button at top
                 ui.tooltip(
@@ -264,12 +271,8 @@ def run_control_server(input, output, session, state):
     @reactive.effect
     def init_cmd_dropdowns():
         """Initialize command line parameter dropdown choices"""
-        # Get available INPUT*.txt files
-        input_files = {"INPUT.txt": "INPUT.txt (default)"}
-        for f in sorted(os.listdir(ROOT)):
-            if f.startswith("INPUT") and f.endswith(".txt") and f != "INPUT.txt":
-                input_files[f] = f
-        ui.update_select("cmd_input_file", choices=input_files)
+        # Note: cmd_input_file choices are populated by _sync_setup_to_config
+        # (driven by the setup selector), not here.
 
         # Get available WCONST*.txt files for constants override (Arg 2)
         # Note: Fortran code prepends PELAGIC_INPUT_FOLDER, so just use filename
@@ -329,6 +332,27 @@ def run_control_server(input, output, session, state):
     def _command_config():
         return build_estas_command()
     run.command_config = _command_config
+
+    @reactive.calc
+    def _current_setup():
+        return setups.get_setup(input.setup_select() or "standard")
+    run.current_setup = _current_setup
+
+    @render.ui
+    def setup_availability():
+        st = _current_setup()
+        if setups.is_available(st, ROOT):
+            return ui.TagList()
+        return ui.div(ui.tags.small(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}"),
+                      class_="text-warning")
+
+    @reactive.effect
+    def _sync_setup_to_config():
+        st = _current_setup()
+        files = setups.input_files_for(st, ROOT) or [st.input_file]
+        ui.update_select("cmd_input_file",
+                         choices={f: (f + " (default)" if f == st.input_file else f) for f in files},
+                         selected=st.input_file)
 
     @render.text
     def cmd_preview():

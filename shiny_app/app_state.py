@@ -25,6 +25,11 @@ except ImportError:
     import compiler_env
     import output_data
 
+try:
+    from shiny_app.setups import default_setup as _default_setup
+except ImportError:
+    from setups import default_setup as _default_setup
+
 logger = logging.getLogger("AQUABC")
 
 
@@ -47,6 +52,8 @@ class RunController:
         self.exe_list_version = None    # reactive.Value(int)
         self.active_executable = None   # reactive.Value(str | None)
         self.command_config = None      # Callable[[], list]  (registered = build_estas_command)
+        # current_setup: () -> Setup ; degrades to Standard until run_control assigns the reactive
+        self.current_setup = lambda: _default_setup()
 
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
