@@ -8,11 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-22
+
 ### Added
+- **Loadable setup registry in the Shiny UI (`shiny_app/setups.py`).** One selection loads a
+  complete model configuration — input file + inputs/outputs directories + box count + run
+  environment. Ships three setups: **Standard (25-box)**, **CL29 — Curonian Lagoon (29-box)**, and
+  **CL29 — Curonian Lagoon (29-box, 2023 climatology)**. Selecting a setup drives the config
+  dropdown (filtered to compatible input files), injects `ESTAS_HOLD_VOLUME=1` on both run paths for
+  the CL29 setups, sets the box-count selectors (preserving the committed default), points the
+  primary results/input views at the setup's directories, and prevents running a setup whose inputs
+  are absent (with the exact generate command). Write-guards block overwriting the Standard model's
+  `INPUTS/` (scenario apply + the parameter / initial-condition / model-option Save handlers) while a
+  non-standard setup is loaded. Backward-compatible: the default Standard setup is byte-identical to
+  prior behaviour. Future applications are added as data (one `Setup(...)` entry).
 - **`tools/compare_validation_runs.py`** — per-variable obs-weighted RMSE/bias diff between two
   `validate_cl29_vs_epa.py` runs, with a one-sided regression guard (a named variable fails if
   RMSE or |bias| rises beyond a threshold, or its bias sign-flips). Reusable for before/after
   calibration testing.
+
+### Fixed
+- **Shiny UI model runs now cap `OMP_NUM_THREADS = min(4, cores)`** in the run environment
+  (`shiny_app/compiler_env.py`). An OpenMP-built `ESTAS_II` with `OMP_NUM_THREADS` unset defaulted to
+  every core; for the small box-model problems (25–29 nodes) that is **~180× slower** than a small
+  thread count, because the per-timestep thread spawn/sync overhead swamps the compute (a CL29 UI run
+  went from ~27 h projected back to ~7 min). A user-set `OMP_NUM_THREADS` is respected; serial
+  (non-OpenMP) binaries are unaffected.
 
 ### Investigated (no model-behaviour change)
 - **CL29 PEST-posterior promotion — validated and abandoned.** Promoting the 2022-calibrated
