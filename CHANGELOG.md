@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Setup selector surfaced on the Dashboard landing page** (`shiny_app/modules/dashboard.py`).
+  The loadable-setup selector — previously only on Model Config → Run Model — now also appears on
+  the Dashboard, directly above **Quick Run**, so the Standard (25-box) vs CL29 (29-box) choice is
+  discoverable where runs are actually launched. It stays in **two-way sync** with the Run Model tab
+  selector (both drive the single `run.current_setup` source of truth) and shows the same
+  availability notice when a setup's inputs are absent. UI-only; no model-behaviour change, and the
+  Run Model tab selector is unchanged.
+
 ## [0.6.0] - 2026-07-22
 
 > 🎉 **Released — [AQUABC v0.6.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.6.0)**
