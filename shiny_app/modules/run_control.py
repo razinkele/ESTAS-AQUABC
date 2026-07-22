@@ -490,6 +490,11 @@ def run_control_server(input, output, session, state):
         run.run_log_lines.append("Starting model run...\n")
         run.run_log_lines.append("=" * 50 + "\n")
 
+        st = run.current_setup()
+        if not setups.is_available(st, ROOT):
+            run.run_log_lines.append(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}\n")
+            return
+
         try:
             # Capture current widget values (must be done in reactive context)
             estas_cmd = build_estas_command()
@@ -552,7 +557,7 @@ def run_control_server(input, output, session, state):
             return
 
         threading.Thread(
-            target=run.start_run, args=(estas_cmd, exe_name),
+            target=run.start_run, args=(estas_cmd, exe_name, dict(st.env), st.input_file),
             daemon=True, name="RunThread",
         ).start()
 
