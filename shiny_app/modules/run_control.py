@@ -16,7 +16,7 @@ app.py: `init_cmd_dropdowns`, `build_estas_command`, `cmd_preview`,
 `build_commands`), `constants_validation_status`, `navigate_to_build` (the
 `goto_build` button handler), `on_run` (launches `run.start_run` via thread),
 `on_stop_run`, `copy_mini_log`, `run_log_mini`, `run_status_indicator`, plus
-the Output Config cluster (`output_config_msg`, `OUTPUT_INFO_FILE`,
+the Output Config cluster (`output_config_msg`,
 `load_output_config`, `save_output_config` [bumps
 `state.output_config_version`], `output_config_status`,
 `refresh_sim_output_dirs`, `sim_output_dir_info`). It also carries the three
