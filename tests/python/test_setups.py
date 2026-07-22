@@ -6,15 +6,19 @@ sys.path.insert(0, str(TOOLS))
 import setups as s  # noqa: E402
 
 
-def test_two_entries_with_expected_fields():
+def test_three_entries_with_expected_fields():
     ids = [x.id for x in s.list_setups()]
-    assert ids == ["standard", "cl29"]
-    std, cl29 = s.get_setup("standard"), s.get_setup("cl29")
+    assert ids == ["standard", "cl29", "cl29_2023clim"]
+    std, cl29, clim = (s.get_setup("standard"), s.get_setup("cl29"),
+                       s.get_setup("cl29_2023clim"))
     assert (std.input_file, std.inputs_dir, std.output_dir, std.box_count, std.env) == \
            ("INPUT.txt", "INPUTS", "OUTPUTS", 25, {})
     assert (cl29.input_file, cl29.inputs_dir, cl29.output_dir, cl29.box_count) == \
            ("INPUT_CL29.txt", "INPUTS_CL29", "OUTPUTS_CL29", 29)
     assert cl29.env == {"ESTAS_HOLD_VOLUME": "1"}
+    assert (clim.input_file, clim.inputs_dir, clim.output_dir, clim.box_count) == \
+           ("INPUT_CL29_2023clim.txt", "INPUTS_CL29_2023clim", "OUTPUTS_CL29_2023clim", 29)
+    assert clim.env == {"ESTAS_HOLD_VOLUME": "1"}
 
 
 def test_unknown_id_falls_back_to_default():
@@ -45,9 +49,13 @@ def test_input_files_for_matches_real_comment_format(tmp_path):
 
 
 def test_input_files_for_against_real_repo():
+    # Only git-COMMITTED root configs — INPUT_30day.txt etc. are local-only and
+    # absent in a clean CI checkout, so assert against ones that are committed.
     repo = str(Path(__file__).resolve().parents[2])
     std = s.input_files_for(s.get_setup("standard"), repo)
-    assert "INPUT.txt" in std and "INPUT_30day.txt" in std   # real Standard configs stay visible
-    assert "INPUT_CL29.txt" not in std                        # CL29 config excluded from Standard
-    cl29 = s.input_files_for(s.get_setup("cl29"), repo)
-    assert "INPUT_CL29.txt" in cl29
+    assert "INPUT.txt" in std and "INPUT_200day.txt" in std   # committed Standard configs stay visible
+    assert "INPUT_CL29.txt" not in std                         # CL29 configs excluded from Standard
+    assert "INPUT_CL29_2023clim.txt" not in std
+    assert "INPUT_CL29.txt" in s.input_files_for(s.get_setup("cl29"), repo)
+    clim = s.input_files_for(s.get_setup("cl29_2023clim"), repo)
+    assert "INPUT_CL29_2023clim.txt" in clim and "INPUT_CL29.txt" not in clim

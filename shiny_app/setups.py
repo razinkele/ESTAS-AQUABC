@@ -33,6 +33,12 @@ SETUPS = [
           "INPUT_CL29.txt", "INPUTS_CL29", "OUTPUTS_CL29", 29,
           env={"ESTAS_HOLD_VOLUME": "1"},
           unavailable_hint="Generate inputs: python tools/eutropy_poc/eutropy_to_estas.py"),
+    Setup("cl29_2023clim", "CL29 — Curonian Lagoon (29-box, 2023 climatology)",
+          "CL29 extended to 2023 with day-of-year climatology forcing "
+          "(typical-year, not a hindcast); requires ESTAS_HOLD_VOLUME=1.",
+          "INPUT_CL29_2023clim.txt", "INPUTS_CL29_2023clim", "OUTPUTS_CL29_2023clim", 29,
+          env={"ESTAS_HOLD_VOLUME": "1"},
+          unavailable_hint="Generate inputs: python tools/extend_cl29_forcing_climatology.py"),
 ]
 
 _BY_ID = {s.id: s for s in SETUPS}
