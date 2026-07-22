@@ -53,6 +53,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   posteriors do not transfer across the 2012–16 hyperbloom vs 2022 low-P regimes (nonstationarity).
   Documented in `docs/CL29_KM_2022-2023_Validation.md`; no default changed.
 
+### Verified (release binary)
+- The published `ESTAS_II-0.6.0-linux-x86_64` asset was verified end-to-end after release. It runs
+  the **Standard (25-box)** model to full completion (365-day window, exit 0, no NaN) and the
+  **CL29 (29-box)** application to **full completion — day 4016 (2012–2022), all 29 boxes, no NaN**,
+  with `ESTAS_HOLD_VOLUME=1`. Its CL29 output is **byte-for-byte identical** to the canonical
+  `run_cl29.sh` reference run: **29/29 box files identical, max |Δ| = 0** across every field and
+  timestep — confirming the serial release build reproduces the reference path exactly (the local
+  reference binary is a separate OpenMP build).
+
 ## [0.5.2] - 2026-07-21
 
 ### Fixed
