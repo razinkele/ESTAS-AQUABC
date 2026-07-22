@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [0.6.0] - 2026-07-22
 
+> 🎉 **Released — [AQUABC v0.6.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.6.0)**
+> (Linux binary attached). **Headline: loadable setups.** Load a complete model configuration in
+> one click — the Shiny UI now ships a **setup registry** with **Standard (25-box)**, **CL29 —
+> Curonian Lagoon (29-box)**, and **CL29 (29-box, 2023 climatology)**. Picking a setup wires up the
+> input file, run environment (incl. `ESTAS_HOLD_VOLUME=1` for the CL29 setups), box geometry, and
+> result/input directories, with guards that keep the Standard model's inputs safe. This release also
+> lands a large UI-run speedup (OpenMP thread cap — ~180× faster on small box models) and reusable
+> before/after validation tooling. Fully backward-compatible: the default Standard setup is
+> byte-identical to prior behaviour.
+
 ### Added
 - **Loadable setup registry in the Shiny UI (`shiny_app/setups.py`).** One selection loads a
   complete model configuration — input file + inputs/outputs directories + box count + run
