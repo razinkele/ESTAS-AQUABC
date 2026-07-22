@@ -584,7 +584,7 @@ def dashboard_server(input, output, session, state):
 
         items = []
         try:
-            input_path = os.path.join(ROOT, "INPUT.txt")
+            input_path = os.path.join(ROOT, run.current_setup().input_file)
             if os.path.exists(input_path):
                 with open(input_path) as f:
                     lines = f.readlines()
@@ -652,7 +652,7 @@ def dashboard_server(input, output, session, state):
 
                 # Read output box settings from PELAGIC_OUTPUT_INFORMATION_FILE.txt
                 try:
-                    output_info_path = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+                    output_info_path = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
                     if os.path.exists(output_info_path):
                         with open(output_info_path) as f:
                             output_lines = f.readlines()

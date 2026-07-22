@@ -109,21 +109,25 @@ def input_files_ui():
 
 @module.server
 def input_files_server(input, output, session, state):
-    # `state` is accepted for the uniform x_server(id, state) convention; the
-    # input_files tab is self-contained and uses nothing from it.
+    # `state.run.current_setup().inputs_dir` is the browse root for the file
+    # list/loader/info panel below, so the browser follows the active setup
+    # (e.g. CL29 -> INPUTS_CL29). The box-network map still reads the
+    # module-level INPUTS_DIR constant (guarded separately, Task 6).
 
     # Reactive value to track file list refresh
     file_list_version = reactive.Value(0)
 
-    # populate file list on start and when refresh button is clicked or category changes
+    # populate file list on start and when refresh button is clicked, category
+    # changes, or the active setup changes
     @reactive.Effect
     def _():
         # Depend on file_list_version and category filter to trigger refresh
         file_list_version.get()
         category_filter = input.file_category_filter()
+        inputs_dir = os.path.join(ROOT, state.run.current_setup().inputs_dir)
 
         try:
-            all_files = sorted([f for f in os.listdir(INPUTS_DIR) if os.path.isfile(os.path.join(INPUTS_DIR, f))])
+            all_files = sorted([f for f in os.listdir(inputs_dir) if os.path.isfile(os.path.join(inputs_dir, f))])
 
             # Apply category filter
             if category_filter and category_filter != "All Categories":
@@ -134,7 +138,7 @@ def input_files_server(input, output, session, state):
                             filtered_files.append(f)
                     else:
                         # For uncatalogued files, use pattern matching
-                        info = analyze_input_file(os.path.join(INPUTS_DIR, f))
+                        info = analyze_input_file(os.path.join(inputs_dir, f))
                         if info.get("category") == category_filter:
                             filtered_files.append(f)
                 files = filtered_files
@@ -162,9 +166,10 @@ def input_files_server(input, output, session, state):
             logger.debug("load_file called but no file selected")
             return
         logger.info(f"Loading file: {f}")
+        inputs_dir = os.path.join(ROOT, state.run.current_setup().inputs_dir)
 
         try:
-            path = safe_resolve(INPUTS_DIR, f)
+            path = safe_resolve(inputs_dir, f)
             with open(path) as fh:
                 txt = fh.read()
             logger.info(f"Successfully loaded {f} ({len(txt)} characters)")
@@ -192,8 +197,9 @@ def input_files_server(input, output, session, state):
             )
 
         # Analyze the file
+        inputs_dir = os.path.join(ROOT, state.run.current_setup().inputs_dir)
         try:
-            path = safe_resolve(INPUTS_DIR, f)
+            path = safe_resolve(inputs_dir, f)
         except ValueError as e:
             return ui.tags.div(
                 ui.tags.p(f"Invalid file: {e}", class_="text-danger"),

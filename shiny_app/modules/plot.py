@@ -467,6 +467,21 @@ def plot_server(input, output, session, state):
             ui.update_select("sim_output_dir", choices=dirs, selected=default_dir, session=rc)
 
     @reactive.effect
+    def sync_output_dir_to_setup():
+        """Reseed the output-dir dropdowns when the active setup changes.
+
+        Keyed ONLY on ``run.current_setup()`` — never reads the dropdown's
+        own value (that would self-trigger). Auto-selects the setup's
+        output_dir only if that directory actually exists.
+        """
+        target = run.current_setup().output_dir
+        dirs = output_data.get_output_directories()
+        if target in dirs:
+            ui.update_select("output_dir_select", choices=dirs, selected=target)
+            # Also update Model Config output directory (run_control module's tab)
+            ui.update_select("sim_output_dir", choices=dirs, selected=target, session=rc)
+
+    @reactive.effect
     @reactive.event(input.refresh_output_dirs)
     def refresh_output_dirs():
         """Refresh the list of output directories"""

@@ -6,8 +6,9 @@ A true Shiny module: ``diagnostics_ui(id)`` (``@module.ui``, returns a
 ``ui.card``) and ``diagnostics_server(id, state)`` (``@module.server``,
 registers all reactive/render functions for the Diagnostics tab). The
 app-level ``panel_conditional`` gating on ``input.navigation`` lives in
-``create_ui()`` in app.py, not here. ``state`` is accepted for the module
-convention but unused — this module is self-contained.
+``create_ui()`` in app.py, not here. ``state`` is used to reseed the
+output-dir dropdown from ``state.run.current_setup()`` on setup change —
+otherwise this module is self-contained.
 
 The module wraps ``tools/deep_process_rate_analysis.run_analysis()`` and
 surfaces results as interactive tables, Plotly charts, and downloadable
@@ -343,8 +344,9 @@ def _count_severities(flat_rows):
 def diagnostics_server(input, output, session, state):
     """Register all reactive/render functions for the Diagnostics panel.
 
-    ``state`` is unused (kept for the module convention) — diagnostics is
-    self-contained and computes its own project root via ``_parent_dir``.
+    ``state.run.current_setup()`` reseeds the output-dir dropdown on setup
+    change; otherwise diagnostics is self-contained and computes its own
+    project root via ``_parent_dir``.
     """
 
     # ── Thread-safe mutable state (NOT reactive.Value) ──────────────────
@@ -383,9 +385,7 @@ def diagnostics_server(input, output, session, state):
             _prev_fp.set(fp)
             _ver.set(new_ver)
 
-    # ── initialise output-dir dropdown ──────────────────────────────────
-    @reactive.effect
-    def _init_diag_dirs():
+    def _scan_output_dirs():
         dirs = {}
         try:
             for item in sorted(os.listdir(_parent_dir)):
@@ -393,9 +393,30 @@ def diagnostics_server(input, output, session, state):
                     dirs[item] = item
         except Exception:
             pass
+        return dirs
+
+    # ── initialise output-dir dropdown ──────────────────────────────────
+    @reactive.effect
+    def _init_diag_dirs():
+        dirs = _scan_output_dirs()
         if not dirs:
             dirs["OUTPUTS"] = "OUTPUTS"
         ui.update_select("diag_output_dir", choices=dirs)
+
+    # ── reseed on setup change ───────────────────────────────────────────
+    @reactive.effect
+    def _sync_diag_dir_to_setup():
+        """Reseed diag_output_dir to the active setup's output_dir.
+
+        Keyed ONLY on ``state.run.current_setup()`` — never reads
+        ``input.diag_output_dir()`` (that would self-trigger). Auto-selects
+        only if the setup's output directory actually exists.
+        """
+        target = state.run.current_setup().output_dir
+        if not os.path.isdir(os.path.join(_parent_dir, target)):
+            return
+        dirs = _scan_output_dirs() or {"OUTPUTS": "OUTPUTS"}
+        ui.update_select("diag_output_dir", choices=dirs, selected=target)
 
     # ── Run analysis ────────────────────────────────────────────────────
     @reactive.effect
