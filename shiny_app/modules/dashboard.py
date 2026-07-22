@@ -108,6 +108,14 @@ def dashboard_ui():
                 ui.output_ui("run_timer_display"),
             ),
         ),
+        # Setup selection — surfaced on the landing page, synced to the Run Model tab
+        ui.div(
+            {"class": "dashboard-setup-row", "style": "max-width: 460px; margin-bottom: 0.75rem;"},
+            ui.input_select("dash_setup_select", "Setup:",
+                            choices={s.id: s.name for s in setups.list_setups()},
+                            selected="standard"),
+            ui.output_ui("dash_setup_availability"),
+        ),
         # Two-column layout: actions + system | run log
         ui.layout_columns(
             # Left: Quick actions + system info
@@ -425,6 +433,16 @@ def dashboard_server(input, output, session, state):
                 run.running = False
 
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
+
+    @render.ui
+    def dash_setup_availability():
+        st = run.current_setup()
+        if setups.is_available(st, ROOT):
+            return ui.TagList()
+        return ui.div(
+            ui.tags.small(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}"),
+            class_="text-warning",
+        )
 
     @render.ui
     def dashboard_run_log():

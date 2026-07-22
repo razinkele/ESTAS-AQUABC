@@ -9,6 +9,14 @@ def nid(module_id: str, input_id: str) -> str:
     return f"{module_id}-{input_id}"
 
 
+def test_dashboard_ui_includes_setup_selector():
+    """The Dashboard surfaces the loadable-setup selector + its availability notice."""
+    html = str(dashboard_ui("dashboard"))
+    assert nid("dashboard", "dash_setup_select") in html, "missing dashboard setup selector"
+    assert nid("dashboard", "dash_setup_availability") in html, "missing setup availability output"
+    assert "Setup:" in html, "missing Setup: label"
+
+
 def test_dashboard_ui_namespaces_ids_and_renders_content():
     html = str(dashboard_ui("dashboard"))
 
