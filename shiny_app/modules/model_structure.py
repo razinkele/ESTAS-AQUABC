@@ -229,7 +229,7 @@ def model_structure_server(input, output, session, state):
 </head>
 <body>
 <div class="diagram-header">
-  <h1>AQUABC v0.3 &mdash; Ecological Model Architecture</h1>
+  <h1>AQUABC v0.6.0 &mdash; Ecological Model Architecture</h1>
   <p>Interactive biogeochemical network &middot; 32 pelagic + 24 sediment + 6 macroalgae + 4 allelopathy state variables</p>
 </div>
 <div class="legend">
