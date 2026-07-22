@@ -41,6 +41,7 @@ from datetime import date, datetime, timedelta
 from shiny import module, reactive, render, ui
 
 try:
+    from shiny_app import setups
     from shiny_app.compiler_env import (
         build_intel_wrapped_command,
         check_intel_libs_available,
@@ -51,6 +52,7 @@ try:
     from shiny_app.input_analysis import validate_required_inputs
     from shiny_app.utils import validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
+    import setups
     from compiler_env import (
         build_intel_wrapped_command,
         check_intel_libs_available,
@@ -200,6 +202,11 @@ def dashboard_server(input, output, session, state):
         run.run_log_lines.clear()
         run.run_log_lines.append("Starting quick run...\n")
 
+        cur = run.current_setup()
+        if not setups.is_available(cur, ROOT):
+            run.run_log_lines.append(f"⚠ Inputs for “{cur.name}” not found. {cur.unavailable_hint}\n")
+            return
+
         # Validate required input files first
         run.run_log_lines.append("Validating input files...\n")
         is_valid, errors, warnings = validate_required_inputs()
@@ -328,6 +335,9 @@ def dashboard_server(input, output, session, state):
                 else:
                     # For non-Intel executables, use standard environment
                     run_env = get_run_environment()
+
+                if cur.env:
+                    run_env.update(cur.env)
 
                 logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
                 p = subprocess.Popen(
@@ -574,7 +584,7 @@ def dashboard_server(input, output, session, state):
 
         items = []
         try:
-            input_path = os.path.join(ROOT, "INPUT.txt")
+            input_path = os.path.join(ROOT, run.current_setup().input_file)
             if os.path.exists(input_path):
                 with open(input_path) as f:
                     lines = f.readlines()
@@ -642,7 +652,7 @@ def dashboard_server(input, output, session, state):
 
                 # Read output box settings from PELAGIC_OUTPUT_INFORMATION_FILE.txt
                 try:
-                    output_info_path = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+                    output_info_path = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
                     if os.path.exists(output_info_path):
                         with open(output_info_path) as f:
                             output_lines = f.readlines()

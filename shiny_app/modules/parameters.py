@@ -25,6 +25,7 @@ INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 def parameters_ui():
     return ui.card(
         ui.card_header("Parameters"),
+        ui.output_ui("setup_notice"),
         ui.layout_columns(
             ui.tooltip(
                 ui.input_select("param_file", "Constants file:",
@@ -65,10 +66,25 @@ def parameters_ui():
 
 @module.server
 def parameters_server(input, output, session, state):
-    # `state` is accepted for the uniform x_server(id, state) convention; the
-    # parameters tab is self-contained and uses nothing from it.
+    # This tab always reads/writes the Standard INPUTS/ dir (module-level
+    # INPUTS_DIR), regardless of `state.run.current_setup()`; under a
+    # non-standard setup (e.g. CL29) it is a reference-only view, flagged by
+    # setup_notice() below (deferred: no CL29-specific viewer wired yet).
     param_file_obj = reactive.Value(None)
     param_save_msg = reactive.Value("")
+
+    @render.ui
+    def setup_notice():
+        """Flag that this panel always shows the Standard-model INPUTS/, not the active setup's."""
+        if state.run.current_setup().id != "standard":
+            return ui.div(
+                ui.tags.small(
+                    "Showing Standard-model reference data; the CL29-specific view is not yet wired.",
+                    class_="text-warning"
+                ),
+                class_="mb-2"
+            )
+        return ui.TagList()
 
     @reactive.effect
     @reactive.event(input.load_params, input.param_category, input.param_file)
@@ -150,6 +166,13 @@ def parameters_server(input, output, session, state):
     @reactive.event(input.save_params)
     def save_parameters():
         """Save modified parameters"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Parameter save blocked: active setup is '%s', not 'standard' "
+                "(would overwrite Standard's INPUTS/)", state.run.current_setup().id
+            )
+            param_save_msg.set("Parameter editing is available for the Standard model only.")
+            return
         pf = param_file_obj.get()
         if not pf:
             param_save_msg.set("Error: No parameter file loaded")

@@ -16,7 +16,7 @@ app.py: `init_cmd_dropdowns`, `build_estas_command`, `cmd_preview`,
 `build_commands`), `constants_validation_status`, `navigate_to_build` (the
 `goto_build` button handler), `on_run` (launches `run.start_run` via thread),
 `on_stop_run`, `copy_mini_log`, `run_log_mini`, `run_status_indicator`, plus
-the Output Config cluster (`output_config_msg`, `OUTPUT_INFO_FILE`,
+the Output Config cluster (`output_config_msg`,
 `load_output_config`, `save_output_config` [bumps
 `state.output_config_version`], `output_config_status`,
 `refresh_sim_output_dirs`, `sim_output_dir_info`). It also carries the three
@@ -56,12 +56,13 @@ import traceback
 from shiny import module, reactive, render, ui
 
 try:
-    from shiny_app import build_commands, output_data
+    from shiny_app import build_commands, output_data, setups
     from shiny_app.compiler_env import check_intel_libs_available, is_intel_executable
     from shiny_app.utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
     import build_commands
     import output_data
+    import setups
     from compiler_env import check_intel_libs_available, is_intel_executable
     from utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 
@@ -82,6 +83,12 @@ def run_control_ui():
             ui.card(
                 {"class": "run-params-compact"},
                 ui.card_header("Run Parameters"),
+
+                # Setup selection
+                ui.input_select("setup_select", "Setup:",
+                                choices={s.id: s.name for s in setups.list_setups()},
+                                selected="standard"),
+                ui.output_ui("setup_availability"),
 
                 # Build options button at top
                 ui.tooltip(
@@ -264,12 +271,8 @@ def run_control_server(input, output, session, state):
     @reactive.effect
     def init_cmd_dropdowns():
         """Initialize command line parameter dropdown choices"""
-        # Get available INPUT*.txt files
-        input_files = {"INPUT.txt": "INPUT.txt (default)"}
-        for f in sorted(os.listdir(ROOT)):
-            if f.startswith("INPUT") and f.endswith(".txt") and f != "INPUT.txt":
-                input_files[f] = f
-        ui.update_select("cmd_input_file", choices=input_files)
+        # Note: cmd_input_file choices are populated by _sync_setup_to_config
+        # (driven by the setup selector), not here.
 
         # Get available WCONST*.txt files for constants override (Arg 2)
         # Note: Fortran code prepends PELAGIC_INPUT_FOLDER, so just use filename
@@ -329,6 +332,36 @@ def run_control_server(input, output, session, state):
     def _command_config():
         return build_estas_command()
     run.command_config = _command_config
+
+    @reactive.calc
+    def _current_setup():
+        return setups.get_setup(input.setup_select() or "standard")
+    run.current_setup = _current_setup
+
+    @render.ui
+    def setup_availability():
+        st = _current_setup()
+        if setups.is_available(st, ROOT):
+            return ui.TagList()
+        return ui.div(ui.tags.small(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}"),
+                      class_="text-warning")
+
+    @reactive.effect
+    def _sync_setup_to_config():
+        st = _current_setup()
+        files = setups.input_files_for(st, ROOT) or [st.input_file]
+        ui.update_select("cmd_input_file",
+                         choices={f: (f + " (default)" if f == st.input_file else f) for f in files},
+                         selected=st.input_file)
+
+    @reactive.effect
+    def _sync_output_boxes_to_setup():
+        n = run.current_setup().box_count
+        with reactive.isolate():
+            keep = [b for b in (input.output_boxes() or []) if b.isdigit() and int(b) <= n]
+        ui.update_checkbox_group("output_boxes",
+                                 choices={str(i): f"Box {i}" for i in range(1, n + 1)},
+                                 selected=keep)
 
     @render.text
     def cmd_preview():
@@ -466,6 +499,11 @@ def run_control_server(input, output, session, state):
         run.run_log_lines.append("Starting model run...\n")
         run.run_log_lines.append("=" * 50 + "\n")
 
+        st = run.current_setup()
+        if not setups.is_available(st, ROOT):
+            run.run_log_lines.append(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}\n")
+            return
+
         try:
             # Capture current widget values (must be done in reactive context)
             estas_cmd = build_estas_command()
@@ -528,7 +566,7 @@ def run_control_server(input, output, session, state):
             return
 
         threading.Thread(
-            target=run.start_run, args=(estas_cmd, exe_name),
+            target=run.start_run, args=(estas_cmd, exe_name, dict(st.env), st.input_file),
             daemon=True, name="RunThread",
         ).start()
 
@@ -559,12 +597,12 @@ def run_control_server(input, output, session, state):
 
     # ========== OUTPUT CONFIGURATION ==========
     output_config_msg = reactive.Value("")
-    OUTPUT_INFO_FILE = os.path.join(ROOT, "INPUTS", "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
 
     @reactive.effect
     @reactive.event(input.load_output_config)
     def load_output_config():
         """Load current output configuration from file"""
+        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
         try:
             if not os.path.exists(OUTPUT_INFO_FILE):
                 output_config_msg.set("Output config file not found")
@@ -617,6 +655,7 @@ def run_control_server(input, output, session, state):
     @reactive.event(input.save_output_config)
     def save_output_config():
         """Save output configuration to file"""
+        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
         try:
             selected_boxes = set(input.output_boxes() or [])
             output_types = set(input.output_types() or [])
@@ -628,7 +667,7 @@ def run_control_server(input, output, session, state):
             # Build new file content
             lines = ["#     PELAGIC BOX NO      PRODUCE_PEL_STATE_VAR_OUTPUTS     PRODUCE_PEL_PROCESS_RATE_OUTPUTS     PRODUCE_PEL_MASS_BALANCE_OUTPUTS\n"]
 
-            for box in range(1, 26):
+            for box in range(1, run.current_setup().box_count + 1):
                 box_str = str(box)
                 if box_str in selected_boxes:
                     sv = "1" if state_vars_enabled else "0"

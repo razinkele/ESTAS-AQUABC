@@ -25,6 +25,11 @@ except ImportError:
     import compiler_env
     import output_data
 
+try:
+    from shiny_app.setups import default_setup as _default_setup
+except ImportError:
+    from setups import default_setup as _default_setup
+
 logger = logging.getLogger("AQUABC")
 
 
@@ -47,6 +52,8 @@ class RunController:
         self.exe_list_version = None    # reactive.Value(int)
         self.active_executable = None   # reactive.Value(str | None)
         self.command_config = None      # Callable[[], list]  (registered = build_estas_command)
+        # current_setup: () -> Setup ; degrades to Standard until run_control assigns the reactive
+        self.current_setup = lambda: _default_setup()
 
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
@@ -116,11 +123,12 @@ class RunController:
         else:
             self.run_log_lines.append("No model is currently running.\n")
 
-    def start_run(self, estas_cmd, exe_name):
+    def start_run(self, estas_cmd, exe_name, env_extra=None, input_file=None):
         """Model-run worker — call as a thread target. Ported from on_run._work."""
         start_time = time.time()
         logger.info("Run thread started")
         exec_cmd = [c for c in estas_cmd if c]
+        input_txt = os.path.join(self.root, input_file) if input_file else None
         try:
             use_shell = False
             final_cmd = exec_cmd
@@ -135,6 +143,8 @@ class RunController:
                     run_env = compiler_env.get_run_environment()
             else:
                 run_env = compiler_env.get_run_environment()
+            if env_extra:
+                run_env.update(env_extra)   # additive, after get_run_environment(), before Popen
             logger.info(f"Executing: {final_cmd if isinstance(final_cmd, str) else ' '.join(final_cmd)}")
             p = subprocess.Popen(final_cmd, cwd=self.root, stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT, text=True, bufsize=1, env=run_env,
@@ -161,7 +171,8 @@ class RunController:
                 now = time.time()
                 if now - last_update >= 2.0:
                     elapsed = now - start_time
-                    output_info = output_data.get_output_files_info()
+                    output_info = output_data.get_output_files_info(input_txt_path=input_txt) if input_txt \
+                        else output_data.get_output_files_info()
                     file_count = output_info.get("file_count", 0)
                     size_kb = output_info.get("size_kb", 0)
                     out_folder = output_info.get("folder", "OUTPUTS")
@@ -186,7 +197,8 @@ class RunController:
             rc = p.returncode
             elapsed = time.time() - start_time
             self.run_log_lines.append("-" * 50 + "\n")
-            final_output_info = output_data.get_output_files_info()
+            final_output_info = output_data.get_output_files_info(input_txt_path=input_txt) if input_txt \
+                else output_data.get_output_files_info()
             final_files = final_output_info.get("file_count", 0)
             final_out = final_output_info.get("out_files", 0)
             final_bin = final_output_info.get("bin_files", 0)

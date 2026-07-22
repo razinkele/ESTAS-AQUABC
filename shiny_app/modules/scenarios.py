@@ -36,6 +36,7 @@ INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 def scenarios_ui():
     return ui.card(
         ui.card_header("Scenario Presets"),
+        ui.output_ui("scenario_setup_notice"),
         ui.layout_columns(
             # Load Scenario Section
             ui.card(
@@ -106,10 +107,26 @@ def scenarios_ui():
 
 @module.server
 def scenarios_server(input, output, session, state):
-    # `state` is accepted for the uniform x_server(id, state) convention; the
-    # scenarios tab is self-contained and uses nothing from it.
+    # `state.run.current_setup()` gates scenario *apply*: `load_selected_scenario`
+    # (Load button -> apply_scenario) is the only handler that overwrites
+    # INPUTS/, and it must never touch a non-standard setup's inputs dir (e.g.
+    # INPUTS_CL29). save/delete write to shiny_app/scenarios/ (setup-independent)
+    # but are defensively guarded too.
     scenario_mgr = reactive.Value(None)
     scenario_status_msg = reactive.Value("")
+
+    @render.ui
+    def scenario_setup_notice():
+        """Warn when the active setup isn't Standard: scenario apply is disabled."""
+        if state.run.current_setup().id != "standard":
+            return ui.div(
+                ui.tags.small(
+                    "Scenario editing is available for the Standard model only.",
+                    class_="text-warning"
+                ),
+                class_="mb-2"
+            )
+        return ui.TagList()
 
     # Initialize scenario manager on session start
     @reactive.effect
@@ -178,6 +195,14 @@ def scenarios_server(input, output, session, state):
     @reactive.event(input.load_scenario)
     def load_selected_scenario():
         """Load and apply the selected scenario"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Scenario apply blocked: active setup is '%s', not 'standard' "
+                "(would overwrite that setup's INPUTS/)", state.run.current_setup().id
+            )
+            scenario_status_msg.set("Scenario editing is available for the Standard model only.")
+            return
+
         mgr = scenario_mgr.get()
         scenario_name = input.scenario_select()
 
@@ -213,6 +238,14 @@ def scenarios_server(input, output, session, state):
     @reactive.event(input.save_scenario)
     def save_new_scenario():
         """Save current configuration as a new scenario"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Scenario save blocked: active setup is '%s', not 'standard'",
+                state.run.current_setup().id
+            )
+            scenario_status_msg.set("Scenario editing is available for the Standard model only.")
+            return
+
         mgr = scenario_mgr.get()
         name = input.new_scenario_name()
         description = input.new_scenario_desc()
@@ -276,6 +309,14 @@ def scenarios_server(input, output, session, state):
     @reactive.event(input.delete_scenario)
     def delete_selected_scenario():
         """Delete the selected scenario"""
+        if state.run.current_setup().id != "standard":
+            logger.info(
+                "Scenario delete blocked: active setup is '%s', not 'standard'",
+                state.run.current_setup().id
+            )
+            scenario_status_msg.set("Scenario editing is available for the Standard model only.")
+            return
+
         mgr = scenario_mgr.get()
         scenario_name = input.scenario_select()
 
