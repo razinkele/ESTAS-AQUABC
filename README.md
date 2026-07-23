@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/razinkele/ESTAS-AQUABC?sort=semver)](https://github.com/razinkele/ESTAS-AQUABC/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<!-- LATEST_RELEASE -->**Latest release:** [v0.6.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.6.0)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
+<!-- LATEST_RELEASE -->**Latest release:** [v0.7.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.7.0)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
 
 AQUABC is a process-based **aquatic biogeochemical model** — pelagic and sediment
 cycling of nitrogen, phosphorus, silica, carbon, oxygen, and the Mn/Fe/S redox system,
