@@ -1,3 +1,15 @@
+! This is the ESTAS module for interfacing the ESTAS with any bottom
+! sediment diagenesis models. It contains the standard subroutines
+!
+!     INIT_BSED_MODEL_CONSTANTS
+!     INIT_BSED_MODEL_CONSTANTS
+!     UPDATE_BOTTOM_SEDIMENT_INPUTS
+!     READ_BOTTOM_SEDIMENTS_MODEL_INPUTS
+!
+! While the input/output statements are standadrd and should not be
+! changed to loose the compatiblity with the ESTAS sequqnces, all of
+! these files should be internally programmed to use the sediment
+! modelling frameworks specific requirenments.
 module BOTTOM_SEDIMENTS
 
     use GLOBAL
