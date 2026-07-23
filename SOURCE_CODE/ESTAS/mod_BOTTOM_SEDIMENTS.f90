@@ -15,6 +15,38 @@ module BOTTOM_SEDIMENTS
     use GLOBAL
     use UTILS_1
     implicit none
+
+    ! Bottom-sediment submodel state, moved out of module GLOBAL (Phase 5.1).
+    ! See docs/superpowers/specs/2026-07-23-sediment-state-derived-type-design.md
+    type, public :: sediment_state_t
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: INIT_SED_STATE_VARS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DEPTHS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_POROSITIES
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DENSITIES
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: PART_MIXING_COEFFS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_DIFFUSIONS
+        real(kind = DBL)                                     :: SURF_MIXLEN
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_BURRIALS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SURF_WATER_CONCS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_TEMPS
+        real(kind = DBL), allocatable, dimension(:)          :: SED_MODEL_CONSTANTS
+        integer,          allocatable, dimension(:)          :: SED_TYPE_PER_BOX
+        real(kind = DBL), allocatable, dimension(:, :, :, :) :: PROCESSES_sed
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DRIVING_FUNCTIONS
+        real(kind = DBL), allocatable, dimension(:, :)       :: FLUXES_TO_SEDIMENTS
+        real(kind = DBL)                                     :: ADVECTIVE_VELOCITY
+        real(kind = DBL), allocatable, dimension(:)          :: H_ERODEP
+        integer,          allocatable, dimension(:)          :: SED_FLAGS
+        integer                                              :: NUM_FLUX_RECEIVING_SED_LAYERS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: FINAL_SED_STATE_VARS
+        real(kind = DBL), allocatable, dimension(:, :)       :: FLUXES_FROM_SEDIMENTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_OUTPUTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_SAVED_OUTPUTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_BURRIAL_RATE_OUTPUTS
+    end type sediment_state_t
+
+    type(sediment_state_t), public :: bsed
+
 contains
 
     ! Subroutine that initializes bottom sediment submodel
