@@ -1,6 +1,7 @@
 ! This version is with AI co-development
 program ESTAS_II
     use GLOBAL
+    use WATER_SEDIMENT_COUPLING, only: wsc
     use RESUSPENSION, only: resusp
     use AQUATIC_MODEL
     !use INITIALIZE_AQUATIC_MODEL
@@ -80,21 +81,21 @@ program ESTAS_II
     deallocate(SAVED_OUTPUTS    )
     deallocate(pH               )
     deallocate(CHLA             )
-    deallocate(FLUXES_TO_WATER_COLUMN       )
-    deallocate(FLUXES_OUTPUT_TO_WATER_COLUMN)
+    deallocate(wsc%FLUXES_TO_WATER_COLUMN       )
+    deallocate(wsc%FLUXES_OUTPUT_TO_WATER_COLUMN)
     ! -----------------------------------------------------------------------------------
     ! End of deallocate AQUABC water column arrays
     ! -----------------------------------------------------------------------------------
     
-    deallocate(DISSOLVED_FRACTIONS           )
-    deallocate(FRACTION_OF_DEPOSITION        )
-    deallocate(SETTLING_RATES                )
-    deallocate(NOT_DEPOSITED_FLUXES          )
-    deallocate(FLUXES                        )
-    deallocate(SETTLING_VELOCITIES_OUTPUT    )
-    deallocate(EFFECTIVE_DISSLOVED_FRACTIONS )
-    deallocate(EFFECTIVE_DEPOSITION_FRACTIONS)
-    deallocate(DEPOSITION_AREA_RATIOS        )
+    deallocate(wsc%DISSOLVED_FRACTIONS           )
+    deallocate(wsc%FRACTION_OF_DEPOSITION        )
+    deallocate(wsc%SETTLING_RATES                )
+    deallocate(wsc%NOT_DEPOSITED_FLUXES          )
+    deallocate(wsc%FLUXES                        )
+    deallocate(wsc%SETTLING_VELOCITIES_OUTPUT    )
+    deallocate(wsc%EFFECTIVE_DISSLOVED_FRACTIONS )
+    deallocate(wsc%EFFECTIVE_DEPOSITION_FRACTIONS)
+    deallocate(wsc%DEPOSITION_AREA_RATIOS        )
  
 	! -----------------------------------------------------------------------------------
     ! Deallocate AQUABC sediment arrays

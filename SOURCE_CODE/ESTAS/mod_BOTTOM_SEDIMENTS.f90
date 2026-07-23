@@ -13,6 +13,7 @@
 module BOTTOM_SEDIMENTS
 
     use GLOBAL
+    use WATER_SEDIMENT_COUPLING, only: wsc
     use UTILS_1
     implicit none
 
@@ -348,13 +349,13 @@ contains
 
         ! Calculate settling velocities. This simple example assumes that the settling
         ! velocities do not change in time and space units: m/day
-        SETTLING_VELOCITIES = SETTLING_VELOCITIES_OUTPUT
+        SETTLING_VELOCITIES = wsc%SETTLING_VELOCITIES_OUTPUT
 
         ! Calcululate dissolved fractions
-        DISSOLVED_FRACTIONS = EFFECTIVE_DISSLOVED_FRACTIONS
+        DISSOLVED_FRACTIONS = wsc%EFFECTIVE_DISSLOVED_FRACTIONS
 
         ! Calculate not deposited fluxes
-        FRACTION_OF_DEPOSITION = EFFECTIVE_DEPOSITION_FRACTIONS
+        FRACTION_OF_DEPOSITION = wsc%EFFECTIVE_DEPOSITION_FRACTIONS
     end subroutine SEDIMENT_TRANSPORT
 
 

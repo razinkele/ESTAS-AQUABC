@@ -1,6 +1,7 @@
 module PELAGIC_SOLVER
 
     use GLOBAL
+    use WATER_SEDIMENT_COUPLING, only: wsc
     use RESUSPENSION, only: resusp
     use PELAGIC_BOX_MODEL
     use PELAGIC_ECOLOGY
@@ -1534,19 +1535,19 @@ contains
             bsed%H_ERODEP(:) = 0.0D0
 
             ! Get sediment transport
-            DISSOLVED_FRACTIONS    = EFFECTIVE_DISSLOVED_FRACTIONS
-            FRACTION_OF_DEPOSITION = EFFECTIVE_DEPOSITION_FRACTIONS
+            wsc%DISSOLVED_FRACTIONS    = EFFECTIVE_DISSLOVED_FRACTIONS
+            wsc%FRACTION_OF_DEPOSITION = EFFECTIVE_DEPOSITION_FRACTIONS
 
             call FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
                (STATE_VARIABLES    , nkn        , nstate, &
                 MODEL_CONSTANTS    , nconst     ,         &
                 DRIVING_FUNCTIONS  , n_driving_functions, &
-                SETTLING_VELOCITIES, DISSOLVED_FRACTIONS, &
+                SETTLING_VELOCITIES, wsc%DISSOLVED_FRACTIONS, &
                 1.0D0              , 1, TIME            , &
-                SETTLING_RATES     , bsed%FLUXES_TO_SEDIMENTS, &
+                wsc%SETTLING_RATES     , bsed%FLUXES_TO_SEDIMENTS, &
                 NUM_SED_VARS                            , &
-                1 , FRACTION_OF_DEPOSITION              , &
-                NOT_DEPOSITED_FLUXES, nstate            , &
+                1 , wsc%FRACTION_OF_DEPOSITION              , &
+                wsc%NOT_DEPOSITED_FLUXES, nstate            , &
                 CONSIDER_NON_OBLIGATORY_FIXERS          , &
                 CONSIDER_NOSTOCALES)
 
@@ -1584,11 +1585,11 @@ contains
             ! tail (nstate+1:) carries stale values that get added to the secondary-
             ! metabolite derivatives below, blowing them up and (via the growth-inhibition
             ! factor) collapsing phytoplankton growth. Zero it first so the tail stays 0.
-            FLUXES_TO_WATER_COLUMN = 0.0D0
+            wsc%FLUXES_TO_WATER_COLUMN = 0.0D0
 
             call FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
                  (bsed%FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
-                  FLUXES_TO_WATER_COLUMN, nkn, nstate)
+                  wsc%FLUXES_TO_WATER_COLUMN, nkn, nstate)
 
             ! NOT_DEPOSITED_FLUXES
             ! --------------------
@@ -1620,17 +1621,17 @@ contains
 
             ! DRIVING_FUNCTIONS(:, 8) is water column depth
 
-            FLUXES_OUTPUT_TO_WATER_COLUMN(:,:) = FLUXES_TO_WATER_COLUMN(:,:)
+            wsc%FLUXES_OUTPUT_TO_WATER_COLUMN(:,:) = wsc%FLUXES_TO_WATER_COLUMN(:,:)
 
             do STATE_VAR_NO = 1, nstate
-                FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) = &
-                    FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                wsc%FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) = &
+                    wsc%FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
 
-                NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) = &
-                    NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                wsc%NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) = &
+                    wsc%NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
 
-                SETTLING_RATES        (:,STATE_VAR_NO) = &
-                    SETTLING_RATES        (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                wsc%SETTLING_RATES        (:,STATE_VAR_NO) = &
+                    wsc%SETTLING_RATES        (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
             end do
         end if
 
@@ -1651,7 +1652,7 @@ contains
                 PELAGIC_ECOLOGY_CALLED_BEFORE = CALLED_BEFORE
 
             PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, :, DERIV_NO) = &
-                (DERIVATIVES(i,:) + FLUXES_TO_WATER_COLUMN(i,:)) * &
+                (DERIVATIVES(i,:) + wsc%FLUXES_TO_WATER_COLUMN(i,:)) * &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
         end do
 
