@@ -1,3 +1,4 @@
+! This version is with AI co-development
 program ESTAS_II
     use GLOBAL
     use RESUSPENSION, only: resusp
