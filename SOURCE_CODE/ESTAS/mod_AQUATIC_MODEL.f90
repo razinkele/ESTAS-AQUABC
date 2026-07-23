@@ -1,18 +1,18 @@
-% ---------------------------------------------------------------------------------------
-% This is the module for the AQUATIC model as a general framwwork containing
-%
-%     - The pelagic modeling infrastructure
-%     - The bottom sediments modeling infrastructure
-%     - The resuspension modeling infrastructure
-% ---------------------------------------------------------------------------------------
-% The aquatic model data strucutre (type AQUATIC_MODEL_DS) includes a pelagic model
-% data structure (PELAGIC_BOX_MODEL_DATA) but no other sub-model data structures such
-% as BOTTOM_SEDIMENTS or RESUSPENSION data structure. This is because that only the 
-% pelagic sub-model is able to transfer the materials from basin to basin horizontally
-% with advection and diffusion in any direction hence it forms the shape of the
-% entire model domain. Bottom sediment and resuspension sub-models are simply associated
-% and interacting with the designated pelagic boxes in vertical direction only.
-% ---------------------------------------------------------------------------------------
+! ---------------------------------------------------------------------------------------
+! This is the module for the AQUATIC model as a general framwwork containing
+!
+!     - The pelagic modeling infrastructure
+!     - The bottom sediments modeling infrastructure
+!     - The resuspension modeling infrastructure
+! ---------------------------------------------------------------------------------------
+! The aquatic model data strucutre (type AQUATIC_MODEL_DS) includes a pelagic model
+! data structure (PELAGIC_BOX_MODEL_DATA) but no other sub-model data structures such
+! as BOTTOM_SEDIMENTS or RESUSPENSION data structure. This is because that only the 
+! pelagic sub-model is able to transfer the materials from basin to basin horizontally
+! with advection and diffusion in any direction hence it forms the shape of the
+! entire model domain. Bottom sediment and resuspension sub-models are simply associated
+! and interacting with the designated pelagic boxes in vertical direction only.
+! ---------------------------------------------------------------------------------------
 module AQUATIC_MODEL
     use GLOBAL
     use PELAGIC_BOX_MODEL
