@@ -297,7 +297,7 @@ contains
 
                             do SED_LAYER_NO = 1,NUM_SED_LAYERS
                                 write(*, fmt = '(a10 : F20.6)') &
-                                      'Layer', INIT_SED_STATE_VARS(i, SED_LAYER_NO, SED_STATE_VAR_NO)
+                                      'Layer', bsed%INIT_SED_STATE_VARS(i, SED_LAYER_NO, SED_STATE_VAR_NO)
                             end do
 
                             write(*,fmt = '(a35)')      '-----------------------------------'
@@ -1476,23 +1476,23 @@ contains
         if (MODEL_BOTTOM_SEDIMENTS > 1) then
             ! Get sediment temperature from water column assuming it is equal
             do SED_LAYER_NO = 1,NUM_SED_LAYERS
-                SED_TEMPS(:,SED_LAYER_NO) = max(0.0D0, min(45.0D0, DRIVING_FUNCTIONS(:,1)))
+                bsed%SED_TEMPS(:,SED_LAYER_NO) = max(0.0D0, min(45.0D0, DRIVING_FUNCTIONS(:,1)))
             end do
 
             ! Uptate the time dependent forcings in sediments
             call UPDATE_BOTTOM_SEDIMENT_INPUTS &
                  (TIME                          , &
-                  SED_DEPTHS                    , &
-                  SED_POROSITIES                , &
-                  SED_DENSITIES                 , &
-                  PART_MIXING_COEFFS            , &
-                  ADVECTIVE_VELOCITY            , &
-                  SED_DIFFUSIONS                , &
-                  SURF_MIXLEN                   , &
-                  SED_BURRIALS                  , &
-                  SED_TEMPS                     , &
-                  INIT_SED_STATE_VARS(:,:,15)   , & ! Salt
-                  SED_FLAGS                     , &
+                  bsed%SED_DEPTHS                    , &
+                  bsed%SED_POROSITIES                , &
+                  bsed%SED_DENSITIES                 , &
+                  bsed%PART_MIXING_COEFFS            , &
+                  bsed%ADVECTIVE_VELOCITY            , &
+                  bsed%SED_DIFFUSIONS                , &
+                  bsed%SURF_MIXLEN                   , &
+                  bsed%SED_BURRIALS                  , &
+                  bsed%SED_TEMPS                     , &
+                  bsed%INIT_SED_STATE_VARS(:,:,15)   , & ! Salt
+                  bsed%SED_FLAGS                     , &
                   NUM_SED_FLAGS                 , &
                   nkn                           , &
                   NUM_SED_LAYERS                , &
@@ -1505,33 +1505,33 @@ contains
             ! Surface water concentrations are needed for dissolved sediment state variables
             ! and not used here. However, to avoid internal check errors, (such as division by zero)
             ! be set to their values very small concentrations.
-            SURF_WATER_CONCS(:,  1)  =  STATE_VARIABLES  (:, NH4_N_INDEX)
-            SURF_WATER_CONCS(:,  2)  =  STATE_VARIABLES  (:, NO3_N_INDEX)
-            SURF_WATER_CONCS(:,  3)  =  STATE_VARIABLES  (:, DET_PART_ORG_N_INDEX)
-            SURF_WATER_CONCS(:,  4)  =  1.0D-10
-            SURF_WATER_CONCS(:,  5)  =  STATE_VARIABLES  (:, PO4_P_INDEX)
-            SURF_WATER_CONCS(:,  6)  =  STATE_VARIABLES  (:, DET_PART_ORG_P_INDEX)
-            SURF_WATER_CONCS(:,  7)  =  1.0D-10
-            SURF_WATER_CONCS(:,  8)  =  STATE_VARIABLES  (:, DISS_OXYGEN_INDEX)
-            SURF_WATER_CONCS(:,  9)  =  STATE_VARIABLES  (:, DET_PART_ORG_C_INDEX)
-            SURF_WATER_CONCS(:, 10)  =  1.0D-10
-            SURF_WATER_CONCS(:, 11)  =  STATE_VARIABLES  (:, DISS_Si_INDEX)
-            SURF_WATER_CONCS(:, 12)  =  1.0D-10
-            SURF_WATER_CONCS(:, 13)  =  STATE_VARIABLES  (:, INORG_C_INDEX)
-            SURF_WATER_CONCS(:, 14)  =  STATE_VARIABLES  (:, TOT_ALK_INDEX)
-            SURF_WATER_CONCS(:, 15)  =  DRIVING_FUNCTIONS(:, 2) !Salinity will come from second driving function
-            SURF_WATER_CONCS(:, 16)  =  STATE_VARIABLES  (:, FE_II_INDEX)
-            SURF_WATER_CONCS(:, 17)  =  STATE_VARIABLES  (:, FE_III_INDEX)
-            SURF_WATER_CONCS(:, 18)  =  STATE_VARIABLES  (:, MN_II_INDEX)
-            SURF_WATER_CONCS(:, 19)  =  STATE_VARIABLES  (:, MN_IV_INDEX)
-            SURF_WATER_CONCS(:, 20)  =  STATE_VARIABLES  (:, CA_INDEX)
-            SURF_WATER_CONCS(:, 21)  =  STATE_VARIABLES  (:, MG_INDEX)
-            SURF_WATER_CONCS(:, 22)  =  STATE_VARIABLES  (:, S_PLUS_6_INDEX)
-            SURF_WATER_CONCS(:, 23)  =  STATE_VARIABLES  (:, S_MINUS_2_INDEX)
-            SURF_WATER_CONCS(:, 24)  =  STATE_VARIABLES  (:, CH4_C_INDEX)
+            bsed%SURF_WATER_CONCS(:,  1)  =  STATE_VARIABLES  (:, NH4_N_INDEX)
+            bsed%SURF_WATER_CONCS(:,  2)  =  STATE_VARIABLES  (:, NO3_N_INDEX)
+            bsed%SURF_WATER_CONCS(:,  3)  =  STATE_VARIABLES  (:, DET_PART_ORG_N_INDEX)
+            bsed%SURF_WATER_CONCS(:,  4)  =  1.0D-10
+            bsed%SURF_WATER_CONCS(:,  5)  =  STATE_VARIABLES  (:, PO4_P_INDEX)
+            bsed%SURF_WATER_CONCS(:,  6)  =  STATE_VARIABLES  (:, DET_PART_ORG_P_INDEX)
+            bsed%SURF_WATER_CONCS(:,  7)  =  1.0D-10
+            bsed%SURF_WATER_CONCS(:,  8)  =  STATE_VARIABLES  (:, DISS_OXYGEN_INDEX)
+            bsed%SURF_WATER_CONCS(:,  9)  =  STATE_VARIABLES  (:, DET_PART_ORG_C_INDEX)
+            bsed%SURF_WATER_CONCS(:, 10)  =  1.0D-10
+            bsed%SURF_WATER_CONCS(:, 11)  =  STATE_VARIABLES  (:, DISS_Si_INDEX)
+            bsed%SURF_WATER_CONCS(:, 12)  =  1.0D-10
+            bsed%SURF_WATER_CONCS(:, 13)  =  STATE_VARIABLES  (:, INORG_C_INDEX)
+            bsed%SURF_WATER_CONCS(:, 14)  =  STATE_VARIABLES  (:, TOT_ALK_INDEX)
+            bsed%SURF_WATER_CONCS(:, 15)  =  DRIVING_FUNCTIONS(:, 2) !Salinity will come from second driving function
+            bsed%SURF_WATER_CONCS(:, 16)  =  STATE_VARIABLES  (:, FE_II_INDEX)
+            bsed%SURF_WATER_CONCS(:, 17)  =  STATE_VARIABLES  (:, FE_III_INDEX)
+            bsed%SURF_WATER_CONCS(:, 18)  =  STATE_VARIABLES  (:, MN_II_INDEX)
+            bsed%SURF_WATER_CONCS(:, 19)  =  STATE_VARIABLES  (:, MN_IV_INDEX)
+            bsed%SURF_WATER_CONCS(:, 20)  =  STATE_VARIABLES  (:, CA_INDEX)
+            bsed%SURF_WATER_CONCS(:, 21)  =  STATE_VARIABLES  (:, MG_INDEX)
+            bsed%SURF_WATER_CONCS(:, 22)  =  STATE_VARIABLES  (:, S_PLUS_6_INDEX)
+            bsed%SURF_WATER_CONCS(:, 23)  =  STATE_VARIABLES  (:, S_MINUS_2_INDEX)
+            bsed%SURF_WATER_CONCS(:, 24)  =  STATE_VARIABLES  (:, CH4_C_INDEX)
 
             ! Assume no sediment erosion in this simple example
-            H_ERODEP(:) = 0.0D0
+            bsed%H_ERODEP(:) = 0.0D0
 
             ! Get sediment transport
             DISSOLVED_FRACTIONS    = EFFECTIVE_DISSLOVED_FRACTIONS
@@ -1543,7 +1543,7 @@ contains
                 DRIVING_FUNCTIONS  , n_driving_functions, &
                 SETTLING_VELOCITIES, DISSOLVED_FRACTIONS, &
                 1.0D0              , 1, TIME            , &
-                SETTLING_RATES     , FLUXES_TO_SEDIMENTS, &
+                SETTLING_RATES     , bsed%FLUXES_TO_SEDIMENTS, &
                 NUM_SED_VARS                            , &
                 1 , FRACTION_OF_DEPOSITION              , &
                 NOT_DEPOSITED_FLUXES, nstate            , &
@@ -1551,31 +1551,31 @@ contains
                 CONSIDER_NOSTOCALES)
 
             ! For now 1, will depend on current or wave submodel in the future
-            NUM_FLUX_RECEIVING_SED_LAYERS = 1
+            bsed%NUM_FLUX_RECEIVING_SED_LAYERS = 1
 
             !Call sediment submodel
             call AQUABC_SEDIMENT_MODEL_1 &
-                (nkn,INIT_SED_STATE_VARS, SED_DEPTHS , SED_POROSITIES,  &
-                 SED_DENSITIES          , PART_MIXING_COEFFS         ,  &
-                 SED_DIFFUSIONS         , SURF_MIXLEN, SED_BURRIALS  ,  &
-                 SURF_WATER_CONCS       , SED_TEMPS                  ,  &
+                (nkn,bsed%INIT_SED_STATE_VARS, bsed%SED_DEPTHS , bsed%SED_POROSITIES,  &
+                 bsed%SED_DENSITIES          , bsed%PART_MIXING_COEFFS         ,  &
+                 bsed%SED_DIFFUSIONS         , bsed%SURF_MIXLEN, bsed%SED_BURRIALS  ,  &
+                 bsed%SURF_WATER_CONCS       , bsed%SED_TEMPS                  ,  &
                  NUM_SED_VARS           , NUM_SED_LAYERS             ,  &
-                 SED_MODEL_CONSTANTS    , NUM_SED_CONSTS             ,  &
-                 SED_DRIVING_FUNCTIONS  , NUM_SED_DRIV               ,  & ! not used yet
-                 SED_FLAGS              , NUM_SED_FLAGS              ,  &
-                 FLUXES_TO_SEDIMENTS    , NUM_FLUXES_TO_SEDIMENTS    ,  &
-                 NUM_FLUX_RECEIVING_SED_LAYERS, ADVECTIVE_VELOCITY   ,  &
+                 bsed%SED_MODEL_CONSTANTS    , NUM_SED_CONSTS             ,  &
+                 bsed%SED_DRIVING_FUNCTIONS  , NUM_SED_DRIV               ,  & ! not used yet
+                 bsed%SED_FLAGS              , NUM_SED_FLAGS              ,  &
+                 bsed%FLUXES_TO_SEDIMENTS    , NUM_FLUXES_TO_SEDIMENTS    ,  &
+                 bsed%NUM_FLUX_RECEIVING_SED_LAYERS, bsed%ADVECTIVE_VELOCITY   ,  &
                  TIME, TIME_STEP                                     ,  &
-                 H_ERODEP                                            ,  &
-                 FINAL_SED_STATE_VARS                                ,  &
-                 FLUXES_FROM_SEDIMENTS, NUM_FLUXES_FROM_SEDIMENTS    ,  &
-                 PROCESSES_sed        , NDIAGVAR_sed                 ,  &
-                 SED_OUTPUTS          , NUM_SED_OUTPUTS              ,  &
-                 SED_SAVED_OUTPUTS    , NUM_SED_SAVED_OUTPUTS        ,  &
-                 SED_BURRIAL_RATE_OUTPUTS, BOTTOM_SED_ADVANCED_REDOX_SIMULATION)
+                 bsed%H_ERODEP                                            ,  &
+                 bsed%FINAL_SED_STATE_VARS                                ,  &
+                 bsed%FLUXES_FROM_SEDIMENTS, NUM_FLUXES_FROM_SEDIMENTS    ,  &
+                 bsed%PROCESSES_sed        , NDIAGVAR_sed                 ,  &
+                 bsed%SED_OUTPUTS          , NUM_SED_OUTPUTS              ,  &
+                 bsed%SED_SAVED_OUTPUTS    , NUM_SED_SAVED_OUTPUTS        ,  &
+                 bsed%SED_BURRIAL_RATE_OUTPUTS, BOTTOM_SED_ADVANCED_REDOX_SIMULATION)
 
-            where (FINAL_SED_STATE_VARS <= 0.0D0)
-                FINAL_SED_STATE_VARS(:, :, :) = 0.0D0
+            where (bsed%FINAL_SED_STATE_VARS <= 0.0D0)
+                bsed%FINAL_SED_STATE_VARS(:, :, :) = 0.0D0
             end where
 
             ! The sediment->water mapping (FLX_SED_MOD_1_TO_ALUKAS_II_VEC) only fills
@@ -1587,7 +1587,7 @@ contains
             FLUXES_TO_WATER_COLUMN = 0.0D0
 
             call FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
-                 (FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
+                 (bsed%FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
                   FLUXES_TO_WATER_COLUMN, nkn, nstate)
 
             ! NOT_DEPOSITED_FLUXES
