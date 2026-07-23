@@ -15,6 +15,38 @@ module BOTTOM_SEDIMENTS
     use GLOBAL
     use UTILS_1
     implicit none
+
+    ! Bottom-sediment submodel state, moved out of module GLOBAL (Phase 5.1).
+    ! See docs/superpowers/specs/2026-07-23-sediment-state-derived-type-design.md
+    type, public :: sediment_state_t
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: INIT_SED_STATE_VARS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DEPTHS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_POROSITIES
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DENSITIES
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: PART_MIXING_COEFFS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_DIFFUSIONS
+        real(kind = DBL)                                     :: SURF_MIXLEN
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_BURRIALS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SURF_WATER_CONCS
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_TEMPS
+        real(kind = DBL), allocatable, dimension(:)          :: SED_MODEL_CONSTANTS
+        integer,          allocatable, dimension(:)          :: SED_TYPE_PER_BOX
+        real(kind = DBL), allocatable, dimension(:, :, :, :) :: PROCESSES_sed
+        real(kind = DBL), allocatable, dimension(:, :)       :: SED_DRIVING_FUNCTIONS
+        real(kind = DBL), allocatable, dimension(:, :)       :: FLUXES_TO_SEDIMENTS
+        real(kind = DBL)                                     :: ADVECTIVE_VELOCITY
+        real(kind = DBL), allocatable, dimension(:)          :: H_ERODEP
+        integer,          allocatable, dimension(:)          :: SED_FLAGS
+        integer                                              :: NUM_FLUX_RECEIVING_SED_LAYERS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: FINAL_SED_STATE_VARS
+        real(kind = DBL), allocatable, dimension(:, :)       :: FLUXES_FROM_SEDIMENTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_OUTPUTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_SAVED_OUTPUTS
+        real(kind = DBL), allocatable, dimension(:, :, :)    :: SED_BURRIAL_RATE_OUTPUTS
+    end type sediment_state_t
+
+    type(sediment_state_t), public :: bsed
+
 contains
 
     ! Subroutine that initializes bottom sediment submodel
@@ -28,177 +60,177 @@ contains
         ! AQUABC_II BS model constants
         ! Notes for SHYFEM compatibility
 
-        K_OXIC_DISS_POC              = SED_MODEL_CONSTANTS(  1)
-        K_ANOXIC_DISS_POC            = SED_MODEL_CONSTANTS(  2)
-        THETA_DISS_POC               = SED_MODEL_CONSTANTS(  3)
-        KHS_DISS_POC                 = SED_MODEL_CONSTANTS(  4)
-        K_OXIC_DISS_PON              = SED_MODEL_CONSTANTS(  5)
-        K_ANOXIC_DISS_PON            = SED_MODEL_CONSTANTS(  6)
-        THETA_DISS_PON               = SED_MODEL_CONSTANTS(  7)
-        KHS_DISS_PON                 = SED_MODEL_CONSTANTS(  8)
-        K_OXIC_DISS_POP              = SED_MODEL_CONSTANTS(  9)
-        K_ANOXIC_DISS_POP            = SED_MODEL_CONSTANTS( 10)
-        THETA_DISS_POP               = SED_MODEL_CONSTANTS( 11)
-        KHS_DISS_POP                 = SED_MODEL_CONSTANTS( 12)
-        K_OXIC_DISS_PSi              = SED_MODEL_CONSTANTS( 13)
-        K_ANOXIC_DISS_PSi            = SED_MODEL_CONSTANTS( 14)
-        THETA_DISS_PSi               = SED_MODEL_CONSTANTS( 15)
-        KHS_DISS_PSi                 = SED_MODEL_CONSTANTS( 16)
-        K_OXIC_MINER_DOC             = SED_MODEL_CONSTANTS( 17)
-        K_ANOXIC_MINER_DOC           = SED_MODEL_CONSTANTS( 18)
-        THETA_MINER_DOC              = SED_MODEL_CONSTANTS( 19)
-        KHS_MINER_DOC                = SED_MODEL_CONSTANTS( 20)
-        K_OXIC_MINER_DON             = SED_MODEL_CONSTANTS( 21)
-        K_ANOXIC_MINER_DON           = SED_MODEL_CONSTANTS( 22)
-        THETA_MINER_DON              = SED_MODEL_CONSTANTS( 23)
-        KHS_MINER_DON                = SED_MODEL_CONSTANTS( 24)
-        K_OXIC_MINER_DOP             = SED_MODEL_CONSTANTS( 25)
-        K_ANOXIC_MINER_DOP           = SED_MODEL_CONSTANTS( 26)
-        THETA_MINER_DOP              = SED_MODEL_CONSTANTS( 27)
-        KHS_MINER_DOP                = SED_MODEL_CONSTANTS( 28)
-        O_TO_C                       = SED_MODEL_CONSTANTS( 29)
-        K_NITR                       = SED_MODEL_CONSTANTS( 30)
-        THETA_NITR                   = SED_MODEL_CONSTANTS( 31)
-        KHS_NITR_NH4N                = SED_MODEL_CONSTANTS( 32)
-        KHS_NITR_DOXY                = SED_MODEL_CONSTANTS( 33)
-        K_DENITR                     = SED_MODEL_CONSTANTS( 34)
-        THETA_DENITR                 = SED_MODEL_CONSTANTS( 35)
-        KHS_DENITR_NO3N              = SED_MODEL_CONSTANTS( 36)
-        KHS_DENITR_DOC               = SED_MODEL_CONSTANTS( 37)
-        KHS_DENITR_DOXY              = SED_MODEL_CONSTANTS( 38)
-        DENITR_YIELD                 = SED_MODEL_CONSTANTS( 39)
-        DOXY_AT_ANOXIA               = SED_MODEL_CONSTANTS( 40)
-        SOLID_PART_COEFF_NH4         = SED_MODEL_CONSTANTS( 41)
-        SOLID_PART_COEFF_PO4         = SED_MODEL_CONSTANTS( 42)
-        SED_PH_MIN_DOC_MIN           = SED_MODEL_CONSTANTS( 43)
-        SED_PH_MIN_DOC_MAX           = SED_MODEL_CONSTANTS( 44)
-        SED_PH_MIN_DON_MIN           = SED_MODEL_CONSTANTS( 45)
-        SED_PH_MIN_DON_MAX           = SED_MODEL_CONSTANTS( 46)
-        SED_PH_MIN_DOP_MIN           = SED_MODEL_CONSTANTS( 47)
-        SED_PH_MIN_DOP_MAX           = SED_MODEL_CONSTANTS( 48)
-        SED_PH_NITR_NH4_MIN          = SED_MODEL_CONSTANTS( 49)
-        SED_PH_NITR_NH4_MAX          = SED_MODEL_CONSTANTS( 50)
-        SED_PH_DENITR_NO3_MIN        = SED_MODEL_CONSTANTS( 51)
-        SED_PH_DENITR_NO3_MAX        = SED_MODEL_CONSTANTS( 52)
-        SED_k_OX_FE_II               = SED_MODEL_CONSTANTS( 53)
-        SED_k_RED_FE_III             = SED_MODEL_CONSTANTS( 54)
-        SED_k_OX_MN_II               = SED_MODEL_CONSTANTS( 55)
-        SED_k_RED_MN_IV              = SED_MODEL_CONSTANTS( 56)
-        SED_KHS_DOXY_FE_III_RED      = SED_MODEL_CONSTANTS( 57)
-        SED_KHS_DOXY_MN_IV_RED       = SED_MODEL_CONSTANTS( 58)
-        SED_K_MIN_DOC_DOXY_20        = SED_MODEL_CONSTANTS( 59)
-        SED_K_MIN_DOC_NO3N_20        = SED_MODEL_CONSTANTS( 60)
-        SED_K_MIN_DOC_MN_IV_20       = SED_MODEL_CONSTANTS( 61)
-        SED_K_MIN_DOC_FE_III_20      = SED_MODEL_CONSTANTS( 62)
-        SED_K_MIN_DOC_S_PLUS_6_20    = SED_MODEL_CONSTANTS( 63)
-        SED_K_MIN_DOC_DOC_20         = SED_MODEL_CONSTANTS( 64)
-        SED_THETA_K_MIN_DOC_DOXY     = SED_MODEL_CONSTANTS( 65)
-        SED_THETA_K_MIN_DOC_NO3N     = SED_MODEL_CONSTANTS( 66)
-        SED_THETA_K_MIN_DOC_MN_IV    = SED_MODEL_CONSTANTS( 67)
-        SED_THETA_K_MIN_DOC_FE_III   = SED_MODEL_CONSTANTS( 68)
-        SED_THETA_K_MIN_DOC_S_PLUS_6 = SED_MODEL_CONSTANTS( 69)
-        SED_THETA_K_MIN_DOC_DOC      = SED_MODEL_CONSTANTS( 70)
-        SED_K_HS_DOC_MIN_DOXY        = SED_MODEL_CONSTANTS( 71)
-        SED_K_HS_DOC_MIN_NO3N        = SED_MODEL_CONSTANTS( 72)
-        SED_K_HS_DOC_MIN_MN_IV       = SED_MODEL_CONSTANTS( 73)
-        SED_K_HS_DOC_MIN_FE_III      = SED_MODEL_CONSTANTS( 74)
-        SED_K_HS_DOC_MIN_S_PLUS_6    = SED_MODEL_CONSTANTS( 75)
-        SED_K_HS_DOC_MIN_DOC         = SED_MODEL_CONSTANTS( 76)
-        SED_K_HS_DOXY_RED_LIM        = SED_MODEL_CONSTANTS( 77)
-        SED_K_HS_NO3N_RED_LIM        = SED_MODEL_CONSTANTS( 78)
-        SED_K_HS_MN_IV_RED_LIM       = SED_MODEL_CONSTANTS( 79)
-        SED_K_HS_FE_III_RED_LIM      = SED_MODEL_CONSTANTS( 80)
-        SED_K_HS_S_PLUS_6_RED_LIM    = SED_MODEL_CONSTANTS( 81)
-        SED_K_HS_DOXY_RED_INHB       = SED_MODEL_CONSTANTS( 82)
-        SED_K_HS_NO3N_RED_INHB       = SED_MODEL_CONSTANTS( 83)
-        SED_K_HS_MN_IV_RED_INHB      = SED_MODEL_CONSTANTS( 84)
-        SED_K_HS_FE_III_RED_INHB     = SED_MODEL_CONSTANTS( 85)
-        SED_K_HS_S_PLUS_6_RED_INHB   = SED_MODEL_CONSTANTS( 86)
-        SED_PH_MIN_DOC_MIN_DOXY      = SED_MODEL_CONSTANTS( 87)
-        SED_PH_MIN_DOC_MIN_NO3N      = SED_MODEL_CONSTANTS( 88)
-        SED_PH_MIN_DOC_MIN_MN_IV     = SED_MODEL_CONSTANTS( 89)
-        SED_PH_MIN_DOC_MIN_FE_III    = SED_MODEL_CONSTANTS( 90)
-        SED_PH_MIN_DOC_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS( 91)
-        SED_PH_MIN_DOC_MIN_DOC       = SED_MODEL_CONSTANTS( 92)
-        SED_PH_MAX_DOC_MIN_DOXY      = SED_MODEL_CONSTANTS( 93)
-        SED_PH_MAX_DOC_MIN_NO3N      = SED_MODEL_CONSTANTS( 94)
-        SED_PH_MAX_DOC_MIN_MN_IV     = SED_MODEL_CONSTANTS( 95)
-        SED_PH_MAX_DOC_MIN_FE_III    = SED_MODEL_CONSTANTS( 96)
-        SED_PH_MAX_DOC_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS( 97)
-        SED_PH_MAX_DOC_MIN_DOC       = SED_MODEL_CONSTANTS( 98)
-        SED_K_MIN_DON_DOXY_20        = SED_MODEL_CONSTANTS( 99)
-        SED_K_MIN_DON_NO3N_20        = SED_MODEL_CONSTANTS(100)
-        SED_K_MIN_DON_MN_IV_20       = SED_MODEL_CONSTANTS(101)
-        SED_K_MIN_DON_FE_III_20      = SED_MODEL_CONSTANTS(102)
-        SED_K_MIN_DON_S_PLUS_6_20    = SED_MODEL_CONSTANTS(103)
-        SED_K_MIN_DON_DOC_20         = SED_MODEL_CONSTANTS(104)
-        SED_THETA_K_MIN_DON_DOXY     = SED_MODEL_CONSTANTS(105)
-        SED_THETA_K_MIN_DON_NO3N     = SED_MODEL_CONSTANTS(106)
-        SED_THETA_K_MIN_DON_MN_IV    = SED_MODEL_CONSTANTS(107)
-        SED_THETA_K_MIN_DON_FE_III   = SED_MODEL_CONSTANTS(108)
-        SED_THETA_K_MIN_DON_S_PLUS_6 = SED_MODEL_CONSTANTS(109)
-        SED_THETA_K_MIN_DON_DOC      = SED_MODEL_CONSTANTS(110)
-        SED_K_HS_DON_MIN_DOXY        = SED_MODEL_CONSTANTS(111)
-        SED_K_HS_DON_MIN_NO3N        = SED_MODEL_CONSTANTS(112)
-        SED_K_HS_DON_MIN_MN_IV       = SED_MODEL_CONSTANTS(113)
-        SED_K_HS_DON_MIN_FE_III      = SED_MODEL_CONSTANTS(114)
-        SED_K_HS_DON_MIN_S_PLUS_6    = SED_MODEL_CONSTANTS(115)
-        SED_K_HS_DON_MIN_DOC         = SED_MODEL_CONSTANTS(116)
-        SED_PH_MIN_DON_MIN_DOXY      = SED_MODEL_CONSTANTS(117)
-        SED_PH_MIN_DON_MIN_NO3N      = SED_MODEL_CONSTANTS(118)
-        SED_PH_MIN_DON_MIN_MN_IV     = SED_MODEL_CONSTANTS(119)
-        SED_PH_MIN_DON_MIN_FE_III    = SED_MODEL_CONSTANTS(120)
-        SED_PH_MIN_DON_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS(121)
-        SED_PH_MIN_DON_MIN_DOC       = SED_MODEL_CONSTANTS(122)
-        SED_PH_MAX_DON_MIN_DOXY      = SED_MODEL_CONSTANTS(123)
-        SED_PH_MAX_DON_MIN_NO3N      = SED_MODEL_CONSTANTS(124)
-        SED_PH_MAX_DON_MIN_MN_IV     = SED_MODEL_CONSTANTS(125)
-        SED_PH_MAX_DON_MIN_FE_III    = SED_MODEL_CONSTANTS(126)
-        SED_PH_MAX_DON_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS(127)
-        SED_PH_MAX_DON_MIN_DOC       = SED_MODEL_CONSTANTS(128)
-        SED_K_MIN_DOP_DOXY_20        = SED_MODEL_CONSTANTS(129)
-        SED_K_MIN_DOP_NO3N_20        = SED_MODEL_CONSTANTS(130)
-        SED_K_MIN_DOP_MN_IV_20       = SED_MODEL_CONSTANTS(131)
-        SED_K_MIN_DOP_FE_III_20      = SED_MODEL_CONSTANTS(132)
-        SED_K_MIN_DOP_S_PLUS_6_20    = SED_MODEL_CONSTANTS(133)
-        SED_K_MIN_DOP_DOC_20         = SED_MODEL_CONSTANTS(134)
-        SED_THETA_K_MIN_DOP_DOXY     = SED_MODEL_CONSTANTS(135)
-        SED_THETA_K_MIN_DOP_NO3N     = SED_MODEL_CONSTANTS(136)
-        SED_THETA_K_MIN_DOP_MN_IV    = SED_MODEL_CONSTANTS(137)
-        SED_THETA_K_MIN_DOP_FE_III   = SED_MODEL_CONSTANTS(138)
-        SED_THETA_K_MIN_DOP_S_PLUS_6 = SED_MODEL_CONSTANTS(139)
-        SED_THETA_K_MIN_DOP_DOC      = SED_MODEL_CONSTANTS(140)
-        SED_K_HS_DOP_MIN_DOXY        = SED_MODEL_CONSTANTS(141)
-        SED_K_HS_DOP_MIN_NO3N        = SED_MODEL_CONSTANTS(142)
-        SED_K_HS_DOP_MIN_MN_IV       = SED_MODEL_CONSTANTS(143)
-        SED_K_HS_DOP_MIN_FE_III      = SED_MODEL_CONSTANTS(144)
-        SED_K_HS_DOP_MIN_S_PLUS_6    = SED_MODEL_CONSTANTS(145)
-        SED_K_HS_DOP_MIN_DOC         = SED_MODEL_CONSTANTS(146)
-        SED_PH_MIN_DOP_MIN_DOXY      = SED_MODEL_CONSTANTS(147)
-        SED_PH_MIN_DOP_MIN_NO3N      = SED_MODEL_CONSTANTS(148)
-        SED_PH_MIN_DOP_MIN_MN_IV     = SED_MODEL_CONSTANTS(149)
-        SED_PH_MIN_DOP_MIN_FE_III    = SED_MODEL_CONSTANTS(150)
-        SED_PH_MIN_DOP_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS(151)
-        SED_PH_MIN_DOP_MIN_DOC       = SED_MODEL_CONSTANTS(152)
-        SED_PH_MAX_DOP_MIN_DOXY      = SED_MODEL_CONSTANTS(153)
-        SED_PH_MAX_DOP_MIN_NO3N      = SED_MODEL_CONSTANTS(154)
-        SED_PH_MAX_DOP_MIN_MN_IV     = SED_MODEL_CONSTANTS(155)
-        SED_PH_MAX_DOP_MIN_FE_III    = SED_MODEL_CONSTANTS(156)
-        SED_PH_MAX_DOP_MIN_S_PLUS_6  = SED_MODEL_CONSTANTS(157)
-        SED_PH_MAX_DOP_MIN_DOC       = SED_MODEL_CONSTANTS(158)
-        SED_k_OX_CH4                 = SED_MODEL_CONSTANTS(159)
-        SED_THETA_k_OX_CH4           = SED_MODEL_CONSTANTS(160)
-        SED_k_HS_OX_CH4_DOXY         = SED_MODEL_CONSTANTS(161)
-        SED_k_OX_H2S                 = SED_MODEL_CONSTANTS(162)
-        SED_THETA_k_OX_H2S           = SED_MODEL_CONSTANTS(163)
-        SED_k_HS_OX_H2S_DOXY         = SED_MODEL_CONSTANTS(164)
-        SED_k_DISS_FE_II_20          = SED_MODEL_CONSTANTS(165)
-        SED_THETA_k_DISS_FE_II       = SED_MODEL_CONSTANTS(166)
-        SED_INIT_MULT_FE_II_DISS     = SED_MODEL_CONSTANTS(167)
-        SED_k_DISS_FE_III_20         = SED_MODEL_CONSTANTS(168)
-        SED_THETA_k_DISS_FE_III      = SED_MODEL_CONSTANTS(169)
-        SED_INIT_MULT_FE_III_DISS    = SED_MODEL_CONSTANTS(170)
-        FE_P_REDOX_FRAC              = SED_MODEL_CONSTANTS(171)
+        K_OXIC_DISS_POC              = bsed%SED_MODEL_CONSTANTS(  1)
+        K_ANOXIC_DISS_POC            = bsed%SED_MODEL_CONSTANTS(  2)
+        THETA_DISS_POC               = bsed%SED_MODEL_CONSTANTS(  3)
+        KHS_DISS_POC                 = bsed%SED_MODEL_CONSTANTS(  4)
+        K_OXIC_DISS_PON              = bsed%SED_MODEL_CONSTANTS(  5)
+        K_ANOXIC_DISS_PON            = bsed%SED_MODEL_CONSTANTS(  6)
+        THETA_DISS_PON               = bsed%SED_MODEL_CONSTANTS(  7)
+        KHS_DISS_PON                 = bsed%SED_MODEL_CONSTANTS(  8)
+        K_OXIC_DISS_POP              = bsed%SED_MODEL_CONSTANTS(  9)
+        K_ANOXIC_DISS_POP            = bsed%SED_MODEL_CONSTANTS( 10)
+        THETA_DISS_POP               = bsed%SED_MODEL_CONSTANTS( 11)
+        KHS_DISS_POP                 = bsed%SED_MODEL_CONSTANTS( 12)
+        K_OXIC_DISS_PSi              = bsed%SED_MODEL_CONSTANTS( 13)
+        K_ANOXIC_DISS_PSi            = bsed%SED_MODEL_CONSTANTS( 14)
+        THETA_DISS_PSi               = bsed%SED_MODEL_CONSTANTS( 15)
+        KHS_DISS_PSi                 = bsed%SED_MODEL_CONSTANTS( 16)
+        K_OXIC_MINER_DOC             = bsed%SED_MODEL_CONSTANTS( 17)
+        K_ANOXIC_MINER_DOC           = bsed%SED_MODEL_CONSTANTS( 18)
+        THETA_MINER_DOC              = bsed%SED_MODEL_CONSTANTS( 19)
+        KHS_MINER_DOC                = bsed%SED_MODEL_CONSTANTS( 20)
+        K_OXIC_MINER_DON             = bsed%SED_MODEL_CONSTANTS( 21)
+        K_ANOXIC_MINER_DON           = bsed%SED_MODEL_CONSTANTS( 22)
+        THETA_MINER_DON              = bsed%SED_MODEL_CONSTANTS( 23)
+        KHS_MINER_DON                = bsed%SED_MODEL_CONSTANTS( 24)
+        K_OXIC_MINER_DOP             = bsed%SED_MODEL_CONSTANTS( 25)
+        K_ANOXIC_MINER_DOP           = bsed%SED_MODEL_CONSTANTS( 26)
+        THETA_MINER_DOP              = bsed%SED_MODEL_CONSTANTS( 27)
+        KHS_MINER_DOP                = bsed%SED_MODEL_CONSTANTS( 28)
+        O_TO_C                       = bsed%SED_MODEL_CONSTANTS( 29)
+        K_NITR                       = bsed%SED_MODEL_CONSTANTS( 30)
+        THETA_NITR                   = bsed%SED_MODEL_CONSTANTS( 31)
+        KHS_NITR_NH4N                = bsed%SED_MODEL_CONSTANTS( 32)
+        KHS_NITR_DOXY                = bsed%SED_MODEL_CONSTANTS( 33)
+        K_DENITR                     = bsed%SED_MODEL_CONSTANTS( 34)
+        THETA_DENITR                 = bsed%SED_MODEL_CONSTANTS( 35)
+        KHS_DENITR_NO3N              = bsed%SED_MODEL_CONSTANTS( 36)
+        KHS_DENITR_DOC               = bsed%SED_MODEL_CONSTANTS( 37)
+        KHS_DENITR_DOXY              = bsed%SED_MODEL_CONSTANTS( 38)
+        DENITR_YIELD                 = bsed%SED_MODEL_CONSTANTS( 39)
+        DOXY_AT_ANOXIA               = bsed%SED_MODEL_CONSTANTS( 40)
+        SOLID_PART_COEFF_NH4         = bsed%SED_MODEL_CONSTANTS( 41)
+        SOLID_PART_COEFF_PO4         = bsed%SED_MODEL_CONSTANTS( 42)
+        SED_PH_MIN_DOC_MIN           = bsed%SED_MODEL_CONSTANTS( 43)
+        SED_PH_MIN_DOC_MAX           = bsed%SED_MODEL_CONSTANTS( 44)
+        SED_PH_MIN_DON_MIN           = bsed%SED_MODEL_CONSTANTS( 45)
+        SED_PH_MIN_DON_MAX           = bsed%SED_MODEL_CONSTANTS( 46)
+        SED_PH_MIN_DOP_MIN           = bsed%SED_MODEL_CONSTANTS( 47)
+        SED_PH_MIN_DOP_MAX           = bsed%SED_MODEL_CONSTANTS( 48)
+        SED_PH_NITR_NH4_MIN          = bsed%SED_MODEL_CONSTANTS( 49)
+        SED_PH_NITR_NH4_MAX          = bsed%SED_MODEL_CONSTANTS( 50)
+        SED_PH_DENITR_NO3_MIN        = bsed%SED_MODEL_CONSTANTS( 51)
+        SED_PH_DENITR_NO3_MAX        = bsed%SED_MODEL_CONSTANTS( 52)
+        SED_k_OX_FE_II               = bsed%SED_MODEL_CONSTANTS( 53)
+        SED_k_RED_FE_III             = bsed%SED_MODEL_CONSTANTS( 54)
+        SED_k_OX_MN_II               = bsed%SED_MODEL_CONSTANTS( 55)
+        SED_k_RED_MN_IV              = bsed%SED_MODEL_CONSTANTS( 56)
+        SED_KHS_DOXY_FE_III_RED      = bsed%SED_MODEL_CONSTANTS( 57)
+        SED_KHS_DOXY_MN_IV_RED       = bsed%SED_MODEL_CONSTANTS( 58)
+        SED_K_MIN_DOC_DOXY_20        = bsed%SED_MODEL_CONSTANTS( 59)
+        SED_K_MIN_DOC_NO3N_20        = bsed%SED_MODEL_CONSTANTS( 60)
+        SED_K_MIN_DOC_MN_IV_20       = bsed%SED_MODEL_CONSTANTS( 61)
+        SED_K_MIN_DOC_FE_III_20      = bsed%SED_MODEL_CONSTANTS( 62)
+        SED_K_MIN_DOC_S_PLUS_6_20    = bsed%SED_MODEL_CONSTANTS( 63)
+        SED_K_MIN_DOC_DOC_20         = bsed%SED_MODEL_CONSTANTS( 64)
+        SED_THETA_K_MIN_DOC_DOXY     = bsed%SED_MODEL_CONSTANTS( 65)
+        SED_THETA_K_MIN_DOC_NO3N     = bsed%SED_MODEL_CONSTANTS( 66)
+        SED_THETA_K_MIN_DOC_MN_IV    = bsed%SED_MODEL_CONSTANTS( 67)
+        SED_THETA_K_MIN_DOC_FE_III   = bsed%SED_MODEL_CONSTANTS( 68)
+        SED_THETA_K_MIN_DOC_S_PLUS_6 = bsed%SED_MODEL_CONSTANTS( 69)
+        SED_THETA_K_MIN_DOC_DOC      = bsed%SED_MODEL_CONSTANTS( 70)
+        SED_K_HS_DOC_MIN_DOXY        = bsed%SED_MODEL_CONSTANTS( 71)
+        SED_K_HS_DOC_MIN_NO3N        = bsed%SED_MODEL_CONSTANTS( 72)
+        SED_K_HS_DOC_MIN_MN_IV       = bsed%SED_MODEL_CONSTANTS( 73)
+        SED_K_HS_DOC_MIN_FE_III      = bsed%SED_MODEL_CONSTANTS( 74)
+        SED_K_HS_DOC_MIN_S_PLUS_6    = bsed%SED_MODEL_CONSTANTS( 75)
+        SED_K_HS_DOC_MIN_DOC         = bsed%SED_MODEL_CONSTANTS( 76)
+        SED_K_HS_DOXY_RED_LIM        = bsed%SED_MODEL_CONSTANTS( 77)
+        SED_K_HS_NO3N_RED_LIM        = bsed%SED_MODEL_CONSTANTS( 78)
+        SED_K_HS_MN_IV_RED_LIM       = bsed%SED_MODEL_CONSTANTS( 79)
+        SED_K_HS_FE_III_RED_LIM      = bsed%SED_MODEL_CONSTANTS( 80)
+        SED_K_HS_S_PLUS_6_RED_LIM    = bsed%SED_MODEL_CONSTANTS( 81)
+        SED_K_HS_DOXY_RED_INHB       = bsed%SED_MODEL_CONSTANTS( 82)
+        SED_K_HS_NO3N_RED_INHB       = bsed%SED_MODEL_CONSTANTS( 83)
+        SED_K_HS_MN_IV_RED_INHB      = bsed%SED_MODEL_CONSTANTS( 84)
+        SED_K_HS_FE_III_RED_INHB     = bsed%SED_MODEL_CONSTANTS( 85)
+        SED_K_HS_S_PLUS_6_RED_INHB   = bsed%SED_MODEL_CONSTANTS( 86)
+        SED_PH_MIN_DOC_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS( 87)
+        SED_PH_MIN_DOC_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS( 88)
+        SED_PH_MIN_DOC_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS( 89)
+        SED_PH_MIN_DOC_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS( 90)
+        SED_PH_MIN_DOC_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS( 91)
+        SED_PH_MIN_DOC_MIN_DOC       = bsed%SED_MODEL_CONSTANTS( 92)
+        SED_PH_MAX_DOC_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS( 93)
+        SED_PH_MAX_DOC_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS( 94)
+        SED_PH_MAX_DOC_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS( 95)
+        SED_PH_MAX_DOC_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS( 96)
+        SED_PH_MAX_DOC_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS( 97)
+        SED_PH_MAX_DOC_MIN_DOC       = bsed%SED_MODEL_CONSTANTS( 98)
+        SED_K_MIN_DON_DOXY_20        = bsed%SED_MODEL_CONSTANTS( 99)
+        SED_K_MIN_DON_NO3N_20        = bsed%SED_MODEL_CONSTANTS(100)
+        SED_K_MIN_DON_MN_IV_20       = bsed%SED_MODEL_CONSTANTS(101)
+        SED_K_MIN_DON_FE_III_20      = bsed%SED_MODEL_CONSTANTS(102)
+        SED_K_MIN_DON_S_PLUS_6_20    = bsed%SED_MODEL_CONSTANTS(103)
+        SED_K_MIN_DON_DOC_20         = bsed%SED_MODEL_CONSTANTS(104)
+        SED_THETA_K_MIN_DON_DOXY     = bsed%SED_MODEL_CONSTANTS(105)
+        SED_THETA_K_MIN_DON_NO3N     = bsed%SED_MODEL_CONSTANTS(106)
+        SED_THETA_K_MIN_DON_MN_IV    = bsed%SED_MODEL_CONSTANTS(107)
+        SED_THETA_K_MIN_DON_FE_III   = bsed%SED_MODEL_CONSTANTS(108)
+        SED_THETA_K_MIN_DON_S_PLUS_6 = bsed%SED_MODEL_CONSTANTS(109)
+        SED_THETA_K_MIN_DON_DOC      = bsed%SED_MODEL_CONSTANTS(110)
+        SED_K_HS_DON_MIN_DOXY        = bsed%SED_MODEL_CONSTANTS(111)
+        SED_K_HS_DON_MIN_NO3N        = bsed%SED_MODEL_CONSTANTS(112)
+        SED_K_HS_DON_MIN_MN_IV       = bsed%SED_MODEL_CONSTANTS(113)
+        SED_K_HS_DON_MIN_FE_III      = bsed%SED_MODEL_CONSTANTS(114)
+        SED_K_HS_DON_MIN_S_PLUS_6    = bsed%SED_MODEL_CONSTANTS(115)
+        SED_K_HS_DON_MIN_DOC         = bsed%SED_MODEL_CONSTANTS(116)
+        SED_PH_MIN_DON_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS(117)
+        SED_PH_MIN_DON_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS(118)
+        SED_PH_MIN_DON_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS(119)
+        SED_PH_MIN_DON_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS(120)
+        SED_PH_MIN_DON_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS(121)
+        SED_PH_MIN_DON_MIN_DOC       = bsed%SED_MODEL_CONSTANTS(122)
+        SED_PH_MAX_DON_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS(123)
+        SED_PH_MAX_DON_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS(124)
+        SED_PH_MAX_DON_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS(125)
+        SED_PH_MAX_DON_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS(126)
+        SED_PH_MAX_DON_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS(127)
+        SED_PH_MAX_DON_MIN_DOC       = bsed%SED_MODEL_CONSTANTS(128)
+        SED_K_MIN_DOP_DOXY_20        = bsed%SED_MODEL_CONSTANTS(129)
+        SED_K_MIN_DOP_NO3N_20        = bsed%SED_MODEL_CONSTANTS(130)
+        SED_K_MIN_DOP_MN_IV_20       = bsed%SED_MODEL_CONSTANTS(131)
+        SED_K_MIN_DOP_FE_III_20      = bsed%SED_MODEL_CONSTANTS(132)
+        SED_K_MIN_DOP_S_PLUS_6_20    = bsed%SED_MODEL_CONSTANTS(133)
+        SED_K_MIN_DOP_DOC_20         = bsed%SED_MODEL_CONSTANTS(134)
+        SED_THETA_K_MIN_DOP_DOXY     = bsed%SED_MODEL_CONSTANTS(135)
+        SED_THETA_K_MIN_DOP_NO3N     = bsed%SED_MODEL_CONSTANTS(136)
+        SED_THETA_K_MIN_DOP_MN_IV    = bsed%SED_MODEL_CONSTANTS(137)
+        SED_THETA_K_MIN_DOP_FE_III   = bsed%SED_MODEL_CONSTANTS(138)
+        SED_THETA_K_MIN_DOP_S_PLUS_6 = bsed%SED_MODEL_CONSTANTS(139)
+        SED_THETA_K_MIN_DOP_DOC      = bsed%SED_MODEL_CONSTANTS(140)
+        SED_K_HS_DOP_MIN_DOXY        = bsed%SED_MODEL_CONSTANTS(141)
+        SED_K_HS_DOP_MIN_NO3N        = bsed%SED_MODEL_CONSTANTS(142)
+        SED_K_HS_DOP_MIN_MN_IV       = bsed%SED_MODEL_CONSTANTS(143)
+        SED_K_HS_DOP_MIN_FE_III      = bsed%SED_MODEL_CONSTANTS(144)
+        SED_K_HS_DOP_MIN_S_PLUS_6    = bsed%SED_MODEL_CONSTANTS(145)
+        SED_K_HS_DOP_MIN_DOC         = bsed%SED_MODEL_CONSTANTS(146)
+        SED_PH_MIN_DOP_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS(147)
+        SED_PH_MIN_DOP_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS(148)
+        SED_PH_MIN_DOP_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS(149)
+        SED_PH_MIN_DOP_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS(150)
+        SED_PH_MIN_DOP_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS(151)
+        SED_PH_MIN_DOP_MIN_DOC       = bsed%SED_MODEL_CONSTANTS(152)
+        SED_PH_MAX_DOP_MIN_DOXY      = bsed%SED_MODEL_CONSTANTS(153)
+        SED_PH_MAX_DOP_MIN_NO3N      = bsed%SED_MODEL_CONSTANTS(154)
+        SED_PH_MAX_DOP_MIN_MN_IV     = bsed%SED_MODEL_CONSTANTS(155)
+        SED_PH_MAX_DOP_MIN_FE_III    = bsed%SED_MODEL_CONSTANTS(156)
+        SED_PH_MAX_DOP_MIN_S_PLUS_6  = bsed%SED_MODEL_CONSTANTS(157)
+        SED_PH_MAX_DOP_MIN_DOC       = bsed%SED_MODEL_CONSTANTS(158)
+        SED_k_OX_CH4                 = bsed%SED_MODEL_CONSTANTS(159)
+        SED_THETA_k_OX_CH4           = bsed%SED_MODEL_CONSTANTS(160)
+        SED_k_HS_OX_CH4_DOXY         = bsed%SED_MODEL_CONSTANTS(161)
+        SED_k_OX_H2S                 = bsed%SED_MODEL_CONSTANTS(162)
+        SED_THETA_k_OX_H2S           = bsed%SED_MODEL_CONSTANTS(163)
+        SED_k_HS_OX_H2S_DOXY         = bsed%SED_MODEL_CONSTANTS(164)
+        SED_k_DISS_FE_II_20          = bsed%SED_MODEL_CONSTANTS(165)
+        SED_THETA_k_DISS_FE_II       = bsed%SED_MODEL_CONSTANTS(166)
+        SED_INIT_MULT_FE_II_DISS     = bsed%SED_MODEL_CONSTANTS(167)
+        SED_k_DISS_FE_III_20         = bsed%SED_MODEL_CONSTANTS(168)
+        SED_THETA_k_DISS_FE_III      = bsed%SED_MODEL_CONSTANTS(169)
+        SED_INIT_MULT_FE_III_DISS    = bsed%SED_MODEL_CONSTANTS(170)
+        FE_P_REDOX_FRAC              = bsed%SED_MODEL_CONSTANTS(171)
 
         ! Register isedi parameter for sediment transport mode selection.
         ! In ESTAS (without SHYFEM sediment transport), isedi must be 0
@@ -372,33 +404,33 @@ contains
         ! -----------------------------------------------------------------------------------
         ! Allocate AQUABC sediments arrays
         ! -----------------------------------------------------------------------------------
-        allocate(INIT_SED_STATE_VARS     (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
-        allocate(SED_DEPTHS              (nkn,NUM_SED_LAYERS)              )
-        allocate(SED_POROSITIES          (nkn,NUM_SED_LAYERS)              )
-        allocate(SED_DENSITIES           (nkn,NUM_SED_LAYERS)              )
-        allocate(PART_MIXING_COEFFS      (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
-        allocate(SED_DIFFUSIONS          (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
+        allocate(bsed%INIT_SED_STATE_VARS     (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
+        allocate(bsed%SED_DEPTHS              (nkn,NUM_SED_LAYERS)              )
+        allocate(bsed%SED_POROSITIES          (nkn,NUM_SED_LAYERS)              )
+        allocate(bsed%SED_DENSITIES           (nkn,NUM_SED_LAYERS)              )
+        allocate(bsed%PART_MIXING_COEFFS      (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
+        allocate(bsed%SED_DIFFUSIONS          (nkn,NUM_SED_LAYERS, NUM_SED_VARS))
 
-        allocate(SED_BURRIALS            (nkn,NUM_SED_LAYERS)                            )
-        allocate(SED_TYPE_PER_BOX        (nkn)                                           )
-        allocate(SURF_WATER_CONCS        (nkn,NUM_SED_VARS)                              )
-        allocate(SED_TEMPS               (nkn,NUM_SED_LAYERS)                            )
-        allocate(SED_MODEL_CONSTANTS     (NUM_SED_CONSTS)                                )
+        allocate(bsed%SED_BURRIALS            (nkn,NUM_SED_LAYERS)                            )
+        allocate(bsed%SED_TYPE_PER_BOX        (nkn)                                           )
+        allocate(bsed%SURF_WATER_CONCS        (nkn,NUM_SED_VARS)                              )
+        allocate(bsed%SED_TEMPS               (nkn,NUM_SED_LAYERS)                            )
+        allocate(bsed%SED_MODEL_CONSTANTS     (NUM_SED_CONSTS)                                )
         ! Default unset constants to 0 so an older W_SED_CONST.txt that omits newer
         ! trailing entries (e.g. #171 FE_P_REDOX_FRAC) leaves them at a safe baseline.
-        SED_MODEL_CONSTANTS = 0.0D0
-        allocate(PROCESSES_sed           (nkn,NUM_SED_LAYERS, NUM_SED_VARS, NDIAGVAR_sed))
-        allocate(SED_DRIVING_FUNCTIONS   (NUM_SED_LAYERS, NUM_SED_DRIV)                  )
-        allocate(FLUXES_TO_SEDIMENTS     (nkn,NUM_FLUXES_TO_SEDIMENTS)                   )
-        allocate(SED_BURRIAL_RATE_OUTPUTS(nkn,NUM_SED_LAYERS, NUM_SED_VARS))
+        bsed%SED_MODEL_CONSTANTS = 0.0D0
+        allocate(bsed%PROCESSES_sed           (nkn,NUM_SED_LAYERS, NUM_SED_VARS, NDIAGVAR_sed))
+        allocate(bsed%SED_DRIVING_FUNCTIONS   (NUM_SED_LAYERS, NUM_SED_DRIV)                  )
+        allocate(bsed%FLUXES_TO_SEDIMENTS     (nkn,NUM_FLUXES_TO_SEDIMENTS)                   )
+        allocate(bsed%SED_BURRIAL_RATE_OUTPUTS(nkn,NUM_SED_LAYERS, NUM_SED_VARS))
 
-        allocate(H_ERODEP                (nkn)          )
-        allocate(SED_FLAGS               (NUM_SED_FLAGS))
+        allocate(bsed%H_ERODEP                (nkn)          )
+        allocate(bsed%SED_FLAGS               (NUM_SED_FLAGS))
 
-        allocate(FINAL_SED_STATE_VARS    (nkn,NUM_SED_LAYERS, NUM_SED_VARS         ))
-        allocate(FLUXES_FROM_SEDIMENTS   (nkn,NUM_FLUXES_FROM_SEDIMENTS            ))
-        allocate(SED_OUTPUTS             (nkn,NUM_SED_LAYERS, NUM_SED_OUTPUTS      ))
-        allocate(SED_SAVED_OUTPUTS       (nkn,NUM_SED_LAYERS, NUM_SED_SAVED_OUTPUTS))
+        allocate(bsed%FINAL_SED_STATE_VARS    (nkn,NUM_SED_LAYERS, NUM_SED_VARS         ))
+        allocate(bsed%FLUXES_FROM_SEDIMENTS   (nkn,NUM_FLUXES_FROM_SEDIMENTS            ))
+        allocate(bsed%SED_OUTPUTS             (nkn,NUM_SED_LAYERS, NUM_SED_OUTPUTS      ))
+        allocate(bsed%SED_SAVED_OUTPUTS       (nkn,NUM_SED_LAYERS, NUM_SED_SAVED_OUTPUTS))
         ! -----------------------------------------------------------------------------------
         ! End of allocate AQUABC sediments arrays
         ! -----------------------------------------------------------------------------------
@@ -436,10 +468,10 @@ contains
             ! Per-box profile-type indices: one integer per line, all nkn boxes
             read(IN_FILE, *)                              ! # SED_TYPE_PER_BOX header
             do i = 1, nkn
-                read(IN_FILE, *) SED_TYPE_PER_BOX(i)
-                if (SED_TYPE_PER_BOX(i) < 1 .or. SED_TYPE_PER_BOX(i) > NUM_SED_TYPES) then
+                read(IN_FILE, *) bsed%SED_TYPE_PER_BOX(i)
+                if (bsed%SED_TYPE_PER_BOX(i) < 1 .or. bsed%SED_TYPE_PER_BOX(i) > NUM_SED_TYPES) then
                     write(*, *) 'READ_BOTTOM_SEDIMENTS_MODEL_INPUTS: box ', i, &
-                        ' has sediment type index ', SED_TYPE_PER_BOX(i), &
+                        ' has sediment type index ', bsed%SED_TYPE_PER_BOX(i), &
                         ' out of range [1, ', NUM_SED_TYPES, ']'
                     stop
                 end if
@@ -503,19 +535,19 @@ contains
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
-            read(IN_FILE, *) ADVECTIVE_VELOCITY
+            read(IN_FILE, *) bsed%ADVECTIVE_VELOCITY
 
             ! Global surface mixing length: 3 header/skip records + 1 scalar (once)
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
-            read(IN_FILE, *) SURF_MIXLEN
+            read(IN_FILE, *) bsed%SURF_MIXLEN
 
             ! Fan the per-type profiles out to every box (the IC copy is a transpose)
             call ASSIGN_SED_PROFILES_TO_BOXES(nkn, NUM_SED_LAYERS, NUM_SED_VARS, &
-                 SED_TYPE_PER_BOX, TYPE_DEPTHS, TYPE_POROSITIES, TYPE_DENSITIES, &
-                 TYPE_MIXING, TYPE_BURIAL, TYPE_IC, SED_DEPTHS, SED_POROSITIES, &
-                 SED_DENSITIES, SED_BURRIALS, PART_MIXING_COEFFS, INIT_SED_STATE_VARS)
+                 bsed%SED_TYPE_PER_BOX, TYPE_DEPTHS, TYPE_POROSITIES, TYPE_DENSITIES, &
+                 TYPE_MIXING, TYPE_BURIAL, TYPE_IC, bsed%SED_DEPTHS, bsed%SED_POROSITIES, &
+                 bsed%SED_DENSITIES, bsed%SED_BURRIALS, bsed%PART_MIXING_COEFFS, bsed%INIT_SED_STATE_VARS)
 
             deallocate(TYPE_DEPTHS, TYPE_POROSITIES, TYPE_DENSITIES, &
                        TYPE_MIXING, TYPE_BURIAL, TYPE_IC)
@@ -524,7 +556,7 @@ contains
             ! Legacy single-profile parse path (UNCHANGED reads: one profile broadcast to all
             ! boxes, with ADVECTIVE_VELOCITY and SURF_MIXLEN interleaved as in the shipped file).
             ! -------------------------------------------------------------------------------
-            SED_TYPE_PER_BOX = 1
+            bsed%SED_TYPE_PER_BOX = 1
 
             ! Read sediment depths
             read(IN_FILE, *)
@@ -533,7 +565,7 @@ contains
 
             do SED_LAYER_NO = 1, NUM_SED_LAYERS
                 read(IN_FILE, *) AUX_DOUBLE
-                SED_DEPTHS(:, SED_LAYER_NO) = AUX_DOUBLE
+                bsed%SED_DEPTHS(:, SED_LAYER_NO) = AUX_DOUBLE
             end do
 
             ! Read sediment porosities
@@ -543,7 +575,7 @@ contains
 
             do SED_LAYER_NO = 1, NUM_SED_LAYERS
                 read(IN_FILE, *) AUX_DOUBLE
-                SED_POROSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
+                bsed%SED_POROSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
             end do
 
             ! Read sediment densities
@@ -553,34 +585,34 @@ contains
 
             do SED_LAYER_NO = 1, NUM_SED_LAYERS
                 read(IN_FILE, *) AUX_DOUBLE
-                SED_DENSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
+                bsed%SED_DENSITIES(:, SED_LAYER_NO) = AUX_DOUBLE
             end do
 
             ! Read advective velocities
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
-            read(IN_FILE, *) ADVECTIVE_VELOCITY
+            read(IN_FILE, *) bsed%ADVECTIVE_VELOCITY
 
             ! Read particle mixing coefficients
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *) AUX_DOUBLE
-            PART_MIXING_COEFFS(:,:,:) = AUX_DOUBLE  !m2/day
+            bsed%PART_MIXING_COEFFS(:,:,:) = AUX_DOUBLE  !m2/day
 
             ! Read sediment burials
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *) AUX_DOUBLE
-            SED_BURRIALS      (:,:)   = AUX_DOUBLE  !m/day
+            bsed%SED_BURRIALS      (:,:)   = AUX_DOUBLE  !m/day
 
             ! Read sediment mixing length with surface water
             read(IN_FILE, *)
             read(IN_FILE, *)
             read(IN_FILE, *)
-            read(IN_FILE, *) SURF_MIXLEN            !m
+            read(IN_FILE, *) bsed%SURF_MIXLEN            !m
 
             ! Read the initial concentrations for bottom sediments
             read(IN_FILE, *)
@@ -595,7 +627,7 @@ contains
             do BOX_NO = 1,nkn
                 do LAYER_NO = 1, NUM_SED_LAYERS
                     do SED_VAR_NO = 1, NUM_SED_VARS
-                        INIT_SED_STATE_VARS(BOX_NO,LAYER_NO,SED_VAR_NO) = &
+                        bsed%INIT_SED_STATE_VARS(BOX_NO,LAYER_NO,SED_VAR_NO) = &
                             BSED_ARRAY(SED_VAR_NO, LAYER_NO)
                     end do
                 end do
@@ -613,7 +645,7 @@ contains
              trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
              'bottom-sediment model input')
 
-        call READ_MODEL_CONSTANTS(SED_MODEL_CONSTANTS, IN_FILE + 1)
+        call READ_MODEL_CONSTANTS(bsed%SED_MODEL_CONSTANTS, IN_FILE + 1)
         close(IN_FILE + 1)
 
         deallocate(BSED_ARRAY)

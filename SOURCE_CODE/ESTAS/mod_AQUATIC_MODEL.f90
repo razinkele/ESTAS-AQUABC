@@ -651,7 +651,7 @@ contains
             do i = 1, nkn
                 do j = 1, NUM_SED_LAYERS
                     write(unit = 1021, fmt = '(F10.4,2I10,24F20.10)') &
-                          TIME, i, j, INIT_SED_STATE_VARS(i, j, :)
+                          TIME, i, j, bsed%INIT_SED_STATE_VARS(i, j, :)
                 end do
             end do
 

@@ -132,78 +132,11 @@ module GLOBAL
 
     ! Variables for bottom sediment submodel
 
-    !Input  : Initial values of sediment state variables
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: INIT_SED_STATE_VARS
-
-    !Input  : Sediment depths
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_DEPTHS
-
-    !Input  : Sediment porosities
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_POROSITIES
-
-    !Input  : Bulk wet density
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_DENSITIES
-
-    !Input  : Particle mixing coeff
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: PART_MIXING_COEFFS
-
-    !Input  : Sediment diffusions
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: SED_DIFFUSIONS
-
-    !Input  : Mixing length with surface water
-    real(kind=DBL)                                     :: SURF_MIXLEN
-
-    !Input  : Sediment burrial rate
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_BURRIALS
-
-    !Input  : Surface water concentration of sediment state variable
-    real(kind=DBL), allocatable, dimension(:, :)       :: SURF_WATER_CONCS
-
-    !Input  : Sediment temperatures (take the same as water temperature)
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_TEMPS
-
-    !Input  : Model constants for sediment model
-    real(kind=DBL), allocatable, dimension(:)          :: SED_MODEL_CONSTANTS
-
-    !Input  : Per-box sediment profile-type index (1..NUM_SED_TYPES); nkn-length
-    integer, allocatable, dimension(:)                 :: SED_TYPE_PER_BOX
-
-    !Input  : Output : Diagnostic variables documented in sediments
-    real(kind=DBL), allocatable, dimension(:, :, :, :) :: PROCESSES_sed
-
-    !Input  : Driving functions in sediments
-    real(kind=DBL), allocatable, dimension(:, :)       :: SED_DRIVING_FUNCTIONS
-
-    !Input  : Fluxes to sediments from water column by settling/deposition
-    real(kind=DBL), allocatable, dimension(:, :)       :: FLUXES_TO_SEDIMENTS
-
-    !Input  : Advective velocity (make it later array of nkn)
-    real(kind=DBL)                                     :: ADVECTIVE_VELOCITY
-
-    !Input  : Eroded(>0) or deposited(<0) thickness of first layer per time step, m
-    real(kind=DBL), allocatable, dimension(:)          :: H_ERODEP
-
-    !Input  : Sediment model flag
-    integer        , allocatable, dimension(:)         :: SED_FLAGS
-
-    !Input  : Number of sediment layers receiving flux from water column
-    !         through settling and deposition
-    integer                                            :: NUM_FLUX_RECEIVING_SED_LAYERS
-
-    !Output : Final values of sediment state variables
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: FINAL_SED_STATE_VARS
-
-    !Output : Fluxes from sediments into the water column
-    real(kind=DBL), allocatable, dimension(:, :)       :: FLUXES_FROM_SEDIMENTS
-
-    !Output : Additional output required for SHYFEM compatibility
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: SED_OUTPUTS
-
-    !Output : Saved outputs required by sediment model
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: SED_SAVED_OUTPUTS
-
-    !Output : For COCOA process rate outputs. Optional argument for sediment model.
-    real(kind=DBL), allocatable, dimension(:, :, :)    :: SED_BURRIAL_RATE_OUTPUTS
+    ! -----------------------------------------------------------------------------------
+    ! Bottom-sediment submodel state (24 members) moved to the derived type `bsed`
+    ! (type sediment_state_t) in module BOTTOM_SEDIMENTS — see
+    ! docs/superpowers/specs/2026-07-23-sediment-state-derived-type-design.md.
+    ! -----------------------------------------------------------------------------------
     ! End of variables for bottom sediment submodel
 
     ! Variables for water column - bottom sediment interaction

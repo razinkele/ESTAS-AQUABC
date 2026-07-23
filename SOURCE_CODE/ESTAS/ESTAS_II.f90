@@ -100,29 +100,29 @@ program ESTAS_II
     ! Deallocate AQUABC sediment arrays
     ! -----------------------------------------------------------------------------------
     if (MODEL_BOTTOM_SEDIMENTS > 1) then
-        deallocate(INIT_SED_STATE_VARS)
-        deallocate(SED_DEPTHS         )
-        deallocate(SED_POROSITIES     )
-        deallocate(SED_DENSITIES      )
-        deallocate(PART_MIXING_COEFFS )
-        deallocate(SED_DIFFUSIONS     )
+        deallocate(bsed%INIT_SED_STATE_VARS)
+        deallocate(bsed%SED_DEPTHS         )
+        deallocate(bsed%SED_POROSITIES     )
+        deallocate(bsed%SED_DENSITIES      )
+        deallocate(bsed%PART_MIXING_COEFFS )
+        deallocate(bsed%SED_DIFFUSIONS     )
 
-        deallocate(SED_BURRIALS         )
-        deallocate(SURF_WATER_CONCS     )
-        deallocate(SED_TEMPS            )
-        deallocate(SED_MODEL_CONSTANTS  )
-        deallocate(PROCESSES_sed        )
-        deallocate(SED_DRIVING_FUNCTIONS)
-        deallocate(FLUXES_TO_SEDIMENTS  )
-        deallocate(SED_BURRIAL_RATE_OUTPUTS)
+        deallocate(bsed%SED_BURRIALS         )
+        deallocate(bsed%SURF_WATER_CONCS     )
+        deallocate(bsed%SED_TEMPS            )
+        deallocate(bsed%SED_MODEL_CONSTANTS  )
+        deallocate(bsed%PROCESSES_sed        )
+        deallocate(bsed%SED_DRIVING_FUNCTIONS)
+        deallocate(bsed%FLUXES_TO_SEDIMENTS  )
+        deallocate(bsed%SED_BURRIAL_RATE_OUTPUTS)
     
-        deallocate(H_ERODEP )
-        deallocate(SED_FLAGS)
+        deallocate(bsed%H_ERODEP )
+        deallocate(bsed%SED_FLAGS)
 
-        deallocate(FINAL_SED_STATE_VARS )
-        deallocate(FLUXES_FROM_SEDIMENTS)
-        deallocate(SED_OUTPUTS          )
-        deallocate(SED_SAVED_OUTPUTS    )
+        deallocate(bsed%FINAL_SED_STATE_VARS )
+        deallocate(bsed%FLUXES_FROM_SEDIMENTS)
+        deallocate(bsed%SED_OUTPUTS          )
+        deallocate(bsed%SED_SAVED_OUTPUTS    )
     end if
     ! -----------------------------------------------------------------------------------
     ! End of deallocate AQUABC sediment arrays

@@ -6,6 +6,7 @@ module SIMULATE
     use PELAGIC_EXERGY
     use TIME_SERIES
     use UTILS_1
+    use BOTTOM_SEDIMENTS, only: bsed
 
     implicit none
 
@@ -326,7 +327,7 @@ contains
                       nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
 
                 if (MODEL_BOTTOM_SEDIMENTS > 1) then
-                    INIT_SED_STATE_VARS = FINAL_SED_STATE_VARS
+                    bsed%INIT_SED_STATE_VARS = bsed%FINAL_SED_STATE_VARS
                 end if
 
                 !Cost function
@@ -737,31 +738,31 @@ contains
 
                             do j = 1, NUM_SED_LAYERS
                                 write(unit = 1021, fmt = '(F10.4,2I10,24F20.10)') &
-                                      WTIME, i, j, INIT_SED_STATE_VARS(i, j, :)
+                                      WTIME, i, j, bsed%INIT_SED_STATE_VARS(i, j, :)
                             end do
 
                             if (PRODUCE_COCOA_OUTPUTS > 0) then
                                 write(unit = 2031, fmt  = '(F10.4,2I10,2F30.8)') WTIME, i, 1, &
-                                      (FLUXES_FROM_SEDIMENTS(i, 1) + FLUXES_FROM_SEDIMENTS(i, 2)), & ! Compute N_OUT_FROM_SED
-                                      FLUXES_FROM_SEDIMENTS(i, 5)                                    ! P_OUT_FROM_SED
+                                      (bsed%FLUXES_FROM_SEDIMENTS(i, 1) + bsed%FLUXES_FROM_SEDIMENTS(i, 2)), & ! Compute N_OUT_FROM_SED
+                                      bsed%FLUXES_FROM_SEDIMENTS(i, 5)                                    ! P_OUT_FROM_SED
 
                                 write(unit = 2032, fmt  = '(F10.4,2I10,3F40.8)') WTIME, i, 1, &
-                                      FLUXES_TO_SEDIMENTS(i, 2), FLUXES_TO_SEDIMENTS(i, 4), FLUXES_TO_SEDIMENTS(i, 7)
+                                      bsed%FLUXES_TO_SEDIMENTS(i, 2), bsed%FLUXES_TO_SEDIMENTS(i, 4), bsed%FLUXES_TO_SEDIMENTS(i, 7)
 
                                 do j = 1, NUM_SED_LAYERS
                                     write(unit = 2021, fmt = '(F10.4,2I10,3F30.8)') WTIME, i, j, &
-                                          PROCESSES_sed(i, j , 2, 11), &         !N_SED_DENITRIFICATION
-                                          PROCESSES_sed(i, j , 3, 11), &         !N_SED_REMINARALIZATION
-                                          PROCESSES_sed(i, j , 6, 11)            !P_SED_REMINERALIZATION
+                                          bsed%PROCESSES_sed(i, j , 2, 11), &         !N_SED_DENITRIFICATION
+                                          bsed%PROCESSES_sed(i, j , 3, 11), &         !N_SED_REMINARALIZATION
+                                          bsed%PROCESSES_sed(i, j , 6, 11)            !P_SED_REMINERALIZATION
 
                                     write(unit = 2022, fmt = '(F10.4,2I10,2F30.8)') WTIME, i, j, &
-                                          (SED_BURRIAL_RATE_OUTPUTS(i, j, 1) + & ! Compute N_BURRIAL
-                                           SED_BURRIAL_RATE_OUTPUTS(i, j, 2) + & ! Compute N_BURRIAL
-                                           SED_BURRIAL_RATE_OUTPUTS(i, j, 3) + & ! Compute N_BURRIAL
-                                           SED_BURRIAL_RATE_OUTPUTS(i, j, 4)), & ! Compute N_BURRIAL
-                                          (SED_BURRIAL_RATE_OUTPUTS(i, j, 5) + & ! Compute P_BURRIAL
-                                           SED_BURRIAL_RATE_OUTPUTS(i, j, 6) + & ! Compute P_BURRIAL
-                                           SED_BURRIAL_RATE_OUTPUTS(i, j, 7))    ! Compute P_BURRIAL
+                                          (bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 1) + & ! Compute N_BURRIAL
+                                           bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 2) + & ! Compute N_BURRIAL
+                                           bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 3) + & ! Compute N_BURRIAL
+                                           bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 4)), & ! Compute N_BURRIAL
+                                          (bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 5) + & ! Compute P_BURRIAL
+                                           bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 6) + & ! Compute P_BURRIAL
+                                           bsed%SED_BURRIAL_RATE_OUTPUTS(i, j, 7))    ! Compute P_BURRIAL
                                 end do
                             end if
                         end do
