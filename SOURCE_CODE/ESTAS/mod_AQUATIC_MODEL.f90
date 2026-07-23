@@ -1,3 +1,18 @@
+% ---------------------------------------------------------------------------------------
+% This is the module for the AQUATIC model as a general framwwork containing
+%
+%     - The pelagic modeling infrastructure
+%     - The bottom sediments modeling infrastructure
+%     - The resuspension modeling infrastructure
+% ---------------------------------------------------------------------------------------
+% The aquatic model data strucutre (type AQUATIC_MODEL_DS) includes a pelagic model
+% data structure (PELAGIC_BOX_MODEL_DATA) but no other sub-model data structures such
+% as BOTTOM_SEDIMENTS or RESUSPENSION data structure. This is because that only the 
+% pelagic sub-model is able to transfer the materials from basin to basin horizontally
+% with advection and diffusion in any direction hence it forms the shape of the
+% entire model domain. Bottom sediment and resuspension sub-models are simply associated
+% and interacting with the designated pelagic boxes in vertical direction only.
+% ---------------------------------------------------------------------------------------
 module AQUATIC_MODEL
     use GLOBAL
     use PELAGIC_BOX_MODEL
@@ -23,6 +38,10 @@ module AQUATIC_MODEL
 
 contains
 
+    ! ---------------------------------------------------------------------------------------
+    ! SUBROUTINE TO MANAGE THE READING AND PARTLY PREPROCESSING OPERATION OF THE AQUATIC
+    ! MODEL INPUTS
+    ! ---------------------------------------------------------------------------------------
     subroutine READ_AQUATIC_MODEL_INPUTS(AQUATIC_MODEL_DATA, IN_FILE, OUT_FILE)
 
         implicit none
@@ -111,8 +130,6 @@ contains
         !Read the pelagic model input file name
         read(unit = IN_FILE, fmt = *)
         read(unit = IN_FILE, fmt = *) FILE_NAME
-
-
 
         call OPEN_INPUT_FILE(IN_FILE + 2, &
              trim(adjustl(PELAGIC_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
@@ -266,21 +283,47 @@ contains
                   '                  P_PEL_EXCRET', '           P_PEL_DECOMP_OF_DET'
         end if
         ! -----------------------------------------------------------------------------------
-        ! END OF INITIALIZATION OF THE WATER COLIMN MODEL
+        ! END OF INITIALIZATION OF THE WATER COLUMN MODEL
         ! -----------------------------------------------------------------------------------
 
-
-        ! Read the resuspension option
-        !
+        ! -----------------------------------------------------------------------------------
+        ! READING THE RESUSPENSION RELATED MODEL INPUTS
+        ! -----------------------------------------------------------------------------------
         ! Option 1 : Fully prescribed resuspension. The user supplies the time series
         !            for the resuspension velocities and resuspended concentrations.
+        !            A resuspension velocity v_r (m/day) and, for each state variable j, 
+        !            a resuspended bed concentration C_bed,j are read from time series. 
+        !            An upward source term is then added to every state-variable derivative,
+        !            dC_j/dt  +=  f_area · A · v_r · C_bed,j,   where f_area is the 
+        !            resuspension-active area fraction of the box and A its surface area. 
+        !            This explicitly returns bed material — predominantly particulate matter 
+        !            and its bound nutrients — to the overlying water.
         !
-        ! Option 2 : Semi-prescribed resuspension. ESTAS calculates the time series
-        !            for the resuspension velocities, but the user still supplies
-        !            the resuspended concentrations. (TO BE IMPLEMENTED)
+        ! Option 2 : Semi-prescribed resuspension.
+        !            For each activated box the bottom shear stress is read from a prescribed 
+        !            time series and compared with a per-box critical shear stress 
+        !            (BOX_CRITICAL_SHEAR_STRESSES, read from an input file). When the bottom 
+        !            shear stress exceeds the critical shear stress the flag 
+        !            SHUT_DOWN_SETTLING is set to 1 and the entire settling-derivative 
+        !            block is skipped for that box and time step. Physically, an erosive bed 
+        !            keeps particles in suspension: material that would otherwise settle out 
+        !            is retained in the water column. This mode adds no mass — it simply 
+        !            switches off a loss term during energetic (e.g. windy) periods.
         !
-        ! Option 3 : Full water column - sediment coupling
-
+        ! Option 3 : TO BE IMPLEMENTED, such as option one except that the concentrations 
+        !            will be the cocentrations from the bottom sediment diagenesis model
+        !            here, care must be taken to ensure that the resuspended masses would be
+        !            substracted from the bottom sediments. Also it may be important to 
+        !            consider the number of bottom sediment layers involved
+        !
+        ! Option 4 : TO BE IMPLEMENTED, almost like option 3 except that the sediment 
+        !            resuspension will only proceed if the critical shear stress is exceeded
+        !            and the settling is stopped in such a case.
+        !
+        ! Further options:  TO BE IMPLEMENTED, according to document 
+        !                   "Sediment_Resuspension_in_AQUABC.docx" produced by Claude in
+        !                   23/7/2026 Klaipeda
+        ! -----------------------------------------------------------------------------------
         read(unit = IN_FILE, fmt = *)
         read(unit = IN_FILE, fmt = *) resusp%RESUSPENSION_OPTION
         write(unit = *, fmt = *) 'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
@@ -321,7 +364,10 @@ contains
                 read(TMP_STR, *, iostat = iostat_tmp) MODEL_BOTTOM_SEDIMENTS_PRESET
                 if (iostat_tmp == 0) then
                     MODEL_BOTTOM_SED_PRESET = .true.
-                    write(unit = *, fmt = *) 'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
+
+                    write(unit = *, fmt = *) &
+                        'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
+
                     resusp%RESUSPENSION_OPTION = 0
                 else
                     resusp%RESUSPENSION_INPUT_FOLDER = TMP_STR
@@ -331,7 +377,10 @@ contains
                 read(TMP_STR, *, iostat = iostat_tmp) MODEL_BOTTOM_SEDIMENTS_PRESET
                 if (iostat_tmp == 0) then
                     MODEL_BOTTOM_SED_PRESET = .true.
-                    write(unit = *, fmt = *) 'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
+
+                    write(unit = *, fmt = *) &
+                        'Notice: RESUSPENSION block missing in INPUT. Skipping resuspension.'
+
                     resusp%RESUSPENSION_OPTION = 0
                 else
                     resusp%RESUSPENSION_INPUT_FOLDER = TMP_STR
@@ -353,6 +402,7 @@ contains
                 write(unit = *, fmt = *) &
                       'RESUSPENSION INPUT FOLDER : ', trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER))
             end if
+
             if (.not. MODEL_BOTTOM_SED_PRESET) then
                 !Read the resuspension model input file name
                 read(unit = IN_FILE, fmt = *)
@@ -388,13 +438,16 @@ contains
                     if (exists) then
                         write(unit = *, fmt = *) 'Info: Found resuspension file in PELAGIC_INPUT_FOLDER: ' // &
                              trim(adjustl(RESUSP_CANDIDATE_PATH))
+
                         resusp%RESUSPENSION_INPUT_FOLDER = trim(PELAGIC_INPUT_FOLDER)
                     else
                         write(unit = *, fmt = *) 'Error: Resuspension file "' // &
-                             trim(adjustl(FILE_NAME)) // '" not found in either RESUSPENSION_INPUT_FOLDER or PELAGIC_INPUT_FOLDER.'
+                             trim(adjustl(FILE_NAME)) // &
+                             '" not found in either RESUSPENSION_INPUT_FOLDER or PELAGIC_INPUT_FOLDER.'
+
                         write(unit = *, fmt = *) 'Skipping resuspension.'
                         resusp%CONSIDER_RESUSPENSION = 0
-                        resusp%RESUSPENSION_OPTION = 0
+                        resusp%RESUSPENSION_OPTION   = 0
                     end if
                 end if
             end if
@@ -448,10 +501,18 @@ contains
 
             end select
         end if
+        ! -----------------------------------------------------------------------------------
+        ! END OF READING THE RESUSPENSION RELATED MODEL INPUTS
+        ! -----------------------------------------------------------------------------------
 
-        ! Read the bottom sediments inputs
+        ! -----------------------------------------------------------------------------------
+        ! READING THE BOTTOM SEDIMENT MODEL INPUTS
+        ! -----------------------------------------------------------------------------------
         if (MODEL_BOTTOM_SED_PRESET) then
-            write(unit = *, fmt = *) 'Using preset MODEL_BOTTOM_SEDIMENTS: ', MODEL_BOTTOM_SEDIMENTS_PRESET
+
+            write(unit = *, fmt = *) &
+                'Using preset MODEL_BOTTOM_SEDIMENTS: ', MODEL_BOTTOM_SEDIMENTS_PRESET
+
             MODEL_BOTTOM_SEDIMENTS = MODEL_BOTTOM_SEDIMENTS_PRESET
         else
             read(unit = IN_FILE, fmt = *)
@@ -599,9 +660,20 @@ contains
             FLUXES_TO_WATER_COLUMN        = 0.0D0
             FLUXES_OUTPUT_TO_WATER_COLUMN = 0.0D0
         end if
+        ! -----------------------------------------------------------------------------------
+        ! READING THE BOTTOM SEDIMENT MODEL INPUTS
+        ! -----------------------------------------------------------------------------------
+
     end subroutine READ_AQUATIC_MODEL_INPUTS
+    ! ---------------------------------------------------------------------------------------
+    ! ---------------------------------------------------------------------------------------
+    ! ---------------------------------------------------------------------------------------
 
 
+    ! ---------------------------------------------------------------------------------------
+    ! SUBROUTINE TO MANAGE THE INITIALIZATION OF THE AQUATIC MODEL THROUGH THE 
+    ! AQUATIC_MODEL_DS
+    ! ---------------------------------------------------------------------------------------
     subroutine INIT_AQUATIC_MODEL(AQUATIC_MODEL_DATA, TIME)
         implicit none
         type(AQUATIC_MODEL_DS), intent(inout) :: AQUATIC_MODEL_DATA
@@ -612,5 +684,8 @@ contains
         call INIT_PELAGIC_BOX_MODEL(AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA, TIME)
 
     end subroutine INIT_AQUATIC_MODEL
+    ! ---------------------------------------------------------------------------------------
+    ! ---------------------------------------------------------------------------------------
+    ! ---------------------------------------------------------------------------------------
 
 end module AQUATIC_MODEL
