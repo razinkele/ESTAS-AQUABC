@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-23
+
+> 🎉 **Released — [AQUABC v0.7.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.7.0)**
+> (Linux binary attached). **Headline: the `GLOBAL` de-globalisation begins.** The 19-variable
+> sediment-resuspension / shear-stress subsystem moves out of the `GLOBAL` god-module into a
+> `resuspension_t` derived type — the first bounded, **byte-identical** slice of the long-deferred
+> Phase-5 refactor (`GLOBAL`'s allocatable count drops 55 → 44). The Dashboard landing page also
+> gains the loadable-setup selector (in two-way sync with the Run Model tab), and the dependency
+> stack is refreshed. Fully backward-compatible: the Standard model run is byte-identical to v0.6.0.
+
 ### Added
 - **Setup selector surfaced on the Dashboard landing page** (`shiny_app/modules/dashboard.py`).
   The loadable-setup selector — previously only on Model Config → Run Model — now also appears on
@@ -28,6 +38,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the Fortran unit tests stay green. First bounded slice of the deferred `GLOBAL` de-globalisation
   (`FORTRAN_IMPLEMENTATION_PLAN.md` §8.1 Task 5.1). Design + two-round adversarial review:
   `docs/superpowers/specs/2026-07-22-resuspension-state-derived-type-design.md`.
+
+### Dependencies
+- Refreshed the dependency stack (Dependabot, all CI-green): `ruff` 0.8.0 → 0.15.22, `ipywidgets`
+  → ≥8.1.8, `ipyleaflet` → ≥0.20.0, `python-dotenv` → ≥1.2.2, `pre-commit` → ≥4.6.1,
+  `actions/setup-python` 6.3.0 → 7.0.0, and `actions/checkout` 7.0.0 → 7.0.1. Dev/CI-only; no
+  runtime behaviour change.
 
 ## [0.6.0] - 2026-07-22
 

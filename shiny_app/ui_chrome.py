@@ -54,7 +54,7 @@ def app_header():
             {"class": "app-header-title"},
             ui.tags.i(class_="bi bi-water me-2"),
             "AQUABC",
-            ui.tags.span("v0.6.0", class_="version-badge"),
+            ui.tags.span("v0.7.0", class_="version-badge"),
         ),
         # Right side buttons container (tutorial + changelog + help + settings)
         ui.div(
@@ -156,7 +156,7 @@ def settings_offcanvas():
             ui.tags.div(
                 ui.card(
                     ui.card_header("About"),
-                    ui.tags.h5("AQUABC v0.6.0"),
+                    ui.tags.h5("AQUABC v0.7.0"),
                     ui.tags.p("Aquatic Biogeochemical Model"),
                     ui.tags.p("A sophisticated water quality simulation tool with:"),
                     ui.tags.ul(
