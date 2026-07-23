@@ -19,7 +19,7 @@ type lives in a **new leaf module**.
 Two adjacent, comment-delimited blocks in `mod_GLOBAL.f90` (currently lines **142–156**) — **11
 members**, all `real(DBL), allocatable, dimension(:,:)`:
 
-| Member | Sub-block | Exercising code-path (run-gate coverage TBD by §5b) |
+| Member | Sub-block | Exercising code-path (run-gate coverage resolved in §Run-gate coverage) |
 |---|---|---|
 | `FLUXES_TO_WATER_COLUMN` | water↔sediment coupling (142–145) | `MODEL_BOTTOM_SEDIMENTS > 1` (mode-2) |
 | `FLUXES_OUTPUT_TO_WATER_COLUMN` | water↔sediment coupling | `MODEL_BOTTOM_SEDIMENTS > 1` (mode-2) |
@@ -48,10 +48,10 @@ Why this slice, and how it differs from the prior two:
   mass-balance diagnostic does not demonstrate any committed setup driving non-zero settling/flux
   output. The arrays *do* feed the per-box state-variable derivatives
   (`EFFECTIVE_DEPOSITION_FRACTIONS → MASS_SETTLING`, `mod_SOLVER.f90:1300`) and settling velocities
-  *are* configured in `INPUTS/PELAGIC_INPUTS.txt`, so the members may still influence the per-box
-  concentration outputs even with a zero mass-balance term — but this is **not confirmed**. See
-  Verification: the definitive resolution is a **perturbation test** (zero a member post-computation,
-  rerun, diff), and the strip-proof + compile are the guaranteed backstop regardless.
+  *are* configured in `INPUTS/PELAGIC_INPUTS.txt`. **The in-loop review's perturbation test resolved
+  this definitively — see §Run-gate coverage: 6 of 11 are run-gate-covered, 5 are strip+compile only,
+  and Standard-run settling is confirmed active.** The bigger discovery was that 6 members are
+  dummy-argument-shadowed in the solver, changing the rename method (§Method).
 - **Off-surface consumers.** The AQUABC library (`aquabc_II_pelagic_auxillary.f90`,
   `aquabc_II_sediment_model_1_fast.f90`) only `use GLOBAL, only:` dimension constants
   (`nstate`, `NUM_FLUXES_TO_SEDIMENTS`, `NUM_SED_VARS`) — none of the 11. `mod_PELAGIC_BOX.f90` is
@@ -101,107 +101,161 @@ end module WATER_SEDIMENT_COUPLING
 No `contains`, no procedures — a pure data module. `make_lib.sh` globs source files and multi-pass
 compiles module-defining files first, so the new leaf is picked up with no build-script edit.
 
-### Edits per file
+### Method — enumerated genuine touch points, NOT a blanket regex rename
 
-1. **`mod_GLOBAL.f90`** — delete the 11 declarations (lines **142–156**, both comment sub-blocks) and
-   leave a breadcrumb pointing to `wsc_state_t`/`wsc`. GLOBAL allocatable count drops **23 → 12**.
-   ⚠️ Do not touch the neighboring `*_FILENAME` scalars (158–165) or the resuspension breadcrumb
-   below them.
-2. **`mod_WATER_SEDIMENT_COUPLING.f90`** — new file, as above.
-3. **`mod_AQUATIC_MODEL.f90`** (module `AQUATIC_MODEL`) — add `use WATER_SEDIMENT_COUPLING, only: wsc`;
-   the allocation block `:220–238` becomes `allocate(wsc%…)`; rewrite the 14 bare refs to `wsc%…`.
-4. **`mod_SOLVER.f90`** (module `PELAGIC_SOLVER`) — add `use WATER_SEDIMENT_COUPLING, only: wsc`;
-   rewrite ~68 bare refs to `wsc%…`. ⚠️ **Skip the one component access**
-   `PELAGIC_BOXES(i) % DISSOLVED_FRACTIONS` (see name-collision) — it is the `PELAGIC_BOX` type
-   component, not the GLOBAL var.
-5. **`ESTAS_II.f90`** — add `use WATER_SEDIMENT_COUPLING, only: wsc`; the dealloc block `:83–97`
-   becomes `deallocate(wsc%…)`; rewrite the 11 refs.
-6. **`mod_SIMULATE.f90`** (module `SIMULATE`) — add `use WATER_SEDIMENT_COUPLING, only: wsc`; rewrite
-   the 9 refs.
-7. **`mod_BOTTOM_SEDIMENTS.f90`** (module `BOTTOM_SEDIMENTS`) — add
-   `use WATER_SEDIMENT_COUPLING, only: wsc`; rewrite the 9 refs.
-8. **`sub_READ_PELAGIC_INPUTS.f90`** (subroutine `READ_PELAGIC_BOX_MODEL_INPUTS`) — add
-   `use WATER_SEDIMENT_COUPLING, only: wsc` at the subroutine's `use` block; rewrite its 1 ref
-   (`:500`, `DISSOLVED_FRACTIONS(PELAGIC_STATE_VAR_NO)` — it reaches the GLOBAL var today via the
-   `PELAGIC_BOX_MODEL` re-export chain).
+⚠️ **The in-loop review (below) changed the method.** 6 of the 11 members are already **arg-threaded**:
+they are redeclared as `intent(inout)` dummy arguments in live solver routines, so inside those
+routines they are locals, not the GLOBAL var. A blanket word-boundary `sed` with scope carve-outs is a
+scope-aware Fortran parser under a byte-identical constraint — fragile, and its worst failure (a stray
+`wsc%` on a dummy *body* use) is **invisible to both the run gate and the strip-proof** (the dummy is
+argument-associated to the very GLOBAL being moved → same memory → byte-identical). **So this slice is
+done by an explicit enumerated `file:line old→new` list applied one edit at a time.** That list — plus
+a scope-aware per-site review — **is** the verification here; the run gate and strip-proof cannot be.
+The plan derives the list from value-flow, not grep counts, per member as:
+`genuine = all occurrences − shadow-scope bodies − component accesses − strings/comments`.
 
-Rename surface = **6 files** (items 3–8). `mod_PELAGIC_BOX.f90` is **not** edited (off-surface).
+**The 4 hazard classes to exclude from every member's genuine set:**
 
-### Rename discipline — THREE guards (this slice needs more than word-boundary)
+1. **Dummy-argument shadow (scope-aware) — the load-bearing one.** These occurrences stay bare:
+   - `mod_SOLVER.f90` **`SOLVE`** (~50–456) redeclares `SETTLING_VELOCITIES_OUTPUT`,
+     `EFFECTIVE_DISSLOVED_FRACTIONS`, `EFFECTIVE_DEPOSITION_FRACTIONS`, `DEPOSITION_AREA_RATIOS` as
+     dummies; `mod_SOLVER.f90` **`CALC_DERIV`** (~720–1658, called 3×/timestep from `SOLVE`) redeclares
+     the latter three. **Every** use of these 4 members inside `mod_SOLVER` is a dummy → **skip the
+     whole file for those 4**; the true GLOBAL actuals are passed at the `SOLVE` call site in
+     `mod_SIMULATE` (rename there).
+   - `mod_BOTTOM_SEDIMENTS.f90` **`SEDIMENT_TRANSPORT`** (~332–358, **dead code, no callers**)
+     redeclares `DISSOLVED_FRACTIONS`, `FRACTION_OF_DEPOSITION` as dummies → skip those in that scope.
+2. **Component-selector (continuation-aware).** `DISSOLVED_FRACTIONS` is also a `PELAGIC_BOX` component
+   (`mod_PELAGIC_BOX.f90:34`). The **3** accesses `… % DISSOLVED_FRACTIONS` in `mod_SOLVER` (1229,
+   1233, 1241) must stay bare — and **2 of the 3 have the `%` on the *previous* continuation line**
+   (`… PELAGIC_BOXES(i) % &`), so a same-line `%` test misses them. No other of the 11 is a component.
+3. **Word-boundary (`FLUXES`).** The generic token `FLUXES` is a substring of a dozen identifiers
+   (`FLUXES_TO_SEDIMENTS`, `NOT_DEPOSITED_FLUXES`, `NUM_FLUXES_*`, `COCOA_*_FILENAME`,
+   `SEDIMENT_FLUXES`, …) — all `_`-bounded, so match only the standalone token.
+4. **String + comment.** `FLUXES` is inside the literal `'  SEDIMENT FLUXES (g/m^3/days)'`
+   (`mod_AQUATIC_MODEL.f90:263`, an output-file header) — skip it. Bare member names also appear in
+   comments (`mod_SOLVER.f90:1593/1605/1614`, 692/1315) — skip those too (harmless but keeps the diff
+   honest).
 
-1. **Word-boundary `\bMEMBER\b`** — the generic token **`FLUXES`** is a substring of a dozen
-   identifiers (`FLUXES_TO_SEDIMENTS`, `NOT_DEPOSITED_FLUXES`, `NUM_FLUXES_*`, `COCOA_*_FILENAME`,
-   `SEDIMENT_FLUXES`, `FLUXES_TO_WATER_COLUMN`, …). All have `_` at the token edge, so `\bFLUXES\b`
-   matches only the standalone array. **No bare-`FLUXES` local/dummy shadow exists** in the rename
-   surface (verified), so word-boundary is airtight for it.
-2. **String-literal-aware** — `FLUXES` appears **inside a string literal**:
-   `'  SEDIMENT FLUXES (g/m^3/days)'` at `mod_AQUATIC_MODEL.f90:~263` (a `write(unit=1001,…)` header).
-   A code-part word-boundary replace WOULD hit it → the rename tool must skip quoted content. (Here
-   the site is a file-output header so the byte gate would catch corruption, but preserve it anyway;
-   re-scan exhaustively during implementation.)
-3. **Component-selector-aware** — `DISSOLVED_FRACTIONS` is **both** the GLOBAL array we move **and** a
-   component of the `PELAGIC_BOX` derived type (`mod_PELAGIC_BOX.f90:34`
-   `real(DBL), pointer :: DISSOLVED_FRACTIONS`). Component accesses `… % DISSOLVED_FRACTIONS`
-   (`mod_SOLVER.f90` has 1; `mod_PELAGIC_BOX` has its own, off-surface) must **not** be prefixed. The
-   tool must skip a member occurrence immediately preceded by `%` (optional whitespace). A wrong
-   prefix `PELAGIC_BOXES(i) % wsc%DISSOLVED_FRACTIONS` is invalid Fortran → the compile gate backstops
-   it, but strip-and-compare would give a **false clean** (stripping `wsc%` restores the original), so
-   the guard is load-bearing, not belt-and-suspenders.
+### Edits per file — **rename surface = 5 files**
 
-Shadowing pre-check (exact-name locals/dummies in the 6 files) must be run and confirmed clean, as in
-prior slices.
+1. **`mod_GLOBAL.f90`** — delete the 11 declarations (lines **142–156**, both comment sub-blocks); add
+   a breadcrumb pointing to `wsc_state_t`/`wsc`. GLOBAL allocatable count drops **23 → 12**. ⚠️ Do not
+   touch the neighboring `*_FILENAME` scalars (158–165) or the resuspension breadcrumb below.
+2. **`mod_WATER_SEDIMENT_COUPLING.f90`** — new leaf module (as above).
+3. **`mod_AQUATIC_MODEL.f90`** (`AQUATIC_MODEL`) — `use WATER_SEDIMENT_COUPLING, only: wsc`; the
+   allocation block `:220–238` → `allocate(wsc%…)`; the zero-init at ~`:660–661` → `wsc%…`. No dummy
+   shadows here (allocation is in `READ_AQUATIC_MODEL_INPUTS`). **Skip** the string literal at `:263`.
+4. **`ESTAS_II.f90`** — `use WATER_SEDIMENT_COUPLING, only: wsc`; the dealloc block `:83–97` →
+   `deallocate(wsc%…)` (all 11). No shadows.
+5. **`mod_SIMULATE.f90`** (`SIMULATE`) — `use WATER_SEDIMENT_COUPLING, only: wsc`; rename the ~9 genuine
+   refs (the `SOLVE` call-site actuals ~`:323–326` — this is where the 4 shadowed members' GLOBAL
+   values flow in — plus reads ~587/588/612/613/737). No shadows here.
+6. **`mod_SOLVER.f90`** (`PELAGIC_SOLVER`) — `use WATER_SEDIMENT_COUPLING, only: wsc`; rename **only
+   the ~17 genuine GLOBAL refs of the 7 NON-shadowed members** inside `CALC_DERIV` (the coupling/
+   settling arrays used but not in the dummy list — e.g. `FLUXES_TO_WATER_COLUMN`, `DISSOLVED_FRACTIONS`
+   at 1537/1544, `SETTLING_RATES`, `NOT_DEPOSITED_FLUXES`, `FRACTION_OF_DEPOSITION`). **Skip** all uses
+   of the 4 dummy-shadowed members (class 1) and the 3 component accesses (class 2).
+7. **`mod_BOTTOM_SEDIMENTS.f90`** (`BOTTOM_SEDIMENTS`) — `use WATER_SEDIMENT_COUPLING, only: wsc`;
+   rename the **3** genuine refs (`:351`, and the RHS at `:354`/`:357`). **Skip** the
+   `SEDIMENT_TRANSPORT` dummy args and their LHS uses (class 1, dead code).
+
+`mod_PELAGIC_BOX.f90` and **`sub_READ_PELAGIC_INPUTS.f90` are NOT edited** — both reference only the
+`PELAGIC_BOX` component `DISSOLVED_FRACTIONS` (the latter's `:500` has `%` on the `:499` continuation),
+never the GLOBAL array.
 
 ### No circular `use`
 
 `WATER_SEDIMENT_COUPLING` uses only `precision_kinds` — a pure leaf. Adding
-`use WATER_SEDIMENT_COUPLING, only: wsc` to the 6 consumers introduces no cycle (nothing uses them
-back). `make_lib.sh` multi-pass resolves the new module-first ordering by construction.
+`use WATER_SEDIMENT_COUPLING, only: wsc` to the 5 consumers introduces no cycle. `make_lib.sh` globs
+sources and multi-pass compiles module-defining files first, so the new leaf needs no build-script edit.
+
+## Run-gate coverage (RESOLVED by perturbation test — see In-loop review)
+
+**6 of 11 run-gate-covered, 5 strip-proof + compile only.** Settling *is* active in the Standard run
+(the `INPUT.txt` RESUSPENSION block is absent → `RESUSPENSION_OPTION` coerced to 0 at runtime →
+`SHUT_DOWN_SETTLING` stays 0 → the pelagic settling path runs, velocities 0.15 m/day).
+
+| Member | Coverage |
+|---|---|
+| `EFFECTIVE_DISSLOVED_FRACTIONS` | run-gate (mode-0, **measured**) |
+| `FLUXES_TO_WATER_COLUMN` | run-gate (mode-2, **measured**) |
+| `FLUXES_OUTPUT_TO_WATER_COLUMN` | run-gate (mode-2, unit 1023) |
+| `DISSOLVED_FRACTIONS` (GLOBAL) | run-gate (mode-2, **measured**) |
+| `EFFECTIVE_DEPOSITION_FRACTIONS` | run-gate (**inferred**) |
+| `FRACTION_OF_DEPOSITION` (GLOBAL) | run-gate (**inferred**) |
+| `SETTLING_RATES` | strip + compile only (**measured** null) |
+| `NOT_DEPOSITED_FLUXES` | strip + compile only (output-arg, no consumer) |
+| `SETTLING_VELOCITIES_OUTPUT` | strip + compile only (only in dead `SEDIMENT_TRANSPORT`) |
+| `FLUXES` | strip + compile only — **zero code refs (alloc/dealloc only): dead array** |
+| `DEPOSITION_AREA_RATIOS` | strip + compile only (only in never-reached sub-branches) |
 
 ## Non-goals (YAGNI)
 
-- **No arg-threading**, no numerics/logic change — a pure move + rename.
-- **Allocation stays in `AQUATIC_MODEL`, dealloc in `ESTAS_II`** (as `wsc%…`) — moving allocation into
-  the new module is extra byte-identical risk for no benefit.
-- **No latent-bug fixes / dead-code removal.**
-- **Do not edit `mod_PELAGIC_BOX.f90`** (its `DISSOLVED_FRACTIONS` is the type component, not the
-  moved GLOBAL var).
+- **No numerics/logic change** — a pure move + rename. Preserve the existing arg-threading exactly
+  (the 6 shadowed members keep flowing GLOBAL→`SOLVE`→`CALC_DERIV`; we only rename the GLOBAL end).
+- **Allocation stays in `AQUATIC_MODEL`, dealloc in `ESTAS_II`** (as `wsc%…`).
+- **No latent-bug/dead-code removal** — note `FLUXES` is dead and `SEDIMENT_TRANSPORT` is uncalled;
+  leave both (latent cleanup candidates for a separate change).
+- **Do not edit `mod_PELAGIC_BOX.f90` or `sub_READ_PELAGIC_INPUTS.f90`** (component accesses only).
 
 ## Verification
 
-Gate = byte-identical model output. **Split coverage → two run gates required.**
+Gate = byte-identical model output on **both** setups — but for this slice the enumerated-site list +
+per-site review are the primary correctness mechanism (the gates are blind to dummy-body mis-renames).
 
-1. **Shadowing pre-check** — grep the 6 files for member names in `::`/`intent(` context; confirm no
-   local/dummy equals a member. Airtight strip-proof depends on it.
+1. **Shadowing pre-check — EXPECTED TO FIRE on 6 members** (`SETTLING_VELOCITIES_OUTPUT`,
+   `EFFECTIVE_DISSLOVED_FRACTIONS`, `EFFECTIVE_DEPOSITION_FRACTIONS`, `DEPOSITION_AREA_RATIOS`,
+   `DISSOLVED_FRACTIONS`, `FRACTION_OF_DEPOSITION`). This is not a blocker — it identifies exactly which
+   scopes class-1 must exclude. Grep `::`/`intent(` AND continuation lines (a `::` decl can carry the
+   name on the next line — a single-line grep gives a false clean).
 2. **Determinism pre-check** — run each gate setup twice with the pre-change binary; self-diff = 0.
-3. **Build clean** (`make clean-all && make build-estas`) — new module compiles; stale bare ref →
-   undeclared under `implicit none`; wrong `% wsc%` component prefix → hard error.
-4. **Strip-and-compare pure-prefix proof** — per edited file,
-   `diff <(git show PRE:FILE) <(sed 's/wsc%//g' FILE)` shows only structural changes (the new `use`
-   line, GLOBAL deletion, wraps). ⚠️ This proof is **blind to component over-prefixing** (strip
-   restores `% DISSOLVED_FRACTIONS`) — guard #3 + compile are what catch that. Also normalize-diff the
-   moved decls vs the new type for kind/rank fidelity.
-5. **Byte-identical run gate — BOTH setups (mandatory, regardless of coverage):**
-   - **mode-0 Standard `INPUT.txt`** (`OUTPUTS/`) and **mode-2 `INPUT_sediment_test.txt`**
-     (`OUTPUTS_gf_debug/`) must BOTH be bit-identical after the move. A pure rename cannot change any
-     output, so this is non-negotiable acceptance regardless of which members are "active."
-   - Binary is `./ESTAS_II` (input = arg 1; no `ESTAS_HOLD_VOLUME` — Standard topology).
-5b. **Coverage confirmation via PERTURBATION TEST (resolves the §slice uncertainty).** Because the
-   `MASS_BALANCES` settling/flux columns are zero, a passing run-gate diff might reflect members that
-   never influence output. To know which of the 11 the run gate actually exercises: with the
-   pre-change binary, insert a temporary `MEMBER = MEMBER * 2.0D0` (or `= 0.0D0`) immediately after the
-   member is populated and before it is consumed, rebuild, rerun both setups, and diff vs the golden.
-   A member whose perturbation **changes** an output file is run-gate-covered; one whose perturbation
-   leaves all outputs identical is **strip-proof + compile only** (the sediment-slice COCOA treatment —
-   fully defensible, since strip+compile catch swaps/drops/misspellings). Do this at least for
-   `SETTLING_RATES` (representative of the 9) and `FLUXES_TO_WATER_COLUMN` (the mode-2 pair); record
-   the per-member coverage verdict. Revert the perturbation before proceeding.
-6. **132-col wrap** — the `wsc%` prefix (+4) can overflow; wrap at commas/operators.
-7. **Build-health** — `make test-fortran` green (links none of the 6 files → no moved-subsystem
-   coverage; the run gates are the real test).
-8. **CI matrix** (gfortran ubuntu/macOS + ifx oneAPI) green — guards the new-module dependency edge.
+3. **Build clean** (`make clean-all && make build-estas`) — catches a stale bare ref (undeclared under
+   `implicit none`) and a prefixed *declaration* (`intent(inout) … :: wsc%X` is illegal). It does
+   **NOT** catch a prefixed dummy *body* use (compiles + aliases correctly) — only per-site review does.
+4. **Per-site review (load-bearing).** Every edit in the enumerated list is reviewed against the 4
+   hazard classes: is this occurrence a genuine GLOBAL ref, or a dummy/component/string/comment? This
+   replaces the strip-proof as the primary no-mis-rename check, because a dummy-body over-prefix strips
+   clean AND runs byte-identical.
+5. **Strip-and-compare (secondary)** — per edited file,
+   `diff <(git show PRE:FILE) <(sed 's/wsc%//g' FILE)` shows only structural changes. Useful for
+   catching swaps among the 5 *non-shadowed* files' members, but **blind** to class-1 and class-2
+   over-prefixes (both strip clean) — hence step 4.
+6. **Byte-identical run gate — BOTH setups (mandatory acceptance):** mode-0 `INPUT.txt` (`OUTPUTS/`,
+   covers the settling group) and mode-2 `INPUT_sediment_test.txt` (`OUTPUTS_gf_debug/`, covers the
+   coupling fluxes) must BOTH be bit-identical. Binary `./ESTAS_II` (input = arg 1; no
+   `ESTAS_HOLD_VOLUME`). A pure rename cannot change output — non-negotiable regardless of coverage.
+7. **132-col wrap** — the `wsc%` prefix (+4) can overflow; wrap at commas/operators.
+8. **Build-health** — `make test-fortran` green (links none of the 5 files → no moved-subsystem
+   coverage; not "the real test" for this slice — steps 4 & 6 are).
+9. **CI matrix** (gfortran ubuntu/macOS + ifx oneAPI) green — guards the new-module dependency edge.
+
+## In-loop review hardening (2026-07-24)
+
+Four independent adversarial reviewers re-derived every claim against source; one ran a live
+perturbation test. All four returned **NEEDS-CHANGES**, converging on one defect the original spec
+missed entirely, now fixed above:
+
+- **Dummy-argument shadows (all 4 reviewers).** 6 members are `intent(inout)` dummies in `SOLVE`/
+  `CALC_DERIV` (live) and `SEDIMENT_TRANSPORT` (dead). A blanket rename over-prefixes their body uses;
+  because the dummies are argument-associated to the moved GLOBALs, the result compiles AND is
+  byte-identical → invisible to run gate and strip-proof. → method changed to enumerated touch points
+  + per-site review (class-1 guard); `mod_SOLVER` genuine renames corrected ~68 → ~17,
+  `mod_BOTTOM_SEDIMENTS` 9 → 3.
+- **`sub_READ_PELAGIC_INPUTS` is off-surface** (its `DISSOLVED_FRACTIONS` is a component access, `%` on
+  the prior continuation line) → surface corrected 6 → **5 files**; original item-8 rationale was a
+  misread.
+- **Component accesses = 3, continuation-split** (not 1 same-line) → guard #2 made continuation-aware.
+- **Coverage resolved by perturbation test** (P1 EFFECTIVE_DISSLOVED_FRACTIONS mode-0 → differs; P2
+  FLUXES_TO_WATER_COLUMN mode-2 → 23 files differ; P3 SETTLING_RATES → identical; P4 DISSOLVED_FRACTIONS
+  mode-2 → 10 files differ): **6 covered / 5 strip-only**; `SETTLING_RATES` empirically null; `FLUXES`
+  has zero code refs. Standard-run settling confirmed active (RESUSPENSION_OPTION→0 at runtime).
+- Guard #4/string extended to comments. Confirmed sound: leaf-module cycle-safety, `wsc`/`wsc_state_t`
+  no collision, build-script pickup, type/instance visibility, `mod_PELAGIC_BOX`/AQUABC off-surface,
+  member-list & kind/rank fidelity.
 
 ## Rollout
 
 Single PR on `refactor/water-sediment-coupling-derived-type`. Green CI + **both** byte-identical gates
-+ the strip-and-compare proof, then merge on the user's go-ahead. Record both gate results and the
-strip-proof in the PR body. GLOBAL allocatable count 23 → 12.
++ the per-site review + strip-and-compare, then merge on the user's go-ahead. Record both gate results
+and the enumerated edit list in the PR body. GLOBAL allocatable count 23 → 12.
