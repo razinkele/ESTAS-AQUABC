@@ -36,12 +36,20 @@ An explicitly-delimited block in `mod_GLOBAL.f90` lines **133–207**
 - **A dedicated owning module already exists** (`mod_BOTTOM_SEDIMENTS.f90`, module
   `BOTTOM_SEDIMENTS`) — it already allocates (`:375–398`) and reads every one of these; only their
   *declarations* live in GLOBAL. Exact analog of `mod_RESUSPENSION`.
-- **Byte-identical is directly, fully gate-able.** Unlike the resuspension slice (whose option-1
-  members no committed input exercised), committed setups turn the sediment model **on**:
-  `INPUT_gf_release.txt` / `INPUT_3560day.txt` (`MODEL_SEDIMENTS 1`) and `INPUT_sediment_test.txt`
-  (`MODEL_SEDIMENTS 2`). The Standard `INPUT.txt` has `MODEL_SEDIMENTS 0` (code skipped). So the run
-  gate genuinely exercises the moved path — a materially stronger guarantee than the resuspension
-  slice had.
+- **Byte-identical is run-gate-able for 20 of 24 members (via the mode-2 setup).** Unlike the
+  resuspension slice (whose option-1 members no committed input exercised), one committed setup
+  exercises the moved path — **but only `MODEL_SEDIMENTS 2`, not `1`**. There is a hard behavioral fork on `MODEL_BOTTOM_SEDIMENTS`
+  (in-loop review §Gate coverage): all 24 members are allocated, read, computed, written, and
+  deallocated **only** under `if (MODEL_BOTTOM_SEDIMENTS > 1)` (allocation `mod_BOTTOM_SEDIMENTS.f90:375–401`;
+  sole caller `mod_AQUATIC_MODEL.f90:507`; `AQUABC_SEDIMENT_MODEL_1` call `mod_SOLVER.f90:1557`;
+  teardown `ESTAS_II.f90:102`). Mode `1` drives only the *prescribed-flux* subsystem
+  (`PRESCRIBED_SEDIMENT_FLUXES`, `SEDIMENT_FLUX_TS_*`) which **stays in GLOBAL** and touches none of
+  the 24. So `INPUT_gf_release.txt` / `INPUT_3560day.txt` (`MODEL_SEDIMENTS 1`) give **no** moved-path
+  coverage — no better than the mode-0 regression guard. **`INPUT_sediment_test.txt`
+  (`MODEL_SEDIMENTS 2`) is the ONLY committed setup exercising the 24 members** (CL29 and all others
+  are mode 0/1). This is still a materially stronger gate than resuspension had (which had no
+  committed setup for its option-1 subset), but the primary gate MUST be the mode-2 setup — see
+  §Verification.
 
 The 24 members (verbatim from `mod_GLOBAL.f90:136–206`):
 
@@ -135,19 +143,34 @@ but keeps the strip-and-compare diff minimal).
    arrays (`DISSOLVED_FRACTIONS` … `DEPOSITION_AREA_RATIOS`, 214–223), the `*_FILENAME` scalars
    (225–232), and `BOTTOM_SED_ADVANCED_REDOX_SIMULATION` (246) — all stay in GLOBAL (separate future
    slices / different subsystem).
-2. **`mod_BOTTOM_SEDIMENTS.f90`** (module `BOTTOM_SEDIMENTS`) — add the type + `bsed` instance before
-   `contains`; rewrite every bare member reference in its own procedures to `bsed%MEMBER`
-   (allocations become `allocate(bsed%INIT_SED_STATE_VARS(...))`, etc.). It still `use GLOBAL` for
-   the dimension constants (`NUM_SED_LAYERS`, `NUM_SED_VARS`, `NUM_SED_CONSTS`, `nkn`, …), which are
-   **not** moving.
-3. **`ESTAS_II.f90`** — already `use BOTTOM_SEDIMENTS`; rewrite the ~20 refs (chiefly the
-   `deallocate(...)` teardown at `:103–122`) to `bsed%…` (`deallocate(bsed%INIT_SED_STATE_VARS)`).
+2. **`mod_BOTTOM_SEDIMENTS.f90`** (module `BOTTOM_SEDIMENTS`) — add the type + `type(sediment_state_t),
+   public :: bsed` between `implicit none` (:17) and `contains` (:18); rewrite every bare member
+   reference in its own procedures to `bsed%MEMBER`. The allocation block is at **`:375–401`** (inside
+   `READ_BOTTOM_SEDIMENTS_MODEL_INPUTS`), all → `allocate(bsed%…)`. ⚠️ **`SED_MODEL_CONSTANTS = 0.0D0`
+   at `:389`** is an *executable* array init sitting inside the allocate block — it must become
+   `bsed%SED_MODEL_CONSTANTS = 0.0D0` (the word-boundary rename covers it, and correctly does NOT
+   touch `AQUABC_BSED_MODEL_CONSTANTS` / `INIT_BSED_MODEL_CONSTANTS`). It still `use GLOBAL` for the
+   dimension constants (`NUM_SED_LAYERS`, `NUM_SED_VARS`, `NUM_SED_CONSTS`, `nkn`, …), which are
+   **not** moving, and gets `DBL` via GLOBAL's re-export of `precision_kinds` (it does not
+   `use precision_kinds` directly). ⚠️ **Do NOT add a component-`private` line** to the type — the
+   components must stay public or `bsed%MEMBER` fails to resolve in the four consumer modules.
+3. **`ESTAS_II.f90`** — already `use BOTTOM_SEDIMENTS`; rewrite the ~20 refs — chiefly the
+   `deallocate(...)` teardown at **`:103–125`** (guarded by `if (MODEL_BOTTOM_SEDIMENTS > 1)` at
+   `:102`) — to `bsed%…` (`deallocate(bsed%INIT_SED_STATE_VARS)`). ⚠️ **Preserve, do not "fix", the
+   pre-existing dealloc asymmetry:** `SED_TYPE_PER_BOX` is allocated (`mod_BOTTOM_SEDIMENTS.f90:383`)
+   but **never deallocated** — do NOT add `deallocate(bsed%SED_TYPE_PER_BOX)`; a byte-identical
+   refactor preserves the existing teardown exactly (file a separate follow-up if it matters).
 4. **`mod_AQUATIC_MODEL.f90`** — already `use BOTTOM_SEDIMENTS`; rewrite the 2 refs to `bsed%…`.
 5. **`mod_SOLVER.f90`** (module `PELAGIC_SOLVER`) — already `use BOTTOM_SEDIMENTS`; rewrite the
    ~59 refs to `bsed%…`.
-6. **`mod_SIMULATE.f90`** — **add `use BOTTOM_SEDIMENTS, only: bsed`** (it currently reaches the
-   members via `use GLOBAL`; `use` is not transitive through its `use AQUATIC_MODEL` /
-   `use PELAGIC_SOLVER`, so an explicit import is required). Rewrite the ~15 refs to `bsed%…`.
+6. **`mod_SIMULATE.f90`** — **add `use BOTTOM_SEDIMENTS, only: bsed`** and rewrite the ~15 refs to
+   `bsed%…`. (It currently reaches the members via `use GLOBAL`. Note: `bsed` would in fact reach
+   `mod_SIMULATE` *transitively* — both `mod_AQUATIC_MODEL` and `mod_SOLVER` `use BOTTOM_SEDIMENTS`
+   without `only:` and neither sets a module-level `private`, so they re-export `bsed`. The explicit
+   `only: bsed` import is therefore **defensive, not strictly required**: it is the robust form — it
+   survives anyone later narrowing those imports with an `only:` clause, and same-entity access via
+   multiple `use` paths is legal. Keep the import; the earlier "use is not transitive" framing was
+   imprecise.)
 
 ### Rename discipline — word-boundary is mandatory here
 
@@ -219,9 +242,13 @@ The gate is **byte-identical model output**, since this is a behavior-preserving
    occurrences). Since Fortran is case-insensitive but `sed`/`grep` are not, a case-varying reference
    would be missed by a case-sensitive `\bNAME\b` replace; uniform casing means the case-sensitive
    rename and strip-proof are honest. (Belt-and-suspenders: run the replace case-insensitively.)
-2. **Determinism pre-check.** With the **pre-change** binary, run the sediment-ON gate setup twice
-   into separate output dirs and diff — self-diff must be 0 before a 0-diff post-change is meaningful
-   (this tree has real uninit-memory non-determinism history — see `[[fortran-uninit-debugging]]`).
+2. **Determinism pre-check — load-bearing on the mode-2 setup.** With the **pre-change** binary, run
+   the primary gate setup (`INPUT_sediment_test.txt`, §5) twice into separate output dirs and diff —
+   self-diff must be 0 before a 0-diff post-change is meaningful. This is **not** a formality here:
+   `INPUT_sediment_test.txt` is a self-described "negative-mass debug" 2-day window that may abort,
+   and this tree has real uninit-memory non-determinism history (see `[[fortran-uninit-debugging]]`).
+   If the self-diff is non-zero, the byte-identical gate is invalid on that setup and must be
+   stabilized (or a different mode-2 run used) before trusting a 0-diff.
 3. **Build** the library + `ESTAS_II` cleanly (`make clean-all && make build-estas`) — the compiler
    catches any *missed* reference or name clash (stale bare ref → undeclared under `implicit none`).
    It does **not** catch a *wrong same-type* swap between two identically-typed members — that is
@@ -229,17 +256,33 @@ The gate is **byte-identical model output**, since this is a behavior-preserving
 4. **Strip-and-compare pure-prefix proof.** For each edited file,
    `diff <(git show HEAD~1:FILE) <(sed 's/bsed%//g' FILE)` must show **only** structural changes
    (the type block, the new `use` line in `mod_SIMULATE`, the GLOBAL deletion, any 132-col wraps) —
-   proving no member was swapped/dropped/misspelled and, critically, **zero `*_LOC` corruption**.
-   Separately normalize-diff the moved declarations against the original GLOBAL block to confirm
-   kind/dimension fidelity (the strip proof cannot check *moved* decls).
-5. **Byte-identical run gate (primary).** Build serial (default `make build-estas`; **not**
-   `OPENMP=1`), identical compiler/flags both sides. Run a **`MODEL_SEDIMENTS`-on** setup
-   (`INPUT_gf_release.txt`, `MODEL_SEDIMENTS 1`) to completion with the pre-change binary; snapshot
-   `OUTPUTS/`. Rebuild post-change, rerun identical input, diff `OUTPUTS/` **bit-for-bit** (max |Δ| =
-   0). This *does* exercise the moved sediment path (the resuspension slice could not). Secondary:
-   the Standard `INPUT.txt` (`MODEL_SEDIMENTS 0`, code skipped) must also stay bit-identical — a cheap
-   regression that allocation/order wasn't perturbed. Optionally also gate `INPUT_sediment_test.txt`
-   (`MODEL_SEDIMENTS 2`) to cover mode 2.
+   proving no member was swapped/dropped/misspelled. ⚠️ **The strip proof alone does not catch `*_LOC`
+   over-prefixing:** if the forward replace wrongly wrote `bsed%SED_DEPTHS_LOC`, `sed 's/bsed%//g'`
+   *restores* it → the strip-diff looks clean and hides the error. It is the **compile gate (step 3)**
+   that catches it — `bsed%SED_DEPTHS_LOC` references a non-existent component → hard error under
+   `implicit none`. So `*_LOC` safety = word-boundary forward replace (prevents it up front) **+**
+   compile (backstop); the strip proof is one leg of that, not the whole thing. Separately
+   normalize-diff the moved declarations against the original GLOBAL block to confirm kind/dimension
+   fidelity (the strip proof cannot check *moved* decls).
+5. **Byte-identical run gate (primary) → `INPUT_sediment_test.txt` (`MODEL_SEDIMENTS 2`).** This is
+   the **only** committed setup that allocates/reads/computes/writes the 24 members (the
+   `MODEL_BOTTOM_SEDIMENTS > 1` fork — see §The slice). `INPUT_gf_release.txt` (`MODEL_SEDIMENTS 1`)
+   does **not** exercise them and is redundant with the mode-0 regression — do **not** use it as the
+   moved-path gate. Build serial (default `make build-estas`; **not** `OPENMP=1`), identical
+   compiler/flags both sides. Run `INPUT_sediment_test.txt` to completion with the pre-change binary;
+   snapshot its **actual output folder `OUTPUTS_gf_debug/`** (which holds the sediment-concentration
+   file, unit 1021, and sediment-flux file, unit 1023 — not just pelagic box files). Rebuild
+   post-change, rerun, diff `OUTPUTS_gf_debug/` **bit-for-bit** (max |Δ| = 0).
+   - **Run-gate coverage caveat (COCOA=0).** Because `PRODUCE_COCOA_OUTPUTS = 0` in
+     `INPUTS/PELAGIC_INPUTS.txt`, four members are **not** written to any file on this run and are
+     therefore covered only by strip-proof + compile, not the run gate: `PROCESSES_sed`,
+     `SED_BURRIAL_RATE_OUTPUTS`, `SED_OUTPUTS`, `SED_DRIVING_FUNCTIONS`. That is defensible (strip +
+     compile catch swaps/drops/misspellings), but to pull them into run-gate coverage, optionally
+     re-run `INPUT_sediment_test.txt` with `PRODUCE_COCOA_OUTPUTS = 1` and also diff the COCOA output
+     files (units 2021/2022). The remaining 20 members (the diagenesis feedback chain + all sediment
+     model inputs) do influence `OUTPUTS_gf_debug/` and are run-gate-covered.
+   - **Secondary (regression):** the Standard `INPUT.txt` (`MODEL_SEDIMENTS 0`, code skipped) must
+     stay bit-identical — a cheap check that allocation/order wasn't perturbed on the off path.
 6. **132-column free-form wrap.** The `bsed%` prefix (+5 chars) can push long continuation lines past
    gfortran's 132-col limit → truncated `&` → "Syntax error in argument list". Wrap at operators /
    after commas; pure formatting, no semantic change.
@@ -248,8 +291,47 @@ The gate is **byte-identical model output**, since this is a behavior-preserving
 8. **CI matrix** (gfortran ubuntu/macOS + ifx oneAPI) green — guards the `use`-ordering change across
    compilers.
 
+## In-loop review hardening (2026-07-23)
+
+Four independent adversarial reviewers re-derived every claim above against the actual source, each
+tasked to *refute* the spec. Three dimensions returned **SAFE-AS-WRITTEN**; the verification
+dimension returned **NEEDS-CHANGES** and is the reason the gate above was corrected.
+
+- **Rename surface & discipline — SAFE.** Independently confirmed the 5-file surface (no 6th file
+  references a member as a GLOBAL var), the 24-member list vs `mod_GLOBAL.f90:136–206` with zero
+  bleed from the adjacent 209–223 blocks, the *complete* do-not-touch look-alike list (11 `*_LOC` +
+  5 `NUM_*` + 2 `COCOA_*_FILENAME` + 2 `*BSED*` names — every one word-boundary-safe), **no member
+  name inside any string literal** (blind spot genuinely empty), and that `mod_SED_TYPEMAP` + the
+  AQUABC library files reference members only as dummy args. Also: no member is imported via any
+  `use …, only:` list, so the rename can't corrupt a `use` line.
+- **Byte-identical semantics — SAFE.** Type block term-by-term faithful (all 24 kinds/ranks). No
+  SAVE/EQUIVALENCE/COMMON/NAMELIST/DATA/pointer/target/associate/FINAL hazard. All allocations in
+  `mod_BOTTOM_SEDIMENTS.f90:375–401` (spec bound corrected), all deallocations in `ESTAS_II.f90:103–125`.
+  Surfaced: the `SED_MODEL_CONSTANTS = 0.0D0` in-block init (:389) and the `SED_TYPE_PER_BOX`
+  allocate-without-deallocate asymmetry (preserve, don't fix) — both now in §Edits. 3 scalars all
+  assigned-before-read; BSS-preservation sound. Actual-arg contiguity invariant under the move (no
+  copy-in/out divergence).
+- **Build order / module deps — SAFE.** No import cycle; `mod_SIMULATE` genuinely lacks the import
+  today; the 3 other consumers already `use BOTTOM_SEDIMENTS`; no `bsed`/`sediment_state_t` symbol
+  collision; `DBL` reaches `mod_BOTTOM_SEDIMENTS` via GLOBAL's re-export; `make_lib.sh`'s multi-pass
+  absorbs the new edge with no order-list edit. Guardrail added: no component-`private` line.
+- **Verification / gate coverage — NEEDS-CHANGES (folded in).** The material finding: the original
+  primary gate (`INPUT_gf_release.txt`, `MODEL_SEDIMENTS 1`) exercises **zero** of the 24 members —
+  they live behind `MODEL_BOTTOM_SEDIMENTS > 1`, and `INPUT_sediment_test.txt` (`MODEL_SEDIMENTS 2`)
+  is the **only** committed mode-2 setup. §The slice and §Verification-5 now gate on it, with the
+  determinism pre-check made load-bearing on that (possibly-aborting) setup, the `OUTPUTS_gf_debug/`
+  output-folder note, and the COCOA=0 caveat (4 members strip-proof+compile-only). Pre-checks
+  1a/1b/1c independently re-confirmed; strip-proof `*_LOC` false-pass nuance reworded (compile is the
+  backstop, step 4). Reference counts run slightly higher than the spec's `~` figures because a
+  whole-word grep counts comment mentions too (advisory only; compile is the real completeness gate).
+
+Common non-blocking nit flagged by three reviewers and corrected: the "`use` is not transitive"
+justification for the `mod_SIMULATE` import was imprecise (`bsed` *does* re-export transitively; the
+explicit `only: bsed` is defensive, not required) — §Edits item 6 reworded.
+
 ## Rollout
 
-Single PR on `refactor/bottom-sediment-state-derived-type`. Green CI + byte-identical
-sediment-ON + Standard gate + the strip-and-compare proof, then merge on the user's go-ahead. Record
-the byte-identical result and the strip-proof output in the PR body.
+Single PR on `refactor/bottom-sediment-state-derived-type`. Green CI + byte-identical **mode-2**
+(`INPUT_sediment_test.txt`) gate + Standard mode-0 regression + the strip-and-compare proof, then
+merge on the user's go-ahead. Record the byte-identical result and the strip-proof output in the PR
+body.
