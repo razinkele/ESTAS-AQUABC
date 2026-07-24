@@ -15,6 +15,7 @@
 ! ---------------------------------------------------------------------------------------
 module AQUATIC_MODEL
     use GLOBAL
+    use WATER_SEDIMENT_COUPLING, only: wsc
     use PELAGIC_BOX_MODEL
     use RESUSPENSION
     use BOTTOM_SEDIMENTS
@@ -217,8 +218,8 @@ contains
         allocate(CHLA             (nkn)                                                )
         allocate(SURFACE_BOXES    (nkn)                                                )
 
-        allocate(FLUXES_TO_WATER_COLUMN       (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(FLUXES_OUTPUT_TO_WATER_COLUMN(nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%FLUXES_TO_WATER_COLUMN       (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%FLUXES_OUTPUT_TO_WATER_COLUMN(nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
 
         do i = 1, nkn
             SURFACE_BOXES(i) = &
@@ -227,15 +228,15 @@ contains
 
         MODEL_CONSTANTS = AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(:, 1)
 
-        allocate(DISSOLVED_FRACTIONS           (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(FRACTION_OF_DEPOSITION        (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(SETTLING_RATES                (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(NOT_DEPOSITED_FLUXES          (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(FLUXES                        (nkn, NUM_SED_VARS                         ))
-        allocate(SETTLING_VELOCITIES_OUTPUT    (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(EFFECTIVE_DISSLOVED_FRACTIONS (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(EFFECTIVE_DEPOSITION_FRACTIONS(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(DEPOSITION_AREA_RATIOS        (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%DISSOLVED_FRACTIONS           (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%FRACTION_OF_DEPOSITION        (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%SETTLING_RATES                (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%NOT_DEPOSITED_FLUXES          (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%FLUXES                        (nkn, NUM_SED_VARS                         ))
+        allocate(wsc%SETTLING_VELOCITIES_OUTPUT    (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%EFFECTIVE_DISSLOVED_FRACTIONS (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%EFFECTIVE_DEPOSITION_FRACTIONS(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(wsc%DEPOSITION_AREA_RATIOS        (nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)))
 
         call INIT_PELAGIC_MODEL_CONSTANTS()
 
@@ -657,8 +658,8 @@ contains
 
             close(IN_FILE + 2)
         else
-            FLUXES_TO_WATER_COLUMN        = 0.0D0
-            FLUXES_OUTPUT_TO_WATER_COLUMN = 0.0D0
+            wsc%FLUXES_TO_WATER_COLUMN        = 0.0D0
+            wsc%FLUXES_OUTPUT_TO_WATER_COLUMN = 0.0D0
         end if
         ! -----------------------------------------------------------------------------------
         ! READING THE BOTTOM SEDIMENT MODEL INPUTS

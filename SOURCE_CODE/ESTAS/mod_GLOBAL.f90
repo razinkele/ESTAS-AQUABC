@@ -139,21 +139,11 @@ module GLOBAL
     ! -----------------------------------------------------------------------------------
     ! End of variables for bottom sediment submodel
 
-    ! Variables for water column - bottom sediment interaction
-    real(kind = DBL), allocatable, dimension(:, :) :: FLUXES_TO_WATER_COLUMN
-    real(kind = DBL), allocatable, dimension(:, :) :: FLUXES_OUTPUT_TO_WATER_COLUMN
-    ! End of variables for water column - bottom sediment interaction
-
-    real(kind = DBL), allocatable, dimension(:, :) :: DISSOLVED_FRACTIONS
-    real(kind = DBL), allocatable, dimension(:, :) :: FRACTION_OF_DEPOSITION
-    real(kind = DBL), allocatable, dimension(:, :) :: SETTLING_RATES
-    real(kind = DBL), allocatable, dimension(:, :) :: NOT_DEPOSITED_FLUXES
-    real(kind = DBL), allocatable, dimension(:, :) :: FLUXES
-
-    real(kind = DBL), allocatable, dimension(:, :) :: SETTLING_VELOCITIES_OUTPUT
-    real(kind = DBL), allocatable, dimension(:, :) :: EFFECTIVE_DISSLOVED_FRACTIONS
-    real(kind = DBL), allocatable, dimension(:, :) :: EFFECTIVE_DEPOSITION_FRACTIONS
-    real(kind = DBL), allocatable, dimension(:, :) :: DEPOSITION_AREA_RATIOS
+    ! -----------------------------------------------------------------------------------
+    ! Particle settling/deposition + water<->sediment flux coupling state (11 members)
+    ! moved to the derived type `wsc` (type wsc_state_t) in module WATER_SEDIMENT_COUPLING
+    ! — see docs/superpowers/specs/2026-07-23-water-sediment-coupling-derived-type-design.md.
+    ! -----------------------------------------------------------------------------------
 
     character(len = 2048) :: COCOA_PELAGIC_OUTPUTS_FILENAME
 

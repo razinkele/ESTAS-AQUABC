@@ -1,6 +1,7 @@
 module SIMULATE
 
     use GLOBAL
+    use WATER_SEDIMENT_COUPLING, only: wsc
     use AQUATIC_MODEL
     use PELAGIC_SOLVER
     use PELAGIC_EXERGY
@@ -320,10 +321,10 @@ contains
                      (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA, &
                       TIME, TIME_STEP                            , &
                       PELAGIC_SOLVER_NO                          , &
-                      SETTLING_VELOCITIES_OUTPUT                 , &
-                      EFFECTIVE_DISSLOVED_FRACTIONS              , &
-                      EFFECTIVE_DEPOSITION_FRACTIONS             , &
-                      DEPOSITION_AREA_RATIOS                     , &
+                      wsc%SETTLING_VELOCITIES_OUTPUT                 , &
+                      wsc%EFFECTIVE_DISSLOVED_FRACTIONS              , &
+                      wsc%EFFECTIVE_DEPOSITION_FRACTIONS             , &
+                      wsc%DEPOSITION_AREA_RATIOS                     , &
                       nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
 
                 if (MODEL_BOTTOM_SEDIMENTS > 1) then
@@ -584,8 +585,8 @@ contains
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
                                           (DERIVATIVES(i, j) - &
-                                               FLUXES_TO_WATER_COLUMN(i,j)), &
-                                               FLUXES_TO_WATER_COLUMN(i, j)
+                                               wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
+                                               wsc%FLUXES_TO_WATER_COLUMN(i, j)
                                 else
                                     write(unit = 1001) WTIME, dble(i), dble(j), &
                                           (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
@@ -609,8 +610,8 @@ contains
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
                                           (DERIVATIVES(i, j) - &
-                                               FLUXES_TO_WATER_COLUMN(i,j)), &
-                                               FLUXES_TO_WATER_COLUMN(i, j)
+                                               wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
+                                               wsc%FLUXES_TO_WATER_COLUMN(i, j)
                                 end if
                             end do
                         end if
@@ -734,7 +735,7 @@ contains
                     if (MODEL_BOTTOM_SEDIMENTS > 1) then
                         do i = 1, nkn
                             write(unit = 1023, fmt = '(F10.4,I10,36F20.10)') &
-                                  WTIME, i, FLUXES_OUTPUT_TO_WATER_COLUMN(i,:)
+                                  WTIME, i, wsc%FLUXES_OUTPUT_TO_WATER_COLUMN(i,:)
 
                             do j = 1, NUM_SED_LAYERS
                                 write(unit = 1021, fmt = '(F10.4,2I10,24F20.10)') &
