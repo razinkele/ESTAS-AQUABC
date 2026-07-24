@@ -358,9 +358,14 @@ contains
                                             PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS) :: &
                     K1_TOTAL_DERIVS
                 real(kind = DBL) :: k1_deriv, k2_deriv
+                real(kind = DBL), dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES) :: &
+                    VOLUME_OLD, VOL_DERIV_1
 
                 ! Store K1 derivatives and advance state to predicted position
                 do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                    VOLUME_OLD(i)  = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
+                    VOL_DERIV_1(i) = PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, 1)
+
                     if (.not. HOLD_VOLUME_CONSTANT) &
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
                          PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME + &
@@ -392,6 +397,19 @@ contains
                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
                 end do
 
+                ! Fix F: re-evaluate time-forcing at TIME+dt so stage 2 uses forcing
+                ! consistent with its evaluation point (restores 2nd-order forcing terms).
+                ! Refreshes SETTLING_VELOCITIES → re-establish the un-suppressed base from
+                ! the TIME+dt fresh values; the restore below then applies once (PR #36).
+                call UPDATE_TIME_FUNCS &
+                     (PELAGIC_BOX_MODEL_DATA  , TIME + TIME_STEP, &
+                      FLOWS                   , &
+                      BOUND_CONCS             , DISPERSION_COEFFS, INTERFACE_AREAS , &
+                      SETTLING_VELOCITIES     , SURFACE_AREAS    , &
+                      BOTTOM_AREAS, MASS_LOADS, MASS_WITHDRAWALS , &
+                      PRESCRIBED_SEDIMENT_FLUXES)
+                SETTLING_VELOCITIES_FRESH = SETTLING_VELOCITIES
+
                 ! Restore fresh settling velocities so stage 2's CHLA suppression
                 ! applies once (from the fresh base), not on top of stage 1's.
                 SETTLING_VELOCITIES = SETTLING_VELOCITIES_FRESH
@@ -405,6 +423,18 @@ contains
                       EFFECTIVE_DEPOSITION_FRACTIONS, &
                       DEPOSITION_AREA_RATIOS        , &
                       nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
+
+                ! Fix V: RK2-average the box volume now the stage-2 volume derivative is
+                ! available, so the final conc = mass/VOLUME divides by a 2nd-order volume
+                ! (not the 1st-order Euler-predictor volume).
+                if (.not. HOLD_VOLUME_CONSTANT) then
+                    do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                        PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME = &
+                            VOLUME_OLD(i) + 0.5D0 * &
+                            (VOL_DERIV_1(i) + PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, 1)) &
+                            * TIME_STEP
+                    end do
+                end if
 
                 ! Final RK2 update: restore original masses and apply averaged derivatives
                 do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
