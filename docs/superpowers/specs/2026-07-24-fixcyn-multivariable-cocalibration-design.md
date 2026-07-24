@@ -1,7 +1,78 @@
 # FIX_CYN Multivariable Co-Calibration — Design
 
 **Date:** 2026-07-24
-**Status:** design (approved in brainstorming)
+**Status:** ⛔ **BLOCKED by in-loop review (2026-07-25) — do NOT execute as specified.** Three
+adversarial reviews (methodology, model-mechanism, feasibility) converged: the plumbing is fixable
+but the calibration is **ill-posed at the premise level**. Reformulation required. See "In-loop
+review outcome" below.
+
+## In-loop review outcome (2026-07-25)
+
+**Verdict: the co-calibration as designed cannot succeed and must not be run.** Three blocking
+structural findings (each independently sufficient), plus fixable hardening, plus what to preserve.
+
+### Blocking (structural — no parameter search resolves these)
+
+1. **⛔ The FIX_CYN biomass targets and EPA Chl-a targets are numerically CONTRADICTORY at the
+   overlapping boxes.** FIX_CYN enters modeled Chl-a additively as `biomass/40 × 1000` µg/L
+   (`validate_cl29_vs_epa.py:45,70`). So the biomass target alone forces a minimum Chl-a:
+   box 14 → 6.06 gC/m³ ⇒ **151 µg/L** vs total EPA Chl-a **65.9** (230 %, impossible);
+   box 23 → 4.23 ⇒ **106** vs **90.6** (117 %, impossible). At the two boxes carrying ~84 % of the
+   biomass-group weight, FIX_CYN alone demands more chlorophyll than the *entire* measured Chl-a.
+   Root cause: co-calibrating a **2009/2015 peak-campaign biomass** (biovolume→C) against a
+   **2012–21 decadal-mean extracted Chl-a** through a single fixed C:Chl=40 — non-commensurable
+   bases/eras. Corroborated by the N budget (6.06 gC/m³ × N:C 0.22 = 1.33 gN/m³, matches the
+   observed TN +56 %). Survives a 2× biomass-error revision. **No 6-param set fits both groups.**
+
+2. **⛔ High-DIN fixation wall — "FIX_CYN present" and "realistic fixation" are mutually exclusive
+   in CL29 summer.** The fixing fraction is gated by `K_FIX/(K_FIX+DIN)`
+   (`aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90:203`). CL29 summer DIN is high (boundary-dominated
+   over-prediction), so the switch ≈ 0.09 (mostly OFF): FIX_CYN can only reach observed biomass by
+   growing as a **non-fixing** cyano (`:216`), i.e. redundant with CYN and fixing ~nothing. The
+   6 params cannot create the low-DIN/replete-P niche (set by the open boundary). Same
+   competitive-exclusion-under-nutrient-replete wall already hit for Nostocales.
+
+3. **⛔ Composition degeneracy + Chl-neutrality is double-edged → silent drive-to-FIX-zero.** The
+   obs use *total* Chl-a (sums DIA/CYN/OPA/FIX_CYN/NOST, `aquabc_II_pelagic_model.f90:1005-1007`)
+   with **no CYN and no OPA constraint**. The "chl-neutral CYN↔FIX swap" enabler also makes Chl-a
+   *uninformative* about the FIX/CYN partition, and the freed resource from lowering KG_CYN flows
+   naturally to **OPA** (T_opt=17 °C, near-ideal for the cool summer; C:Chl=30, which *inflates*
+   Chl), not FIX_CYN — there is no OPA lever. With obs ~2:1 against FIX presence and the presence
+   check only post-hoc (not in-loop), the phi-minimizer will re-exclude FIX_CYN, report low
+   aggregate phi, and silently reproduce the original problem while looking "converged."
+
+### Fixable hardening (were the premise sound)
+
+- Per-group weights (reused `obs_weight()` returns one weight → silently fits CHLA only); use
+  `++ies_no_noise(true)` (weight=1/mean implies ~100 % obs noise); align the 2-yr proxy objective
+  with the 11-yr acceptance metric (report per-group phi both ways); harden soft thresholds to
+  a-priori hard numbers.
+- Build each group's box list from its OWN obs availability (fixcyn 8 vs chla/si 9; boxes 18/24/25
+  have no Chl-a/Si → would fabricate 0-targets); build writes the authoritative ordered manifest,
+  forward_run consumes it.
+- Copy `tools/validate_cl29_vs_epa.py` + `pest_fixcyn_multi/` into each PANTHER worker (workers have
+  no `tools/`); `.pst` command `python3 …`.
+- Move R_FIX/K_FIX to post-hoc (near-non-identifiable in-loop); calibrate the 4 identifiable params.
+- Post-hoc N-fix: map via `station.box_id` (Nida→23, Vidmares→18), NOT `station_pts`; filter
+  `statistic='Average'`; reconstruct with the FULL `LIM_KG_FIX_FIX_CYN` (DIN switch + LIM_P +
+  LIM_LIGHT), not temperature alone (else ~10× overestimate); pin the µmol N2 vs N ×2 unit basis.
+
+### Preserve (validated correct)
+
+Reuse of the validator's `add_derived`/`load_box_output` (proxy CHLA definitionally identical to
+the main-setup validation); R_FIX low bound as the N-fix guard; per-box summer-mean aggregation
+(balances group counts 8/9/9 — load-bearing); the honest "forced regression = valid finding"
+framing; the init-within-bounds build guard.
+
+### Stale note
+
+Spec §Parameters says "WCONST ships R_FIX=1.0, outside the bound" — this file already ships 0.1;
+`INIT_OVERRIDE` is a no-op here. All 6 inits pass the bounds guard.
+
+---
+*Original design below — retained for the record; superseded by the reformulation decision.*
+
+**Status (original):** design (approved in brainstorming)
 
 ## Problem
 
