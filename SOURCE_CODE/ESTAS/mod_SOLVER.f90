@@ -401,6 +401,9 @@ contains
                 ! consistent with its evaluation point (restores 2nd-order forcing terms).
                 ! Refreshes SETTLING_VELOCITIES → re-establish the un-suppressed base from
                 ! the TIME+dt fresh values; the restore below then applies once (PR #36).
+                ! Invariant this relies on: UPDATE_TIME_FUNCS fully recomputes
+                ! SETTLING_VELOCITIES from the time series (not a partial/in-place update),
+                ! so SETTLING_VELOCITIES_FRESH captures the clean TIME+dt base.
                 call UPDATE_TIME_FUNCS &
                      (PELAGIC_BOX_MODEL_DATA  , TIME + TIME_STEP, &
                       FLOWS                   , &

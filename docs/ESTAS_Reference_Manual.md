@@ -269,7 +269,7 @@ The solver ID (`PELAGIC_SOLVER_NO`, internal to `mod_SIMULATE.f90`) selects the 
 run start from the `ESTAS_PELAGIC_SOLVER` environment variable (unset or `1` → Forward Euler, the
 default; `2` → RK2/Heun below; any other value stops the run with an error). Setting
 `PELAGIC_SOLVER_NO = 2` activates the **RK2 (Heun's method)** solver, which is fully implemented in
-`mod_SOLVER.f90` (lines 280--410+).
+`mod_SOLVER.f90` (the `PELAGIC_SOLVER_NO == 2` branch of `SOLVE`).
 
 ### RK2 (Heun's Method) — experimental
 
