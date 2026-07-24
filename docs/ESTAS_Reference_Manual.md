@@ -265,19 +265,35 @@ $$V_i^{n+1} = V_i^{n} + \frac{dV_i}{dt}\bigg|^{n} \cdot \Delta t$$
 
 $$C_{i,j}^{n+1} = \frac{M_{i,j}^{n+1}}{V_i^{n+1}}$$
 
-The solver ID (`PELAGIC_SOLVER_NO = 1`) selects the Forward Euler scheme (default).  Setting `PELAGIC_SOLVER_NO = 2` activates the **RK2 (Heun's method)** solver, which is fully implemented in `mod_SOLVER.f90` (lines 280--410+).
+The solver ID (`PELAGIC_SOLVER_NO`, internal to `mod_SIMULATE.f90`) selects the scheme; it is set at
+run start from the `ESTAS_PELAGIC_SOLVER` environment variable (unset or `1` → Forward Euler, the
+default; `2` → RK2/Heun below; any other value stops the run with an error). Setting
+`PELAGIC_SOLVER_NO = 2` activates the **RK2 (Heun's method)** solver, which is fully implemented in
+`mod_SOLVER.f90` (lines 280--410+).
 
-### RK2 (Heun's Method)
+### RK2 (Heun's Method) — experimental
 
 When `PELAGIC_SOLVER_NO = 2`, ESTAS uses Heun's two-stage predictor--corrector method:
 
 **Stage 1 (predictor):**
 $$\tilde{M}_{i,j}^{n+1} = M_{i,j}^{n} + \frac{dM_{i,j}}{dt}\bigg|^{n} \cdot \Delta t$$
 
-**Stage 2 (corrector):** Recalculate derivatives at the predicted state, then average:
+**Stage 2 (corrector):** Recalculate derivatives (and time-dependent forcing) at the predicted state
+and time $t+\Delta t$, then average:
 $$M_{i,j}^{n+1} = M_{i,j}^{n} + \frac{1}{2}\left(\frac{dM_{i,j}}{dt}\bigg|^{n} + \frac{dM_{i,j}}{dt}\bigg|^{\text{pred}}\right) \cdot \Delta t$$
 
-The RK2 solver includes negative mass handling, concentration clamping, and diagnostic messages identical to the Euler solver. It provides improved accuracy for stiff problems or when larger time steps are used.
+The box volume is advanced with the matching 0.5·(v1+v2)·$\Delta t$ average, so that
+$C_{i,j}^{n+1} = M_{i,j}^{n+1}/V_i^{n+1}$ stays consistent with the mass update. The RK2 solver
+includes negative mass handling, concentration clamping, and diagnostic messages identical to the
+Euler solver, and is stable at the step sizes ESTAS is normally run at.
+
+**Status: experimental, not a faster or more accurate default.** RK2 is a correctly implemented,
+stable Heun method, but for this model its *output* (concentration) converges at only ~1st order, not
+the 2nd order the two-stage scheme would otherwise give — dominated by the `MIN_CONCENTRATION`
+positivity clamp described below, a non-smooth operation that caps the achievable order regardless of
+solver. At equal computational cost (2× the derivative evaluations per step) it does not outperform
+Euler. It is exposed via `ESTAS_PELAGIC_SOLVER=2` for experimentation, not as a recommended
+alternative to the default Euler scheme.
 
 ## Stability and Safety
 
