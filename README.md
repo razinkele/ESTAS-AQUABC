@@ -95,6 +95,12 @@ make OPENMP=1 build-estas        # OpenMP-enabled
 `run_cl29.sh` bakes in `ESTAS_HOLD_VOLUME=1`, required because the EUTROPY-derived flows
 are not per-box volume-conserving.
 
+The pelagic time-integration scheme is selectable via `ESTAS_PELAGIC_SOLVER`: unset or `1` uses the
+default Forward Euler solver; `2` selects the Heun/RK2 solver. **RK2 is experimental** — for this
+model it converges at only ~1st order (dominated by the `MIN_CONCENTRATION` positivity clamp, not a
+solver defect) and is not faster or more accurate than the default Euler; see the "RK2 (Heun's
+Method)" section of [`docs/ESTAS_Reference_Manual.md`](docs/ESTAS_Reference_Manual.md) for details.
+
 ## Python Shiny front end
 
 `shiny_app/` provides build/run controls, an editor for `INPUTS/` files (first save writes

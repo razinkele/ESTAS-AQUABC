@@ -24,6 +24,7 @@ def test_run_control_ui_namespaces_ids():
         "cmd_constants_file",
         "cmd_binary_enabled",
         "cmd_binary_filename",
+        "solver_select",
         "run",
         "stop_run",
         "btn_copy_mini_log",

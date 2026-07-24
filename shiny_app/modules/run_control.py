@@ -151,6 +151,17 @@ def run_control_ui():
                     ),
                 ),
 
+                # Pelagic solver selection
+                ui.tooltip(
+                    ui.input_select(
+                        "solver_select",
+                        "Pelagic solver",
+                        choices={"1": "Euler (default)", "2": "Heun / RK2 (experimental)"},
+                        selected="1"
+                    ),
+                    "Numerical integration scheme for the pelagic kinetics. Euler is the default; Heun/RK2 is experimental."
+                ),
+
                 # Command preview
                 ui.tags.strong("Command Preview", class_="small mt-2"),
                 ui.output_text_verbatim("cmd_preview", placeholder=True),
@@ -566,7 +577,8 @@ def run_control_server(input, output, session, state):
             return
 
         threading.Thread(
-            target=run.start_run, args=(estas_cmd, exe_name, dict(st.env), st.input_file),
+            target=run.start_run,
+            args=(estas_cmd, exe_name, build_commands.assemble_run_env(st.env, input.solver_select()), st.input_file),
             daemon=True, name="RunThread",
         ).start()
 

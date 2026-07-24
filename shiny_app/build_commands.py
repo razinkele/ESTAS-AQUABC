@@ -59,6 +59,14 @@ def assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
     return cmd
 
 
+def assemble_run_env(setup_env: dict, solver_value: str) -> dict:
+    """Run-subprocess env: copy the setup env (never mutate the shared Setup.env) and
+    set the pelagic solver choice. solver_value: "1" Euler (default) | "2" Heun/RK2."""
+    env = dict(setup_env)
+    env["ESTAS_PELAGIC_SOLVER"] = solver_value
+    return env
+
+
 def get_available_executables(root):
     """Scan for available executable files under root."""
     executables = []

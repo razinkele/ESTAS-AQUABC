@@ -20,6 +20,7 @@ contains
         type(AQUATIC_MODEL_DS), intent(inout) :: AQUATIC_MODEL_DATA
 
         integer :: PELAGIC_SOLVER_NO
+        character(len = 32) :: SOLVER_ENV
         integer :: COUNTER
 
         integer :: i
@@ -90,7 +91,18 @@ contains
         NUM_RELATIVE_ERRORS = 0
 
         AUX_OUTPUT_UNIT   = 20
-        PELAGIC_SOLVER_NO = 1
+        call get_environment_variable('ESTAS_PELAGIC_SOLVER', SOLVER_ENV)
+        select case (trim(adjustl(SOLVER_ENV)))
+            case ('', '1')
+                PELAGIC_SOLVER_NO = 1
+            case ('2')
+                PELAGIC_SOLVER_NO = 2
+            case default
+                write(6,*) 'ERROR: ESTAS_PELAGIC_SOLVER must be 1 (Euler) or 2 (Heun/RK2), got "' &
+                           // trim(adjustl(SOLVER_ENV)) // '"'
+                error stop 1
+        end select
+        write(6,*) 'PELAGIC_SOLVER = ', PELAGIC_SOLVER_NO, ' (1 = Euler, 2 = Heun/RK2, experimental)'
         MEM_ERROR         = 0
 
         TIME_STEP                   = AQUATIC_MODEL_DATA % TIME_STEP
