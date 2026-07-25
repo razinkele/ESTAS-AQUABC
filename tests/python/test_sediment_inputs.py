@@ -126,10 +126,23 @@ class TestWriteInputTxt:
         assert "NUM_PRESCRIBED_SEDIMENT_FLUX_SETS" not in t   # must be absent under ==2
         assert f"{240:15d}\n" in t                            # PRINT_INTERVAL 240
 
-    def test_disabled_matches_baseline(self, tmp_path):
+    def test_disabled_matches_baseline(self, tmp_path, monkeypatch):
+        # True baseline = BOTH sinks off (diagenesis + benthic denit).
+        monkeypatch.setattr(conv, "CL29_BENTHIC_DENIT", None)
         t = self._write(tmp_path, False)
         assert "# MODEL_SEDIMENTS\n          0\n" in t
         assert "# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n" in t
         assert "# SEDIMENT MODEL INPUT FILE\n" in t
         assert f"{10:15d}\n" in t                             # PRINT_INTERVAL 10
+        assert "MODEL_SEDIMENTS\n          2" not in t
+
+    def test_benthic_denit_uses_layout_1(self, tmp_path, monkeypatch):
+        # CL29_BENTHIC_DENIT on (default) with diagenesis off -> MODEL_SEDIMENTS=1
+        # prescribed-flux path, one flux set (SED_FLUX_NO3_SINK.txt).
+        monkeypatch.setattr(conv, "CL29_BENTHIC_DENIT",
+                            {"peak_mmol": 3.0, "floor_mmol": 0.36, "peak_doy": 220, "width": 55})
+        t = self._write(tmp_path, False)
+        assert "# MODEL_SEDIMENTS\n          1\n" in t
+        assert "# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          1\n" in t
+        assert "# SEDIMENT MODEL INPUT FILE\nSED_FLUX_NO3_SINK.txt\n" in t
         assert "MODEL_SEDIMENTS\n          2" not in t
