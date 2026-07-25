@@ -178,6 +178,35 @@ CL29_BOUNDARY_PO4_SUMMER_PEAK = 2.0   # 3.0->2.0 2026-07-19: the 3.0 boost was t
 # so the baseline stays byte-identical. See
 # docs/superpowers/specs/2026-07-08-cl29-sediment-diagenesis-phase1-design.md.
 CL29_ENABLE_SEDIMENTS = False
+
+# ---- Benthic denitrification NO3 sink (ADOPTED default) --------------------------
+# CL29 is a WATER-COLUMN-only model, so it lacks the lagoon's largest N sink: benthic
+# denitrification (coupled nitrification-denitrification at the sediment surface, which
+# permanently removes NO3 as N2 gas). Without it CL29 over-predicts SUMMER NO3 ~8-16x
+# (the water-column K_MIN_DOC_NO3N_20 denit lever above closes only part of the gap;
+# see cl29-epa-validation). This option prescribes that missing sink as a summer-peaked
+# NO3 removal applied to the sediment surface of ALL 29 boxes via the MODEL_SEDIMENTS=1
+# prescribed-flux path (area-scaled per box in mod_SOLVER.f90:1358-1359).
+#
+# Magnitude (gN/m2/d, NEGATIVE=removal) is a day-of-year Gaussian:
+#   sink(doy) = -(floor + (peak-floor)*exp(-((doy-peak_doy)/width)^2))  [mmol N/m2/d -> gN]
+# peaking at ~5 mmol/m2/d in early August (day 220) with a ~0.36 mmol winter floor --
+# an annual mean ~1.5 mmol/m2/d, within measured Curonian denitrification rates (1.2-4.8).
+# 1 mmol N/m2/d = 0.014 gN/m2/d (14 g N/mol). A prescribed-flux prototype (the productive
+# subset {7,11,14,17,18,23,25}) reduced summer NO3 ~20% with NO side effects (Chl-a/DO/NH4
+# stable). Applied lagoon-wide here (all 29 boxes) as a PARTIAL, defensible improvement:
+# it does not close the residual NO3 gap, which is boundary/spring-nutrient-pool-drainage-
+# dominated (the model equilibrates to open-boundary concentrations; see cl29-epa-validation).
+#
+# Set to None to disable (INPUT_CL29 reverts to MODEL_SEDIMENTS=0, byte-identical baseline).
+# INCOMPATIBLE with CL29_ENABLE_SEDIMENTS (MODEL_SEDIMENTS can be 1 OR 2, not both);
+# main() hard-errors if both are set. Default sediments=False, so ON => MODEL_SEDIMENTS=1.
+CL29_BENTHIC_DENIT = {"peak_mmol": 3.0, "floor_mmol": 0.36, "peak_doy": 220, "width": 55}
+_MMOL_N_TO_GN = 0.014   # 1 mmol N/m2/d = 0.014 gN/m2/d
+# Base forcing-TS count in _write_master's ts_files list. When CL29_BENTHIC_DENIT is on
+# the NO3-sink series is appended as forcing TS number _BASE_NUM_FORCING_TS + 1, and the
+# SED_FLUX set references that same number (kept in sync by an assert in _write_master).
+_BASE_NUM_FORCING_TS = 14
 # Sediment carbonate ICs. None = use the template's values (INORG_C/TOT_ALK ~0.003,
 # a physically realistic pore-water DIC). If the staged run's CO2SYS hard-stops with
 # 'pH does not converge', set to (INORG_C, TOT_ALK) ~= (3.0, 3.1): the inflated
@@ -419,6 +448,45 @@ def write_ts(path, comment, days, cols):
             fh.write(f"{float(d):.6f} " + " ".join(f"{v:.6f}" for v in row) + "\n")
 
 
+def _no3_sink_gN(doy, cfg):
+    """Summer-peaked benthic-denit NO3 sink at day-of-year `doy`, in gN/m2/d, NEGATIVE
+    (removal). Day-of-year Gaussian in mmol N/m2/d converted to gN/m2/d:
+      sink = -(floor + (peak-floor) * exp(-((doy-peak_doy)/width)^2)) * _MMOL_N_TO_GN
+    Reproduces the prototype FORC_NO3_SINK.txt (peak 5 mmol day 220, floor 0.36 mmol)."""
+    peak = cfg["peak_mmol"] * _MMOL_N_TO_GN
+    floor = cfg["floor_mmol"] * _MMOL_N_TO_GN
+    g = floor + (peak - floor) * math.exp(-(((doy - cfg["peak_doy"]) / cfg["width"]) ** 2))
+    return -g
+
+
+def _write_no3_sink_forcing(out, tdays, cfg):
+    """FORC_NO3_SINK.txt: a 2-variable forcing TS on the model time axis. var1 = 0.0 for
+    every time row (the no-flux series every non-NO3 (box,statevar) points at); var2 = the
+    summer-peaked NO3 sink (gN/m2/d, negative). doy = day % 365 (matches the boundary-P
+    seasonal convention). Spans the full simulation via tdays."""
+    cols = [[0.0, _no3_sink_gN(d % 365.0, cfg)] for d in tdays]
+    write_ts(os.path.join(out, "FORC_NO3_SINK.txt"),
+             "NO3 benthic denit sink SUMMER-PEAKED  var1=0  var2=sink gN/m2/d",
+             tdays, cols)
+
+
+def _write_sed_flux_no3_sink(out, ts_no):
+    """SED_FLUX_NO3_SINK.txt: the prescribed-flux set wiring the NO3 sink to every box.
+    2 header lines then NBOX*NSTATE rows `BOX STATEVAR FORCING_TS_NO FORCING_TS_VAR_NO`
+    (reader: sub_READ_BOTTOM_SEDS_FLUXES_INPUTS). NO3 (statevar 2) -> the sink (var 2) in
+    ALL NBOX boxes; every other (box,statevar) -> the 0.0 no-flux series (var 1). Never
+    FORCING_TS_NO=0 -- that is an out-of-bounds read."""
+    with open(os.path.join(out, "SED_FLUX_NO3_SINK.txt"), "w") as fh:
+        fh.write("# ************************* PRESCRIBED SEDIMENT FLUXES "
+                 "(NO3 benthic sink) *************************\n")
+        fh.write("#         BOX NO        STATE VAR NO       FORCING TS NO   "
+                 "FORCING TS VAR NO\n")
+        for b in range(1, NBOX + 1):
+            for v in range(1, NSTATE + 1):
+                var_no = 2 if v == 2 else 1     # statevar 2 = NO3_N -> sink; else 0.0
+                fh.write(f"{b:20d}{v:20d}{ts_no:20d}{var_no:20d}\n")
+
+
 def wind_modulated_settling(wind, w0, uhalf):
     """Per-day net diatom settling velocity from daily wind (m/day).
 
@@ -508,6 +576,14 @@ def synth_bathymetry(box, area, depth):
 
 
 def main():
+    # MODEL_SEDIMENTS can be 1 (prescribed NO3-sink flux) OR 2 (full diagenesis), not
+    # both -- the two toggles are mutually exclusive. Fail loud rather than emit an
+    # inconsistent INPUT_CL29 (e.g. an orphan forcing TS with no flux set referencing it).
+    if CL29_BENTHIC_DENIT and CL29_ENABLE_SEDIMENTS:
+        raise SystemExit(
+            "CL29_BENTHIC_DENIT (MODEL_SEDIMENTS=1 prescribed NO3-sink flux) is "
+            "incompatible with CL29_ENABLE_SEDIMENTS (MODEL_SEDIMENTS=2 diagenesis) -- "
+            "enable at most one.")
     if os.path.isdir(OUT):
         shutil.rmtree(OUT)
     os.makedirs(OUT)
@@ -601,6 +677,12 @@ def main():
 
     # ---- master PELAGIC_INPUTS.txt ----
     _write_master(OUT, state_block, links, depth, area)
+    # benthic-denit NO3 sink: the summer-peaked forcing TS + its all-boxes prescribed
+    # flux set (wired into PELAGIC_INPUTS by _write_master, MODEL_SEDIMENTS=1 by
+    # _write_input_txt). The flux set references forcing TS _BASE_NUM_FORCING_TS + 1.
+    if CL29_BENTHIC_DENIT:
+        _write_no3_sink_forcing(OUT, tdays, CL29_BENTHIC_DENIT)
+        _write_sed_flux_no3_sink(OUT, _BASE_NUM_FORCING_TS + 1)
     _write_sediment_inputs(OUT, CL29_ENABLE_SEDIMENTS, CL29_SEDIMENT_TYPE)
     _write_input_txt(REPO, tdays, CL29_ENABLE_SEDIMENTS)
     _write_run_wrapper(REPO)
@@ -668,7 +750,10 @@ def _write_master(out, state_block, links, depth, area):
     L.append(_hdr("NUM_OPEN_BOUNDARIES", NBND))
     L.append(_hdr("NUM_MASS_LOADS", 0))
     L.append(_hdr("NUM_MASS_WITHDRAWALS", 0))
-    L.append(_hdr("NUM_FORCING_TS", 14))
+    # +1 forcing TS when the benthic-denit NO3 sink is enabled (FORC_NO3_SINK.txt,
+    # appended to ts_files below as TS _BASE_NUM_FORCING_TS + 1).
+    num_forcing_ts = _BASE_NUM_FORCING_TS + (1 if CL29_BENTHIC_DENIT else 0)
+    L.append(_hdr("NUM_FORCING_TS", num_forcing_ts))
     L.append("# PELAGIC_MODEL_OPTIONS\nPELAGIC_MODEL_OPTIONS.txt\n")
     L.append("# PELAGIC OUTPUT INFORMATION FILE\nPELAGIC_OUTPUT_INFORMATION_FILE.txt\n")
     L.append("# PROCESS RATE OUTPUT TYPE, 1 Volume based 2 Area based\n1\n")
@@ -797,6 +882,10 @@ def _write_master(out, state_block, links, depth, area):
                 "FORC_TS_5.txt", "TEMP_TS.txt", "SALT_TS.txt", "SOLAR_RAD_TS.txt",
                 "FORC_TS_9.txt", "AIR_TEMP_TS.txt", "WIND_SPEED_TS.txt",
                 "RAINFALL_TS.txt", "EVAPORATION_TS.txt", "ICE_COVER.txt"]
+    assert len(ts_files) == _BASE_NUM_FORCING_TS, \
+        "ts_files length drifted from _BASE_NUM_FORCING_TS"
+    if CL29_BENTHIC_DENIT:                       # appended as TS _BASE_NUM_FORCING_TS + 1
+        ts_files.append("FORC_NO3_SINK.txt")
     for i, f in enumerate(ts_files, start=1):
         L.append(f"{i:20d}{f:>50}\n")
 
@@ -1080,6 +1169,15 @@ def _write_input_txt(repo, tdays, enable_sediments=False):
             fh.write("# MODEL_SEDIMENTS\n          2\n")
             fh.write("# BOTTOM SEDIMENT MODEL INPUT FILE\n")
             fh.write("BOTTOM_SEDIMENT_MODEL_INPUT.txt\n")
+        elif CL29_BENTHIC_DENIT:
+            # Benthic-denit NO3 sink via the prescribed-flux path (MODEL_SEDIMENTS=1
+            # activates ONLY prescribed fluxes, not the >1 diagenesis model). One flux
+            # set: SED_FLUX_NO3_SINK.txt. (enable_sediments is guaranteed False here --
+            # main() hard-errors if both toggles are set.)
+            fh.write("# MODEL_SEDIMENTS\n          1\n")
+            fh.write("# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          1\n")
+            fh.write("# SEDIMENT MODEL INPUT FILE\n")
+            fh.write("SED_FLUX_NO3_SINK.txt\n")
         else:
             fh.write("# MODEL_SEDIMENTS\n          0\n")
             fh.write("# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS\n          0\n")
