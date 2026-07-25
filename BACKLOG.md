@@ -56,7 +56,7 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Variable-stoichiometry option for key groups (Si:C, N:C plasticity) | P2 | Selective ERSEM-style realism, no full rewrite. |
+| Variable-stoichiometry option for key groups (Si:C, N:C plasticity) | P2 | Selective ERSEM-style realism, no full rewrite. **Now concretely motivated (2026-07-25):** the CL29 summer-NO3 over-prediction is unfixable by uptake precisely because N:C is fixed at 0.22 — phyto can't luxury-uptake N without over-growing biomass (breaking Chl-a). Variable N:C would let the model strip summer DIN to observed near-depletion. See §4 summer-NO3 + `cl29-epa-validation`. |
 | Re-introduce explicit bacteria as a library (nitrifiers / heterotrophs / denitrifiers + electron acceptors) | P2 | Restores dynamic remineralization; corrects the organic-carbon underestimate. |
 | Function-oriented zoobenthos library (filters / shredders / predators; e.g. *Dreissena*) | P3 | General, not Curonian-specific. |
 | Unify ESTAS box ↔ SHYFEM 3-D (one kinetic core, two deployments) | P3 | Removes drift between standalone and SHYFEM-bundled versions. |
@@ -71,6 +71,8 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
 | CL29 sediment Phase 2 (muddy-anoxic-P flux) | **NO-GO** at the §4.1a gate under advanced-redox = 0. |
 | Nostocales multi-year bloom | **Won't-fix** — de-risked as not-defensibly-fixable (competitive exclusion under P-limitation). |
 | CL29 PEST-posterior promotion | **Abandoned** — non-stationarity; PR #61 landed net-zero, kept only the tooling. |
+| FIX_CYN (N2-fixing cyano) to observed biomass | **Won't-fix / decided (2026-07-25)** — temperature diagnosis correct (T_opt=26 too warm) but FIX_CYN-as-a-*fixer* is not reproducible: NH4-floor competitive exclusion (summer DIN floored ~0.06 by regeneration-driven NH4 that matches EPA → non-fixers stay 87% N-replete; fixers never competitive). Growing it to observed biomass also regresses Chl-a/Si/TN (single-var vs multivar tension). Same class as Nostocales. See `fix-cyn-n2fixation-overprediction`. |
+| CL29 summer-NO3 over-prediction | **Partial fix ADOPTED (2026-07-25, `78ce4ad`)** — benthic denitrification `CL29_BENTHIC_DENIT` (config-only, converter option) closes ~20% of the summer gap: NO3 bias +0.065→+0.033, TN/DO better, small structural PO4 regression (+5.7% RMSE, unavoidable). Residual ~80% is spring-pool-drainage-dominated + the aseasonal-diatom-metabolism limit (uptake blocked by **fixed N:C** — see §3 variable-stoichiometry). A documented multi-factor residual alongside PO4/Si. |
 
 ---
 
