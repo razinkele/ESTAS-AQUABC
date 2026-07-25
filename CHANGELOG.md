@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-25
+
+> 🎉 **Released — [AQUABC v0.8.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.8.0)**
+> (Linux binary attached). **Headline: Phase-5 de-globalisation continues, the pelagic solver becomes
+> selectable, and CL29 gains a benthic-denitrification nitrogen sink.** Two more byte-identical
+> `GLOBAL`→derived-type slices (bottom-sediment `sediment_state_t`, settling / water-coupling
+> `wsc_state_t`) drop `GLOBAL`'s allocatable count 44 → 12. The pelagic solver is now selectable via
+> the `ESTAS_PELAGIC_SOLVER` env var (default Euler, byte-identical; RK2/Heun an experimental opt-in).
+> A new config-only `CL29_BENTHIC_DENIT` sediment NO3 sink addresses the CL29 summer-NO3
+> over-prediction (EPA-verified: NO3 bias more than halved). Standard model runs remain byte-identical
+> to v0.7.0.
+
+### Added
+- **Configurable pelagic solver** (`ESTAS_PELAGIC_SOLVER` env var). Default (unset / `1`) is Euler and
+  byte-identical to prior releases; `2` selects the RK2/Heun solver as a **documented experimental**
+  opt-in — an investigation established it converges ~1st-order for this model (dominated by
+  `MIN_CONCENTRATION` clamping) and is not better than Euler per unit cost. Ships with a Shiny
+  run-control selector and the banked RK2 correctness fixes (volume RK2-averaging + stage-2 forcing
+  re-evaluation).
+- **Benthic denitrification NO3 sink for CL29** (`CL29_BENTHIC_DENIT` converter option). A summer-peaked
+  prescribed sediment-interface NO3 sink (config-only, no Fortran) addressing the diagnosed summer-NO3
+  over-prediction — the water-column-only model lacks the dominant shallow-lagoon N sink (its own
+  water-column denitrification is O2-throttled). EPA-verified over 11 years: NO3 bias more than halved
+  and TN/DO improved, with a small, structural PO4 trade-off; off by config for a byte-identical baseline.
+
+### Changed
+- **Phase-5.1 `GLOBAL` de-globalisation continues** (both byte-identical): the bottom-sediment state
+  moves into `sediment_state_t` (`bsed`) and the settling / water-sediment-coupling state into
+  `wsc_state_t` (`wsc`, a new leaf module), dropping `GLOBAL`'s allocatable count 44 → 23 → 12. Each
+  slice was hardened via adversarial in-loop review and a strip-and-compare byte-identity proof.
+
+### Documentation
+- **FIX_CYN (N2-fixing cyanobacteria) investigation — decided negative result.** Documented as not
+  reproducible in CL29: an NH4-floor competitive exclusion (summer DIN floored by regeneration-driven
+  NH4 that already matches observations, keeping non-fixers N-replete), the same class as the
+  Nostocales limit. The multivariable co-calibration spec was blocked by a three-lens in-loop review
+  (contradictory observations + the fixation wall). The related summer-NO3 over-prediction is
+  root-caused (missing benthic denitrification, now partially fixed), and **variable N:C stoichiometry**
+  is flagged in the backlog as the clean future lever to close the remaining gap.
+
 ## [0.7.0] - 2026-07-23
 
 > 🎉 **Released — [AQUABC v0.7.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.7.0)**
