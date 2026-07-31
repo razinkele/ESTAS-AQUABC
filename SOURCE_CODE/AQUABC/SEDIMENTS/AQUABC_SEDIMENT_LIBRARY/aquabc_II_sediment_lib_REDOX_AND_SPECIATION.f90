@@ -209,7 +209,10 @@ subroutine SED_REDOX_AND_SPECIATION &
     FE_II_ACTIVITY_RATIOS (:, :, 3) = FE_S_OVER_FE_II
     FE_II_ACTIVITY_RATIOS (:, :, 4) = FE_S_2_OVER_FE_II
 
-    FE_II_SALT_NO  = maxloc(FE_II_ACTIVITY_RATIOS , dim = 2)
+    ! FE_II_ACTIVITY_RATIOS is (reactor, layer, salt); reduce over the salt
+    ! axis (dim=3) to pick the most likely Fe(II) salt per reactor/layer.
+    ! (Reducing dim=2, the layer axis, was a bug.)
+    FE_II_SALT_NO  = maxloc(FE_II_ACTIVITY_RATIOS , dim = 3)
 
     !FeCO3
     where(FE_II_SALT_NO == 1)
