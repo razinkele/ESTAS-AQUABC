@@ -1,7 +1,10 @@
 # Resuspension × Sediment-Diagenesis Coupling — Design / Scope
 
 **Date:** 2026-07-30
-**Status:** scope / design (for review — not yet a plan)
+**Status:** scope / design (for review — not yet a plan). **A partial implementation of this exact fix
+already exists in `ali_version/` — see "Reconciliation with `ali_version`" below; it changes the
+architecture decision and de-risks the driver, but leaves the spec's core deliverable (the particulate
+C/N/P water handoff) unbuilt.**
 
 ## Goal
 
@@ -138,11 +141,90 @@ erosion driver; guard removal (gated to the coupled path only).
 
 **Estimate: ~5–7 days for Phase 1.** Phase 2 (shear-driven erosion) adds ~2–3 days.
 
+## Reconciliation with `ali_version/` (2026-07-30)
+
+A collaborator's tree `ali_version/` contains a **partial, in-progress implementation of this fix** —
+"**Resuspension Option 3**". It is based on a *recent* main (carries the `resuspension_t` /
+`sediment_state_t` / `wsc_state_t` refactors and the RK2 solver; `mod_BOTTOM_SEDIMENTS.f90` and
+`mod_GLOBAL.f90` byte-identical), i.e. targeted work, not a stale fork. (The raw 1413-line
+`mod_AQUATIC_MODEL` diff is a **CRLF artifact** — 721 `\r` lines; the real whitespace-insensitive change
+is 277 lines. Normalize line endings before any merge.)
+
+**What Ali already built (validates the spec's Option A + guard-lift):**
+- **Option-3 config reader** `READ_RESUSPENSION_FILE_OPTION_3` (`ali mod_RESUSPENSION.f90:232-310`) — a
+  per-box prescribed **velocity** time series, filling the pre-existing `resusp%` fields.
+- **Guard lifted, gated to the new path** (`ali mod_AQUATIC_MODEL.f90:574-583`): halts only for
+  `OPTION==1|2` + diagenesis; `OPTION==3` + diagenesis now runs. (Same goal as this spec, keyed on the
+  option rather than `MODEL_SEDIMENTS`+`CONSIDER`.)
+- **Per-box `RESUSPENSION_VELOCITIES(nkn)`** assembled in a new `case(3)` (`ali mod_SOLVER.f90:~1497`)
+  that **does NOT touch `DERIVATIVES`** (avoids Option 1's source-from-nowhere) and is passed into
+  `AQUABC_SEDIMENT_MODEL_1` (`:1616`).
+- **An erosion term** `SED_RESUSPENSION_RATES` (layer 1) inside the sediment lib
+  (`ali aquabc_II_sediment_model_1_fast.f90:246,696,1779,1846`): computed for both the dissolved fraction
+  (`:1779`) and the pure particulates (`:1846`), added to the water-return flux and subtracted from the
+  bed. A genuine two-way transfer, driven by the prescribed velocity — **this is the spec's Option A.**
+
+**What Ali left broken — exactly this spec's core deliverable:**
+- **The particulate C/N/P water handoff is a net mass SINK.** The return map still hard-zeroes water
+  indices 5:11 (`aquabc_II_sediment_auxillary.f90:396`, **unchanged**), and bed slots SED_PON/POP/POC
+  (4/7/10) appear nowhere on its RHS → eroded POC/PON/POP are decremented from the bed but **dropped at
+  the water handoff**. Only `PART_Si` survives (water 18 ← bed 12). Closing this — the spec's mapping
+  table + the `:396` call-out — is the load-bearing remaining work.
+- **Conservation is not demonstrated even for PART_Si:** bed-loss carries `×SED_POROSITIES` while the
+  particulate water-gain has no porosity factor (solute path *divides* by porosity); the driver uses
+  `DABS(vel)`; and the areal `FRAC_RESUSPENSION_AREAS` factor is absent. Symptom: Ali **widened the
+  `STRANGER` sanity limits ±1e4→±1e5** to keep runs alive — consistent with unbalanced fluxes.
+- **Scope creep:** Ali also resuspends **dissolved solutes** (`:1779`) — which this spec scopes OUT.
+
+**Architecture fork (Ali chose the opposite of the spec):** Ali put the erosion term **inside the shared
+AQUABC sediment lib**; the spec recommends the **ESTAS bed block** (`mod_SOLVER:1510-1669`) to avoid
+touching the SHYFEM-shared lib. He did *not* revive the dormant `isedi`/`H_ERODEP` branch. **This is now a
+real decision (see Open decisions #5).**
+
+**Do-not-entangle / separate concerns in `ali_version`:**
+- **⚠️ It very likely does not compile:** `aquabc_II_sediment_lib_REDOX_AND_SPECIATION.f90:212-213` uses
+  `#`-prefixed comments (invalid Fortran — same class as the historical `%`-comment break). The underlying
+  change is a **genuine redox bugfix** (`maxloc(FE_II_ACTIVITY_RATIOS, dim=2)`→`dim=3` for the 3-D array)
+  — **worth cherry-picking independently** once the `#`→`!` comments are fixed.
+- A **diagnostics refactor** (negative-mass/conc checks → `CHECK_NEW_PELAGIC_MASS/CONCENTRATION` in
+  `mod_PELAGIC_ECOLOGY`; also *suppresses* the negative-mass spew for known vars) — orthogonal, merge
+  separately.
+- A **config revert** commenting out the recent-main `RESUSPENSION_INPUT_FOLDER` / `MODEL_BOTTOM_SED_PRESET`
+  machinery ("DO NOT REACTIVATE. I HAVE NO CLUE HOW IT WORKS") — **removes a current-main feature**; do not
+  merge wholesale.
+
+**Net:** Ali's work de-risks Phase-1 items 1 (driver) and 4 (guard-lift) — adopt his Option-3 reader +
+`RESUSPENSION_VELOCITIES` plumbing. The spec's central task (the particulate C/N/P handoff + a demonstrated
+conservation invariant) is precisely what remains.
+
+**Update (2026-07-30, post-fix):** The "conservation not demonstrated / porosity asymmetry" concern above
+was subsequently **root-caused and fixed** on the coupling branch `feature/resuspension-diagenesis-coupling`
+(commit `b5cf00b`). The real
+defect was not a porosity factor but an **areal-vs-volumetric unit mismatch on the bed side**:
+`SED_RESUSPENSION_RATES` is an areal flux (g/m²/day), but the bed sink folded it into `TRANSPORT_DERIVS`
+(a per-volume concentration rate) **without `÷SED_DEPTHS`**. Since `DERIVS = TRANSPORT_DERIVS × SED_DEPTHS`,
+the bed removed only `RATES×porosity×depth` (~2%) while the water gained the full areal `RATES` — creating
+~98% of the eroded mass. Fixed by subtracting `SED_RESUSPENSION_RATES / max(SED_DEPTHS, 1e-20)` at the
+three TRANSPORT sites. **Now demonstrated:** flux-level `bed_out/water_in` ratio = 1.0000000000, and the
+erosion-on − erosion-off bed `SED_PSi` delta flipped from +5.7/+16 (created) to −822 (removed). The
+particulate **C/N/P** water handoff (the `aquabc_II_sediment_auxillary.f90:396` hard-zero of water indices
+5:11) remains the load-bearing unbuilt deliverable.
+
 ## Open decisions for review
 
-1. **Erosion driver:** A (prescribed velocity, minimal — recommended) vs B (shear-driven, physical).
+1. **Erosion driver:** A (prescribed velocity, minimal — recommended; **Ali's Option 3 already realizes
+   this**) vs B (shear-driven, physical).
 2. **Option-1 dimensional-quirk fix:** coupled-path-only (byte-identity-safe) vs global (fixes a real bug,
    changes Option-1-alone behaviour).
 3. **Depth of ambition:** Phase 1 only (lift the guard, conservative) vs Phase 1 + 2.
 4. **Is this worth doing now?** No current setup needs both (CL29 diagenesis runs with resuspension off).
    The value is unblocking a physically-complete shallow-lagoon configuration; weigh against the ~1-week cost.
+5. **Architecture (forced by `ali_version`):** **(A) adopt Ali's in-lib erosion term** — then add the
+   particulate C/N/P water handoff (fix `aquabc_II_sediment_auxillary.f90:396` map), the `FRAC` areal
+   factor, reconcile the porosity asymmetry, and decide whether to keep or drop his dissolved-solute
+   resuspension; **or (B) the spec's ESTAS-bed-block design** — then Ali's in-lib term is superseded and
+   reverted, keeping only his Option-3 reader + `RESUSPENSION_VELOCITIES` plumbing + guard-lift. The spec
+   assumed B; Ali shipped A. **Recommendation: (A)** — most of the plumbing exists; the remaining work is
+   the handoff map + conservation, which is the same in either path.
+6. **Cherry-pick the redox `dim=2→dim=3` bugfix** from `ali_version` independently of the coupling (fix the
+   `#`-comments first). Separate PR.
