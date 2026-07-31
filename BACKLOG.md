@@ -6,7 +6,7 @@ paper (`~/curonian/docs/EUTROPY_AQUABC_comparison*` §10.3 / §11.2), and the sc
 campaigns tracked in project notes. **Detailed task specs live in the referenced sources — this
 file is the prioritized index, not a duplicate**, so it can't drift from the plan.
 
-**Last updated:** 2026-07-23 · **Latest release:** v0.7.0 · Fortran-plan Phases 1–4 and every item
+**Last updated:** 2026-07-31 · **Latest release:** v0.8.0 · Fortran-plan Phases 1–4 and every item
 in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**.
 
 ---
@@ -26,6 +26,38 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
   see the caveat under **Calibration** below — the in-Fortran objective is still a stub.
 - Fortran-plan Phases 1–4 (safety, modernization, testing, OpenMP) and the whole
   `FIXES_AND_IMPROVEMENTS.md` list — done.
+- **v0.8.0 benthic denitrification** (`CL29_BENTHIC_DENIT`, `78ce4ad`) — config-only NO3 sink; closes
+  ~20% of the CL29 summer-NO3 over-prediction. See §4.
+- **Configurable pelagic solver (RK2/Heun)** — shipped as an experimental opt-in via `ESTAS_PELAGIC_SOLVER`
+  env (default Euler, byte-identical). Investigation concluded RK2 is correct but ~1st-order and not better
+  than Euler for this model (MIN_CONCENTRATION clamping dominates). *Retires the old "expose RK2" backlog item.*
+- **Phase 5.1 de-globalization — two more slices merged:** bottom-sediment `SED_*` → `sediment_state_t`/`bsed`
+  (`1a413e9`) and settling/water-coupling → `wsc_state_t` (`54a2de2`), both byte-identical. `mod_GLOBAL`
+  allocatables now **12** (the pelagic water-column core). *Retires the "sediment `SED_*` cluster" as the next slice.*
+- **Sediment-redox Fe(II) salt-selection bugfix** (`maxloc … dim=2→dim=3`) — merged to `main` (PR #80).
+
+---
+
+## 0. In-flight — resuspension × sediment-diagenesis coupling
+
+*Source: `docs/superpowers/specs/2026-07-30-resuspension-diagenesis-coupling-design.md`. Branch:
+`feature/resuspension-diagenesis-coupling`.*
+
+Lets bed resuspension (prescribed-velocity "Option 3") run **together with full diagenesis**
+(`MODEL_SEDIMENTS=2`) with a mass-conserving bed↔water particulate transfer — the previously-guarded,
+never-run combination. Built on the collaborator's `ali_version` Option-3 scaffolding.
+
+| Item | Status |
+|------|--------|
+| Areal-vs-volumetric bed-side erosion conservation fix (missing `÷SED_DEPTHS`) | **Done** — flux ratio 1.0; `SED_PSi` delta −822. |
+| Particulate **C/N/P** water handoff (`FLX_SED_MOD_1_TO_ALUKAS_II_VEC`, water 9/10/11 ← bed slots 10/4/7) | **Done** — mirrors the proven PART_Si channel. Verified: noero (diagenesis-without-resuspension) **byte-identical** (0 diffs), ero now delivers C/N/P detritus to the water column (+7.4/+2.4/+0.008) matching bed decrements (−9355/−5321/−84). Coupling is mass-conserving for all four particulates. |
+| Shear-driven erosion rate (Phase 2, `E=E₀(τ_b/τ_c−1)`) | Deferred (spec Option B). |
+
+**Phase 1 of the coupling is complete and verified** — the branch is now merge-ready (pending review). Only the
+optional Phase 2 (shear-driven erosion realism) remains.
+
+Two mergeable side-branches already split out: `feature/pelagic-negmass-diagnostics` (Ali's negative-mass
+diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliation + this backlog refresh).
 
 ---
 
@@ -34,11 +66,11 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 5.1 | Reduce global state (`mod_GLOBAL` 50+ vars, ~416 `pelagic_internal` arrays → derived types) | **In progress** | Resuspension slice done (`2014265`). Next natural slice: the sediment `SED_*` clusters. Reuse the resuspension method. |
+| 5.1 | Reduce global state (`mod_GLOBAL` 50+ vars, ~416 `pelagic_internal` arrays → derived types) | **In progress** | Resuspension (`2014265`), bottom-sediment (`1a413e9`) and water-coupling (`54a2de2`) slices done. `mod_GLOBAL` allocatables now **12** — the pelagic water-column core is the remaining (harder, tightly-coupled) slice. Reuse the byte-identical method. |
 | 5.2 | Separate CO2SYS into a standalone library (`CO2SYS_LIB/` + CMake) | Open | |
 | 5.3 | Higher-order ODE solvers (beyond the existing RK2/Heun) | Open | |
-| 5.4 | Runtime configuration (config-driven instead of recompile) | Open | Overlaps the RK2-via-config item below. |
-| — | Expose the existing RK2/Heun solver via config | Open (P2) | Code present (`mod_SOLVER.f90`, `PELAGIC_SOLVER_NO == 2`) but hard-coded to Euler at `mod_SIMULATE.f90:91` (`PELAGIC_SOLVER_NO = 1`). A one-line switch + input plumbing unlocks it. |
+| 5.4 | Runtime configuration (config-driven instead of recompile) | Open | RK2-via-config already shipped (see "Recently completed"). |
+| — | Expose the existing RK2/Heun solver via config | **Done** | Shipped experimental via `ESTAS_PELAGIC_SOLVER` env (default Euler, byte-identical). |
 | — | Inconsistent naming (throughout) | Open (Low) | §2.2 issue table. |
 
 ## 2. Calibration & reproducibility
@@ -78,9 +110,10 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
 
 ## The one shovel-ready engineering item
 
-Continue **Phase 5.1** with the next `GLOBAL` / `pelagic_internal` slice (sediment `SED_*` cluster
-is the obvious next bite), using the byte-identical method proven on resuspension. Everything else
-is either deferred-by-design (5.2–5.4, low priority) or waiting on data/decisions.
+Continue **Phase 5.1** with the final `GLOBAL` slice — the **12-allocatable pelagic water-column core**
+(the resuspension, bottom-sediment and water-coupling slices are done). This is the hardest slice (the
+core is tightly used throughout the kinetics), but the byte-identical method is proven. Everything else
+is either in-flight (§0 coupling), deferred-by-design (5.2–5.4, low priority) or waiting on data/decisions.
 
 ## Sources (authoritative detail — do not duplicate here)
 

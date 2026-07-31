@@ -70,7 +70,8 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             SED_OUTPUTS          , NUM_SED_OUTPUTS              ,  &
             SED_SAVED_OUTPUTS    , NUM_SED_SAVED_OUTPUTS        ,  &
             SED_BURRIAL_RATE_OUTPUTS, &
-            ADVANCED_REDOX_OPTION)
+            ADVANCED_REDOX_OPTION   , &
+            RESUSPENSION_VELOCITIES)
 
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
@@ -132,7 +133,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind=DBL_PREC) :: PSTIME
     real(kind=DBL_PREC) :: TIME_STEP
     real(kind=DBL_PREC) :: SURF_MIXLEN
-
+    real(kind=DBL_PREC), dimension(nkn)                                            :: RESUSPENSION_VELOCITIES     !26/07/2026, Added by Ali to support resuspension
     !OUTPUT ARGUMENTS
     real(kind=DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: FINAL_SED_STATE_VARS
     real(kind=DBL_PREC), dimension(nkn,NUM_FLUXES_FROM_SEDIMENTS) :: FLUXES_FROM_SEDIMENTS
@@ -242,6 +243,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: SED_DIFFUSION_RATES
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: PART_MIXING_RATES
     real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: SED_BURRIAL_RATES
+    real(kind = DBL_PREC), dimension(nkn,NUM_SED_LAYERS, NUM_SED_VARS) :: SED_RESUSPENSION_RATES
 
     ! UNIT AREA MASSES FOR STATE VARIABLES
     real(kind=DBL_PREC) UNIT_AREA_MASSES   (nkn,NUM_SED_LAYERS, NUM_SED_VARS)
@@ -691,6 +693,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     SED_DIFFUSION_RATES   (1:nkn, 1:NUM_SED_LAYERS, 1:NUM_SED_VARS) = 0.0D0
     PART_MIXING_RATES     (1:nkn, 1:NUM_SED_LAYERS, 1:NUM_SED_VARS) = 0.0D0
     SED_BURRIAL_RATES     (1:nkn, 1:NUM_SED_LAYERS, 1:NUM_SED_VARS) = 0.0D0
+    SED_RESUSPENSION_RATES(1:nkn, 1:NUM_SED_LAYERS, 1:NUM_SED_VARS) = 0.0D0
 
     SETTLING_AFFECTED_DEPTH(1:nkn) = 0.0D0
     ! for difussion boundary sink gradient definition:
@@ -1665,7 +1668,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                     ADV_ENTERING_CONC = 0.0D0
                                     !      INTERMED_RESULTS(i, j) *
                                     !      SOLUTE_FRACTIONS(i, j)
-                                else !for the middle layers
+                               else !for the middle layers
 
                                     ! Division by porosity to have concentration
                                     ! per pore water volume
@@ -1674,7 +1677,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                          SOLUTE_FRACTIONS(:,i + 1, j)) / &
                                     max(SED_POROSITIES(:,i+1), 1.0D-20)
 
-                                end if ! for the last layer
+                               end if ! for the last layer
                             end if !ADVECTIVE_VELOCITY <= 0.0D0
                         end if !switch_advection.ne.0
 
@@ -1770,6 +1773,12 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         if ((switch_diffusion.eq.0).and.(switch_advection.eq.0)) then
                             FLUXES_FROM_SEDIMENTS(:,j) = 0.0D0
                         end if
+                        
+                        !27/07/2026: Include the resuspension. Assume that resuspension
+                        !can only proceed from the first sediment layer
+                        SED_RESUSPENSION_RATES(:,i, j) = INTERMED_RESULTS(:,i, j) * &
+                            SOLUTE_FRACTIONS(:,i, j)/max(SED_POROSITIES(:,i), 1.0D-20) * DABS(RESUSPENSION_VELOCITIES)
+                                                 ! division by porosity to have concentration per pore water
                     end if !i.eq.1
                     !END FLUX FROM SEDIMENTS TO WATER COLUMN
 
@@ -1831,6 +1840,11 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         if (switch_partmixing.ne.0) then
                             PART_MIXING_RATES(:,i, j) = 0.0D0
                         end if
+
+                        !27/07/2026: Include the resuspension. Assume that resuspension
+                        !can only proceed from the first sediment layer
+                        SED_RESUSPENSION_RATES(:,i, j) = INTERMED_RESULTS(:,i, j) * &
+                            (1.0D0 - SOLUTE_FRACTIONS(:,i, j)) * DABS(RESUSPENSION_VELOCITIES)
                     else ! i > 1
                         !24/06/2012: If clause Added by Ali for safer switch off
                         if (switch_partmixing.ne.0) then
@@ -1921,13 +1935,28 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                             DIFFUSION_DERIVS  (:,i, j) * SED_POROSITIES(:,i) + &    !diffusion derivs multipl.
                             BURIAL_DERIVS     (:,i, j) + PART_MIXING_DERIVS(:,i, j) !by poros. to have deriv. in total volume
 
+                    ! 26/07/2026 : Added to support resuspension in the first sediment layer
+                    FLUXES_FROM_SEDIMENTS(:,j) = &
+                        FLUXES_FROM_SEDIMENTS(:,j) + SED_RESUSPENSION_RATES(:,i, j)
                 end if
 
                 ADVECTION_DERIVS(:,i, j) = &
-                    SED_IN_ADVEC_RATES(:,i, j) - SED_OUT_ADVEC_RATES(:,i, j)
+                    SED_IN_ADVEC_RATES(:,i, j) - SED_OUT_ADVEC_RATES(:,i, j) - SED_RESUSPENSION_RATES(:,i, j)
 
                 !Advection derivs multipl. by poros. to have deriv. in total volume
                 TRANSPORT_DERIVS(:,i, j) = TRANSPORT_DERIVS(:,i, j) + ADVECTION_DERIVS(:,i, j)* SED_POROSITIES(:,i)
+
+                ! -----------------------------------------------------------------------
+                ! EROSION MASS-CONSERVATION FIX (resuspension coupling)
+                ! SED_RESUSPENSION_RATES is an AREAL flux (g/m2/day). It was folded into
+                ! ADVECTION_DERIVS (line above) and thereby applied to TRANSPORT_DERIVS with
+                ! the wrong (x porosity, areal-not-concentration) scaling. Here we undo that
+                ! erroneous contribution (+ RATES*porosity) and re-add the correct concentration
+                ! sink (- RATES / layer thickness), so bed-loss mass = RATES*area = water-gain
+                ! mass. SED_RESUSPENSION_RATES is 0 outside layer 1, so this is a no-op elsewhere.
+                TRANSPORT_DERIVS(:,i, j) = TRANSPORT_DERIVS(:,i, j) &
+                    + SED_RESUSPENSION_RATES(:,i, j) * SED_POROSITIES(:,i) &
+                    - SED_RESUSPENSION_RATES(:,i, j) / max(SED_DEPTHS(:,i), 1.0D-20)
 
             end do !j = 1, NUM_SED_VARS
         end do !i = 1, (NUM_SED_LAYERS - 1)
@@ -1961,6 +1990,14 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     BURIAL_DERIVS(:,NUM_SED_LAYERS, j) + &
                     ADVECTION_DERIVS(:,NUM_SED_LAYERS, j) * SED_POROSITIES(:,NUM_SED_LAYERS) + & !advection derivs multipl. by poros. to have deriv. in total volume & &
                     PART_MIXING_DERIVS(:,NUM_SED_LAYERS, j)
+
+                ! EROSION MASS-CONSERVATION FIX (bottom layer, multi-layer case). Undo the
+                ! erroneous x-porosity erosion contribution from ADVECTION_DERIVS and re-add
+                ! the correct concentration sink (- RATES / thickness). No-op here since
+                ! erosion is confined to layer 1, but kept consistent with the layer loop.
+                TRANSPORT_DERIVS(:,NUM_SED_LAYERS, j) = TRANSPORT_DERIVS(:,NUM_SED_LAYERS, j) &
+                    + SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j) * SED_POROSITIES(:,NUM_SED_LAYERS) &
+                    - SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j) / max(SED_DEPTHS(:,NUM_SED_LAYERS), 1.0D-20)
             else !NUM_SED_LAYERS.EQ. 1
                 !Introduced by Petras for testing:
                 DIFFUSION_DERIVS(:,NUM_SED_LAYERS, j) = &
@@ -1970,8 +2007,13 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     SED_BURRIAL_RATES (:,NUM_SED_LAYERS, j)
 
                 ADVECTION_DERIVS(:,NUM_SED_LAYERS, j) = &
-                    SED_IN_ADVEC_RATES (:,NUM_SED_LAYERS, j) - &
-                    SED_OUT_ADVEC_RATES(:,NUM_SED_LAYERS, j)
+                    SED_IN_ADVEC_RATES    (:,NUM_SED_LAYERS, j) - &
+                    SED_OUT_ADVEC_RATES   (:,NUM_SED_LAYERS, j) - &
+                    SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j)
+
+                ! 26/07/2026 : Added to support resuspension in the first sediment layer
+                FLUXES_FROM_SEDIMENTS(:,j) = &
+                    FLUXES_FROM_SEDIMENTS(:,j) + SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j)
 
                 ! Zero-flux lower boundary for single-layer case
                 PART_MIXING_DERIVS(:,NUM_SED_LAYERS, J) = &
@@ -1982,6 +2024,13 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     BURIAL_DERIVS(:,NUM_SED_LAYERS, j) + &
                     ADVECTION_DERIVS(:,NUM_SED_LAYERS, j) * SED_POROSITIES(:,NUM_SED_LAYERS) + & !advection derivs multipl. by poros. to have deriv. in total volume & &
                     PART_MIXING_DERIVS(:,NUM_SED_LAYERS, j)
+
+                ! EROSION MASS-CONSERVATION FIX (single-layer case: layer 1 == NUM_SED_LAYERS,
+                ! so erosion IS active here). Undo the erroneous x-porosity erosion contribution
+                ! and re-add the correct concentration sink (- RATES / thickness).
+                TRANSPORT_DERIVS(:,NUM_SED_LAYERS, j) = TRANSPORT_DERIVS(:,NUM_SED_LAYERS, j) &
+                    + SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j) * SED_POROSITIES(:,NUM_SED_LAYERS) &
+                    - SED_RESUSPENSION_RATES(:,NUM_SED_LAYERS, j) / max(SED_DEPTHS(:,NUM_SED_LAYERS), 1.0D-20)
             end if !NUM_SED_LAYERS
         end do !j = 1, NUM_SED_VARS
         !End last layer processing for transport
