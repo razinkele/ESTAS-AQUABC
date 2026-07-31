@@ -17,8 +17,10 @@ INTEGER FUNCTION STRANGER(VALUE)
 
     DOUBLE PRECISION, intent(in) :: VALUE
     DOUBLE PRECISION :: LLIMIT, ULIMIT
-    LLIMIT    = -1.0D4
-    ULIMIT    =  1.0D4
+    ! Wider sanity band (±1e5) gives headroom for coupled resuspension+diagenesis
+    ! sediment values; the NaN/Inf check above still catches true blow-ups.
+    LLIMIT    = -1.0D5
+    ULIMIT    =  1.0D5
     STRANGER  = 0
 
     if (IEEE_IS_NAN(VALUE) .or. .not. IEEE_IS_FINITE(VALUE)) then
