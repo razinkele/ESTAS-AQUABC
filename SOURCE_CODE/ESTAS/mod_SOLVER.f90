@@ -148,7 +148,7 @@ contains
                 STATE_VARIABLES(i, :) = &
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
             end do
-
+            !write(*,*) 'UPDATE_TIME_FUNCS'
             call CALC_DERIV &
                  (PELAGIC_BOX_MODEL_DATA, TIME             , TIME_STEP            , &
                   FLOWS, BOUND_CONCS    , DISPERSION_COEFFS, INTERFACE_AREAS      , &
@@ -158,7 +158,7 @@ contains
                   EFFECTIVE_DEPOSITION_FRACTIONS, &
                   DEPOSITION_AREA_RATIOS        , &
                   nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
-
+            !write(*,*) 'CALC_DERIV'
             SETTLING_VELOCITIES_OUTPUT(:,:) = SETTLING_VELOCITIES
 
             !CALCULATE THE STATE VARIABLES IN PELAGIC BOXES
@@ -846,6 +846,8 @@ contains
         integer :: SAVED_OUTPUT_NO
 
         real(kind = DBL) :: RESUSPENSION_VELOCITY
+        
+        real(kind = DBL), dimension(nkn) :: RESUSPENSION_VELOCITIES
 
         real(kind = DBL), dimension((nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &
              RESUSPENSION_CONCENTRATIONS
@@ -858,7 +860,7 @@ contains
              SEDIMENT_FLUXES
 
         call CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
-
+        !write(*,*) '    CALCULATE_SETTLING_SUPRESSION'
         ! ---------------------------------------------------------------------------
         ! Consideration how settling suppression factor by chlorophyl-a will
         ! be considered for the particular box and state variable
@@ -917,6 +919,11 @@ contains
             end do
         end do
 
+        ! Initialize the resuspension velocities for resuspension option 3. This
+        ! prevents wrong values of resuspension velocites that in case resuspension 
+        ! is not considered
+        RESUSPENSION_VELOCITIES(:) = 0.0D0
+        
         !--------------------------------------------------------------------------------
         !Consider precipitation and evaporation for the boxes at the top of basins. This
         !part will be totally reprogrammed when the drying and wetting option for the
@@ -1091,7 +1098,8 @@ contains
                 end if
             end do
         end do
-
+        !write(*,*) '    ADVECTION'
+        
         !CALCULATE THE DISPERSIVE DERIVATIVES
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_DISPERSIVE_LINKS
 
@@ -1234,7 +1242,8 @@ contains
                 end if
             end do
         end do
-
+        !write(*,*) '    DIFFUSION'
+        
         !CALCULATE THE SETTLING DERIVATIVES
         do BASIN_NO = 1, PELAGIC_BOX_MODEL_DATA % NUM_BASINS
             do BOX_NO = 1, PELAGIC_BOX_MODEL_DATA % BASINS(BASIN_NO) % NUM_PELAGIC_BOXES
@@ -1345,7 +1354,8 @@ contains
                 end if
             end do
         end do
-
+        !write(*,*) '    SETTLING'
+        
         ! CALCULATE THE PRESCRIBED SEDIMENT FLUXES
         if (MODEL_BOTTOM_SEDIMENTS == 1) then
             do BASIN_NO = 1, PELAGIC_BOX_MODEL_DATA % NUM_BASINS
@@ -1378,7 +1388,8 @@ contains
         else
             PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(:,:,:) = 0.0D0
         end if
-
+        !write(*,*) '    DIFFUSION'
+        
         !CALCULATE THE MASS LOAD AND MASS WITHDRAWAL DERIVATIVES
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
             do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
@@ -1441,7 +1452,8 @@ contains
         call PELAGIC_KINETICS &
              (PELAGIC_BOX_MODEL_DATA, SEDIMENT_FLUXES, TIME, TIME_STEP, &
               CALLED_BEFORE)
-
+        !write(*,*) '    PELAGIC_KINETICS'
+        
         do i = 1, nkn
             do j = 1, nstate
                 if (IEEE_IS_NAN(STATE_VARIABLES(i,j))) then
@@ -1504,6 +1516,26 @@ contains
                     end do
                     ! End of loop of pegalic boxes
 
+                ! Resuspension option 3. In option 3, since the sediment model must be
+                ! active the resuspension will be added to sediment fluxes to the
+                ! water column and handled by the sediment model. Therefore the array
+                ! DERIVATIVES should not be updated, since all the related material
+                ! transfer will be handled bt the sediment model internally and 
+                ! passed to the water column.
+                case(3)
+
+                    ! Loop of pegalic boxes
+                    do i = 1, nkn
+                        if (resusp%ACTIVATE_RESUSPENSIONS(i) > 0) then
+
+                            ! Get the resuspension velocity (in m/days)
+                            RESUSPENSION_VELOCITIES(i) = &
+                                VALUE_FROM_TIME_SERIE &
+                                    (resusp%RESUSPENSION_TS(resusp%RESUSPENSION_VEL_TS_NOS(i)), TIME, &
+                                     resusp%RESUSPENSION_VEL_TS_VAR_NOS(i))
+                        end if
+                    end do
+                    ! End of loop of pegalic boxes
             end select
         end if
 
@@ -1532,7 +1564,7 @@ contains
                   NUM_SED_LAYERS                , &
                   NUM_SED_VARS                  , &
                   MODEL_BENTHIC_ANIMALS)
-
+            !write(*,*) '        UPDATE_BOTTOM_SEDIMENT_INPUTS'
             ! Calculate the surface water concentrations. For this translation of
             ! water column state variables to bottom sediment state variables is necessary.
 
@@ -1583,7 +1615,7 @@ contains
                 wsc%NOT_DEPOSITED_FLUXES, nstate            , &
                 CONSIDER_NON_OBLIGATORY_FIXERS          , &
                 CONSIDER_NOSTOCALES)
-
+            !write(*,*) '        FLX_ALUKAS_II_TO_SED_MOD_1_VEC'
             ! For now 1, will depend on current or wave submodel in the future
             bsed%NUM_FLUX_RECEIVING_SED_LAYERS = 1
 
@@ -1593,7 +1625,7 @@ contains
                  bsed%SED_DENSITIES          , bsed%PART_MIXING_COEFFS         ,  &
                  bsed%SED_DIFFUSIONS         , bsed%SURF_MIXLEN, bsed%SED_BURRIALS  ,  &
                  bsed%SURF_WATER_CONCS       , bsed%SED_TEMPS                  ,  &
-                 NUM_SED_VARS           , NUM_SED_LAYERS             ,  &
+                 NUM_SED_VARS                , NUM_SED_LAYERS             ,  &
                  bsed%SED_MODEL_CONSTANTS    , NUM_SED_CONSTS             ,  &
                  bsed%SED_DRIVING_FUNCTIONS  , NUM_SED_DRIV               ,  & ! not used yet
                  bsed%SED_FLAGS              , NUM_SED_FLAGS              ,  &
@@ -1606,8 +1638,9 @@ contains
                  bsed%PROCESSES_sed        , NDIAGVAR_sed                 ,  &
                  bsed%SED_OUTPUTS          , NUM_SED_OUTPUTS              ,  &
                  bsed%SED_SAVED_OUTPUTS    , NUM_SED_SAVED_OUTPUTS        ,  &
-                 bsed%SED_BURRIAL_RATE_OUTPUTS, BOTTOM_SED_ADVANCED_REDOX_SIMULATION)
-
+                 bsed%SED_BURRIAL_RATE_OUTPUTS, BOTTOM_SED_ADVANCED_REDOX_SIMULATION, &
+                 RESUSPENSION_VELOCITIES)
+            !write(*,*) '        AQUABC_SEDIMENT_MODEL_1'
             where (bsed%FINAL_SED_STATE_VARS <= 0.0D0)
                 bsed%FINAL_SED_STATE_VARS(:, :, :) = 0.0D0
             end where
@@ -1623,7 +1656,7 @@ contains
             call FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
                  (bsed%FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
                   wsc%FLUXES_TO_WATER_COLUMN, nkn, nstate)
-
+            !write(*,*) '        FLX_SED_MOD_1_TO_ALUKAS_II_VEC'
             ! NOT_DEPOSITED_FLUXES
             ! --------------------
             ! Unit        : g/m^2/day
@@ -1667,7 +1700,7 @@ contains
                     wsc%SETTLING_RATES        (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
             end do
         end if
-
+        !write(*,*) '    SEDIMENTS'
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
             do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
                 PROCESS_RATE_BEGIN_NO = ((j - 1) * NDIAGVAR) + 1
