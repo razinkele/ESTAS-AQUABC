@@ -354,8 +354,10 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
            (FLUXES_FROM_SEDIMENT, NUM_FLUXES_FROM_SEDIMENT, &
             FLUXES_TO_ALUKAS    , nkn, NUM_FLUXES_TO_ALUKAS)
 
-    ! Note: routine does not take into account particulate material resuspension
-    ! as a flux yet. Everytthing what is resuspended is added to the same fluxes. fixme
+    ! Particulate detritus resuspension IS routed to the water column: the eroded bed
+    ! particulate slots (SED_PON/POP/POC/PSi = 4/7/10/12) map to the water-column detritus
+    ! pools (DET_PART_ORG_N/P/C = 10/11/9 and PART_Si = 18). Without erosion these bed
+    ! particulate fluxes are zero, so diagenesis-without-resuspension is unchanged.
 
     use GLOBAL, only: NSTATE_CHECK => nstate
     implicit none
@@ -386,14 +388,18 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
     !DISS_OXYGEN FLUX TO ALUKAS
     FLUXES_TO_ALUKAS(:, 4) = FLUXES_FROM_SEDIMENT(:, 8)
 
-    !DIA_C FLUX TO ALUKAS
-    !ZOO_C FLUX TO ALUKAS
-    !ZOO_N FLUX TO ALUKAS
-    !ZOO_P FLUX TO ALUKAS
-    !DET_PART_ORG_C FLUX TO ALUKAS
-    !DET_PART_ORG_N FLUX TO ALUKAS
-    !DET_PART_ORG_P FLUX TO ALUKAS
-    FLUXES_TO_ALUKAS(:, 5:11) = 0.0D0
+    !DIA_C / ZOO_C / ZOO_N / ZOO_P FLUX TO ALUKAS
+    ! Living plankton pools: the bed carries no phyto/zoo state, so no erosion return.
+    FLUXES_TO_ALUKAS(:, 5:8) = 0.0D0
+
+    !DET_PART_ORG_C FLUX TO ALUKAS  (eroded SED_POC, bed slot 10)
+    FLUXES_TO_ALUKAS(:, 9)  = FLUXES_FROM_SEDIMENT(:, 10)
+
+    !DET_PART_ORG_N FLUX TO ALUKAS  (eroded SED_PON, bed slot 4)
+    FLUXES_TO_ALUKAS(:, 10) = FLUXES_FROM_SEDIMENT(:, 4)
+
+    !DET_PART_ORG_P FLUX TO ALUKAS  (eroded SED_POP, bed slot 7)
+    FLUXES_TO_ALUKAS(:, 11) = FLUXES_FROM_SEDIMENT(:, 7)
 
     !DISS_ORG_C FLUX TO ALUKAS
     FLUXES_TO_ALUKAS(:, 12) = FLUXES_FROM_SEDIMENT(:, 9)
