@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-31
+
+> 🎉 **Released — [AQUABC v0.9.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.9.0)**
+> (Linux binary attached). **Headline: resuspension now runs together with full sediment diagenesis via a
+> mass-conserving bed↔water particulate coupling.** Prescribed-velocity "Option 3" erodes the surface bed
+> layer and transfers the eroded particulate C/N/P/Si to the water-column detritus pools, decrementing the
+> bed by the same mass — the previously-guarded, never-run combination. The release also lands a
+> sediment-redox Fe(II) salt-selection bugfix and a negative-mass diagnostics refactor, consolidated from a
+> collaborator's tree. **Standard (25-box, `MODEL_SEDIMENTS=0`) runs remain byte-identical to v0.8.0.**
+
+### Added
+- **Resuspension × sediment-diagenesis coupling (Phase 1).** Bed resuspension ("Option 3" — a per-box
+  prescribed erosion-velocity time series) can now run together with full diagenesis (`MODEL_SEDIMENTS=2`):
+  an erosion term removes particulate C/N/P/Si from bed layer 1 and delivers it to the water-column detritus
+  pools (`DET_PART_ORG_C/N/P`, `PART_Si`) by the same areal mass — a mass-conserving two-way transfer — and
+  the guard that previously halted diagenesis+resuspension is lifted for Option 3. All new behaviour is gated
+  on `MODEL_SEDIMENTS>1 .and. resuspension`, a combination no existing setup runs. Verified over 365-day
+  coupled runs: flux-level bed_out/water_in ratio = 1.0; diagenesis-without-resuspension **byte-identical**;
+  eroded C/N/P/Si delivered to the water column matches the bed decrement. Phase 2 (shear-driven erosion) is
+  deferred by design.
+
+### Changed
+- **Sediment-redox Fe(II) salt-selection bugfix.** `SED_REDOX_AND_SPECIATION` picked the precipitating
+  Fe(II) salt by reducing the wrong axis of the `(box, layer, salt)` activity-ratio array
+  (`maxloc(..., dim=2)`, the *layer* axis); corrected to `dim=3` (the *salt* axis). This changes sediment
+  redox/speciation output for **advanced-redox diagenesis runs** (a correctness fix, not a no-op);
+  no-diagenesis runs (e.g. Standard) are unaffected.
+- **Negative-mass / negative-concentration diagnostics** extracted from the pelagic solver loop into
+  dedicated `CHECK_NEW_PELAGIC_MASS` / `CHECK_NEW_PELAGIC_CONCENTRATION` routines in `mod_PELAGIC_ECOLOGY`
+  (readability/locality; behaviour preserved).
+- **Sediment `STRANGER` sanity band widened** ±1e4 → ±1e5 for headroom on coupled runs; the NaN/Inf guard is
+  unchanged, so true blow-ups are still caught (changes only the finite out-of-range trip threshold).
+
+### Documentation
+- **Resuspension × sediment-diagenesis coupling design + `ali_version` reconciliation** recorded under
+  `docs/superpowers/specs/2026-07-30-resuspension-diagenesis-coupling-design.md`.
+- **BACKLOG.md refreshed** — coupling Phase-1 marked complete; the next shovel-ready engineering slice is the
+  remaining 12-allocatable pelagic-core `GLOBAL` de-globalization; variable N:C stoichiometry remains the
+  flagged science lever for the CL29 summer-NO3 residual.
+
 ## [0.8.0] - 2026-07-25
 
 > 🎉 **Released — [AQUABC v0.8.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.8.0)**
