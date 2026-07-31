@@ -487,17 +487,20 @@ contains
                     close(IN_FILE + 2)
 
                 case (3)
-                    resusp%CONSIDER_RESUSPENSION = 0
+                    resusp%CONSIDER_RESUSPENSION = 1
 
                     write(unit = *, fmt = *) &
                         'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
                     write(unit = *, fmt = *) &
-                         'Resuspension will not be considered'
+                        'Resuspension will be considered as in Option 3'
 
-                    write(unit = *, fmt = *) &
-                         'becuse resuspension option 3 is not implemented yet.'
+                    !Open the resuspension model input file
+                    call OPEN_INPUT_FILE(IN_FILE + 2, &
+                         trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // trim(adjustl(FILE_NAME)), &
+                         'model input')
 
+                    call READ_RESUSPENSION_FILE_OPTION_3(IN_FILE + 2)
                     close(IN_FILE + 2)
 
             end select
@@ -552,7 +555,8 @@ contains
         end if
 
         if (MODEL_BOTTOM_SEDIMENTS > 1) then
-            if (resusp%CONSIDER_RESUSPENSION > 0) then
+            if ((resusp%RESUSPENSION_OPTION == 1) .or. &
+                (resusp%RESUSPENSION_OPTION == 2)) then
                 write(unit = *, fmt = *) &
                       'Bottom sediments are not coupled with resuspension ' // &
                       'in this version of ESTAS-AQUABC. Program halted.'

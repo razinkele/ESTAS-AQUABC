@@ -214,4 +214,75 @@ contains
 
     end subroutine READ_RESUSPENSION_FILE_OPTION_2
 
+
+    ! This is the subroutine for option 3.
+    ! It reads the time dependeny resuspension velocities for each box
+    subroutine READ_RESUSPENSION_FILE_OPTION_3(IN_FILE)
+        implicit none
+        integer, intent(in) :: IN_FILE
+
+        integer :: AUX_INTEGER_1, AUX_INTEGER_2, AUX_INTEGER_3, AUX_INTEGER_4
+        integer :: i, RESUSPENSION_TS_NO, BOX_NO
+        real(kind = DBL) :: AUX_DBL_1
+        character(len = 2048) :: AUX_STRING
+
+        ! Read the info lines
+        read(unit = IN_FILE, fmt = *)
+        read(unit = IN_FILE, fmt = *)
+        read(unit = IN_FILE, fmt = *)
+        read(unit = IN_FILE, fmt = *)
+        read(unit = IN_FILE, fmt = *)
+
+        ! Read the number of resuspension time series
+        read(unit = IN_FILE, fmt = *)
+        read(unit = IN_FILE, fmt = *) resusp%NUM_RESUSPENSION_TS
+
+        write(unit = *, fmt = *) &
+            'Number of resuspension time series : ', resusp%NUM_RESUSPENSION_TS
+
+        allocate(resusp%ACTIVATE_RESUSPENSIONS      (nkn))
+        allocate(resusp%RESUSPENSION_VEL_TS_NOS     (nkn))
+        allocate(resusp%RESUSPENSION_VEL_TS_VAR_NOS (nkn))
+        allocate(resusp%RESUSPENSION_TS_FILE_NAMES(resusp%NUM_RESUSPENSION_TS))
+        allocate(resusp%RESUSPENSION_TS           (resusp%NUM_RESUSPENSION_TS))
+
+        ! Read the resuspension time serie file names
+        read(unit = IN_FILE, fmt = *)
+
+        do RESUSPENSION_TS_NO = 1, resusp%NUM_RESUSPENSION_TS
+            read(unit = IN_FILE, fmt = *) AUX_INTEGER_1, AUX_STRING
+            resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1) = AUX_STRING
+
+            call OPEN_INPUT_FILE(IN_FILE + 1, &
+                 trim(adjustl(resusp%RESUSPENSION_INPUT_FOLDER)) // &
+                 trim(adjustl(resusp%RESUSPENSION_TS_FILE_NAMES(AUX_INTEGER_1))), &
+                 'resuspension input')
+
+            call INITIALIZE_TIME_SERIE    (resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO))
+            call READ_TIME_SERIE_FROM_FILE(resusp%RESUSPENSION_TS(RESUSPENSION_TS_NO), IN_FILE+1)
+            close(IN_FILE + 1)
+        end do
+
+        ! Read the pelegic box options for resuspension
+        read(unit = IN_FILE, fmt = *)
+
+        do BOX_NO = 1,nkn
+            read(unit = IN_FILE, fmt = *) &
+                 AUX_INTEGER_1, AUX_INTEGER_2, AUX_INTEGER_3, AUX_INTEGER_4
+
+            if (AUX_INTEGER_2 > 1) then
+                AUX_INTEGER_2 = 1
+            end if
+
+            if (AUX_INTEGER_2 < 0) then
+                AUX_INTEGER_2 = 0
+            end if
+
+            resusp%ACTIVATE_RESUSPENSIONS     (AUX_INTEGER_1) = AUX_INTEGER_2
+            resusp%RESUSPENSION_VEL_TS_NOS    (AUX_INTEGER_1) = AUX_INTEGER_3
+            resusp%RESUSPENSION_VEL_TS_VAR_NOS(AUX_INTEGER_1) = AUX_INTEGER_4
+        end do
+
+    end subroutine READ_RESUSPENSION_FILE_OPTION_3
+
 end module RESUSPENSION
