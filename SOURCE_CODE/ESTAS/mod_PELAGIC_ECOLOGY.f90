@@ -1517,4 +1517,181 @@ subroutine PELAGIC_KINETICS &
         SEC_MET_DERIVATIVES(:,:) = 0.0D0
     end if
 
-end subroutine
+    end subroutine
+
+    ! This subroutine must be programmed specifically for the aquatic
+    ! modelling framework that is called from ESTAS. In this case
+    ! AQUABC
+    subroutine CHECK_NEW_PELAGIC_MASS &
+               (PELAGIC_BOX_MODEL_DATA, old_mass, new_mass, tot_deriv, &
+                TIME, TIME_STEP, BOX_NO, STATE_VARIABLE_NO)
+
+        use precision_kinds
+        use PELAGIC_BOX_MODEL
+        use GLOBAL
+        use aquabc_pel_state_var_indexes
+
+        implicit none
+
+        type(PELAGIC_BOX_MODEL_DS), intent(in) :: PELAGIC_BOX_MODEL_DATA
+        real(kind = DBL), intent(in) :: old_mass
+        real(kind = DBL), intent(in) :: new_mass
+        real(kind = DBL), intent(in) :: tot_deriv
+        real(kind = DBL), intent(in) :: TIME
+        real(kind = DBL), intent(in) :: TIME_STEP
+        integer, intent(in) :: BOX_NO
+        integer, intent(in) :: STATE_VARIABLE_NO
+    
+        if ((STATE_VARIABLE_NO .ne. NH4_N_INDEX         ) .and. & 
+            (STATE_VARIABLE_NO .ne. NO3_N_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. PO4_P_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_OXYGEN_INDEX   ) .and. &
+            (STATE_VARIABLE_NO .ne. DIA_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_N_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_P_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_C_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_N_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_P_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_C_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_N_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_P_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. CYN_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. OPA_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_Si_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. PART_Si_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. FIX_CYN_C_INDEX     ) .and. &
+            (STATE_VARIABLE_NO .ne. INORG_C_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. TOT_ALK_INDEX       )) then
+            
+            if (ADVANCED_REDOX_SIMULATION > 0) then
+
+                if (new_mass < 0.0D0) then
+                    !$omp critical
+                    write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
+                    write(6,*) '  OLD_MASS=', old_mass
+                    write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
+                    write(6,*) '  NEW_MASS=', new_mass
+                    write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
+                    write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+            
+                   ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                   if (CONSIDER_ALLELOPATHY > 0) then
+                       if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then !
+                           write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
+                           write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    DISPERSION=', &
+                               PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    SETTLING=', PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    MASS_LOAD=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    MASS_WITHDRAWAL=', &
+                               PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    KINETIC=', PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                           write(6,*) '    SED_FLUX=', &
+                               PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                       end if
+                    end if
+                    !$omp end critical
+                end if    
+            end if
+        else
+            if (new_mass < 0.0D0) then
+                !$omp critical
+                write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
+                write(6,*) '  OLD_MASS=', old_mass
+                write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
+                write(6,*) '  NEW_MASS=', new_mass
+                write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
+                write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+            
+                ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                if (CONSIDER_ALLELOPATHY > 0) then
+                    if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then
+                        write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
+                        write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    DISPERSION=', PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    SETTLING=', PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    MASS_LOAD=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    MASS_WITHDRAWAL=', &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    KINETIC=', PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                        write(6,*) '    SED_FLUX=', &
+                            PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
+                    end if
+                end if
+                !$omp end critical
+            end if
+        end if
+    end subroutine
+
+    ! This subroutine must be programmed specifically for the aquatic
+    ! modelling framework that is called from ESTAS. In this case
+    ! AQUABC
+    subroutine CHECK_NEW_PELAGIC_CONCENTRATION &
+               (PELAGIC_BOX_MODEL_DATA, old_mass, new_mass, &
+               TIME, TIME_STEP, BOX_NO, STATE_VARIABLE_NO)
+        
+        use precision_kinds
+        use PELAGIC_BOX_MODEL
+        use GLOBAL
+        use aquabc_pel_state_var_indexes
+
+        implicit none
+
+        type(PELAGIC_BOX_MODEL_DS), intent(in) :: PELAGIC_BOX_MODEL_DATA
+        real(kind = DBL), intent(in) :: old_mass
+        real(kind = DBL), intent(in) :: new_mass
+        real(kind = DBL), intent(in) :: TIME
+        real(kind = DBL), intent(in) :: TIME_STEP
+        integer, intent(in) :: BOX_NO
+        integer, intent(in) :: STATE_VARIABLE_NO
+    
+        if ((STATE_VARIABLE_NO .ne. NH4_N_INDEX         ) .and. & 
+            (STATE_VARIABLE_NO .ne. NO3_N_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. PO4_P_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_OXYGEN_INDEX   ) .and. &
+            (STATE_VARIABLE_NO .ne. DIA_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_N_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. ZOO_P_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_C_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_N_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DET_PART_ORG_P_INDEX) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_C_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_N_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_ORG_P_INDEX    ) .and. &
+            (STATE_VARIABLE_NO .ne. CYN_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. OPA_C_INDEX         ) .and. &
+            (STATE_VARIABLE_NO .ne. DISS_Si_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. PART_Si_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. FIX_CYN_C_INDEX     ) .and. &
+            (STATE_VARIABLE_NO .ne. INORG_C_INDEX       ) .and. &
+            (STATE_VARIABLE_NO .ne. TOT_ALK_INDEX       )) then
+            
+            if (ADVANCED_REDOX_SIMULATION > 0) then
+                ! Diagnostic: if concentration becomes strongly negative, print context
+                if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO) < -1.0D-12) then
+                    !$omp critical
+                    write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
+                    write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
+                    write(6,*) '  CONC='
+                    write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
+                    write(6,*) '  VOLUME='
+                    write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+                    !$omp end critical
+                end if
+            end if
+        else
+            ! Diagnostic: if concentration becomes strongly negative, print context
+            if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO) < -1.0D-12) then
+                !$omp critical
+                write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
+                write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
+                write(6,*) '  CONC='
+                write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
+                write(6,*) '  VOLUME='
+                write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+                !$omp end critical
+            end if
+        end if
+    end subroutine

@@ -174,55 +174,30 @@ contains
                 do j = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
 
                     ! Compute total derivative for this state variable
-                    tot_deriv = (PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS               (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS              (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS                (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS               (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS         (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS                 (i, j, 1) + &
-                      PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1))
+                    tot_deriv = &
+                         (PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS               (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS              (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS                (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS               (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS         (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS                 (i, j, 1) + &
+                          PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1))
 
                     old_mass = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j)
                     new_mass = old_mass + tot_deriv * TIME_STEP
 
-                    if (new_mass < 0.0D0) then
-                        !$omp critical
-                        write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', i, ' STATE=', j
-                        write(6,*) '  OLD_MASS=', old_mass
-                        write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
-                        write(6,*) '  NEW_MASS=', new_mass
-                        write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
-                        write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
-                        ! Detailed derivative breakdown for states 33-36 (allelopathy)
-                        if (j >= 33 .and. j <= 36) then
-                            write(6,*) '  DERIV BREAKDOWN for STATE', j, ':'
-                            write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(i, j, 1)
-                            write(6,*) '    DISPERSION=', PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(i, j, 1)
-                            write(6,*) '    SETTLING=', PELAGIC_BOX_MODEL_DATA % ECOL_SETTLING_DERIVS(i, j, 1)
-                            write(6,*) '    MASS_LOAD=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_LOAD_DERIVS(i, j, 1)
-                            write(6,*) '    MASS_WITHDRAWAL=', PELAGIC_BOX_MODEL_DATA % ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1)
-                            write(6,*) '    KINETIC=', PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, j, 1)
-                            write(6,*) '    SED_FLUX=', PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1)
-                        end if
-                        !$omp end critical
-                    end if
+                    call CHECK_NEW_PELAGIC_MASS &
+                         (PELAGIC_BOX_MODEL_DATA, old_mass, new_mass, tot_deriv, &
+                          TIME, TIME_STEP, i, j)
 
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = new_mass
 
                     PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = &
                         new_mass / PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
 
-                    ! Diagnostic: if concentration becomes strongly negative, print context
-                    if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < -1.0D-12) then
-                        !$omp critical
-                        write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', i, ' STATE=', j
-                        write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
-                        write(6,*) '  CONC='
-                        write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
-                        write(6,*) '  VOLUME='
-                        write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
-                        !$omp end critical
-                    end if
+                    call CHECK_NEW_PELAGIC_CONCENTRATION &
+                         (PELAGIC_BOX_MODEL_DATA, old_mass, new_mass, &
+                          TIME, TIME_STEP, i, j)
 
                     if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) < MIN_CONCENTRATION) then
                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j) = MIN_CONCENTRATION
