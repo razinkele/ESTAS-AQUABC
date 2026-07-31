@@ -1,10 +1,11 @@
 # Resuspension × Sediment-Diagenesis Coupling — Design / Scope
 
 **Date:** 2026-07-30
-**Status:** scope / design (for review — not yet a plan). **A partial implementation of this exact fix
-already exists in `ali_version/` — see "Reconciliation with `ali_version`" below; it changes the
-architecture decision and de-risks the driver, but leaves the spec's core deliverable (the particulate
-C/N/P water handoff) unbuilt.**
+**Status:** **IMPLEMENTED & MERGED (Phase 1).** This design was realized on
+`feature/resuspension-diagenesis-coupling` and merged to `main` in **PR #81** (`55d8488`) — the areal-flux
+conservation fix plus the particulate C/N/P/Si bed↔water handoff, verified byte-identical for all existing
+setups. The historical "Reconciliation with `ali_version`" section below records the starting point (Ali's
+partial Option-3 tree). Only Phase 2 (shear-driven erosion) remains, deferred by design.
 
 ## Goal
 
@@ -208,7 +209,10 @@ the bed removed only `RATES×porosity×depth` (~2%) while the water gained the f
 three TRANSPORT sites. **Now demonstrated:** flux-level `bed_out/water_in` ratio = 1.0000000000, and the
 erosion-on − erosion-off bed `SED_PSi` delta flipped from +5.7/+16 (created) to −822 (removed). The
 particulate **C/N/P** water handoff (the `aquabc_II_sediment_auxillary.f90:396` hard-zero of water indices
-5:11) remains the load-bearing unbuilt deliverable.
+5:11) was **subsequently completed** (`0116cd7`): water DET_PART_ORG_C/N/P (9/10/11) ← eroded bed
+SED_POC/PON/POP (slots 10/4/7) in the live `FLX_SED_MOD_1_TO_ALUKAS_II_VEC`, mirroring the PART_Si channel.
+Verified: noero byte-identical (no regression); ero delivers C/N/P detritus to the water (+7.4/+2.4/+0.008)
+matching bed decrements. **Phase 1 complete and merged (PR #81).**
 
 ## Open decisions for review
 
