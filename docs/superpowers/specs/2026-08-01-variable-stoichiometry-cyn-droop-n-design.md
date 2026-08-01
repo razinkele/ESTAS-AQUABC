@@ -3,7 +3,11 @@
 **Motivation:** `BACKLOG.md` §3 (variable Si:C/N:C stoichiometry); the multivariate wall diagnosed
 across the Nostocales / FIX_CYN / issue-#76 negative results.
 **Date:** 2026-08-01
-**Status:** Design — pending user review, then implementation plan.
+**Status:** ⛔ **Do-not-implement-as-written — a Workflow review (2026-08-01) found the premise refuted
+and the architecture broken. See §12.** The motivating hypothesis (CYN luxury N-uptake draws summer DIN
+down) is contradicted by the model's own conservation + regeneration-floored-DIN verdict; separately the
+gating architecture is unimplementable on four counts and mass-conservation is false as written. Design
+§1–§11 retained for the record.
 **Scope tier chosen:** Scoped Droop-N **pilot** on non-fixing cyanobacteria (CYN) only; config-gated
 via a new setup variant; goal is to test whether variable N:C breaks the wall before any full feature.
 
@@ -202,3 +206,67 @@ EPA multivariate A/B, mirroring the #76 gate: run `INPUTS_CL29_varstoich` (flag 
 - Bi, R., Arndt, C., & Sommer, U. (2012). Stoichiometric responses of phytoplankton species to the
   interactive effect of nutrient supply ratios and growth rates. *Journal of Phycology*, 48(3),
   539–549. <https://doi.org/10.1111/j.1529-8817.2012.01163.x>
+
+---
+
+## 12. Workflow review outcome (2026-08-01) — do not implement as written
+
+A 4-dimension adversarial Workflow review (Fortran/architecture, formulation/mass-conservation,
+adversarial premise, scope/testability; each finding independently verified against source) returned
+**21 confirmed findings, 8 BLOCKING.** Two independent classes of failure; the first is decisive.
+
+### 12.1 The premise is refuted (finding 11, BLOCKING — the headline)
+
+The pilot's motivating claim — "CYN luxury N-uptake draws summer DIN **down** toward EPA" — is
+contradicted by the model's own steady-state N cycling and the project's own verdict:
+- CYN is **88–97% N-replete** across the whole summer DIN range (`KHS_DIN_CYN = 0.009`,
+  `LIM_KG_CYN_N = DIN/(DIN+0.009) ≈ 0.9`), so growth is *not* N-limited and decoupling uptake from
+  growth adds **no sustained N demand**. Biomass is capped by light/temp/grazing/self-shading, not N.
+- A Droop quota therefore adds only a **bounded one-time storage transient** (`≈ (Q_max−Q_Redfield)·CYN_C`),
+  not a season-long sink. Every quota-N loss path (resp→NH4, death→detritus→remin, excr→DON→remin,
+  graze→ZOO→remin) **returns N to the water column, dominantly as NH4** — which *is* the
+  regeneration-driven NH4 that the 2026-07-25 DEFINITIVE VERDICT already identified as the irreducible
+  ~0.06 DIN floor that **already matches EPA**. **Luxury uptake feeds the floor; it cannot lower it**
+  (storage ≠ removal — provable from the §8 conservation identity itself).
+- Worse (finding 12, MAJOR): NH4-preferring uptake strips the pool that **already matches EPA** (NH4)
+  and spares the over-predicted, advection-resupplied **NO3** — the likely signature is a NO3→NH4
+  speciation shift that **raises** NH4 above its floor, recreating the multivariate wall (finding 13).
+
+So the pilot as framed cannot test "lower the summer DIN budget" — at most a phenology/timing
+redistribution — and is a near-certain negative already settled by conservation + the project record.
+
+### 12.2 The architecture is broken (even setting the premise aside)
+
+- **BLOCKING (finding 1):** the runtime flag cannot toggle `nstate` — the ESTAS path is governed by
+  `GLOBAL::nstate`, a **compile-time `parameter = 32`** (`mod_GLOBAL.f90:16`), sizing automatic arrays
+  `dimension(nkn,nstate)`. The `nstate` §5 edits (`interface.f90:74`) is a different symbol used only by
+  the 0D driver. Fix would be a *separate compile-time build* (`nstate=33`), not a runtime flag.
+- **BLOCKING (finding 3):** `CYN_N_INDEX = 33` **collides with the allelopathy block** — metabolites
+  occupy `nstate+1..+4` = 33–36 (`NUM_ALLOLOPATHY_STATE_VARS = 4`), and CL29 declares **36** state vars.
+  The spec never mentions allelopathy; the "33 state vars" arithmetic is wrong.
+- **BLOCKING (finding 4):** the pilot **patches the wrong subroutine** — CL29 runs
+  `CYANO_BOUYANT_STATE_SIMULATION=1` → `CYANOBACTERIA_BOUYANT` (`model.f90:1096`); the plain
+  `CYANOBACTERIA` (`:165`, the spec's target) is **dead code**. As written the Droop path never runs.
+- **BLOCKING (finding 2):** the §9 count-check backstop is **blind under allelopathy** (tautological for
+  both gate setups) → silent state-vector misalignment instead of a loud stop.
+- **BLOCKING (finding 7):** mass conservation is **false as written** — the DON-uptake-during-growth sink
+  (`DISS_ORG_N` process #5, `model.f90:2947/2979`) is left in place, destroying N at
+  `R_CYN_GROWTH·CYN_N_TO_C·(1−PREF_DIN_DON_CYN)` per step; the "by construction" proof does not hold.
+- **BLOCKING (findings 16, 18):** no positive integration test for the flag-ON path (byte-identity gate
+  is vacuous for the new code), and the four `CYN_N_*` constants are ranges/undefined (`CYN_N_KHS_UPT`
+  has no value) — an implementer cannot author `WCONST_04.txt` deterministically.
+- Plus IMPORTANT: converter hardcodes 32 in ~6 sites (finding 5); photosynthetic-O2 stoichiometry
+  breaks and DO is scored (finding 9); the §7 A/B is confounded by the DON drop (finding 14) and is the
+  same unattributable multi-effect bundle as #76 (finding 19); the mass-balance test isn't runnable in
+  the named harness (finding 21).
+
+### 12.3 Decision
+
+**Do not implement this pilot as framed.** The `§3` variable-stoichiometry backlog item stands, but the
+specific "CYN Droop-N draws summer DIN down" hypothesis is refuted (§12.1) — it joins the same
+regeneration-floored-DIN / multivariate-wall class as FIX_CYN and #76. Any future variable-stoichiometry
+work must (a) target a variable/mechanism where the model is genuinely *uptake*-limited (not
+regeneration-floored), and/or reframe as a phenology/timing question with a sustained-drawdown
+discriminator; and (b) if pursued, adopt the corrected architecture (separate compile-time `nstate=33`
+build, allelopathy-aware indexing, patch `CYANOBACTERIA_BOUYANT`, zero the DON-uptake sink, an explicit
+non-blind count assert, committed constants, a flag-ON integration test).
