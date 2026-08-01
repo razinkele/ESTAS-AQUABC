@@ -73,10 +73,10 @@ program ESTAS_II
     ! -----------------------------------------------------------------------------------
     deallocate(pcore%node_active)
     deallocate(STATE_VARIABLES  )
-    deallocate(DERIVATIVES      )
+    deallocate(pcore%DERIVATIVES      )
     deallocate(MODEL_CONSTANTS  )
-    deallocate(DRIVING_FUNCTIONS)
-    deallocate(FLAGS            )
+    deallocate(pcore%DRIVING_FUNCTIONS)
+    deallocate(pcore%FLAGS            )
     deallocate(PROCESS_RATES    )
     deallocate(pcore%SAVED_OUTPUTS)
     deallocate(pH               )

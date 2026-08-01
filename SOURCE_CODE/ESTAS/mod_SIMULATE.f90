@@ -596,7 +596,7 @@ contains
                                                ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1) / &
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
-                                          (DERIVATIVES(i, j) - &
+                                          (pcore%DERIVATIVES(i, j) - &
                                                wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
                                                wsc%FLUXES_TO_WATER_COLUMN(i, j)
                                 else
@@ -621,7 +621,7 @@ contains
                                                ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1) / &
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
-                                          (DERIVATIVES(i, j) - &
+                                          (pcore%DERIVATIVES(i, j) - &
                                                wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
                                                wsc%FLUXES_TO_WATER_COLUMN(i, j)
                                 end if

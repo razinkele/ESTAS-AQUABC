@@ -1332,8 +1332,8 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
             STATE_VARIABLES(nd, NOST_VEG_HET_C_INDEX)
         write(6,'(A,3ES12.4)') ' NH4/NO3/PO4=', STATE_VARIABLES(nd, NH4_N_INDEX), &
             STATE_VARIABLES(nd, NO3_N_INDEX), STATE_VARIABLES(nd, PO4_P_INDEX)
-        write(6,'(A,ES12.4,A,ES12.4)') ' DERIV_FIX=', DERIVATIVES(nd, FIX_CYN_C_INDEX), &
-            ' DERIV_CYN=', DERIVATIVES(nd, CYN_C_INDEX)
+        write(6,'(A,ES12.4,A,ES12.4)') ' DERIV_FIX=', pcore%DERIVATIVES(nd, FIX_CYN_C_INDEX), &
+            ' DERIV_CYN=', pcore%DERIVATIVES(nd, CYN_C_INDEX)
         CHLA_DUMP_DONE = .true.
         ! Stop to preserve dump in logs for analysis
         stop
@@ -1471,9 +1471,9 @@ subroutine PELAGIC_KINETICS &
           nstate                                                 , &
           MODEL_CONSTANTS                                        , &
           nconst                                                 , &
-          DRIVING_FUNCTIONS                                      , &
+          pcore%DRIVING_FUNCTIONS                                      , &
           n_driving_functions                                    , &
-          FLAGS                                                  , &
+          pcore%FLAGS                                                  , &
           nflags                                                 , &
           AQUABC_PROCESS_RATES                                   , &
           NDIAGVAR                                               , &
@@ -1494,12 +1494,12 @@ subroutine PELAGIC_KINETICS &
           CONSIDER_NON_OBLIGATORY_FIXERS                         , &
           CONSIDER_NOSTOCALES)
 
-    DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
+    pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)
 
     if (CONSIDER_ALLELOPATHY > 0) then
 
-        WATER_TEMP(:) = DRIVING_FUNCTIONS(:, 1)
+        WATER_TEMP(:) = pcore%DRIVING_FUNCTIONS(:, 1)
 
         ALLEL_R_DEATH_DIA       = AQUABC_PROCESS_RATES(:, DIA_C_INDEX         , 4)
         ALLEL_R_DEATH_NOFIX_CYN = AQUABC_PROCESS_RATES(:, CYN_C_INDEX         , 4)
@@ -1511,7 +1511,7 @@ subroutine PELAGIC_KINETICS &
         ! DERIVATIVES_SEC_METAB is fetched from unit ALLELOPATHY
         SEC_MET_DERIVATIVES(:,:) = DERIVATIVES_SEC_METAB(:,:)
 
-        DERIVATIVES(:,(nstate+1):(nstate+NUM_ALLOLOPATHY_STATE_VARS)) = &
+        pcore%DERIVATIVES(:,(nstate+1):(nstate+NUM_ALLOLOPATHY_STATE_VARS)) = &
             SEC_MET_DERIVATIVES(:,:)
     else
         SEC_MET_DERIVATIVES(:,:) = 0.0D0

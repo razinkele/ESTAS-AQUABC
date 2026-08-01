@@ -208,10 +208,10 @@ contains
 
         allocate(pcore%node_active(nkn)                                      )
         allocate(STATE_VARIABLES  (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
-        allocate(DERIVATIVES      (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
+        allocate(pcore%DERIVATIVES      (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
         allocate(MODEL_CONSTANTS  (nconst)                                   )
-        allocate(DRIVING_FUNCTIONS(nkn,n_driving_functions)                  )
-        allocate(FLAGS            (nflags)                                   )
+        allocate(pcore%DRIVING_FUNCTIONS(nkn,n_driving_functions)                  )
+        allocate(pcore%FLAGS            (nflags)                                   )
         allocate(PROCESS_RATES    (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS), NDIAGVAR))
         allocate(pcore%SAVED_OUTPUTS(nkn,n_saved_outputs)                                )
         allocate(pH               (nkn)                                                )
