@@ -66,7 +66,7 @@ diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliat
 
 | ID | Item | Status | Notes |
 |----|------|--------|-------|
-| 5.1 | Reduce global state (`mod_GLOBAL` 50+ vars, ~416 `pelagic_internal` arrays → derived types) | **In progress** | Resuspension (`2014265`), bottom-sediment (`1a413e9`) and water-coupling (`54a2de2`) slices done. `mod_GLOBAL` allocatables now **12** — the pelagic water-column core is the remaining (harder, tightly-coupled) slice. Reuse the byte-identical method. |
+| 5.1 | Reduce global state (`mod_GLOBAL` 50+ vars, ~416 `pelagic_internal` arrays → derived types) | **Substantially complete** | 4 byte-identical slices merged: resuspension (`2014265`), bottom-sediment (`1a413e9`), water-coupling (`54a2de2`), and the **pelagic-core `pcore` Tiers 1–2** (PRs #88 `1c2c9ef` / #89 `7c5d85e`) — `mod_GLOBAL` loose pelagic allocatables **12→4**. **Tier 3 (`pH`/`STATE_VARIABLES`/`MODEL_CONSTANTS`/`PROCESS_RATES`): NO-GO (2026-08-01)** — cosmetic count only (`pcore` stays in GLOBAL → zero coupling change) vs highest-risk/~1000 sites. See `docs/superpowers/specs/2026-08-01-pelagic-core-deglobalization-design.md`. |
 | 5.2 | Separate CO2SYS into a standalone library (`CO2SYS_LIB/` + CMake) | Open | |
 | 5.3 | Higher-order ODE solvers (beyond the existing RK2/Heun) | Open | |
 | 5.4 | Runtime configuration (config-driven instead of recompile) | Open | RK2-via-config already shipped (see "Recently completed"). |
@@ -108,12 +108,16 @@ diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliat
 
 ---
 
-## The one shovel-ready engineering item
+## Phase 5.1 status: substantially complete — no shovel-ready slice remains
 
-Continue **Phase 5.1** with the final `GLOBAL` slice — the **12-allocatable pelagic water-column core**
-(the resuspension, bottom-sediment and water-coupling slices are done). This is the hardest slice (the
-core is tightly used throughout the kinetics), but the byte-identical method is proven. Everything else
-is either in-flight (§0 coupling), deferred-by-design (5.2–5.4, low priority) or waiting on data/decisions.
+`mod_GLOBAL`'s loose pelagic allocatables are down **12→4** (pelagic-core `pcore` Tiers 1–2 merged); the
+resuspension, bottom-sediment and water-coupling subsystems were done earlier. **Tier 3 (the last 4 core
+arrays) is a decided NO-GO** — cosmetic count with zero coupling change vs the highest risk/effort (see 5.1
+above). So there is no low-risk mechanical de-globalization slice left to pick up. What remains is either
+deferred-by-design (5.2 CO2SYS-lib, 5.3 higher-order solvers, 5.4 config-driven runtime — all low priority),
+science (§3, esp. variable N:C stoichiometry) or waiting on data/decisions (§4). The next *substantive*
+engineering lift would be an actual de-coupling (lift `pcore`/`bsed`/`wsc`/`resusp` out of `GLOBAL` into
+their own modules) — a design effort, not a mechanical slice.
 
 ## Sources (authoritative detail — do not duplicate here)
 

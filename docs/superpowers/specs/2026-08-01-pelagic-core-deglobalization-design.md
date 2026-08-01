@@ -1,9 +1,11 @@
 # Pelagic-Core `GLOBAL` De-globalization — Design / Scope
 
 **Date:** 2026-08-01
-**Status:** scope / design (for review) — **hardened by a 4-way adversarial in-loop review (2026-08-01)**; all
-file:line references are under `SOURCE_CODE/` (note a byte-identical twin tree exists at `ali_version/` — use
-the `SOURCE_CODE/` copy).
+**Status:** **COMPLETE — Tiers 1–2 merged, Tier 3 NO-GO (2026-08-01).** The de-globalization stopped at
+`GLOBAL` **12 → 4** loose pelagic allocatables (Tier 1 PR #88 `1c2c9ef`, Tier 2 PR #89 `7c5d85e`, both
+byte-identical). Tier 3 was deliberately not taken up — see "Tier-3 decision gate" for the no-go rationale.
+Hardened by a 4-way adversarial in-loop review + a 5-finder Workflow review. File:line references are under
+`SOURCE_CODE/` (a byte-identical twin tree exists at `ali_version/` — use the `SOURCE_CODE/` copy).
 
 ## Goal
 
@@ -176,12 +178,24 @@ commit (explicit pathspec).
 4. **Enumeration landmines:** case-sensitivity + continuation lines + per-occurrence mixed statements — folded
    into method steps 2–3.
 
-## Tier-3 decision gate
+## Tier-3 decision gate — DECIDED: NO-GO (2026-08-01)
 
-After Tier 1 lands, explicitly decide go/no-go on **Tier 3**: hand-classifying ~1,000 candidate `pH`/
-`PROCESS_RATES`/`MODEL_CONSTANTS`/`STATE_VARIABLES` sites (with silent rank-match over-rename exposure) buys a
-cosmetic allocatable-count metric with zero coupling change. Weigh the strengthened method (unused-warning net
-+ flag gates + per-occurrence review) against the residual latent-bug risk. Tier 2 is intermediate.
+**Decision: do NOT proceed with Tier 3. Stop the de-globalization at `GLOBAL` 12 → 4.**
+
+Rationale (after Tiers 1–2 shipped byte-identical): moving the remaining core arrays (`pH`,
+`STATE_VARIABLES`, `MODEL_CONSTANTS`, `PROCESS_RATES`) buys only a cosmetic allocatable-count metric (4 → 0)
+— `pcore` stays inside `mod_GLOBAL`, so there is **zero coupling change** and the program is functionally
+identical either way. Against that near-zero benefit: it is the **highest-risk** tier (the `pH` `PH`/`pH`
+case-split; the `MODEL_CONSTANTS` same-rank dummy in `GENERATE_PELAGIC_DERIVED_VARS` — the one over-rename
+class the compiler cannot reject on shape) and the **largest effort** (~1,000 candidate sites, ~10× Tiers
+1+2). A future *real* de-globalization (lifting `pcore` into its own module — the actual coupling win) would
+fold in the 4 remaining arrays as part of its own work, so doing Tier 3 now neither de-risks nor accelerates
+it.
+
+**If completeness is ever wanted:** do it as per-array sub-slices (`pH` first, isolated), with **manual**
+per-occurrence classification (no rename script — Tier 2 showed scripts trip on continuation-`%`), plus a
+wider gate (a config exercising the advanced-redox + allelopathy paths so the same-rank-dummy routines are
+covered). Not planned.
 
 ## Tier 1 — this slice
 
