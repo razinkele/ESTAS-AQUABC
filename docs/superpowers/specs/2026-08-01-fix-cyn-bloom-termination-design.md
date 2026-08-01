@@ -2,10 +2,12 @@
 
 **Issue:** [#76 — Phytoplankton phenology: N-fixers form a persistent bloom, not the observed late-summer spike-and-crash](https://github.com/razinkele/ESTAS-AQUABC/issues/76)
 **Date:** 2026-08-01
-**Status:** ✅ **Necessity gate RUN (2026-08-01) — the quadratic term is NOT needed.** Corrected
-CTMI-valid temperature windows alone (`KD_FIX_CYN_DENS = 0`, no code change) reproduce the #76
-target phenology. **The deliverable pivots to a windows-only phenology fix; the quadratic-term
-design (§1–§11) is superseded and retained for the record only.** See §12.4 for the gate result.
+**Status:** ⛔ **Closed after two decisive gates (2026-08-01) — no code change recommended.**
+(1) Necessity gate: corrected CTMI-valid windows alone (`KD_FIX_CYN_DENS = 0`) reproduce the #76
+spike-and-crash phenology ⟹ **the quadratic term is unnecessary** (§1–§11 superseded, kept for the
+record). (2) Multivariate gate: the window fix improves PO4 but **regresses NH4/DO/Si/TN/TP/Chl-a**
+⟹ it does not net-improve skill and is **not shippable** — the same documented structural tension as
+FIX_CYN-as-a-fixer. Durable value = the diagnosis + experiments (§12.4/§12.5); a #76 write-up.
 **Scope tier chosen:** Capability + first-cut (config-gated, default-off, byte-identical); full calibration is a documented follow-on.
 
 ---
@@ -417,3 +419,35 @@ activating FIX_CYN (EPA CHLA/Si/TN/NH4 regressions, IM-4) is **not yet re-checke
 CTMI-valid window and must be validated against the EPA/KM record before this becomes a CL29
 default; (c) whether the blooming biomass is truly diazotrophic vs a non-fixing cyano winning the
 niche (IM-5 / §1.2) is still open. These belong to a new *windows-only* spec, not this one.
+
+### 12.5 Multivariate gate (RUN 2026-08-01) — windows-only fix does NOT net-improve skill
+
+The IM-4 caution was then tested directly: both 5-year runs scored against the EPA tidy obs
+(`tools/validate_cl29_vs_epa.py`, 9 boxes, 2012–2016 obs subset), obs-count-weighted per-variable
+RMSE, baseline (default windows) vs corrected (CTMI-valid windows):
+
+| variable | obs mean | base RMSE | corrected RMSE | ΔRMSE |
+|---|---|---|---|---|
+| **PO4** | 0.007 | 0.038 | 0.031 | **−19% (better)** |
+| NH4 | 0.044 | 0.072 | 0.094 | +30% (worse) |
+| NO3 | 0.428 | 0.675 | 0.680 | +0.7% |
+| DO | 8.96 | 3.12 | 3.44 | +10% (worse) |
+| Si | 0.72 | 1.53 | 1.79 | +17% (worse) |
+| TN | 1.30 | 1.48 | 1.71 | +16% (worse) |
+| TP | 0.064 | 0.071 | 0.076 | +7% (worse) |
+| Chl-a | — | 28.2 | 32.1 | +14% (worse; bias −5.3 → +10.6) |
+
+**Verdict: the corrected-window phenology fix improves PO4 and the bloom *phase*, but regresses five
+other EPA variables (NH4, DO, Si, TN, TP) and Chl-a magnitude.** This is the same single-variable-vs-
+multivariate wall the project already documented for FIX_CYN activation
+(`fix-cyn-n2fixation-overprediction.md`: PO4 better, CHLA/Si/TN/NH4 worse) — the CTMI-valid window
+does **not** escape it. The larger September FIX_CYN bloom over-produces N (TN, NH4), perturbs Si, and
+over-produces organic matter → DO supersaturation and Chl overshoot.
+
+**Overall conclusion for issue #76.** The proposed fix resolves as follows: (1) the **quadratic
+bloom-termination term is unnecessary** — a CTMI-valid window alone gives the spike-and-crash; (2) the
+**winter clear is temperature-forced**, and the prior "structural persistence" was a CTMI-invalidity
+artifact; (3) but **fixing the phenology phase costs net multivariate skill**, so the corrected window
+is **not shippable as a CL29 default** — it belongs to the same "won't-fix / documented structural
+tension" class as FIX_CYN-as-a-fixer. The durable value is the **diagnosis + the two decisive
+experiments**, suitable for an issue-#76 write-up. No code change is recommended.
