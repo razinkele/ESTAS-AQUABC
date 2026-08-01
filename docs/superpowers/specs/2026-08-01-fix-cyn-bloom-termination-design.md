@@ -2,7 +2,9 @@
 
 **Issue:** [#76 — Phytoplankton phenology: N-fixers form a persistent bloom, not the observed late-summer spike-and-crash](https://github.com/razinkele/ESTAS-AQUABC/issues/76)
 **Date:** 2026-08-01
-**Status:** Design approved — ready for implementation plan
+**Status:** ⚠️ **Revised after in-loop review (2026-08-01) — a necessity gate is now REQUIRED before
+any implementation plan. See §12.** The code indicates the winter clear is temperature-forced, so
+the quadratic term's necessity is unproven; one experiment settles it.
 **Scope tier chosen:** Capability + first-cut (config-gated, default-off, byte-identical); full calibration is a documented follow-on.
 
 ---
@@ -273,3 +275,111 @@ follow-on, out of scope here.
   <https://doi.org/10.5194/bg-21-2493-2024>
 - Issue #76 and the curonian analyses: `~/curonian/harness/results/aquabc_phyto_phenology.md`,
   `phyto_phenology_test.md`, `phyto_fixer_tune.md`, `aquabc_po4_diagnosis.md`.
+
+---
+
+## 12. In-loop review outcome (2026-08-01) — necessity gate
+
+A four-reviewer adversarial in-loop review (Fortran/byte-identity, scientific soundness,
+scope/testing, adversarial premise) found the design **not implementable as written** and, more
+importantly, put the **necessity of the quadratic term itself in question**. The clean capability
+(a gated, default-0 closure) remains low-risk, but the demonstration and the premise it rests on
+are defective. Findings below are verified against the source, not just asserted.
+
+### 12.1 Blocking findings
+
+- **BL-1 — Demonstration temperature windows are CTMI-invalid (scientific).** CL29 runs
+  `TEMPERATURE_MODEL = 1` (CTMI) — `INPUTS_CL29/PELAGIC_MODEL_OPTIONS.txt:15`. In CTMI mode the
+  constants are cardinal temps with **`T_max = KAPPA_*_OVER_OPT_TEMP`**
+  (`aquabc_II_pelagic_auxillary.f90:80-85`), and CTMI is used only when
+  `2·T_opt > T_min + T_max`; otherwise it **falls back to the plateau model** where
+  `KAPPA_*_UNDER_OPT_TEMP = 0` ⟹ `exp(0)=1` ⟹ *full growth at all sub-optimal temperatures,
+  including freezing winter*. The baseline windows are valid; **all §5.2 demo changes flip them
+  invalid** (DIA 3/10/21 → 20<24; CYN 15/21/34 → 42<49; FIX 14/21/32 → 42<46), forcing the
+  plateau-fallback branch that *manufactures* the year-round plateau the demo exists to remove.
+  **Fix:** co-lower each `T_max` (= `KAPPA_*_OVER_OPT_TEMP`) to keep `T_max < 2·T_opt − T_min`:
+
+  | group | demo T_min | demo T_opt | required `KAPPA_OVER` (T_max) | current |
+  |---|---|---|---|---|
+  | DIA | 3 | 10 | **< 17** (e.g. 16) | 21 |
+  | FIX_CYN | 14 | 21 | **< 28** (e.g. 27) | 32 |
+  | CYN | 15 | 21 | **< 27** (e.g. 26) — *or drop the CYN change, see BL-3/M7* | 34 |
+
+  And assert the run log does **not** contain `GROWTH_AT_TEMP: CTMI params invalid … falling back
+  to plateau`.
+
+- **BL-2 — The term's necessity is unproven; the motivating "structural persistence" is likely a
+  CTMI-invalidity artifact (scientific/adversarial).** The curonian runs that established the
+  self-sustaining plateau (`phyto_phenology_test.md` PH_FIX/PH_ALL, `phyto_fixer_tune.md` Round 2)
+  used `FIX_CYN_OPT_TEMP_UR = 21` — CTMI-invalid → the same plateau-fallback branch with the
+  cold-side growth switch disabled. Under any **CTMI-valid** window, winter `T < T_min ⟹
+  LIM_TEMP = 0 ⟹ zero winter growth by construction`, so the *existing* linear death (0.04–0.10
+  d⁻¹) already clears the standing stock. **The plausible real fix is corrected, CTMI-valid
+  temperature windows — with the quadratic term unnecessary.** This must be tested before the term
+  is built (see §12.3).
+
+- **BL-3 — Constant plumbing targets the wrong routines; as written it crashes every setup
+  (Fortran + scope, independently).** `para_get_value` hard-`STOP`s on an unregistered name
+  (`STRING_UTILS.f90:71`); it does **not** default-fill. The real sites are
+  `INIT_PELAGIC_MODEL_CONSTANTS` (the `para_get_value` read-back, ~:681) and
+  `INSERT_PELAGIC_MODEL_CONSTANTS` (the `para_insert_value` registrar, ~:1315) — **not**
+  `READ_`/`WRITE_` as §5.1(2)/§6 say. **Fix:** mirror the last-added constant `BETA_FIX_CYN` (#321)
+  exactly across `DEFAULT`(:1648) / `INSERT`(:1315) / `INIT`(:681) / `VALIDATE`(:930), and rewrite
+  §6's mechanism to: "DEFAULT sets 0.0 → INSERT registers it in the para table → INIT's
+  name-keyed read returns 0.0 → term = +0.0 → byte-identical." (The byte-identity *outcome* is
+  still achievable; the recipe was wrong.)
+
+- **BL-4 — §2's dynamical justification is wrong; `−kB²` alone gives a lower stable plateau, not a
+  crash (scientific + adversarial).** For a continuous scalar system `dB/dt=(μ−d−kB)B` the approach
+  to `B* = (μ−d)/k` is **monotone — no overshoot, no crash**; and `μ` is already `μ(B)` via
+  self-shading, so `B*` is not even constant. The seasonal crash is delivered by autumn/winter
+  `μ(t)` collapse (⟹ BL-1 must be fixed first). **Fix:** rewrite §2 to claim the term **caps the
+  summer peak height / breaks the self-sustaining plateau** (a magnitude effect); the winter clear
+  is temperature-forced, not term-driven.
+
+### 12.2 Important findings (apply only if the gate in §12.3 passes)
+
+- **IM-1 — Existing Fortran unit tests read uninitialized memory.** `tests/fortran/test_fix_cyn.f90`
+  seeds params via `set_default_fix_cyn_params` (`tests/fortran/test_defaults.f90:159-187`), which
+  will not set the new field → `+KD·C²` multiplies garbage in all 9 cases. **Fix:** set
+  `KD_FIX_CYN_DENS = 0.0D0` there **and** default-initialize the type component itself
+  (`:: KD_FIX_CYN_DENS = 0.0_DBL_PREC` in `t_fix_cyn_params`) for robustness.
+- **IM-2 — The 3-config byte-identity gate is vacuous for the feature** (KD=0 ⟹ `+0.0` regardless
+  of wiring/sign). Add a **byte-difference** test: CL29 `KD=0` vs `KD=k` must differ and FIX_CYN
+  biomass must drop. Reword §8: the gate proves "no existing setup changes," not feature validity.
+- **IM-3 — Detritus routing is mis-partitioned and may worsen the §7 autumn-PO4 target.** Routing
+  100% of the crowding loss to `DET_PART_ORG_{C,N,P}` (fast-remineralizing; `KDISS_P` already 14×
+  the C/N rate) can *increase* the autumn P overshoot the demo claims to fix. Lysis is dissolved
+  (DOC/DON/DOP); aggregation/sinking is export. Add a caveat + an autumn-PO4 sign check; consider
+  splitting the loss. (§4.1's "mass-conservation is automatic" holds for *total* mass, verified;
+  the *partitioning* is a modelling choice, not automatic.)
+- **IM-4 — Success criteria are cherry-picked.** Activating FIX_CYN is already known to regress the
+  multivariate fit (EPA CHLA +52%, Si +64%, TN +56%, NH4 +16% worse; only PO4 −35% better —
+  `fix-cyn-n2fixation-overprediction.md`). §7 reports only the improving subset. State the Si/TN/
+  CHLA regression as an expected cost in §9 and report those variables in the demo.
+- **IM-5 — Framing over-claims diazotrophy.** The project's verdict is that FIX_CYN-*as-a-fixer* is
+  not reproducible in CL29; the opened-window biomass wins the niche as a *non-fixing* cyano. Drop
+  the "*Aphanizomenon/Nodularia* diazotrophic bloom" and "real autumn nutrient return" language
+  until §1.2's reconciliation is closed with fixation diagnostics.
+
+### 12.3 The necessity gate (do this before writing any implementation plan)
+
+Adjudicated reviewer conflict, for the record: the in-subroutine 50%-loss safeguard is **inert** at
+realistic biomass (cap `= 0.5·C/TIME_STEP = 120·C day⁻¹` at `dt=1/240`; peak `kC² ≈ 7 day⁻¹` for
+`k=0.2, C=6` — three orders below), so the crash is **not** a timestep artifact. §9's "exercises
+the capped regime" text is wrong and must be removed.
+
+**One decisive experiment (it is the corrected primary demo, not a new phase):** run CL29 with
+**CTMI-valid** windows (BL-1 table; DIA corrected, FIX opened; leave CYN unchanged per M7) and
+`KD_FIX_CYN_DENS ∈ {0, ~0.05, ~0.2}` with the **temperature values held identical across all three
+arms**.
+
+- If **k = 0 already** yields the September-peak / winter-clear phenology → **the term is
+  unnecessary**; the deliverable pivots to shipping the corrected temperature windows (a much
+  smaller change), and the quadratic-term code is dropped.
+- If **k = 0 plateaus and k > 0 crashes it** → the term is justified; proceed with the term and
+  apply the BL-3 wiring fix and the §12.2 fixes.
+
+Report the outcome honestly either way (a k=0-already-seasonal result is a valid, publishable
+finding, not a failure). Until this runs, **do not hand writing-plans a term-based plan** — it would
+be built on an assumption the code contradicts.
