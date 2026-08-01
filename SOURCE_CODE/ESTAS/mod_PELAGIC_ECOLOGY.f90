@@ -1317,7 +1317,7 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
           FIX_CYN_C_TO_CHLA                        , &
           NOST_C_TO_CHLA                           , &
           nkn                                      , &
-          CHLA                                     , &
+          pcore%CHLA                               , &
           CONSIDER_NON_OBLIGATORY_FIXERS           , &
           CONSIDER_NOSTOCALES)
 
@@ -1325,7 +1325,7 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
     if (CHLA_NEG_FLAG .and. .not. CHLA_DUMP_DONE) then
         nd = CHLA_NEG_NODE
         write(6,'(A)') '=== ONE-SHOT CHLA_NEGATIVE DUMP ==='
-        write(6,'(A,I4,A,ES12.4,A,ES12.4)') ' BOX=', nd, ' NEG_VAL=', CHLA_NEG_VALUE, ' CHLA=', CHLA(nd)
+        write(6,'(A,I4,A,ES12.4,A,ES12.4)') ' BOX=', nd, ' NEG_VAL=', CHLA_NEG_VALUE, ' CHLA=', pcore%CHLA(nd)
         write(6,'(A,5ES11.3)') ' DIA/CYN/FIX/OPA/NOST=', &
             STATE_VARIABLES(nd, DIA_C_INDEX), STATE_VARIABLES(nd, CYN_C_INDEX), &
             STATE_VARIABLES(nd, FIX_CYN_C_INDEX), STATE_VARIABLES(nd, OPA_C_INDEX), &
@@ -1344,7 +1344,7 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
     ! ---------------------------------------------------------------------------
     ! Calculate the settling suppression factor by chlorophyl-a
     ! ---------------------------------------------------------------------------
-    call settling_suppres_factor_vec(CHLA, nkn, SETTLING_VELOCITY_FACTORS)
+    call settling_suppres_factor_vec(pcore%CHLA, nkn, SETTLING_VELOCITY_FACTORS)
     ! ---------------------------------------------------------------------------
 end subroutine CALCULATE_SETTLING_SUPRESSION
 
@@ -1464,7 +1464,7 @@ subroutine PELAGIC_KINETICS &
     end if
 
     call AQUABC_PELAGIC_KINETICS &
-         (node_active                                            , &
+         (pcore%node_active                                      , &
           nkn                                                    , &
           AQUABC_STATE_VARIABLES                                 , &
           AQUABC_DERIVATIVES                                     , &
@@ -1477,7 +1477,7 @@ subroutine PELAGIC_KINETICS &
           nflags                                                 , &
           AQUABC_PROCESS_RATES                                   , &
           NDIAGVAR                                               , &
-          SAVED_OUTPUTS                                          , &
+          pcore%SAVED_OUTPUTS                                    , &
           n_saved_outputs                                        , &
           PH                                                     , &
           TIME                                                   , &
@@ -1485,7 +1485,7 @@ subroutine PELAGIC_KINETICS &
           PELAGIC_BOX_MODEL_DATA % DAY_OF_YEAR                   , &
           SEDIMENT_FLUXES                                        , &
           AQUABC_CALLED_BEFORE                                   , &
-          SURFACE_BOXES                                          , &
+          pcore%SURFACE_BOXES                                    , &
           ZOOPLANKTON_OPTION                                     , &
           ADVANCED_REDOX_SIMULATION                              , &
           USER_ENTERED_frac_avail_DON                            , &
