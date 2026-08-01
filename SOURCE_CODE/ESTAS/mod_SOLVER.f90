@@ -863,7 +863,7 @@ contains
         MODEL_CONSTANTS   = 0.0D0
         DRIVING_FUNCTIONS = 0.0D0
         PROCESS_RATES     = 0.0D0
-        SAVED_OUTPUTS     = 0.0D0
+        pcore%SAVED_OUTPUTS = 0.0D0
         FLAGS             = 0
 
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
@@ -1406,7 +1406,7 @@ contains
             DRIVING_FUNCTIONS(i, :) = &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % DRIVING_FUNCTIONS
 
-            SAVED_OUTPUTS(i, :) = &
+            pcore%SAVED_OUTPUTS(i, :) = &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % SAVED_OUTPUTS
         end do
 
@@ -1687,7 +1687,7 @@ contains
             end do
 
             PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % &
-                SAVED_OUTPUTS = SAVED_OUTPUTS(i,:)
+                SAVED_OUTPUTS = pcore%SAVED_OUTPUTS(i,:)
 
             PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % &
                 PELAGIC_ECOLOGY_CALLED_BEFORE = CALLED_BEFORE

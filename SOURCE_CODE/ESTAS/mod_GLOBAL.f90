@@ -91,10 +91,6 @@ module GLOBAL
 
     ! Variables for water column kinetics submodel
 
-    ! Input  : Active nodes for diagnostic
-    ! (not implmented but must be used for interface compatibility)
-    integer              , allocatable, dimension(:) :: node_active
-
     !Input  : Vector of state variables
     real(kind = DBL), allocatable, dimension(:,:)    :: STATE_VARIABLES
 
@@ -114,20 +110,22 @@ module GLOBAL
     !Output : Diagnostic variables documented in PELAGIC_KINETICS
     real(kind = DBL), allocatable, dimension(:,:,:)  :: PROCESS_RATES
 
-    !Input and Output : Any output that should be saved for the next time step
-    real(kind = DBL), allocatable, dimension(:,:)    :: SAVED_OUTPUTS
-
     !Old style PH array  must be used for interface compatibility
     real(kind = DBL), allocatable, dimension(:)      :: pH
 
     integer :: CALLED_BEFORE
 
-    !Output : Chl-A as a useful derived variable
-    real(kind = DBL), allocatable, dimension(:)     :: CHLA
-
-    real(kind = DBL), allocatable, dimension(:, :)  :: WATER_COLUMN_OUTPUT
-
-    integer, allocatable, dimension(:) :: SURFACE_BOXES
+    ! Pelagic-core state bundle (Phase-5.1 Tier 1): 5 peripheral water-column
+    ! arrays lifted out of loose GLOBAL scope into a single instance `pcore`
+    ! (access via pcore%<name>). The type grows across Tiers 2/3.
+    type :: pelagic_core_t
+        integer,          allocatable, dimension(:)   :: node_active         ! active nodes (interface compat)
+        real(kind = DBL), allocatable, dimension(:,:) :: SAVED_OUTPUTS        ! saved for the next time step
+        real(kind = DBL), allocatable, dimension(:)   :: CHLA                 ! Chl-A derived variable
+        real(kind = DBL), allocatable, dimension(:,:) :: WATER_COLUMN_OUTPUT  ! dead; preserved unallocated
+        integer,          allocatable, dimension(:)   :: SURFACE_BOXES
+    end type pelagic_core_t
+    type(pelagic_core_t) :: pcore
     ! End of variables for water column kinetics submodel
 
     ! Variables for bottom sediment submodel

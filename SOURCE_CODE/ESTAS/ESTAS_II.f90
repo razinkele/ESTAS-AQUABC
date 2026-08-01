@@ -71,16 +71,16 @@ program ESTAS_II
     ! -----------------------------------------------------------------------------------
     ! Deallocate AQUABC water column arrays
     ! -----------------------------------------------------------------------------------
-    deallocate(node_active      )
+    deallocate(pcore%node_active)
     deallocate(STATE_VARIABLES  )
     deallocate(DERIVATIVES      )
     deallocate(MODEL_CONSTANTS  )
     deallocate(DRIVING_FUNCTIONS)
     deallocate(FLAGS            )
     deallocate(PROCESS_RATES    )
-    deallocate(SAVED_OUTPUTS    )
+    deallocate(pcore%SAVED_OUTPUTS)
     deallocate(pH               )
-    deallocate(CHLA             )
+    deallocate(pcore%CHLA)
     deallocate(wsc%FLUXES_TO_WATER_COLUMN       )
     deallocate(wsc%FLUXES_OUTPUT_TO_WATER_COLUMN)
     ! -----------------------------------------------------------------------------------

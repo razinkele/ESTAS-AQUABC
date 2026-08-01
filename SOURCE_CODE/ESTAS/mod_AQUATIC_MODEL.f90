@@ -206,23 +206,23 @@ contains
             stop "error stop"
         end if
 
-        allocate(node_active      (nkn)                                      )
+        allocate(pcore%node_active(nkn)                                      )
         allocate(STATE_VARIABLES  (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
         allocate(DERIVATIVES      (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
         allocate(MODEL_CONSTANTS  (nconst)                                   )
         allocate(DRIVING_FUNCTIONS(nkn,n_driving_functions)                  )
         allocate(FLAGS            (nflags)                                   )
         allocate(PROCESS_RATES    (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS), NDIAGVAR))
-        allocate(SAVED_OUTPUTS    (nkn,n_saved_outputs)                                )
+        allocate(pcore%SAVED_OUTPUTS(nkn,n_saved_outputs)                                )
         allocate(pH               (nkn)                                                )
-        allocate(CHLA             (nkn)                                                )
-        allocate(SURFACE_BOXES    (nkn)                                                )
+        allocate(pcore%CHLA(nkn)                                                )
+        allocate(pcore%SURFACE_BOXES(nkn)                                                )
 
         allocate(wsc%FLUXES_TO_WATER_COLUMN       (nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
         allocate(wsc%FLUXES_OUTPUT_TO_WATER_COLUMN(nkn,(nstate + NUM_ALLOLOPATHY_STATE_VARS)))
 
         do i = 1, nkn
-            SURFACE_BOXES(i) = &
+            pcore%SURFACE_BOXES(i) = &
                 AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % SURFACE_BOX
         end do
 
