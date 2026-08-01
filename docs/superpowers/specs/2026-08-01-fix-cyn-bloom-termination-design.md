@@ -2,9 +2,10 @@
 
 **Issue:** [#76 — Phytoplankton phenology: N-fixers form a persistent bloom, not the observed late-summer spike-and-crash](https://github.com/razinkele/ESTAS-AQUABC/issues/76)
 **Date:** 2026-08-01
-**Status:** ⚠️ **Revised after in-loop review (2026-08-01) — a necessity gate is now REQUIRED before
-any implementation plan. See §12.** The code indicates the winter clear is temperature-forced, so
-the quadratic term's necessity is unproven; one experiment settles it.
+**Status:** ✅ **Necessity gate RUN (2026-08-01) — the quadratic term is NOT needed.** Corrected
+CTMI-valid temperature windows alone (`KD_FIX_CYN_DENS = 0`, no code change) reproduce the #76
+target phenology. **The deliverable pivots to a windows-only phenology fix; the quadratic-term
+design (§1–§11) is superseded and retained for the record only.** See §12.4 for the gate result.
 **Scope tier chosen:** Capability + first-cut (config-gated, default-off, byte-identical); full calibration is a documented follow-on.
 
 ---
@@ -383,3 +384,36 @@ arms**.
 Report the outcome honestly either way (a k=0-already-seasonal result is a valid, publishable
 finding, not a failure). Until this runs, **do not hand writing-plans a term-based plan** — it would
 be built on an assumption the code contradicts.
+
+### 12.4 Gate outcome (RUN 2026-08-01) — TERM UNNECESSARY
+
+Two 5-year CL29 runs (2012–2016, `ESTAS_HOLD_VOLUME=1`, `MODEL_SEDIMENTS=1`, daily output), box 23,
+year-2–5 monthly climatology. Corrected windows: DIA (T_min −2→3, T_max 21→**16**), FIX_CYN
+(T_min 18→14, T_opt 26→21, T_max 32→**27**), CYN unchanged — all CTMI-valid (run log shows **zero**
+"falling back to plateau" warnings). `KD_FIX_CYN_DENS` absent (= the `k=0` arm; the term does not
+exist in code).
+
+| chl-a (µg L⁻¹, box 23) | J | F | M | A | M | J | J | A | **S** | O | N | D | peak |
+|---|--|--|--|--|--|--|--|--|--|--|--|--|--|
+| OBS | 17 | 16 | 33 | 40 | 47 | 39 | 65 | 100 | **153** | 71 | 41 | 29 | Sep |
+| Baseline (default windows) | 27 | 23 | 17 | 17 | 20 | 19 | 17 | 21 | 17 | 12 | 14 | 18 | **Jan** |
+| Corrected (k=0, no term) | 1 | 1 | 2 | 27 | 20 | 28 | 50 | 66 | **72** | 20 | 16 | 4 | **Sep** |
+
+- FIX_CYN chl-equiv: baseline near-zero (DJF 0.07 / ASO 2.75); corrected **spike-and-crash**
+  (DJF 0.09 / ASO 49.0, peak/winter ≈ **552×**).
+- PO4 summer (Jul–Aug): baseline 0.034–0.051 → corrected **0.003** (drawn down by the bloom);
+  winter no longer crashed (Jan 0.001 → 0.073).
+
+**Verdict:** the `k=0` corrected-window arm already delivers the September peak, the winter clear,
+and the summer-PO4 drawdown — confirming BL-2 that the winter clear is temperature-forced (valid
+CTMI window ⟹ winter growth = 0 ⟹ existing linear death clears the stock). **The quadratic
+bloom-termination term (`KD_FIX_CYN_DENS`, §1–§11) is not needed and is dropped.** The `k>0` arms
+were never run — unnecessary.
+
+**Deliverable pivots to windows-only** (constants, no code): the corrected CTMI-valid windows as an
+opt-in CL29 phenology setup. **Caveats before shipping (follow-on):** (a) peak magnitude
+under-predicts (72 vs obs 153) — a magnitude, not phase, gap; (b) the known multivariate cost of
+activating FIX_CYN (EPA CHLA/Si/TN/NH4 regressions, IM-4) is **not yet re-checked** under the
+CTMI-valid window and must be validated against the EPA/KM record before this becomes a CL29
+default; (c) whether the blooming biomass is truly diazotrophic vs a non-fixing cyano winning the
+niche (IM-5 / §1.2) is still open. These belong to a new *windows-only* spec, not this one.
