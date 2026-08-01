@@ -7,7 +7,8 @@ campaigns tracked in project notes. **Detailed task specs live in the referenced
 file is the prioritized index, not a duplicate**, so it can't drift from the plan.
 
 **Last updated:** 2026-08-01 · **Latest release:** v0.9.1 · Fortran-plan Phases 1–4 and every item
-in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**.
+in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues** (the one that was open,
+#76 FIX_CYN phenology, was investigated and closed as *not planned* — see §4).
 
 ---
 
@@ -104,6 +105,7 @@ diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliat
 | Nostocales multi-year bloom | **Won't-fix** — de-risked as not-defensibly-fixable (competitive exclusion under P-limitation). |
 | CL29 PEST-posterior promotion | **Abandoned** — non-stationarity; PR #61 landed net-zero, kept only the tooling. |
 | FIX_CYN (N2-fixing cyano) to observed biomass | **Won't-fix / decided (2026-07-25)** — temperature diagnosis correct (T_opt=26 too warm) but FIX_CYN-as-a-*fixer* is not reproducible: NH4-floor competitive exclusion (summer DIN floored ~0.06 by regeneration-driven NH4 that matches EPA → non-fixers stay 87% N-replete; fixers never competitive). Growing it to observed biomass also regresses Chl-a/Si/TN (single-var vs multivar tension). Same class as Nostocales. See `fix-cyn-n2fixation-overprediction`. |
+| FIX_CYN bloom phenology / late-summer spike-and-crash (**issue #76**) | **Won't-fix / documented (2026-08-01)** — closed as *not planned* (PR #92 landed the investigation doc). A four-reviewer in-loop review + two CL29 gates found: (a) the proposed density-dependent bloom-termination term is **unnecessary** — corrected CTMI-valid temperature windows alone give the Sep spike-and-crash (winter clear is temperature-forced, not loss-driven); (b) the prior "structural persistence" was a **CTMI-invalidity artifact** (invalid window → plateau-fallback branch disables the cold-season growth-off switch); (c) the phase-fix **regresses multivariate skill** vs EPA (PO4 −19% but NH4 +30%, DO/Si/TN/TP/Chl-a worse) — same wall as the row above. Reusable lesson: verify the temperature-model branch is *valid* before trusting a "needs a formulation change" diagnosis. See `docs/superpowers/specs/2026-08-01-fix-cyn-bloom-termination-design.md` (§12.4/§12.5) and `fix-cyn-n2fixation-overprediction`. |
 | CL29 summer-NO3 over-prediction | **Partial fix ADOPTED (2026-07-25, `78ce4ad`)** — benthic denitrification `CL29_BENTHIC_DENIT` (config-only, converter option) closes ~20% of the summer gap: NO3 bias +0.065→+0.033, TN/DO better, small structural PO4 regression (+5.7% RMSE, unavoidable). Residual ~80% is spring-pool-drainage-dominated + the aseasonal-diatom-metabolism limit (uptake blocked by **fixed N:C** — see §3 variable-stoichiometry). A documented multi-factor residual alongside PO4/Si. |
 
 ---
