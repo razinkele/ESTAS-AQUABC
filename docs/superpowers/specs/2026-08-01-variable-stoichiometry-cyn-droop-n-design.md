@@ -3,11 +3,11 @@
 **Motivation:** `BACKLOG.md` §3 (variable Si:C/N:C stoichiometry); the multivariate wall diagnosed
 across the Nostocales / FIX_CYN / issue-#76 negative results.
 **Date:** 2026-08-01
-**Status:** ⛔ **Do-not-implement-as-written — a Workflow review (2026-08-01) found the premise refuted
-and the architecture broken. See §12.** The motivating hypothesis (CYN luxury N-uptake draws summer DIN
-down) is contradicted by the model's own conservation + regeneration-floored-DIN verdict; separately the
-gating architecture is unimplementable on four counts and mass-conservation is false as written. Design
-§1–§11 retained for the record.
+**Status:** ⛔ **Do-not-implement-as-written — a Workflow review (2026-08-01) strongly contraindicated
+the premise and found the architecture broken. See §12.** The motivating hypothesis (CYN luxury N-uptake
+draws summer DIN down) is strongly contraindicated by the model's own N-replete state + regeneration-
+floored-DIN verdict; separately the gating architecture is unimplementable on four counts and
+mass-conservation is false as written. Design §1–§11 retained for the record.
 **Scope tier chosen:** Scoped Droop-N **pilot** on non-fixing cyanobacteria (CYN) only; config-gated
 via a new setup variant; goal is to test whether variable N:C breaks the wall before any full feature.
 
@@ -215,7 +215,7 @@ A 4-dimension adversarial Workflow review (Fortran/architecture, formulation/mas
 adversarial premise, scope/testability; each finding independently verified against source) returned
 **21 confirmed findings, 8 BLOCKING.** Two independent classes of failure; the first is decisive.
 
-### 12.1 The premise is refuted (finding 11, BLOCKING — the headline)
+### 12.1 The premise is strongly contraindicated (finding 11, BLOCKING — the headline)
 
 The pilot's motivating claim — "CYN luxury N-uptake draws summer DIN **down** toward EPA" — is
 contradicted by the model's own steady-state N cycling and the project's own verdict:
@@ -226,8 +226,14 @@ contradicted by the model's own steady-state N cycling and the project's own ver
   not a season-long sink. Every quota-N loss path (resp→NH4, death→detritus→remin, excr→DON→remin,
   graze→ZOO→remin) **returns N to the water column, dominantly as NH4** — which *is* the
   regeneration-driven NH4 that the 2026-07-25 DEFINITIVE VERDICT already identified as the irreducible
-  ~0.06 DIN floor that **already matches EPA**. **Luxury uptake feeds the floor; it cannot lower it**
-  (storage ≠ removal — provable from the §8 conservation identity itself).
+  ~0.06 DIN floor that **already matches EPA**. So luxury uptake largely **feeds the floor rather than
+  lowering it** — most stored N remineralizes back into the water column.
+  - *Honest caveat (not analytically airtight):* the one genuine escape hatch is **export** — luxury-N
+    loaded biomass that *settles to the sediment or is grazed and exported* is a real water-column N
+    sink, unlike remineralization-in-place. So this is a *strong contraindication*, not a proof. What
+    makes it hold anyway: because CYN is already ~90% N-replete, the luxury store is a **small, bounded
+    perturbation**, so its partially-exported fraction is **second-order** — not enough to move the
+    boundary/regeneration-set summer DIN budget.
 - Worse (finding 12, MAJOR): NH4-preferring uptake strips the pool that **already matches EPA** (NH4)
   and spares the over-predicted, advection-resupplied **NO3** — the likely signature is a NO3→NH4
   speciation shift that **raises** NH4 above its floor, recreating the multivariate wall (finding 13).
@@ -262,9 +268,22 @@ redistribution — and is a near-certain negative already settled by conservatio
 
 ### 12.3 Decision
 
-**Do not implement this pilot as framed.** The `§3` variable-stoichiometry backlog item stands, but the
-specific "CYN Droop-N draws summer DIN down" hypothesis is refuted (§12.1) — it joins the same
-regeneration-floored-DIN / multivariate-wall class as FIX_CYN and #76. Any future variable-stoichiometry
+**The bigger takeaway (the genuinely valuable result).** This is now the **third** phytoplankton-side
+lever — Nostocales, FIX_CYN/#76, and now variable-stoichiometry-CYN — to die on the **same**
+regeneration/boundary-floored-DIN wall. That convergence is itself the finding: **the CL29 summer
+nutrient over-prediction is very likely a boundary-forcing / internal-regeneration structural feature,
+not fixable by any phytoplankton-side mechanism.** The actionable conclusion is therefore *upstream* of
+stoichiometry: **before any future variable-stoichiometry (or phyto-kinetics) work, first establish that
+a genuinely *uptake-limited* target exists at all** (i.e. a variable/season/box where ambient nutrient
+limits phyto growth, `LIM_N ≪ 1`, and is not held by boundary input or regeneration). If the wall is
+boundary-driven — as three independent lines now suggest — variable stoichiometry is the wrong tool
+*everywhere in CL29*, not just for CYN, and the lever to pursue is the open-boundary forcing (see
+`cl29-epa-validation`, boundary×0.5).
+
+**Do not implement this pilot as framed.** The `§3` variable-stoichiometry backlog item stands as a
+*general model-richness* goal, but the specific "CYN Droop-N draws summer DIN down" hypothesis is
+strongly contraindicated (§12.1) — it joins the same regeneration-floored-DIN / multivariate-wall class
+as FIX_CYN and #76. Any future variable-stoichiometry
 work must (a) target a variable/mechanism where the model is genuinely *uptake*-limited (not
 regeneration-floored), and/or reframe as a phenology/timing question with a sustained-drawdown
 discriminator; and (b) if pursued, adopt the corrected architecture (separate compile-time `nstate=33`
