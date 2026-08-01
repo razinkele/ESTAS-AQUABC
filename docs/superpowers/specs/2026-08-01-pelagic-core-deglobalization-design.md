@@ -1,119 +1,199 @@
 # Pelagic-Core `GLOBAL` De-globalization — Design / Scope
 
 **Date:** 2026-08-01
-**Status:** scope / design (for review — not yet a plan)
+**Status:** scope / design (for review) — **hardened by a 4-way adversarial in-loop review (2026-08-01)**; all
+file:line references are under `SOURCE_CODE/` (note a byte-identical twin tree exists at `ali_version/` — use
+the `SOURCE_CODE/` copy).
 
 ## Goal
 
-Bundle the **12 remaining loose pelagic water-column allocatables** in `mod_GLOBAL` into a single derived
-type `pelagic_core_t` with one module instance `pcore`, dropping `GLOBAL`'s allocatable count **12 → 0**.
-Byte-identical (a pure `X` → `pcore%X` rename), done in **3 risk-tiered sub-slices** (per the chosen
-sequencing). This is the **final** Phase-5.1 slice (§8.1 Task 5.1) and the hardest — the core arrays are
-used throughout the kinetics and solver, and their names double as SHYFEM-library dummy arguments and
-local variables, so a scope-blind rename is a silent semantic bug.
+Bundle the **12 loose pelagic water-column allocatables** in `SOURCE_CODE/ESTAS/mod_GLOBAL.f90` into a single
+derived type `pelagic_core_t` with one module instance `pcore` (defined **inside `mod_GLOBAL`**), dropping
+`GLOBAL`'s **loose-allocatable count 12 → 0**. Done in **3 risk-tiered sub-slices**, each a byte-identical
+`X` → `pcore%X` rename.
+
+**Honest framing (review I-2):** because `pcore` stays in `mod_GLOBAL`, this is **namespacing/bundling, not a
+coupling reduction** — every consumer still `use GLOBAL` and now writes `pcore%X`. The concrete benefit is the
+allocatable-count metric + uniformity with the 3 prior slices + making a *future* real lift (move `pcore` to
+its own module) a near-one-line change. It is the safest mechanical choice for the most-entangled arrays under
+a byte-identical constraint. **Tier 3 (~1,000 candidate `pH`/`PROCESS_RATES`/`MODEL_CONSTANTS` sites) is an
+explicit go/no-go after Tier 1**, not a formality — see "Tier-3 decision gate".
 
 ## Current state (verified against the tree)
 
-The 12 allocatables (`mod_GLOBAL.f90:96-130`):
+The 12 allocatables (`mod_GLOBAL.f90:96-130`). **The count column is a case-sensitive word-match UPPER BOUND
+(the review universe), NOT the rename set** — it includes dummy args, derived-type components, local shadows,
+and comments (exactly what the method skips). The true rename count is far smaller (Tier 1 ≈ **17–20 renames**,
+not 92); it is established by the scope-classification pass, not by grep.
 
-| Array | GLOBAL-resolving refs (in `use GLOBAL` files) | total refs | notes |
+| Array | candidate word-matches (upper bound, 19 files) | true renames (est.) | notes |
 |---|---|---|---|
-| `PROCESS_RATES` | 646 | 736 | the giant |
-| `MODEL_CONSTANTS` | 356 | 368 | almost all ESTAS-side |
-| `STATE_VARIABLES` | 106 | 234 | |
-| `DERIVATIVES` | 93 | 165 | |
-| `DRIVING_FUNCTIONS` | 50 | 92 | |
-| `SAVED_OUTPUTS` | 38 | 48 | ⚠️ also a `PELAGIC_BOX` component + a dummy arg |
-| `FLAGS` | 35 | 88 | ⚠️ prior shadow bug (advredox non-determinism) |
-| `CHLA` | 27 | 68 | ⚠️ also a **scalar** local (`mod_PELAGIC_ECOLOGY:318`) + dummy args |
-| `pH` | 25 | 310 | ⚠️ extreme: only 25 of 310 are the GLOBAL array |
-| `node_active` | 21 | 66 | ⚠️ `intent(in)` dummy arg throughout the pelagic lib |
-| `SURFACE_BOXES` | 6 | 23 | ⚠️ dummy arg + separate allocatables in 0D/interface/benchmark |
-| `WATER_COLUMN_OUTPUT` | 0 | 1 | **DEAD** — only the declaration exists; never allocated/used |
+| `PROCESS_RATES` | 646 | — | Tier 3 |
+| `MODEL_CONSTANTS` | 356 | — | Tier 3; ⚠️ rank-1 dummy in `GENERATE_PELAGIC_DERIVED_VARS` = **rank-match over-rename risk (silent)** |
+| `STATE_VARIABLES` | 234 | — | Tier 3 |
+| `DERIVATIVES` | 165 | — | Tier 2 |
+| `DRIVING_FUNCTIONS` | 92 | — | Tier 2 |
+| `SAVED_OUTPUTS` | 38 | ~6–7 | ⚠️ rank-2 dummy in `mod_BOTTOM_SEDIMENTS` (**B1**) + `PELAGIC_BOX` component + rank-1 dummy |
+| `FLAGS` | 88 | — | Tier 2; prior shadow bug (advredox) |
+| `CHLA` | 54* | ~7 | ⚠️ **four** distinct entities (see Shadow inventory); hardest Tier-1 array |
+| `pH` | 25 (82 case-insensitive) | — | Tier 3; ⚠️ `PH`/`pH` case split — grep MUST be case-insensitive |
+| `node_active` | 21 | ~3 | 18 are dummies in the only-import `aquabc_II_pelagic_model.f90` |
+| `SURFACE_BOXES` | 6 | ~3 | |
+| `WATER_COLUMN_OUTPUT` | 1 | 0 | **DEAD** — only the `mod_GLOBAL.f90:128` declaration; never allocated/used |
 
-- **Touch set = the 19 files that `use GLOBAL`** (not the whole tree). The pelagic library files
-  (`aquabc_II_pelagic_model.f90`, `..._auxillary.f90`, the sediment libs) receive these arrays as **dummy
-  arguments** — those sites are NOT renamed.
-- **Alloc:** `mod_AQUATIC_MODEL.f90:209-219`. **Dealloc:** `ESTAS_II.f90:74-83`. Both are part of the touch
-  set (`allocate(pcore%X(...))`, `deallocate(pcore%X)`).
-- **The core hazard (the wsc lesson):** these names shadow. A `use GLOBAL` file can *also* have a same-named
-  dummy arg, local, or derived-type component (e.g. `mod_PELAGIC_ECOLOGY` uses GLOBAL **and** has a scalar
-  `CHLA` local **and** a `PELAGIC_BOX % SAVED_OUTPUTS` component). Renaming a shadow site to `pcore%X` is
-  **byte-identical AND gate-invisible** yet semantically wrong. Per-site scope-aware review is the
-  load-bearing safety net — not a rename script.
+\* the original draft listed `CHLA` as 27 by silently pre-subtracting one file; the raw in-19 word count is 54.
+Row-to-row the column mixed conventions — do not treat any of these as rename counts.
+
+### Touch set (partitioned by import style)
+
+- **21 files `use GLOBAL`; 2 are compiler-generated & gitignored** (`SOURCE_CODE/build/*__genmod.f90`,
+  regenerated each build) → the real touch set is **19 files**.
+- Of the 19: **4 use `use GLOBAL, only:`** importing only count-scalars — `aquabc_II_pelagic_model.f90:89`,
+  `aquabc_II_pelagic_auxillary.f90:920/1155`, `aquabc_II_sediment_model_1_fast.f90:81`,
+  `aquabc_II_sediment_auxillary.f90:364/445`. They import **zero** Tier-1 arrays and **not** `pcore`, so every
+  Tier-1 token in them is provably a dummy/local → **all-skip, and any accidental `pcore%X` fails to compile**
+  (`pcore` not in scope). These are the SAFE zone.
+- The other **15 use `GLOBAL` unrestricted** — the only zone where a silent over-rename can compile. No file
+  mixes both forms.
+- **Transitive re-export is real but empty:** unrestricted `use GLOBAL` re-exports the arrays (and future
+  `pcore`) to importers (e.g. output writers `use PELAGIC_BOX_MODEL`), but every outside-19 referrer resolves
+  to a component/dummy/local (e.g. `sub_WRITE_PELAGIC_OUTPUT.f90:222` reads `…%PELAGIC_BOXES(j)%SAVED_OUTPUTS`,
+  not the GLOBAL array). And after the declaration moves, a hidden re-export user of the bare name is
+  **compiler-caught**, not silent. The 19-file touch set is complete.
+
+### Alloc / dealloc (asymmetric — do NOT assume pairing)
+
+- **Alloc** `mod_AQUATIC_MODEL.f90:209-219` — 11 arrays (all except the dead `WATER_COLUMN_OUTPUT`), one per line.
+- **Dealloc** `ESTAS_II.f90:74-83` — 10 arrays. **`SURFACE_BOXES` is allocated but never deallocated;
+  `WATER_COLUMN_OUTPUT` is neither.** Preserve this asymmetry exactly — do not add a `deallocate(pcore%SURFACE_BOXES)`.
 
 ## Design
 
-Define `pelagic_core_t` and its single module instance `pcore` **inside `mod_GLOBAL`** (the arrays' current
-home, so every existing `use GLOBAL` keeps working — no new module, no dependency cycle). The 12 members are
-moved into the type across the 3 tiers; each tier moves its arrays and rewrites their GLOBAL-resolving
-references `X` → `pcore%X`.
+Define `type :: pelagic_core_t` + `type(pelagic_core_t) :: pcore` inside `mod_GLOBAL` (verified cycle-safe:
+`mod_GLOBAL` adds zero new `use`, so `make_lib.sh`'s ordering is unchanged; `pcore`/`pelagic_core_t` names are
+free tree-wide; `mod_GLOBAL` currently defines no derived type — this is the first, standard Fortran). Members
+are added tier by tier; `pcore` is a module var (implicit SAVE — same lifetime as the loose arrays; no `FINAL`
+procedures exist → no finalization surprise).
 
-```fortran
-type :: pelagic_core_t
-    integer,          allocatable :: node_active(:)
-    real(kind=DBL),   allocatable :: STATE_VARIABLES(:,:)
-    ! … members added tier by tier …
-end type
-type(pelagic_core_t) :: pcore
-```
+### The 3 risk tiers
 
-### The 3 risk tiers (chosen sequencing)
-
-| Tier | Arrays | GLOBAL-resolving sites | risk |
+| Tier | Arrays | est. renames | risk |
 |---|---|---|---|
-| **1 (this slice)** | `WATER_COLUMN_OUTPUT` (drop, dead), `SURFACE_BOXES` (6), `node_active` (21), `CHLA` (27), `SAVED_OUTPUTS` (38) | ~92 | low-med (CHLA/SAVED_OUTPUTS in-file shadows) |
-| **2** | `FLAGS` (35), `DRIVING_FUNCTIONS` (50), `DERIVATIVES` (93) | ~178 | med (FLAGS shadow history) |
-| **3** | `pH` (25 of 310), `STATE_VARIABLES` (106), `MODEL_CONSTANTS` (356), `PROCESS_RATES` (646) | ~1133 | high (pH extreme shadow; volume) |
+| **1 (this slice)** | `WATER_COLUMN_OUTPUT` (move, dead-but-preserved), `SURFACE_BOXES`, `node_active`, `CHLA`, `SAVED_OUTPUTS` | ~17–20 | **low** — shadows are rank/type-mismatched → mis-renames compile-fail, EXCEPT the B1 sediment site (below) |
+| **2** | `FLAGS`, `DRIVING_FUNCTIONS`, `DERIVATIVES` | — | med (FLAGS shadow history) |
+| **3** | `pH`, `STATE_VARIABLES`, `MODEL_CONSTANTS`, `PROCESS_RATES` | — | **high** — `pH` case-split + rank-match dummies (`MODEL_CONSTANTS`) that over-rename **silently** |
 
-Each tier is an independent, byte-identical PR; `pelagic_core_t` grows monotonically.
+### Why Tier 1 is genuinely low-risk (the compiler backstop — review's key insight)
 
-### Method per tier (proven on resuspension / sediment / wsc)
+With `implicit none` in every rename-site scope (`PELAGIC_KINETICS` `mod_PELAGIC_ECOLOGY.f90:1362`, `CALC_DERIV`
+`mod_SOLVER.f90:740`, `CALCULATE_SETTLING_SUPRESSION`, `mod_AQUATIC_MODEL:25/48`), once `X` leaves `GLOBAL`:
+- an **under-rename** (a GLOBAL-array site left bare) → the name no longer resolves → **compile error** (unless a
+  same-name shadow exists in that exact scope; none do for the Tier-1 GLOBAL-array scopes).
+- an **over-rename** (a shadow wrongly prefixed) → caught **only on shape mismatch**. Tier-1 shadows are shape-
+  mismatched (`CHLA` local is a **scalar** vs rank-1 array; `SAVED_OUTPUTS` `PELAGIC_BOX` component is rank-1
+  pointer vs rank-2 array; rank-1 dummies indexed one-dim vs rank-2) → **compile-fail**. The one exception is B1.
 
-1. **Determinism pre-check** — confirm the gate configs are deterministic run-to-run before changing anything.
-2. **Enumerate** every candidate site: `grep -nwE` the array within the 19 `use GLOBAL` files → an
-   explicit `file:line old→new` list.
-3. **Scope-aware per-site review** (load-bearing): for each site, decide whether the name resolves to the
-   GLOBAL array (rename) or a local/dummy/component (skip). Record rename-vs-skip per line. This replaces
-   any blind sed/script rename — the wsc slice proved scripts produce byte-identical-but-wrong shadow
-   mis-renames.
-4. **Apply** the renames + move the declaration into `pelagic_core_t` + retarget alloc/dealloc.
-5. **Build** (gfortran release; also OpenMP + ifx in CI).
-6. **Byte-identity gate:** Standard (25-box) and CL29 runs produce **identical** output before/after
-   (these are core arrays exercised by every run — no flag-forked gate needed, unlike the sediment slice).
-   Use strip-and-compare on the diff to prove a pure `pcore%`-prefix change where feasible.
-7. **CI matrix** green (gfortran macOS/ubuntu, ifx, integration-tests, python-lint) → merge.
+### B1 — the single silent Tier-1 site (BLOCKING mitigation)
+
+`mod_BOTTOM_SEDIMENTS.f90:335` (signature) and `:343` (`real …, dimension(nkn_loc,n_saved_outputs) :: SAVED_OUTPUTS`)
+are a **rank-2 dummy** of `SEDIMENT_TRANSPORT`, in a file that `use GLOBAL` **unrestricted** (so `pcore` is
+visible) and whose shape **matches** the GLOBAL array → a mis-rename here would **compile silently**, and the
+routine only runs under `MODEL_SEDIMENTS=2`. Mitigation (mandatory for Tier 1):
+1. Enumerate `mod_BOTTOM_SEDIMENTS.f90:335` and `:343` as **explicit SKIPs** in the site list.
+2. **Add a `MODEL_SEDIMENTS=2` / `INPUT_sediment_test.txt` run to the Tier-1 byte gate** (Standard + CL29 do
+   NOT exercise it: Standard is `MODEL_SEDIMENTS=0`, CL29 is `=1`).
+3. This retracts the earlier blanket "no flag-forked gate needed" claim — false wherever a Tier array shadows a
+   shape-matching dummy inside a flag-gated routine (also `MODEL_CONSTANTS` in Tier 3).
+
+### Shadow inventory (per-array, expanded)
+
+- **`CHLA` — four entities:** `GLOBAL::CHLA` (rename target); `AQUABC_PELAGIC_INTERNAL::CHLA`
+  (`aquabc_II_pelagic_internal.f90:222`, `target` array — the `ENV_CHUNK%CHLA => CHLA(ns:ne)` bind at
+  `aquabc_II_pelagic_model.f90:1044` is this one, NOT GLOBAL); scalar local `mod_PELAGIC_ECOLOGY.f90:318`
+  (in `GENERATE_PELAGIC_DERIVED_VARS`); pointer component `aquabc_II_pelagic_types.f90:170` (`env%CHLA`).
+  → **CHLA gets its own dedicated review pass** (hardest Tier-1 array). GLOBAL-array renames live in
+  `CALCULATE_SETTLING_SUPRESSION` (`mod_PELAGIC_ECOLOGY:1320/1328/1347`) + alloc/dealloc; the `mod_SOLVER:22/391`
+  hits are **comments**.
+- **`SAVED_OUTPUTS`:** GLOBAL renames ≈ `mod_AQUATIC_MODEL:216`, `ESTAS_II:81`, `mod_SOLVER:866/1409-LHS/1690-RHS`,
+  `mod_PELAGIC_ECOLOGY:1480`. Skips: `PELAGIC_BOX` component decl `mod_PELAGIC_BOX.f90:79` (+ its alloc/dealloc),
+  dummies `mod_PELAGIC_ECOLOGY:271/280`, **B1** `mod_BOTTOM_SEDIMENTS:335/343`, component `mod_SIMULATE:545`.
+- **`node_active` / `SURFACE_BOXES`:** ~3 GLOBAL renames each (alloc + the `PELAGIC_KINETICS` call arg + dealloc);
+  the bulk are dummies in the only-import `aquabc_II_pelagic_model.f90`.
+
+## Method per tier (hardened)
+
+1. **Determinism + baseline pre-check.** Confirm the gate configs are deterministic run-to-run. **Capture the
+   pre-change compiler warning set** (`-Wunused-variable -Wunused-dummy-argument`) as a baseline (for step 7).
+2. **Enumerate** candidate sites: `grep -niwE` (**case-insensitive** — mandatory; `pH`↔`PH`) each array within
+   the **15 unrestricted `use GLOBAL` files** (the 4 only-import files are all-skip). Read **full logical
+   statements including `&` continuation lines** — a `%`-component split across a continuation looks bare on the
+   grepped line (`mod_SOLVER:1689-1690`).
+3. **Scope-aware, per-OCCURRENCE classification** (the load-bearing gate — not a script): for each occurrence
+   decide GLOBAL-array (rename) vs shadow (skip). Some single statements need opposite decisions per token
+   (`mod_SOLVER:1409-1410`, `:1689-1690` — component-skip on one side, GLOBAL-rename on the other). Record a
+   `file:line:col rename|skip` list. `CHLA` and (Tier 3) `pH` get a dedicated pass.
+4. **Apply** renames + move the declaration into `pelagic_core_t` + retarget alloc (`mod_AQUATIC_MODEL:209-219`)
+   and dealloc (`ESTAS_II:74-83`), **preserving the alloc/dealloc asymmetry** (SURFACE_BOXES alloc-only,
+   WATER_COLUMN_OUTPUT neither). If a rename-site file uses `use GLOBAL, only:`, add `pcore` to its only-list
+   (build-caught if missed).
+5. **`!$omp` pre-check + build.** Verify no moved array appears in any `!$omp` data-sharing clause
+   (`private/firstprivate/shared/default(none)`) — none do for Tier 1 (all regions are `default(shared)`; a
+   privatized derived-type component would be a compile error anyway). Build gfortran release **and OpenMP**.
+6. **Compiler-backstop cross-check.** The build itself is the under-rename net (bare `X` gone → error). As a
+   discovery aid, a scratch "delete `X` from GLOBAL, force-compile every file, collect `no IMPLICIT type`
+   errors" pass enumerates under-rename sites (caveat: under-renames only, never over-renames; `make_lib.sh`
+   stops at the first failing file so force per-file).
+7. **Baseline-diffed unused-warning pass** (the over-rename net the type-checker misses on shape-match): rebuild
+   with `-Wunused-*`, diff vs the step-1 baseline. A fully over-renamed shadow becomes a **newly-unused**
+   local/dummy — investigate every new unused warning.
+8. **Byte-identity gate** over **all** output files in `OUTPUTS/`, `OUTPUTS_CL29/`, **and the `MODEL_SEDIMENTS=2`
+   run** — identical before/after:
+   - Standard: `./ESTAS_II INPUT.txt` (`MODEL_SEDIMENTS=0`, redox=0).
+   - CL29: `ESTAS_HOLD_VOLUME=1 ./ESTAS_II INPUT_CL29.txt` (`=1`, redox=1 — **sole config observing
+     `SAVED_OUTPUTS` via the Fe/Mn feedback**; the flag is mandatory or CL29 crashes ~day 449).
+   - Sediment: the `MODEL_SEDIMENTS=2` / `INPUT_sediment_test.txt` gate (covers B1's routine).
+9. **Strip-and-compare (mandatory):** strip `pcore%` back to bare and confirm the diff is a pure prefix-add —
+   this proves **no stray edits**, NOT that the right sites were chosen (a wrongly-prefixed shadow strips back
+   too). Correctness rests on steps 3+6+7+8, not this.
+10. **CI matrix** green (gfortran macOS/ubuntu, ifx, integration-tests, python-lint) → PR → merge.
 
 ## Byte-identity / regression constraints
 
-- **Every existing run stays byte-identical** — this is a pure rename, no semantics change. Verify with
-  Standard 25-box and CL29 golden runs identical to the pre-change binary's output.
-- `INPUTS/FLOW_TS.txt` stays out of every commit (explicit pathspec).
+Every existing run stays byte-identical (pure rename). Gate = Standard + CL29(`HOLD_VOLUME=1`) +
+`MODEL_SEDIMENTS=2`, diffing all output files, plus the OpenMP build. `INPUTS/FLOW_TS.txt` stays out of every
+commit (explicit pathspec).
 
 ## Risks & mitigations
 
-1. **Shadow mis-rename (the load-bearing risk).** Mitigation: enumerated per-site review, not a script;
-   Tier-3 `pH` gets its own dedicated review pass (25 needles in 310). Byte-identity alone does NOT catch
-   these — the review is the real gate.
-2. **Dead-array assumption.** `WATER_COLUMN_OUTPUT` verified dead (0 refs); dropping it must not change any
-   output (it never fed one). If a later tier finds a hidden use, revisit.
-3. **Alloc/dealloc ordering.** Move both the `mod_AQUATIC_MODEL` alloc and the `ESTAS_II` dealloc together
-   per array so `pcore%X` is always allocated before use and freed once.
-4. **OpenMP.** `pcore` is a module-level shared instance (same sharing as the current GLOBAL arrays); the
-   parallel kinetics region reads/writes members exactly as it does the loose arrays today — no change to
-   the threading contract. Verify the OpenMP build byte-identical too.
+1. **Silent same-rank/same-type over-rename** (the only class the compiler misses). Tier 1: confined to **B1**
+   (`mod_BOTTOM_SEDIMENTS:343`) → explicit skip + `MODEL_SEDIMENTS=2` gate. Tiers 2/3: `MODEL_CONSTANTS`/`FLAGS`
+   rank-match dummies in flag-gated routines → the unused-warning pass (step 7) + per-tier flag gates are
+   load-bearing there; do not carry the "core arrays exercised by every run" assumption forward.
+2. **`WATER_COLUMN_OUTPUT` preserved, not dropped** (per direction): verified dead (0 refs); moved into `pcore`
+   unallocated — a true no-op (allocatable components default deallocated; no auto-alloc/finalization). Still
+   counts toward 12→0.
+3. **Alloc/dealloc asymmetry** (see above) — do not add a spurious dealloc.
+4. **Enumeration landmines:** case-sensitivity + continuation lines + per-occurrence mixed statements — folded
+   into method steps 2–3.
+
+## Tier-3 decision gate
+
+After Tier 1 lands, explicitly decide go/no-go on **Tier 3**: hand-classifying ~1,000 candidate `pH`/
+`PROCESS_RATES`/`MODEL_CONSTANTS`/`STATE_VARIABLES` sites (with silent rank-match over-rename exposure) buys a
+cosmetic allocatable-count metric with zero coupling change. Weigh the strengthened method (unused-warning net
++ flag gates + per-occurrence review) against the residual latent-bug risk. Tier 2 is intermediate.
 
 ## Tier 1 — this slice
 
-Move `SURFACE_BOXES`, `node_active`, `CHLA`, `SAVED_OUTPUTS` into `pelagic_core_t`/`pcore` (~92 sites),
-and **delete** the dead `WATER_COLUMN_OUTPUT` declaration. Key per-site care: the `CHLA` scalar local and
-the `SAVED_OUTPUTS` `PELAGIC_BOX` component in `mod_PELAGIC_ECOLOGY`/`mod_PELAGIC_BOX` are shadows — skip
-them. Deliverable: one byte-identical PR; Standard + CL29 golden runs identical before/after.
+Move `SURFACE_BOXES`, `node_active`, `CHLA`, `SAVED_OUTPUTS` into `pelagic_core_t`/`pcore` (~17–20 renames) and
+move the dead `WATER_COLUMN_OUTPUT` declaration in as well (preserved, unallocated). Explicit skips:
+`mod_BOTTOM_SEDIMENTS:335/343` (B1), the `CHLA` scalar/pointer/target entities, the `SAVED_OUTPUTS`
+`PELAGIC_BOX` component + dummies. Deliverable: one byte-identical PR passing the full gate (Standard + CL29 +
+`MODEL_SEDIMENTS=2`, all outputs, OpenMP).
 
 ## Out of scope
 
-- Any semantic/behaviour change (this is structural only).
-- Splitting into concern-based types (decided: one `pcore` bundle).
-- Truly removing global state (the instance `pcore` is still module-level, like the prior slices — the goal
-  is bundling the loose allocatables, reducing `GLOBAL`'s allocatable count, not dependency injection).
-- Tiers 2 and 3 land as their own subsequent PRs after Tier 1 validates the pattern on this codebase.
+- Any semantic/behaviour change (structural only).
+- Concern-based types (decided: one `pcore` bundle).
+- Truly removing global state (deferred — `pcore` stays module-level; this is bundling, per Goal).
+- Tiers 2 and 3 land as their own subsequent PRs; Tier 3 only after its decision gate.
