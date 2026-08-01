@@ -861,10 +861,10 @@ contains
         ! times each, O(nkn^2) write traffic (PROCESS_RATES is nkn x 36 x 30).
         ! Byte-identical (TODO 4.5).
         MODEL_CONSTANTS   = 0.0D0
-        DRIVING_FUNCTIONS = 0.0D0
+        pcore%DRIVING_FUNCTIONS = 0.0D0
         PROCESS_RATES     = 0.0D0
         pcore%SAVED_OUTPUTS = 0.0D0
-        FLAGS             = 0
+        pcore%FLAGS             = 0
 
         do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
             PELAGIC_BOX_MODEL_DATA % VOLUME_DERIVS(i, DERIV_NO) = 0.0D0
@@ -1393,7 +1393,7 @@ contains
             end do
         end do
 
-        FLAGS           = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(1) % FLAGS
+        pcore%FLAGS           = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(1) % FLAGS
 
         CALLED_BEFORE   = &
             PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(1) % PELAGIC_ECOLOGY_CALLED_BEFORE
@@ -1403,7 +1403,7 @@ contains
             STATE_VARIABLES(i, :)          = &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS
 
-            DRIVING_FUNCTIONS(i, :) = &
+            pcore%DRIVING_FUNCTIONS(i, :) = &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % DRIVING_FUNCTIONS
 
             pcore%SAVED_OUTPUTS(i, :) = &
@@ -1484,7 +1484,7 @@ contains
                                          TIME, resusp%RESUSPENSION_CONC_TS_VAR_NOS(i, j))
                             end do
 
-                            DERIVATIVES(i,:) = DERIVATIVES(i,:) + &
+                            pcore%DERIVATIVES(i,:) = pcore%DERIVATIVES(i,:) + &
                                 (resusp%FRAC_RESUSPENSION_AREAS(i) * SURFACE_AREAS(i) * &
                                  RESUSPENSION_VELOCITY * RESUSPENSION_CONCENTRATIONS(:))
                         end if
@@ -1517,7 +1517,7 @@ contains
         if (MODEL_BOTTOM_SEDIMENTS > 1) then
             ! Get sediment temperature from water column assuming it is equal
             do SED_LAYER_NO = 1,NUM_SED_LAYERS
-                bsed%SED_TEMPS(:,SED_LAYER_NO) = max(0.0D0, min(45.0D0, DRIVING_FUNCTIONS(:,1)))
+                bsed%SED_TEMPS(:,SED_LAYER_NO) = max(0.0D0, min(45.0D0, pcore%DRIVING_FUNCTIONS(:,1)))
             end do
 
             ! Uptate the time dependent forcings in sediments
@@ -1560,7 +1560,7 @@ contains
             bsed%SURF_WATER_CONCS(:, 12)  =  1.0D-10
             bsed%SURF_WATER_CONCS(:, 13)  =  STATE_VARIABLES  (:, INORG_C_INDEX)
             bsed%SURF_WATER_CONCS(:, 14)  =  STATE_VARIABLES  (:, TOT_ALK_INDEX)
-            bsed%SURF_WATER_CONCS(:, 15)  =  DRIVING_FUNCTIONS(:, 2) !Salinity will come from second driving function
+            bsed%SURF_WATER_CONCS(:, 15)  =  pcore%DRIVING_FUNCTIONS(:, 2) !Salinity will come from second driving function
             bsed%SURF_WATER_CONCS(:, 16)  =  STATE_VARIABLES  (:, FE_II_INDEX)
             bsed%SURF_WATER_CONCS(:, 17)  =  STATE_VARIABLES  (:, FE_III_INDEX)
             bsed%SURF_WATER_CONCS(:, 18)  =  STATE_VARIABLES  (:, MN_II_INDEX)
@@ -1581,7 +1581,7 @@ contains
             call FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
                (STATE_VARIABLES    , nkn        , nstate, &
                 MODEL_CONSTANTS    , nconst     ,         &
-                DRIVING_FUNCTIONS  , n_driving_functions, &
+                pcore%DRIVING_FUNCTIONS  , n_driving_functions, &
                 SETTLING_VELOCITIES, wsc%DISSOLVED_FRACTIONS, &
                 1.0D0              , 1, TIME            , &
                 wsc%SETTLING_RATES     , bsed%FLUXES_TO_SEDIMENTS, &
@@ -1666,13 +1666,13 @@ contains
 
             do STATE_VAR_NO = 1, nstate
                 wsc%FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) = &
-                    wsc%FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                    wsc%FLUXES_TO_WATER_COLUMN(:,STATE_VAR_NO) / pcore%DRIVING_FUNCTIONS(:, 8)
 
                 wsc%NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) = &
-                    wsc%NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                    wsc%NOT_DEPOSITED_FLUXES  (:,STATE_VAR_NO) / pcore%DRIVING_FUNCTIONS(:, 8)
 
                 wsc%SETTLING_RATES        (:,STATE_VAR_NO) = &
-                    wsc%SETTLING_RATES        (:,STATE_VAR_NO) / DRIVING_FUNCTIONS(:, 8)
+                    wsc%SETTLING_RATES        (:,STATE_VAR_NO) / pcore%DRIVING_FUNCTIONS(:, 8)
             end do
         end if
         !write(*,*) '    SEDIMENTS'
@@ -1693,7 +1693,7 @@ contains
                 PELAGIC_ECOLOGY_CALLED_BEFORE = CALLED_BEFORE
 
             PELAGIC_BOX_MODEL_DATA % ECOL_KINETIC_DERIVS(i, :, DERIV_NO) = &
-                (DERIVATIVES(i,:) + wsc%FLUXES_TO_WATER_COLUMN(i,:)) * &
+                (pcore%DERIVATIVES(i,:) + wsc%FLUXES_TO_WATER_COLUMN(i,:)) * &
                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % VOLUME
         end do
 

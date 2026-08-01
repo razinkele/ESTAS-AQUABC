@@ -94,18 +94,9 @@ module GLOBAL
     !Input  : Vector of state variables
     real(kind = DBL), allocatable, dimension(:,:)    :: STATE_VARIABLES
 
-    !Output : Time derivatives of state variables
-    real(kind = DBL), allocatable, dimension(:,:)    :: DERIVATIVES
-
     !Input  : Vector of kinetic and stochiometric model constants.
     !See subroutine INIT_WC_MODEL_CONSTANTS
     real(kind = DBL), allocatable, dimension(:)      :: MODEL_CONSTANTS
-
-    !Input  : Values for environmental conditions.
-    real(kind = DBL), allocatable, dimension(:,:)    :: DRIVING_FUNCTIONS
-
-    !Input  : Values for flags.
-    integer         , allocatable, dimension(:)      :: FLAGS
 
     !Output : Diagnostic variables documented in PELAGIC_KINETICS
     real(kind = DBL), allocatable, dimension(:,:,:)  :: PROCESS_RATES
@@ -124,6 +115,9 @@ module GLOBAL
         real(kind = DBL), allocatable, dimension(:)   :: CHLA                 ! Chl-A derived variable
         real(kind = DBL), allocatable, dimension(:,:) :: WATER_COLUMN_OUTPUT  ! dead; preserved unallocated
         integer,          allocatable, dimension(:)   :: SURFACE_BOXES
+        real(kind = DBL), allocatable, dimension(:,:) :: DERIVATIVES          ! time derivatives (Tier 2)
+        real(kind = DBL), allocatable, dimension(:,:) :: DRIVING_FUNCTIONS    ! environmental conditions (Tier 2)
+        integer,          allocatable, dimension(:)   :: FLAGS                ! flags (Tier 2)
     end type pelagic_core_t
     type(pelagic_core_t) :: pcore
     ! End of variables for water column kinetics submodel
