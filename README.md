@@ -42,7 +42,7 @@ validated against long-term monitoring data.
 
 ## Development status
 
-**Current release:** v0.9.0. AQUABC is under active research development; maturity varies
+**Current release:** v0.9.1. AQUABC is under active research development; maturity varies
 by component:
 
 | Component | Status |
@@ -152,5 +152,11 @@ Python suite pass, and open a pull request — CI must be green before merge.
 
 ## License & citation
 
-Released under the [MIT License](LICENSE). If you use AQUABC in published work, please
-cite the repository (`razinkele/ESTAS-AQUABC`) and the release version.
+Released under the [MIT License](LICENSE). If you use AQUABC in published work, please cite the
+model description paper:
+
+> Ertürk, A., Šakurova, I., Žilius, M., et al. (2023). Development of a pelagic biogeochemical model with
+> enhanced computational performance by optimizing ecological complexity and spatial resolution.
+> *Ecological Modelling*, 486, 110509. <https://doi.org/10.1016/j.ecolmodel.2023.110509>
+
+and, where relevant, the software repository (`razinkele/ESTAS-AQUABC`) and the release version.

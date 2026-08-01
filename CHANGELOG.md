@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-08-01
+
+> 🎉 **Released — [AQUABC v0.9.1](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.9.1)**
+> (Linux binary attached). **Internal refactoring only — pelagic-core `GLOBAL` de-globalization (Phase 5.1),
+> byte-identical.** Bundles 8 loose pelagic water-column allocatables in `mod_GLOBAL` into a single
+> derived-type instance `pcore` (`pelagic_core_t`), dropping the loose-allocatable count 12 → 4. **No
+> behavioural or output change — every model run is byte-identical to v0.9.0.**
+
+### Changed
+- **Pelagic-core `GLOBAL` de-globalization (Phase 5.1, byte-identical).** Moved 8 of the 12 loose pelagic
+  water-column arrays out of `mod_GLOBAL`'s global scope into one `pcore` instance — Tier 1 (`node_active`,
+  `SAVED_OUTPUTS`, `CHLA`, `WATER_COLUMN_OUTPUT`, `SURFACE_BOXES`) and Tier 2 (`DERIVATIVES`,
+  `DRIVING_FUNCTIONS`, `FLAGS`). Pure `X` → `pcore%X` renames; verified byte-identical across Standard
+  (`MODEL_SEDIMENTS=0`), CL29 (`=1`) and the `MODEL_SEDIMENTS=2` sediment test, with clean gfortran + OpenMP
+  builds and an unchanged `-Wunused` set. `GLOBAL` loose-allocatable count 12 → 4. Tier 3 (the last 4 core
+  arrays — `pH`/`STATE_VARIABLES`/`MODEL_CONSTANTS`/`PROCESS_RATES`) is a decided **no-go** (a cosmetic
+  count reduction with zero coupling change, since `pcore` stays in `mod_GLOBAL`, against the highest-risk
+  tier).
+
+### Documentation
+- Design spec + implementation plan for the pelagic-core de-globalization — hardened by a 4-way adversarial
+  in-loop review + a 5-finder workflow review — and the Tier-3 no-go decision, under
+  `docs/superpowers/{specs,plans}/2026-08-01-pelagic-core-*`. `BACKLOG.md` §1 5.1 updated to substantially
+  complete.
+- Added the model description paper to the README citation section: Ertürk, A., Šakurova, I., Žilius, M.,
+  et al. (2023), *Ecological Modelling* 486, 110509, <https://doi.org/10.1016/j.ecolmodel.2023.110509>.
+
 ## [0.9.0] - 2026-07-31
 
 > 🎉 **Released — [AQUABC v0.9.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.9.0)**
