@@ -53,7 +53,7 @@
 
 **Declaration moves (into `pelagic_core_t`):** `mod_GLOBAL.f90` `node_active(:96)`, `SAVED_OUTPUTS(:118)`, `CHLA(:126)`, `WATER_COLUMN_OUTPUT(:128, dead — move, do not delete)`, `SURFACE_BOXES(:130)`.
 
-**SKIP (shadows — never rename):** `CHLA` scalar local `mod_PELAGIC_ECOLOGY:318/363/380`; comments `mod_PELAGIC_ECOLOGY:1324`, `mod_SOLVER:22/391`; `SAVED_OUTPUTS` `PELAGIC_BOX` component `mod_PELAGIC_BOX:79/124/173/184`, `mod_SIMULATE:545`, `mod_PELAGIC_ECOLOGY:50/55/76/160/164/271/280`, `mod_SOLVER:1255/1410/1690-LHS`; **B1** `mod_BOTTOM_SEDIMENTS:335/343`.
+**SKIP (shadows — never rename):** `CHLA` scalar local `mod_PELAGIC_ECOLOGY:318/363/380`; comments `mod_PELAGIC_ECOLOGY:1324`, `mod_SOLVER:22/391`; `SAVED_OUTPUTS` `PELAGIC_BOX` component `mod_PELAGIC_BOX:79/124/173/184`, `mod_SIMULATE:545`, `mod_PELAGIC_ECOLOGY:50/55/76/160/164/271/280`, `mod_SOLVER:1255/1410/1690-LHS`; **B1** `mod_BOTTOM_SEDIMENTS:335/343`; component reads via transitive re-export (not in the touch set) `sub_WRITE_PELAGIC_OUTPUT.f90:222`, `sub_WRITE_PELAGIC_BINARY_OUTPUT.f90:195`.
 
 ---
 
@@ -64,10 +64,10 @@
 Run: `make clean-all && make build-estas`
 Expected: `ESTAS_II` built, exit 0.
 
-- [ ] **Step 2: Capture the `-Wunused` warning baseline (over-rename net).**
+- [ ] **Step 2: Capture the `-Wunused` warning baseline (over-rename net).** The release build already compiles with `-Wall -Wextra -fimplicit-none` (`Makefile:108`) — `-Wunused-variable` (from `-Wall`) and `-Wunused-dummy-argument` (from `-Wextra`) are already emitted, so **no extra flags are needed**. The only requirement is to capture the **merged** stream (warnings are on stderr and `make_lib.sh` interleaves them — a bare `2>file` came back EMPTY in review, making the check vacuous).
 
-Run: `make clean-all >/dev/null 2>&1 && make FFLAGS_EXTRA='-Wunused-variable -Wunused-dummy-argument' build-estas 2>build_warnings_before.txt; grep -E 'Wunused' build_warnings_before.txt | sort > /tmp/unused_before.txt` (if `FFLAGS_EXTRA` is not a Makefile hook, capture from a normal build's stderr — the point is a sorted pre-change unused-warning set). Then rebuild normally (Step 1's binary).
-Expected: a sorted baseline file exists.
+Run: `make clean-all >/dev/null 2>&1 && make build-estas >/tmp/build_before.txt 2>&1; grep -E 'Wunused' /tmp/build_before.txt | sort > /tmp/unused_before.txt; wc -l /tmp/unused_before.txt`
+Expected: a **non-empty** sorted baseline. If it is empty the capture is wrong — fix it before proceeding, or the over-rename net tests nothing.
 
 - [ ] **Step 3: Run the three gate configs and snapshot outputs.**
 
@@ -102,10 +102,10 @@ end type pelagic_core_t
 type(pelagic_core_t) :: pcore
 ```
 
-- [ ] **Step 2: Build — expect it to FAIL** with "`node_active`/`CHLA`/`SAVED_OUTPUTS`/`SURFACE_BOXES` has no IMPLICIT type" (or not-defined) at every RENAME usage site. This failing build IS the compiler backstop: the error list should match the RENAME table (17 sites minus the ones already edited). Record the list.
+- [ ] **Step 2: Build — expect it to FAIL** with "no IMPLICIT type" / "not declared" at the RENAME usage sites. This is a **smoke check, not a completeness cross-check**: the multi-pass `make_lib.sh` halts at the first failing file, so it surfaces only *that* file's errors — do NOT expect all 17 sites at once. The completeness guarantee is Task 5's exit-0 clean build. What to check here: any error pointing at a **SKIP** site means that name genuinely resolved to GLOBAL there → re-classify.
 
-Run: `make build-estas 2>&1 | grep -iE "Error|IMPLICIT|not been declared|no IMPLICIT" | head -40`
-Expected: errors at exactly the RENAME sites; zero errors pointing at a SKIP site (if a SKIP site errors, that name genuinely resolved to GLOBAL there — re-classify).
+Run: `make build-estas 2>&1 | grep -iE "Error|no IMPLICIT|not been declared" | head -40`
+Expected: errors only at RENAME (not SKIP) sites among the files compiled before the build halts.
 
 ### Task 3: Retarget alloc/dealloc (preserve asymmetry)
 
@@ -126,7 +126,7 @@ Expected: errors at exactly the RENAME sites; zero errors pointing at a SKIP sit
 
 ### Task 6: Over-rename net (`-Wunused` diff)
 
-- [ ] **Step 1:** Rebuild capturing `-Wunused-variable -Wunused-dummy-argument`; sort to `/tmp/unused_after.txt`.
+- [ ] **Step 1:** Rebuild and capture the same merged stream: `make clean-all >/dev/null 2>&1 && make build-estas >/tmp/build_after.txt 2>&1; grep -E 'Wunused' /tmp/build_after.txt | sort > /tmp/unused_after.txt`.
 - [ ] **Step 2:** `diff /tmp/unused_before.txt /tmp/unused_after.txt`.
 Expected: **empty**. Any newly-unused local/dummy means a shadow was over-renamed (its local is now dead) — investigate and fix before proceeding.
 
@@ -159,6 +159,7 @@ git commit -m "refactor(pcore): bundle 5 peripheral pelagic-core GLOBAL arrays i
 ## Self-Review
 
 - **Spec coverage:** every spec method step (case-insensitive enumeration, per-occurrence classification, compiler backstop, `-Wunused` net, 3-config gate incl. `MODEL_SEDIMENTS=2` for B1, strip-and-compare, OpenMP build, alloc/dealloc asymmetry) maps to a task. ✓
-- **Placeholder scan:** the RENAME/SKIP list is fully enumerated with file:line (no "enumerate the sites"); commands are concrete. The one conditional is `INPUT_sediment_test.txt` — flagged as "resolve exact MODEL_SEDIMENTS=2 config if it differs" rather than left vague. ✓
+- **Placeholder scan:** the list enumerates every GLOBAL-resolving RENAME site + every in-touch-set shadow with file:line, plus the two out-of-touch-set `sub_WRITE_PELAGIC_*` component reads (SKIP, for audit completeness). Commands are concrete. The one conditional is `INPUT_sediment_test.txt` — flagged as "resolve exact MODEL_SEDIMENTS=2 config if it differs" rather than left vague. ✓
+- **Workflow-review fixes applied (2026-08-01):** the `-Wunused` capture stream bug (was vacuous) fixed to merged-stream `>file 2>&1` with the release build's existing `-Wall -Wextra`; `FFLAGS_EXTRA` (not a real hook) removed; Task-2-Step-2 reworded as a smoke check (make halts at first failing file); the two `sub_WRITE_PELAGIC_*` component sites added to SKIP. The load-bearing rename/skip classification was independently re-derived by 3 array finders and confirmed correct. ✓
 - **Type consistency:** the `pelagic_core_t` component kinds/dims match the `mod_GLOBAL.f90:96-130` originals (int(:), real(:,:), real(:), real(:,:), int(:)). ✓
 - **Atomicity:** one commit (intermediate states don't build) — the plan builds the failing state deliberately (Task 2 Step 2) as the backstop, not as a shippable checkpoint. ✓
