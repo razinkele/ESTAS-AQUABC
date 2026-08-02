@@ -12,13 +12,16 @@ INPUTS_CL29_*/
 epa_observations_out/
 epa_observations_*/
 
-# prebuilt binaries / compiled artifacts (rebuilt inside the image)
+# prebuilt binaries / compiled artifacts (rebuilt inside the image).
+# NOTE: do NOT exclude SOURCE_CODE/build/ wholesale — it holds the build script
+# make_lib.sh + its Makefile (source, needed by `make build-lib`); only the
+# generated artifacts below are excluded.
 ESTAS_II
 ESTAS_II-*
-SOURCE_CODE/build/
 **/*.o
 **/*.mod
 **/*.a
+SOURCE_CODE/build/*__genmod.f90
 
 # python / tooling caches
 **/__pycache__/
