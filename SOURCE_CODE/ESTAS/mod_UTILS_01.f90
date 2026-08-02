@@ -6,6 +6,7 @@ contains
 
     subroutine READ_MODEL_CONSTANTS(MODEL_CONSTANTS, INPUT_NO)
 
+        use iso_fortran_env, only: error_unit
         implicit none
         real(kind = DBL), dimension(:), intent(out) :: MODEL_CONSTANTS
 
@@ -15,13 +16,57 @@ contains
         character(len = 100) :: CONSTANT_NAME
         real(kind = DBL) :: CONSTANT_VALUE
 
+        ! Fail-loud on an incomplete/invalid constants file (positional, name-blind reader shared by the
+        ! pelagic WCONST and the sediment W_SED_CONST). n = expected count = size of the passed slice.
+        ! Byte-identical for an index-complete file (every slot overwritten -> zero-init irrelevant,
+        ! n_bad = 0 -> no diagnostics, no stop). AQUABC_LENIENT_CONSTANTS=1 restores warn-and-continue.
+        integer :: n, ios, i, n_bad
+        logical, allocatable :: seen(:)
+        logical :: lenient
+        character(len = 32) :: env
+
+        n = size(MODEL_CONSTANTS)
+        allocate(seen(n))
+        seen = .false.
+        MODEL_CONSTANTS = 0.0_DBL       ! dropped slots -> deterministic 0 (used only in lenient mode)
+        n_bad = 0
+
         do
-            read(unit = INPUT_NO, fmt = *, end = 200) &
+            read(unit = INPUT_NO, fmt = *, iostat = ios) &
                  CONSTANT_NO, CONSTANT_NAME, CONSTANT_VALUE
+            if (ios < 0) exit                                     ! EOF
+            if (ios > 0) then                                     ! malformed line (conversion error)
+                write(error_unit, *) 'READ_MODEL_CONSTANTS: malformed line in constants file'
+                n_bad = n_bad + 1
+                exit
+            end if
+            if (CONSTANT_NO < 1 .or. CONSTANT_NO > n) then        ! would corrupt memory
+                write(error_unit, *) 'READ_MODEL_CONSTANTS: index out of range [1,', n, ']: ', CONSTANT_NO
+                n_bad = n_bad + 1
+                cycle
+            end if
+            if (seen(CONSTANT_NO)) then
+                write(error_unit, *) 'READ_MODEL_CONSTANTS: duplicate index: ', CONSTANT_NO
+                n_bad = n_bad + 1
+            end if
             MODEL_CONSTANTS(CONSTANT_NO) = CONSTANT_VALUE
+            seen(CONSTANT_NO) = .true.
         end do
 
-        200 continue
+        do i = 1, n
+            if (.not. seen(i)) then
+                write(error_unit, *) 'READ_MODEL_CONSTANTS: constant #', i, ' MISSING from file (defaulted to 0)'
+                n_bad = n_bad + 1
+            end if
+        end do
+
+        deallocate(seen)
+
+        call get_environment_variable('AQUABC_LENIENT_CONSTANTS', env)
+        lenient = (trim(adjustl(env)) == '1')
+        if (n_bad > 0 .and. .not. lenient) then
+            error stop 'READ_MODEL_CONSTANTS: incomplete/invalid constants file (see stderr above)'
+        end if
 
     end subroutine READ_MODEL_CONSTANTS
 

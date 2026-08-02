@@ -113,6 +113,14 @@ jobs:
           mkdir -p OUTPUTS
           make run-example | tee run.log
 
+      - name: Fail-loud constants reader check
+        # Doctors temp copies of WCONST_04.txt and asserts READ_MODEL_CONSTANTS aborts (nonzero exit,
+        # named index) on a dropped/out-of-range/duplicate constant, and that AQUABC_LENIENT_CONSTANTS=1
+        # warns without aborting. Linux-only (uses `timeout`); the reader is platform-independent.
+        # Runs WITHOUT AQUABC_LENIENT_CONSTANTS so the strict default path is exercised.
+        if: runner.os == 'Linux'
+        run: bash tests/integration/fail_loud_constants.sh
+
       - name: Run example tests
         run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
 
