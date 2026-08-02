@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Fail-loud constants reader.** `READ_MODEL_CONSTANTS` (the shared positional reader for the pelagic
+  `WCONST_04.txt` and the sediment `W_SED_CONST.txt`) now rejects an incomplete/invalid constants file —
+  a missing, out-of-range, or duplicate index, or a malformed line — with a nonzero `error stop` that
+  names the offending index, instead of silently defaulting a dropped constant or corrupting memory on an
+  out-of-range write. Set `AQUABC_LENIENT_CONSTANTS=1` to restore the old warn-and-continue behaviour.
+  Byte-identical for the shipped (index-complete) setups. Also completed the 0D example constants files
+  (`const_CL.txt`/`const_default.txt`) to their full set, and added a reproducible-build container.
+
 ## [0.9.1] - 2026-08-01
 
 > 🎉 **Released — [AQUABC v0.9.1](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.9.1)**

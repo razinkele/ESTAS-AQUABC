@@ -299,6 +299,12 @@ alternative to the default Euler scheme.
 
 - **Minimum concentration clamp**: if $C_{i,j} <$ `MIN_CONCENTRATION`, it is reset to `MIN_CONCENTRATION` and the mass recomputed.
 - **Maximum concentration clamp**: if $C_{i,j} > 10^{10}$, the simulation is halted.
+- **Fail-loud constants reader**: the model-constants files (`WCONST_04.txt`, `W_SED_CONST.txt`) are read
+  by index into a fixed-size array. A file that is missing a constant, has an out-of-range or duplicate
+  index, or a malformed line is **rejected with a nonzero exit** that names the offending index — so a
+  run's parameters are fully and correctly specified by its input, never silently defaulted. Set
+  `AQUABC_LENIENT_CONSTANTS=1` to restore the old warn-and-continue behaviour (missing constants default
+  to 0); by default (unset) the reader is strict.
 - **Negative mass warning**: diagnostic messages are printed whenever $M_{i,j}^{n+1} < 0$.
 - **Time step**: the user sets `TIME_STEPS_PER_DAY` in `INPUT.txt`.  Typical stable values range from 48 to 480.
 
