@@ -168,6 +168,7 @@ into CI). Browser (Playwright/Selenium) integration tests run in CI's dedicated
 | [`docs/CL29_EPA_Calibration_Summary.md`](docs/CL29_EPA_Calibration_Summary.md) | Curonian Lagoon calibration & validation |
 | [`docs/CL29_KM_2022-2023_Validation.md`](docs/CL29_KM_2022-2023_Validation.md) | CL29 vs the 2022–2023 KM monitoring (nutrients + Chl-a) |
 | [`docs/CL29_Calibration_PEST_Workflow.md`](docs/CL29_Calibration_PEST_Workflow.md) | Calibration workflow (external PEST++) |
+| [`docs/CL29_Sensitivity_Analysis.md`](docs/CL29_Sensitivity_Analysis.md) | Global sensitivity / identifiability screen (Method of Morris) |
 | [`docs/OPENMP_PERFORMANCE.md`](docs/OPENMP_PERFORMANCE.md) | OpenMP scaling & benchmarks |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history |
 
