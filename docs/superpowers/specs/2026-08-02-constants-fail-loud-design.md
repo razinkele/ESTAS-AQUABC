@@ -4,7 +4,12 @@
 Part of the calibration-rigor frontier (the phyto-side nutrient levers are exhausted;
 see `cl29-epa-validation` structural conclusion).
 **Date:** 2026-08-02
-**Status:** Design — pending user review, then implementation plan.
+**Status:** ⛔ **Do-not-implement-as-written — an in-loop review (3 reviewers, 2026-08-02) found the spec
+doubly mis-targeted and its re-verification inverted. See §9.** It hardens a reader the ESTAS/CL29
+calibration path never calls; on the reader it DOES hit (the 0D example, which CI runs) the fail-loud
+default would turn CI red because that reader's file `const_CL.txt` is genuinely incomplete (318/323) —
+the "306 vs 318" the spec dismissed as stale is a REAL, live, latent gap. Mechanics are also wrong
+(`stop`→exit 0, names→stdout). Requires a retarget + rewrite. §1–§8 retained for the record.
 **Scope tier:** One localized Fortran change to the pelagic constants reader + a test.
 
 ---
@@ -140,3 +145,64 @@ any external workflow that deliberately relied on defaults.
   safe because shipped files are complete.
 - **Reframe:** re-verification showed the files are complete, so this is *defensive calibration-safety
   hardening*, not a live-bug fix — the honest framing.
+  *(§9: this reframe is WRONG — the re-verification checked the wrong reader's file.)*
+
+---
+
+## 9. In-loop review outcome (2026-08-02) — do not implement as written
+
+Three reviewers (Fortran/byte-identity, completeness-of-all-files, scope/testability); the two
+load-bearing claims code-verified by the controller. **The spec is doubly mis-targeted and its §1
+re-verification is inverted.**
+
+### 9.1 Blocking findings
+
+- **BL-1 — wrong reader for the calibration goal.** The ESTAS/CL29/standard path reads `WCONST_04.txt`
+  through the **positional, name-blind** `READ_MODEL_CONSTANTS` (`mod_UTILS_01.f90`, called at
+  `sub_READ_PELAGIC_INPUTS.f90:284`): `MODEL_CONSTANTS(CONSTANT_NO) = CONSTANT_VALUE` — it uses the
+  integer index and **ignores the name**. The reader the spec hardens, `READ_PELAGIC_MODEL_CONSTANTS`
+  (para_aqua, name-based), is reached only via `aquabc_read_constants` → the **0D example programs**,
+  reading `data/const_CL.txt`. The ESTAS pelagic path doesn't `use para_aqua` at all. So the spec does
+  not protect the calibration path it targets. The ESTAS footgun is also *different/harder*: positional
+  means a **misnamed** constant is silently accepted by index, a **dropped** line leaves the slot unset,
+  and there is **no name table** to diff against.
+- **BL-2 — the reader it DOES edit is live on the 0D/CI path, and its file is incomplete → CI red.**
+  `const_CL.txt` is **318/323** (missing `BETA_CYN/DIA/FIX_CYN/OPA/NOST_VEG_HET`, all default 0.00 → why
+  it's latent/harmless today), fed by the active `aquabc_II_pelagic_0D.f90:185`. CI runs the 0D example
+  (`ci.yml:117/121/126`, the End-to-end golden regression). Under strict-default the 0D run aborts → CI
+  red. **So the §1 "306 vs 318 is stale" dismissal is FALSE:** `const_default.txt`=306 and
+  `const_CL.txt`=318 are exactly those files — a real, live, latent silent-default-fill the BACKLOG
+  correctly flagged and the re-verification missed by checking only `WCONST_04.txt` (a different
+  reader's file). The "defensive, not a live bug" reframe (§1/§8) is wrong.
+- **BL-3 — the mechanics don't work and no stated test proves the feature fires.** gfortran `stop
+  'string'` → **exit 0** (must be `error stop` for a nonzero exit — the feature doesn't fail-loud with
+  plain `stop`); the named report via `write(6,*)` goes to **stdout** while the STOP text goes to
+  **stderr** (a test grepping stderr for names finds nothing); and an in-process Fortran unit test
+  **cannot** assert the abort (it kills the test binary) → the strict path needs a **subprocess** test.
+  The byte-identity gate is **vacuous** as a correctness proof (complete files never exercise the new
+  logic) and omits the one incomplete shipped path (0D).
+
+### 9.2 Important / good
+
+- **Duplicate-name handling is a genuine strength — but unclaimed.** A file with `dup(X)+missing(Y)`
+  gives `j==nconsts`, so the bare count check passes while Y silently defaults; name-based `seen`
+  tracking catches Y regardless. Assert this, and add the near-free duplicate detector (`seen(i)`
+  already true ⇒ duplicate).
+- **`ios>0` (malformed line) unhandled** — the loop exits only on `ios<0`; a bad record reuses the
+  stale `name` → a misleading "missing X" diagnostic. In-scope since the feature targets edited files.
+- Minor: case-sensitivity unstated; §2 Goal overclaims (sediment/allelopathy readers keep the footgun);
+  `AQUABC_LENIENT_CONSTANTS` has no committed doc/CI-hygiene surface; `para_index_value` is public (O(n),
+  not the O(n²) loop); the test's Makefile wiring is unspecified.
+
+### 9.3 Corrected understanding & decision
+
+There are **two** pelagic constants subsystems: (a) ESTAS **positional** `READ_MODEL_CONSTANTS` (name-
+blind, `WCONST_04.txt`, the calibration path) and (b) 0D **name-based** `READ_PELAGIC_MODEL_CONSTANTS`
+(`const_CL.txt`, CI-exercised). A correct "fail-loud" feature must (1) target the ESTAS positional
+reader for the calibration goal — bounds-check the index, zero/sentinel-init `MODEL_CONSTANTS`, track a
+`seen(NUM_MODEL_CONSTANTS)` mask, and introduce a canonical index→name table for misnamed detection (a
+bigger change than scoped); (2) first **complete the 0D files** `const_CL.txt`/`const_default.txt` to
+323 (append the missing constants at their code defaults + regenerate the 0D golden) — a real,
+BACKLOG-flagged reproducibility fix in its own right; and (3) use `error stop` + stderr, a subprocess
+positive test, and a non-vacuous gate. **This is a retarget + rewrite, not a patch.** The goal remains
+valid and now better-understood.
