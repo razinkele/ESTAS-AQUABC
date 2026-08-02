@@ -101,6 +101,32 @@ model it converges at only ~1st order (dominated by the `MIN_CONCENTRATION` posi
 solver defect) and is not faster or more accurate than the default Euler; see the "RK2 (Heun's
 Method)" section of [`docs/ESTAS_Reference_Manual.md`](docs/ESTAS_Reference_Manual.md) for details.
 
+## Reproducible container
+
+For a bit-reproducible build + run, use the container. It pins the toolchain and a **fixed `-march`**
+(an x86-64 baseline — **not** `-march=native`, which is host-specific), builds the library + `ESTAS_II`,
+and verifies the committed 0D example against its golden **at build time** (the image build fails if the
+numerics diverge). Design: [`docs/superpowers/specs/2026-08-02-reproducible-build-container-design.md`](docs/superpowers/specs/2026-08-02-reproducible-build-container-design.md).
+
+```sh
+docker build -t aquabc .          # builds + runs the 0D self-test
+docker run --rm aquabc            # banner + re-run the 0D self-test
+```
+
+The 0D example is self-contained. The **CL29** application inputs (`INPUTS_CL29/`) and the EPA
+observations are external (gitignored / not committed), so reproduce CL29 + validation by **mounting**
+them:
+
+```sh
+docker run --rm -v "$PWD/INPUTS_CL29:/app/INPUTS_CL29" aquabc run_cl29.sh
+docker run --rm -v "$PWD/INPUTS_CL29:/app/INPUTS_CL29" \
+                -v "$PWD/epa_observations_out:/app/epa_observations_out" aquabc \
+  python3 tools/validate_cl29_vs_epa.py --outputs OUTPUTS_CL29 \
+    --obs epa_observations_out/epa_observations_tidy.csv
+```
+
+Reproducibility is scoped to x86-64 (the pinned baseline).
+
 ## Python Shiny front end
 
 `shiny_app/` provides build/run controls, an editor for `INPUTS/` files (first save writes
