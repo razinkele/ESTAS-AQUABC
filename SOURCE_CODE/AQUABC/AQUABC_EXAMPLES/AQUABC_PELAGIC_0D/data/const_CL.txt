@@ -316,3 +316,8 @@
    316                K_MIN_PHYT_AMIN_DOC     0.400000D+01
    317                K_MIN_PHYT_AMIN_DON     0.400000D+01
    318                K_MIN_PHYT_AMIN_DOP     0.400000D+01
+   319                           BETA_DIA   0.000000D+00
+   320                           BETA_CYN   0.000000D+00
+   321                       BETA_FIX_CYN   0.000000D+00
+   322                           BETA_OPA   0.000000D+00
+   323                  BETA_NOST_VEG_HET   0.000000D+00
