@@ -1,6 +1,11 @@
 module COST_FUNCTION
     implicit none
 
+    ! NOTE: intentional stub. AQUABC's calibration objective (Phi) is realised EXTERNALLY by the
+    ! PEST++ workflow (pest/ + pestpp-ies), which scores misfit via tools/validate_cl29_vs_epa.py.
+    ! See docs/CL29_Calibration_PEST_Workflow.md. MEASURED_VALUE_DS below is scaffolding only, for
+    ! a future in-model objective; no cost is computed here by design.
+
     type MEASURED_VALUE_DS
         integer :: NUM_BOXES
         integer, pointer, dimension(:) :: NUM_DATA_POINTS
