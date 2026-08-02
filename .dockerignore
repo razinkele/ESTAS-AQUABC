@@ -1,0 +1,32 @@
+# Keep the build context small + hermetic. Exclude VCS, CI, regenerated/large outputs, external
+# (mounted) application data, prebuilt artifacts, and scratch. Everything the build needs
+# (SOURCE_CODE/, Makefile, tests/, INPUTS/, the 0D example data) is kept.
+.git
+.github
+.gitignore
+
+# regenerated / large model outputs and gitignored application data (mounted at run time)
+OUTPUTS_*/
+INPUTS_CL29/
+INPUTS_CL29_*/
+epa_observations_out/
+epa_observations_*/
+
+# prebuilt binaries / compiled artifacts (rebuilt inside the image)
+ESTAS_II
+ESTAS_II-*
+SOURCE_CODE/build/
+**/*.o
+**/*.mod
+**/*.a
+
+# python / tooling caches
+**/__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# scratch, logs, images, editor
+*.log
+*.png
+.playwright-mcp/

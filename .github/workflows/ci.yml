@@ -226,3 +226,14 @@ jobs:
           make FC="$IFX" BUILD_TYPE=debug build-lib
           test -f SOURCE_CODE/build/libaquabc.a || { echo "debug libaquabc.a MISSING"; exit 1; }
           echo "ifx debug (-O0) build OK"
+
+  docker-build:
+    name: Reproducible container build + self-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the reproducible container (runs the 0D golden self-test at build time)
+        run: docker build -t aquabc:ci .
+      - name: Run the container self-test
+        run: docker run --rm aquabc:ci
