@@ -304,3 +304,20 @@
    304                      K_MORT_AKI_20              0.000 !304   Mortality rate constant constant of akinetes at 20 degrees celsius
    305                   THETA_K_MORT_AKI             1.020  !305   Arhenius temperature correction factor for akinete mortality rate constant constant
    306                         T_GERM_AKI              21.0  !306   Temperature to trigger germination when DIN is also low
+   307                   KHS_POC_DISS_SAT             1.250  !307   
+   308                   KHS_PON_DISS_SAT             0.250  !308   
+   309                   KHS_POP_DISS_SAT            0.0250  !309   
+   310                     frac_avail_DON              0.00  !310   
+   311                     frac_avail_DOP              0.00  !311   
+   312                frac_avail_DON_NOST               0.0  !312   
+   313                KHS_DN_NOST_VEG_HET            0.0072  !313   
+   314          FRAC_FIX_N_FOR_GR_VEG_HET             0.650  !314   
+   315                   FRAC_NOST_GROWTH              0.10  !315   
+   316                K_MIN_PHYT_AMIN_DOC              4.00  !316   
+   317                K_MIN_PHYT_AMIN_DON              4.00  !317   
+   318                K_MIN_PHYT_AMIN_DOP              4.00  !318   
+   319                           BETA_DIA              0.00  !319   Diatoms photoinhibition parameter
+   320                           BETA_CYN              0.00  !320   Non-fixing cyanobacteria photoinhibition parameter
+   321                       BETA_FIX_CYN              0.00  !321   Fixing cyanobacteria photoinhibition parameter
+   322                           BETA_OPA              0.00  !322   OtherPhyto photoinhibition parameter
+   323                  BETA_NOST_VEG_HET              0.00  !323   Nostocales photoinhibition parameter
