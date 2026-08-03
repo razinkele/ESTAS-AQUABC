@@ -4,9 +4,14 @@
 
 Calibrate CL29 against the EPA observations **following the Method-of-Morris identifiability screen**
 (`docs/CL29_Sensitivity_Analysis.md`): adjust only the parameters the data can constrain, and hold the
-non-identifiable ones (Si half-sat, biogenic-Si dissolution, POP dissolution) at their defaults. The
-central result is a methodological one — **on this nonstationary record, short-window *screening* is
-robust but short-window *calibration* is not** — plus a modest, defensible full-record refinement.
+non-identifiable ones (Si half-sat, biogenic-Si dissolution, POP dissolution) at their defaults.
+
+The central result: **the calibration is limited by a biomass↔nutrient↔Chl-a multivariate wall on the
+full record.** PO4 and Si are ~64 % of the misfit, and the only lever that reduces them is over-growing
+phytoplankton — which over-predicts Chl-a. So the *adoptable* refinement (which must keep Chl-a honest) is
+modest. A secondary, narrower effect is training-window nonstationarity: a short-window calibration
+additionally over-tunes one lever (denitrification). Morris *screening* stays robust throughout — it ranks
+relative influence, which is regime-independent; it is *calibration* (absolute values) that hits the wall.
 
 ## Tools
 
@@ -31,19 +36,22 @@ DE improved the *training-window* Φ 13.52 → 9.93 (**+26.6 %**) and drove:
 | K_NITR_20 (nitrification) | 0.6 → 1.76 |
 | KG_DIA/KG_CYN (growth) | 3.7/2.4 → 4.9/4.7 |
 
-**Validated on the full 11-yr record, Φ 12.63 → 10.4 (+18 %)** — so the *levers* transfer (most nutrient
-RMSEs improve: PO4 0.041→0.029, NO3 0.489→0.454, NH4 0.060→0.050, TN 1.082→0.938). **But the specific
-values are over-tuned:**
+**Validated on the full 11-yr record, Φ 12.63 → 10.4 (+18 %)** — so the aggregate gain *does* transfer.
+But it is bought by **two non-adoptable moves**, not by a genuinely better parameterization:
 
-- Denit **railed to 2.97**, ≈3× the full-record optimum (Result 2), over-correcting NO3 bias to −0.093.
-- Chl-a mean bias inflated −3.2 → **+11.2 µg/L** (RMSE 29.8→28.2, so the weighted Φ barely notices, but the
-  +34 % mean over-prediction is real). The optimizer bought nutrient fit by lowering cyano mortality (÷3)
-  and raising growth — which strips nutrients via uptake but **inflates biomass**.
+- **The biomass move (dominant — ~79 % of the +18 %).** PO4 alone accounts for 5.88→4.12 of the 2.24 Φ
+  drop. The Result-2 grid shows no *nutrient-cycling* lever moves PO4 (KHS_DIP alone → PO4 flat), so this
+  drop came from the phyto-biomass knobs (cyano mortality ÷3, growth ↑) growing more phytoplankton →
+  more P uptake. The same move **inflated Chl-a mean bias −3.2 → +11.2 µg/L** (+34 %). This is the
+  multivariate wall: PO4/Si are only reducible by over-growing biomass, at Chl-a's expense — exactly the
+  standing structural picture ([[cl29-epa-validation]]: baseline biomass ≈ right, nutrients in excess, so
+  consuming the excess *requires* more-than-observed biomass).
+- **The narrow over-tuning move.** Denit **railed to 2.97**, ≈3× the full-record optimum (Result 2),
+  over-correcting NO3 bias to −0.093 — the one genuinely nonstationary, window-overfit value.
 - (DO is *not* part of this: RMSE 8.005→8.074 on an obs mean of 10.66 is noise on an already-poor fit.)
 
-This is the `[[cl29-pest-posterior-nonstationarity]]` trap: the 2012–2013 hyperbloom regime differs from the
-post-2016 de-eutrophied record, so **2-yr-trained absolute values do not transfer**. Morris *screening* on a
-short window is regime-robust (relative influence); *calibrating* on a short window is the error.
+So the aggregate Φ transfers, but the improvement is non-adoptable — it either breaks Chl-a or over-tunes a
+narrow lever. The wall is an on-record structural limit, not a short-window artifact.
 
 ## Result 2 — full-record (11-yr) calibration, nutrient subset (phyto fixed)
 
@@ -72,9 +80,11 @@ Three decisive findings:
    railing-to-2.97 as a regime-overfitting artifact. (The prior single-lever work recommended denit ≈1.0
    as a *Chl-a-tradeoff* balance; with phyto fixed here, denit 1.5–2.0 is defensible and zeroes the DIN
    biases — consistent that denit should be ≥ its 1.0 default.)
-3. **PO4 (+0.028) and Si (+1.04) are immovable across every point** — no identifiable nutrient lever touches
-   them, independently re-confirming that the PO4/Si over-prediction is boundary/structural, not
-   calibratable ([[cl29-epa-validation]]).
+3. **PO4 (+0.028) and Si (+1.04) are immovable by the nutrient-cycling subset** — no cycling/loss/affinity
+   lever touches them (KHS_DIP alone → PO4 flat). They are *not* absolutely immovable: Result 1 reduced PO4
+   by ~30 % — but only via the phyto-biomass knobs, at the cost of the +11 Chl-a bias. Since PO4+Si are
+   ~64 % of the misfit and the only lever for them breaks Chl-a, the wall-respecting refinement structurally
+   **cannot and should not** touch them — which is exactly why its ceiling is +4.6 %.
 
 ## Recommendation
 
@@ -83,7 +93,8 @@ Three decisive findings:
 - A **modest, defensible refinement** is available (Result 2): raise `K_MIN_DOC_NO3N_20` from 1.0 to ≈1.5–2.0
   with modest `K_NITR_20`/`KDISS_DET_PART_ORG_N_20` increases and `KHS_DIP_DIA`≈0.003. This zeroes the DIN
   biases (NH4 +0.002, NO3 −0.014) and slightly improves Chl-a, for ~+4.6 % full-record Φ. **PO4 and Si
-  cannot be improved by these levers** — that residual is structural.
+  (~64 % of the misfit) cannot be improved without over-growing biomass** — which over-predicts Chl-a — so
+  that residual is wall-limited, not calibratable.
 - **Adopting any of these as shipped defaults is a scientific decision left to the user** (the converter/
   WCONST are not changed here). The clean single-lever option is `K_MIN_DOC_NO3N_20 = 1.5` (NO3 bias → ~0,
   no side effects); the fuller balanced option is the `denit 2 + N-cycle + P-affinity` row.
