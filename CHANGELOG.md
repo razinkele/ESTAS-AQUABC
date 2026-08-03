@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-03
+
+> 🎉 **Released — [AQUABC v0.10.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.10.0)**
+> (Linux binary attached). **Calibration-rigor toolkit + identifiability-guided recalibration of CL29.**
+> Adds a Method-of-Morris sensitivity/identifiability screen and a self-contained parallel calibrator,
+> plus the PEST++ workflow guide, a reproducible-build container, and a fail-loud constants reader — and
+> adopts a verified nutrient recalibration for CL29 (+3.2 % full-record fit, DIN biases zeroed).
+
 ### Added
 - **Fail-loud constants reader.** `READ_MODEL_CONSTANTS` (the shared positional reader for the pelagic
   `WCONST_04.txt` and the sediment `W_SED_CONST.txt`) now rejects an incomplete/invalid constants file —
@@ -16,6 +24,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   out-of-range write. Set `AQUABC_LENIENT_CONSTANTS=1` to restore the old warn-and-continue behaviour.
   Byte-identical for the shipped (index-complete) setups. Also completed the 0D example constants files
   (`const_CL.txt`/`const_default.txt`) to their full set, and added a reproducible-build container.
+- **PEST++ calibration workflow guide** (`docs/CL29_Calibration_PEST_Workflow.md`) — documents the external
+  calibration harness (Φ objective, adjustable parameters, run instances) that stands in for the
+  deliberately-stubbed in-Fortran cost function.
+- **Global sensitivity / identifiability screen** — Method of Morris (`tools/sensitivity_morris.py`), a
+  self-contained (no PEST++) parallel screen that reuses the CL29 forward model to rank which `WCONST`
+  constants the EPA data can constrain. Result: phytoplankton kinetics (cyano mortality, diatom/cyano
+  growth) are identifiable; the Si half-saturation and biogenic-Si dissolution constants are not.
+  `docs/CL29_Sensitivity_Analysis.md`.
+- **Identifiability-guided calibration** — `tools/calibrate_cl29.py` (scipy differential-evolution) and
+  `tools/eval_fullrecord_points.py`, a no-PEST++ parallel calibrator. Established that the
+  biomass↔nutrient↔Chl-a multivariate wall (PO4 + Si ≈ 64 % of the misfit, reducible only by over-growing
+  biomass) is the primary full-record limit, and that the shipped defaults were already near-optimal.
+  `docs/CL29_Calibration_Results.md`.
+
+### Changed
+- **CL29 nutrient recalibration (adopted).** `CL29_WCONST_OVERRIDE` in
+  `tools/eutropy_poc/eutropy_to_estas.py`: denitrification `K_MIN_DOC_NO3N_20` 1.0→1.5, nitrification
+  `K_NITR_20` 0.6→1.0, PON→NH4 regeneration `KDISS_DET_PART_ORG_N_20` 0.25→0.4, diatom P-affinity
+  `KHS_DIP_DIA` 0.005→0.003. Verified on the full 11-yr EPA record: +3.2 % Φ, DIN biases zeroed
+  (NH4 +0.010→+0.004, NO3 +0.033→+0.015), Chl-a bias improved (−3.2→−2.1), PO4/Si unchanged (structural).
+  The deliberately-tuned diatom/OPA phosphate competition survives the `KHS_DIP_DIA` change (OPA −4…−6 %).
+  CL29-only; the Standard setups are unaffected.
 
 ## [0.9.1] - 2026-08-01
 
