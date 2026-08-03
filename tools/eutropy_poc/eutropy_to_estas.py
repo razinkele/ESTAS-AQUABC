@@ -84,7 +84,18 @@ CL29_WCONST_OVERRIDE = {
     # removal, not over-loading). 1.0 brings NO3 bias +0.31->+0.06 (RMSE -31%) and
     # TN +0.80->+0.39 across all 9 boxes, with DO slightly improved and Chl-a ~5% low.
     # (PO4/Si stay high -- their sinks are sediment burial/Fe-binding, MODEL_SEDIMENTS=0.)
-    "K_MIN_DOC_NO3N_20": 1.0,
+    # 2026-08-03 identifiability-guided full-record recalibration (docs/CL29_Calibration_Results.md,
+    # tools/calibrate_cl29.py + eval_fullrecord_points.py): following the Morris screen, a joint
+    # calibration of the identifiable nutrient-cycling levers raises denit 1.0->1.5 and adds
+    # nitrification + PON->NH4 regeneration + a stronger diatom P-affinity. Verified on the full 11-yr EPA
+    # record: DIN biases zeroed (NH4 +0.010->+0.004, NO3 +0.033->+0.015) for +3.2% Phi, and Chl-a bias
+    # IMPROVES (-3.2->-2.1, no regression). The diatom/OPA phosphate competition (above) survives the
+    # KHS_DIP_DIA 0.005->0.003 change (OPA annual-mean carbon -4..-6% across boxes, not starved).
+    # PO4/Si remain structural (biomass-wall limited -- only reducible by over-growing biomass).
+    "K_MIN_DOC_NO3N_20": 1.5,
+    "K_NITR_20": 1.0,
+    "KDISS_DET_PART_ORG_N_20": 0.4,
+    "KHS_DIP_DIA": 0.003,
 }
 
 # Diatom settling velocity (m/day), settling-vel slot 1 (state var DIA_C). This is the ROOT

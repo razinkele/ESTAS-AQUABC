@@ -86,20 +86,31 @@ Three decisive findings:
    ~64 % of the misfit and the only lever for them breaks Chl-a, the wall-respecting refinement structurally
    **cannot and should not** touch them — which is exactly why its ceiling is +4.6 %.
 
-## Recommendation
+## Adopted refinement (2026-08-03)
 
-- **The current WCONST defaults are well-calibrated for the full record; do not adopt the 2-yr values.** The
-  8-parameter 2-yr calibration (Result 1) is overfit — its denit is ≈3× physical and it inflates Chl-a.
-- A **modest, defensible refinement** is available (Result 2): raise `K_MIN_DOC_NO3N_20` from 1.0 to ≈1.5–2.0
-  with modest `K_NITR_20`/`KDISS_DET_PART_ORG_N_20` increases and `KHS_DIP_DIA`≈0.003. This zeroes the DIN
-  biases (NH4 +0.002, NO3 −0.014) and slightly improves Chl-a, for ~+4.6 % full-record Φ. **PO4 and Si
-  (~64 % of the misfit) cannot be improved without over-growing biomass** — which over-predicts Chl-a — so
-  that residual is wall-limited, not calibratable.
-- **Adopting any of these as shipped defaults is a scientific decision left to the user** (the converter/
-  WCONST are not changed here). The clean single-lever option is `K_MIN_DOC_NO3N_20 = 1.5` (NO3 bias → ~0,
-  no side effects); the fuller balanced option is the `denit 2 + N-cycle + P-affinity` row.
-- For a publication-grade calibration, run the proper full-record DE with `pestpp-ies` (or
-  `tools/calibrate_cl29.py --days 4016` on hardware without the sandbox time-cap), seeded near these values.
+The defensible, wall-respecting refinement was **adopted** into `CL29_WCONST_OVERRIDE`
+(`tools/eutropy_poc/eutropy_to_estas.py`) after a full-record verification:
+
+| parameter | default → adopted |
+|---|---|
+| `K_MIN_DOC_NO3N_20` (denit) | 1.0 → **1.5** |
+| `K_NITR_20` (nitrification) | 0.6 → **1.0** |
+| `KDISS_DET_PART_ORG_N_20` (PON→NH4) | 0.25 → **0.4** |
+| `KHS_DIP_DIA` (diatom P-affinity) | 0.005 → **0.003** |
+
+**Verified on the full 11-yr record:** Φ 12.63 → **12.22 (+3.2 %)**; DIN biases zeroed (NH4 +0.010→+0.004,
+NO3 +0.033→+0.015); **Chl-a bias improves** −3.2→−2.1 (no regression); PO4/Si unchanged (structural). The
+`KHS_DIP_DIA` change was checked against the deliberately-tuned diatom/OPA phosphate competition: OPA
+annual-mean carbon drops only ~4–6 % across boxes (DIA rises ~2–3 %) — the OPA shoulder-bloom **survives,
+not starved**.
+
+**Not adopted / out of scope:** the 8-parameter 2-yr calibration (Result 1) — overfit (denit ≈3× physical,
+Chl-a +11). **PO4 and Si (~64 % of the misfit) are not calibratable** by any adoptable lever — reducing them
+requires over-growing biomass, which over-predicts Chl-a (the wall). The remaining PO4/Si lever is the
+open-boundary forcing / removal balance ([[cl29-epa-validation]]), not phytoplankton or nutrient kinetics.
+
+For a publication-grade calibration, run the proper full-record DE with `pestpp-ies` (or
+`tools/calibrate_cl29.py --days 4016` on hardware without the sandbox time-cap), seeded near these values.
 
 ## Reference
 
