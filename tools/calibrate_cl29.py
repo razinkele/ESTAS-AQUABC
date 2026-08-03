@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+"""Identifiability-guided calibration of CL29 against the EPA observations.
+
+Follows the Method-of-Morris screen (docs/CL29_Sensitivity_Analysis.md): optimize the parameters the
+data can actually constrain and leave the non-identifiable ones fixed. Reuses the Morris forward model
+as-is (symlink-farm worker + perturbed WCONST_04.txt + short-window CL29 + validate_cl29_vs_epa.py as Φ),
+so it needs no PEST++ install — it is the sandbox-runnable equivalent of `pestpp-ies` on pest/cl29.pst.
+
+Optimizer: scipy.differential_evolution (global, gradient-free), parallel across the local cores. The
+objective adds Chl-a to the five EPA state variables so the optimizer cannot buy nutrient fit with a
+Chl-a blow-up (the known nutrient<->biomass multivariate trade-off / structural wall).
+
+    python3 tools/calibrate_cl29.py --popsize 5 --maxiter 12 --workers 24 --days 730
+
+Writes a per-generation checkpoint (JSON) and, on completion, a baseline-vs-optimum per-variable table.
+The best-fit is a *candidate* — adopting it as shipped WCONST defaults is a separate scientific decision.
+"""
+import argparse
+import csv
+import json
+import math
+import os
+import shutil
+import subprocess
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sensitivity_morris as M  # noqa: E402  (sibling module: forward-model helpers + constants)
+
+# Parameter sets, all drawn from the Morris identifiable tiers (the two non-identifiable params,
+# KHS_DSi_DIA and KDISS_DET_PART_ORG_P_20, are excluded from every set and left at their defaults):
+#   "all"      — the 8 identifiable params (high + moderate tiers).
+#   "nutrient" — the wall-respecting subset: nutrient-cycling/loss/affinity levers ONLY, with the four
+#                phyto-biomass knobs (cyano/diatom mortality + both growth rates) FIXED at defaults.
+#                The "all" run overfits Chl-a/DO by using the biomass knobs to shave nutrients via uptake;
+#                "nutrient" keeps the nutrient gains without inflating biomass (see docs).
+PARAM_SETS = {
+    "all": [
+        ("KD_CYN_20",               "log", 0.04,   0.4),    # cyano mortality  (Morris #1)
+        ("K_MIN_DOC_NO3N_20",       "log", 0.3,    3.0),    # denitrification  (#2)
+        ("K_NITR_20",               "log", 0.2,    2.0),    # nitrification    (#3)
+        ("KG_DIA_OPT_TEMP",         "lin", 1.5,    6.0),    # diatom growth    (#4)
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    5.0),    # cyano growth     (#5)
+        ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),    # PON->NH4         (#6)
+        ("KD_DIA_20",               "log", 0.04,   0.4),    # diatom mortality (#7)
+        ("KHS_DIP_DIA",             "log", 0.002,  0.03),   # diatom DIP half-sat (#8)
+    ],
+    "nutrient": [
+        ("K_MIN_DOC_NO3N_20",       "log", 0.3,    3.0),    # denitrification (N loss)
+        ("K_NITR_20",               "log", 0.2,    2.0),    # nitrification (NH4->NO3)
+        ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),    # PON->NH4 regeneration
+        ("KHS_DIP_DIA",             "log", 0.002,  0.03),   # diatom DIP affinity (PO4 uptake efficiency)
+    ],
+}
+CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
+CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
+PENALTY = 1.0e6          # objective value for a failed forward run
+DAYS = 730              # optimization window (days); overridden from --days
+WORKDIR = "/tmp/cal_work"
+CKPT = "/tmp/cal_work/checkpoint.json"
+
+
+def _metrics_rows(out_dir, tag):
+    """Run the validator on out_dir and return {var: (rmse, obs_mean, model_mean, bias, n)} n-weighted."""
+    val = os.path.join(out_dir, f"val_{tag}")
+    subprocess.run(["python3", M.VALIDATOR, "--outputs", os.path.join(out_dir, "OUT"),
+                    "--obs", M.OBS, "--base-year", "2012", "--out", val, "--no-plots"],
+                   cwd=M.REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+    agg = {}
+    with open(os.path.join(val, "validation_metrics.csv")) as f:
+        for row in csv.DictReader(f):
+            v = row["variable"]
+            n = float(row["n"] or 0)
+            if n <= 0:
+                continue
+            a = agg.setdefault(v, [0.0, 0.0, 0.0, 0.0, 0.0])
+            a[0] += n * float(row["rmse"]) ** 2
+            a[1] += n
+            a[2] += n * float(row["obs_mean"])
+            a[3] += n * float(row["model_mean"])
+            a[4] += n * float(row["bias"])
+    out = {}
+    for v, (ssr, n, om, mm, bs) in agg.items():
+        out[v] = (math.sqrt(ssr / n), om / n, mm / n, bs / n, int(n))
+    return out
+
+
+def _phi_from_rows(rows, phi_vars):
+    """Φ = Σ_var (1/obs_mean)·RMSE over phi_vars (same weighting as the PEST objective)."""
+    phi = 0.0
+    for v in phi_vars:
+        if v not in rows:
+            continue
+        rmse, om = rows[v][0], rows[v][1]
+        if om > 1e-9:
+            phi += rmse / om
+    return phi
+
+
+def _run(values, tag):
+    """Set up a worker dir (perturbed WCONST if `values` else baseline), run CL29, return (out_dir, ok)."""
+    wd = os.path.join(WORKDIR, f"cal_{tag}")
+    shutil.rmtree(wd, ignore_errors=True)
+    os.makedirs(os.path.join(wd, "INPUTS_CL29"), exist_ok=True)
+    os.makedirs(os.path.join(wd, "OUT"), exist_ok=True)
+    for fn in os.listdir(M.SRC_INPUTS):
+        dst = os.path.join(wd, "INPUTS_CL29", fn)
+        if fn == "WCONST_04.txt" and values is not None:
+            M._write_perturbed_wconst(os.path.join(M.SRC_INPUTS, fn), dst, values)
+        else:
+            os.symlink(os.path.join(M.SRC_INPUTS, fn), dst)
+    with open(os.path.join(M.REPO, "INPUT_CL29.txt")) as f:
+        lines = f.readlines()
+    out = []
+    for ln in lines:
+        if ln.startswith("         4016.0"):
+            out.append(f"{float(DAYS):15.1f}\n")
+        elif ln.startswith("             10"):
+            out.append("            240\n")
+        elif ln.startswith("OUTPUTS_CL29/"):
+            out.append("OUT/\n")
+        else:
+            out.append(ln)
+    with open(os.path.join(wd, "INPUT.txt"), "w") as f:
+        f.writelines(out)
+    env = dict(os.environ, ESTAS_HOLD_VOLUME="1")
+    # Timeout must scale with the window (a full-record run is ~11 min solo and ~2x under contention);
+    # a fixed 900s silently times out every concurrent full-record eval -> PENALTY -> corrupted DE.
+    tmo = max(1800, int(DAYS * 2.0))
+    r = subprocess.run([M.BIN, "INPUT.txt"], cwd=wd, env=env,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=tmo)
+    ok = (r.returncode == 0 and os.path.exists(os.path.join(wd, "OUT", "PELAGIC_BOX_00023.out")))
+    return wd, ok
+
+
+def _values_from_x(x):
+    return {name: M.x_to_value(x[i], tr, lo, hi) for i, (name, tr, lo, hi) in enumerate(CAL_PARAMS)}
+
+
+def evaluate(x):
+    """DE objective: Φ over the 6 calibration variables for normalized parameter vector x∈[0,1]^8."""
+    try:
+        wd, ok = _run(_values_from_x(x), f"{os.getpid()}")
+        if not ok:
+            return PENALTY
+        rows = _metrics_rows(wd, "opt")
+        phi = _phi_from_rows(rows, CAL_PHI_VARS)
+        shutil.rmtree(wd, ignore_errors=True)
+        return phi if phi > 0 else PENALTY
+    except Exception:
+        return PENALTY
+
+
+def _report_table(base_rows, best_rows):
+    print(f"\n{'var':<6}{'obs_mean':>10}{'model(base)':>13}{'model(best)':>13}"
+          f"{'bias(base)':>12}{'bias(best)':>12}{'RMSE(base)':>12}{'RMSE(best)':>12}  n")
+    for v in CAL_PHI_VARS + ["TN", "TP"]:
+        b = base_rows.get(v)
+        o = best_rows.get(v)
+        if not b or not o:
+            continue
+        print(f"{v:<6}{b[1]:>10.4g}{b[2]:>13.4g}{o[2]:>13.4g}"
+              f"{b[3]:>+12.4g}{o[3]:>+12.4g}{b[0]:>12.4g}{o[0]:>12.4g}  {b[4]}")
+
+
+def main():
+    global DAYS, WORKDIR, CKPT, CAL_PARAMS
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--paramset", choices=list(PARAM_SETS), default="all",
+                    help="'all' = 8 identifiable params; 'nutrient' = wall-respecting cycling-only subset")
+    ap.add_argument("--popsize", type=int, default=5)
+    ap.add_argument("--maxiter", type=int, default=12)
+    ap.add_argument("--tol", type=float, default=0.02)
+    ap.add_argument("--days", type=int, default=730)
+    ap.add_argument("--workers", type=int, default=min(24, (os.cpu_count() or 4) - 2))
+    ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--workdir", default="/tmp/cal_work")
+    ap.add_argument("--validate-full", type=int, default=0,
+                    help="after optimizing, validate the best on this many days (e.g. 4016 = full record)")
+    a = ap.parse_args()
+    DAYS, WORKDIR = a.days, a.workdir
+    CAL_PARAMS = PARAM_SETS[a.paramset]
+    CKPT = os.path.join(WORKDIR, "checkpoint.json")
+    os.makedirs(WORKDIR, exist_ok=True)
+    if not os.path.exists(M.BIN):
+        raise SystemExit("ESTAS_II not built (make build-estas)")
+
+    from scipy.optimize import differential_evolution
+
+    print(f"Calibrating {len(CAL_PARAMS)} identifiable params over {'/'.join(CAL_PHI_VARS)} "
+          f"({a.days}-day window, DE popsize={a.popsize} maxiter={a.maxiter}, {a.workers} workers)")
+    print("baseline (current WCONST defaults):")
+    base_wd, ok = _run(None, "baseline")
+    base_rows = _metrics_rows(base_wd, "base") if ok else {}
+    base_phi = _phi_from_rows(base_rows, CAL_PHI_VARS)
+    print(f"  baseline Φ = {base_phi:.4f}")
+
+    gen = {"n": 0}
+
+    def cb(xk, convergence=None):
+        gen["n"] += 1
+        vals = _values_from_x(xk)
+        with open(CKPT, "w") as f:
+            json.dump({"generation": gen["n"], "x": list(xk), "values": vals,
+                       "convergence": convergence}, f, indent=2)
+        print(f"  gen {gen['n']:>2}: best {', '.join(f'{k}={v:.4g}' for k, v in vals.items())}",
+              flush=True)
+
+    result = differential_evolution(
+        evaluate, bounds=[(0.0, 1.0)] * len(CAL_PARAMS),
+        popsize=a.popsize, maxiter=a.maxiter, tol=a.tol, mutation=(0.5, 1.0), recombination=0.7,
+        init="latinhypercube", polish=False, updating="deferred", workers=a.workers,
+        seed=a.seed, callback=cb)
+
+    best_vals = _values_from_x(result.x)
+    print(f"\n=== calibration result ===\nbest Φ = {result.fun:.4f}  (baseline {base_phi:.4f}, "
+          f"{100*(base_phi-result.fun)/base_phi:+.1f}%)   nfev={result.nfev}")
+    print("best parameters (default → calibrated):")
+    with open(os.path.join(M.SRC_INPUTS, "WCONST_04.txt")) as wf:
+        defaults = {p[1]: float(p[2]) for p in (ln.split() for ln in wf) if len(p) >= 3}
+    for name, *_ in CAL_PARAMS:
+        print(f"  {name:<26} {defaults.get(name, float('nan')):>10.4g} → {best_vals[name]:.4g}")
+
+    best_wd, ok = _run(best_vals, "best")
+    best_rows = _metrics_rows(best_wd, "best") if ok else {}
+    _report_table(base_rows, best_rows)
+    with open(os.path.join(WORKDIR, "result.json"), "w") as f:
+        json.dump({"best_phi": result.fun, "base_phi": base_phi, "values": best_vals,
+                   "nfev": result.nfev}, f, indent=2)
+
+    if a.validate_full:
+        print(f"\n=== full-record validation ({a.validate_full} days) ===")
+        DAYS = a.validate_full
+        fb_wd, ok = _run(None, "full_base")
+        fb = _metrics_rows(fb_wd, "fbase") if ok else {}
+        fo_wd, ok = _run(best_vals, "full_best")
+        fo = _metrics_rows(fo_wd, "fbest") if ok else {}
+        _report_table(fb, fo)
+
+
+if __name__ == "__main__":
+    main()
