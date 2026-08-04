@@ -148,6 +148,64 @@ def build_table(out_dir, base_year, obs):
     return rows
 
 
+def _season_of(month):
+    """Meteorological season bucket, used to expose obs sampling bias (e.g. summer-heavy Si)."""
+    if month in (12, 1, 2, 3):
+        return "winter"
+    if month in (6, 7, 8, 9):
+        return "summer"
+    return "shoulder"
+
+
+def season_summary(out_dir, base_year, obs):
+    """Per-(variable, season) aggregate metrics, pooled over boxes.
+
+    The aggregate obs mean can be dominated by a season the obs over-sample — EPA Si, for example,
+    is ~3x summer-heavy, which pulls the annual obs mean down while the model is aseasonal, so the
+    aggregate RMSE over-states the mismatch. Splitting by season separates where the model already
+    matches (e.g. winter Si) from the real gap (e.g. the missing summer Si drawdown).
+    """
+    buckets = {}   # (var, season) -> [pred[], obs[]]
+    for path in sorted(glob.glob(os.path.join(out_dir, "PELAGIC_BOX_*.out"))):
+        if path.endswith("_PROCESS_RATES.out"):
+            continue
+        box = box_number(path)
+        keys = [(box, var) for var in MODEL_COL if (box, var) in obs]
+        if not keys:
+            continue
+        mdf = load_box_output(path, base_year)
+        base = mdf["date"].iloc[0]
+        m_days = mdf["TIME_DAYS"].to_numpy(float)
+        hi = m_days[-1]
+        for box_, var in keys:
+            m_vals = mdf[MODEL_COL[var]].to_numpy(float)
+            for d, v in zip(obs[(box_, var)]["date"], obs[(box_, var)]["value"]):
+                off = (d - base).days
+                if not (0 <= off <= hi):
+                    continue
+                pred = float(np.interp(off, m_days, m_vals))
+                b = buckets.setdefault((var, _season_of(d.month)), [[], []])
+                b[0].append(pred)
+                b[1].append(v)
+    rows = []
+    for (var, s), (pred, ov) in buckets.items():
+        p, o = np.array(pred), np.array(ov)
+        resid = p - o
+        rows.append({"variable": var, "season": s, "n": len(o),
+                     "obs_mean": float(o.mean()), "model_mean": float(p.mean()),
+                     "bias": float(resid.mean()), "rmse": math.sqrt(float((resid ** 2).mean()))})
+    return rows
+
+
+def print_season_table(rows):
+    order = {"winter": 0, "shoulder": 1, "summer": 2}
+    print("\nSeasonal breakdown (pooled over boxes) — exposes obs sampling bias:")
+    print(f"  {'var':<5}{'season':<9}{'n':>6}{'obs_mean':>10}{'mod_mean':>10}{'bias':>9}{'rmse':>9}")
+    for r in sorted(rows, key=lambda r: (r["variable"], order.get(r["season"], 9))):
+        print(f"  {r['variable']:<5}{r['season']:<9}{r['n']:>6}{r['obs_mean']:>10.4g}"
+              f"{r['model_mean']:>10.4g}{r['bias']:>+9.3g}{r['rmse']:>9.4g}")
+
+
 def print_table(rows):
     if not rows:
         print("No overlapping observations in the model window.")
@@ -227,6 +285,8 @@ def main(argv=None):
     p.add_argument("--out", default="./cl29_epa_validation",
                    help="output folder for the metrics CSV and plots")
     p.add_argument("--no-plots", action="store_true", help="skip the PDF plots")
+    p.add_argument("--by-season", action="store_true",
+                   help="also print a per-(variable, season) breakdown (exposes obs sampling bias)")
     a = p.parse_args(argv)
 
     if not os.path.isdir(a.outputs):
@@ -236,6 +296,8 @@ def main(argv=None):
     print_table(rows)
     if not rows:
         return 1
+    if a.by_season:
+        print_season_table(season_summary(a.outputs, a.base_year, obs))
     os.makedirs(a.out, exist_ok=True)
     csv_path = os.path.join(a.out, "validation_metrics.csv")
     write_metrics_csv(rows, csv_path)
