@@ -112,6 +112,36 @@ open-boundary forcing / removal balance ([[cl29-epa-validation]]), not phytoplan
 For a publication-grade calibration, run the proper full-record DE with `pestpp-ies` (or
 `tools/calibrate_cl29.py --days 4016` on hardware without the sandbox time-cap), seeded near these values.
 
+## Summer PO4 — a documented structural residual (2026-08-04)
+
+The `--by-season` breakdown (`validate_cl29_vs_epa.py --by-season`, PR #105) localizes the post-v0.10.0
+residual: NO3/NH4 are well-fit in **every** season, Si and PO4 match in **winter**, and the entire
+remaining misfit is a **summer failure** — most sharply, summer PO4 is ~10× over-predicted (obs 0.005 →
+model 0.047: the model does not draw phosphate down during the bloom). The aggregate Φ is *pessimistic*
+relative to this seasonal view.
+
+Summer PO4 is a **structural residual** — it has now resisted three independent levers, all failing on the
+same biomass↔nutrient↔Chl-a wall:
+
+1. **Over-grow biomass** (the 8-parameter calibration, Result 1) — reduces PO4 but overshoots Chl-a (+11).
+2. **Remove P via a benthic sink** (config-only summer-peaked PO4 sink, prototype Approach 1; the same
+   prescribed-flux hook as `CL29_BENTHIC_DENIT`, retargeted to state var 3 PO4_P) — closes the PO4 gap
+   (0.047→0.007) but only by starving the bloom: summer Chl-a crashes 25→8 (obs 33) and NO3/Si rise at
+   **every** magnitude tested (0.1–0.5 mmol P/m²/d; no clean setting), with the fixed flux over-drawing PO4
+   to the concentration floor. **Not adopted.**
+3. **Variable P:C / luxury-P uptake (Droop-P)** — not viable and not pursued: the model's baseline summer
+   bloom is nutrient-**replete** (LIM_P = 0.85 cyano / 0.94 diatom, LIM_N = 0.90; Monod C/(C+KHS)), so it is
+   not P-limited. Luxury-P storage would draw P into storage, not biomass, leaving the (temperature/
+   phenology-limited) Chl-a deficit untouched; and forcing P-limitation is exactly what crashes the bloom in
+   (2). It fails the standing precondition — establish a genuinely uptake-limited target (`LIM≪1`) before any
+   var-stoich work — and would be a large new-state-variable build.
+
+Root cause: the real lagoon sustains **low PO4 *and* high Chl-a simultaneously**, which the model's
+nutrient-replete, temperature/phenology-limited summer bloom cannot reproduce — no nutrient-side or
+stoichiometry-side lever reaches obs PO4 without breaking Chl-a. The only remaining candidate is the one
+that stands for the whole nutrient budget: **the open-boundary forcing / removal balance** (the summer P
+*supply*), not a phytoplankton, sediment, or stoichiometry mechanism. See `CL29_EPA_Calibration_Summary.md`.
+
 ## Reference
 
 Morris, M. D. (1991). Factorial sampling plans for preliminary computational experiments.
