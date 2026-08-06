@@ -142,6 +142,18 @@ stoichiometry-side lever reaches obs PO4 without breaking Chl-a. The only remain
 that stands for the whole nutrient budget: **the open-boundary forcing / removal balance** (the summer P
 *supply*), not a phytoplankton, sediment, or stoichiometry mechanism. See `CL29_EPA_Calibration_Summary.md`.
 
+**Open-boundary P supply — checked; small clean gain adopted (2026-08-06).** The converter's summer PO4
+boost (`CL29_BOUNDARY_PO4_SUMMER_PEAK`) was an eutrophic-era tuning that *doubled* the realistic summer
+river low (0.0095→0.019 mg P/L). A full-record `--by-season` sweep of the boost showed reducing *supply* is
+**clean** where the benthic sink was not — Monod uptake self-regulates, so LIM_P stays replete (0.86→0.81
+across PEAK 2.0→0.5), Chl-a is essentially untouched (25.45→24.87), and there is no over-draw or NO3/Si side
+effect. **Removing the boost (PEAK 2.0→1.0) was adopted** — summer PO4 0.047→0.038 (~20 %) at ~zero cost, a
+defensible realism correction for the de-eutrophied record. It is **not** a gap-closer, and that is itself
+the diagnostic: the model's interior summer PO4 (0.038) *exceeds* the boundary PO4 (~0.02), so the residual
+is **internal-regeneration-dominated, not boundary-supplied** — confirming the structural conclusion from
+the supply side. Closing it would require a P *removal* process (burial/retention) the water-column model
+lacks and that no config-only lever can add without breaking Chl-a.
+
 ## Reference
 
 Morris, M. D. (1991). Factorial sampling plans for preliminary computational experiments.
