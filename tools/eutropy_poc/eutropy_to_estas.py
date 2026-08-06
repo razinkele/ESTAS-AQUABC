@@ -179,11 +179,15 @@ CL29_BOUNDARY_PO4_SCALE = 1.0
 # diatom 1.35->1.56, succession intact, 0 NaN. (An earlier "summer-P crashes cyano" report was a
 # WRONG-COLUMN artifact -- CYN_C is col 15.) 3.0 -> summer PO4 ~0.034, matching the observed
 # 2012-2016 summer AVG (~0.025-0.034); use ~5 to target the eutrophic peak years (obs up to 0.143).
-CL29_BOUNDARY_PO4_SUMMER_PEAK = 2.0   # 3.0->2.0 2026-07-19: the 3.0 boost was tuned to the
-# 2012-2016 eutrophic peak, but validating against the 2012-2021 EPA record (incl. the
-# de-eutrophication years) it over-supplies summer P; 2.0 cuts channel TP +0.019->+0.013 /
-# PO4 +0.034->+0.028 without touching box-19 spring diatoms (the boost peaks day ~200, the
-# bloom is day 60-150). See cl29-epa-validation. (Was ENABLED 2026-07-12; note below.)
+CL29_BOUNDARY_PO4_SUMMER_PEAK = 1.0   # 3.0->2.0->1.0: the boost was tuned to the 2012-2016
+# eutrophic peak; validating against the full 2012-2021 EPA record (incl. de-eutrophication) it
+# over-supplies summer P. 2026-08-06: removed entirely (1.0 = no seasonal boost) as a realism
+# correction -- the boost DOUBLED the realistic summer river low (0.0095->0.019), and post-v0.10.0 it
+# no longer even helps the blooms. A full-record --by-season sweep (docs/CL29_Calibration_Results.md)
+# showed 2.0->1.0 cuts summer PO4 0.047->0.038 at ~zero Chl-a cost (LIM_P stays replete 0.86->0.83, no
+# bloom crash) and no NO3/Si side effects; spring diatoms untouched (the boost peaked day ~200, the
+# bloom is day 60-150). The residual summer PO4 (0.038 vs obs 0.005) is internal-regeneration-dominated
+# (model interior PO4 > boundary PO4), NOT boundary-supplied -- a documented structural limit.
 # Phase-1 sediment diagenesis (MODEL_SEDIMENTS=2), opt-in and off by default: when
 # False the converter emits no sediment files and INPUT_CL29 keeps MODEL_SEDIMENTS=0,
 # so the baseline stays byte-identical. See
