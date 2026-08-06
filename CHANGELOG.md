@@ -8,6 +8,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-06
+
+> 🎉 **Released — [AQUABC v0.11.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.11.0)**
+> (Linux binary attached). **CL29 fit characterization + a boundary-P realism correction.** Adds a seasonal
+> breakdown to the EPA validator, removes the eutrophic-era summer PO4 boundary boost, and documents the
+> summer PO4/Si residual as a bounded, internal-regeneration-dominated structural limit.
+
+### Added
+- **Seasonal breakdown for the CL29–EPA validator** (`validate_cl29_vs_epa.py --by-season`). Pools the fit
+  metrics into winter/shoulder/summer buckets, since the EPA obs are season-imbalanced (Si/PO4 are ~4×
+  summer-heavy) while the model is comparatively aseasonal, so the aggregate metrics over-state the misfit.
+  Opt-in; the default metrics CSV is unchanged. It shows NO3/NH4 are well-fit in every season and Si/PO4
+  match in winter — the remaining residual is a summer-only effect.
+
+### Changed
+- **Removed the eutrophic-era summer PO4 boundary boost** (`CL29_BOUNDARY_PO4_SUMMER_PEAK` 2.0 → 1.0). The
+  boost doubled the realistic summer river low (0.0095 → 0.019 mg P/L); it was tuned to the 2012–2016
+  eutrophic peak and over-supplies summer P for the de-eutrophication years. A full-record `--by-season`
+  sweep confirmed that reducing *supply* is clean (Monod-self-limiting): summer PO4 0.047 → 0.038 (~20 %) at
+  ~zero Chl-a cost (LIM_P stays replete), with no over-draw and no NO3/Si side effect. CL29-only; the
+  Standard setups are unaffected.
+
+### Documentation
+- **Summer PO4/Si characterized as a bounded structural residual** (`docs/CL29_Calibration_Results.md`). The
+  summer PO4 gap resisted every lever — over-growing biomass (Chl-a +11), a config-only benthic PO4 sink
+  (tested, rejected: crashes Chl-a 25→8), variable-P stoichiometry (ruled out: the baseline summer bloom is
+  nutrient-replete, LIM_P = 0.85), and open-boundary P supply (a small clean gain, adopted above). The model
+  interior summer PO4 exceeds the boundary PO4, so the residual is internal-regeneration-dominated — it
+  would need a P *removal* process the water-column model lacks.
+
 ## [0.10.0] - 2026-08-03
 
 > 🎉 **Released — [AQUABC v0.10.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.10.0)**
