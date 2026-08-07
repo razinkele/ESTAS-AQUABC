@@ -127,3 +127,8 @@ OUTPUTS_CL29/
 tools/benchmark_openmp_results.txt
 SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/benchmark_openmp
 verify_baseline/
+
+# Private manuscript drafts & reports (local + OneDrive only — NOT for GitHub)
+docs/CL29_Calibration_Paper_Draft.md
+docs/ESTAS_AQUABC_2023_paper_vs_2026.md
+docs/CL29_Setup_and_Calibration_Report_*.docx
