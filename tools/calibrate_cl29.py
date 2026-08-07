@@ -17,6 +17,7 @@ The best-fit is a *candidate* — adopting it as shipped WCONST defaults is a se
 """
 import argparse
 import csv
+import functools
 import json
 import math
 import os
@@ -51,23 +52,48 @@ PARAM_SETS = {
         ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),    # PON->NH4 regeneration
         ("KHS_DIP_DIA",             "log", 0.002,  0.03),   # diatom DIP affinity (PO4 uptake efficiency)
     ],
+    # Composition-targeted set for the group-carbon objective (--group-carbon): the
+    # screened phytoplankton knobs only, nutrient-cycle rates held at the adopted
+    # defaults. Bounds identical to the Morris screen.
+    "phyto": [
+        ("KD_CYN_20",               "log", 0.04,   0.4),    # cyano mortality  (Morris #1)
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    5.0),    # cyano growth
+        ("KG_DIA_OPT_TEMP",         "lin", 1.5,    6.0),    # diatom growth
+        ("KD_DIA_20",               "log", 0.04,   0.4),    # diatom mortality
+        ("KHS_DIN_CYN",             "log", 0.003,  0.05),   # cyano DIN affinity (NH4-floor competition)
+    ],
+    # "phyto" + OPA/FIX-specific knobs: the 5-knob run wins CYN_C by driving OPA and the
+    # fixers extinct (competition-only trade-off); this set lets DE defend all 4 groups.
+    "phyto_all": [
+        ("KD_CYN_20",               "log", 0.04,   0.4),
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    5.0),
+        ("KG_DIA_OPT_TEMP",         "lin", 1.5,    6.0),
+        ("KD_DIA_20",               "log", 0.04,   0.4),
+        ("KHS_DIN_CYN",             "log", 0.003,  0.05),
+        ("KG_OPA_OPT_TEMP",         "lin", 1.0,    6.0),    # OPA growth (default 2.9)
+        ("KD_OPA_20",               "log", 0.04,   0.4),    # OPA mortality (default 0.11)
+        ("KG_FIX_CYN_OPT_TEMP",     "lin", 1.0,    6.0),    # fixer growth (default 3.5)
+        ("KD_FIX_CYN_20",           "log", 0.04,   0.4),    # fixer mortality (default 0.10)
+    ],
 }
 CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
 CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
+# Group-carbon terms appended to Φ under --group-carbon (obs: tools/ingest_km_plankton.py;
+# the validator scores obs FIX_CYN_C against model FIX_CYN_C+NOST_VEG_HET_C).
+GROUP_VARS = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C"]
+USE_GROUP_CARBON = False     # set by --group-carbon in main() (before the worker fork)
+PLANKTON_OBS = None          # resolved in module scope below
 PENALTY = 1.0e6          # objective value for a failed forward run
 DAYS = 730              # optimization window (days); overridden from --days
 WORKDIR = "/tmp/cal_work"
 CKPT = "/tmp/cal_work/checkpoint.json"
 
+PLANKTON_OBS = os.path.join(M.REPO, "km_plankton_out", "km_plankton_tidy.csv")
 
-def _metrics_rows(out_dir, tag):
-    """Run the validator on out_dir and return {var: (rmse, obs_mean, model_mean, bias, n)} n-weighted."""
-    val = os.path.join(out_dir, f"val_{tag}")
-    subprocess.run(["python3", M.VALIDATOR, "--outputs", os.path.join(out_dir, "OUT"),
-                    "--obs", M.OBS, "--base-year", "2012", "--out", val, "--no-plots"],
-                   cwd=M.REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
-    agg = {}
-    with open(os.path.join(val, "validation_metrics.csv")) as f:
+
+def _agg_metrics(csv_path, agg):
+    """Accumulate a validator metrics CSV into {var: [n*rmse², n, n*obs, n*mod, n*bias]}."""
+    with open(csv_path) as f:
         for row in csv.DictReader(f):
             v = row["variable"]
             n = float(row["n"] or 0)
@@ -79,6 +105,26 @@ def _metrics_rows(out_dir, tag):
             a[2] += n * float(row["obs_mean"])
             a[3] += n * float(row["model_mean"])
             a[4] += n * float(row["bias"])
+
+
+def _metrics_rows(out_dir, tag):
+    """Run the validator on out_dir and return {var: (rmse, obs_mean, model_mean, bias, n)} n-weighted.
+
+    With USE_GROUP_CARBON, the plankton-carbon observations are scored in a second
+    validator pass and merged (the variable sets are disjoint).
+    """
+    obs_sets = [(M.OBS, "")]
+    if USE_GROUP_CARBON:
+        obs_sets.append((PLANKTON_OBS, "_plk"))
+    agg = {}
+    for obs, suffix in obs_sets:
+        val = os.path.join(out_dir, f"val_{tag}{suffix}")
+        subprocess.run(["python3", M.VALIDATOR, "--outputs", os.path.join(out_dir, "OUT"),
+                        "--obs", obs, "--base-year", "2012", "--out", val, "--no-plots"],
+                       cwd=M.REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        path = os.path.join(val, "validation_metrics.csv")
+        if os.path.exists(path):     # a source with no in-window obs writes no CSV
+            _agg_metrics(path, agg)
     out = {}
     for v, (ssr, n, om, mm, bs) in agg.items():
         out[v] = (math.sqrt(ssr / n), om / n, mm / n, bs / n, int(n))
@@ -137,9 +183,43 @@ def _values_from_x(x):
     return {name: M.x_to_value(x[i], tr, lo, hi) for i, (name, tr, lo, hi) in enumerate(CAL_PARAMS)}
 
 
-def evaluate(x):
-    """DE objective: Φ over the 6 calibration variables for normalized parameter vector x∈[0,1]^8."""
+def _x_from_value(v, transform, lo, hi):
+    """Inverse of M.x_to_value, clipped inside the open unit interval."""
+    x = math.log(v / lo) / math.log(hi / lo) if transform == "log" else (v - lo) / (hi - lo)
+    return min(0.98, max(0.02, x))
+
+
+def _x0_from_seed(seed_path):
+    """Build a DE x0 from a previous result.json: seeded values where present, WCONST defaults else."""
+    seed = json.load(open(seed_path)).get("values", {})
+    with open(os.path.join(M.SRC_INPUTS, "WCONST_04.txt")) as wf:
+        defaults = {p[1]: float(p[2]) for p in (ln.split() for ln in wf) if len(p) >= 3}
+    return [_x_from_value(seed.get(name, defaults[name]), tr, lo, hi)
+            for name, tr, lo, hi in CAL_PARAMS]
+
+
+def _apply_cfg(cfg):
+    """Install the run configuration into module globals (needed in pool workers).
+
+    ⚠ scipy's internal Pool may use the *forkserver* start method, whose workers do NOT
+    inherit globals set in main() after import (that silent assumption produced an
+    all-PENALTY 'converged' DE: workers saw the default 8-param set with a shorter x →
+    instant IndexError). The objective therefore carries its configuration explicitly
+    (functools.partial) and installs it per call — correct under fork, forkserver and
+    spawn alike.
+    """
+    global DAYS, WORKDIR, USE_GROUP_CARBON, CAL_PHI_VARS, CAL_PARAMS
+    DAYS, WORKDIR = cfg["days"], cfg["workdir"]
+    USE_GROUP_CARBON = cfg["group_carbon"]
+    CAL_PHI_VARS = cfg["phi_vars"]
+    CAL_PARAMS = PARAM_SETS[cfg["paramset"]]
+
+
+def evaluate(x, cfg=None):
+    """DE objective: Φ over the calibration variables for normalized parameter vector x∈[0,1]^n."""
     try:
+        if cfg is not None:
+            _apply_cfg(cfg)
         wd, ok = _run(_values_from_x(x), f"{os.getpid()}")
         if not ok:
             return PENALTY
@@ -164,10 +244,15 @@ def _report_table(base_rows, best_rows):
 
 
 def main():
-    global DAYS, WORKDIR, CKPT, CAL_PARAMS
+    global DAYS, WORKDIR, CKPT, CAL_PARAMS, CAL_PHI_VARS, USE_GROUP_CARBON
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--paramset", choices=list(PARAM_SETS), default="all",
-                    help="'all' = 8 identifiable params; 'nutrient' = wall-respecting cycling-only subset")
+                    help="'all' = 8 identifiable params; 'nutrient' = wall-respecting cycling-only "
+                         "subset; 'phyto' = composition-targeted phytoplankton knobs")
+    ap.add_argument("--group-carbon", action="store_true",
+                    help="append the plankton group-carbon terms (DIA_C/CYN_C/FIX_CYN_C/OPA_C, "
+                         "km_plankton_out obs) to Φ — the window must cover 2015 (>=1461 days) "
+                         "for the in-window composition data to bite")
     ap.add_argument("--popsize", type=int, default=5)
     ap.add_argument("--maxiter", type=int, default=12)
     ap.add_argument("--tol", type=float, default=0.02)
@@ -175,6 +260,9 @@ def main():
     ap.add_argument("--workers", type=int, default=min(24, (os.cpu_count() or 4) - 2))
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--workdir", default="/tmp/cal_work")
+    ap.add_argument("--seed-result", default=None,
+                    help="result.json of a previous run: its values (plus WCONST defaults for new "
+                         "params) become the DE x0 seed individual")
     ap.add_argument("--validate-full", type=int, default=0,
                     help="after optimizing, validate the best on this many days (e.g. 4016 = full record)")
     a = ap.parse_args()
@@ -184,6 +272,14 @@ def main():
     os.makedirs(WORKDIR, exist_ok=True)
     if not os.path.exists(M.BIN):
         raise SystemExit("ESTAS_II not built (make build-estas)")
+    if a.group_carbon:
+        if not os.path.exists(PLANKTON_OBS):
+            raise SystemExit(f"plankton obs not found ({PLANKTON_OBS}) — run tools/ingest_km_plankton.py")
+        USE_GROUP_CARBON = True
+        CAL_PHI_VARS = CAL_PHI_VARS + GROUP_VARS
+        if a.days < 1461:
+            print(f"WARNING: --days {a.days} < 1461 — the 2015 composition observations "
+                  "fall outside the window; group terms will not constrain anything")
 
     from scipy.optimize import differential_evolution
 
@@ -206,11 +302,17 @@ def main():
         print(f"  gen {gen['n']:>2}: best {', '.join(f'{k}={v:.4g}' for k, v in vals.items())}",
               flush=True)
 
+    cfg = {"days": DAYS, "workdir": WORKDIR, "group_carbon": USE_GROUP_CARBON,
+           "phi_vars": list(CAL_PHI_VARS), "paramset": a.paramset}
+    x0 = _x0_from_seed(a.seed_result) if a.seed_result else None
+    if x0 is not None:
+        print("seeding x0 from", a.seed_result, "->",
+              ", ".join(f"{k}={v:.4g}" for k, v in _values_from_x(x0).items()))
     result = differential_evolution(
-        evaluate, bounds=[(0.0, 1.0)] * len(CAL_PARAMS),
+        functools.partial(evaluate, cfg=cfg), bounds=[(0.0, 1.0)] * len(CAL_PARAMS),
         popsize=a.popsize, maxiter=a.maxiter, tol=a.tol, mutation=(0.5, 1.0), recombination=0.7,
         init="latinhypercube", polish=False, updating="deferred", workers=a.workers,
-        seed=a.seed, callback=cb)
+        seed=a.seed, callback=cb, x0=x0)
 
     best_vals = _values_from_x(result.x)
     print(f"\n=== calibration result ===\nbest Φ = {result.fun:.4f}  (baseline {base_phi:.4f}, "
