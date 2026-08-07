@@ -47,6 +47,15 @@ C_TO_CHLA = {"DIA_C": 30.0, "CYN_C": 40.0, "FIX_CYN_C": 40.0,
 # EPA key -> comparison column: a direct .out column, or a derived column of the
 # same name added by add_derived().
 MODEL_COL = {**DIRECT_COL, "TN": "TN", "TP": "TP", "CHLA": "CHLA"}
+# Plankton-carbon observations (tools/ingest_km_plankton.py, mg C/L). Group biomasses
+# compare directly to state variables; observed heterocystous/N-fixing carbon cannot
+# separate FIX_CYN from Nostocales, so it is scored against their sum (FIX_TOT_C);
+# the observed total is scored against all live phytoplankton carbon (PHYTO_TOT_C,
+# dormant akinetes excluded — they are not counted as live biomass in the surveys).
+MODEL_COL.update({
+    "DIA_C": "DIA_C", "CYN_C": "CYN_C", "OPA_C": "OPA_C", "ZOO_C": "ZOO_C",
+    "FIX_CYN_C": "FIX_TOT_C", "PHYTO_TOT_C": "PHYTO_TOT_C",
+})
 
 
 def _col(df, name):
@@ -69,6 +78,9 @@ def add_derived(df):
                 + _col(df, "DET_PART_ORG_P") + _col(df, "ZOO_P") + P_TO_C * phyto_c)
     df["CHLA"] = 1000.0 * sum((_col(df, c) / r for c, r in C_TO_CHLA.items()),
                               pd.Series(0.0, index=df.index))
+    df["FIX_TOT_C"] = _col(df, "FIX_CYN_C") + _col(df, "NOST_VEG_HET_C")
+    df["PHYTO_TOT_C"] = (_col(df, "DIA_C") + _col(df, "CYN_C") + _col(df, "OPA_C")
+                         + df["FIX_TOT_C"])
     return df
 
 
