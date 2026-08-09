@@ -16,6 +16,15 @@ Sources (under ``curonian/DATA``):
     the 2015 empirical ratios, and depth/replicate samples averaged per (station, date).
   * ``.../Zooplanktonas_KM_BJ_2023*.xls`` — species-level zooplankton abundance + wet
     biomass (mg/m3) -> total ZOO_C (mg C/L) with a documented wet->carbon factor.
+  * ``JTD/monitoringasjsonl`` — the official AAA open-data NDJSON export
+    (``datasets/gov/aaa/juros_mariu_monitoringas``): systematic species-level
+    phytoplankton (2016-2024) and zooplankton (2016-2024) biomass at the LTK stations,
+    same schema semantics as the workbooks. Roughly half the phytoplankton records carry
+    a null ``data`` (date) field; the sampling date is recovered by joining ``reg_nr``
+    (the sampling-event registration code) against the dated records of the whole dump —
+    verified near-exact (3 of ~6,000 events span two adjacent cruise days; the earliest
+    day is used). Quality-checked ("patikrinta") workbook data takes precedence over the
+    NDJSON for overlapping (station, date)s.
 
 Only lagoon (KM / LTK) files are ingested; the ``*_BJ_*``-station files cover the Baltic
 Sea proper and are out of the CL29 domain (the KM files are picked by their station
@@ -256,6 +265,14 @@ def load_species_phyto(path):
     return out.dropna(subset=["date"])
 
 
+def zoo_by_sd(df):
+    """Zoo species frame -> ({(station, date): mean wet biomass}, {(station, date): n samples})."""
+    per_sample = df.groupby(["station", "date", "sample"])["biomass"].sum()
+    wet = per_sample.groupby(level=[0, 1]).mean().to_dict()
+    n = per_sample.groupby(level=[0, 1]).size().to_dict()
+    return {k: v for k, v in wet.items() if not math.isnan(v)}, n
+
+
 def load_species_zoo(path):
     eng = "xlrd" if path.lower().endswith(".xls") else None
     df = pd.ExcelFile(path, engine=eng).parse(0)
@@ -269,6 +286,82 @@ def load_species_zoo(path):
     out["biomass"] = pd.to_numeric(out["biomass"], errors="coerce")
     out["station"] = out["station"].astype(str).str.strip()
     return out.dropna(subset=["date"])
+
+
+# --- AAA open-data NDJSON export -----------------------------------------------------
+
+def normalize_jsonl_records(records):
+    """Parsed NDJSON dicts -> (fito_rows, zoo_rows, regnr_dates).
+
+    Rows are {sample, station, date (date|None), reg_nr, cls, taxon, biomass};
+    regnr_dates maps (reg_nr, station) and reg_nr to the EARLIEST dated occurrence
+    anywhere in the dump (used to recover the null-date biology records).
+    """
+    fito, zoo = [], []
+    regnr_dates = {}
+    for r in records:
+        d = r.get("data")
+        day = dt.date.fromisoformat(str(d)[:10]) if d else None
+        reg, st = r.get("reg_nr"), str(r.get("m_vietos_kodas") or "").strip()
+        if day and reg:
+            for key in ((reg, st), reg):
+                if key not in regnr_dates or day < regnr_dates[key]:
+                    regnr_dates[key] = day
+        t = str(r.get("_type", "")).rsplit("/", 1)[-1]
+        if t not in ("Fitoplanktonas", "Zooplanktonas"):
+            continue
+        row = {"sample": f"{reg}|{r.get('gylis_nuo')}|{r.get('gylis_iki')}",
+               "station": st, "date": day, "reg_nr": reg,
+               "cls": r.get("individu_klase"), "taxon": r.get("taksonas_rusis"),
+               "biomass": r.get("biomase")}
+        (fito if t == "Fitoplanktonas" else zoo).append(row)
+    return fito, zoo, regnr_dates
+
+
+def recover_dates(rows, regnr_dates):
+    """Fill null dates from the reg_nr join; return (kept_rows, n_recovered, n_dropped)."""
+    kept, rec, drop = [], 0, 0
+    for r in rows:
+        if r["date"] is None:
+            day = regnr_dates.get((r["reg_nr"], r["station"])) or regnr_dates.get(r["reg_nr"])
+            if day is None:
+                drop += 1
+                continue
+            r = {**r, "date": day}
+            rec += 1
+        kept.append(r)
+    return kept, rec, drop
+
+
+def load_jsonl_plankton(path):
+    """Stream the AAA NDJSON dump -> (fito_df, zoo_df) in the species-frame shape."""
+    import json as _json
+    records = []
+    with open(path) as fh:
+        for line in fh:
+            if line.strip():
+                records.append(_json.loads(line))
+    fito, zoo, regnr_dates = normalize_jsonl_records(records)
+    out = []
+    for rows, label in ((fito, "fito"), (zoo, "zoo")):
+        rows = [r for r in rows if r["station"].startswith("LTK")]
+        rows, rec, drop = recover_dates(rows, regnr_dates)
+        if rec or drop:
+            print(f"  jsonl {label}: {rec} null-date records recovered via reg_nr, {drop} dropped")
+        df = pd.DataFrame(rows, columns=["sample", "station", "date", "cls", "taxon", "biomass"])
+        df["biomass"] = pd.to_numeric(df["biomass"], errors="coerce")
+        out.append(df.dropna(subset=["date"]))
+    return out[0], out[1]
+
+
+def merge_with_precedence(sources):
+    """[(label, {key: value}), ...] in priority order -> {key: (label, value)}."""
+    out = {}
+    for label, d in sources:
+        for k, v in d.items():
+            if k not in out:
+                out[k] = (label, v)
+    return out
 
 
 def pick_latest(paths):
@@ -359,6 +452,9 @@ def main(argv=None):
                    help="LTK station->box map (EPA ingester CSV)")
     p.add_argument("--zoo-c-per-wet", type=float, default=ZOO_C_PER_WET,
                    help="zooplankton carbon per wet mass (default %(default)s)")
+    p.add_argument("--jsonl", default=None,
+                   help="AAA monitoring NDJSON dump (default <data-root>/JTD/monitoringasjsonl; "
+                        "pass an empty string to skip)")
     p.add_argument("--strict", action="store_true",
                    help="drop low-confidence 2015 campaign stations")
     a = p.parse_args(argv)
@@ -368,6 +464,8 @@ def main(argv=None):
     f2022 = pick_latest(glob.glob(os.path.join(bio, "Fitoplanktonas_KM_2022*")))
     f2023 = pick_latest(glob.glob(os.path.join(bio, "Fitoplanktonas_KM_BJ_2023*")))
     fzoo = pick_latest(glob.glob(os.path.join(bio, "Zooplanktonas_KM*")))
+    if a.jsonl is None:
+        a.jsonl = os.path.join(a.data_root, "JTD", "monitoringasjsonl")
 
     ltk_map = load_station_box(a.epa_map)   # station -> (box, region)
 
@@ -411,27 +509,44 @@ def main(argv=None):
     else:
         print(f"! 2015 workbook not found ({f2015}), using fallback ratios")
 
-    # 2) monitoring phytoplankton (wet biomass -> carbon via the 2015 ratios)
+    # 2) monitoring phytoplankton + zooplankton: workbooks first (quality-checked
+    #    "patikrinta" exports win), then the AAA NDJSON dump for everything else.
+    phyto_sources, zoo_sources = [], []   # (label, carbon/wet dict, nsamp dict)
     for f in (f2022, f2023):
         if not f:
             continue
         df = load_species_phyto(f)
-        carbon = aggregate_group_carbon(df, ratios)
-        nsamp = df.groupby(["station", "date"])["sample"].nunique().to_dict()
-        wet = {}
-        emit_rows(carbon, ltk_meta, ratios, wet, nsamp, os.path.basename(f), rows)
-        d = sorted({x for (_, x) in carbon})
-        print(f"{os.path.basename(f)}: {len(carbon)} station-dates ({d[0]}..{d[-1]})")
-
-    # 3) monitoring zooplankton -> ZOO_C
+        phyto_sources.append((os.path.basename(f), aggregate_group_carbon(df, ratios),
+                              df.groupby(["station", "date"])["sample"].nunique().to_dict()))
     if fzoo:
-        df = load_species_zoo(fzoo)
-        per_sample = df.groupby(["station", "date", "sample"])["biomass"].sum()
-        per_sd = per_sample.groupby(level=[0, 1]).mean()
-        n_sd = per_sample.groupby(level=[0, 1]).size()
-        for (st, d), wet in per_sd.items():
-            if math.isnan(wet):
-                continue
+        wet, n = zoo_by_sd(load_species_zoo(fzoo))
+        zoo_sources.append((os.path.basename(fzoo), wet, n))
+    if a.jsonl and os.path.exists(a.jsonl):
+        fdf, zdf = load_jsonl_plankton(a.jsonl)
+        if len(fdf):
+            phyto_sources.append(("monitoringasjsonl", aggregate_group_carbon(fdf, ratios),
+                                  fdf.groupby(["station", "date"])["sample"].nunique().to_dict()))
+        if len(zdf):
+            wet, n = zoo_by_sd(zdf)
+            zoo_sources.append(("monitoringasjsonl", wet, n))
+    elif a.jsonl:
+        print(f"! NDJSON dump not found ({a.jsonl}), skipping")
+
+    merged_p = merge_with_precedence([(label, c) for label, c, _ in phyto_sources])
+    for label, _, nsamp in phyto_sources:
+        subset = {k: v for k, (lab, v) in merged_p.items() if lab == label}
+        if not subset:
+            continue
+        emit_rows(subset, ltk_meta, ratios, {}, nsamp, label, rows)
+        d = sorted({x for (_, x) in subset})
+        print(f"{label}: {len(subset)} station-dates ({d[0]}..{d[-1]})")
+
+    merged_z = merge_with_precedence([(label, w) for label, w, _ in zoo_sources])
+    for label, _, n_sd in zoo_sources:
+        subset = {k: v for k, (lab, v) in merged_z.items() if lab == label}
+        if not subset:
+            continue
+        for (st, d), wet in subset.items():
             box, region, conf = ltk_meta(st)
             if box is None:
                 continue
@@ -439,11 +554,12 @@ def main(argv=None):
                 "station": st, "box": box, "region": region, "date": str(d),
                 "variable": "ZOO_C", "model_index": PLANKTON_VARIABLES["ZOO_C"][0],
                 "value": round(zoo_biomass_to_carbon(wet, a.zoo_c_per_wet), 6),
-                "units": "mg C/L", "n_samples": int(n_sd[(st, d)]),
+                "units": "mg C/L", "n_samples": int(n_sd.get((st, d), 0)),
                 "wet_biomass": round(wet, 3), "c_ratio": a.zoo_c_per_wet,
-                "confidence": conf, "source_file": os.path.basename(fzoo),
+                "confidence": conf, "source_file": label,
             })
-        print(f"{os.path.basename(fzoo)}: {len(per_sd)} station-dates -> ZOO_C")
+        d = sorted({x for (_, x) in subset})
+        print(f"{label}: {len(subset)} station-dates -> ZOO_C ({d[0]}..{d[-1]})")
 
     os.makedirs(a.out, exist_ok=True)
     tidy = write_tidy(rows, a.out)

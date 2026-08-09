@@ -44,6 +44,27 @@ N_TO_C, P_TO_C = 0.22, 0.024
 PHYTO_C = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C", "NOST_VEG_HET_C", "AKI_C"]
 C_TO_CHLA = {"DIA_C": 30.0, "CYN_C": 40.0, "FIX_CYN_C": 40.0,
              "OPA_C": 30.0, "NOST_VEG_HET_C": 40.0}
+# WCONST constant name -> the pool whose C:Chl it sets. The C:Chl ratios are *model*
+# parameters (they drive CHLA -> light extinction -> self-shading in LIM_LIGHT/CUR_SMITH,
+# see aquabc_II_pelagic_model.f90:1005), so a run with perturbed ratios must be scored with
+# the same ratios — use --wconst to read them from that run's constants file.
+WCONST_CHLA_KEYS = {"DIA_C_TO_CHLA": "DIA_C", "CYN_C_TO_CHLA": "CYN_C",
+                    "FIX_CYN_C_TO_CHLA": "FIX_CYN_C", "OPA_C_TO_CHLA": "OPA_C",
+                    "NOST_C_TO_CHLA": "NOST_VEG_HET_C"}
+
+
+def load_c_to_chla(wconst_path):
+    """Read the C:Chl ratios from a WCONST_04.txt -> {pool: ratio} (missing keys keep defaults)."""
+    out = dict(C_TO_CHLA)
+    with open(wconst_path) as fh:
+        for ln in fh:
+            parts = ln.split()
+            if len(parts) >= 3 and parts[1] in WCONST_CHLA_KEYS:
+                try:
+                    out[WCONST_CHLA_KEYS[parts[1]]] = float(parts[2])
+                except ValueError:
+                    pass
+    return out
 # EPA key -> comparison column: a direct .out column, or a derived column of the
 # same name added by add_derived().
 MODEL_COL = {**DIRECT_COL, "TN": "TN", "TP": "TP", "CHLA": "CHLA"}
@@ -56,6 +77,13 @@ MODEL_COL.update({
     "DIA_C": "DIA_C", "CYN_C": "CYN_C", "OPA_C": "OPA_C", "ZOO_C": "ZOO_C",
     "FIX_CYN_C": "FIX_TOT_C", "PHYTO_TOT_C": "PHYTO_TOT_C",
 })
+
+
+_ACTIVE_C_TO_CHLA = None      # set by main() from --wconst; None = module defaults
+
+
+def _c_to_chla():
+    return _ACTIVE_C_TO_CHLA or C_TO_CHLA
 
 
 def _col(df, name):
@@ -76,7 +104,7 @@ def add_derived(df):
                 + _col(df, "DET_PART_ORG_N") + _col(df, "ZOO_N") + N_TO_C * phyto_c)
     df["TP"] = (_col(df, "PO4_P") + _col(df, "DISS_ORG_P")
                 + _col(df, "DET_PART_ORG_P") + _col(df, "ZOO_P") + P_TO_C * phyto_c)
-    df["CHLA"] = 1000.0 * sum((_col(df, c) / r for c, r in C_TO_CHLA.items()),
+    df["CHLA"] = 1000.0 * sum((_col(df, c) / r for c, r in _c_to_chla().items()),
                               pd.Series(0.0, index=df.index))
     df["FIX_TOT_C"] = _col(df, "FIX_CYN_C") + _col(df, "NOST_VEG_HET_C")
     df["PHYTO_TOT_C"] = (_col(df, "DIA_C") + _col(df, "CYN_C") + _col(df, "OPA_C")
@@ -98,13 +126,19 @@ def box_number(path):
     return int(m.group(1)) if m else None
 
 
-def load_obs(tidy_csv):
-    """Load the EPA tidy CSV -> {(box, var): DataFrame[date(datetime.date), value]}."""
+def load_obs(tidy_csv, since=None, until=None):
+    """Load the EPA tidy CSV -> {(box, var): DataFrame[date(datetime.date), value]}.
+
+    ``since``/``until`` (ISO date strings, inclusive) restrict the observations — used to
+    score a calibration holdout period in isolation.
+    """
     out = {}
     with open(tidy_csv, newline="") as fh:
         for r in csv.DictReader(fh):
             var = r["variable"]
             if var not in MODEL_COL:
+                continue
+            if (since and r["date"] < since) or (until and r["date"] > until):
                 continue
             key = (int(r["box"]), var)
             out.setdefault(key, []).append(
@@ -299,11 +333,25 @@ def main(argv=None):
     p.add_argument("--no-plots", action="store_true", help="skip the PDF plots")
     p.add_argument("--by-season", action="store_true",
                    help="also print a per-(variable, season) breakdown (exposes obs sampling bias)")
+    p.add_argument("--since", default=None, metavar="YYYY-MM-DD",
+                   help="only score observations on/after this date (holdout scoring)")
+    p.add_argument("--until", default=None, metavar="YYYY-MM-DD",
+                   help="only score observations on/before this date")
+    p.add_argument("--wconst", default=None,
+                   help="read the C:Chl ratios from this run's WCONST_04.txt instead of the "
+                        "shipped defaults (required when scoring a run with perturbed C:Chl — "
+                        "they are model parameters, not just a reporting convention)")
     a = p.parse_args(argv)
+
+    if a.wconst:
+        global _ACTIVE_C_TO_CHLA
+        _ACTIVE_C_TO_CHLA = load_c_to_chla(a.wconst)
+        print(f"C:Chl from {a.wconst}: "
+              + ", ".join(f"{k}={v:g}" for k, v in _ACTIVE_C_TO_CHLA.items()))
 
     if not os.path.isdir(a.outputs):
         p.error(f"model output folder not found: {a.outputs}")
-    obs = load_obs(a.obs)
+    obs = load_obs(a.obs, since=a.since, until=a.until)
     rows = build_table(a.outputs, a.base_year, obs)
     print_table(rows)
     if not rows:

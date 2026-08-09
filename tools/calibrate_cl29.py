@@ -62,6 +62,20 @@ PARAM_SETS = {
         ("KD_DIA_20",               "log", 0.04,   0.4),    # diatom mortality
         ("KHS_DIN_CYN",             "log", 0.003,  0.05),   # cyano DIN affinity (NH4-floor competition)
     ],
+    # "phyto" + the zooplankton knobs. The 7-yr group-carbon run (2026-08-08) left ZOO_C
+    # bias unchanged to 4 decimals — zooplankton is INERT to phytoplankton parameters, so
+    # its 5.5x under-prediction can only be addressed by freeing its own rates. Expect a
+    # coupled trade-off: more zooplankton = more grazing = less (already-low) phytoplankton.
+    "phyto_zoo": [
+        ("KD_CYN_20",               "log", 0.04,   0.4),
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    5.0),
+        ("KG_DIA_OPT_TEMP",         "lin", 1.5,    6.0),
+        ("KD_DIA_20",               "log", 0.04,   0.4),
+        ("KHS_DIN_CYN",             "log", 0.003,  0.05),
+        ("KG_ZOO_OPT_TEMP",         "log", 0.15,   1.5),    # zoo growth (default 0.45)
+        ("KD_ZOO_20",               "log", 0.05,   0.5),    # zoo mortality (default 0.15)
+        ("FOOD_MIN_ZOO",            "log", 0.005,  0.1),    # feeding threshold (default 0.02)
+    ],
     # "phyto" + OPA/FIX-specific knobs: the 5-knob run wins CYN_C by driving OPA and the
     # fixers extinct (competition-only trade-off); this set lets DE defend all 4 groups.
     "phyto_all": [
@@ -79,8 +93,10 @@ PARAM_SETS = {
 CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
 CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
 # Group-carbon terms appended to Φ under --group-carbon (obs: tools/ingest_km_plankton.py;
-# the validator scores obs FIX_CYN_C against model FIX_CYN_C+NOST_VEG_HET_C).
-GROUP_VARS = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C"]
+# the validator scores obs FIX_CYN_C against model FIX_CYN_C+NOST_VEG_HET_C). ZOO_C joined
+# 2026-08-08 once the AAA NDJSON extension gave it in-window coverage (329 station-dates
+# 2016-2022) — a grazing-side constraint the phyto-only objective lacked.
+GROUP_VARS = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C", "ZOO_C"]
 USE_GROUP_CARBON = False     # set by --group-carbon in main() (before the worker fork)
 PLANKTON_OBS = None          # resolved in module scope below
 PENALTY = 1.0e6          # objective value for a failed forward run

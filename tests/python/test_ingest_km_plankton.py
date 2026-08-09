@@ -12,7 +12,10 @@ from ingest_km_plankton import (  # noqa: E402
     aggregate_group_carbon,
     blocks_from_2015,
     class_to_group,
+    merge_with_precedence,
+    normalize_jsonl_records,
     parse_2015_date,
+    recover_dates,
     zoo_biomass_to_carbon,
 )
 
@@ -134,3 +137,60 @@ def test_aggregate_group_carbon_sums_species_then_averages_samples():
     # FIX: sample A = 2.0, sample B = 0.0 -> mean 1.0 wet -> x0.2 C
     assert abs(out[key]["FIX"] - 0.20) < 1e-12
     assert out[key]["CYN"] == 0.0 and out[key]["OPA"] == 0.0
+
+
+# --- AAA NDJSON export ---------------------------------------------------------------
+
+T = "datasets/gov/aaa/juros_mariu_monitoringas/"
+
+
+def _rec(t, reg, st, date, **kw):
+    return {"_type": T + t, "reg_nr": reg, "m_vietos_kodas": st, "data": date, **kw}
+
+
+def test_normalize_jsonl_records_routes_types_and_builds_date_map():
+    recs = [
+        _rec("Hidrochemija", "R1", "LTK2", "2021-03-23T00:00:00", parametro_pav="x"),
+        _rec("Fitoplanktonas", "R1", "LTK2", None, individu_klase="Bacillariales",
+             taksonas_rusis="Aulacoseira", biomase=0.5, gylis_nuo=0, gylis_iki=1),
+        _rec("Zooplanktonas", "R2", "LTK5", "2020-07-01T00:00:00",
+             individu_klase="CYCLOPOIDA", taksonas_rusis="Cyclops", biomase=12.0),
+    ]
+    fito, zoo, regnr = normalize_jsonl_records(recs)
+    assert len(fito) == 1 and len(zoo) == 1
+    assert fito[0]["date"] is None and fito[0]["cls"] == "Bacillariales"
+    assert zoo[0]["date"] == dt.date(2020, 7, 1)
+    assert regnr[("R1", "LTK2")] == dt.date(2021, 3, 23)
+    assert regnr["R1"] == dt.date(2021, 3, 23)
+
+
+def test_normalize_jsonl_keeps_earliest_date_for_ambiguous_regnr():
+    recs = [
+        _rec("Hidrochemija", "R1", "LTK2", "2021-08-26T00:00:00"),
+        _rec("Hidrochemija", "R1", "LTK2", "2021-08-23T00:00:00"),
+    ]
+    _, _, regnr = normalize_jsonl_records(recs)
+    assert regnr[("R1", "LTK2")] == dt.date(2021, 8, 23)
+
+
+def test_recover_dates_station_key_then_fallback_then_drop():
+    regnr = {("R1", "LTK2"): dt.date(2021, 3, 23), "R9": dt.date(2019, 5, 2)}
+    rows = [
+        {"date": None, "reg_nr": "R1", "station": "LTK2"},   # exact (reg, station) hit
+        {"date": None, "reg_nr": "R9", "station": "LTK5"},   # reg_nr fallback
+        {"date": None, "reg_nr": "R7", "station": "LTK5"},   # unrecoverable -> dropped
+        {"date": dt.date(2022, 1, 1), "reg_nr": "R0", "station": "LTK2"},  # untouched
+    ]
+    kept, rec, drop = recover_dates(rows, regnr)
+    assert (rec, drop) == (2, 1)
+    assert [r["date"] for r in kept] == [dt.date(2021, 3, 23), dt.date(2019, 5, 2),
+                                         dt.date(2022, 1, 1)]
+
+
+def test_merge_with_precedence_first_source_wins():
+    xls = {("LTK2", dt.date(2022, 6, 1)): {"DIA": 1.0}}
+    jsonl = {("LTK2", dt.date(2022, 6, 1)): {"DIA": 9.9},   # duplicate -> xls wins
+             ("LTK5", dt.date(2020, 7, 1)): {"DIA": 2.0}}   # unique -> kept
+    out = merge_with_precedence([("xls", xls), ("jsonl", jsonl)])
+    assert out[("LTK2", dt.date(2022, 6, 1))] == ("xls", {"DIA": 1.0})
+    assert out[("LTK5", dt.date(2020, 7, 1))] == ("jsonl", {"DIA": 2.0})
