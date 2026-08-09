@@ -135,9 +135,16 @@ def _metrics_rows(out_dir, tag):
     agg = {}
     for obs, suffix in obs_sets:
         val = os.path.join(out_dir, f"val_{tag}{suffix}")
-        subprocess.run(["python3", M.VALIDATOR, "--outputs", os.path.join(out_dir, "OUT"),
-                        "--obs", obs, "--base-year", "2012", "--out", val, "--no-plots"],
-                       cwd=M.REPO, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        cmd = ["python3", M.VALIDATOR, "--outputs", os.path.join(out_dir, "OUT"),
+               "--obs", obs, "--base-year", "2012", "--out", val, "--no-plots"]
+        # Score with the run's own C:Chl ratios — they are model parameters (they drive
+        # self-shading), so deriving Chl-a with different ones would silently mis-score a
+        # run whose ratios were perturbed. A no-op when they are at their defaults.
+        wconst = os.path.join(out_dir, "INPUTS_CL29", "WCONST_04.txt")
+        if os.path.exists(wconst):
+            cmd += ["--wconst", wconst]
+        subprocess.run(cmd, cwd=M.REPO,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         path = os.path.join(val, "validation_metrics.csv")
         if os.path.exists(path):     # a source with no in-window obs writes no CSV
             _agg_metrics(path, agg)
