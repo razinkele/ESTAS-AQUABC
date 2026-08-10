@@ -302,11 +302,11 @@ standing stock.
 
 ## 7. Follow-up, in order
 
-1. **Justify or revise `FIX_CYN_OPT_TEMP_LR = 18.0 °C`.** This is the highest-value single
-   number in the diagnosis: it alone closes the autumn season while the nitrogen window is at
-   its widest, and no October day in eleven years comes within two degrees of it. Check it
-   against the literature for the diazotroph species actually present in this lagoon. It has
-   **not** been verified here and must not be changed on the strength of this document alone.
+1. ~~**Justify or revise `FIX_CYN_OPT_TEMP_LR = 18.0 °C`**~~ — **done, see §8.** The lagoon's
+   diazotrophs are *Aphanizomenon* and *Anabaena*, not *Nodularia*, and cultured
+   *Aphanizomenon flos-aquae* grows above **8 °C** with an optimum of 23–29 °C. `T_opt = 26 °C`
+   is therefore well supported; **`T_min = 18 °C` is about 10 °C too high** and is the single
+   wrong number. Next step is a run with a corrected `T_min`, not further desk work.
 2. **Do not pursue "the forcing is too cold".** Daily temperatures reach 24–28 °C with a mean
    annual maximum of 25.5 °C (§1), so the forcing is plausible and `T_opt = 26 °C` is actually
    attained. An independent check against an external temperature source is still worth having
@@ -322,6 +322,79 @@ standing stock.
    the leverage of any growth or mortality parameter on standing stock is unknown.
 6. **Treat zooplankton grazing as a separate, larger item.** Negligible grazing on every group
    is a structural gap, not a phenology parameter, and it interacts with the winter half only.
+
+---
+
+## 8. Literature check: `T_min = 18 °C` is not defensible for this lagoon
+
+Follow-up item 1, carried out 2026-08-10 via the scite literature index. Both papers below were
+checked for editorial notices; **neither carries a retraction, correction or expression of
+concern.**
+
+### Which species are actually here
+
+The Curonian monitoring record (`~/curonian/DATA/JTD/monitoringasjsonl`, 162,254 records)
+gives genus mention counts of *Anabaena* 1591, *Aphanizomenon* 1111, *Dolichospermum* 75 and
+**Nodularia 123**. The lagoon's diazotroph assemblage is *Aphanizomenon* and
+*Anabaena*/*Dolichospermum*. *Nodularia spumigena* — the warm-water open-Baltic bloomer whose
+thermal preferences a `T_min` of 18 °C would suit — is marginal here.
+
+### What the measured cardinal temperatures are
+
+Tsujimura et al. (2001) cultured an axenic *Aphanizomenon flos-aquae* strain and report:
+
+> "The strain could grow at **above 8°C** with an **optimum temperature ranging from 23 to
+> 29°C**, and survived even at 5°C for at least 25 days under low light conditions. Although
+> these results confirmed the ability of the bloom formation during **late autumn and winter**,
+> it is still unclear why the *Aphanizomenon* bloom occurred at temperatures of **ca 10°C in
+> December**…"
+
+Yamamoto (2009) corroborates the cold end from field populations: *A. flos-aquae* "could also
+tolerate low temperatures in the winter, and was present in relatively high densities", with
+"large biomasses of the low-temperature-adapted *A. flos-aquae* … observed mainly during
+winter", and concludes it "can grow over a wide range of water temperatures".
+
+**So the model's `T_opt = 26 °C` is well supported — it sits inside the measured 23–29 °C
+optimum — and `T_min = 18 °C` is roughly 10 °C too high.** That is the single wrong number, and
+it is wrong in exactly the way that closes autumn.
+
+*Not verified:* clean cardinal temperatures for *Anabaena*/*Dolichospermum* specifically. Three
+searches did not return a direct measurement, so the case above rests on *Aphanizomenon*, which
+is one of the two dominant genera rather than both.
+
+### What a literature-consistent T_min would change
+
+Recomputing the CTMI over the run's own daily temperatures with `T_min = 8 °C` and everything
+else unchanged (validity improves markedly: the margin on 2·T_opt > T_min + T_max goes from 2 to
+12):
+
+| month | mean T °C | factor now (T_min 18) | factor at T_min 8 | % of days permitted, now → then |
+|---|---|---|---|---|
+| Jul | 21.0 | 0.427 | 0.725 | 90.8 → 100 |
+| Aug | 20.8 | 0.400 | 0.717 | 91.6 → 100 |
+| **Sep** | 16.3 | 0.026 | **0.374** | 21.4 → **100** |
+| **Oct** | 10.8 | 0.000 | **0.072** | 0.0 → **85.8** |
+| Nov | 6.2 | 0.000 | 0.003 | 0.0 → 24.2 |
+
+Sep–Nov mean factor rises from **0.008 to 0.149**; the annual mean roughly **2.4×**, from 0.096
+to 0.231. The thermal gate opens across precisely the months where §3.4 shows the nitrogen
+window at its widest.
+
+**This is a projection of the temperature factor alone, not a predicted biomass response.**
+Growth is multiplicative with light, phosphorus and the fixation switch, and §3.3 shows standing
+stock is set largely by transport rather than local rates. Whether corrected diazotroph
+phenology actually moves the chlorophyll peak requires a run — that is the obvious next
+experiment, and it is now a well-posed one.
+
+### References
+
+Tsujimura, S., Ishikawa, K., & Tsukada, H. (2001). Effect of temperature on growth of the
+cyanobacterium *Aphanizomenon flos-aquae* in Lake Biwa and Lake Yogo. *Phycological Research*,
+49(4), 275–280. https://doi.org/10.1046/j.1440-1835.2001.00255.x
+
+Yamamoto, Y. (2009). Environmental factors that determine the occurrence and seasonal dynamics
+of *Aphanizomenon flos-aquae*. *Journal of Limnology*, 68(1), 122.
+https://doi.org/10.4081/jlimnol.2009.122
 
 ---
 
