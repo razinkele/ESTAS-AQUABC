@@ -34,15 +34,23 @@ The inversion has two independent halves, driven by different things.
 ### Model water temperature
 
 Every statement below is relative to the temperature the model actually simulated, read from
-the run's own output (`PROCESS_RATES` slot 13 of `CYN_C_INDEX`), monthly mean:
+the run's own output (`PROCESS_RATES` slot 13 of `CYN_C_INDEX`).
 
 | month | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| °C | 1.0 | 1.1 | 3.1 | 8.0 | 14.4 | 19.1 | **21.0** | 20.8 | 16.3 | 10.8 | 6.2 | 2.1 |
+| monthly mean °C | 1.0 | 1.1 | 3.1 | 8.0 | 14.4 | 19.1 | 21.0 | 20.8 | 16.3 | 10.8 | 6.2 | 2.1 |
+| **daily max °C** | | | | | | | **28.3** | **27.8** | **23.0** | **16.2** | **11.6** | **8.2** |
 
-**The modelled lagoon never exceeds 21 °C.** Whether that is correct is unverified — the EPA
-observation set carries no temperature variable, so it could not be checked here. It is the
-first item in §7.
+**The monthly means understate the peaks badly and must not be used to judge threshold
+behaviour.** Daily values reach 24–28 °C, with a mean annual maximum of **25.5 °C** over the
+eleven years (2012–2022 annual maxima: 24.4, 25.0, 26.5, 24.7, 25.3, 22.1, 27.8, 25.2, 25.4,
+28.3, 25.6). July–August daily percentiles are p50 20.7, p75 22.4, p90 24.2, p95 25.2, p99 27.0.
+
+**The forcing is therefore plausible on its face** — a shallow eutrophic lagoon reaching the
+mid-20s in summer — and the "the model is too cold" hypothesis is not supported by the run. It
+is *not* independently validated (the EPA set carries no temperature variable), but it no
+longer sits on the critical path: the autumn result in §3.4 turns on daily maxima that are far
+below any threshold in question.
 
 ---
 
@@ -176,27 +184,55 @@ Box 23, monthly means:
 wider than July's 0.439 — and phosphorus is not limiting, but the temperature factor is
 exactly zero.**
 
-The cause is a single parameter. `FIX_CYN_OPT_TEMP_LR` = **18.0 °C** is the CTMI minimum, and
-autumn water is 10.7 °C and 6.1 °C. Below T_min the CTMI is identically zero, so growth is
-zero regardless of every other gate being open. Light is also declining in autumn (0.282 over
-Sep–Nov against 0.475 in Jul–Aug) and would be a real secondary constraint, but it never gets
-to act: the temperature gate is an exact zero, and nothing multiplies back up from that.
+The cause is a single parameter: `FIX_CYN_OPT_TEMP_LR` = **18.0 °C**, the CTMI minimum. Below
+T_min the CTMI is identically zero, so growth is zero regardless of every other gate.
+
+**This is not an averaging artifact — it holds on daily values.** Across all four boxes and all
+eleven years:
+
+| month | daily max °C | days above 18 °C | % of days with TEMP factor = 0 |
+|---|---|---|---|
+| Jul | 28.3 | 1239 (90.8 %) | 8.3 % |
+| Aug | 27.8 | 1250 (91.6 %) | 8.1 % |
+| Sep | 23.0 | 282 (21.4 %) | 77.3 % |
+| **Oct** | **16.2** | **0 (0.0 %)** | **100 %** |
+| **Nov** | **11.6** | **0 (0.0 %)** | **100 %** |
+| **Dec** | **8.2** | **0 (0.0 %)** | **100 %** |
+
+**Not one day in October, November or December in eleven years reaches 18 °C** — October's
+daily *maximum* is 16.2 °C, nearly two degrees short. The shutdown is absolute and it is not a
+matter of degree. September is the transition: three-quarters of its days are already
+hard-zeroed.
+
+Light is also declining in autumn (0.282 over Sep–Nov against 0.475 in Jul–Aug) and would be a
+real secondary constraint, but it never gets to act — the temperature gate is an exact zero
+and nothing multiplies back up from that.
 
 So the model cannot produce autumn diazotrophs **at all**, at any nutrient or light condition,
-while `T_min = 18 °C` stands. That is a hard structural statement, not a matter of degree, and
-it directly explains the autumn half of the phase error.
+while `T_min = 18 °C` stands. That directly explains the autumn half of the phase error, and it
+matters because the observations do *not* fall off in October: in-situ chlorophyll is 52.4,
+47.9 and 48.3 µg/L for Aug/Sep/Oct, essentially flat, while the model drops to 23.6.
 
-### 3.5 Both diazotroph optima are unreachable
+### 3.5 The optima ARE reached — the summer constraint is intermittency, not a ceiling
 
-| | T_min | T_opt | T_max | factor at 21 °C | factor at T_opt |
-|---|---|---|---|---|---|
-| FIX_CYN | 18.0 | 26.0 | 32.0 | 0.44 | 1.00 |
-| NOST | 16.0 | 26.0 | 33.0 | — | 1.00 |
+| | T_min | T_opt | T_max | measured factor: max | median (Jul–Aug) | % of days at 0 |
+|---|---|---|---|---|---|---|
+| FIX_CYN | 18.0 | 26.0 | 32.0 | **1.000** | 0.375 | 8.2 % |
+| NOST | 16.0 | 26.0 | 33.0 | — | — | — |
 
-Both groups carry `T_opt = 26 °C` while the lagoon peaks at 21 °C, so neither ever approaches
-its optimum in any month of any year; FIX_CYN is capped at about 0.44 of potential growth.
-Both CTMIs are valid (52 > 50 and 52 > 49). The arithmetic was verified against the run:
+Both CTMIs are valid (52 > 50 and 52 > 49) and the arithmetic was verified against the run:
 CTMI(20.97 °C) = 0.436 against a measured 0.427.
+
+**The FIX_CYN temperature factor reaches a full 1.000 in the run**, so `T_opt = 26 °C` is
+attained on the warmest days and the group is *not* capped below its potential. The July–August
+distribution is strongly skewed — p25 0.108, p50 0.375, p75 0.691, p90 0.914 — and 91 % of
+July–August days are above `T_min`. The seasonal mean of 0.414 is the mean of that spread, not
+a ceiling.
+
+So the summer constraint is **intermittency**: the lagoon straddles the 18 °C threshold, and
+fixer growth is switched fully on and fully off within the season rather than held at a steady
+fraction. This is a materially different statement from "temperature limits the summer bloom",
+and it is the reason §3.1 declines to name temperature as summer's dominant constraint.
 
 ---
 
@@ -239,10 +275,11 @@ It bears on the two halves asymmetrically, which is worth being precise about:
 | Fixers: growth-dominated yet biomass low | no | Both fixer groups are locally loss-dominated, so the germination pathway is **not** implicated. This answers the open question left in `fixer-deficit-is-amplitude-not-extinction`: the akinete carbon leaving `AKI_C` is respired and dies rather than being lost in transfer. |
 
 **Selected follow-up target: the cardinal temperatures**, which is the one lever both halves of
-the phase error share. Diatoms peak at 10 °C and shut off at 21 °C; diazotrophs cannot grow
-below 18 °C and peak at 26 °C, which this lagoon never reaches. Those settings together
-produce a cycle that peaks in February instead of August and that cannot populate autumn at
-all.
+the phase error share — but specifically the *thresholds*, not the optima. Diatoms peak at
+10 °C and shut off at 21 °C, so they are a winter group by construction. Diazotrophs cannot
+grow below 18 °C, which the lagoon clears routinely in July–August but never once in October.
+Their optimum of 26 °C is reached and is not the problem. Those settings together produce a
+cycle that peaks in February instead of August and that cannot populate autumn at all.
 
 ---
 
@@ -265,18 +302,18 @@ standing stock.
 
 ## 7. Follow-up, in order
 
-1. **Verify the temperature forcing.** The modelled lagoon peaks at 21.0 °C. The EPA set
-   carries no temperature variable, so this needs an external source. If the real lagoon
-   reaches 24–25 °C, part of the summer deficit is a forcing error rather than a parameter
-   error. Do this before touching any cardinal temperature. Note it does **not** rescue
-   autumn: no plausible forcing puts October above 18 °C.
-2. **Justify or revise `FIX_CYN_OPT_TEMP_LR = 18.0 °C`.** This is the highest-value single
+1. **Justify or revise `FIX_CYN_OPT_TEMP_LR = 18.0 °C`.** This is the highest-value single
    number in the diagnosis: it alone closes the autumn season while the nitrogen window is at
-   its widest. Check it against the literature for the species actually present in this
-   lagoon. It has **not** been verified here and must not be changed on the strength of this
-   document alone.
-3. **Then examine `T_opt = 26 °C` for both diazotroph groups, and `T_opt = 10 °C` for
-   diatoms**, on the same evidentiary standard.
+   its widest, and no October day in eleven years comes within two degrees of it. Check it
+   against the literature for the diazotroph species actually present in this lagoon. It has
+   **not** been verified here and must not be changed on the strength of this document alone.
+2. **Do not pursue "the forcing is too cold".** Daily temperatures reach 24–28 °C with a mean
+   annual maximum of 25.5 °C (§1), so the forcing is plausible and `T_opt = 26 °C` is actually
+   attained. An independent check against an external temperature source is still worth having
+   — the EPA set carries none — but it is no longer on the critical path, and it cannot affect
+   autumn in any case.
+3. **Then examine `T_opt = 10 °C` for diatoms**, on the same evidentiary standard. `T_opt = 26 °C`
+   for the fixers is a lower priority now that it is known to be reached.
 4. **Re-check CTMI validity on any change.** Diatoms have only 1 °C of margin
    (2·T_opt = 20 against T_min + T_max = 19); breaking the inequality silently substitutes a
    plateau and manufactures false persistence.
@@ -303,8 +340,19 @@ offset. `tools/diagnose_group_limitation.py` asserts it on every run. This is th
 of error as `aquabc-parallel-code-paths` — a name matching is not the same as the thing
 matching.
 
-A second lesson sits in §3.1: a three-month seasonal window averaged across a sharp threshold
-inverts the verdict. September's temperature factor of 0.026 pulled the Jul–Sep mean into the
-"strongly limiting" band and made temperature look like summer's dominant constraint when in
-the bloom months it is merely one of several partial ones. Season windows must be checked
-against the monthly series before their means are interpreted.
+**The second lesson cost three wrong claims: averaging across a sharp threshold inverts the
+verdict, and this model is full of sharp thresholds.** The CTMI is exactly zero below T_min, so
+any mean spanning that boundary is a mean over a bimodal quantity and describes no actual day.
+
+- A Jul–**Sep** window put FIX_CYN's temperature factor at 0.287, in the "strongly limiting"
+  band, when over the bloom months themselves it is 0.414 and merely one of several partial
+  constraints. September's 0.026 did it (§3.1).
+- Monthly-mean water temperature suggested the lagoon "never exceeds 21 °C" and that both
+  diazotroph optima were therefore unreachable. Daily values reach 24–28 °C and the factor
+  attains a full 1.000; the group is not capped at all (§1, §3.5).
+- The same monthly means made autumn look like a matter of degree. On daily values it is
+  absolute — zero days above threshold in three months across eleven years (§3.4).
+
+Two of those three claims were wrong in the *optimistic* direction and one in the pessimistic,
+so there is no safe bias to assume. **Check the daily distribution before interpreting any mean
+that spans a threshold**, and report the fraction of zeros alongside the mean.
