@@ -32,6 +32,9 @@ import sys
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from seasonal_phase import format_report, phase_metrics  # noqa: E402
+
 # EPA tidy variable key -> model .out state-variable column (direct comparison).
 DIRECT_COL = {
     "NH4": "NH4_N", "NO3": "NO3_N", "PO4": "PO4_P",
@@ -318,6 +321,38 @@ def make_plots(out_dir, base_year, obs, rows, pdf_path):
             plt.close(fig)
 
 
+def phase_summary(out_dir, base_year, obs, variable="CHLA"):
+    """Monthly climatology of model vs observations, pooled over mapped boxes.
+
+    Observations are restricted to the simulated window exactly as metrics() and
+    season_summary() do; otherwise observations from years the model never ran
+    dominate the observed climatology (69% of the CHLA rows predate 2016).
+    """
+    model_sum, model_n, obs_sum, obs_n = {}, {}, {}, {}
+    for path in sorted(glob.glob(os.path.join(out_dir, "PELAGIC_BOX_*.out"))):
+        if path.endswith("_PROCESS_RATES.out"):
+            continue
+        box = box_number(path)
+        if (box, variable) not in obs:
+            continue
+        mdf = load_box_output(path, base_year)
+        col = MODEL_COL[variable]
+        base = mdf["date"].iloc[0]
+        hi = mdf["TIME_DAYS"].to_numpy(float)[-1]
+        for d, v in zip(mdf["date"], mdf[col]):
+            model_sum[d.month] = model_sum.get(d.month, 0.0) + float(v)
+            model_n[d.month] = model_n.get(d.month, 0) + 1
+        for d, v in zip(obs[(box, variable)]["date"], obs[(box, variable)]["value"]):
+            off = (d - base).days
+            if not (0 <= off <= hi):
+                continue
+            obs_sum[d.month] = obs_sum.get(d.month, 0.0) + float(v)
+            obs_n[d.month] = obs_n.get(d.month, 0) + 1
+    model_by_month = {m: model_sum[m] / model_n[m] for m in model_sum}
+    obs_by_month = {m: obs_sum[m] / obs_n[m] for m in obs_sum}
+    return phase_metrics(model_by_month, obs_by_month), model_by_month, obs_by_month
+
+
 def main(argv=None):
     here = os.path.dirname(os.path.abspath(__file__))
     p = argparse.ArgumentParser(description=__doc__,
@@ -333,6 +368,9 @@ def main(argv=None):
     p.add_argument("--no-plots", action="store_true", help="skip the PDF plots")
     p.add_argument("--by-season", action="store_true",
                    help="also print a per-(variable, season) breakdown (exposes obs sampling bias)")
+    p.add_argument("--phase", action="store_true",
+                   help="report seasonal-phase metrics (peak month, autumn/spring ratio, "
+                        "seasonal correlation) for chlorophyll-a")
     p.add_argument("--since", default=None, metavar="YYYY-MM-DD",
                    help="only score observations on/after this date (holdout scoring)")
     p.add_argument("--until", default=None, metavar="YYYY-MM-DD",
@@ -358,6 +396,13 @@ def main(argv=None):
         return 1
     if a.by_season:
         print_season_table(season_summary(a.outputs, a.base_year, obs))
+    if a.phase:
+        m, model_by_month, obs_by_month = phase_summary(a.outputs, a.base_year, obs)
+        print("\nSeasonal phase (chlorophyll-a, monthly climatology):")
+        print(format_report(m))
+        print(f"  {'month':>6}{'model':>9}{'obs':>9}")
+        for mo in sorted(set(model_by_month) & set(obs_by_month)):
+            print(f"  {mo:>6}{model_by_month[mo]:>9.1f}{obs_by_month[mo]:>9.1f}")
     os.makedirs(a.out, exist_ok=True)
     csv_path = os.path.join(a.out, "validation_metrics.csv")
     write_metrics_csv(rows, csv_path)
