@@ -46,7 +46,8 @@ subroutine ZOOPLANKTON &
             R_ZOO_GROWTH                  , &
             FAC_HYPOX_ZOO_D               , &
             ZOO_FOOD_MODEL                , &
-            KHS_FOOD_TOT_ZOO)
+            KHS_FOOD_TOT_ZOO              , &
+            ZOO_CLOSURE_REF)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_TYPES, only: t_zoo_params, t_phyto_env
@@ -76,6 +77,10 @@ subroutine ZOOPLANKTON &
     ! preferred food (mg C/L), used only when ZOO_FOOD_MODEL = 1.
     integer, intent(in) :: ZOO_FOOD_MODEL
     real(kind = DBL_PREC), intent(in) :: KHS_FOOD_TOT_ZOO
+    ! Reference biomass (mg C/L) of the quadratic closure used when
+    ! ZOO_FOOD_MODEL = 1; at ZOO_C = ZOO_CLOSURE_REF the specific death rate
+    ! equals KD_ZOO.
+    real(kind = DBL_PREC), intent(in) :: ZOO_CLOSURE_REF
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -436,6 +441,18 @@ subroutine ZOOPLANKTON &
     end if
 
     R_ZOO_DEATH = KD_ZOO * FAC_HYPOX_ZOO_D * ZOO_C
+
+    ! Density-dependent (quadratic) closure -- the mandatory companion of the
+    ! saturating food response. With linear closure a saturating grazer is the
+    ! textbook NPZ instability (Steele-type): once net growth is positive at any
+    ! biomass, food saturation cannot stop the runaway because the zoo's own
+    ! death feeds the detritus food pool. The quadratic term stands in for the
+    ! unmodelled fish predation. Normalized so that at ZOO_C = ZOO_CLOSURE_REF
+    ! the specific death rate equals the calibrated KD_ZOO (the observed summer
+    ! biomass scale), weaker below it, stronger above it.
+    if (ZOO_FOOD_MODEL > 0) then
+        R_ZOO_DEATH = KD_ZOO * FAC_HYPOX_ZOO_D * ZOO_C * (ZOO_C / ZOO_CLOSURE_REF)
+    end if
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn

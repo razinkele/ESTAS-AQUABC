@@ -194,6 +194,10 @@ module GLOBAL
     ! Half-saturation of TOTAL preferred food (mg C/L), used only when
     ! ZOO_FOOD_MODEL = 1.
     real(kind = DBL) :: KHS_FOOD_TOT_ZOO = 0.5D0
+    ! Quadratic-closure reference biomass (mg C/L), used only when
+    ! ZOO_FOOD_MODEL = 1; at ZOO_C = ZOO_CLOSURE_REF the specific zoo death
+    ! rate equals KD_ZOO_20 (temperature-corrected).
+    real(kind = DBL) :: ZOO_CLOSURE_REF = 0.05D0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4

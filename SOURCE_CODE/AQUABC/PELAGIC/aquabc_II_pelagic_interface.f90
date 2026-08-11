@@ -314,7 +314,8 @@ subroutine aquabc_run                       ( &
              CONSIDER_NON_OBLIGATORY_FIXERS, &
              CONSIDER_NOSTOCALES     , &
              0                       , &   ! ZOO_FOOD_MODEL: 0D path keeps the legacy food model
-             0.5D0)                        ! KHS_FOOD_TOT_ZOO (unused when the model is 0)
+             0.5D0                   , &   ! KHS_FOOD_TOT_ZOO (unused when the model is 0)
+             0.05D0)                       ! ZOO_CLOSURE_REF  (unused when the model is 0)
 
         STATE_VARIABLES = STATE_VARIABLES + DERIVATIVES * TIME_STEP
 

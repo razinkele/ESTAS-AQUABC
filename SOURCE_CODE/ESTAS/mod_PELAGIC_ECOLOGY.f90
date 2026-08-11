@@ -1164,6 +1164,9 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) KHS_FOOD_TOT_ZOO
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) ZOO_CLOSURE_REF
 900 continue
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
@@ -1510,7 +1513,8 @@ subroutine PELAGIC_KINETICS &
           CONSIDER_NON_OBLIGATORY_FIXERS                         , &
           CONSIDER_NOSTOCALES                                    , &
           ZOO_FOOD_MODEL                                         , &
-          KHS_FOOD_TOT_ZOO)
+          KHS_FOOD_TOT_ZOO                                       , &
+          ZOO_CLOSURE_REF)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)

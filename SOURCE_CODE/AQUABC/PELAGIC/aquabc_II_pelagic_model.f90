@@ -78,7 +78,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             CONSIDER_NON_OBLIGATORY_FIXERS  , &
             CONSIDER_NOSTOCALES             , &
             ZOO_FOOD_MODEL                  , &
-            KHS_FOOD_TOT_ZOO)
+            KHS_FOOD_TOT_ZOO                , &
+            ZOO_CLOSURE_REF)
 
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
@@ -149,6 +150,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! on preference-weighted total food (mg C/L). See the ZOOPLANKTON routine.
     integer                ,                          intent(in)    :: ZOO_FOOD_MODEL
     real(kind = DBL_PREC)  ,                          intent(in)    :: KHS_FOOD_TOT_ZOO
+    real(kind = DBL_PREC)  ,                          intent(in)    :: ZOO_CLOSURE_REF
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
@@ -1366,7 +1368,8 @@ contains
             R_ZOO_GROWTH(ns:ne)                  , &
             FAC_HYPOX_ZOO_D(ns:ne)               , &
             ZOO_FOOD_MODEL                       , &
-            KHS_FOOD_TOT_ZOO)
+            KHS_FOOD_TOT_ZOO                     , &
+            ZOO_CLOSURE_REF)
 
     R_ZOO_FEEDING_DIA(ns:ne) = &
         R_ZOO_FEEDING_DIA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
