@@ -160,10 +160,13 @@ Two consequences:
 - Every "loss-dominated" statement in this document is about the **local kinetic balance**,
   not about a population budget. NOST is likewise locally loss-dominated (growth 0.00257
   against losses 0.00517).
-- **Local rate parameters have less leverage over standing stock than the kinetic tables
-  suggest**, because the standing stock is substantially set by import. This converges with
-  the independently established conclusion in `cl29-epa-validation` that the effective lever
-  in this configuration is open-boundary forcing and the removal balance.
+- ~~**Local rate parameters have less leverage over standing stock than the kinetic tables
+  suggest**~~ — **this inference was wrong, and the experiment in §9 refuted it**: changing one
+  local growth parameter moved August biomass 13×. The budget *fact* stands (imports exceed the
+  local balance ~35×), but the inference from it did not follow, because the imported
+  concentration is not an external boundary condition — it is the neighbouring boxes'
+  concentration, which responds to the same parameter everywhere at once. Transport is an
+  *amplifier* of the whole field, not an independent supply that caps local leverage.
 
 ### 3.4 Autumn: a single parameter closes the season
 
@@ -395,6 +398,75 @@ cyanobacterium *Aphanizomenon flos-aquae* in Lake Biwa and Lake Yogo. *Phycologi
 Yamamoto, Y. (2009). Environmental factors that determine the occurrence and seasonal dynamics
 of *Aphanizomenon flos-aquae*. *Journal of Limnology*, 68(1), 122.
 https://doi.org/10.4081/jlimnol.2009.122
+
+---
+
+## 9. The experiment: T_min 18 → 8 °C fixes the inversion
+
+Run 2026-08-11. Identical configuration to the baseline in every respect except **one line**:
+`FIX_CYN_OPT_TEMP_LR` 18.0 → 8.0 in `WCONST_04.txt` (the value §8 supports; the diff against
+the baseline config is exactly that line). Same 11 years, same boxes, same harness; scored with
+the same validator against the same observations.
+
+### Phase metrics — the headline
+
+| | baseline | **T_min = 8** | observed |
+|---|---|---|---|
+| Chl-a peak month | January | **September** | August |
+| peak offset | +5 months | **+1 month** | — |
+| autumn/spring ratio | 0.63 | **1.15** | 2.06 |
+| seasonal r | −0.70 | **+0.40** | — |
+
+Monthly climatology (µg/L): August model **52.8** vs obs 50.8; September **55.8** vs 50.2. The
+six-month inversion is gone.
+
+### The fixer bloom
+
+`FIX_CYN_C` monthly mean (mg C/L, 4 boxes, 11 yr):
+
+| | Jun | Jul | Aug | Sep | Oct | Nov |
+|---|---|---|---|---|---|---|
+| baseline | 0.010 | 0.030 | 0.100 | 0.031 | 0.006 | 0.007 |
+| **T_min = 8** | 0.041 | **0.448** | **1.308** | **1.529** | **0.680** | 0.067 |
+| ratio | 4.3× | 15× | 13× | 49× | **106×** | 10× |
+
+The bloom now peaks in August–September at ~1.3–1.5 mg C/L against the observed ~2 mg C/L —
+the ~10× amplitude deficit is reduced to ~25–35 % — and holds a substantial October population
+where the baseline had none. Spring is untouched (ratios ≈ 1.0 in Jan–Apr), so the change did
+exactly what the CTMI arithmetic predicted and nothing else. Competitive rebalancing is
+visible and plausible: CYN −43 % in August, DIA −49 % in Sep–Oct (nutrient drawdown by the
+fixers), NOST slightly down.
+
+### Full validation — what it costs
+
+| variable | baseline RMSE / bias | T_min=8 RMSE / bias |
+|---|---|---|
+| **PO4** | 0.0326 / +0.0219 | **0.0241 / +0.0113** |
+| **CHLA** | 29.2 / −2.75 | **27.0** / +6.78 |
+| NH4 | 0.0548 / +0.0044 | 0.0596 / +0.0192 |
+| NO3 | 0.476 / +0.023 | 0.474 / +0.035 |
+| DO | 8.00 / +0.29 | 8.03 / +0.51 |
+| TN | 1.05 / +0.27 | 1.03 / +0.48 |
+| TP / Si | unchanged | unchanged |
+
+**PO4 improves substantially** — RMSE −26 %, bias halved. The chronic summer-PO4
+over-prediction (BACKLOG §3's "benthic P retention" frontier) was partly the missing fixer
+bloom: diazotrophs that actually grow consume the late-summer phosphorus pool. The cost is a
+modest rise in NH4/TN/DO biases, which is mechanistically expected — nitrogen fixation adds
+new nitrogen to the system, and a real bloom respires and remineralizes. CHLA RMSE improves
+8 %; its bias flips from −2.75 to +6.78 because the winter diatom excess still stands beneath
+the recovered autumn.
+
+### What remains open
+
+1. **October is still low** (32.5 vs 46.4 µg/L): NOST stays gated by its own
+   `NOST_VEG_HET_OPT_TEMP_LR = 16 °C`, and the same species-level literature argument applies
+   to it. A companion run lowering it is the obvious next experiment.
+2. **The winter half is untouched** (January 46.5 vs 17.6 µg/L), as expected — that is the
+   diatom cardinal-temperature problem (§2), a separate decision.
+3. This experiment changed a scratch config only. **Adopting T_min = 8 °C into `INPUTS_CL29`
+   is a model-behaviour change and a user decision**, ideally with a recalibration pass after
+   it, since the DE work to date was conditioned on fixers that could not grow.
 
 ---
 
