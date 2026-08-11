@@ -457,11 +457,28 @@ new nitrogen to the system, and a real bloom respires and remineralizes. CHLA RM
 8 %; its bias flips from −2.75 to +6.78 because the winter diatom excess still stands beneath
 the recovered autumn.
 
+### Companion experiment: NOST T_min 16 → 8 °C does nothing — it is inoculum-limited
+
+Run 2026-08-11, same harness: `FIX_CYN_OPT_TEMP_LR = 8` **and** `NOST_VEG_HET_OPT_TEMP_LR`
+16 → 8 (two-line diff, verified). Result: **phase metrics and aggregate scores identical** to
+the FIX_CYN-only run (peak 9, ratio 1.15, r +0.40; PO4 RMSE 0.0241; CHLA 26.96). NOST itself
+rises ×2–4 in its season but from a base three orders below FIX_CYN (peak 0.10 vs 1.5 mg C/L);
+total phytoplankton moves ≤1 % in every month and October is unchanged (×0.999).
+
+The akinete pool says why: `AKI_C` falls **0.73 → 0.002 mg C/L by August in both runs**. The
+NOST bloom is capped by its germination inoculum, which is exhausted before autumn begins —
+by October there is nothing left to germinate, so no growth-side T_min can create an autumn
+population. **NOST's autumn is a life-cycle problem (akinete formation/germination timing),
+not a growth-kinetics problem** — consistent with the CLC-model literature
+(`docs/Diazotroph_phenology_modelling_review.md`), which holds blooms into autumn via staged
+transitions rather than temperature response. Reverting NOST T_min to 16 for adoption
+purposes loses nothing.
+
 ### What remains open
 
-1. **October is still low** (32.5 vs 46.4 µg/L): NOST stays gated by its own
-   `NOST_VEG_HET_OPT_TEMP_LR = 16 °C`, and the same species-level literature argument applies
-   to it. A companion run lowering it is the obvious next experiment.
+1. **October is still low** (32.5 vs 46.4 µg/L). ~~NOST T_min~~ — ruled out above. The residual
+   is FIX_CYN's remaining amplitude shortfall (0.68 vs ~2 mg C/L observed-equivalent in
+   October) plus, if pursued structurally, the NOST akinete life-cycle timing.
 2. **The winter half is untouched** (January 46.5 vs 17.6 µg/L), as expected — that is the
    diatom cardinal-temperature problem (§2), a separate decision.
 3. This experiment changed a scratch config only. **Adopting T_min = 8 °C into `INPUTS_CL29`
