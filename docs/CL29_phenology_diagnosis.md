@@ -532,6 +532,48 @@ below observations (§9, akinete life-cycle).
 
 ---
 
+## 11. The winter half: the diatom-envelope experiment (informative, NOT adopted)
+
+Run 2026-08-11 against the adopted §10 config. Motivation: the observed diatom carbon is
+**two-sided against the model** — February obs 0.28 vs model 0.94 (3.4× excess) *and* August
+obs 0.54 vs model 0.006 (90× deficit). The lagoon's diatom record is a year-round succession
+(cool-water *Stephanodiscus* spring guild; warm-water *Actinocyclus normanii* /
+*Skeletonema subsalsum* late-summer guild), while the model's single DIA group carries a pure
+cold-water envelope (−2, 10, 21). Literature anchors: diatom T_opt ≈ 14 °C for the cool guild
+(hourly river-phytoplankton model, 10.1029/2020wr028773); the warm guild has qualitative
+"late-summer, warm, nutrient-rich" support (Vesijärvi record, 10.1080/09670269710001737289;
+Krammer & Lange-Bertalot ecology via 10.3897/phytokeys.178.64426) but **no clean cardinal
+triple** — a weaker evidentiary basis than §8's, and it stays flagged as such.
+
+**Experiment:** DIA CTMI (−2, 10, 21) → (−2, 14, 28), two lines, validity margin 1→2.
+
+**What improved** (vs §10 adopted): Si RMSE 1.54→1.37, bias +1.13→+0.85 — confirming the
+missing-summer-Si-consumer mechanism; PO4 RMSE 0.0240→0.0206; NH4, TN, TP all better; winter
+Chl-a Jan 46.5→35.3, Feb 43.9→37.6 (obs 17.6/10.2) — a ~25 % cut of the winter excess. Summer
+diatoms appear at roughly the observed order: Jul 0.48 (obs 0.37), Aug 0.27 (obs 0.54).
+
+**Why it is not adoptable: June.** Observed diatoms *collapse* in June (0.17 mg C/L, the
+annual minimum); the widened envelope instead carries 0.71 through June–July, and that early
+surge consumes the phosphorus ahead of the diazotrophs — FIX_CYN_C falls ~40 % across its
+season (Aug 1.58→0.97, Sep 1.75→1.28; bias +0.03→−0.21) and CYN_C worsens too (−0.77→−0.85).
+The phase ratio slips 1.26→1.10. Trading the recovered N-fixation process for nutrient RMSE
+would invert this arc's priorities, so the live config keeps (−2, 10, 21).
+
+**What the experiment establishes:**
+
+1. **Temperature is only ~a quarter of the winter excess.** With winter growth cut 36 % the
+   Jan–Feb Chl-a is still 2–3.7× observed. The remaining drivers are the known structural
+   pair: the 2× too-transparent light climate (`K_B_E` — winter is exactly when background
+   extinction dominates self-shading) and the absent grazing.
+2. **The summer diatom guild is real and its absence costs Si, PO4 and NH4 skill** — but
+   reproducing a June collapse plus an August return in one group is a succession structure
+   (a second diatom guild, or seasonally staged traits), not a parameter. Same class as the
+   NOST akinete finding (§9): CL29's remaining phenology errors are life-cycle/guild
+   structure, not rate constants.
+3. Any future second-diatom-guild design should expect the Si and PO4 gains measured here.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
