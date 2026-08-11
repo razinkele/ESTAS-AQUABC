@@ -614,6 +614,49 @@ corrupts the objective — the first `phyto_zoo` run was killed and relaunched f
 
 ---
 
+## 13. Route B implemented: saturating food response + quadratic closure
+
+(2026-08-11, branch `feature/zoo-saturating-food`, commits `ddba406` + `99ce233`.)
+
+**The change** (opt-in, `ZOO_FOOD_MODEL = 1` in `PELAGIC_MODEL_OPTIONS.txt`; default path
+byte-identical, gated twice): total zoo ingestion saturates on preference-weighted total food
+(Fasham-type, `FF = F/(F + KHS_FOOD_TOT_ZOO)`), the per-prey split keeps the active-switching
+weights, **and the closure becomes quadratic** —
+`R_DEATH = KD_ZOO·ZOO_C·(ZOO_C/ZOO_CLOSURE_REF)`. The closure is not optional: the first
+tuned probe with linear closure ran to ZOO_C ~10⁷ mg C/L — the textbook Steele-type NPZ
+instability, amplified here by the zoo→death→detritus→food loop. The legacy
+preference-diluted cap had been the accidental stabilizer, which is worth stating plainly:
+**the old formulation's zoo ceiling and the model's numerical stability were the same
+artifact.**
+
+**Verification** (full 11-year record, adopted §10 config otherwise):
+
+| | adopted (legacy zoo) | structure @ defaults | **structure + tuned** | obs |
+|---|---|---|---|---|
+| ZOO_C bias | −0.0375 | −0.0256 | **+0.0059** | — |
+| ZOO_C June/July/Aug | 0.010/0.009/0.009 | 0.021/0.022/0.025 | **0.058/0.070/0.079** | 0.088/0.079/0.054 |
+| seasonal r (Chl-a) | +0.53 | +0.54 | **+0.57** | — |
+| autumn/spring | 1.26 | 1.27 | **1.34** | 2.06 |
+| FIX_CYN_C bias | +0.030 | +0.033 | +0.104 | — |
+| CHLA RMSE | 26.11 | 26.11 | 26.92 | — |
+| PO4 RMSE | 0.0240 | 0.0241 | 0.0266 | — |
+
+"Tuned" = KG_ZOO 0.6, KD_ZOO 0.08 (at the closure reference 0.05 mg C/L), KHS 0.15 — scale
+values, not a calibration. **The zooplankton is alive for the first time**: a real seasonal
+cycle at the observed magnitude (bias ≈ 0, best-ever RMSE), and the chlorophyll phase
+*improves* to its best-ever seasonal correlation while the fixer bloom stays intact. Costs are
+modest and mechanistically expected (a living zoo recycles nutrients: PO4 +11 % RMSE, CHLA
++3 %) — exactly the kind of shift the next N-cycle recalibration pass absorbs, as §10's did.
+The model zoo peaks in August against the observed June — it follows the model's phyto phase,
+so it should shift left with any further phenology gains.
+
+**Open decisions:** enable `ZOO_FOOD_MODEL = 1` + the three constants in the CL29 config
+(user call, like §10's adoption), then a recalibration pass (`phyto_zoo` + N-cycle under the
+new response). The zoo-trio compensation values from §12 are superseded by this and should
+not be adopted.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth

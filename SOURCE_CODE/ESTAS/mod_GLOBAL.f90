@@ -186,6 +186,18 @@ module GLOBAL
     integer :: CYANO_BOUYANT_STATE_SIMULATION
     integer :: CONSIDER_NON_OBLIGATORY_FIXERS
     integer :: CONSIDER_NOSTOCALES
+
+    ! Zooplankton food-limitation model (docs/CL29_phenology_diagnosis.md par. 12):
+    ! 0 = legacy summed preference-diluted Monods (default, byte-identical),
+    ! 1 = saturating Fasham-type response on preference-weighted total food.
+    integer :: ZOO_FOOD_MODEL = 0
+    ! Half-saturation of TOTAL preferred food (mg C/L), used only when
+    ! ZOO_FOOD_MODEL = 1.
+    real(kind = DBL) :: KHS_FOOD_TOT_ZOO = 0.5D0
+    ! Quadratic-closure reference biomass (mg C/L), used only when
+    ! ZOO_FOOD_MODEL = 1; at ZOO_C = ZOO_CLOSURE_REF the specific zoo death
+    ! rate equals KD_ZOO_20 (temperature-corrected).
+    real(kind = DBL) :: ZOO_CLOSURE_REF = 0.05D0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4

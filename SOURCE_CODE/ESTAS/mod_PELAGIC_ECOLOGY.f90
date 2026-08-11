@@ -1154,7 +1154,26 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! in the file and before the trailing CYN_ALLELOPATHY_FILE_NAME lines.
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) FEPO4_KSP_LOG10
+
+    ! Zooplankton food-limitation model (0 = legacy summed Monods, 1 = saturating
+    ! total-food response) and its total-food half saturation (mg C/L). Read
+    ! gracefully like the two options above; option files without these lines keep
+    ! the defaults set in mod_GLOBAL (0 and 0.5 -> legacy, byte-identical).
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) ZOO_FOOD_MODEL
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) KHS_FOOD_TOT_ZOO
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) ZOO_CLOSURE_REF
 900 continue
+    if (ZOO_FOOD_MODEL > 0) then
+        write(*,*) 'Zooplankton food model: saturating total-food response, ', &
+                   'KHS_FOOD_TOT_ZOO =', KHS_FOOD_TOT_ZOO
+    else
+        write(*,*) 'Zooplankton food model: legacy summed per-prey Monods (default).'
+    end if
     if (USE_CTMI_TEMP) then
         write(*,*) 'Temperature model: CTMI (Cardinal Temperature Model).'
     else
@@ -1492,7 +1511,10 @@ subroutine PELAGIC_KINETICS &
           LIGHT_EXTINCTION_OPTION                                , &
           CYANO_BOUYANT_STATE_SIMULATION                         , &
           CONSIDER_NON_OBLIGATORY_FIXERS                         , &
-          CONSIDER_NOSTOCALES)
+          CONSIDER_NOSTOCALES                                    , &
+          ZOO_FOOD_MODEL                                         , &
+          KHS_FOOD_TOT_ZOO                                       , &
+          ZOO_CLOSURE_REF)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)

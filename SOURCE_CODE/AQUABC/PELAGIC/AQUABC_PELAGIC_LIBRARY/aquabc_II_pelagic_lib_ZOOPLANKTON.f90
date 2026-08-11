@@ -44,7 +44,10 @@ subroutine ZOOPLANKTON &
             ACTUAL_ZOO_N_TO_C             , &
             ACTUAL_ZOO_P_TO_C             , &
             R_ZOO_GROWTH                  , &
-            FAC_HYPOX_ZOO_D)
+            FAC_HYPOX_ZOO_D               , &
+            ZOO_FOOD_MODEL                , &
+            KHS_FOOD_TOT_ZOO              , &
+            ZOO_CLOSURE_REF)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_TYPES, only: t_zoo_params, t_phyto_env
@@ -66,6 +69,18 @@ subroutine ZOOPLANKTON &
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: NOST_VEG_HET_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: DET_PART_ORG_C
     real(kind = DBL_PREC), dimension(nkn), intent(in) :: ZOO_C
+
+    ! Food-limitation model switch: 0 = legacy summed preference-diluted Monods
+    ! (default), 1 = saturating total-food response (Fasham-type; total ingestion
+    ! saturates on preference-weighted total food, diet split keeps the active-
+    ! switching weights). KHS_FOOD_TOT_ZOO is the half saturation of TOTAL
+    ! preferred food (mg C/L), used only when ZOO_FOOD_MODEL = 1.
+    integer, intent(in) :: ZOO_FOOD_MODEL
+    real(kind = DBL_PREC), intent(in) :: KHS_FOOD_TOT_ZOO
+    ! Reference biomass (mg C/L) of the quadratic closure used when
+    ! ZOO_FOOD_MODEL = 1; at ZOO_C = ZOO_CLOSURE_REF the specific death rate
+    ! equals KD_ZOO.
+    real(kind = DBL_PREC), intent(in) :: ZOO_CLOSURE_REF
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -111,6 +126,8 @@ subroutine ZOOPLANKTON &
     ! Active switching model variables
     real(kind = DBL_PREC), dimension(nkn) :: TOTAL_FOOD
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_DIA
+    ! work arrays for the saturating total-food response (ZOO_FOOD_MODEL = 1)
+    real(kind = DBL_PREC), dimension(nkn) :: FF_TOT_ZOO, W_SUM_ZOO
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_CYN
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_OPA
     real(kind = DBL_PREC), dimension(nkn) :: DYN_PREF_FIX_CYN
@@ -280,6 +297,51 @@ subroutine ZOOPLANKTON &
         FOOD_FACTOR_ZOO_DET_PART_ORG_C = 0.0D0
     end where
 
+    ! =========================================================================
+    ! SATURATING TOTAL-FOOD RESPONSE (ZOO_FOOD_MODEL = 1, opt-in)
+    !
+    ! The legacy factors above SUM preference-diluted per-prey Monods, so their
+    ! total is bounded by the preference weights (~0.9 at infinite food of every
+    ! type, 0.18-0.25 at any composition CL29 produces) and feeding can never
+    ! outrun mortality (docs/CL29_phenology_diagnosis.md par. 12). Here the
+    ! TOTAL ingestion saturates on preference-weighted total food (Fasham-type)
+    ! and the per-prey split keeps the active-switching weights, so the diet
+    ! composition behaviour is unchanged while sum(FOOD_FACTOR_i) = FF_TOT -> 1
+    ! when food is plentiful. The severe-hypoxia guard further down still zeroes
+    ! the feeding rates unconditionally.
+    ! =========================================================================
+    if (ZOO_FOOD_MODEL > 0) then
+        FF_TOT_ZOO = TOTAL_FOOD / (TOTAL_FOOD + KHS_FOOD_TOT_ZOO)
+
+        ! switching-weighted availabilities (reuse the factor arrays as work space)
+        FOOD_FACTOR_ZOO_DIA            = DYN_PREF_DIA     * max(DIA_C            - FOOD_MIN_ZOO, 0.0D0)
+        FOOD_FACTOR_ZOO_CYN            = DYN_PREF_CYN     * max(CYN_C            - FOOD_MIN_ZOO, 0.0D0)
+        FOOD_FACTOR_ZOO_OPA            = DYN_PREF_OPA     * max(OPA_C            - FOOD_MIN_ZOO, 0.0D0)
+        FOOD_FACTOR_ZOO_FIX_CYN        = DYN_PREF_FIX_CYN * max(FIX_CYN_C        - FOOD_MIN_ZOO, 0.0D0)
+        FOOD_FACTOR_ZOO_NOST_VEG_HET   = DYN_PREF_NOST    * max(NOST_VEG_HET_C   - FOOD_MIN_ZOO, 0.0D0)
+        FOOD_FACTOR_ZOO_DET_PART_ORG_C = DYN_PREF_DET     * max(DET_PART_ORG_C   - FOOD_MIN_ZOO, 0.0D0)
+
+        W_SUM_ZOO = FOOD_FACTOR_ZOO_DIA + FOOD_FACTOR_ZOO_CYN + FOOD_FACTOR_ZOO_OPA + &
+                    FOOD_FACTOR_ZOO_FIX_CYN + FOOD_FACTOR_ZOO_NOST_VEG_HET + &
+                    FOOD_FACTOR_ZOO_DET_PART_ORG_C
+
+        where (W_SUM_ZOO > 1.0D-10)
+            FOOD_FACTOR_ZOO_DIA            = FF_TOT_ZOO * FOOD_FACTOR_ZOO_DIA            / W_SUM_ZOO
+            FOOD_FACTOR_ZOO_CYN            = FF_TOT_ZOO * FOOD_FACTOR_ZOO_CYN            / W_SUM_ZOO
+            FOOD_FACTOR_ZOO_OPA            = FF_TOT_ZOO * FOOD_FACTOR_ZOO_OPA            / W_SUM_ZOO
+            FOOD_FACTOR_ZOO_FIX_CYN        = FF_TOT_ZOO * FOOD_FACTOR_ZOO_FIX_CYN        / W_SUM_ZOO
+            FOOD_FACTOR_ZOO_NOST_VEG_HET   = FF_TOT_ZOO * FOOD_FACTOR_ZOO_NOST_VEG_HET   / W_SUM_ZOO
+            FOOD_FACTOR_ZOO_DET_PART_ORG_C = FF_TOT_ZOO * FOOD_FACTOR_ZOO_DET_PART_ORG_C / W_SUM_ZOO
+        elsewhere
+            FOOD_FACTOR_ZOO_DIA            = 0.0D0
+            FOOD_FACTOR_ZOO_CYN            = 0.0D0
+            FOOD_FACTOR_ZOO_OPA            = 0.0D0
+            FOOD_FACTOR_ZOO_FIX_CYN        = 0.0D0
+            FOOD_FACTOR_ZOO_NOST_VEG_HET   = 0.0D0
+            FOOD_FACTOR_ZOO_DET_PART_ORG_C = 0.0D0
+        end where
+    end if
+
     R_ZOO_FEEDING_DIA            = KG_ZOO_DIA            * FOOD_FACTOR_ZOO_DIA            * ZOO_C
     R_ZOO_FEEDING_CYN            = KG_ZOO_CYN            * FOOD_FACTOR_ZOO_CYN            * ZOO_C
     R_ZOO_FEEDING_FIX_CYN        = KG_ZOO_FIX_CYN        * FOOD_FACTOR_ZOO_FIX_CYN        * ZOO_C
@@ -379,6 +441,18 @@ subroutine ZOOPLANKTON &
     end if
 
     R_ZOO_DEATH = KD_ZOO * FAC_HYPOX_ZOO_D * ZOO_C
+
+    ! Density-dependent (quadratic) closure -- the mandatory companion of the
+    ! saturating food response. With linear closure a saturating grazer is the
+    ! textbook NPZ instability (Steele-type): once net growth is positive at any
+    ! biomass, food saturation cannot stop the runaway because the zoo's own
+    ! death feeds the detritus food pool. The quadratic term stands in for the
+    ! unmodelled fish predation. Normalized so that at ZOO_C = ZOO_CLOSURE_REF
+    ! the specific death rate equals the calibrated KD_ZOO (the observed summer
+    ! biomass scale), weaker below it, stronger above it.
+    if (ZOO_FOOD_MODEL > 0) then
+        R_ZOO_DEATH = KD_ZOO * FAC_HYPOX_ZOO_D * ZOO_C * (ZOO_C / ZOO_CLOSURE_REF)
+    end if
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn
