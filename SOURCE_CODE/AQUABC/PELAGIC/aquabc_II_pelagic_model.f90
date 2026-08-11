@@ -76,7 +76,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
             LIGHT_EXTINCTION_OPTION         , &
             CYANO_BOUYANT_STATE_SIMULATION  , &
             CONSIDER_NON_OBLIGATORY_FIXERS  , &
-            CONSIDER_NOSTOCALES)
+            CONSIDER_NOSTOCALES             , &
+            ZOO_FOOD_MODEL                  , &
+            KHS_FOOD_TOT_ZOO)
 
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
@@ -142,6 +144,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer                ,                          intent(in)    :: CYANO_BOUYANT_STATE_SIMULATION
     integer                ,                          intent(in)    :: CONSIDER_NON_OBLIGATORY_FIXERS
     integer                ,                          intent(in)    :: CONSIDER_NOSTOCALES
+    ! Zooplankton food-limitation model: 0 legacy summed Monods (default),
+    ! 1 saturating total-food response; KHS_FOOD_TOT_ZOO = its half saturation
+    ! on preference-weighted total food (mg C/L). See the ZOOPLANKTON routine.
+    integer                ,                          intent(in)    :: ZOO_FOOD_MODEL
+    real(kind = DBL_PREC)  ,                          intent(in)    :: KHS_FOOD_TOT_ZOO
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
@@ -1357,7 +1364,9 @@ contains
             ACTUAL_ZOO_N_TO_C(ns:ne)             , &
             ACTUAL_ZOO_P_TO_C(ns:ne)             , &
             R_ZOO_GROWTH(ns:ne)                  , &
-            FAC_HYPOX_ZOO_D(ns:ne))
+            FAC_HYPOX_ZOO_D(ns:ne)               , &
+            ZOO_FOOD_MODEL                       , &
+            KHS_FOOD_TOT_ZOO)
 
     R_ZOO_FEEDING_DIA(ns:ne) = &
         R_ZOO_FEEDING_DIA(ns:ne) * GROWTH_INHIB_FACTOR_ZOO(ns:ne)
