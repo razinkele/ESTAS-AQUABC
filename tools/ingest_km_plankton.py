@@ -16,6 +16,9 @@ Sources (under ``curonian/DATA``):
     the 2015 empirical ratios, and depth/replicate samples averaged per (station, date).
   * ``.../Zooplanktonas_KM_BJ_2023*.xls`` — species-level zooplankton abundance + wet
     biomass (mg/m3) -> total ZOO_C (mg C/L) with a documented wet->carbon factor.
+  * ``JTD/zooplankton/extracted/*ooplanktonas*`` — the annual "patikrinta" KM zoo
+    workbooks 2009-2025 (two layouts: flat post-2017, band-headed 2012/2016;
+    2009-2011 are abundance-only and are skipped with a message).
   * ``JTD/monitoringasjsonl`` — the official AAA open-data NDJSON export
     (``datasets/gov/aaa/juros_mariu_monitoringas``): systematic species-level
     phytoplankton (2016-2024) and zooplankton (2016-2024) biomass at the LTK stations,
@@ -215,10 +218,19 @@ def ratios_from_2015(frame):
 
 # --- species-level monitoring files ---------------------------------------------------
 
+def _norm_hdr(s):
+    """Header text -> lowercase with NBSP removed and whitespace runs collapsed.
+
+    The KM exports are hand-made: the same column arrives as ``MV kodas``,
+    ``MV    kodas`` and ``MV\xa0kodas`` in different years, so raw substring
+    matching silently loses whole workbooks (2014 did exactly that)."""
+    return re.sub(r"\s+", " ", str(s).replace("\xa0", " ")).lower()
+
+
 def _col(df, *subs):
-    """First column whose header contains all substrings (case/NBSP-insensitive)."""
+    """First column whose header contains all substrings (case/space/NBSP-insensitive)."""
     for c in df.columns:
-        h = str(c).replace("\xa0", " ").lower()
+        h = _norm_hdr(c)
         if all(s in h for s in subs):
             return c
     return None
@@ -276,7 +288,10 @@ def zoo_by_sd(df):
 def load_species_zoo(path):
     eng = "xlrd" if path.lower().endswith(".xls") else None
     df = pd.ExcelFile(path, engine=eng).parse(0)
-    cols = {"sample": _col(df, "mėginio numeris"), "date": _col(df, "paėmimo"),
+    # sample: 2020+ says "Mėginio numeris", 2013-2019 "Tyrimo regis(t)racijos Nr."
+    # ("racijos nr" also covers the 2014 export's 'regisracijos' typo)
+    cols = {"sample": _col(df, "mėginio numeris") or _col(df, "racijos nr"),
+            "date": _col(df, "paėmimo"),
             "station": _col(df, "mv kodas"), "biomass": _col(df, "biomas")}
     missing = [k for k, v in cols.items() if v is None]
     if missing:
@@ -286,6 +301,76 @@ def load_species_zoo(path):
     out["biomass"] = pd.to_numeric(out["biomass"], errors="coerce")
     out["station"] = out["station"].astype(str).str.strip()
     return out.dropna(subset=["date"])
+
+
+def band_zoo_from_frame(raw, name="workbook"):
+    """Pre-2017 KM zoo export (band headers, merged cells) -> species frame, or None.
+
+    Layout (2012/2016 vintage): a header band row carries 'Registracijos Nr.',
+    'Vietos Nr.' and the date column; 'Gausumas' and 'Biomasė' are merged band
+    cells whose per-sex/total sub-columns are named one row BELOW, so the total
+    biomass lives under the rightmost 'Bendra(s)' sub-header at or right of the
+    'Biomasė' band cell. 2009-2011 exports carry abundance bands only (no
+    'Biomasė' anywhere) -> returns None; converting ind/m3 to biomass would need
+    per-taxon individual masses, and those years predate the model window anyway.
+
+    Merged cells leave sample/station/date blank on continuation rows ->
+    forward-fill. Stations are the bare KM numbers (1, 2, 5, ...) -> 'LTK<n>',
+    the same stations the LTK->box map already carries.
+    """
+    def find_cell(pattern, max_row=6):
+        for i in range(min(max_row, len(raw))):
+            for j, v in enumerate(raw.iloc[i]):
+                if re.search(pattern, _norm_hdr(v)):
+                    return i, j
+        return None
+
+    biom = find_cell(r"biomas")
+    if biom is None:
+        print(f"  ! {name}: abundance-only export (no 'Biomasė' band), skipped")
+        return None
+    hdr = find_cell(r"vietos")
+    sample = find_cell(r"registracijos nr")
+    # sampling date, never the analysis date: 'ėmimo data' covers both 'paėmimo'
+    # and the 2012 export's 'pėmimo' typo while excluding 'atlikimo data';
+    # fall back to a bare 'Data,' (2016 vintage has no analysis-date column)
+    date = find_cell(r"ėmimo data") or find_cell(r"\bdata,")
+    if hdr is None or sample is None or date is None:
+        raise ValueError(f"{name}: band header cells not found "
+                         f"(vietos={hdr}, sample={sample}, date={date})")
+
+    # rightmost 'Bendr*' sub-header at/right of the Biomasė band = total mg/m3
+    sub_row = biom[0] + 1
+    bend = [j for j, v in enumerate(raw.iloc[sub_row])
+            if j >= biom[1] and re.search(r"bendr", _norm_hdr(v))]
+    bio_col = max(bend) if bend else None
+    if bio_col is None:
+        raise ValueError(f"{name}: no 'Bendra' sub-column under the Biomasė band")
+
+    body = raw.iloc[sub_row + 1:, :].copy()
+    out = pd.DataFrame({
+        "sample": body[sample[1]].ffill(),
+        "date": pd.to_datetime(body[date[1]].ffill(), errors="coerce").dt.date,
+        "station": pd.to_numeric(body[hdr[1]].ffill(), errors="coerce"),
+        "biomass": pd.to_numeric(body[bio_col], errors="coerce"),
+    })
+    out = out.dropna(subset=["date", "station", "biomass"])
+    out["station"] = out["station"].astype(int).map("LTK{}".format)
+    return out
+
+
+def load_zoo_workbook(path):
+    """Any KM zoo workbook -> species frame (sample/date/station/biomass) or None.
+
+    Tries the flat post-2017 layout first, then the pre-2017 band layout;
+    abundance-only exports come back as None.
+    """
+    try:
+        return load_species_zoo(path)
+    except ValueError:
+        eng = "xlrd" if path.lower().endswith(".xls") else None
+        raw = pd.ExcelFile(path, engine=eng).parse(0, header=None)
+        return band_zoo_from_frame(raw, os.path.basename(path))
 
 
 # --- AAA open-data NDJSON export -----------------------------------------------------
@@ -455,6 +540,9 @@ def main(argv=None):
     p.add_argument("--jsonl", default=None,
                    help="AAA monitoring NDJSON dump (default <data-root>/JTD/monitoringasjsonl; "
                         "pass an empty string to skip)")
+    p.add_argument("--zoo-archive", default=None,
+                   help="folder of annual KM zoo workbooks 2009-2025 (default "
+                        "<data-root>/JTD/zooplankton/extracted; empty string to skip)")
     p.add_argument("--strict", action="store_true",
                    help="drop low-confidence 2015 campaign stations")
     a = p.parse_args(argv)
@@ -466,6 +554,8 @@ def main(argv=None):
     fzoo = pick_latest(glob.glob(os.path.join(bio, "Zooplanktonas_KM*")))
     if a.jsonl is None:
         a.jsonl = os.path.join(a.data_root, "JTD", "monitoringasjsonl")
+    if a.zoo_archive is None:
+        a.zoo_archive = os.path.join(a.data_root, "JTD", "zooplankton", "extracted")
 
     ltk_map = load_station_box(a.epa_map)   # station -> (box, region)
 
@@ -521,6 +611,20 @@ def main(argv=None):
     if fzoo:
         wet, n = zoo_by_sd(load_species_zoo(fzoo))
         zoo_sources.append((os.path.basename(fzoo), wet, n))
+    # annual "patikrinta" archive 2009-2025: after the established BJ workbook
+    # (identical keys defer to it) but before the NDJSON dump. Sorted by the
+    # year in the filename so the precedence order is deterministic.
+    if a.zoo_archive and os.path.isdir(a.zoo_archive):
+        arch = sorted(glob.glob(os.path.join(a.zoo_archive, "*ooplanktonas*")),
+                      key=lambda p: (re.search(r"20\d\d", os.path.basename(p)) or [""])[0])
+        for f in arch:
+            zdf = load_zoo_workbook(f)
+            if zdf is None or not len(zdf):
+                continue
+            wet, n = zoo_by_sd(zdf)
+            zoo_sources.append((os.path.basename(f), wet, n))
+    elif a.zoo_archive:
+        print(f"! zoo archive not found ({a.zoo_archive}), skipping")
     if a.jsonl and os.path.exists(a.jsonl):
         fdf, zdf = load_jsonl_plankton(a.jsonl)
         if len(fdf):

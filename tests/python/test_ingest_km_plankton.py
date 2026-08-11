@@ -9,7 +9,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "tools"))
 from ingest_km_plankton import (  # noqa: E402
     DEFAULT_RATIOS,
     ZOO_C_PER_WET,
+    _col,
     aggregate_group_carbon,
+    band_zoo_from_frame,
     blocks_from_2015,
     class_to_group,
     merge_with_precedence,
@@ -194,3 +196,41 @@ def test_merge_with_precedence_first_source_wins():
     out = merge_with_precedence([("xls", xls), ("jsonl", jsonl)])
     assert out[("LTK2", dt.date(2022, 6, 1))] == ("xls", {"DIA": 1.0})
     assert out[("LTK5", dt.date(2020, 7, 1))] == ("jsonl", {"DIA": 2.0})
+
+
+def test_col_matcher_collapses_whitespace_runs():
+    # the 2014 export writes 'MV    kodas' (multiple spaces); 2021+ uses NBSP
+    df = pd.DataFrame(columns=["MV    kodas", "Biomasė,\xa0 mg/m3"])
+    assert _col(df, "mv kodas") == "MV    kodas"
+    assert _col(df, "biomas") == "Biomasė,\xa0 mg/m3"
+
+
+def _band_frame(with_biomass=True):
+    """Minimal 2012-vintage band layout: header band, sub-header, merged cells."""
+    hdr = ["Registracijos Nr.", "Vietos Nr.", "Mėginio pėmimo data, mmmm.mm.dd",
+           "Tyrimo atlikimo data, mmmm.mm.dd", "Gausumas", None, "Biomasė", None]
+    sub = [None, None, None, None, "Bendras, ind./m3", "% nuo bendro",
+           "vyr. lyties, mg/m3", "Bendra, mg/m3"]
+    if not with_biomass:                       # 2009-2011: abundance bands only
+        hdr[6] = hdr[7] = None
+        sub[6], sub[7] = "Bendras, ind./m3", "% nuo bendro"
+    rows = [
+        ["1-12-339", 1, "2012-04-19", "2012-06-20", 1314, 2.2, 0.1, 0.205],
+        [None, None, None, None, 119, 0.2, 0.0, 0.031],      # merged cells -> ffill
+        ["1-12-340", 5, "2012-07-03", "2012-08-01", 75, 1.1, 0.4, 1.7],
+    ]
+    return pd.DataFrame([hdr, sub] + rows)
+
+
+def test_band_zoo_parses_layout_with_merged_cells():
+    out = band_zoo_from_frame(_band_frame())
+    assert list(out["station"]) == ["LTK1", "LTK1", "LTK5"]
+    assert list(out["sample"]) == ["1-12-339", "1-12-339", "1-12-340"]
+    # sampling date is forward-filled and is the SAMPLING date, not analysis date
+    assert list(out["date"])[:2] == [dt.date(2012, 4, 19)] * 2
+    # biomass is the rightmost 'Bendra' under the Biomasė band, not the per-sex one
+    assert list(out["biomass"]) == [0.205, 0.031, 1.7]
+
+
+def test_band_zoo_returns_none_for_abundance_only_exports():
+    assert band_zoo_from_frame(_band_frame(with_biomass=False), "zoo_2010") is None
