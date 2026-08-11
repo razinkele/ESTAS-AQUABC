@@ -574,6 +574,46 @@ would invert this arc's priorities, so the live config keeps (−2, 10, 21).
 
 ---
 
+## 12. The zooplankton deficit: measured, formalized, and closed to parameters
+
+(2026-08-11.) The 5.5× zooplankton deficit was diagnosed at the code level, tested with a
+dedicated DE, and the parameter route is now measured as insufficient.
+
+**Diagnosis** (PROCESS_RATES, verified `ZOO_C_INDEX = 6`, plus the code's own formulas at June
+conditions): per-capita ingestion ≈ 0.058/d against fixed losses 0.185/d → **net −0.13/d at
+the observed zoo peak month**. The binding constraint is the food-limitation formulation in
+`aquabc_II_pelagic_lib_ZOOPLANKTON.f90`: each prey contributes
+`dyn_pref·(C−0.02)/(C+KHS)` and the contributions are *summed*, so the total is bounded by the
+preference weights (Σ = 0.90 at infinite food of every type, 0.18–0.25 at any composition the
+model produces), and the active-switching exponent further suppresses every minority prey.
+A Fasham-type formulation saturates to ~1 on *total* preferred food; this one cannot. Two
+aggravators: the largest preference (OPA, 0.37) points at an extinct group, and detritus
+(~1.2 mg C/L) soaks up the switching weight at half grazing efficiency.
+
+**The `phyto_zoo` DE** (8 knobs incl. KG_ZOO/KD_ZOO/FOOD_MIN, group-carbon Φ, retrained after
+the zoo-obs enlargement — see below): converged at Φ +8.3 %. On the full record it replayed
+the CYN↔FIX seesaw a third time (CYN bias −0.77 → −0.01 bought with FIX +0.03 → −0.50, Chl-a
+worse) — not adoptable, same reason as §10. The zoo knobs themselves moved to KG_ZOO
+0.45→**0.25** (down — the optimizer used them to trim grazing losses, not to grow zoo),
+KD_ZOO 0.15→0.081, FOOD_MIN 0.02→0.0065, and delivered **ZOO_C +37 % against a 400 % gap.**
+
+**The zoo-trio subset** (three zoo knobs only, phyto untouched): ZOO_C bias −0.0375 → −0.0345
+with zero collateral — phase, fixers, nutrients all unchanged. A free but marginal gain;
+KG_ZOO = 0.25/d is biologically backwards (a compensation, not a correction), so adopting it
+is a judgment call recorded as open.
+
+⇒ **The zoo deficit is structural.** The fix is Fortran: replace the summed preference-diluted
+Monods with a saturating total-food response. Any such change re-opens KG_ZOO/KD_ZOO
+calibration afterwards.
+
+**Observation base**: the ZOO_C record grew 329 → 577 station-dates (469 in-window) by
+ingesting the 2009–2025 annual KM workbook archive (`c1c7c26`); the deficit verdict is
+unchanged on the 13-year verified record. Operational rule learned the hard way: the
+calibrator reads the obs CSVs live per evaluation, so regenerating them mid-DE silently
+corrupts the objective — the first `phyto_zoo` run was killed and relaunched for exactly this.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
