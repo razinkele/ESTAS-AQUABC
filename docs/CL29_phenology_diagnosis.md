@@ -487,6 +487,51 @@ purposes loses nothing.
 
 ---
 
+## 10. Adoption and recalibration (2026-08-11)
+
+`FIX_CYN_OPT_TEMP_LR = 8.0` was adopted into the live `INPUTS_CL29/WCONST_04.txt`
+(byte-identical to the §9 experiment config) and versioned in ESTAS-AQUABC-DATA (`5635e67`).
+NOST's T_min stays 16 per the null companion result.
+
+**Recalibration** (`tools/calibrate_cl29.py --paramset all --group-carbon`, 1461-day window,
+DE popsize 5, converged after 7 generations / 320 evaluations): Φ 15.299 → 13.696 (−10.5 %).
+The optimizer moved the whole N-processing chain up — K_NITR_20 1.0→1.42,
+K_MIN_DOC_NO3N_20 1.5→2.32, KDISS_DET_PART_ORG_N_20 0.4→0.62 — which is what the new
+fixation-derived nitrogen demands, plus KHS_DIP_DIA 0.003→0.0061 and stronger CYN
+(KG 4.95, KD 0.053).
+
+**The full optimum re-hit the composition wall with the roles reversed**: on the full record
+it fixes CYN_C (bias −0.72 → −0.04 against obs 1.01 mg C/L) by letting strengthened CYN
+competitively crush the fixers (FIX_CYN_C model mean 0.60 → 0.12, bias −0.57). Phase survives
+(peak month exactly 8) because CYN carries the autumn bloom instead — but the N-fixation
+process this whole arc exists to recover shrinks 5×.
+
+**Adopted instead: the N-cycle subset only** (the four nutrient parameters above at their DE
+values; phyto knobs left at defaults). Full-record A/B/C comparison:
+
+| | A: T_min=8 only | B: full optimum | **C: adopted subset** |
+|---|---|---|---|
+| FIX_CYN_C bias (obs 0.70) | −0.10 | −0.57 | **+0.03** |
+| CYN_C bias (obs 1.01) | −0.72 | **−0.04** | −0.77 |
+| NO3 bias | +0.035 | −0.050 | **+0.004** |
+| CHLA RMSE | 26.96 | 27.36 | **26.11** |
+| seasonal r | +0.40 | +0.34 | **+0.53** |
+| peak month (obs 8) | 9 | **8** | 9 |
+
+The subset keeps the nutrient gains, scores the best CHLA RMSE and seasonal correlation of any
+configuration to date, and brings the fixer bias to ~zero — faster N turnover deepens the
+summer DIN drawdown (widening the fixation window §3.2), and the doubled diatom P
+half-saturation cedes phosphorus to the summer groups. Versioned in ESTAS-AQUABC-DATA
+(`daabebc`); the full optimum remains in `/tmp/cal_adopt/result.json` should the CYN-first
+trade ever be preferred.
+
+**Open after adoption:** CYN_C is now the largest composition residual (−0.77 against obs
+1.01) — plausibly a grazing-structure problem, since ZOO_C stays 5.5× low in every variant and
+no parameter here touches it. The winter diatom excess (§2) stands. October Chl-a remains
+below observations (§9, akinete life-cycle).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
