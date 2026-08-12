@@ -23,6 +23,7 @@ program test_zooplankton
     call test_respiration_positive()
     call test_zero_zooplankton()
     call test_excretion_partitioning()
+    call test_saturating_food()
 
     print *, ""
     print *, "=========================================="
@@ -71,7 +72,8 @@ contains
                        NOST_C, DET_C, ZOO_C, TIME_STEP, nkn, &
                        R_ZOO_FEEDING_DIA, R_ZOO_FEEDING_CYN, &
                        R_ZOO_FEEDING_OPA, R_ZOO_RESP, R_ZOO_DEATH, &
-                       R_ZOO_GROWTH, R_ZOO_EX_DOC, KG_ZOO)
+                       R_ZOO_GROWTH, R_ZOO_EX_DOC, KG_ZOO, &
+                       zoo_food_model, khs_food_tot, closure_ref)
         type(t_zoo_params), intent(in) :: params
         type(t_phyto_env), intent(in) :: env
         integer, intent(in) :: nkn
@@ -87,6 +89,11 @@ contains
         real(kind=DBL_PREC), intent(out) :: R_ZOO_GROWTH(nkn)
         real(kind=DBL_PREC), intent(out) :: R_ZOO_EX_DOC(nkn)
         real(kind=DBL_PREC), intent(out) :: KG_ZOO(nkn)
+        ! optional: exercise the saturating total-food response (default legacy)
+        integer, intent(in), optional :: zoo_food_model
+        real(kind=DBL_PREC), intent(in), optional :: khs_food_tot, closure_ref
+        integer :: zfm
+        real(kind=DBL_PREC) :: khs, zref
 
         real(kind=DBL_PREC) :: KG_ZOO_DIA(nkn), KG_ZOO_CYN(nkn)
         real(kind=DBL_PREC) :: KG_ZOO_OPA(nkn), KG_ZOO_FIX_CYN(nkn)
@@ -116,6 +123,11 @@ contains
         ACTUAL_ZOO_N_TO_C = 0.0D0; ACTUAL_ZOO_P_TO_C = 0.0D0
         R_ZOO_GROWTH = 0.0D0; FAC_HYPOX_ZOO_D = 0.0D0
 
+        zfm = 0; khs = 0.5D0; zref = 0.05D0
+        if (present(zoo_food_model)) zfm = zoo_food_model
+        if (present(khs_food_tot))   khs = khs_food_tot
+        if (present(closure_ref))    zref = closure_ref
+
         call ZOOPLANKTON(params, env, DIA_C, CYN_C, OPA_C, FIX_CYN_C, &
                          NOST_C, DET_C, ZOO_C, TIME_STEP, nkn, &
                          KG_ZOO, KG_ZOO_DIA, KG_ZOO_CYN, KG_ZOO_OPA, &
@@ -127,7 +139,8 @@ contains
                          R_ZOO_INT_RESP, R_ZOO_RESP, &
                          R_ZOO_EX_DON, R_ZOO_EX_DOP, R_ZOO_EX_DOC, &
                          R_ZOO_DEATH, ACTUAL_ZOO_N_TO_C, ACTUAL_ZOO_P_TO_C, &
-                         R_ZOO_GROWTH, FAC_HYPOX_ZOO_D)
+                         R_ZOO_GROWTH, FAC_HYPOX_ZOO_D, &
+                         zfm, khs, zref)
     end subroutine run_zoo
 
     ! Smoke test: prey available, positive grazing
@@ -161,6 +174,51 @@ contains
         call assert_not_nan(R_GROWTH(1), "Growth rate is not NaN")
         call assert_true(R_F_DIA(1) > 0.0D0, "Feeding on diatoms is positive")
     end subroutine test_smoke
+
+    ! Saturating total-food response (ZOO_FOOD_MODEL=1): the ceiling is lifted
+    ! and the closure is quadratic. Same state as the smoke test.
+    subroutine test_saturating_food()
+        integer, parameter :: nkn = 1
+        type(t_zoo_params) :: params
+        type(t_phyto_env) :: env
+        real(kind=DBL_PREC), target :: TEMP(nkn), I_A(nkn), K_E(nkn)
+        real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn), DO_arr(nkn)
+        real(kind=DBL_PREC) :: DIA_C(nkn), CYN_C(nkn), OPA_C(nkn)
+        real(kind=DBL_PREC) :: FIX_CYN_C(nkn), NOST_C(nkn), DET_C(nkn), ZOO_C(nkn)
+        real(kind=DBL_PREC) :: R_F_DIA(nkn), R_F_CYN(nkn), R_F_OPA(nkn)
+        real(kind=DBL_PREC) :: R_RESP(nkn), R_DEATH0(nkn), R_DEATH1(nkn), R_GROWTH0(nkn)
+        real(kind=DBL_PREC) :: R_GROWTH1(nkn), R_EX_DOC(nkn), KG_ZOO(nkn)
+
+        print *, "Test: Saturating total-food response (ZOO_FOOD_MODEL=1)"
+
+        call set_default_zoo_params(params)
+        TEMP = 20.0D0; I_A = 300.0D0; K_E = 1.0D0
+        DEPTH = 3.0D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr)
+
+        ! abundant prey of every type: the legacy sum stays preference-bounded,
+        ! the saturating response approaches KG_ZOO
+        DIA_C = 5.0D0; CYN_C = 5.0D0; OPA_C = 5.0D0
+        FIX_CYN_C = 5.0D0; NOST_C = 5.0D0; DET_C = 5.0D0
+        ZOO_C = 0.1D0    ! 2x the closure reference (0.05)
+
+        call run_zoo(params, env, DIA_C, CYN_C, OPA_C, FIX_CYN_C, NOST_C, &
+                     DET_C, ZOO_C, 1.0D0, nkn, &
+                     R_F_DIA, R_F_CYN, R_F_OPA, R_RESP, R_DEATH0, &
+                     R_GROWTH0, R_EX_DOC, KG_ZOO)
+        call run_zoo(params, env, DIA_C, CYN_C, OPA_C, FIX_CYN_C, NOST_C, &
+                     DET_C, ZOO_C, 1.0D0, nkn, &
+                     R_F_DIA, R_F_CYN, R_F_OPA, R_RESP, R_DEATH1, &
+                     R_GROWTH1, R_EX_DOC, KG_ZOO, &
+                     zoo_food_model = 1, khs_food_tot = 0.5D0, closure_ref = 5.0D-2)
+
+        call assert_not_nan(R_GROWTH1(1), "Saturating growth is not NaN")
+        call assert_true(R_GROWTH1(1) > R_GROWTH0(1), &
+            "Abundant food: saturating ingestion exceeds the legacy ceiling")
+        ! quadratic closure at ZOO_C = 2x reference doubles the specific death rate
+        call assert_true(abs(R_DEATH1(1) - 2.0D0 * R_DEATH0(1)) < 1.0D-9, &
+            "Closure is quadratic (2x reference -> 2x legacy death)")
+    end subroutine test_saturating_food
 
     ! Single prey: only DIA_C > 0
     subroutine test_single_prey()
