@@ -689,6 +689,49 @@ akinete life-cycle (§9); the second diatom guild / June succession (§11); CYN_
 
 ---
 
+## 15. The coupled light-climate DE: honest optics cannot buy back the bloom
+
+(2026-08-12.) The standing hypothesis from the calibration arc was that the two measured but
+calibration-invisible parameters — `K_B_E` (0.70 modelled vs 2.18 from the measured kd,
+n=199) and C:Chl (30/40 modelled vs 53/78 measured, n=312) — could be corrected if the
+growth engine were recalibrated *jointly*. With the fixers and zooplankton now alive, this
+was tested properly: optics **imposed** (never calibrated), growth engine **freed**.
+
+**The impose-only probe** split the compensating errors exactly as predicted: winter Chl-a
+excess *gone* (Feb 12.1 vs obs 10.2, Mar 24.6 vs 25.1 — near-perfect for the first time),
+NH4/TN best-ever, ZOO_C bias −0.0004; summer/autumn collapsed ~3× (Aug 16.2 vs 50.8).
+
+**The coupled DE** (`--paramset light --inputs /tmp/inputs_light`, calibrator `c9ca94c`:
+all-group KG with wide uppers + the N-cycle four; 160 evals, window Φ +11.1 %): the
+optimizer used the headroom — KG_DIA 3.7→**7.98**, KG_FIX_CYN 3.5→**6.37**, KG_OPA
+2.9→**5.60** — and it was not enough:
+
+| full record | adopted config | honest-optics best | obs |
+|---|---|---|---|
+| CHLA Aug / Sep / Oct | 52.8 / 55.8 / 32.5 | 21.6 / 24.6 / 13.3 | 50.8 / 50.2 / 46.4 |
+| CHLA RMSE / bias | **27.30 / +10.2** | 29.27 / −14.35 | — |
+| seasonal r | **+0.59** | +0.29 | — |
+| CYN_C / OPA_C bias | −0.80 / −0.47 | −0.68 / −0.47 | — |
+
+**Doubling the growth engine recovers only ~4 of the ~18 missing µg/L.** In kd ≈ 2.9 water,
+depth-averaged light limitation caps production regardless of the rate constant, and the
+missing biomass sits exactly where the unresolved composition residuals sit (CYN, OPA, the
+fixer amplitude tail). The real lagoon overcomes honest turbidity by **vertical
+positioning** — buoyant cyanobacteria accumulate at the surface and escape the
+depth-averaged light penalty — which a depth-averaged light formulation cannot represent
+at any KG.
+
+**Decision: not adopted; the arc closes with the trade made explicit.** The operational
+CL29 keeps the transparent-water compensation (K_B_E 0.70, C:Chl 30/40) — knowingly now:
+it is the price of the observed summer bloom under depth-averaged light. The honest-optics
+configuration stays as the reference diagnosis (`/tmp/inputs_light` recipe reproducible
+from §"the probe"), and the structural exit is **surface-bloom / buoyancy-resolved light**
+(the model's `CYANO_BOUYANT_STATE_SIMULATION` exists and is on, but light remains
+depth-averaged) — filed with the akinete life-cycle and second-diatom-guild items as
+paper-2 structure.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
