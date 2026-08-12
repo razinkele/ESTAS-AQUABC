@@ -89,6 +89,20 @@ PARAM_SETS = {
         ("KG_FIX_CYN_OPT_TEMP",     "lin", 1.0,    6.0),    # fixer growth (default 3.5)
         ("KD_FIX_CYN_20",           "log", 0.04,   0.4),    # fixer mortality (default 0.10)
     ],
+    # The coupled light-climate set (docs/CL29_phenology_diagnosis.md par. 15): run against
+    # a base config with the MEASURED optics imposed (K_B_E 2.18, C:Chl 53/78 via --inputs).
+    # Under honest, ~2.7x darker water the production engine needs headroom, so the growth
+    # uppers are deliberately wide; the N-cycle four re-balance regeneration underneath.
+    "light": [
+        ("KG_DIA_OPT_TEMP",         "lin", 2.0,   10.0),
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    8.0),
+        ("KG_FIX_CYN_OPT_TEMP",     "lin", 1.0,    8.0),
+        ("KG_OPA_OPT_TEMP",         "lin", 1.0,    8.0),
+        ("K_MIN_DOC_NO3N_20",       "log", 0.3,    3.0),
+        ("K_NITR_20",               "log", 0.2,    2.0),
+        ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
+        ("KHS_DIP_DIA",             "log", 0.002,  0.03),
+    ],
 }
 CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
 CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
@@ -283,12 +297,18 @@ def main():
     ap.add_argument("--workers", type=int, default=min(24, (os.cpu_count() or 4) - 2))
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--workdir", default="/tmp/cal_work")
+    ap.add_argument("--inputs", default=None,
+                   help="alternate INPUTS_CL29 folder to calibrate against (e.g. a copy with "
+                        "the measured light climate imposed); default = the repo inputs")
     ap.add_argument("--seed-result", default=None,
                     help="result.json of a previous run: its values (plus WCONST defaults for new "
                          "params) become the DE x0 seed individual")
     ap.add_argument("--validate-full", type=int, default=0,
                     help="after optimizing, validate the best on this many days (e.g. 4016 = full record)")
     a = ap.parse_args()
+    if a.inputs:
+        M.SRC_INPUTS = os.path.abspath(a.inputs)
+        print(f"calibrating against inputs: {M.SRC_INPUTS}")
     DAYS, WORKDIR = a.days, a.workdir
     CAL_PARAMS = PARAM_SETS[a.paramset]
     CKPT = os.path.join(WORKDIR, "checkpoint.json")
