@@ -732,6 +732,52 @@ paper-2 structure.
 
 ---
 
+## 16. The weakest-point investigation: the CYN guild carries the fixers' disease
+
+(2026-08-13.) With the arc adopted, the largest residual is summer–autumn cyanobacterial
+biomass: CYN_C −0.80 and OPA_C −0.47 mg C/L — together half the observed phytoplankton carbon,
+and the same mass the §15 honest-optics test could not rebuild.
+
+**Measured causes (adopted config, PROCESS_RATES):** CYN is temperature-forbidden
+October–April — `CYN_OPT_TEMP_LR = 15 °C`, the **third taxon-transplant error of the same
+class** (FIX_CYN 18°, NOST 16°, CYN 15°) — while the monitoring record's non-fixing guild is
+the cool-water filamentous group (*Oscillatoria* 2866 > *Aphanocapsa* 1265 > *Chroococcus*,
+*Limnothrix*, *Planktothrix* > *Microcystis* 828). Even at bloom peak CYN is loss-dominated
+(0.094 vs 0.109 /d) with negligible grazing; August P competition with the fixer bloom caps
+it further. OPA is boundary-held; only its light factor is instrumented (a diagnostic gap).
+Also found: `CYANO_BOUYANT_STATE_SIMULATION` is dead code — read, passed, never used; all
+groups share one depth-averaged light response (`smith = 1` hardcoded).
+
+**The T_min 15→5 °C probe** (one line; *P. agardhii*-type value): the targeted months behave
+exactly as predicted — August 49.8 vs obs 50.8 (essentially exact), November 27.4 vs 24.0
+(fixed), CYN bias −0.80 → −0.60, CHLA RMSE 27.3 → 26.5 and bias +10.2 → +6.4, NH4 bias +0.002
+— but **seasonal r falls +0.59 → +0.24**, because compressing the summer peak toward
+observations leaves the untouched winter diatom excess (Jan 47.3 / Feb 46.0 vs obs 17.6/10.2)
+as the model's highest months. The probe also shows real CYN↔FIX niche interaction now
+(fixers +0.17 → −0.09): the two guilds trade the same summer phosphorus, as they should.
+**Not adoptable alone**; the mechanics are verified, the blocker is the winter half.
+
+**Synthesis — the avenues converge on Scheffer's turbid-state package.** Scheffer, Rinaldi &
+Gragnani (1997, *Ecology*) describe exactly this lagoon: filamentous cyanobacteria dominate
+shallow turbid systems as an alternative stable state because they win at LOW LIGHT and
+create the turbidity. The model lacks every trait in that mechanism: its CYN is warm-water
+(T_min 15), shares the community light response, and the water is 2× too transparent (§15).
+The coherent structural target is therefore the **combined configuration**: honest optics
+(K_B_E 2.18, C:Chl measured) + eurythermal low-light CYN (T_min ~5, group-specific light
+response per Oberhaus & Humbert 2007) — under which winter diatoms are properly light-capped
+(the §15 probe showed Feb/Mar become near-exact) *and* a low-light CYN carries the
+summer–autumn biomass that §15's growth-rate-only test could not. Buoyant surface-layer light
+for the fixers (Huisman et al. 2004; Jöhnk et al. 2008) is the complementary lever for the
+fixer amplitude. Ranked next experiments: (1) honest optics + CYN T_min 5 + lowered CYN light
+saturation, one run; (2) if it holds, the DE on that base; (3) fixer surface-light option.
+
+**References for this section** (scite-checked 2026-08-13, no editorial notices): Scheffer
+et al. 1997 (10.1890/0012-9658(1997)078[0272:OTDOFC]2.0.CO;2); Huisman et al. 2004
+(10.1890/03-0763); Jöhnk et al. 2008 (10.1111/j.1365-2486.2007.01510.x); Oberhaus & Humbert
+2007 (10.1111/j.1529-8817.2007.00414.x); Bonilla et al. 2011 (10.1111/j.1574-6941.2011.01242.x).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
