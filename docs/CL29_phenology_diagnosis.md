@@ -657,6 +657,38 @@ not be adopted.
 
 ---
 
+## 14. Post-zoo recalibration and final adopted state (2026-08-11/12)
+
+With `ZOO_FOOD_MODEL = 1` + the tuned zoo rates enabled in the CL29 config (data repo
+`781ae88`), the 8-knob DE was rerun so the N-cycle could absorb the living zoo's nutrient
+recycling (window Φ +5.2 %, 240 evals). **The CYN↔FIX seesaw did not fire this time** —
+with real grazing in the system the optimizer no longer buys CYN by crushing the fixers.
+The full optimum still traded CHLA (+1.0 RMSE) and a fixer overshoot (+0.237) for PO4/Si,
+driven by KG_DIA 3.7→4.75, so per the established discipline only the **N-cycle subset
+(v2) was adopted** (data repo `dbef92a`): K_NITR_20 **1.878**, K_MIN_DOC_NO3N_20 **2.986**,
+KDISS_DET_PART_ORG_N_20 **0.3024**, KHS_DIP_DIA **0.004503**.
+
+Full-record, subset v2 vs the §13 zoo-adopted base: NH4 bias **+0.0184 → +0.0054** (RMSE
+−12 %), TN RMSE 0.982 → **0.941**, seasonal r **+0.59** and autumn/spring **1.41** (both
+best-ever); costs small and stated — CHLA RMSE +1.4 % (27.30), NO3 bias overshoots to
+−0.062 (K_NITR at 1.88 is aggressive), FIX_CYN_C +0.173. This adoption was a close call,
+decided by the user; unlike the two previous subset adoptions it does not dominate outright.
+
+**The adopted CL29 state after this arc** (all versioned in ESTAS-AQUABC-DATA):
+`FIX_CYN_OPT_TEMP_LR = 8` (§8–9) · N-cycle v1 (§10) → superseded by v2 above ·
+`ZOO_FOOD_MODEL = 1` + KHS_FOOD_TOT 0.15 + closure ref 0.05 + KG_ZOO 0.6 / KD_ZOO 0.08
+(§13). Against the season-inverted starting point: Chl-a peak Feb→Sep (obs Aug), seasonal
+r −0.70 → **+0.59**, autumn/spring 0.63 → **1.41** (obs 2.06), fixer bias −0.10 → +0.17
+with the bloom real, zooplankton from 5× low to bias ≈ 0 with the observed cycle, NH4/TN
+best-ever, PO4 RMSE 0.0264 vs 0.0326 pre-arc.
+
+**Still open, ranked:** the coupled light-climate move (honest K_B_E + C:Chl + growth
+engine — §"K_B_E probe": winter is light-driven but reachable only jointly); the October
+akinete life-cycle (§9); the second diatom guild / June succession (§11); CYN_C −0.80
+(the largest composition residual); OPA extinct as ever.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
