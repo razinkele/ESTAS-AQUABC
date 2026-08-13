@@ -778,6 +778,38 @@ et al. 1997 (10.1890/0012-9658(1997)078[0272:OTDOFC]2.0.CO;2); Huisman et al. 20
 
 ---
 
+## 17. The combined Scheffer probe: the depth-average ceiling binds — vertical structure
+is now proven necessary by experiment
+
+(2026-08-13.) The §16 synthesis was tested as a single configuration: honest optics
+(K_B_E 2.18, measured C:Chl) + eurythermal low-light CYN (`CYN_OPT_TEMP_LR` 5 °C,
+`BETA_CYN` 2.0 — the Platt photoinhibition extension shifts CYN's light optimum to I_s/3),
+all config-only, on the adopted base.
+
+**Result:** winter stays exact (Feb 9.9 vs obs 10.2; Mar 25.4 vs 25.1) and CYN improves to
+its best RMSE anywhere (1.62; bias −0.56), zooplankton bias +0.0003 — but **summer does not
+come back** (Aug 14.2 vs obs 50.8), landing *below* even §15's growth-freed 21.6 because the
+low-light CYN now competes with the fixers year-round (FIX −0.56).
+
+**Why — the ceiling is arithmetic, not a trait.** The depth-averaged Steele factor is bounded
+by e/(kd·H) regardless of I_s or BETA: the exponential bracket cannot exceed 1, so at the
+measured kd ≈ 2.9 m⁻¹ and H ≈ 2.5–4 m the light factor is capped at ~0.23–0.37, against
+~0.6 under the transparent compensation. Every within-formulation trait (saturation, BETA,
+T_min) only redistributes growth *inside* that cap. The lagoon's real low-light winners and
+surface bloomers both escape it the same way — by not experiencing the depth-averaged light:
+buoyant taxa ride at the surface, and the observed biomass maxima are surface phenomena.
+
+**Consequence:** the configuration space is now exhausted *by experiment* for the
+honest-optics summer. The necessary structural change is **an effective-depth light option
+for positioned groups** — evaluate the Steele/Smith integral over min(H, H_eff) with
+H_eff ~0.5–1 m for buoyant/surface taxa (Huisman et al. 2004; Jöhnk et al. 2008), an opt-in
+one-argument change to `LIM_LIGHT` in the same engineering pattern as `ZOO_FOOD_MODEL`.
+Secondary keeps from this probe: the CYN T_min correction and its BETA trait are right on
+their own terms (best-ever CYN skill in both probes that carried them) and should ship with
+whatever light structure follows.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
