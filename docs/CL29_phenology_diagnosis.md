@@ -810,6 +810,45 @@ whatever light structure follows.
 
 ---
 
+## 18. Real wind: the forcing fixed, the accidental subsidy removed, the gate still shut
+
+(2026-08-13, plan `2026-08-13-wind-positioning-activation.md`, Tasks 1–4.)
+
+**Task 1 — the forcing** (`tools/build_wind_forcing.py`, `d2c629a`): ERA5 hourly 10 m wind at
+Nida, 2012–2022 (2017–2022 freshly fetched), daily mean of hourly speed, 4017 days, 0 gaps;
+validated against 663 instantaneous in-lagoon readings from the hydrometeo workbooks
+(r = 0.51, bias +0.23 m/s — daily-vs-spot, level check passed). Jun–Sep median 5.5 m/s; only
+~3 % of summer days ≤ 2.5 m/s.
+
+**Task 2 — engagement statistics**: under the Nagy daily gate, full surface positioning
+never fires (needs W ≤ 1.1 m/s under honest optics: 0 % of days); the partial branch engages
+18 % of summer days in the deepest boxes only. 34 calm spells in 11 summers, none over 3
+days. Daily means erase the diurnal calm windows where real scums form.
+
+**Task 3 — A/B on the adopted config**: mild net gain and one irony. DO RMSE 7.92 (best
+ever — KAWIND finally sees variability), CHLA 26.84, TN 0.925, DIA bias ≈ 0, autumn/spring
+1.43; cost NO3 bias −0.10. But the cyano light factors went *down* 2–7 %: the constant-4 m/s
+placeholder had pinned MIX_DEPTH at 3.95 m, giving deep boxes **permanent accidental partial
+positioning**, which real wind (summer mean ~6 m/s) removes and episodic calm days do not
+repay. The placeholder was not just hiding the mechanism — it was impersonating it, badly.
+
+**Task 4 — the Scheffer package + real wind** (the honest configuration, complete): winter
+exact (Feb 9.0 vs obs 10.2, Mar 25.4 vs 25.1), **NH4 RMSE 0.0433, TN 0.899, DO 7.90 with
+bias −0.05, ZOO_C bias −0.0003 — the best nitrogen/oxygen/zooplankton state this model has
+ever produced** — and August 14.9 vs observed 50.8 (§17 was 14.2: real wind adds 0.7 µg/L
+of positioning). The honest configuration is now right about everything except the one
+process it cannot express at daily wind resolution: the surface bloom.
+
+**Verdict:** every ingredient is in place and verified — honest optics, correct guild
+temperatures, low-light trait, living zooplankton, real forcing — except a positioning gate
+that can actually open. **Task 5 (flotation-velocity criterion or sub-daily calm-fraction
+weighting in the `_BOUYANT` gates) is the single remaining item between this model and an
+honest-optics configuration that matches observations**, and it is a small, well-scoped
+Fortran change in the established opt-in pattern. Adoption of the real-wind forcing alone
+(Task 3's mild net gain + realism) is a separate, immediate decision.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
