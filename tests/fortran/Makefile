@@ -23,6 +23,7 @@ TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_c
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
+POSITIONING_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_positioning_state.f90
 PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
 SEDIMENT_SRC = $(AQUABC_SRC)/SEDIMENTS
 
@@ -194,6 +195,7 @@ test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSE
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CYANOBACTERIA.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_cyanobacteria.f90 *.o
@@ -246,6 +248,7 @@ test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_fix_cyn.f90 *.o
@@ -272,6 +275,7 @@ test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_NOSTACALES.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_nostocales.f90 *.o

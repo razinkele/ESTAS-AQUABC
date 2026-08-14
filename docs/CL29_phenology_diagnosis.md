@@ -895,6 +895,54 @@ now with every term of the compensation measured, bounded, and documented.
 
 ---
 
+## 20. The positional ratchet: the honest configuration overtakes the operational one
+
+(2026-08-14/15, plan `2026-08-14-surface-persistence-state.md`; branch
+`feature/surface-persistence`, commit `1f1de30`.)
+
+**The mechanism** (opt-in `CYANO_POS_MODEL = 2`): module `AQUABC_POSITIONING_STATE` holds a
+surface-positioned fraction S ∈ [0,1] per box per buoyant group —
+dS/dt = K_POS_UP·F_calm·(1−S) − K_POS_DISP·F_storm·S, forward Euler on the kinetic step,
+persistent across steps; the light blend uses S in place of the memoryless calm fraction.
+The shared CALM_FRACTION CDF was uncapped in the process (min(0,·) saturates F naturally),
+fixing a dispersal-side artifact and deduplicating three inline copies. Unit-tested (builds
+in calm, ratchets across days, collapses in storm); byte-identical default; all suites green.
+
+**The ladder** (honest configuration, August/September vs observed 50.8/50.2 µg/L):
+
+| | Aug | Sep | seasonal r | peak month |
+|---|---|---|---|---|
+| memoryless blend, W_crit 3 (§19) | 18.0 | 20.0 | +0.38 | Mar |
+| ratchet, W_DISP_POS = 4 m/s | 17.9 | 21.1 | +0.39 | Mar |
+| **ratchet, W_DISP_POS = 8 m/s** | **34.6** | **35.7** | **+0.70** | **Sep** |
+
+W_DISP = 4 confirms the §19 arithmetic — ordinary 5–6 m/s days carry storm-fractions near
+0.9, so the scum collapses daily and the ratchet adds nothing. At W_DISP = 8 the scum
+survives ordinary days and is reset only by genuine blows: **the persistence hypothesis is
+confirmed**, and the hysteresis width (formation floor 3 m/s, dispersal 8 m/s) is the pair
+of numbers that carries it.
+
+**The headline:** the honest configuration — measured K_B_E and C:Chl, literature guild
+temperatures, the low-light CYN trait, the living zooplankton, real ERA5 wind, and one new
+state with three literature-scale constants — now scores **seasonal r +0.70, the best of the
+entire project including every transparent-water configuration** (operational: +0.59), with
+CHLA RMSE 26.69 also beating the operational 27.30, winter exact (Feb 8.7 vs 10.2, Mar 25.6
+vs 25.1), July nearly exact (22.4 vs 26.2), fixers positive (+0.20) and zooplankton at
+observed scale. The compensating-error configuration is no longer the best available
+description of this lagoon.
+
+**Remaining gaps, named:** Aug–Sep sit ~16 µg/L below the plateau (S dynamics under real
+wind sequences; surface self-shading unmodelled; C:Chl 78 fixed); October (14.2 vs 46.4 —
+autumn storm resets compound the §9 akinete inoculum limit); the November/January margins.
+No recalibration has yet been run under this configuration — every prior DE was conditioned
+on transparent water; the N-cycle four and the growth constants are the obvious first pass.
+
+**Open decisions:** W_DISP sensitivity refinement (6/10 bracketing), the recalibration DE on
+this base, and — for the first time a live question — **adopting the honest configuration as
+the operational one.**
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth

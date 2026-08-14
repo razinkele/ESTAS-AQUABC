@@ -17,6 +17,7 @@ program test_cyanobacteria
     print *, ""
 
     call test_smoke()
+    call test_persistence_ratchet()
     call test_growth_positive()
     call test_warm_temperature_preference()
     call test_nutrient_n_limitation()
@@ -345,6 +346,7 @@ contains
         real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn)
         real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
         real(kind=DBL_PREC) :: NH4_N(nkn), NO3_N(nkn), DON(nkn), PO4_P(nkn)
+        real(kind=DBL_PREC) :: S_TEST(1)
         real(kind=DBL_PREC) :: CYN_C(nkn), ZOO_C(nkn)
 
         real(kind=DBL_PREC) :: CYN_LIGHT_SAT(nkn)
@@ -382,6 +384,7 @@ contains
         PREF_DIN_DON_CYN = 0.0D0; PREF_NH4N_CYN = 0.0D0
 
         ! Call BOUYANT variant with SMITH=1 to trigger euphotic depth
+        S_TEST = 0.0D0
         call CYANOBACTERIA_BOUYANT(params, env, CYN_LIGHT_SAT, &
                 NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
                 1.0D0, 1, nkn, &
@@ -391,11 +394,82 @@ contains
                 R_CYN_GROWTH, R_CYN_MET, R_CYN_RESP, R_CYN_EXCR, &
                 R_CYN_INT_RESP, KD_CYN, FAC_HYPOX_CYN_D, &
                 R_CYN_DEATH, PREF_DIN_DON_CYN, PREF_NH4N_CYN, &
-                     0, 0.5D0, 0.0D0)
+                     0, 0.5D0, 0.0D0, S_TEST)
 
         call assert_finite(R_CYN_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_CYN_MET(1), "Metabolism finite with K_E=0")
         call assert_finite(R_CYN_DEATH(1), "Death finite with K_E=0")
     end subroutine test_ke_zero
+
+    ! Positional ratchet (CYANO_POS_MODEL = 2): repeated calm days build the
+    ! surface fraction S (raising the light factor across calls); one stormy
+    ! day collapses it. Drives the S slice directly (module state untouched).
+    subroutine test_persistence_ratchet()
+        use AQUABC_POSITIONING_STATE, only: CALM_FRACTION
+        integer, parameter :: nkn = 1
+        type(t_cyn_params) :: params
+        type(t_phyto_env) :: env
+        real(kind=DBL_PREC), target :: TEMP(nkn), I_A(nkn), K_E(nkn)
+        real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn), DO_arr(nkn)
+        real(kind=DBL_PREC), target :: W_CALM(nkn), W_STORM(nkn)
+        real(kind=DBL_PREC) :: S_R(nkn), LIM1(nkn), LIM3(nkn), LIMS(nkn)
+        real(kind=DBL_PREC) :: S_after_calm
+        integer :: i
+
+        print *, "Test: positional ratchet (CYANO_POS_MODEL=2)"
+
+        call set_default_cyn_params(params)
+        TEMP = 20.0D0; I_A = 300.0D0; K_E = 2.9D0
+        DEPTH = 3.8D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
+        W_CALM = 1.0D0; W_STORM = 12.0D0
+
+        ! sanity on the CDF itself
+        call assert_true(CALM_FRACTION(1.0D0, 3.0D0) > 0.99D0, &
+            "CDF: fully calm day -> F ~ 1")
+        call assert_true(1.0D0 - CALM_FRACTION(1.0D0, 4.0D0) < 0.01D0, &
+            "CDF: storm fraction ~ 0 on a calm day")
+
+        S_R = 0.0D0
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, W_CALM)
+        call run_cyn_pos(params, env, S_R, LIM1)          ! day 1
+        S_after_calm = S_R(1)
+        call assert_true(S_after_calm > 0.5D0, "one calm day builds S > 0.5")
+        call run_cyn_pos(params, env, S_R, LIM3)          ! days 2-3
+        call run_cyn_pos(params, env, S_R, LIM3)
+        call assert_true(S_R(1) > S_after_calm - 1.0D-12, "S persists/ratchets across days")
+        call assert_true(LIM3(1) > LIM1(1) - 1.0D-12, "light factor rises with S")
+
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, W_STORM)
+        call run_cyn_pos(params, env, S_R, LIMS)          ! storm day
+        call assert_true(S_R(1) < 0.05D0, "one storm day collapses S")
+    end subroutine test_persistence_ratchet
+
+    ! Helper: one CYANOBACTERIA_BOUYANT call with the ratchet on, returning the
+    ! light limitation and updating the caller's S slice.
+    subroutine run_cyn_pos(params, env, S_R, LIM_OUT)
+        type(t_cyn_params), intent(in) :: params
+        type(t_phyto_env), intent(in) :: env
+        real(kind=DBL_PREC), intent(inout) :: S_R(1)
+        real(kind=DBL_PREC), intent(out) :: LIM_OUT(1)
+        integer, parameter :: nkn = 1
+        real(kind=DBL_PREC) :: CYN_LIGHT_SAT(nkn), NH4(nkn), NO3(nkn), DON(nkn)
+        real(kind=DBL_PREC) :: PO4(nkn), CYN_C(nkn), ZOO_C(nkn)
+        real(kind=DBL_PREC) :: KG(nkn), A0(nkn), A1(nkn)
+        real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn), LNU(nkn), LK(nkn)
+        real(kind=DBL_PREC) :: RG(nkn), RM(nkn), RR(nkn), RE(nkn), RI(nkn)
+        real(kind=DBL_PREC) :: KD(nkn), FH(nkn), RD(nkn), PDD(nkn), PNH(nkn)
+
+        CYN_LIGHT_SAT = 0.0D0; NH4 = 0.05D0; NO3 = 0.3D0; DON = 0.5D0
+        PO4 = 0.05D0; CYN_C = 0.5D0; ZOO_C = 0.01D0
+        KG=0; A0=0; A1=0; LT=0; LL=0; LD=0; LN=0; LP=0; LNU=0; LK=0
+        RG=0; RM=0; RR=0; RE=0; RI=0; KD=0; FH=0; RD=0; PDD=0; PNH=0
+
+        call CYANOBACTERIA_BOUYANT(params, env, CYN_LIGHT_SAT, &
+                     NH4, NO3, DON, PO4, CYN_C, ZOO_C, 1.0D0, 1, nkn, &
+                     KG, A0, A1, LT, LL, LD, LN, LP, LNU, LK, &
+                     RG, RM, RR, RE, RI, KD, FH, RD, PDD, PNH, &
+                     2, 0.5D0, 3.0D0, S_R)
+        LIM_OUT = LL
+    end subroutine run_cyn_pos
 
 end program test_cyanobacteria

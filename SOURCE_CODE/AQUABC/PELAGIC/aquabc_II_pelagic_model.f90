@@ -85,6 +85,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             W_CRIT_POS_MIN)
 
     use CO2SYS_CDIAC
+    use AQUABC_POSITIONING_STATE, only: S_POS, ENSURE_POSITIONING_STATE, &
+                                        POS_CYN, POS_FIX, POS_NOST
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use aquabc_II_wc_ini
@@ -410,6 +412,12 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ns = 1
     ne = nkn
     nkn_local = nkn
+
+    ! Positional-ratchet state (CYANO_POS_MODEL = 2): allocated once, serially,
+    ! before the kinetics parallel region opens below. Always allocated so the
+    ! slice arguments to the cyano libraries are defined in every mode; the
+    ! ratchet only UPDATES when CYANO_POS_MODEL >= 2.
+    call ENSURE_POSITIONING_STATE(nkn)
 
     ! Cap the team to at most `nkn` threads so no thread gets an empty chunk. TODO 4.4:
     ! a thread with an empty chunk (nkn_local<=0, from the old ceil-based split when
@@ -1145,7 +1153,8 @@ contains
           PREF_NH4N_CYN(ns:ne)          , &
           CYANO_POS_MODEL               , &
           H_SURF_POS    , &
-          W_CRIT_POS_MIN)
+          W_CRIT_POS_MIN, &
+          S_POS(ns:ne, POS_CYN))
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -1195,7 +1204,8 @@ contains
                 PREF_NH4N_DON_FIX_CYN(ns:ne)   , &
                 CYANO_POS_MODEL                , &
                 H_SURF_POS    , &
-                W_CRIT_POS_MIN)
+                W_CRIT_POS_MIN, &
+                S_POS(ns:ne, POS_FIX))
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
@@ -1310,7 +1320,8 @@ contains
             R_MORT_AKI(ns:ne)                 , &
             CYANO_POS_MODEL                   , &
             H_SURF_POS    , &
-            W_CRIT_POS_MIN)
+            W_CRIT_POS_MIN, &
+            S_POS(ns:ne, POS_NOST))
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models
