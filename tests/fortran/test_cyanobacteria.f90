@@ -391,7 +391,7 @@ contains
                 R_CYN_GROWTH, R_CYN_MET, R_CYN_RESP, R_CYN_EXCR, &
                 R_CYN_INT_RESP, KD_CYN, FAC_HYPOX_CYN_D, &
                 R_CYN_DEATH, PREF_DIN_DON_CYN, PREF_NH4N_CYN, &
-                     0, 0.5D0)
+                     0, 0.5D0, 0.0D0)
 
         call assert_finite(R_CYN_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_CYN_MET(1), "Metabolism finite with K_E=0")

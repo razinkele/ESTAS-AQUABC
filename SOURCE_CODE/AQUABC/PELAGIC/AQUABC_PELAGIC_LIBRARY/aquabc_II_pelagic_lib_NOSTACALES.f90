@@ -43,7 +43,8 @@ subroutine NOSTOCALES &
             R_LOSS_AKI                        , &
             R_MORT_AKI                        , &
             CYANO_POS_MODEL                   , &
-            H_SURF_POS)
+            H_SURF_POS                   , &
+            W_CRIT_POS_MIN)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
@@ -95,6 +96,7 @@ subroutine NOSTOCALES &
    ! Sub-daily surface-positioning gate (0 = legacy, 1 = calm-fraction blend)
    integer, intent(in) :: CYANO_POS_MODEL
    double precision, intent(in) :: H_SURF_POS
+   double precision, intent(in) :: W_CRIT_POS_MIN
    ! ------------------------------------------------------------------------------------
 
    ! ------------------------------------------------------------------------------------
@@ -234,7 +236,7 @@ subroutine NOSTOCALES &
         ! because beyond it the cascade above already positions.
         ! ------------------------------------------------------------------
         if (CYANO_POS_MODEL > 0) then
-            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, 0.0D0)
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
             X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
             where (X_POS > 1.0D-3)
                 F_CALM = log(X_POS)

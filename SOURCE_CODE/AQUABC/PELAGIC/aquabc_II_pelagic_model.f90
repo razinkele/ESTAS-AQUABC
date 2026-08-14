@@ -81,7 +81,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
             KHS_FOOD_TOT_ZOO                , &
             ZOO_CLOSURE_REF                 , &
             CYANO_POS_MODEL                 , &
-            H_SURF_POS)
+            H_SURF_POS                      , &
+            W_CRIT_POS_MIN)
 
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
@@ -157,6 +158,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! the surface-layer depth (m) for the positioned fraction.
     integer                ,                          intent(in)    :: CYANO_POS_MODEL
     real(kind = DBL_PREC)  ,                          intent(in)    :: H_SURF_POS
+    real(kind = DBL_PREC)  ,                          intent(in)    :: W_CRIT_POS_MIN
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
@@ -1142,7 +1144,8 @@ contains
           PREF_DIN_DON_CYN(ns:ne)        , &
           PREF_NH4N_CYN(ns:ne)          , &
           CYANO_POS_MODEL               , &
-          H_SURF_POS)
+          H_SURF_POS    , &
+          W_CRIT_POS_MIN)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -1191,7 +1194,8 @@ contains
                 R_FIX_CYN_DEATH(ns:ne)              , &
                 PREF_NH4N_DON_FIX_CYN(ns:ne)   , &
                 CYANO_POS_MODEL                , &
-                H_SURF_POS)
+                H_SURF_POS    , &
+                W_CRIT_POS_MIN)
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
@@ -1305,7 +1309,8 @@ contains
             R_LOSS_AKI(ns:ne)                        , &
             R_MORT_AKI(ns:ne)                 , &
             CYANO_POS_MODEL                   , &
-            H_SURF_POS)
+            H_SURF_POS    , &
+            W_CRIT_POS_MIN)
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models

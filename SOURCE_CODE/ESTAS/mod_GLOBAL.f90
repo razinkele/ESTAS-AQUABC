@@ -207,6 +207,11 @@ module GLOBAL
     integer :: CYANO_POS_MODEL = 0
     ! Surface-layer depth (m) experienced by the positioned fraction.
     real(kind = DBL) :: H_SURF_POS = 0.5D0
+    ! Floor on the positioning-critical wind speed (m/s). The Nagy-inverted
+    ! W_crit (~1.1 m/s under honest optics) treats colonies as passive; the
+    ! empirical scum-formation threshold for buoyant colonies is ~2-4 m/s.
+    ! 0 (default) = pure Nagy inversion, byte-identical.
+    real(kind = DBL) :: W_CRIT_POS_MIN = 0.0D0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4

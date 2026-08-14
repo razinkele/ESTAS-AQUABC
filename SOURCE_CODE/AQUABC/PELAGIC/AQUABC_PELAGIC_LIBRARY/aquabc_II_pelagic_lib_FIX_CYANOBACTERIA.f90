@@ -322,7 +322,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             R_FIX_CYN_DEATH              , &
             PREF_NH4_DON_FIX_CYN         , &
             CYANO_POS_MODEL              , &
-            H_SURF_POS)
+            H_SURF_POS                   , &
+            W_CRIT_POS_MIN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -387,6 +388,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     ! layer depth (m) experienced by the positioned fraction.
     integer, intent(in) :: CYANO_POS_MODEL
     real(kind = DBL_PREC), intent(in) :: H_SURF_POS
+    real(kind = DBL_PREC), intent(in) :: W_CRIT_POS_MIN
 
     !Auxillary variables introduced by Pzem 2019-08
     real(kind = DBL_PREC), dimension(nkn) :: FIX_CYN_DEPTH
@@ -498,7 +500,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         ! above already positions.
         ! ------------------------------------------------------------------
         if (CYANO_POS_MODEL > 0) then
-            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, 0.0D0)   ! W_crit
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)   ! W_crit
             X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
             where (X_POS > 1.0D-3)
                 F_CALM = log(X_POS)

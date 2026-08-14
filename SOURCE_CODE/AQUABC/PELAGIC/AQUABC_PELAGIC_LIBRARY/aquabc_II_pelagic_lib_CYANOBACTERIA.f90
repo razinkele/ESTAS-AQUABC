@@ -263,7 +263,8 @@ subroutine CYANOBACTERIA_BOUYANT &
             PREF_DIN_DON_CYN        , &
             PREF_NH4N_CYN           , &
             CYANO_POS_MODEL         , &
-            H_SURF_POS)
+            H_SURF_POS                   , &
+            W_CRIT_POS_MIN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -321,6 +322,7 @@ subroutine CYANOBACTERIA_BOUYANT &
     ! and the surface-layer depth (m) for the positioned fraction.
     integer, intent(in) :: CYANO_POS_MODEL
     real(kind = DBL_PREC), intent(in) :: H_SURF_POS
+    real(kind = DBL_PREC), intent(in) :: W_CRIT_POS_MIN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
@@ -430,7 +432,7 @@ subroutine CYANOBACTERIA_BOUYANT &
         ! because beyond it the cascade above already positions.
         ! ------------------------------------------------------------------
         if (CYANO_POS_MODEL > 0) then
-            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, 0.0D0)
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
             X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
             where (X_POS > 1.0D-3)
                 F_CALM = log(X_POS)
