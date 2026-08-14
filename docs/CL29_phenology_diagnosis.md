@@ -943,6 +943,37 @@ the operational one.**
 
 ---
 
+## 21. The first honest-base calibration: project bests, and the seesaw's last stand
+
+(2026-08-15; `--paramset light --inputs /tmp/inputs_honest`; converged in 2 generations /
+120 evaluations, window Φ +9.6 %.)
+
+**Full-record best vs the ratchet base:** CHLA RMSE **25.13** (base 26.69; operational
+27.30), bias −9.3; **seasonal r +0.72, autumn/spring 1.62, peak September** — all three the
+best values of the entire project; August/September 39.1/41.6 (obs 50.8/50.2); **October
+25.3** (from 14.2); PO4 RMSE 0.0262; NH4 bias +0.004; zoo intact.
+
+**The parameters tell the §15 story completed:** the optimizer pushed the growth engine to
+KG_DIA **8.1** (of a bound at 10) and KG_FIX_CYN **7.6** — under measured optics with
+positioning, the production engine wants ~2.2× the transparent-water constants, and now it
+*works* because the light is there to use. KDISS_PON halved (0.17) and KHS_DIP_DIA doubled
+(0.0084) re-balance the nutrient side.
+
+**The honest costs:** the composition seesaw returned in mirrored form — KG_CYN cut to 1.2,
+CYN_C bias −0.72 → −0.88, while the fixers overshoot (+0.56). TN worsens (+0.58). And
+KG values near their bounds are the familiar signature of residual compensation — the two
+processes still missing from the honest configuration (surface self-shading of the
+positioned fraction; photoacclimative C:Chl) are being paid for in growth constants.
+
+**Status:** *not adopted* — recorded as the honest configuration's calibration frontier.
+The candidate adoption paths, in increasing ambition: (a) N-cycle pair only (KDISS 0.17,
+KHS_DIP 0.0084) on the ratchet base; (b) the full optimum with the CYN cost accepted;
+(c) close the two named gaps first (surface self-shading, variable C:Chl), then recalibrate
+— at which point the growth constants should fall back toward literature values, the
+cleanest test of whether compensation is truly gone.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
