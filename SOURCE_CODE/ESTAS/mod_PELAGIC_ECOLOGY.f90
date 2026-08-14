@@ -1167,6 +1167,17 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) ZOO_CLOSURE_REF
+
+    ! Sub-daily positioning gate (0 = legacy; 1 = calm-fraction surface blend)
+    ! and the surface-layer depth it uses. Graceful like everything above.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYANO_POS_MODEL
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) H_SURF_POS
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) W_CRIT_POS_MIN
 900 continue
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
@@ -1514,7 +1525,10 @@ subroutine PELAGIC_KINETICS &
           CONSIDER_NOSTOCALES                                    , &
           ZOO_FOOD_MODEL                                         , &
           KHS_FOOD_TOT_ZOO                                       , &
-          ZOO_CLOSURE_REF)
+          ZOO_CLOSURE_REF                                        , &
+          CYANO_POS_MODEL                                        , &
+          H_SURF_POS                                             , &
+          W_CRIT_POS_MIN)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)

@@ -198,6 +198,20 @@ module GLOBAL
     ! ZOO_FOOD_MODEL = 1; at ZOO_C = ZOO_CLOSURE_REF the specific zoo death
     ! rate equals KD_ZOO_20 (temperature-corrected).
     real(kind = DBL) :: ZOO_CLOSURE_REF = 0.05D0
+
+    ! Sub-daily cyanobacteria surface-positioning gate
+    ! (docs/superpowers/plans/2026-08-14-subdaily-positioning-gate.md):
+    ! 0 = legacy daily-mean Nagy gate only (default, byte-identical);
+    ! 1 = blend in a surface-layer light fraction weighted by the within-day
+    !     calm fraction (ERA5-hourly-fitted CDF of W_h/W_day).
+    integer :: CYANO_POS_MODEL = 0
+    ! Surface-layer depth (m) experienced by the positioned fraction.
+    real(kind = DBL) :: H_SURF_POS = 0.5D0
+    ! Floor on the positioning-critical wind speed (m/s). The Nagy-inverted
+    ! W_crit (~1.1 m/s under honest optics) treats colonies as passive; the
+    ! empirical scum-formation threshold for buoyant colonies is ~2-4 m/s.
+    ! 0 (default) = pure Nagy inversion, byte-identical.
+    real(kind = DBL) :: W_CRIT_POS_MIN = 0.0D0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4

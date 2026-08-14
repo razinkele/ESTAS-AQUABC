@@ -261,7 +261,10 @@ subroutine CYANOBACTERIA_BOUYANT &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
             PREF_DIN_DON_CYN        , &
-            PREF_NH4N_CYN)
+            PREF_NH4N_CYN           , &
+            CYANO_POS_MODEL         , &
+            H_SURF_POS                   , &
+            W_CRIT_POS_MIN)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
@@ -315,10 +318,17 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: R_CYN_DEATH
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_DIN_DON_CYN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_NH4N_CYN
+    ! Sub-daily surface-positioning gate (0 = legacy, 1 = calm-fraction blend)
+    ! and the surface-layer depth (m) for the positioned fraction.
+    integer, intent(in) :: CYANO_POS_MODEL
+    real(kind = DBL_PREC), intent(in) :: H_SURF_POS
+    real(kind = DBL_PREC), intent(in) :: W_CRIT_POS_MIN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
     real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
+    ! work arrays for the sub-daily positioning blend (CYANO_POS_MODEL = 1)
+    real(kind = DBL_PREC), dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
     ! -------------------------------------------------------------------------
@@ -410,6 +420,32 @@ subroutine CYANOBACTERIA_BOUYANT &
         call LIM_LIGHT&
              (I_A          , CHLA, KG_CYN, CYANO_DEPTH, K_E, LIM_KG_CYN_LIGHT, &
               CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
+
+        ! ------------------------------------------------------------------
+        ! Sub-daily surface-positioning blend (CYANO_POS_MODEL = 1, opt-in).
+        ! F_CALM = fraction of the day with hourly wind below the
+        ! positioning-critical speed W_crit (MIX(W)=euphotic), from the
+        ! within-day W_h/W_day CDF fitted on ERA5 hourly Nida 2012-2022
+        ! (96,432 h; ln F quadratic in ln x, max error < 0.05 for x <= 1).
+        ! That fraction of the day the population experiences the surface
+        ! layer H_SURF_POS instead of the cascade depth; x capped at 1
+        ! because beyond it the cascade above already positions.
+        ! ------------------------------------------------------------------
+        if (CYANO_POS_MODEL > 0) then
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
+            X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
+            where (X_POS > 1.0D-3)
+                F_CALM = log(X_POS)
+                F_CALM = exp(min(0.0D0, &
+                    0.6218D0*F_CALM*F_CALM + 3.8137D0*F_CALM - 0.7987D0))
+            elsewhere
+                F_CALM = 0.0D0
+            end where
+            H_SURF_ARR = min(H_SURF_POS, DEPTH)
+            call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_E, &
+                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)
+            LIM_KG_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_CYN_LIGHT + F_CALM * LIM_SURF
+        end if
     end if
 
 

@@ -41,7 +41,10 @@ subroutine NOSTOCALES &
             R_GERM_NOST_AKI                   , &
             R_FORM_NOST_AKI                   , &
             R_LOSS_AKI                        , &
-            R_MORT_AKI)
+            R_MORT_AKI                        , &
+            CYANO_POS_MODEL                   , &
+            H_SURF_POS                   , &
+            W_CRIT_POS_MIN)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
@@ -90,6 +93,10 @@ subroutine NOSTOCALES &
    double precision, dimension(nkn), intent(inout) :: R_FORM_NOST_AKI
    double precision, dimension(nkn), intent(inout) :: R_LOSS_AKI
    double precision, dimension(nkn), intent(inout) :: R_MORT_AKI
+   ! Sub-daily surface-positioning gate (0 = legacy, 1 = calm-fraction blend)
+   integer, intent(in) :: CYANO_POS_MODEL
+   double precision, intent(in) :: H_SURF_POS
+   double precision, intent(in) :: W_CRIT_POS_MIN
    ! ------------------------------------------------------------------------------------
 
    ! ------------------------------------------------------------------------------------
@@ -100,6 +107,8 @@ subroutine NOSTOCALES &
    double precision, dimension(nkn) :: NOST_VEG_HET_DEPTH
    double precision, dimension(nkn) :: EUPHOTIC_DEPTH
    double precision, dimension(nkn) :: MIX_DEPTH
+   ! work arrays for the sub-daily positioning blend (CYANO_POS_MODEL = 1)
+   double precision, dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH
    !double precision, dimension(nkn) :: R_MORT_DENS_NOST_VEG_HET
    double precision, dimension(nkn) :: AKI_GERM ! Germination rate constanst for Akinetes
    double precision, dimension(nkn) :: AKI_FORM ! Formation rate constanst for Akinetes
@@ -215,6 +224,32 @@ subroutine NOSTOCALES &
         call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, NOST_VEG_HET_DEPTH, K_E, &
                        LIM_KG_NOST_VEG_HET_LIGHT , NOST_C_TO_CHLA, I_S_NOST_VEG_HET, &
                        NOST_LIGHT_SAT, nkn, BETA_NOST_VEG_HET)
+
+        ! ------------------------------------------------------------------
+        ! Sub-daily surface-positioning blend (CYANO_POS_MODEL = 1, opt-in).
+        ! F_CALM = fraction of the day with hourly wind below the
+        ! positioning-critical speed W_crit (MIX(W)=euphotic), from the
+        ! within-day W_h/W_day CDF fitted on ERA5 hourly Nida 2012-2022
+        ! (96,432 h; ln F quadratic in ln x, max error < 0.05 for x <= 1).
+        ! That fraction of the day the population experiences the surface
+        ! layer H_SURF_POS instead of the cascade depth; x capped at 1
+        ! because beyond it the cascade above already positions.
+        ! ------------------------------------------------------------------
+        if (CYANO_POS_MODEL > 0) then
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
+            X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
+            where (X_POS > 1.0D-3)
+                F_CALM = log(X_POS)
+                F_CALM = exp(min(0.0D0, &
+                    0.6218D0*F_CALM*F_CALM + 3.8137D0*F_CALM - 0.7987D0))
+            elsewhere
+                F_CALM = 0.0D0
+            end where
+            H_SURF_ARR = min(H_SURF_POS, DEPTH)
+            call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, H_SURF_ARR, K_E, &
+                 LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET)
+            LIM_KG_NOST_VEG_HET_LIGHT = (1.0D0 - F_CALM) * LIM_KG_NOST_VEG_HET_LIGHT + F_CALM * LIM_SURF
+        end if
     end if
    ! ------------------------------------------------------------------------------------
 
