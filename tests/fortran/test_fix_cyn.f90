@@ -493,7 +493,8 @@ contains
                 R_FIX_CYN_RESP, R_FIX_CYN_EXCR, &
                 R_FIX_CYN_INT_RESP, KD_FIX_CYN, &
                 FAC_HYPOX_FIX_CYN_D, R_FIX_CYN_DEATH, &
-                PREF_NH4_DON_FIX_CYN)
+                PREF_NH4_DON_FIX_CYN, &
+                     0, 0.5D0)
 
         call assert_finite(R_FIX_CYN_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_FIX_CYN_MET(1), "Metabolism finite with K_E=0")

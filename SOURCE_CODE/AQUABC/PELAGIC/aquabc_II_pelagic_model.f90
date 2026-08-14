@@ -79,7 +79,9 @@ subroutine AQUABC_PELAGIC_KINETICS &
             CONSIDER_NOSTOCALES             , &
             ZOO_FOOD_MODEL                  , &
             KHS_FOOD_TOT_ZOO                , &
-            ZOO_CLOSURE_REF)
+            ZOO_CLOSURE_REF                 , &
+            CYANO_POS_MODEL                 , &
+            H_SURF_POS)
 
     use CO2SYS_CDIAC
     use AQUABC_II_GLOBAL
@@ -151,6 +153,10 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer                ,                          intent(in)    :: ZOO_FOOD_MODEL
     real(kind = DBL_PREC)  ,                          intent(in)    :: KHS_FOOD_TOT_ZOO
     real(kind = DBL_PREC)  ,                          intent(in)    :: ZOO_CLOSURE_REF
+    ! Sub-daily surface-positioning gate (0 legacy / 1 calm-fraction blend) and
+    ! the surface-layer depth (m) for the positioned fraction.
+    integer                ,                          intent(in)    :: CYANO_POS_MODEL
+    real(kind = DBL_PREC)  ,                          intent(in)    :: H_SURF_POS
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
@@ -1134,7 +1140,9 @@ contains
           FAC_HYPOX_CYN_D(ns:ne)         , &
           R_CYN_DEATH(ns:ne)             , &
           PREF_DIN_DON_CYN(ns:ne)        , &
-          PREF_NH4N_CYN(ns:ne))
+          PREF_NH4N_CYN(ns:ne)          , &
+          CYANO_POS_MODEL               , &
+          H_SURF_POS)
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
@@ -1181,7 +1189,9 @@ contains
                 KD_FIX_CYN(ns:ne)                   , &
                 FAC_HYPOX_FIX_CYN_D(ns:ne)          , &
                 R_FIX_CYN_DEATH(ns:ne)              , &
-                PREF_NH4N_DON_FIX_CYN(ns:ne))
+                PREF_NH4N_DON_FIX_CYN(ns:ne)   , &
+                CYANO_POS_MODEL                , &
+                H_SURF_POS)
 
         ! Consider the effect of growth inhibition which is supplied from outside
         ! by external models
@@ -1293,7 +1303,9 @@ contains
             R_GERM_NOST_AKI(ns:ne)                   , &
             R_FORM_NOST_AKI(ns:ne)                   , &
             R_LOSS_AKI(ns:ne)                        , &
-            R_MORT_AKI(ns:ne))
+            R_MORT_AKI(ns:ne)                 , &
+            CYANO_POS_MODEL                   , &
+            H_SURF_POS)
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models
