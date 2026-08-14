@@ -849,6 +849,52 @@ Fortran change in the established opt-in pattern. Adoption of the real-wind forc
 
 ---
 
+## 19. The sub-daily positioning gate: built, verified, and bounded — the surface bloom
+is a persistent state, not a daily fraction
+
+(2026-08-14, wind-plan Task 5; branch `feature/subdaily-positioning`, commits `99bd28e` +
+`be21fbd`; opt-in `CYANO_POS_MODEL` + `H_SURF_POS` + `W_CRIT_POS_MIN`, default byte-identical,
+all Fortran suites green, direct-caller tests updated with the change.)
+
+**Mechanism:** in the three cyano light gates, the cascade-depth factor is blended with a
+0.5 m surface-layer factor, weighted by F_calm — the fraction of the day the hourly wind
+sits below the positioning-critical speed, from the within-day wind CDF fitted on 96,432
+ERA5 hours (log-quadratic, error < 0.01 in the calm tail). `W_CRIT_POS_MIN` floors the
+critical speed: the Nagy inversion treats colonies as passive tracers (W_crit ≈ 1.1 m/s
+under honest optics); empirical scum-formation thresholds are ~2–4 m/s.
+
+**The measured ladder** (honest configuration, August climatology vs observed 50.8 µg/L):
+
+| configuration | Aug | Sep | seasonal r | FIX_CYN_C bias |
+|---|---|---|---|---|
+| Task 4 — no gate | 14.9 | 15.9 | +0.23 | −0.478 |
+| gate, Nagy W_crit (1.1 m/s) | 15.1 | 16.1 | +0.24 | −0.471 |
+| gate, scum W_crit (3.0 m/s) | **18.0** | **20.0** | **+0.38** | **−0.328** |
+
+Winter stays exact throughout (Feb 8.8–9.0 vs obs 10.2; Mar 25.4–25.5 vs 25.1), and the
+scum-threshold run adds new best-evers underneath: DO RMSE 7.83, TN 0.888, PO4 back to
+0.0379. Direction fully confirmed; magnitude bounded.
+
+**The bound is structural and now quantified.** The blend scales the day-averaged light
+factor by F_calm ≤ ~0.45 even on calm days; a *fully* positioned population at 0.5 m in
+kd ≈ 2.9 water carries a light factor ≈ 0.9 vs the column's 0.28 — and extrapolating the
+ladder to F → 1 lands almost exactly on the observed August–October plateau (~45–50 µg/L).
+**The observed lagoon behaves as persistently positioned through the bloom season** — the
+famous multi-week surface accumulations — while a within-day calm fraction can never exceed
+its wind statistics. Persistence is a *state* (biomass that stays surface-concentrated
+across days once accumulated, reset by storms), i.e. a ratchet with memory — the same
+structural family as the akinete life-cycle (§9), not a parameterization refinement.
+
+**Disposition:** the machinery merges (byte-identical default; three literature-anchored
+constants for any future use); no option is enabled in the operational config. The
+honest-optics programme closes with its ledger fully quantified: winter, nitrogen, oxygen
+and zooplankton essentially solved; the summer surface-bloom state identified as the single
+remaining structural development, alongside its siblings (akinete staging, second diatom
+guild). The operational transparent-compensation configuration remains the shipping one —
+now with every term of the compensation measured, bounded, and documented.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
