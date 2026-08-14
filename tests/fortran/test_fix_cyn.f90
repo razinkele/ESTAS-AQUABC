@@ -431,6 +431,7 @@ contains
         real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn)
         real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
         real(kind=DBL_PREC) :: NH4_N(nkn), NO3_N(nkn), DON(nkn), PO4_P(nkn)
+        real(kind=DBL_PREC) :: S_TEST(1)
         real(kind=DBL_PREC) :: FIX_CYN_C(nkn)
 
         real(kind=DBL_PREC) :: FIX_CYN_LIGHT_SAT(nkn)
@@ -478,6 +479,7 @@ contains
         PREF_NH4_DON_FIX_CYN = 0.0D0
 
         ! Call BOUYANT variant with SMITH=1 to trigger euphotic depth
+        S_TEST = 0.0D0
         call FIX_CYANOBACTERIA_BOUYANT(params, env, 1.0D0, 1, nkn, &
                 NH4_N, NO3_N, DON, PO4_P, FIX_CYN_C, &
                 FIX_CYN_LIGHT_SAT, ALPHA_0, ALPHA_1, &
@@ -494,7 +496,7 @@ contains
                 R_FIX_CYN_INT_RESP, KD_FIX_CYN, &
                 FAC_HYPOX_FIX_CYN_D, R_FIX_CYN_DEATH, &
                 PREF_NH4_DON_FIX_CYN, &
-                     0, 0.5D0, 0.0D0)
+                     0, 0.5D0, 0.0D0, S_TEST)
 
         call assert_finite(R_FIX_CYN_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_FIX_CYN_MET(1), "Metabolism finite with K_E=0")

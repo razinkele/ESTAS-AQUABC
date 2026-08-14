@@ -264,9 +264,11 @@ subroutine CYANOBACTERIA_BOUYANT &
             PREF_NH4N_CYN           , &
             CYANO_POS_MODEL         , &
             H_SURF_POS                   , &
-            W_CRIT_POS_MIN)
+            W_CRIT_POS_MIN               , &
+            S_CHUNK)
 
     use AQUABC_II_GLOBAL
+    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
     use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
@@ -323,6 +325,9 @@ subroutine CYANOBACTERIA_BOUYANT &
     integer, intent(in) :: CYANO_POS_MODEL
     real(kind = DBL_PREC), intent(in) :: H_SURF_POS
     real(kind = DBL_PREC), intent(in) :: W_CRIT_POS_MIN
+    ! surface-positioned fraction state slice (module S_POS), updated when
+    ! CYANO_POS_MODEL >= 2; inert zeros otherwise
+    real(kind = DBL_PREC), dimension(nkn), intent(inout) :: S_CHUNK
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
@@ -431,16 +436,28 @@ subroutine CYANOBACTERIA_BOUYANT &
         ! layer H_SURF_POS instead of the cascade depth; x capped at 1
         ! because beyond it the cascade above already positions.
         ! ------------------------------------------------------------------
-        if (CYANO_POS_MODEL > 0) then
+        if (CYANO_POS_MODEL == 1) then
             X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
-            X_POS = min(X_POS / max(WINDS, 1.0D-1), 1.0D0)
-            where (X_POS > 1.0D-3)
-                F_CALM = log(X_POS)
-                F_CALM = exp(min(0.0D0, &
-                    0.6218D0*F_CALM*F_CALM + 3.8137D0*F_CALM - 0.7987D0))
-            elsewhere
-                F_CALM = 0.0D0
-            end where
+            F_CALM = CALM_FRACTION(WINDS, X_POS)
+            H_SURF_ARR = min(H_SURF_POS, DEPTH)
+            call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_E, &
+                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)
+            LIM_KG_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_CYN_LIGHT + F_CALM * LIM_SURF
+        end if
+
+        ! Positional ratchet (CYANO_POS_MODEL = 2): S builds during the calm
+        ! fraction of the day and is dispersed during the storm fraction,
+        ! persisting across time steps (module AQUABC_POSITIONING_STATE).
+        ! Forward Euler on the kinetic step, clamped to [0,1]. The blend then
+        ! uses S instead of the memoryless within-day calm fraction.
+        if (CYANO_POS_MODEL >= 2) then
+            X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
+            F_CALM = CALM_FRACTION(WINDS, X_POS)
+            LIM_SURF = 1.0D0 - CALM_FRACTION(WINDS, W_DISP_POS)   ! storm fraction (scratch use)
+            S_CHUNK = S_CHUNK + TIME_STEP * &
+                (K_POS_UP * F_CALM * (1.0D0 - S_CHUNK) - K_POS_DISP * LIM_SURF * S_CHUNK)
+            S_CHUNK = max(0.0D0, min(1.0D0, S_CHUNK))
+            F_CALM = S_CHUNK
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
             call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_E, &
                  LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)

@@ -1073,11 +1073,13 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use GLOBAL
     use ALLELOPATHY
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
+    use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
 
     implicit none
 
     integer, intent(in) :: IN_FILE
     integer :: TEMP_MODEL_OPT
+    real(kind = DBL) :: K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1143,6 +1145,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! files without this line default to plateau. This sets the AQUABC-side flag that
     ! GROWTH_AT_TEMP reads. The trailing CYN_ALLELOPATHY_FILE_NAME lines (if present)
     ! are consumed harmlessly here; the file is closed right after this routine.
+    K_POS_UP_IN = 3.0D0; K_POS_DISP_IN = 10.0D0; W_DISP_POS_IN = 4.0D0
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     read(IN_FILE + 1, *, end = 900, err = 900)
@@ -1178,7 +1181,20 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) W_CRIT_POS_MIN
+
+    ! Positional-ratchet constants (CYANO_POS_MODEL = 2): surfacing rate (1/d),
+    ! storm-dispersal rate (1/d), dispersal wind threshold (m/s). Graceful;
+    ! defaults live in AQUABC_POSITIONING_STATE.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) K_POS_UP_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) K_POS_DISP_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) W_DISP_POS_IN
 900 continue
+    call SET_POSITIONING_PARAMS(K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN)
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
                    'KHS_FOOD_TOT_ZOO =', KHS_FOOD_TOT_ZOO
