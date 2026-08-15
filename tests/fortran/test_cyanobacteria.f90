@@ -442,7 +442,42 @@ contains
         call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, W_STORM)
         call run_cyn_pos(params, env, S_R, LIMS)          ! storm day
         call assert_true(S_R(1) < 0.05D0, "one storm day collapses S")
+
+        ! concentrated self-shading: same ratcheted state, dense vs sparse
+        ! population -> the dense scum sees less light
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, W_CALM)
+        S_R = 1.0D0
+        call run_cyn_pos_c(params, env, S_R, 0.1D0, LIM1)   ! sparse
+        S_R = 1.0D0
+        call run_cyn_pos_c(params, env, S_R, 8.0D0, LIM3)   ! dense scum
+        call assert_true(LIM3(1) < LIM1(1), "dense positioned scum shades itself")
     end subroutine test_persistence_ratchet
+
+    ! Variant with settable biomass (self-shading test).
+    subroutine run_cyn_pos_c(params, env, S_R, biomass, LIM_OUT)
+        type(t_cyn_params), intent(in) :: params
+        type(t_phyto_env), intent(in) :: env
+        real(kind=DBL_PREC), intent(inout) :: S_R(1)
+        real(kind=DBL_PREC), intent(in) :: biomass
+        real(kind=DBL_PREC), intent(out) :: LIM_OUT(1)
+        integer, parameter :: nkn = 1
+        real(kind=DBL_PREC) :: CYN_LIGHT_SAT(nkn), NH4(nkn), NO3(nkn), DON(nkn)
+        real(kind=DBL_PREC) :: PO4(nkn), CYN_C(nkn), ZOO_C(nkn)
+        real(kind=DBL_PREC) :: KG(nkn), A0(nkn), A1(nkn)
+        real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn), LNU(nkn), LK(nkn)
+        real(kind=DBL_PREC) :: RG(nkn), RM(nkn), RR(nkn), RE(nkn), RI(nkn)
+        real(kind=DBL_PREC) :: KD(nkn), FH(nkn), RD(nkn), PDD(nkn), PNH(nkn)
+        CYN_LIGHT_SAT = 0.0D0; NH4 = 0.05D0; NO3 = 0.3D0; DON = 0.5D0
+        PO4 = 0.05D0; CYN_C = biomass; ZOO_C = 0.01D0
+        KG=0; A0=0; A1=0; LT=0; LL=0; LD=0; LN=0; LP=0; LNU=0; LK=0
+        RG=0; RM=0; RR=0; RE=0; RI=0; KD=0; FH=0; RD=0; PDD=0; PNH=0
+        call CYANOBACTERIA_BOUYANT(params, env, CYN_LIGHT_SAT, &
+                     NH4, NO3, DON, PO4, CYN_C, ZOO_C, 1.0D0, 1, nkn, &
+                     KG, A0, A1, LT, LL, LD, LN, LP, LNU, LK, &
+                     RG, RM, RR, RE, RI, KD, FH, RD, PDD, PNH, &
+                     2, 0.5D0, 3.0D0, S_R)
+        LIM_OUT = LL
+    end subroutine run_cyn_pos_c
 
     ! Helper: one CYANOBACTERIA_BOUYANT call with the ratchet on, returning the
     ! light limitation and updating the caller's S slice.

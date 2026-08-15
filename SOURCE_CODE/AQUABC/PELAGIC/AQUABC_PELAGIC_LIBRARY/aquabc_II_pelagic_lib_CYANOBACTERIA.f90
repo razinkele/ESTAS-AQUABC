@@ -268,7 +268,7 @@ subroutine CYANOBACTERIA_BOUYANT &
             S_CHUNK)
 
     use AQUABC_II_GLOBAL
-    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS
+    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
     use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
@@ -333,7 +333,7 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
     real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
     ! work arrays for the sub-daily positioning blend (CYANO_POS_MODEL = 1)
-    real(kind = DBL_PREC), dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH
+    real(kind = DBL_PREC), dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH, K_SURF_POS
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
     ! -------------------------------------------------------------------------
@@ -459,7 +459,14 @@ subroutine CYANOBACTERIA_BOUYANT &
             S_CHUNK = max(0.0D0, min(1.0D0, S_CHUNK))
             F_CALM = S_CHUNK
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
-            call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_E, &
+            ! Concentrated self-shading: the positioned fraction packs the
+            ! group's biomass into the surface layer, so that layer sees the
+            ! group's chlorophyll in excess of the column average.
+            ! excess (ug/L) = C[mg C/L]*1000/CChl * S * (H/H_surf - 1)
+            K_SURF_POS = K_E + KD_PER_CHL_POS * &
+                max(CYN_C * 1.0D3 / CYN_C_TO_CHLA * S_CHUNK * &
+                    (DEPTH / max(H_SURF_ARR, 1.0D-2) - 1.0D0), 0.0D0)
+            call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_SURF_POS, &
                  LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)
             LIM_KG_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_CYN_LIGHT + F_CALM * LIM_SURF
         end if

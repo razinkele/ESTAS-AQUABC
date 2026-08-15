@@ -48,7 +48,7 @@ subroutine NOSTOCALES &
             S_CHUNK)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
-   use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS
+   use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    implicit none
 
@@ -113,7 +113,7 @@ subroutine NOSTOCALES &
    double precision, dimension(nkn) :: EUPHOTIC_DEPTH
    double precision, dimension(nkn) :: MIX_DEPTH
    ! work arrays for the sub-daily positioning blend (CYANO_POS_MODEL = 1)
-   double precision, dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH
+   double precision, dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH, K_SURF_POS
    !double precision, dimension(nkn) :: R_MORT_DENS_NOST_VEG_HET
    double precision, dimension(nkn) :: AKI_GERM ! Germination rate constanst for Akinetes
    double precision, dimension(nkn) :: AKI_FORM ! Formation rate constanst for Akinetes
@@ -263,7 +263,14 @@ subroutine NOSTOCALES &
             S_CHUNK = max(0.0D0, min(1.0D0, S_CHUNK))
             F_CALM = S_CHUNK
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
-            call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, H_SURF_ARR, K_E, &
+            ! Concentrated self-shading: the positioned fraction packs the
+            ! group's biomass into the surface layer, so that layer sees the
+            ! group's chlorophyll in excess of the column average.
+            ! excess (ug/L) = C[mg C/L]*1000/CChl * S * (H/H_surf - 1)
+            K_SURF_POS = K_E + KD_PER_CHL_POS * &
+                max(NOST_VEG_HET_C * 1.0D3 / NOST_C_TO_CHLA * S_CHUNK * &
+                    (DEPTH / max(H_SURF_ARR, 1.0D-2) - 1.0D0), 0.0D0)
+            call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, H_SURF_ARR, K_SURF_POS, &
                  LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET)
             LIM_KG_NOST_VEG_HET_LIGHT = (1.0D0 - F_CALM) * LIM_KG_NOST_VEG_HET_LIGHT + F_CALM * LIM_SURF
         end if

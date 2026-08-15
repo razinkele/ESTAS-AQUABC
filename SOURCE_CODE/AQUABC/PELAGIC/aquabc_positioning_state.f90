@@ -23,6 +23,12 @@ module AQUABC_POSITIONING_STATE
     real(kind = DBL_PREC) :: K_POS_UP   = 3.0D0
     real(kind = DBL_PREC) :: K_POS_DISP = 10.0D0
     real(kind = DBL_PREC) :: W_DISP_POS = 4.0D0
+    ! Self-shading slope of the POSITIONED fraction (m-1 per ug Chl a / L):
+    ! the Curonian empiric kd relation's chlorophyll coefficient. A scum
+    ! concentrates the group's biomass into H_SURF_POS, so the surface layer
+    ! sees the group's chlorophyll in EXCESS of the column average; that excess
+    ! attenuates the surface light. 0 disables (pre-closure behaviour).
+    real(kind = DBL_PREC) :: KD_PER_CHL_POS = 0.02D0
 
 contains
 
@@ -40,11 +46,13 @@ contains
         if (allocated(S_POS)) S_POS = 0.0D0
     end subroutine RESET_POSITIONING_STATE
 
-    subroutine SET_POSITIONING_PARAMS(kup, kdisp, wdisp)
+    subroutine SET_POSITIONING_PARAMS(kup, kdisp, wdisp, kdchl)
         real(kind = DBL_PREC), intent(in) :: kup, kdisp, wdisp
+        real(kind = DBL_PREC), intent(in), optional :: kdchl
         K_POS_UP   = kup
         K_POS_DISP = kdisp
         W_DISP_POS = wdisp
+        if (present(kdchl)) KD_PER_CHL_POS = kdchl
     end subroutine SET_POSITIONING_PARAMS
 
     elemental function CALM_FRACTION(w_day, w_thresh) result(f)
