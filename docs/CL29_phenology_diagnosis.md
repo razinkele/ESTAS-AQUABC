@@ -1020,6 +1020,36 @@ constants and the CYN trade. Machinery for both is merged and opt-in.
 
 ---
 
+## 23. Adoption: the honest configuration is operational CL29
+
+(2026-08-15, user decision; data repo `a7e633e`.) The transparent-water compensation era
+ends. Operational CL29 is now the honest configuration **with the closure-DE engine
+optimum**, taking the extra skill at the stated price of interpretability:
+
+- **Measured, fixed, never calibrated:** K_B_E 2.18; C:Chl 53/78 (the §22 pigment-inflation
+  lesson); the ERA5 wind record.
+- **Literature-anchored:** fixer T_min 8 °C, CYN T_min 5 °C + BETA 2, zoo rates at the
+  closure reference; ratchet constants (3 / 8 m/s formation/dispersal hysteresis, 0.5 m
+  surface layer) with concentrated scum self-shading.
+- **Structural (all opt-in, byte-identical off):** ZOO_FOOD_MODEL 1 (saturating + quadratic
+  closure), CYANO_POS_MODEL 2 (positional ratchet).
+- **Fitted (the interpretability price, stated):** KG_DIA 8.10, KG_CYN 1.21, KG_FIX 7.62,
+  KG_OPA 2.58; K_MIN_DOC_NO3N 2.98, K_NITR 1.94, KDISS_PON 0.174, KHS_DIP_DIA 0.00844.
+
+**Operational scores (the validated full-record run of this exact configuration):**
+seasonal r **+0.72** (was −0.70 when this document began), autumn/spring **1.62** (was
+0.63), CHLA RMSE **25.19** (was ~29 with the mean hiding an inverted cycle), peak September
+(was February), October 25.0 (was ~8 under honest optics), winter Feb 15.9 vs obs 10.2,
+PO4 RMSE 0.0264, zooplankton and diazotrophs at observed scale.
+
+**The open frontier after adoption:** OPA extinct (−0.47 in every configuration ever run),
+CYN cool-season biomass (−0.88 under the fitted engine), the June diatom collapse /
+second-guild succession, October's remaining gap (25 vs 46: akinete staging), the deep-DE
+KG-retreat question, and photoacclimative C:Chl as the structural successor to the fixed
+ratios. The compensation ledger stands at five channels, all documented in §§8–22.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
