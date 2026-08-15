@@ -103,6 +103,24 @@ PARAM_SETS = {
         ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
         ("KHS_DIP_DIA",             "log", 0.002,  0.03),
     ],
+    # Path (c) closure set (doc par. 21): the 'light' engine + C:Chl calibrated
+    # WITHIN the measured bounds (312 paired determinations: median 53, IQR
+    # 36-78; diatom-dominated ~31). Under the honest base with concentrated
+    # self-shading, KG falling back from its bounds is the test that
+    # compensation is gone.
+    "honest": [
+        ("KG_DIA_OPT_TEMP",         "lin", 2.0,   10.0),
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    8.0),
+        ("KG_FIX_CYN_OPT_TEMP",     "lin", 1.0,    8.0),
+        ("KG_OPA_OPT_TEMP",         "lin", 1.0,    8.0),
+        ("K_MIN_DOC_NO3N_20",       "log", 0.3,    3.0),
+        ("K_NITR_20",               "log", 0.2,    2.0),
+        ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
+        ("KHS_DIP_DIA",             "log", 0.002,  0.03),
+        ("DIA_C_TO_CHLA",           "lin", 25.0,  53.0),
+        ("CYN_C_TO_CHLA",           "lin", 36.0,  78.0),
+        ("FIX_CYN_C_TO_CHLA",       "lin", 36.0,  78.0),
+    ],
 }
 CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
 CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
