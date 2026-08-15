@@ -98,6 +98,7 @@ contains
         type(t_phyto_env), intent(in) :: env
         integer, intent(in) :: nkn, DAY_OF_YEAR
         real(kind=DBL_PREC), intent(in) :: DIN(nkn), DON(nkn), DP(nkn)
+        double precision :: S_NOST_TEST(nkn)
         real(kind=DBL_PREC), intent(in) :: NOST_VEG_HET_C(nkn), NOST_AKI_C(nkn)
         real(kind=DBL_PREC), intent(in) :: TIME_STEP
         real(kind=DBL_PREC), intent(out) :: R_NOST_VEG_HET_GROWTH(nkn)
@@ -139,6 +140,7 @@ contains
         R_GERM_NOST_AKI = 0.0D0; R_FORM_NOST_AKI = 0.0D0
         R_LOSS_AKI = 0.0D0; R_MORT_AKI = 0.0D0
 
+        S_NOST_TEST = 0.0D0
         call NOSTOCALES(params, env, TIME_STEP, DAY_OF_YEAR, 0, nkn, &
                         NOST_LIGHT_SAT, DIN, DON, DP, &
                         NOST_VEG_HET_C, NOST_AKI_C, &
@@ -153,7 +155,8 @@ contains
                         RD_NOST_VEG_HET, FAC_HYPOX_NOST_VEG_HET_D, &
                         R_NOST_VEG_HET_DEATH, R_DENS_MORT_NOST_VEG_HET, &
                         R_GERM_NOST_AKI, R_FORM_NOST_AKI, &
-                        R_LOSS_AKI, R_MORT_AKI)
+                        R_LOSS_AKI, R_MORT_AKI, &
+                        0, 0.5D0, 0.0D0, S_NOST_TEST)
     end subroutine run_nost
 
     ! Smoke test: typical conditions produce plausible outputs
@@ -496,6 +499,7 @@ contains
         type(t_nost_params) :: params
         type(t_phyto_env) :: env
         real(kind=DBL_PREC), target :: TEMP(nkn), I_A(nkn), K_E(nkn)
+        double precision :: S_NOST_TEST(nkn)
         real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn)
         real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
         real(kind=DBL_PREC) :: DIN(nkn), DON(nkn), DP(nkn)
@@ -551,6 +555,7 @@ contains
         R_LOSS_AKI = 0.0D0; R_MORT_AKI = 0.0D0
 
         ! Call with SMITH=1 to trigger euphotic depth calculation
+        S_NOST_TEST = 0.0D0
         call NOSTOCALES(params, env, 1.0D0, 180, 1, nkn, &
                         NOST_LIGHT_SAT, DIN, DON, DP, &
                         NOST_VEG, NOST_AKI, &
@@ -565,7 +570,8 @@ contains
                         RD_NOST_VEG_HET, FAC_HYPOX_NOST_VEG_HET_D, &
                         R_NOST_VEG_HET_DEATH, R_DENS_MORT_NOST_VEG_HET, &
                         R_GERM_NOST_AKI, R_FORM_NOST_AKI, &
-                        R_LOSS_AKI, R_MORT_AKI)
+                        R_LOSS_AKI, R_MORT_AKI, &
+                        0, 0.5D0, 0.0D0, S_NOST_TEST)
 
         call assert_finite(R_NOST_VEG_HET_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_NOST_VEG_HET_MET(1), "Metabolism finite with K_E=0")
