@@ -974,6 +974,52 @@ cleanest test of whether compensation is truly gone.
 
 ---
 
+## 22. Path (c) executed: the fifth compensation channel, and where the honest programme rests
+
+(2026-08-15; branch `feature/honest-closure`.)
+
+**Piece 1 — concentrated self-shading** (`b8c4e26`): the positioned fraction's surface light
+now attenuates through its own concentrated chlorophyll (K_surf = K_E + 0.02·excess, the
+Curonian empiric slope; own-group v1). Unit-tested (a dense scum sees less light than a
+sparse one); byte-identical default; the honest-base Φ moved 19.4266 → 19.4454 — the scum
+pays a real, small light tax.
+
+**Piece 2 — C:Chl within measured bounds — refuted as a calibration knob.** The 11-parameter
+DE (engine + DIA/CYN/FIX C:Chl bounded by the 312-pair IQRs) found **the fifth compensation
+channel: pigment inflation.** It drove all three ratios toward their lower bounds (26/50/43),
+filling the chlorophyll gap with pigment instead of biomass — window Φ +10.3 % while winter
+exploded (Feb 54 vs obs 10) and seasonal r collapsed to +0.47. The RMSE objective cannot be
+trusted with a pigment knob it can see when the phase it cannot see pays the bill.
+**C:Chl stays fixed at measured values; the honest treatment is photoacclimative structure,
+not calibration.**
+
+**The corrected 8-knob DE** (C:Chl pinned, self-shading active) converged in 2 generations
+to the *numerically identical* §21 attractor (KG_DIA 8.1, KG_CYN 1.21, KG_FIX 7.62; full
+record r +0.72, CHLA RMSE 25.19): at present biomass the self-shading tax is too small to
+re-rank a same-seeded 120-candidate search. **The KG-retreat test is unresolved as run** —
+the caveat is honest (popsize 5, tol 0.02 converges prematurely on 8 dimensions), and a
+deep search (popsize ≥ 15, maxiter ≥ 40) is the stated instrument if the question is to be
+forced. The seesaw signature (KG_CYN crushed) persists in the attractor, so residual
+structure is still being paid for somewhere — the unresolved trio (OPA extinct at −0.47
+through every configuration ever run; the June diatom collapse; CYN's cool-season identity)
+remains the likeliest account.
+
+**Where the honest programme rests, in full:**
+
+| configuration | r | autumn/spring | CHLA RMSE | fitted phyto constants |
+|---|---|---|---|---|
+| operational (transparent) | +0.59 | 1.41 | 27.30 | none (subset-adopted N-cycle only) |
+| **ratchet base (honest, unfitted)** | **+0.70** | 1.41 | 26.69 | **none** |
+| closure DE best (honest, fitted) | +0.72 | 1.62 | 25.19 | KG at/near bounds, CYN crushed |
+
+The adoption question the user now owns: the **ratchet base** is the philosophically clean
+candidate — every constant measured, literature-anchored, or subset-adopted; no fitted
+phytoplankton kinetics; already beating the operational configuration. The closure-DE
+optimum adds skill (+0.02 r, −1.5 CHLA RMSE, October +11) at the price of pinned growth
+constants and the CYN trade. Machinery for both is merged and opt-in.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
