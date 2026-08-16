@@ -1095,6 +1095,41 @@ items in §23, because it is cheap and it re-frames what those items are.
 
 ---
 
+## 25. The deep DE: the KG-retreat test answered — negatively — and the seesaw exposed as an
+artifact
+
+(2026-08-16/17; popsize 15, maxiter 40, fresh seed, 360 evaluations — 3× the §22 search.)
+
+**KG does not retreat.** With self-shading active and a search 3× deeper on an independent
+seed, the diatom growth constant went **up**, not down: 8.10 → **9.17** (bound 10);
+KG_FIX_CYN 7.62 → 7.05; KG_OPA 2.58 → 3.71. The honest configuration's inflated growth
+constants are **not** an artifact of premature convergence, and the self-shading tax was not
+what they were paying for. **Something is still being compensated** — and after §24, the
+asymmetric boundary condition is the leading candidate: three of four phytoplankton groups
+are diluted toward a flat 0.020 placeholder, so the engine must over-grow them locally to
+reach observed biomass at all.
+
+**The composition seesaw is partly a search artifact.** The §21/§22 attractor's signature
+move — KG_CYN crushed to 1.21 — did not recur: this search set KG_CYN to **4.01**, above its
+default, with essentially the same CYN_C bias (−0.73 vs −0.70). Two distinct parameter sets
+give the same composition outcome, so "the optimizer sacrifices CYN" was over-read; what the
+data actually constrain is the *outcome*, not the route.
+
+**Neither optimum is global.** The deep search converged in 2 generations on `tol 0.02` to
+Φ 18.46, *worse* than the shallow run's 17.57, on the same objective and base. The Φ
+landscape is rugged and the tolerance stops both prematurely; the adopted configuration
+(§23) remains the best-scoring one found, but it is explicitly a good local optimum, not a
+demonstrated best. Its full-record scores still lead: r +0.72 / CHLA 25.19 against this
+run's +0.66 / 25.55.
+
+**What this closes and opens.** Closes: the §22 caveat — the KG question is now *answered*
+(no retreat), and the seesaw narrative is corrected. Opens: the boundary-symmetry experiment
+(§24) is now the highest-value next step *for interpretability as well as skill* — it is the
+one candidate that would explain inflated growth constants across three groups at once, and
+it is a data task, not a modelling one.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
