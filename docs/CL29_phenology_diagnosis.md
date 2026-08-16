@@ -1050,6 +1050,51 @@ ratios. The compensation ledger stands at five channels, all documented in §§8
 
 ---
 
+## 24. The OPA extinction: an asymmetric boundary condition, not a kinetic failure
+
+(2026-08-16. Diagnosis only — no change made.) OPA has sat at −0.47 mg C/L bias in *every
+configuration this project has ever run*, untouched by optics, temperature, grazing,
+positioning or calibration. Measuring instead of assuming, in the established order:
+
+**Not the limitation algebra.** All groups share `LIM = LIGHT × min(DOXY, NUTR)`; the
+"changed by Petras" comment at the OPA site is the same expression the others use.
+
+**Not temperature.** OPA's CTMI (10, 17, 23; valid, margin 1 °C) gives an annual mean factor
+of **0.300 — higher than CYN's 0.287** — peaking at 0.868 in September, positive on 45 % of
+days. Its thermal window is genuinely better than that of the group which outlives it 60×.
+
+**Not its resource traits.** OPA grows faster than CYN (2.58 vs 1.21 d⁻¹ after the adopted
+calibration), has the better phosphorus affinity (KHS_DIP 0.006 vs 0.008), and the lower
+mortality (0.11 vs 0.125). On local kinetics OPA should beat CYN.
+
+**It is the boundary condition.** The open boundary supplies CYN with a *seasonally varying*
+carbon input rising to **0.36 mg C/L in September** (annual mean 0.154), while OPA — like the
+diatoms and the fixers — receives a **flat 0.020 placeholder in every month of every year**.
+Initial conditions carry the same 31× asymmetry (CYN 0.680, OPA 0.022). In a system where
+transport dominates local kinetics, that is decisive: the model's CYN is partly *prescribed*
+by its boundary, and OPA is permanently diluted toward a placeholder.
+
+Two consequences, both uncomfortable and both worth stating in the paper:
+
+1. **Part of the model's CYN skill is circular.** The seasonal shape the boundary imposes
+   (rising to a September maximum) is the shape CYN is scored against. This does not
+   invalidate the CYN-related findings — the §16 T_min correction and §22's crush both act
+   on top of it — but the CYN carbon comparison is not an independent test in the way the
+   diazotroph or zooplankton comparisons are.
+2. **The OPA "coexistence failure" of §3.6 may never have been a coexistence failure.** Every
+   calibration that "killed OPA by choice" was choosing between a group with a seasonal
+   subsidy and one with a placeholder. The competitive-exclusion interpretation of the
+   composition wall needs this caveat attached.
+
+**The fix is data, not code**: Baltic-boundary phytoplankton composition for the strait
+(the HELCOM/Klaipėda monitoring holds group-resolved biomass at the boundary stations), used
+to give DIA/OPA/FIX_CYN boundary series with the same status as CYN's. Until then, OPA's
+bias should be reported as *unconstrained by the experiment*, not as a model deficiency —
+and the honest ranking of the remaining structural work puts this ahead of the OPA-related
+items in §23, because it is cheap and it re-frames what those items are.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
