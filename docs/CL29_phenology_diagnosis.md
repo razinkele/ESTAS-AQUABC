@@ -1188,6 +1188,47 @@ since the growth constants were partly compensating the missing supply.
 
 ---
 
+## 27. Post-boundary recalibration: no gain to take, and the inflation shown to be
+compensation
+
+(2026-08-17; `light` set, popsize 8 / maxiter 25 / seed 11 on the newly adopted boundary.)
+
+**The boundary was worth 14.6 % of the objective on its own.** Baseline Φ fell 19.4454 →
+**16.6117** with no parameter changed — the largest single-change improvement in this study,
+and it came from data rather than fitting.
+
+**The recalibration found nothing to add.** Best Φ 16.7224 — **0.7 % worse than the adopted
+parameters**, which the Latin-hypercube initialisation never contains. Full-record: the two
+are indistinguishable (Si 0.824 vs 0.825, PO4 0.0232 vs 0.0231, CHLA 25.52 vs 25.56, ZOO
+identical); the search's NH4 is better in bias but worse in RMSE, its CYN slightly better,
+its phase slightly worse (r +0.69 vs +0.73). **Nothing is adopted; the configuration adopted
+in §26 stands.**
+
+**But the parameter it chose settles the §25 question.** The search reached its
+near-equivalent score with **KG_DIA 8.10 → 5.769** — a 37 % retreat, and the first time this
+constant has fallen under any intervention (self-shading: no; deeper search: it rose to
+9.17). Two configurations differing by 40 % in the diatom growth constant now score within
+0.7 % of each other:
+
+> **the inflation was compensation for the missing boundary supply.** With diatoms given
+> their real 7.5× spring input, the constant is no longer identifiable — the objective has
+> gone flat along that axis, which is exactly the signature of a compensation that has been
+> removed rather than merely relocated.
+
+That closes the thread opened in §21 and left explicitly unresolved in §22 and §25. It also
+means the adopted configuration's inflated constants are now *cosmetic rather than
+load-bearing*: they can be set to literature values at a cost of 0.7 % in Φ and ~0.04 in
+seasonal r, which is a legitimate scientific choice — a "literature-parameters" variant is
+recorded here as available (KG_DIA 5.77, KG_CYN 2.79, KG_OPA 4.14, KG_FIX 7.88; K_NITR 1.35,
+KDISS_PON 0.505, KHS_DIP_DIA 0.00276), not adopted.
+
+**Unmoved by any of it: OPA** (−0.476 in both). Three independent interventions — boundary
+supply, growth constant raised to 4.14, and the whole community recalibrated around it — and
+it does not return. The §3.6 competitive-exclusion reading is now confirmed from three
+directions.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
