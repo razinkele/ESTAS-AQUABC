@@ -1086,6 +1086,11 @@ Two consequences, both uncomfortable and both worth stating in the paper:
    subsidy and one with a placeholder. The competitive-exclusion interpretation of the
    composition wall needs this caveat attached.
 
+> **Correction (§26):** the asymmetry described here is real and its CYN half is worse than
+> stated — but the causal claim below was **refuted by experiment**: raising OPA's boundary
+> supply 18-fold made modelled OPA *fall*. OPA's extinction is internal competitive exclusion.
+> The boundary fix is still worth making, for silica.
+
 **The fix is data, not code**: Baltic-boundary phytoplankton composition for the strait
 (the HELCOM/Klaipėda monitoring holds group-resolved biomass at the boundary stations), used
 to give DIA/OPA/FIX_CYN boundary series with the same status as CYN's. Until then, OPA's
@@ -1127,6 +1132,100 @@ run's +0.66 / 25.55.
 (§24) is now the highest-value next step *for interpretability as well as skill* — it is the
 one candidate that would explain inflated growth constants across three groups at once, and
 it is a data task, not a modelling one.
+
+---
+
+## 26. The boundary-symmetry experiment: §24's hypothesis refuted, and the silica residual
+solved
+
+(2026-08-17; `tools/build_boundary_phyto.py`, commit `1399e9f`; A/B against the adopted
+configuration.)
+
+**What the Baltic archive says.** Deriving all four groups by one method from one source
+(`Fitoplanktonas_BJ_*`, 34,301 rows 2018–2023, Curonian plume zone LT3/LT4/LT5, the same
+group mapping and C:biovolume ratios as the in-lagoon ingester) gives boundary climatologies
+very unlike the shipped forcing: OPA peaks **0.369 in April** against a flat 0.020
+placeholder (18×), DIA 0.150 in March (7.5×), FIX 0.118 in July (6×) — **and CYN's shipped
+series is itself wrong**: 0.356 peaking in September against an observed 0.197 peaking in
+June, i.e. roughly twice too high and a quarter-year late.
+
+**The hypothesis is refuted.** §24 proposed the boundary asymmetry as the cause of OPA's
+permanent extinction. With OPA's boundary supply raised up to 18-fold, **modelled OPA fell**
+— 0.0057 → 0.0022 mg C/L, bias −0.474 → −0.476. The mechanism is now visible: the symmetric
+boundary also feeds DIA and FIX, and OPA loses the resulting competition inside the lagoon
+harder than it gains from its own supply. **OPA's extinction is genuinely internal
+competitive exclusion, not a forcing artifact**, and the §3.6 composition-wall reading stands
+after all. §24's diagnosis of the asymmetry was correct; its causal attribution was wrong,
+and the experiment is what separated them.
+
+**The unexpected win: silica.** Giving diatoms their real boundary supply — which raises
+autumn–winter diatoms 2–3× (October 0.008 → 0.021 mg C/L) — draws down the silica the model
+has over-predicted since the very first calibration:
+
+| full record | adopted | **symmetric boundary** |
+|---|---|---|
+| **Si RMSE / bias** | 1.59 / +1.28 | **0.82 / +0.21** |
+| PO4 RMSE / bias | 0.0264 / +0.0119 | **0.0232 / +0.0077** |
+| seasonal r | +0.72 | **+0.73** |
+| autumn/spring | 1.62 | **1.66** |
+| FIX_CYN_C bias | +0.544 | **+0.443** |
+| ZOO_C bias | +0.0079 | **−0.0013** |
+| CHLA RMSE / bias | **25.19** / −9.44 | 25.71 / +7.94 |
+| NH4 RMSE | **0.0456** | 0.0489 |
+
+**Si RMSE falls 48 % and its bias 84 %** — the silica over-prediction was among the oldest
+unexplained residuals in this project (with PO4 it carried ~64 % of the original misfit), and
+it turns out to have been a missing boundary diatom supply, not a kinetic or burial problem.
+PO4 improves too, the phase metrics reach new (marginal) bests, and the fixer overshoot and
+zooplankton bias both shrink. The costs are small and in chlorophyll/ammonium.
+
+**Disposition:** a strong net gain resting on a defensible, single-method dataset, and it
+corrects a forcing that was demonstrably wrong for all four groups. Recommended for adoption;
+the caveats are stated in the tool's docstring (plume water carries outflowing lagoon
+signal — an upper bound; 2018–2023 archive against a 2012–2022 run, used as a climatology
+exactly as the shipped CYN series is). A recalibration under it is the natural follow-up,
+since the growth constants were partly compensating the missing supply.
+
+---
+
+## 27. Post-boundary recalibration: no gain to take, and the inflation shown to be
+compensation
+
+(2026-08-17; `light` set, popsize 8 / maxiter 25 / seed 11 on the newly adopted boundary.)
+
+**The boundary was worth 14.6 % of the objective on its own.** Baseline Φ fell 19.4454 →
+**16.6117** with no parameter changed — the largest single-change improvement in this study,
+and it came from data rather than fitting.
+
+**The recalibration found nothing to add.** Best Φ 16.7224 — **0.7 % worse than the adopted
+parameters**, which the Latin-hypercube initialisation never contains. Full-record: the two
+are indistinguishable (Si 0.824 vs 0.825, PO4 0.0232 vs 0.0231, CHLA 25.52 vs 25.56, ZOO
+identical); the search's NH4 is better in bias but worse in RMSE, its CYN slightly better,
+its phase slightly worse (r +0.69 vs +0.73). **Nothing is adopted; the configuration adopted
+in §26 stands.**
+
+**But the parameter it chose settles the §25 question.** The search reached its
+near-equivalent score with **KG_DIA 8.10 → 5.769** — a 37 % retreat, and the first time this
+constant has fallen under any intervention (self-shading: no; deeper search: it rose to
+9.17). Two configurations differing by 40 % in the diatom growth constant now score within
+0.7 % of each other:
+
+> **the inflation was compensation for the missing boundary supply.** With diatoms given
+> their real 7.5× spring input, the constant is no longer identifiable — the objective has
+> gone flat along that axis, which is exactly the signature of a compensation that has been
+> removed rather than merely relocated.
+
+That closes the thread opened in §21 and left explicitly unresolved in §22 and §25. It also
+means the adopted configuration's inflated constants are now *cosmetic rather than
+load-bearing*: they can be set to literature values at a cost of 0.7 % in Φ and ~0.04 in
+seasonal r, which is a legitimate scientific choice — a "literature-parameters" variant is
+recorded here as available (KG_DIA 5.77, KG_CYN 2.79, KG_OPA 4.14, KG_FIX 7.88; K_NITR 1.35,
+KDISS_PON 0.505, KHS_DIP_DIA 0.00276), not adopted.
+
+**Unmoved by any of it: OPA** (−0.476 in both). Three independent interventions — boundary
+supply, growth constant raised to 4.14, and the whole community recalibrated around it — and
+it does not return. The §3.6 competitive-exclusion reading is now confirmed from three
+directions.
 
 ---
 
