@@ -19,11 +19,12 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
 POSITIONING_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_positioning_state.f90
+NOST_STAGING_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_nost_staging.f90
 PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
 SEDIMENT_SRC = $(AQUABC_SRC)/SEDIMENTS
 
@@ -279,6 +280,14 @@ test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_NOSTACALES.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_nostocales.f90 *.o
+
+# Compile test_nost_staging (bed akinete bank, EMA cue, latch; pure module +
+# state, no other kinetics dependency -- mirrors test_cyanobacteria's link)
+test_nost_staging: test_nost_staging.f90 $(NOST_STAGING_SRC)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(NOST_STAGING_SRC)
+	$(FC) $(FFLAGS) -o $@ test_nost_staging.f90 *.o
 
 # Compile test_bioturbation
 test_bioturbation: test_bioturbation.f90 $(SEDIMENT_SRC)/aquabc_II_sediment_bioturbation.f90

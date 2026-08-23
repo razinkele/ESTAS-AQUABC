@@ -62,6 +62,7 @@ tests/fortran/test_cyanobacteria
 tests/fortran/test_diatoms
 tests/fortran/test_doc_mineralization
 tests/fortran/test_fix_cyn
+tests/fortran/test_nost_staging
 tests/fortran/test_nostocales
 tests/fortran/test_opa
 tests/fortran/test_redox
