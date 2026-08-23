@@ -6,9 +6,11 @@ paper (`~/curonian/docs/EUTROPY_AQUABC_comparison*` §10.3 / §11.2), and the sc
 campaigns tracked in project notes. **Detailed task specs live in the referenced sources — this
 file is the prioritized index, not a duplicate**, so it can't drift from the plan.
 
-**Last updated:** 2026-08-06 · **Latest release:** v0.11.0 · Fortran-plan Phases 1–4 and every item
-in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues** (the one that was open,
-#76 FIX_CYN phenology, was investigated and closed as *not planned* — see §4).
+**Last updated:** 2026-08-23 · **Latest release:** v0.11.0 (`main` is ahead of it — the doc §20–27
+honest-configuration + boundary arc is merged unreleased) · Fortran-plan Phases 1–4 and every item
+in `FIXES_AND_IMPROVEMENTS.md` are complete; the only open GitHub issue is the v0.11.0
+release-announcement pointer (#112). (#76 FIX_CYN phenology was investigated and closed as
+*not planned* — see §4.)
 
 ---
 
@@ -23,6 +25,24 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
   the honest-optics programme closed by experiment: winter/N/O₂/zoo essentially solved under
   measured optics; the summer surface bloom is a **persistent state** the daily-fraction mechanism
   class cannot reach. Full ledger: `docs/CL29_phenology_diagnosis.md` §1–19.
+
+- **The honest-configuration adoption + boundary arc (2026-08-14 → 08-17)** — the surface-bloom
+  persistence STATE built as the positional ratchet (`CYANO_POS_MODEL=2`, module
+  `AQUABC_POSITIONING_STATE`, dS/dt = K_UP·F_calm·(1−S) − K_DISP·F_storm·S, formation/dispersal
+  hysteresis 3/8 m/s; doc §20, merged `a92b33f`) — with it the UNFITTED honest configuration
+  overtook the operational one (seasonal r +0.70 vs +0.59). The honest-base DE added project
+  bests (§21); self-shading of the positioned fraction was built and the FIFTH compensation
+  channel found — pigment inflation: C:Chl must never be a calibration knob (§22). **✅ ADOPTED
+  as operational CL29 (§23, user decision): the transparent-water era is over** (r +0.72, CHLA
+  RMSE 25.19, peak Sep). Then the boundary arc: OPA's flat-placeholder open boundary diagnosed
+  (§24); the symmetric 4-group boundary built from Baltic plume data (§26) REFUTED the OPA
+  attribution (competitive exclusion, confirmed from three directions) and **SOLVED the silica
+  residual (RMSE −48 % — a missing boundary diatom supply, not kinetics/burial)**; adopted §27
+  (merged `faaccf0`): baseline Φ −14.6 % from the data alone, the largest single-change gain of
+  the study. Post-boundary recalibration found nothing to adopt and proved the KG inflation was
+  compensation for the missing supply — now cosmetic (a literature-parameters variant is
+  recorded in §27). Current operational scores: **r +0.73, ratio 1.66, CHLA RMSE ~25.5,
+  Si 0.82, PO4 0.0232.** Full ledger: doc §20–27.
 
 - **Resuspension global state → `resuspension_t`** — first slice of Phase 5.1 global-state
   reduction; `GLOBAL` allocatable count 55→44; byte-identical; merged **`2014265`**. Established a
@@ -49,7 +69,7 @@ in `FIXES_AND_IMPROVEMENTS.md` are complete; there are **no open GitHub issues**
 
 ---
 
-## 0. In-flight — resuspension × sediment-diagenesis coupling
+## 0. Completed — resuspension × sediment-diagenesis coupling (shipped v0.9.0)
 
 *Source: `docs/superpowers/specs/2026-07-30-resuspension-diagenesis-coupling-design.md`. Branch:
 `feature/resuspension-diagenesis-coupling`.*
@@ -64,11 +84,10 @@ never-run combination. Built on the collaborator's `ali_version` Option-3 scaffo
 | Particulate **C/N/P** water handoff (`FLX_SED_MOD_1_TO_ALUKAS_II_VEC`, water 9/10/11 ← bed slots 10/4/7) | **Done** — mirrors the proven PART_Si channel. Verified: noero (diagenesis-without-resuspension) **byte-identical** (0 diffs), ero now delivers C/N/P detritus to the water column (+7.4/+2.4/+0.008) matching bed decrements (−9355/−5321/−84). Coupling is mass-conserving for all four particulates. |
 | Shear-driven erosion rate (Phase 2, `E=E₀(τ_b/τ_c−1)`) | Deferred (spec Option B). |
 
-**Phase 1 of the coupling is complete and verified** — the branch is now merge-ready (pending review). Only the
-optional Phase 2 (shear-driven erosion realism) remains.
-
-Two mergeable side-branches already split out: `feature/pelagic-negmass-diagnostics` (Ali's negative-mass
-diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliation + this backlog refresh).
+**Shipped in v0.9.0 (2026-07-31)** — Phase 1 merged to `main` together with the Fe(II) salt-selection
+bugfix and the negative-mass diagnostics refactor (the two side-branches landed with the release);
+Standard runs byte-identical. Only the optional Phase 2 (shear-driven erosion realism,
+`E=E₀(τ_b/τ_c−1)`) remains, deferred by design.
 
 ---
 
@@ -101,10 +120,14 @@ diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliat
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| **⭐ Surface-bloom persistence state (positional ratchet + storm reset)** | **P1 — the single item between CL29 and an honest-optics configuration matching observations** | Doc §19 (2026-08-14): the measured ladder (no gate 14.9 → Nagy 15.1 → scum-threshold 18.0 µg/L Aug vs obs 50.8) extrapolates to the observed plateau exactly at full persistence (F→1, light factor 0.9 at 0.5 m in kd≈2.9). Needs a state (surface-accumulated biomass fraction, built up in calm spells, dispersed by storms), NOT further wind-statistics parameterization — that class is exhausted 3 rungs deep. Companion machinery already merged (`CYANO_POS_MODEL`/`H_SURF_POS`/`W_CRIT_POS_MIN`, byte-identical default). Same family: akinete staging (§9 — Oct inoculum), second diatom guild (§11 — June collapse/Aug return + the Si consumer). |
+| **⭐ Surface-bloom persistence state (positional ratchet + storm reset)** | **✅ DONE + ADOPTED (2026-08-14/15, doc §20/§23)** | Built as `CYANO_POS_MODEL=2` — module `AQUABC_POSITIONING_STATE`, per-box surface fraction `S_POS(nkn,3)`, dS/dt = K_UP·F_calm·(1−S) − K_DISP·F_storm·S, hysteresis formation 3 / dispersal 8 m/s (merged `a92b33f`; surface self-shading of the positioned fraction added §22, `299eccd`). Operational since §23 — live `INPUTS_CL29/PELAGIC_MODEL_OPTIONS.txt`: `CYANO_POS_MODEL 2`, `K_POS_UP 3`, `K_POS_DISP 10`, `W_DISP_POS 8`. Residual margins are the two rows below: Aug–Sep ≈ −16 µg/L (S-dynamics refinement + photoacclimative C:Chl) and October (akinete staging). Independent validation idea (unstarted): date real surface-accumulation episodes from the OLCI/MPH satellite record and compare against the modelled `S_POS` trajectory. |
+| **⭐ Akinete staging (life-cycle transition logic for NOST/FIX)** | **P1 — the largest remaining seasonal residual (October)** | October: model ~25 vs obs ~46 µg/L even post-boundary (§21/§27). NOST is inoculum-limited, not temperature-limited: `AKI_C` drains 0.73→0.002 by August, and T_min 16→8 was a NULL (doc §9). The CLC literature (Hense & Beckmann; `docs/Diazotroph_phenology_modelling_review.md`) gates transitions differently from growth — heterocyst formation by DIN limitation, akinete formation by an ENERGY/light cue (what holds the bloom into autumn), stage-specific buoyancy, between-year inoculum memory. AQUABC already carries the veg/het/akinete STATE VARIABLES; what is missing is the transition logic. Interacts with the ratchet's storm resets (both shape Oct). |
+| **Second diatom guild (June collapse / August return)** | P2 | Obs DIA_C is two-sided: Feb 3.4× model excess AND Aug 90× deficit; one CTMI envelope cannot do both — the wide-envelope experiment (doc §11) fixed Si/winter but destroyed June (obs annual min 0.17 mg C/L while the envelope carried 0.71 through Jun–Jul and ate the fixers' P). ⚠ Partly relieved since: §26's boundary diatom supply now covers the autumn–winter Si drawdown (Si RMSE 0.82) — **re-measure the residual before sizing the guild**. Cool guild lit T_opt≈14 (*Stephanodiscus*); the warm guild (*Actinocyclus*/*Skeletonema subsalsum*) has no clean published cardinals. |
+| Photoacclimative C:Chl (structure — never a knob) | P2 | The fifth compensation channel (doc §22): C:Chl handed to the objective — even bounded by the measured IQR — fills the CHLA gap with pigment, not biomass (Feb 54 vs obs 10, r collapse to +0.47). Operationally FIXED at the measured 53/78; the honest closure is photoacclimative structure (Geider-class). Also the leading candidate for part of the Aug–Sep margin. |
+| CYN cool-season bias (−0.88) | P3 | Survives every configuration and both DE attractors (§25: two parameter sets, same composition outcome — the data constrain the outcome, not the route). Grazing structure is the suspect (obs ZOO now at scale, but preference/refuge untested); several published cyanobacteria models use a toxicity grazing refuge (`Diazotroph_phenology_modelling_review.md`). |
 | Housekeeping: dead/vestigial buoyancy code | P3 | `CYANO_BOUYANT_STATE_SIMULATION` is read, printed, passed and never used (a placebo switch since ≥2019); the non-buoyant `FIX_CYANOBACTERIA` first variant carries a vestigial `FIX_CYN_DEPTH = 1.0` scalar multiplier (2013 "×1.2 surface layer", neutralized 2014) — not the CL29 path. Remove or wire both when next touching the libs. |
 | Variable-stoichiometry option for key groups (Si:C, N:C plasticity) | P2 — **CL29: contraindicated** | Stands as a *general model-richness* goal (selective ERSEM-style, no full rewrite). **⚠️ The earlier (2026-07-25) "variable N:C would strip summer DIN to depletion" motivation is now CONTRAINDICATED for CL29 (2026-08-02).** A scoped Droop-N pilot on CYN was designed and adversarially **Workflow-reviewed (21 confirmed findings, 8 BLOCKING)**; the premise fails — CL29 summer DIN is **regeneration/boundary-floored** (CYN already ~90% N-replete, `KHS_DIN_CYN=0.009`), so a luxury quota is a small bounded store that remineralizes back into the EPA-matching NH4 floor (net export second-order). This is the **3rd phyto-side lever** (after Nostocales, FIX_CYN/#76) to die on the same wall → the CL29 nutrient over-prediction is likely **boundary-forcing / regeneration structural, not phyto-fixable**. Before any future var-stoich (or phyto-kinetics) work, first establish that a genuinely *uptake-limited* target exists; if the wall is boundary-driven, the lever is open-boundary forcing (`cl29-epa-validation`, boundary×0.5). Full write-up: `docs/superpowers/specs/2026-08-01-variable-stoichiometry-cyn-droop-n-design.md` §12. |
-| **Benthic P-retention / burial process — the summer-PO4 residual** | P2 — **demoted (2026-08-11): no longer the only lever** — the T_min=8 fixer bloom consumed much of the excess (PO4 RMSE −26 %, bias +0.022→+0.011); the residual is halved but real | CL29 over-predicts SUMMER PO4 ~10× (obs 0.005 → model 0.047; winter matches). Confirmed a **structural residual** (2026-08, v0.11.0): it resisted over-growing biomass (Chl-a +11), a config-only benthic PO4 sink (crashes Chl-a 25→8), var-stoich-P (baseline nutrient-**replete**, LIM_P=0.85 → fails the `LIM≪1` precondition), and boundary-P supply (a small clean gain *was* adopted — `CL29_BOUNDARY_PO4_SUMMER_PEAK` 2.0→1.0, #108). The model interior summer PO4 **>** the boundary PO4 → **internal-regeneration-dominated**; closing it needs a genuine P *removal* process the water-column model lacks: **redox-dependent oxic (Fe-oxyhydroxide-bound) P burial**, or **benthic primary-producer P uptake** (macrophyte/periphyton). A **Fortran model-richness effort** (new process/state variable), NOT config/kinetics tuning. ⚠️ Hard prereq: any candidate must draw PO4 down **without** inducing P-limitation (the wall) — i.e. remove the P the replete bloom isn't using; a fixed sink over-draws and crashes Chl-a (tested). See `docs/CL29_Calibration_Results.md` §"Summer PO4" + [[cl29-calibration-wall]]. |
+| **Benthic P-retention / burial process — the summer-PO4 residual** | P2 — **demoted (2026-08-11): no longer the only lever** — the T_min=8 fixer bloom consumed much of the excess (PO4 RMSE −26 %, bias +0.022→+0.011); **further demoted (2026-08-17, §26/27): the symmetric boundary took PO4 RMSE 0.0264→0.0232 — re-measure what summer residual actually remains before any benthic build** | CL29 over-predicts SUMMER PO4 ~10× (obs 0.005 → model 0.047; winter matches). Confirmed a **structural residual** (2026-08, v0.11.0): it resisted over-growing biomass (Chl-a +11), a config-only benthic PO4 sink (crashes Chl-a 25→8), var-stoich-P (baseline nutrient-**replete**, LIM_P=0.85 → fails the `LIM≪1` precondition), and boundary-P supply (a small clean gain *was* adopted — `CL29_BOUNDARY_PO4_SUMMER_PEAK` 2.0→1.0, #108). The model interior summer PO4 **>** the boundary PO4 → **internal-regeneration-dominated**; closing it needs a genuine P *removal* process the water-column model lacks: **redox-dependent oxic (Fe-oxyhydroxide-bound) P burial**, or **benthic primary-producer P uptake** (macrophyte/periphyton). A **Fortran model-richness effort** (new process/state variable), NOT config/kinetics tuning. ⚠️ Hard prereq: any candidate must draw PO4 down **without** inducing P-limitation (the wall) — i.e. remove the P the replete bloom isn't using; a fixed sink over-draws and crashes Chl-a (tested). See `docs/CL29_Calibration_Results.md` §"Summer PO4" + [[cl29-calibration-wall]]. |
 | Re-introduce explicit bacteria as a library (nitrifiers / heterotrophs / denitrifiers + electron acceptors) | P2 | Restores dynamic remineralization; corrects the organic-carbon underestimate. |
 | Function-oriented zoobenthos library (filters / shredders / predators; e.g. *Dreissena*) | P3 | General, not Curonian-specific. |
 | Unify ESTAS box ↔ SHYFEM 3-D (one kinetic core, two deployments) | P3 | Removes drift between standalone and SHYFEM-bundled versions. |
@@ -115,9 +138,10 @@ diagnostics refactor) and `docs/coupling-reconciliation` (the design reconciliat
 
 | Item | Status |
 |------|--------|
-| CL29 facies map + silica calibration | **Data-blocked** — needs the sediment facies map and Si observations. |
+| CL29 facies map + silica calibration | **Si RESOLVED (2026-08-17, doc §26):** the oldest residual (3.4× summer Si over-prediction) was a MISSING BOUNDARY DIATOM SUPPLY — the symmetric 4-group boundary takes Si RMSE 1.59→0.82 (bias −84 %) — not kinetics or burial; no Si calibration needed. The sediment facies map remains **data-blocked** (sediment-side work only). |
 | CL29 sediment Phase 2 (muddy-anoxic-P flux) | **NO-GO** at the §4.1a gate under advanced-redox = 0. |
-| Nostocales multi-year bloom | **Won't-fix** — de-risked as not-defensibly-fixable (competitive exclusion under P-limitation). |
+| Nostocales multi-year bloom | **Won't-fix** — de-risked as not-defensibly-fixable (competitive exclusion under P-limitation). **Superseded framing (2026-08):** NOST is inoculum-limited (the akinete pool drains by August); the live remedy is §3 akinete staging, not growth kinetics. |
+| OPA extinction (bias −0.47 in every config ever run) | **Decided (2026-08-17, doc §24–27): internal competitive exclusion, confirmed from three directions** — boundary supply raised 18× (modelled OPA *fell*), raised KG_OPA, and full recalibration all leave OPA at −0.476. §24's boundary-asymmetry attribution was refuted by the §26 experiment; the §3.6 composition-wall reading stands. Report as a documented structural limit, not a calibration deficiency. |
 | CL29 PEST-posterior promotion | **Abandoned** — non-stationarity; PR #61 landed net-zero, kept only the tooling. |
 | FIX_CYN (N2-fixing cyano) to observed biomass | **SUPERSEDED — FIXED (2026-08-11)**: the wrong number was `FIX_CYN_OPT_TEMP_LR`=18 (a Nodularia value; the lagoon is Aphanizomenon/Anabaena, lit T_min≈8). Adopted T_min=8 + N-cycle recalibration ⇒ fixer bias **+0.03** vs obs 0.70 mg C/L, Chl-a peak Feb→Sep, seasonal r −0.70→+0.53, best-ever CHLA RMSE 26.11. See `docs/CL29_phenology_diagnosis.md`. Original verdict below kept for the record: **Won't-fix / decided (2026-07-25)** — temperature diagnosis correct (T_opt=26 too warm) but FIX_CYN-as-a-*fixer* is not reproducible: NH4-floor competitive exclusion (summer DIN floored ~0.06 by regeneration-driven NH4 that matches EPA → non-fixers stay 87% N-replete; fixers never competitive). Growing it to observed biomass also regresses Chl-a/Si/TN (single-var vs multivar tension). Same class as Nostocales. See `fix-cyn-n2fixation-overprediction`. |
 | FIX_CYN bloom phenology / late-summer spike-and-crash (**issue #76**) | **Won't-fix / documented (2026-08-01)** — closed as *not planned* (PR #92 landed the investigation doc). A four-reviewer in-loop review + two CL29 gates found: (a) the proposed density-dependent bloom-termination term is **unnecessary** — corrected CTMI-valid temperature windows alone give the Sep spike-and-crash (winter clear is temperature-forced, not loss-driven); (b) the prior "structural persistence" was a **CTMI-invalidity artifact** (invalid window → plateau-fallback branch disables the cold-season growth-off switch); (c) the phase-fix **regresses multivariate skill** vs EPA (PO4 −19% but NH4 +30%, DO/Si/TN/TP/Chl-a worse) — same wall as the row above — **now superseded (2026-08-11): with T_min=8 + the N-cycle recalibration the phase fix improves EVERY headline metric simultaneously** (no wall trade). Reusable lesson: verify the temperature-model branch is *valid* before trusting a "needs a formulation change" diagnosis. See `docs/superpowers/specs/2026-08-01-fix-cyn-bloom-termination-design.md` (§12.4/§12.5) and `fix-cyn-n2fixation-overprediction`. |
@@ -132,7 +156,8 @@ resuspension, bottom-sediment and water-coupling subsystems were done earlier. *
 arrays) is a decided NO-GO** — cosmetic count with zero coupling change vs the highest risk/effort (see 5.1
 above). So there is no low-risk mechanical de-globalization slice left to pick up. What remains is either
 deferred-by-design (5.2 CO2SYS-lib, 5.3 higher-order solvers, 5.4 config-driven runtime — all low priority),
-science (§3, esp. variable N:C stoichiometry) or waiting on data/decisions (§4). The next *substantive*
+science (§3, esp. akinete staging and the second diatom guild — variable N:C is contraindicated for CL29) or
+waiting on data/decisions (§4). The next *substantive*
 engineering lift would be an actual de-coupling (lift `pcore`/`bsed`/`wsc`/`resusp` out of `GLOBAL` into
 their own modules) — a design effort, not a mechanical slice.
 
