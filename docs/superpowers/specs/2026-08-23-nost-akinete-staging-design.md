@@ -65,9 +65,10 @@ Full-record run of the adopted operational configuration (post-`faaccf0`, scores
   `AQUABC_NOST_STAGING` (`SOURCE_CODE/AQUABC/PELAGIC/aquabc_nost_staging.f90`), modeled on
   `AQUABC_POSITIONING_STATE`: allocatable state, `INIT/RESET/SET_..._PARAMS` routines,
   per-chunk access under OpenMP.
-- The module also holds two per-box **flux-export arrays** (`STG_SETTLE_FLUX`,
-  `STG_GERM_FLUX`, g C/m²/d) and one per-box scalar `RAD_EMA` (W/m², the filtered radiation,
-  §4.3). `BED_AKI` starts at 0 — the existing 2012 initial `AKI_C` banks itself via settling
+- The module also holds the per-box **flux-export arrays** (`STG_SETTLE_FLUX`,
+  `STG_GERM_FLUX`, `STG_FORM_FLUX`, g C/m²/d), the gate export `STG_GERM_COND` (logical),
+  exact cumulative integrals (`CUM_SETTLE_AKI`, `CUM_GERM_AKI`, `CUM_FORM_AKI`, `BURIED_AKI`,
+  g C/m²), and one per-box scalar `RAD_EMA` (W/m², the filtered radiation, §4.3). `BED_AKI` starts at 0 — the existing 2012 initial `AKI_C` banks itself via settling
   (§4.2); no new initial-condition machinery. Banking e-folding is `DEPTH/V_SETTLE_AKI`
   (~6–8 d in shallow boxes, weeks-to-months in the 12–21 m boxes) — this is the stated
   spin-up, handled in §7 by excluding 2012–2013 from scoring.
