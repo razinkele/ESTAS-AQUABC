@@ -281,13 +281,15 @@ test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_nostocales.f90 *.o
 
-# Compile test_nost_staging (bed akinete bank, EMA cue, latch; pure module +
-# state, no other kinetics dependency -- mirrors test_cyanobacteria's link)
+# Compile test_nost_staging (bed akinete bank, EMA cue, latch; pure module,
+# only needs mod_AQUABC_II_GLOBAL). Hermetic link (explicit objects, not
+# *.o), mirroring test_sed_typemap/test_co2sys -- stale objects left in this
+# shared dir by other targets cannot leak in.
 test_nost_staging: test_nost_staging.f90 $(NOST_STAGING_SRC)
-	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
-	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
-	$(FC) $(FFLAGS) -c $(NOST_STAGING_SRC)
-	$(FC) $(FFLAGS) -o $@ test_nost_staging.f90 *.o
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC) -o precision_kinds.o
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 -o mod_AQUABC_II_GLOBAL.o
+	$(FC) $(FFLAGS) -c $(NOST_STAGING_SRC) -o aquabc_nost_staging.o
+	$(FC) $(FFLAGS) -o $@ test_nost_staging.f90 aquabc_nost_staging.o mod_AQUABC_II_GLOBAL.o precision_kinds.o
 
 # Compile test_bioturbation
 test_bioturbation: test_bioturbation.f90 $(SEDIMENT_SRC)/aquabc_II_sediment_bioturbation.f90
