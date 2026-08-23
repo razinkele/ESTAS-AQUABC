@@ -319,7 +319,8 @@ subroutine aquabc_run                       ( &
              0.05D0                  , &   ! ZOO_CLOSURE_REF  (unused when the model is 0)
              0                       , &   ! CYANO_POS_MODEL: 0D path keeps the legacy gate
              0.5D0                   , &   ! H_SURF_POS       (unused when the model is 0)
-             0.0D0)                        ! W_CRIT_POS_MIN   (unused when the model is 0)
+             0.0D0                   , &   ! W_CRIT_POS_MIN   (unused when the model is 0)
+             0)                            ! NOST_STAGE_MODEL: 0D path keeps the legacy akinete gates
 
         STATE_VARIABLES = STATE_VARIABLES + DERIVATIVES * TIME_STEP
 

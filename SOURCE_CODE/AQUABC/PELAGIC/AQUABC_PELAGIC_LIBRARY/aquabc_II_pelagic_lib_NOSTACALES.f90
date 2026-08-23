@@ -45,11 +45,21 @@ subroutine NOSTOCALES &
             CYANO_POS_MODEL                   , &
             H_SURF_POS                   , &
             W_CRIT_POS_MIN               , &
-            S_CHUNK)
+            S_CHUNK                           , &
+            NOST_STAGE_MODEL                  , &   ! integer, intent(in)
+            BED_AKI_CHUNK                     , &   ! real(nkn), intent(in)   g C/m2
+            FORM_LATCH_CHUNK                  , &   ! logical(nkn), intent(in)
+            SETTLE_FLUX_CHUNK                 , &   ! real(nkn), intent(out)  g C/m2/d
+            GERM_FLUX_CHUNK                   , &   ! real(nkn), intent(out)  g C/m2/d
+            FORM_FLUX_CHUNK                   , &   ! real(nkn), intent(out)  g C/m2/d (= R_FORM_NOST_AKI*env%DEPTH)
+            GERM_COND_CHUNK                   , &   ! logical(nkn), intent(out)
+            R_GERM_BED_AKI                    , &   ! real(nkn), intent(out)  g C/m3/d (VEG source)
+            R_SETTLE_AKI)                            ! real(nkn), intent(out)  g C/m3/d (AKI_C sink)
 
    use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
+   use AQUABC_NOST_STAGING, only: KR_GERM_BED, V_SETTLE_AKI, T_GERM_AKI_STAGE, EPS_GERM_TEMP_LIM
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -102,6 +112,19 @@ subroutine NOSTOCALES &
    ! surface-positioned fraction state slice (module S_POS); updated when
    ! CYANO_POS_MODEL >= 2, inert zeros otherwise
    double precision, dimension(nkn), intent(inout) :: S_CHUNK
+   ! NOST akinete life-cycle staging (0 = legacy akinete gates, default; 1 = bed
+   ! akinete bank with growth-viability-gated germination and a latch-driven
+   ! formation switch -- spec docs/superpowers/specs/2026-08-23-nost-akinete-
+   ! staging-design.md secs 4.2/4.3). Inert (all outs zero/false) when 0.
+   integer, intent(in) :: NOST_STAGE_MODEL
+   double precision, dimension(nkn), intent(in) :: BED_AKI_CHUNK
+   logical, dimension(nkn), intent(in) :: FORM_LATCH_CHUNK
+   double precision, dimension(nkn), intent(out) :: SETTLE_FLUX_CHUNK
+   double precision, dimension(nkn), intent(out) :: GERM_FLUX_CHUNK
+   double precision, dimension(nkn), intent(out) :: FORM_FLUX_CHUNK
+   logical, dimension(nkn), intent(out) :: GERM_COND_CHUNK
+   double precision, dimension(nkn), intent(out) :: R_GERM_BED_AKI
+   double precision, dimension(nkn), intent(out) :: R_SETTLE_AKI
    ! ------------------------------------------------------------------------------------
 
    ! ------------------------------------------------------------------------------------
@@ -393,34 +416,67 @@ subroutine NOSTOCALES &
 
 
     ! ------------------------------------------------------------------------------------
-    ! CODE TO CALCULATE THE GERMINATION RATE OF NOSTACLE AKINETS
+    ! CODE TO CALCULATE THE GERMINATION AND FORMATION RATES OF NOSTACLE AKINETS
+    ! NOST_STAGE_MODEL > 0 (opt-in, spec secs 4.2/4.3) replaces both legacy season-gated
+    ! where-blocks with a bed akinete bank: germination is growth-viability gated and
+    ! mutually exclusive with the formation latch; formation is latch-driven only (the
+    ! rate constant KR_FORM_AKI is unchanged). NOST_STAGE_MODEL = 0 (default) keeps the
+    ! legacy blocks verbatim and zeroes every new export -- byte-identical.
     ! ------------------------------------------------------------------------------------
-    where (DIN < KN_GERM_AKI .and. TEMP > T_GERM_AKI)
-        AKI_GERM = KR_GERM_AKI
-        IND_GERM = 1
-    elsewhere
-        AKI_GERM = 0.0D0
-    end where
+    if (NOST_STAGE_MODEL > 0) then
+        ! germination: bed-only, growth-viability gated (spec s.4.2)
+        GERM_COND_CHUNK = (DIN < KN_GERM_AKI) .and. &
+                          (LIM_KG_NOST_VEG_HET_TEMP > EPS_GERM_TEMP_LIM) .and. &
+                          (TEMP > T_GERM_AKI_STAGE)
+        where (GERM_COND_CHUNK .and. .not. FORM_LATCH_CHUNK)
+            GERM_FLUX_CHUNK = KR_GERM_BED * BED_AKI_CHUNK
+        elsewhere
+            GERM_FLUX_CHUNK = 0.0D0
+        end where
+        R_GERM_BED_AKI  = GERM_FLUX_CHUNK / DEPTH
+        R_GERM_NOST_AKI = 0.0D0                       ! water-pool germination off
+        ! formation: latch-driven (spec s.4.3); rate constant unchanged
+        where (FORM_LATCH_CHUNK)
+            AKI_FORM = KR_FORM_AKI
+        elsewhere
+            AKI_FORM = 0.0D0
+        end where
+        R_FORM_NOST_AKI = AKI_FORM * NOST_VEG_HET_C
+        ! settling of water akinetes toward the bed
+        SETTLE_FLUX_CHUNK = V_SETTLE_AKI * NOST_AKI_C
+        R_SETTLE_AKI      = SETTLE_FLUX_CHUNK / DEPTH
+        FORM_FLUX_CHUNK   = R_FORM_NOST_AKI * DEPTH   ! diagnostic export (CUM_FORM/V6 ratio)
+    else
+        ! ------------------------------------------------------------------------------------
+        ! CODE TO CALCULATE THE GERMINATION RATE OF NOSTACLE AKINETS (legacy, verbatim)
+        ! ------------------------------------------------------------------------------------
+        where (DIN < KN_GERM_AKI .and. TEMP > T_GERM_AKI)
+            AKI_GERM = KR_GERM_AKI
+            IND_GERM = 1
+        elsewhere
+            AKI_GERM = 0.0D0
+        end where
 
-    R_GERM_NOST_AKI = AKI_GERM * NOST_AKI_C
+        R_GERM_NOST_AKI = AKI_GERM * NOST_AKI_C
 
-    ! ------------------------------------------------------------------------------------
-    ! END OF CODE TO CALCULATE THE GERMINATION RATE OF NOSTACLE AKINETS
-    ! ------------------------------------------------------------------------------------
+        ! ------------------------------------------------------------------------------------
+        ! CODE TO CALCULATE THE FORMATION RATE OF NOSTACLE AKINETS (legacy, verbatim)
+        ! ------------------------------------------------------------------------------------
+        where ((TEMP < T_FORM_AKI).and.(DAY_OF_YEAR > int(DAY_FORM_AKI) .and. DAY_OF_YEAR < 365))
+            AKI_FORM = KR_FORM_AKI
+        elsewhere
+            AKI_FORM = 0.0D0
+        end where
 
+        R_FORM_NOST_AKI = AKI_FORM * NOST_VEG_HET_C
 
+        ! Staging exports are inert under the legacy path
+        GERM_COND_CHUNK = .false.; GERM_FLUX_CHUNK = 0.0D0; SETTLE_FLUX_CHUNK = 0.0D0
+        FORM_FLUX_CHUNK = 0.0D0
+        R_GERM_BED_AKI = 0.0D0;    R_SETTLE_AKI = 0.0D0
+    end if
     ! ------------------------------------------------------------------------------------
-    ! CODE TO CALCULATE THE FORMATION RATE OF NOSTACLE AKINETS
-    ! ------------------------------------------------------------------------------------
-    where ((TEMP < T_FORM_AKI).and.(DAY_OF_YEAR > int(DAY_FORM_AKI) .and. DAY_OF_YEAR < 365))
-        AKI_FORM = KR_FORM_AKI
-    elsewhere
-        AKI_FORM = 0.0D0
-    end where
-
-    R_FORM_NOST_AKI = AKI_FORM * NOST_VEG_HET_C
-    ! ------------------------------------------------------------------------------------
-    ! END OF CODE TO CALCULATE THE FORMATION RATE OF NOSTACLE AKINETS
+    ! END OF CODE TO CALCULATE THE GERMINATION AND FORMATION RATES OF NOSTACLE AKINETS
     ! ------------------------------------------------------------------------------------
 
 

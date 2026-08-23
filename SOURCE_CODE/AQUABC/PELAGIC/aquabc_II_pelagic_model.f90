@@ -82,11 +82,14 @@ subroutine AQUABC_PELAGIC_KINETICS &
             ZOO_CLOSURE_REF                 , &
             CYANO_POS_MODEL                 , &
             H_SURF_POS                      , &
-            W_CRIT_POS_MIN)
+            W_CRIT_POS_MIN                  , &
+            NOST_STAGE_MODEL)
 
     use CO2SYS_CDIAC
     use AQUABC_POSITIONING_STATE, only: S_POS, ENSURE_POSITIONING_STATE, &
                                         POS_CYN, POS_FIX, POS_NOST
+    use AQUABC_NOST_STAGING, only: BED_AKI, FORM_LATCH, STG_SETTLE_FLUX, STG_GERM_FLUX, &
+                                   STG_FORM_FLUX, STG_GERM_COND, ENSURE_NOST_STAGING_STATE
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use aquabc_II_wc_ini
@@ -161,6 +164,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     integer                ,                          intent(in)    :: CYANO_POS_MODEL
     real(kind = DBL_PREC)  ,                          intent(in)    :: H_SURF_POS
     real(kind = DBL_PREC)  ,                          intent(in)    :: W_CRIT_POS_MIN
+    ! NOST akinete life-cycle staging gate (0 legacy / 1 bed bank + latch, see
+    ! AQUABC_NOST_STAGING). The seven array/logical staging dummies of NOSTOCALES
+    ! are supplied from that module's state (ENSURE'd below), not threaded here --
+    ! same treatment as S_POS above.
+    integer                ,                          intent(in)    :: NOST_STAGE_MODEL
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
@@ -418,6 +426,11 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! slice arguments to the cyano libraries are defined in every mode; the
     ! ratchet only UPDATES when CYANO_POS_MODEL >= 2.
     call ENSURE_POSITIONING_STATE(nkn)
+
+    ! NOST akinete staging state (NOST_STAGE_MODEL > 0): allocated once, serially,
+    ! same rationale as ENSURE_POSITIONING_STATE above -- always allocated so the
+    ! slice arguments to NOSTOCALES are defined in every mode.
+    call ENSURE_NOST_STAGING_STATE(nkn)
 
     ! Cap the team to at most `nkn` threads so no thread gets an empty chunk. TODO 4.4:
     ! a thread with an empty chunk (nkn_local<=0, from the old ceil-based split when
@@ -1321,7 +1334,16 @@ contains
             CYANO_POS_MODEL                   , &
             H_SURF_POS    , &
             W_CRIT_POS_MIN, &
-            S_POS(ns:ne, POS_NOST))
+            S_POS(ns:ne, POS_NOST)             , &
+            NOST_STAGE_MODEL                   , &
+            BED_AKI(ns:ne)                     , &
+            FORM_LATCH(ns:ne)                  , &
+            STG_SETTLE_FLUX(ns:ne)             , &
+            STG_GERM_FLUX(ns:ne)               , &
+            STG_FORM_FLUX(ns:ne)               , &
+            STG_GERM_COND(ns:ne)               , &
+            R_GERM_BED_AKI(ns:ne)              , &
+            R_SETTLE_AKI(ns:ne))
 
             ! Consider the effect of growth inhibition which is supplied from outside
             ! by external models
@@ -1345,6 +1367,8 @@ contains
         R_FORM_NOST_AKI(ns:ne)          = 0.0D0
         R_LOSS_AKI(ns:ne)               = 0.0D0
         R_MORT_AKI(ns:ne)               = 0.0D0
+        R_GERM_BED_AKI(ns:ne)           = 0.0D0
+        R_SETTLE_AKI(ns:ne)             = 0.0D0
     end if
 
 
@@ -2565,7 +2589,10 @@ contains
         ! In case of 3d they should rise with negative settling velocity
         ! to the WC nearbottom layer and next layers up, fixme
         ! -------------------------------------------------------------------------------
-        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 6) = R_GERM_NOST_AKI(ns:ne)                                                                            !
+        ! Slot 6 = germination source: R_GERM_NOST_AKI (legacy, water-pool) is 0 when
+        ! NOST_STAGE_MODEL > 0; R_GERM_BED_AKI (staging, bed-pool) is 0 when it is not.
+        ! Their sum is the exact germination source in both modes.
+        PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 6) = R_GERM_NOST_AKI(ns:ne) + R_GERM_BED_AKI(ns:ne)                                                     !
         ! -------------------------------------------------------------------------------
 
         PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 7) = R_FORM_NOST_AKI(ns:ne)
@@ -2628,11 +2655,16 @@ contains
 
         PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 5) = DEPTH(ns:ne)
 
+        ! Slot 6 = R_SETTLE_AKI (staging, water-akinete sink toward the bed); 0 when
+        ! NOST_STAGE_MODEL = 0.
+        PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 6) = R_SETTLE_AKI(ns:ne)
+
         DERIVATIVES(ns:ne,NOST_AKI_C_INDEX) = &
             PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 1) - &
             PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 2) - &
             PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 3) - &
-            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 4)
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 4) - &
+            PROCESS_RATES(ns:ne,NOST_AKI_C_INDEX, 6)
         ! -------------------------------------------------------------------------------
     else
         ! -------------------------------------------------------------------------------

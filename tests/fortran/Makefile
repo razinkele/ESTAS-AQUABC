@@ -277,6 +277,7 @@ test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
+	$(FC) $(FFLAGS) -c $(NOST_STAGING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_NOSTACALES.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_nostocales.f90 *.o

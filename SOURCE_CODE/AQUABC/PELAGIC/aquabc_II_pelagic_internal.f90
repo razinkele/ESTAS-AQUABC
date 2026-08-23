@@ -639,6 +639,10 @@ module AQUABC_PELAGIC_INTERNAL
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_FORM_NOST_AKI
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_LOSS_AKI
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_MORT_AKI
+    ! NOST akinete life-cycle staging (NOST_STAGE_MODEL > 0): bed germination source
+    ! (VEG_HET) and water-akinete settling sink (AKI_C), both g C/m3/d.
+    real(kind = DBL_PREC), allocatable, dimension(:) :: R_GERM_BED_AKI
+    real(kind = DBL_PREC), allocatable, dimension(:) :: R_SETTLE_AKI
     real(kind = DBL_PREC), allocatable, dimension(:) :: R_NOST_VEG_HET_TOT_RESP
 
     real(kind = DBL_PREC), allocatable, dimension(:) :: N_NOST_VEG_HET_TOT_RESP
@@ -1105,6 +1109,8 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(R_FORM_NOST_AKI               (nkn))
     allocate(R_LOSS_AKI                    (nkn))
     allocate(R_MORT_AKI                    (nkn))
+    allocate(R_GERM_BED_AKI                (nkn))
+    allocate(R_SETTLE_AKI                  (nkn))
     allocate(R_NOST_VEG_HET_TOT_RESP       (nkn))
     allocate(N_NOST_VEG_HET_TOT_RESP       (nkn))
     allocate(P_FIX_CYN_GROWTH              (nkn))
@@ -1594,6 +1600,8 @@ subroutine DEALLOC_AQUABC_PELAGIC_INTERNAL
     deallocate(R_FORM_NOST_AKI               )
     deallocate(R_LOSS_AKI                    )
     deallocate(R_MORT_AKI                    )
+    deallocate(R_GERM_BED_AKI                )
+    deallocate(R_SETTLE_AKI                  )
     deallocate(R_NOST_VEG_HET_TOT_RESP       )
     deallocate(N_NOST_VEG_HET_TOT_RESP       )
     deallocate(P_FIX_CYN_GROWTH              )

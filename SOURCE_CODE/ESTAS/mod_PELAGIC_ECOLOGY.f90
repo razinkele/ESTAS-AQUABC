@@ -1580,7 +1580,8 @@ subroutine PELAGIC_KINETICS &
           ZOO_CLOSURE_REF                                        , &
           CYANO_POS_MODEL                                        , &
           H_SURF_POS                                             , &
-          W_CRIT_POS_MIN)
+          W_CRIT_POS_MIN                                         , &
+          NOST_STAGE_MODEL)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)
