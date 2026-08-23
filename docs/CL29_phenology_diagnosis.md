@@ -1227,6 +1227,57 @@ supply, growth constant raised to 4.14, and the whole community recalibrated aro
 it does not return. The §3.6 competitive-exclusion reading is now confirmed from three
 directions.
 
+## 28. The residual re-measurement: the summer-PO4 premise is dead, the diatom
+two-sidedness stands (2026-08-23)
+
+Two backlog items were gated on re-measuring their residuals under the adopted post-boundary
+configuration before building anything: the **second diatom guild** (June collapse / August
+return) and **benthic P retention** (premised on a ~10× *summer* PO4 over-prediction measured
+in the transparent-water era). This section is that measurement.
+
+**Method.** Fresh full-record run (0–4016 d from 2012, daily print interval) of the live
+operational configuration — `INPUTS_CL29/` exactly as adopted in §23+§27 (symmetric boundary,
+honest optics, ratchet `CYANO_POS_MODEL=2`, closure-DE engine), `ESTAS_HOLD_VOLUME=1`, binary
+rebuilt from `main` at `883cc0b`. Scored against the merged EPA + KM-plankton tidy observations
+(78,263 rows) with the **live C:Chl (53/78) via `--wconst`** — note the §23 trap runs both
+ways: the validator's built-in defaults are the *old* 30/40 ratios, so a current run scored
+without `--wconst INPUTS_CL29/WCONST_04.txt` mis-computes CHLA. Monthly climatologies are
+obs-matched pairs (model interpolated to each observation's date and box), not
+climatology-vs-climatology. **Verification that this is the documented state:** PO4 RMSE
+0.0232, Si 0.8235, CHLA 25.52, NH4 0.0489, OPA bias −0.476, FIX +0.443, ZOO −0.001, seasonal
+r +0.70, peak Sep — all reproduce §26/§27 to the digit.
+
+**Finding 1 — the benthic-P premise no longer exists; the PO4 residual moved to autumn.**
+Monthly PO4 model/obs ratios: Jul **0.16**, Aug **0.16**, Sep **0.24** — the model now
+UNDER-predicts summer PO4 four- to six-fold (obs ~0.004–0.006, model ~0.001 mg P/L). The
+over-prediction is now **Oct 6.1×, Nov 4.9×** (biases +0.019, **+0.052** — the largest single
+monthly nutrient bias in the run), plus Jun 4.1× and Feb 2.3×. The October–November excess
+coincides month-for-month with the missing autumn bloom (CHLA Oct −25.9, Nov −20.4 µg/L vs
+obs): the biomass that isn't there isn't consuming the P that is. ⇒ **The autumn PO4 excess is
+plausibly the SAME defect as the October chlorophyll gap — the missing akinete-staged autumn
+population — not a missing benthic sink.** A benthic P-removal process would now *worsen*
+Jul–Sep (already under). Benthic-P is demoted to blocked-on-akinete-staging: re-measure again
+after the autumn bloom exists.
+
+**Finding 2 — the diatom two-sidedness survives the boundary supply, sharpened.** Cool-season
+excess persists: Feb 2.29×, Mar 1.90×, Apr–May 1.36×, and **Jun 1.94×** — the observed June
+clear-water collapse (obs 0.196 mg C/L, the annual minimum) is not reproduced (model 0.380).
+Warm-season absence is total: Jul 0.08×, **Aug 0.005×** (obs 0.564 vs model 0.003), Sep 0.01×,
+Oct 0.03×. Silica carries the matching signature: **Aug 2.03×, Sep 2.21×, Oct 2.10×** — the
+§26 boundary fix bought the RMSE via the autumn–winter boundary drawdown, but the *summer*
+Si consumer is still missing. ⇒ the second-guild item stands as specified, with fresh numbers.
+
+**Bycatch worth recording.** (a) The "CYN cool-season bias" label is WRONG — the CYN_C miss is
+a **summer-guild absence**: obs peaks Aug 2.30 mg C/L vs model 0.06 (ratio 0.03), Jun–Oct all
+≤0.27×, while Feb–Mar are roughly right. (b) FIX_CYN now runs **early and hot**: Jun 7.4×
+over (model 0.83 vs obs 0.11 — the bloom starts a month early), Jul 2.4×, Aug 1.6×, then Nov
+0.47× under — the +0.44 annual bias is mid-season overshoot masking autumn shortfall.
+(c) DO shows the missing-bloom photosynthesis signature: Aug obs 12.6 (supersaturated) vs
+model 9.7 (bias −2.97), Oct −2.1 — the same two months as the CHLA gap.
+
+Analysis: `/tmp/monthly_residuals.py` against `OUTPUTS_CL29/` (recipe: `INPUT_CL29.txt` with
+`PRINT_INTERVAL` 240); numbers preserved here per the scratch-dirs rule.
+
 ---
 
 ## Method note
