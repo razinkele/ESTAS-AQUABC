@@ -1074,12 +1074,14 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use ALLELOPATHY
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
+    use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
 
     implicit none
 
     integer, intent(in) :: IN_FILE
     integer :: TEMP_MODEL_OPT
     real(kind = DBL) :: K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN
+    real(kind = DBL) :: T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1146,6 +1148,8 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! GROWTH_AT_TEMP reads. The trailing CYN_ALLELOPATHY_FILE_NAME lines (if present)
     ! are consumed harmlessly here; the file is closed right after this routine.
     K_POS_UP_IN = 3.0D0; K_POS_DISP_IN = 10.0D0; W_DISP_POS_IN = 4.0D0
+    T_GERM_STG_IN = 12.0D0; I_FORM_IN = 120.0D0; KR_GERM_BED_IN = 0.05D0
+    K_MORT_BED_IN = 1.0D-3; V_SETTLE_IN = 0.5D0
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     read(IN_FILE + 1, *, end = 900, err = 900)
@@ -1193,8 +1197,40 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) W_DISP_POS_IN
+
+    ! NOST akinete life-cycle staging (0 = legacy akinete gates, default; 1 = bed
+    ! akinete bank with a radiation-driven formation/germination latch) and its
+    ! five parameters: germination temperature threshold (deg C), formation
+    ! irradiance threshold (W/m2), bed germination rate (1/d), bed mortality
+    ! (burial) rate (1/d), and akinete settling velocity (m/d). Graceful like
+    ! everything above; defaults live in mod_GLOBAL and this routine's locals.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) NOST_STAGE_MODEL
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) T_GERM_STG_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) I_FORM_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) KR_GERM_BED_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) K_MORT_BED_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) V_SETTLE_IN
 900 continue
     call SET_POSITIONING_PARAMS(K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN)
+    call SET_NOST_STAGING_PARAMS(T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN)
+    if (NOST_STAGE_MODEL > 0) then
+        write(*,*) 'NOST staging: ON. T_GERM=', T_GERM_STG_IN, ' I_FORM=', I_FORM_IN, &
+                   ' KR_GERM_BED=', KR_GERM_BED_IN, ' K_MORT_BED=', K_MORT_BED_IN, &
+                   ' V_SETTLE=', V_SETTLE_IN
+    else
+        write(*,*) 'NOST staging: OFF (legacy akinete gates, default).'
+    end if
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
                    'KHS_FOOD_TOT_ZOO =', KHS_FOOD_TOT_ZOO

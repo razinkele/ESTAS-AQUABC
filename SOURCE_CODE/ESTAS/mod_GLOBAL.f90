@@ -212,6 +212,11 @@ module GLOBAL
     ! empirical scum-formation threshold for buoyant colonies is ~2-4 m/s.
     ! 0 (default) = pure Nagy inversion, byte-identical.
     real(kind = DBL) :: W_CRIT_POS_MIN = 0.0D0
+
+    ! NOST akinete life-cycle staging (docs/superpowers/specs/2026-08-23-nost-akinete-
+    ! staging-design.md): 0 = legacy akinete gates only (default, byte-identical);
+    ! 1 = bed akinete bank with a radiation-driven formation/germination latch.
+    integer :: NOST_STAGE_MODEL = 0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4
