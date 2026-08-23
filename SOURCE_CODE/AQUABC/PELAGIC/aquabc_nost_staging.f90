@@ -32,6 +32,7 @@ module AQUABC_NOST_STAGING
     real(kind = DBL_PREC), allocatable :: STG_SETTLE_FLUX(:) ! g C/m2/d
     real(kind = DBL_PREC), allocatable :: STG_GERM_FLUX(:)   ! g C/m2/d
     real(kind = DBL_PREC), allocatable :: STG_FORM_FLUX(:)   ! g C/m2/d (= R_FORM_NOST_AKI*DEPTH)
+    ! diagnostic only -- NEVER a bed source (formation carbon reaches the bed via settling)
     logical,               allocatable :: STG_GERM_COND(:)   ! non-latch germ conditions met
 
     ! Scalar parameters (graceful option-line overrides; PELAGIC_MODEL_OPTIONS.txt spec sec 4.5):

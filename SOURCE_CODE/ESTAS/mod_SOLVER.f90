@@ -57,6 +57,8 @@ contains
                      DEPOSITION_AREA_RATIOS        , &
                      nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
 
+        use AQUABC_NOST_STAGING, only: ADVANCE_NOST_STAGING, STG_SETTLE_FLUX, STG_GERM_FLUX, &
+                                        STG_FORM_FLUX, STG_GERM_COND
         implicit none
         type(PELAGIC_BOX_MODEL_DS), intent(inout) :: PELAGIC_BOX_MODEL_DATA
         real(kind = DBL)          , intent(in)    :: TIME
@@ -286,6 +288,29 @@ contains
             end do
             !$omp end parallel do
 
+            ! Solver-side once-per-step BED_AKI advance (opt-in, spec docs/superpowers/
+            ! specs/2026-08-23-nost-akinete-staging-design.md sec 4.4). Serial context
+            ! (outside the OpenMP region above); STG_SETTLE_FLUX/STG_GERM_FLUX/STG_
+            ! FORM_FLUX/STG_GERM_COND were overwritten by this step's kinetics evaluation
+            ! (inside CALC_DERIV above), so ADVANCE integrates exactly this step's fluxes
+            ! exactly once. DRIVING_FUNCTIONS(3) is solar radiation (NOT (1), which is
+            ! temperature -- verified against the write site in mod_PELAGIC_ECOLOGY.f90's
+            ! UPDATE_PELAGIC_DRIVING_FUNCS and against pcore%DRIVING_FUNCTIONS(:,1)'s
+            ! WATER_TEMP/SED_TEMPS consumers), already fresh for TIME from the
+            ! UPDATE_TIME_FUNCS call at the top of this step.
+            if (NOST_STAGE_MODEL > 0) then
+                block
+                    real(kind = DBL), dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES) :: SR
+                    integer :: k
+                    do k = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                        SR(k) = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(k) % DRIVING_FUNCTIONS(3)
+                    end do
+                    call ADVANCE_NOST_STAGING(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES, &
+                                              TIME_STEP, SR, STG_SETTLE_FLUX, STG_GERM_FLUX, &
+                                              STG_FORM_FLUX, STG_GERM_COND)
+                end block
+            end if
+
         else if (PELAGIC_SOLVER_NO == 2) then
             ! =====================================================================
             ! RK2 (Heun's method) solver
@@ -335,6 +360,20 @@ contains
                 real(kind = DBL) :: k1_deriv, k2_deriv
                 real(kind = DBL), dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES) :: &
                     VOLUME_OLD, VOL_DERIV_1
+                ! NOST staging (opt-in): stage-1 exports saved here, averaged with the
+                ! stage-2 (current) exports after the corrector below. Declared at this
+                ! outer block's scope (not a nested block) so they survive to the final
+                ! ADVANCE_NOST_STAGING call after the corrector loop.
+                real(kind = DBL), dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES) :: &
+                    SETTLE_1, GERM_1, FORM_1, SR
+                logical, dimension(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES) :: COND_1
+
+                if (NOST_STAGE_MODEL > 0) then
+                    SETTLE_1 = STG_SETTLE_FLUX
+                    GERM_1   = STG_GERM_FLUX
+                    FORM_1   = STG_FORM_FLUX
+                    COND_1   = STG_GERM_COND
+                end if
 
                 ! Store K1 derivatives and advance state to predicted position
                 do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
@@ -458,6 +497,25 @@ contains
                         end if
                     end do
                 end do
+
+                ! Solver-side once-per-step BED_AKI advance (opt-in, spec sec 4.4), RK2
+                ! path: stage-averaged fluxes (0.5*(stage1+stage2)); STG_GERM_COND at this
+                ! point still holds the stage-2 (post-corrector) evaluation, so germ_cond =
+                ! COND_1 .or. STG_GERM_COND per the plan. SR uses the TIME+TIME_STEP forcing
+                ! (DRIVING_FUNCTIONS refreshed by the stage-2 UPDATE_TIME_FUNCS call above) --
+                ! index 3 is solar radiation, not (1), which is temperature (see the Euler-
+                ! path comment above for the verification trail).
+                if (NOST_STAGE_MODEL > 0) then
+                    do i = 1, PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
+                        SR(i) = PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % DRIVING_FUNCTIONS(3)
+                    end do
+                    call ADVANCE_NOST_STAGING(PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES, &
+                                              TIME_STEP, SR, &
+                                              0.5D0 * (SETTLE_1 + STG_SETTLE_FLUX), &
+                                              0.5D0 * (GERM_1   + STG_GERM_FLUX), &
+                                              0.5D0 * (FORM_1   + STG_FORM_FLUX), &
+                                              COND_1 .or. STG_GERM_COND)
+                end if
             end block
 
         end if

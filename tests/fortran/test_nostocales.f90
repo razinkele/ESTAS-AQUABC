@@ -33,6 +33,8 @@ program test_nostocales
     call test_stage_latch_blocks_germination()
     call test_stage_germination_rate_and_water_pool_off()
     call test_stage_formation_and_settling()
+    call test_stage_aki_derivative_identity()
+    call test_stage_two_node_opposite_gates()
 
     print *, ""
     print *, "=========================================="
@@ -999,5 +1001,160 @@ contains
         call assert_approx_equal(R_SETTLE(1), expected_r_settle, 1.0D-12, &
                                   "(f) R_SETTLE_AKI unchanged by latch state")
     end subroutine test_stage_formation_and_settling
+
+    ! -----------------------------------------------------------------------------
+    ! Task-4 carried tests (review of Task 3): AKI_C net-derivative composition
+    ! check + a 2-node opposite-gates case. Carried in because Task 3's coverage
+    ! never asserts the individual rates -> a single subtracted-sink number, and
+    ! never runs nkn>1 (so a where-mask that silently broadcasts one node's gate
+    ! to every node would still pass). Both cases exercise behavior Task 3 already
+    ! implemented (the flag=1 germination/formation/settling block in aquabc_II_
+    ! pelagic_lib_NOSTACALES.f90) -- no Task-4 production code moves them from red
+    ! to green; they are regression protection, not new-feature TDD.
+    !
+    ! NOTE on scope: test_nostocales.f90 calls NOSTOCALES directly and never
+    ! reaches the DERIVATIVES(NOST_AKI_C) assembly at aquabc_II_pelagic_model.f90
+    ! :2662-2667 (the "- slot6" subtraction). This test independently hand-computes
+    ! the four rate formulas and checks their composition here at the kinetics
+    ! level; it does NOT exercise the model.f90 assembly line itself -- that
+    ! composition is covered only by Task 6's V4 conservation audit.
+    ! -----------------------------------------------------------------------------
+
+    ! AKI_C net-derivative composition: independently hand-computed R_FORM, R_LOSS,
+    ! R_MORT, R_SETTLE_AKI (from the raw formulas, not a re-sum of the routine's own
+    ! outputs) must match the routine's outputs, and their model:2667 composition
+    ! (R_FORM - R_GERM - R_LOSS - R_MORT - R_SETTLE, R_GERM forced 0 under the flag)
+    ! must match the independently-computed expected net.
+    subroutine test_stage_aki_derivative_identity()
+        integer, parameter :: nkn = 1
+        type(t_nost_params) :: params
+        type(t_phyto_env) :: env
+        real(kind=DBL_PREC), target :: TEMP(nkn), I_A(nkn), K_E(nkn)
+        real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn)
+        real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
+        real(kind=DBL_PREC) :: DIN(nkn), DON(nkn), DP(nkn)
+        real(kind=DBL_PREC) :: NOST_VEG(nkn), NOST_AKI(nkn)
+        real(kind=DBL_PREC) :: BED_AKI_CHUNK(nkn)
+        logical :: FORM_LATCH_CHUNK(nkn)
+        real(kind=DBL_PREC) :: R_GERM(nkn), R_FORM(nkn), R_LOSS(nkn), R_MORT(nkn)
+        real(kind=DBL_PREC) :: LIM_T(nkn)
+        real(kind=DBL_PREC) :: SETTLE_FLUX(nkn), GERM_FLUX(nkn), FORM_FLUX(nkn)
+        logical :: GERM_COND(nkn)
+        real(kind=DBL_PREC) :: R_GERM_BED(nkn), R_SETTLE(nkn)
+        real(kind=DBL_PREC), parameter :: V_SETTLE_TEST = 0.6D0
+        real(kind=DBL_PREC) :: expected_form, expected_loss, expected_mort, expected_settle
+        real(kind=DBL_PREC) :: expected_net, actual_net
+
+        print *, "Test: stage -- AKI_C net-derivative composition (kinetics-level identity)"
+
+        call set_default_nost_params(params)
+        params%K_LOSS_AKI    = 0.02D0   ! defaults are 0.0 -- would make the check trivial
+        params%K_MORT_AKI_20 = 0.01D0
+        call SET_NOST_STAGING_PARAMS(12.0D0, 120.0D0, 0.05D0, 1.0D-3, V_SETTLE_TEST)
+        TEMP = 25.0D0; I_A = 300.0D0; K_E = 1.0D0
+        DEPTH = 3.0D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
+        WINDS = 3.0D0
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, WINDS)
+
+        DIN = 0.5D0; DON = 0.0D0; DP = 0.1D0
+        NOST_VEG = 2.5D0; NOST_AKI = 1.5D0
+        BED_AKI_CHUNK = 0.0D0
+        FORM_LATCH_CHUNK = .true.   ! latch ON -- formation fires
+
+        call run_nost_staged(params, env, DIN, DON, DP, NOST_VEG, NOST_AKI, &
+                      1.0D0, 100, nkn, 1, BED_AKI_CHUNK, FORM_LATCH_CHUNK, &
+                      R_GERM, R_FORM, R_LOSS, R_MORT, LIM_T, &
+                      SETTLE_FLUX, GERM_FLUX, FORM_FLUX, GERM_COND, R_GERM_BED, R_SETTLE)
+
+        ! Independent hand-computation from the raw formulas (params%KR_FORM_AKI *
+        ! VEG; K_LOSS_AKI * AKI; K_MORT_AKI_20 * theta^(T-20) * AKI; V_SETTLE_AKI *
+        ! AKI / DEPTH) -- NOT a re-sum of the routine's own outputs.
+        expected_form   = params%KR_FORM_AKI * NOST_VEG(1)
+        expected_loss   = params%K_LOSS_AKI * NOST_AKI(1)
+        expected_mort   = params%K_MORT_AKI_20 * (params%THETA_K_MORT_AKI ** (TEMP(1) - 20.0D0)) * NOST_AKI(1)
+        expected_settle = V_SETTLE_TEST * NOST_AKI(1) / DEPTH(1)
+        expected_net    = expected_form - 0.0D0 - expected_loss - expected_mort - expected_settle
+
+        call assert_approx_equal(R_FORM(1), expected_form, 1.0D-12, &
+                                  "derivative-identity: R_FORM_NOST_AKI matches KR_FORM_AKI*VEG")
+        call assert_approx_equal(R_LOSS(1), expected_loss, 1.0D-12, &
+                                  "derivative-identity: R_LOSS_AKI matches K_LOSS_AKI*AKI")
+        call assert_approx_equal(R_MORT(1), expected_mort, 1.0D-12, &
+                                  "derivative-identity: R_MORT_AKI matches K_MORT_AKI_20*theta^(T-20)*AKI")
+        call assert_approx_equal(R_SETTLE(1), expected_settle, 1.0D-12, &
+                                  "derivative-identity: R_SETTLE_AKI matches V_SETTLE_AKI*AKI/DEPTH")
+        call assert_approx_equal(R_GERM(1), 0.0D0, 1.0D-12, &
+                                  "derivative-identity: R_GERM_NOST_AKI is zero under the flag")
+        call assert_true(R_SETTLE(1) > 0.0D0, "derivative-identity: R_SETTLE_AKI > 0 for AKI_C > 0")
+
+        ! model.f90:2662-2667 composition (slot5=DEPTH diagnostic excluded), replicated
+        ! here from the routine's own outputs and checked against the independent net:
+        actual_net = R_FORM(1) - R_GERM(1) - R_LOSS(1) - R_MORT(1) - R_SETTLE(1)
+        call assert_approx_equal(actual_net, expected_net, 1.0D-12, &
+            "derivative-identity: net = R_FORM - R_GERM - R_LOSS - R_MORT - R_SETTLE")
+    end subroutine test_stage_aki_derivative_identity
+
+    ! 2-node case with opposite germination-gate outcomes: node 1 (TEMP=25) passes
+    ! every gate; node 2 (TEMP=16.1, just above the test stub's CTMI T_min=16) is
+    ! blocked by the dead-water gate from the COLD side (case (a) in test_stage_
+    ! dead_water_gate already covers the hot/T_max side). At TEMP=16.1 the stub's
+    ! CTMI numerator is negative across the whole cold side, so LIM_KG_NOST_VEG_HET_
+    ! TEMP clamps to exactly 0.0 (not merely "small") -- well under EPS_GERM_TEMP_
+    ! LIM=0.05. This closes the nkn=1 degeneracy of every other flag=1 where-mask
+    ! test: with nkn=1 a scalar-broadcast bug in the where-mask logic would be
+    ! indistinguishable from correct per-node masking.
+    subroutine test_stage_two_node_opposite_gates()
+        integer, parameter :: nkn = 2
+        type(t_nost_params) :: params
+        type(t_phyto_env) :: env
+        real(kind=DBL_PREC), target :: TEMP(nkn), I_A(nkn), K_E(nkn)
+        real(kind=DBL_PREC), target :: DEPTH(nkn), CHLA(nkn), FDAY(nkn)
+        real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
+        real(kind=DBL_PREC) :: DIN(nkn), DON(nkn), DP(nkn)
+        real(kind=DBL_PREC) :: NOST_VEG(nkn), NOST_AKI(nkn)
+        real(kind=DBL_PREC) :: BED_AKI_CHUNK(nkn)
+        logical :: FORM_LATCH_CHUNK(nkn)
+        real(kind=DBL_PREC) :: R_GERM(nkn), R_FORM(nkn), R_LOSS(nkn), R_MORT(nkn)
+        real(kind=DBL_PREC) :: LIM_T(nkn)
+        real(kind=DBL_PREC) :: SETTLE_FLUX(nkn), GERM_FLUX(nkn), FORM_FLUX(nkn)
+        logical :: GERM_COND(nkn)
+        real(kind=DBL_PREC) :: R_GERM_BED(nkn), R_SETTLE(nkn)
+        real(kind=DBL_PREC), parameter :: KR_GERM_BED_TEST = 0.05D0
+
+        print *, "Test: stage -- 2-node opposite germination-gate outcomes"
+
+        call set_default_nost_params(params)
+        call SET_NOST_STAGING_PARAMS(12.0D0, 120.0D0, KR_GERM_BED_TEST, 1.0D-3, 0.5D0)
+        TEMP(1) = 25.0D0    ! node 1: LIM_TEMP ~0.993, well above EPS_GERM_TEMP_LIM
+        TEMP(2) = 16.1D0    ! node 2: cold side, just above T_min=16 -> LIM_TEMP clamps to 0.0
+        I_A = 300.0D0; K_E = 1.0D0
+        DEPTH = 3.0D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
+        WINDS = 3.0D0
+        call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, WINDS)
+
+        DIN = 0.01D0        ! low DIN at both nodes -- isolates the temperature gate
+        DON = 0.0D0; DP = 0.1D0
+        NOST_VEG = 1.0D0; NOST_AKI = 0.5D0
+        BED_AKI_CHUNK = 4.0D0   ! identical nonzero bed at both nodes
+        FORM_LATCH_CHUNK = .false.
+
+        call run_nost_staged(params, env, DIN, DON, DP, NOST_VEG, NOST_AKI, &
+                      1.0D0, 180, nkn, 1, BED_AKI_CHUNK, FORM_LATCH_CHUNK, &
+                      R_GERM, R_FORM, R_LOSS, R_MORT, LIM_T, &
+                      SETTLE_FLUX, GERM_FLUX, FORM_FLUX, GERM_COND, R_GERM_BED, R_SETTLE)
+
+        call assert_true(LIM_T(1) > 0.05D0, "node 1: LIM_KG_NOST_VEG_HET_TEMP above EPS_GERM_TEMP_LIM")
+        call assert_true(LIM_T(2) <= 0.05D0, "node 2: LIM_KG_NOST_VEG_HET_TEMP at/under EPS_GERM_TEMP_LIM (cold side)")
+        call assert_true(GERM_COND(1), "node 1: GERM_COND_CHUNK true")
+        call assert_true(.not. GERM_COND(2), "node 2: GERM_COND_CHUNK false (cold-blocked)")
+        call assert_approx_equal(GERM_FLUX(1), KR_GERM_BED_TEST * BED_AKI_CHUNK(1), 1.0D-12, &
+                                  "node 1: GERM_FLUX_CHUNK = KR_GERM_BED * BED_AKI_CHUNK")
+        call assert_approx_equal(GERM_FLUX(2), 0.0D0, 1.0D-12, &
+                                  "node 2: GERM_FLUX_CHUNK stays zero")
+        call assert_approx_equal(R_GERM_BED(1), GERM_FLUX(1) / DEPTH(1), 1.0D-12, &
+                                  "node 1: R_GERM_BED_AKI = GERM_FLUX_CHUNK / DEPTH")
+        call assert_approx_equal(R_GERM_BED(2), 0.0D0, 1.0D-12, &
+                                  "node 2: R_GERM_BED_AKI stays zero")
+    end subroutine test_stage_two_node_opposite_gates
 
 end program test_nostocales

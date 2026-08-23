@@ -329,6 +329,17 @@ contains
         read(unit = IN_FILE, fmt = *) resusp%RESUSPENSION_OPTION
         write(unit = *, fmt = *) 'RESUSPENSION_OPTION : ', resusp%RESUSPENSION_OPTION
 
+        ! NOST akinete life-cycle staging (NOST_STAGE_MODEL, read earlier by
+        ! READ_PELAGIC_BOX_MODEL_INPUTS -> READ_PELAGIC_MODEL_OPTIONS above) is
+        ! incompatible with resuspension: BED_AKI is a staging-only pool, invisible to
+        ! bed erosion, so an active resuspension option would silently fail to
+        ! resuspend it. Both flags are in scope here (GLOBAL, RESUSPENSION); fail fast
+        ! at read time on the file-requested option, before any later downgrade to 0.
+        if (NOST_STAGE_MODEL > 0 .and. resusp%RESUSPENSION_OPTION > 0) then
+            error stop 'NOST_STAGE_MODEL=1 is incompatible with resuspension: BED_AKI is invisible '// &
+                       'to bed erosion (see the 2026-08-23 staging spec, s.6.1)'
+        end if
+
         SHUT_DOWN_SETTLING = 0
         MODEL_BOTTOM_SED_PRESET = .false.
 
