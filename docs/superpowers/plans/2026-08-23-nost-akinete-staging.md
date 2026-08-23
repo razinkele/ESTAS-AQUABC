@@ -235,7 +235,7 @@ end if
 
 **Interfaces:** Consumes Task 1's `ADVANCE_NOST_STAGING` + exports and Task 2's flag. Produces nothing new.
 
-- [ ] **Step 1: Locate the per-box solar radiation at solver level** — `grep -n "SOLAR_RADIATION\|DRIVING_FUNCTIONS(" SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90 | head -20`; expected: `PELAGIC_BOXES(i)%DRIVING_FUNCTIONS(1)` is assigned from `SOLAR_RADIATION` (~line 116). Confirm by reading the assignment block; record the index actually used. If the ESTAS-level index differs from 1, use the one found.
+- [ ] **Step 1: Locate the per-box solar radiation at solver level** — `grep -n "SOLAR_RADIATION\|DRIVING_FUNCTIONS(" SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90 | head -20`. **RESOLVED during execution (Task 4): the index is `DRIVING_FUNCTIONS(3)`** — (1) is temperature, (2) is salinity, (3) is solar radiation (assignment block at mod_PELAGIC_ECOLOGY.f90 ~109–140, verified by direct reading). ⚠ The plan-review's "index 1 confirmed" verdicts were wrong; see the review-record correction below.
 - [ ] **Step 2: Euler path** — after the Euler state-update loop has COMPLETED and outside any OpenMP parallel region (the :183–:239 anchor sits inside the update loop — insert after the loop's `end do`, in serial context; verify with `grep -n "omp" SOURCE_CODE/ESTAS/mod_SOLVER.f90 | head` that no parallel region spans the insertion point). Add `use AQUABC_NOST_STAGING, only: ADVANCE_NOST_STAGING, STG_SETTLE_FLUX, STG_GERM_FLUX, STG_FORM_FLUX, STG_GERM_COND` to the routine's use block. Gated:
 ```fortran
 if (NOST_STAGE_MODEL > 0) then
@@ -297,9 +297,13 @@ end if
 ## Review record
 
 Adversarial workflow review 2026-08-23 (4 finder dimensions → refute-oriented verification, 14
-agents): 24 findings — 5 verified CONFIRMED, 5 REFUTED (notably: all four "DRIVING_FUNCTIONS(1)
-is temperature" claims — the solar index 1 anchor is correct), 8 majors passed unverified, 6
-minors. All confirmed/unverified/minor fixes are incorporated: STG_FORM_FLUX export + CUM_*
+agents): 24 findings — 5 verified CONFIRMED, 5 REFUTED, 8 majors passed unverified, 6 minors.
+**Execution correction (Task 4): the four "DRIVING_FUNCTIONS(1) is temperature" findings were
+RIGHT and their REFUTED verdicts were WRONG** — direct reading of the assignment block settles
+it: (1)=temperature, (2)=salinity, (3)=solar radiation. The implementer caught it via the
+step's own verify-grep and used index 3; no wrong code ever landed. Process lesson: four
+verifiers sharing one misreading are not four independent checks — the in-code verify-step
+was the control that actually worked. All confirmed/unverified/minor fixes are incorporated: STG_FORM_FLUX export + CUM_*
 exact integrals (the blocking find), V4 reformulated (bed-side identity + double-banking
 detector; per-box water identity unclosable due to transport), baseline-creation Step 0, the
 0D-does-not-call-the-reader gate fix, tests/fortran Makefile links (both test programs), Euler
