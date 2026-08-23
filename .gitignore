@@ -132,3 +132,20 @@ verify_baseline/
 docs/CL29_Calibration_Paper_Draft.md
 docs/ESTAS_AQUABC_2023_paper_vs_2026.md
 docs/CL29_Setup_and_Calibration_Report_*.docx
+docs/report_scripts/
+
+# Generated observation outputs (regenerable from ~/ESTAS-AQUABC-DATA via
+# tools/ingest_epa_obs / tools/ingest_km_plankton; NEVER regenerate mid-DE)
+epa_observations_out/
+km_plankton_out/
+
+# Tool scratch
+.playwright-mcp/
+
+# Solver/timestep-sweep run outputs (2026-07-24 experiment; findings in docs/memory)
+/OE[0-9]*/
+/RB[0-9]*/
+/RF[0-9]*/
+/RV[0-9]*/
+/SB[0-9]*/
+/SF[0-9]*/
