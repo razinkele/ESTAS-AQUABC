@@ -16,6 +16,9 @@ contains
 
     subroutine RUN_SIMULATION(AQUATIC_MODEL_DATA)
 
+        use AQUABC_NOST_STAGING, only: BED_AKI, RAD_EMA, FORM_LATCH, STG_SETTLE_FLUX, &
+                                        STG_GERM_FLUX, STG_FORM_FLUX, CUM_SETTLE_AKI, &
+                                        CUM_GERM_AKI, CUM_FORM_AKI, BURIED_AKI
         implicit none
         type(AQUATIC_MODEL_DS), intent(inout) :: AQUATIC_MODEL_DATA
 
@@ -28,6 +31,12 @@ contains
         integer :: REPEAT_NO
         integer :: AUX_OUTPUT_UNIT
         integer :: PRINT_INTERVAL
+
+        ! NOST_STAGING.out is opened at most once per run (RUN_SIMULATION has a
+        ! single call site, ESTAS_II.f90), guarded here rather than in the
+        ! initialization pass (mod_AQUATIC_MODEL.f90) per the print-interval
+        ! writer convention this file already uses for MASS_BALANCES.out/COST_TOTAL.
+        logical, save :: NOST_STAGING_OPENED = .false.
 
         integer :: NUM_PELAGIC_OUTPUT_LINES
         integer :: NUM_PELAGIC_EX_OUTPUT_LINES
@@ -628,6 +637,40 @@ contains
                             end do
                         end if
                     end do
+
+                    ! NOST akinete life-cycle staging diagnostic (opt-in: file is only opened,
+                    ! and only ever written, when NOST_STAGE_MODEL > 0; at flag=0 neither this
+                    ! open nor the writes below execute, so NOST_STAGING.out is never created).
+                    ! BED_AKI here IS the bed standing stock (the settled akinete bank) under
+                    ! NOST_STAGE_MODEL=1 -- the state variable NOST_AKI_C is the in-water
+                    ! transit phase only in that regime, unlike the legacy convention elsewhere
+                    ! that reads AKI_C*DEPTH as the bed stock. This file is the flag=1 authority
+                    ! for the bed pool.
+                    if (NOST_STAGE_MODEL > 0) then
+                        if (.not. NOST_STAGING_OPENED) then
+                            open(unit   = 1002, &
+                                 file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // 'NOST_STAGING.out', &
+                                 status = 'UNKNOWN')
+
+                            write(unit = 1002, fmt = '(2A10, 10A20)') &
+                                  '     WTIME', '       BOX', &
+                                  '             BED_AKI', '             RAD_EMA', &
+                                  '               LATCH', '     STG_SETTLE_FLUX', &
+                                  '       STG_GERM_FLUX', '       STG_FORM_FLUX', &
+                                  '      CUM_SETTLE_AKI', '        CUM_GERM_AKI', &
+                                  '        CUM_FORM_AKI', '          BURIED_AKI'
+
+                            NOST_STAGING_OPENED = .true.
+                        end if
+
+                        do i = 1, nkn
+                            write(unit = 1002, fmt = '(F10.4, I10, 2F20.10, I20, 7F20.10)') &
+                                  WTIME, i, BED_AKI(i), RAD_EMA(i), merge(1, 0, FORM_LATCH(i)), &
+                                  STG_SETTLE_FLUX(i), STG_GERM_FLUX(i), STG_FORM_FLUX(i), &
+                                  CUM_SETTLE_AKI(i), CUM_GERM_AKI(i), CUM_FORM_AKI(i), &
+                                  BURIED_AKI(i)
+                        end do
+                    end if
 
                     if (PRODUCE_COCOA_OUTPUTS > 0) then
                         ! ------------------------------------------------------------------------------------------------------------
