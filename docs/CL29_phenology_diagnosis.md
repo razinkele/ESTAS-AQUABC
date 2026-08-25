@@ -1337,8 +1337,9 @@ full-record LATCH trace shows), yet `STG_FORM_FLUX` sits at a per-box, per-day c
 of 1.0e-10 (a numerical floor, not a real flux) for 2016–2022 — **formation is
 biomass-starved, not light-window-starved**: there is no live `NOST_VEG_HET_C` in the
 water column left to convert once the bed's initial charge is spent. The
-dead-water-germination fraction is 0 by construction (`mod_SIMULATE.f90` gates
-germination behind `LIM_TEMP > 0.05`) and needs no measurement.
+dead-water-germination fraction is 0 by construction (`aquabc_II_pelagic_lib_NOSTACALES.f90`
+gates germination behind `LIM_KG_NOST_VEG_HET_TEMP > EPS_GERM_TEMP_LIM`, the latter =
+0.05, declared in `aquabc_nost_staging.f90`) and needs no measurement.
 
 **V6[b] — headline scores: inert for biology; the TN/TP delta is real but confined to the
 spin-up years.** Scored full-record against the adopted baseline (same validator, same
@@ -1419,19 +1420,26 @@ loss is burial alone, matching `exp(−0.001 × 90) = 0.9139` almost exactly. **
 no size-dependent winter refuge: a nearly empty bank bleeds at the same fractional rate as
 a full one.**
 
-**A note on run behaviour, not a ladder finding.** Both full-record `flag=1` runs (the
-V6 default and the V7 no-recruitment control) emit millions of `NEGATIVE MASS PREDICTED`
-console alerts (`mod_PELAGIC_ECOLOGY.f90`'s existing, pre-branch safety clamp — confirmed
-present on `main` before this feature, not new code) against `NO3_N`, `ZOO_N` and `ZOO_P`,
-starting at `TIME=0`; the `flag=0` full-record run emits zero. Both `flag=1` runs still
-complete cleanly (exit 0, full 4016-day record, V4's mass identity holds to the print
-quantum), so this is not a crash. The two configurations differ only in the six staging
-option lines, so `flag=1` emitting these and `flag=0` not is a real correlation — but the
-causal route into three states the staging feature does not directly touch was not
-traced (which write branch fires depends on `ADVANCED_REDOX_SIMULATION`, not checked
-here), so this is reported as an open, undocumented-until-now behavioral difference, not
-an explained mechanism (Global Constraints: measurement and docs only). Worth a look
-before any further work on this branch.
+**A note on run behaviour, retracted.** An earlier draft of this section reported the
+`NEGATIVE MASS PREDICTED` console clamp (`mod_PELAGIC_ECOLOGY.f90`'s existing, pre-branch
+safety net against `NO3_N`, `ZOO_N` and `ZOO_P`, confirmed present on `main` before this
+feature) as staging-correlated — millions of alerts under `flag=1`, zero under `flag=0`.
+**That claim is false, and the mechanism is now identified: an observation artifact, not
+a model difference.** The `flag=0` comparison logs (`v2_main_run.log`, `v2_branch_run.log`)
+were piped through a `grep -vE` filter *at launch* (`/tmp/stg_ab/run_v2_chain.sh`) that
+strips exactly these alert lines, so they could never have shown any — the original
+comparison was filtered-log-vs-unfiltered-log, not flag=0-vs-flag=1. Re-run with `flag=0`
+captured unfiltered, same windows: **170 d — 141,965 (flag=0) vs 141,916 (flag=1); 300 d
+— 1,453,475 (flag=0) vs 1,449,748 (flag=1)**. `flag=0` emits slightly *more*, not zero —
+staging makes no material difference either way (−0.03 % to −0.26 % across the two
+windows, sign not consistent enough to call a real reduction). The same three states are
+implicated in both configs for the same reasons: `ZOO_N`/`ZOO_P` are floor-chatter from
+their zero initial condition in both configs, and `NO3_N` rides the summer-depletion
+floor identically, with the same onset day (~146) in both. **This is pre-existing,
+flag-independent model behaviour, unrelated to the staging feature.** Reusable lesson:
+filter noisy run output at analysis time, never at capture time — a launch-time filter
+can silently manufacture a spurious cross-run difference that looks exactly like a real
+one until someone diffs the launch command, not just the output.
 
 **The adoption question.** At default parameters, `NOST_STAGE_MODEL=1` changes nothing
 biological the October-gap motivation cared about (CHLA, PO4, Si, the FIX_TOT monthly
@@ -1443,13 +1451,11 @@ sustained one, and not (as traced) the same thing as the separately-observed mul
 freeze bug in the non-scored boxes. Turning it on today costs nothing on any of the
 metrics this project has tracked (identical CHLA/PO4/Si/NH4/DO/ZOO/composition from 2014
 onward), buys a modest spin-up-era TN/TP gain, but delivers none of the autumn-bloom
-biology the feature was built for, because the bed bank cannot survive to deliver it; it
-also introduces an unexplained increase in negative-mass-clamping events (previous
-section) that has not been root-caused. Whether to (a) adopt as a small, largely
-cosmetic, zero-biological-effect scoring gain, (b) hold and recalibrate
-`KR_GERM_BED`/`K_MORT_BED_AKI`/`I_FORM_AKI` so the bank can actually self-sustain before
-judging the biological payoff, or (c) shelve the branch pending the clamping question, is
-the user's call — this section reports what was measured, not a recommendation.
+biology the feature was built for, because the bed bank cannot survive to deliver it.
+Whether to (a) adopt as a small, largely cosmetic, zero-biological-effect scoring gain,
+or (b) hold and recalibrate `KR_GERM_BED`/`K_MORT_BED_AKI`/`I_FORM_AKI` so the bank can
+actually self-sustain before judging the biological payoff, is the user's call — this
+section reports what was measured, not a recommendation.
 
 ---
 
