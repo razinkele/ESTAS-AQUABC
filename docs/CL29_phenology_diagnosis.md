@@ -1309,20 +1309,29 @@ defect and the window moved to Oct 7 rather than a code fix) with the hard zero-
 Aug-31 invariant holding with no exceptions across all 11 years × 29 boxes.
 
 **V6[a] — self-sustainment: FAIL, decisively.** The brief's criterion is a non-declining
-post-formation annual maximum of `BED_AKI` per box, 2014–2022. It fails in **all 29
-boxes, every year**: the system-wide sum of annual maxima runs 222.0 (2012, the
+post-formation annual maximum of `BED_AKI` per box, 2014–2022. `BED_AKI` **collapses to
+noise-floor values (~1e-8 g C/m2, ten orders below the 2012 peak) by 2016 in all 29
+boxes, with no recovery to a meaningful scale in the remaining seven years** — of the 232
+box-year transitions 2014–2022, 78 are technically non-declining, but every one of those
+78 is a flat comparison between two values already pinned at that ~1e-8 floor, not a
+sustained or recovering stock. The system-wide sum of annual maxima runs 222.0 (2012, the
 initial-condition transient) → 3.29 (2013) → 0.0576 (2014) → 0.00462 (2015) → 0.000117
 (2016) → ... → 5.2e-7 g C/m2 (2022) — a six-order-of-magnitude collapse, complete by 2016,
-with **no recovery in the remaining seven years of the record.** Full-record system
-totals explain why: `CUM_SETTLE_AKI` 236.3, `CUM_GERM_AKI` 198.5, `CUM_FORM_AKI` 4.33,
-`BURIED_AKI` 37.8 g C/m2 (summed over 29 boxes). **99.97 % of all settling in the
-11-year record happened by end-2012** — a short, front-loaded drain of the model's
-inherited water-column `AKI_C` initial condition into the new bed pool (system-wide the
-settling input peaks at day 60, per V7(i) below, not literally day 1), not a sustained
-ongoing process — and of everything that ever entered the bed, **only 1.80 % came from
-in-bed formation**;
-germination released 82.5 % of it back out and burial permanently claimed 15.7 %. The
-radiation latch itself is not the bottleneck: it opens on schedule every year (confirmed
+with **no recovery in the remaining seven years of the record.** The per-box annual
+`ΔCUM_FORM/ΔCUM_GERM` ratio (the sustaining-box test) tells the same story: it never
+exceeds 1 built from non-floor numbers in any box — `<1` in 2014–2016 as the collapse
+runs, then fluctuating 0.2–1.3 across 2017–2022, but by then both the numerator and
+denominator are themselves noise-floor quantities (~1e-6 to 1e-7 g C/m2/yr), so no box
+shows a genuine `>1` sustaining ratio. Full-record system totals explain the collapse:
+`CUM_SETTLE_AKI` 236.3, `CUM_GERM_AKI` 198.5, `CUM_FORM_AKI` 4.33, `BURIED_AKI` 37.8
+g C/m2 (summed over 29 boxes). **99.97 % of all settling in the 11-year record happened
+by end-2012** — a short, front-loaded drain of the model's inherited water-column
+`AKI_C` initial condition into the new bed pool (system-wide the settling input peaks at
+day 60, per V7(i) below, not literally day 1), not a sustained ongoing process — and of
+everything that ever entered the bed, **only 1.80 % came from in-bed formation**;
+germination released 82.5 % of it back out and burial permanently claimed 15.7 %.
+
+The radiation latch itself is not the bottleneck: it opens on schedule every year (confirmed
 above) and stays open roughly 71 % of the year (mid-September through late May, one box's
 full-record LATCH trace shows), yet `STG_FORM_FLUX` sits at a per-box, per-day constant
 of 1.0e-10 (a numerical floor, not a real flux) for 2016–2022 — **formation is
@@ -1358,8 +1367,9 @@ themselves. A related but **separate** observation, not the cause of this score 
 independent decay pathway when its germination trigger doesn't fire, and it is measured
 **pinned at its 8.0 mg C/L initial condition for seven straight years (2012–2018) in
 boxes 1, 4, 10, 12, 13** before an abrupt 2019 release, coincident with a **system-wide**
-`NOST_VEG_HET_C` revival across all 29 boxes in 2018 (peaking 0.04–0.28 mg C/L, with a
-smaller 2021 echo) — the largest post-2015 sign of life the legacy model ever produces.
+`NOST_VEG_HET_C` revival across all 29 boxes in 2018 (per-box maxima up to 0.278 mg C/L,
+many boxes below 0.04, with a smaller 2021 echo) — the largest post-2015 sign of life the
+legacy model ever produces.
 That multi-year freeze is a genuine legacy-model defect and staging's `R_SETTLE_AKI` term
 would remove it by the same mechanism if it reached those boxes, but this was not traced
 to a specific causal pathway into the TN/TP score. **The trade V6[a] documents stands
@@ -1439,8 +1449,7 @@ section) that has not been root-caused. Whether to (a) adopt as a small, largely
 cosmetic, zero-biological-effect scoring gain, (b) hold and recalibrate
 `KR_GERM_BED`/`K_MORT_BED_AKI`/`I_FORM_AKI` so the bank can actually self-sustain before
 judging the biological payoff, or (c) shelve the branch pending the clamping question, is
-the user's call — this section
-reports what was measured, not a recommendation.
+the user's call — this section reports what was measured, not a recommendation.
 
 ---
 
