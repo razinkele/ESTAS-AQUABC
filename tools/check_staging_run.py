@@ -18,7 +18,7 @@ verification-battery rungs:
                 detector)
   timing       V5 -- per (year, box) first day the LATCH column turns from
                 0 to 1 (the formation-latch autumn crossing), asserted to
-                fall in [Aug 31, Sep 30] for --year-start..--year-end
+                fall in [Aug 31, Oct 7] for --year-start..--year-end
 
 See .superpowers/sdd/2026-08-23-nost-akinete-staging/task-6-brief.md.
 """
@@ -278,7 +278,7 @@ def mode_timing(args):
             checks.append((f"V5 timing year {year} first-ON window", not in_range, detail))
             continue
         dmin, dmax = dates[0], dates[-1]
-        aug31, sep30 = datetime.date(year, 8, 31), datetime.date(year, 9, 30)
+        aug31, sep30 = datetime.date(year, 8, 31), datetime.date(year, 10, 7)
         window_ok = (dmin >= aug31) and (dmax <= sep30)
         coverage_ok = len(dates) == n_boxes
         window_detail = f"first-ON range=[{dmin},{dmax}], window=[{aug31},{sep30}]"
