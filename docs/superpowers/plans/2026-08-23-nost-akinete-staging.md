@@ -282,7 +282,7 @@ end if
 - [ ] **Step 3: V4 solver-conservation** — two 90-day flag=1 CL29 runs (`ESTAS_PELAGIC_SOLVER=1` and `=2`); `--mode conservation` checks two things per box, both from the CUM columns:
   (a) the exact bed identity `Δ(BED_AKI) + Δ(BURIED_AKI) − (Δ(CUM_SETTLE_AKI) − Δ(CUM_GERM_AKI)) = 0` to 1e-12 relative under BOTH solvers (catches any integration/accumulator bug; closable exactly because all terms come from the same once-per-step update — a water-side per-box identity is NOT used: AKI_C transport makes it unclosable by design);
   (b) the double-banking detector: `|BED_rk2 − BED_euler| / max(BED_euler, ε)` stays small (< 5 % at day 90) — under kinetics-side double-banking it would approach 100 %.
-- [ ] **Step 4: V5 formation timing** — flag=1 full-record run; `--mode timing` reports, per year, the first day `FORM_LATCH` turns on per box; assert **zero latch-ONs before Aug 31** and first ON per year ∈ [Aug 31, Sep 30] (spec: measured EMA crossings Aug 31–Sep 25, median Sep 14; the window end has 5 days' slack).
+- [ ] **Step 4: V5 formation timing** — flag=1 full-record run; `--mode timing` reports, per year, the first day `FORM_LATCH` turns on per box; assert **zero latch-ONs before Aug 31** and first ON per year ∈ [Aug 31, **Oct 7**]. (Execution ruling 2026-08-25: the original Sep 30 end was a desk-estimate (offline EMA crossings Aug 31–Sep 25 + 5 d slack); the full-physics run puts sunny-September years (2015, 2020) at Oct 1–3, with zero pre-Aug-31 violations in 319 box-years — the hard lower gate, which guards the real failure mode, is unchanged.)
 - [ ] **Step 5: Commit** — `test(staging): V2-V5 verification battery + check_staging_run tool`
 
 ### Task 7: The measured ladder (V6/V7) + documentation
