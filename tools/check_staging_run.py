@@ -50,8 +50,32 @@ ECHO_FIELDS = (
 )
 
 
+class StagingFileError(Exception):
+    """Raised when a NOST_STAGING.out file's header doesn't match COLUMNS."""
+
+
 def _to_float(tok):
     return float(tok.replace("D", "E").replace("d", "e"))
+
+
+def require_header(header, path):
+    """Fail loudly if `header` isn't exactly COLUMNS, in order.
+
+    mode_conservation and mode_timing parse rows by fixed column *position*
+    (see read_staging_out), trusting the header without checking it. A
+    column-order drift in the Fortran writer would otherwise make those two
+    modes compute wrong-but-plausible numbers silently. mode_smoke already
+    reports a header-mismatch as one of its own checks (see its "header
+    matches spec" entry) so it is not routed through this hard failure --
+    that softer, non-fatal report is more useful for a smoke test, which is
+    meant to surface every symptom in one run rather than abort on the first.
+    """
+    if header != list(COLUMNS):
+        raise StagingFileError(
+            f"{path}: header does not match the expected NOST_STAGING.out columns.\n"
+            f"  expected: {' '.join(COLUMNS)}\n"
+            f"  actual:   {' '.join(header)}"
+        )
 
 
 def read_staging_out(path):
@@ -190,7 +214,8 @@ def mode_smoke(args):
 
 def mode_conservation(args):
     checks = []
-    _, rows_a = read_staging_out(args.staging_out)
+    header_a, rows_a = read_staging_out(args.staging_out)
+    require_header(header_a, args.staging_out)
     ok_a, max_res_a, worst_a = identity_check(rows_a, args.tol, args.tol_abs)
     detail_a = f"max|residual|={max_res_a:.3e} over {len(rows_a)} rows"
     if worst_a is not None:
@@ -202,7 +227,8 @@ def mode_conservation(args):
     if not args.second:
         return checks
 
-    _, rows_b = read_staging_out(args.second)
+    header_b, rows_b = read_staging_out(args.second)
+    require_header(header_b, args.second)
     ok_b, max_res_b, worst_b = identity_check(rows_b, args.tol, args.tol_abs)
     detail_b = f"max|residual|={max_res_b:.3e} over {len(rows_b)} rows"
     if worst_b is not None:
@@ -243,7 +269,8 @@ def mode_conservation(args):
 
 def mode_timing(args):
     checks = []
-    _, rows = read_staging_out(args.staging_out)
+    header, rows = read_staging_out(args.staging_out)
+    require_header(header, args.staging_out)
     if not rows:
         checks.append(("file non-empty", False, "0 data rows"))
         return checks
@@ -278,10 +305,20 @@ def mode_timing(args):
             checks.append((f"V5 timing year {year} first-ON window", not in_range, detail))
             continue
         dmin, dmax = dates[0], dates[-1]
-        aug31, sep30 = datetime.date(year, 8, 31), datetime.date(year, 10, 7)
-        window_ok = (dmin >= aug31) and (dmax <= sep30)
+        aug31, win_end = datetime.date(year, 8, 31), datetime.date(year, 10, 7)
+
+        # Hard gate: zero latch-ONs before Aug 31. Enforced for EVERY year that has any
+        # LATCH 0->1 transition, regardless of --year-start/--year-end -- a pre-Aug-31
+        # crossing is a real defect in any year (including the injected base year), not
+        # just the ones the window/coverage checks are scoped to assert over.
+        lower_ok = dmin >= aug31
+        lower_detail = f"earliest first-ON={dmin}, hard floor={aug31}"
+        checks.append((f"V5 timing year {year} zero-before-Aug-31 (hard gate)",
+                        lower_ok, lower_detail))
+
+        upper_ok = dmax <= win_end
         coverage_ok = len(dates) == n_boxes
-        window_detail = f"first-ON range=[{dmin},{dmax}], window=[{aug31},{sep30}]"
+        window_detail = f"first-ON range=[{dmin},{dmax}], window=[{aug31},{win_end}]"
         coverage_detail = (f"{len(dates)}/{n_boxes} boxes had a 0->1 transition this year "
                             "(a box with no spring germ-release has no autumn turn-on)")
         window_label = f"V5 timing year {year} first-ON window"
@@ -289,8 +326,8 @@ def mode_timing(args):
         if not in_range:
             window_label += " (informational, outside assertion range)"
             coverage_label += " (informational, outside assertion range)"
-            window_ok = coverage_ok = True
-        checks.append((window_label, window_ok, window_detail))
+            upper_ok = coverage_ok = True
+        checks.append((window_label, upper_ok, window_detail))
         checks.append((coverage_label, coverage_ok, coverage_detail))
 
     return checks
@@ -343,7 +380,12 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     mode_fn = {"smoke": mode_smoke, "conservation": mode_conservation, "timing": mode_timing}
-    results = mode_fn[args.mode](args)
+    try:
+        results = mode_fn[args.mode](args)
+    except StagingFileError as exc:
+        print(f"=== check_staging_run.py --mode {args.mode} ===", file=sys.stderr)
+        print(f"FATAL: {exc}", file=sys.stderr)
+        return 2
 
     print(f"=== check_staging_run.py --mode {args.mode} ===")
     ok = True
