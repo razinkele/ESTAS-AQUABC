@@ -1280,6 +1280,170 @@ Analysis: `/tmp/monthly_residuals.py` against `OUTPUTS_CL29/` (recipe: `INPUT_CL
 
 ---
 
+## 29. The akinete-staging ladder: it builds and verifies clean, and its bed bank goes
+extinct within four years
+
+(2026-08-25; branch `feature/nost-akinete-staging`, seven tasks, opt-in
+`NOST_STAGE_MODEL` flag in `PELAGIC_MODEL_OPTIONS.txt` — `0` = legacy akinete gates
+(default, byte-identical to `main`), `1` = bed akinete bank + radiation latch, gated by
+five new scalars: `T_GERM_AKI_STAGE` (pre-season germination temperature guard, 12 °C),
+`I_FORM_AKI` (formation-latch radiation threshold, 120 W/m2), `KR_GERM_BED` (bed
+germination rate, 0.05 /d), `K_MORT_BED_AKI` (bed mortality/burial rate, 0.001 /d),
+`V_SETTLE_AKI` (akinete settling velocity, 0.5 m/d). Not adopted into `INPUTS_CL29/`; this
+section measures it in a scratch config, per Global Constraints.)
+
+**Build and verification (V1–V5): clean.** Six tasks of TDD build-out (state-variable
+plumbing, gate logic, transport-safe derived-type wiring, writer) landed a new
+`AQUABC_NOST_STAGING` module and a `NOST_STAGING.out` diagnostic file, all behind the
+flag. `flag=0` is **byte-identical to `main`** on both the CL29 full record (60/60 output
+files, `diff -rq` clean) and the 0D golden case (`OUTPUT.csv` + `const_out.txt` identical
+to the pre-feature baseline) — the opt-in costs nothing when off. Under `flag=1`, the bed
+mass identity `BED_AKI + BURIED_AKI − CUM_SETTLE_AKI + CUM_GERM_AKI ≡ 0` holds to the
+print quantum (max\|residual\| = 1.000e-10, both the Euler and RK2 solvers, over 2,610
+rows each — the residual histogram clusters on integer multiples of 1e-10, i.e.
+print-rounding, not a mass leak) and the two solvers agree on the bed state to 0.0013 %
+at day 90. The formation-latch phenology lands inside the expected autumn window every
+year 2013–2022 (first LATCH 0→1 crossing Sep 8–Oct 3, all 29 boxes; two sunny-September
+years, 2015 and 2020, run 1–3 days past a desk-estimated Sep 30 cutoff, ruled a plan
+defect and the window moved to Oct 7 rather than a code fix) with the hard zero-before-
+Aug-31 invariant holding with no exceptions across all 11 years × 29 boxes.
+
+**V6[a] — self-sustainment: FAIL, decisively.** The brief's criterion is a non-declining
+post-formation annual maximum of `BED_AKI` per box, 2014–2022. It fails in **all 29
+boxes, every year**: the system-wide sum of annual maxima runs 222.0 (2012, the
+initial-condition transient) → 3.29 (2013) → 0.0576 (2014) → 0.00462 (2015) → 0.000117
+(2016) → ... → 5.2e-7 g C/m2 (2022) — a six-order-of-magnitude collapse, complete by 2016,
+with **no recovery in the remaining seven years of the record.** Full-record system
+totals explain why: `CUM_SETTLE_AKI` 236.3, `CUM_GERM_AKI` 198.5, `CUM_FORM_AKI` 4.33,
+`BURIED_AKI` 37.8 g C/m2 (summed over 29 boxes). **99.97 % of all settling in the
+11-year record happened by end-2012** — a short, front-loaded drain of the model's
+inherited water-column `AKI_C` initial condition into the new bed pool (system-wide the
+settling input peaks at day 60, per V7(i) below, not literally day 1), not a sustained
+ongoing process — and of everything that ever entered the bed, **only 1.80 % came from
+in-bed formation**;
+germination released 82.5 % of it back out and burial permanently claimed 15.7 %. The
+radiation latch itself is not the bottleneck: it opens on schedule every year (confirmed
+above) and stays open roughly 71 % of the year (mid-September through late May, one box's
+full-record LATCH trace shows), yet `STG_FORM_FLUX` sits at a per-box, per-day constant
+of 1.0e-10 (a numerical floor, not a real flux) for 2016–2022 — **formation is
+biomass-starved, not light-window-starved**: there is no live `NOST_VEG_HET_C` in the
+water column left to convert once the bed's initial charge is spent. The
+dead-water-germination fraction is 0 by construction (`mod_SIMULATE.f90` gates
+germination behind `LIM_TEMP > 0.05`) and needs no measurement.
+
+**V6[b] — headline scores: inert for biology; the TN/TP delta is real but confined to the
+spin-up years.** Scored full-record against the adopted baseline (same validator, same
+obs, same `--wconst`): CHLA RMSE 25.52/25.52, bias −11.3/−11.3, seasonal r +0.70/+0.70,
+peak month Sep/Sep; PO4 0.0232/0.0232; Si 0.8235/0.8233; NH4 0.0489/0.0489; DO
+7.917/7.916; ZOO_C bias −0.001/−0.0013; FIX_CYN_C bias +0.443/+0.442; DIA_C −0.135/−0.135;
+CYN_C −0.892/−0.892; monthly FIX_TOT Jun 0.83/0.11→0.8347/0.1132 (7.4×/7.37× overshoot,
+unchanged), Oct 1.27/0.81→1.27/0.81, Nov 0.21/0.46→0.21/0.46 — **every biologically live
+channel is unchanged to 3–4 significant figures.** TN and TP are not: RMSE 0.9506→0.8607
+(−9.5 %) and 0.04166→0.02991 (−28 %), bias +0.58→+0.53 and +0.0123→+0.0067. A
+component-by-component breakdown at the same obs-matched points (NH4, NO3, DON, PON,
+ZOO_N and each phyto-carbon pool × its N:C, TN-contribution basis) finds the two runs
+identical on every term **except `AKI_C`**: 0.0480 mg N/L average under the legacy gate
+vs 0.0003 under staging, a delta of −0.0478 — **92 % of the entire TN bias improvement**,
+the same mechanism scaling to ~93 % of the TP delta via P:C. Splitting that delta by year
+localises it completely: **2012 alone carries 0.898 vs 0.005 mg N/L (the gap), 2013 a
+residual 0.0029 vs 0.00003, and every year 2014–2021 is 0.00000 vs 0.00000 in both
+configs, at the actual EPA-scored boxes** — the entire TN/TP gain is the model's initial
+`AKI_C` charge decaying faster under staging during the 2012–2013 spin-up, not an
+ongoing 2014–2022 effect. Read from source, not guessed: `aquabc_II_pelagic_model.f90`
+adds a new sink term, `R_SETTLE_AKI`, directly onto the legacy `NOST_AKI_C` (`AKI_C`)
+derivative only when staging is on (zeroed at `flag=0`) — staging drains the very state
+variable it was built to replace, faster than the legacy gate does, in the scored boxes
+themselves. A related but **separate** observation, not the cause of this score delta
+(none of the affected boxes are EPA-scored): under the legacy gate, `AKI_C` has no
+independent decay pathway when its germination trigger doesn't fire, and it is measured
+**pinned at its 8.0 mg C/L initial condition for seven straight years (2012–2018) in
+boxes 1, 4, 10, 12, 13** before an abrupt 2019 release, coincident with a **system-wide**
+`NOST_VEG_HET_C` revival across all 29 boxes in 2018 (peaking 0.04–0.28 mg C/L, with a
+smaller 2021 echo) — the largest post-2015 sign of life the legacy model ever produces.
+That multi-year freeze is a genuine legacy-model defect and staging's `R_SETTLE_AKI` term
+would remove it by the same mechanism if it reached those boxes, but this was not traced
+to a specific causal pathway into the TN/TP score. **The trade V6[a] documents stands
+regardless:** an unconditional settling/burial pathway with no refuge is what both drains
+the spin-up transient faster (the TN/TP gain) and drives the new bed bank to total,
+unrecovered extinction (V6[a]) — the same design choice, two different timescales.
+
+**V6[c] — competition: none, because the challenger never shows up.** Obs `FIX_CYN_C` is
+scored against model `FIX_CYN_C + NOST_VEG_HET_C`; splitting the two at the same
+obs-matched points, `NOST_VEG_HET_C`'s contribution is **exactly 0.0000 mg C/L in every
+month** at the six KM-obs boxes. June is not materially worse (7.37× vs the 7.4× baseline
+overshoot) and November did not improve (0.2145 vs 0.21, obs 0.457) — **neither stacking
+nor substitution occurs; the species never reaches a scale where either is possible.**
+The Oct–Nov "does the autumn formation drain clear the population early" question has no
+autumn population to clear: box-level daily inspection across all 11 years shows
+`NOST_VEG_HET_C` already ≤0.001 mg C/L by late September and exactly 0.0000 by October
+every single year — the collapse documented in V6[a] is not an autumn event, it is
+already months old by autumn.
+
+**V7(i) — no-recruitment control (`KR_GERM_BED = 0`, full 4016-day record): a clean,
+single-parameter decay.** With germination permanently blocked (`CUM_GERM_AKI ≡ 0`,
+confirmed for all 116,464 rows), the bed accumulates via settling alone for ~60 days
+(system-wide sum peaks at 214.8 g C/m2 on day 60, the accumulation-only ceiling) then
+declines every single year for the rest of the record, purely via burial —
+`STG_FORM_FLUX` still contributes only 4.5e-6 system-wide over 11 years, confirming
+formation's starvation is independent of germination. The year-over-year decay ratio is
+**0.6942–0.6956 in every one of the ten transitions 2013–2022**, matching
+`exp(−K_MORT_BED_AKI × 365) = 0.69420` to three significant figures every time — a
+693-day (1.9-year) half-life with no size-dependence. By day 4016 only **1.97 % of the
+peak remains** (4.23 of 214.8 g C/m2), even though nothing ever drained it via
+germination. This is the ceiling on inoculum persistence the mechanism can offer in
+its most favourable case: with recruitment fully suppressed, the bank still cannot
+survive a decade.
+
+**V7(ii) — weakest-bloom-year / winter carryover: one collapse, not a series of blooms.**
+`NOST_VEG_HET_C`'s system-mean annual max (all 29 boxes, `PELAGIC_BOX_*.out`) runs 0.503
+(2012) → 0.0055 (2013) → 0.00008 (2014) → **exactly 0.0000 for every year 2015–2022.**
+There is no natural interannual bloom variability to rank a "weakest year" against — the
+model produces one bloom (the initial-condition transient), which fails once and never
+recurs; the requested experiment has effectively already run eight times (2015–2022) with
+the same outcome each time. What can be measured directly is winter carryover: four
+independent Dec 31 → Apr 1 windows (2012→13 through 2015→16), spanning five orders of
+magnitude in starting stock (3.29 down to 0.000117 g C/m2 system-wide), all show
+**91.3–91.4 % survival**, with `CUM_GERM_AKI` flat to six decimal places in every window
+(germination contributes nothing in winter, as expected under the `LIM_TEMP` gate) — the
+loss is burial alone, matching `exp(−0.001 × 90) = 0.9139` almost exactly. **The bank has
+no size-dependent winter refuge: a nearly empty bank bleeds at the same fractional rate as
+a full one.**
+
+**A note on run behaviour, not a ladder finding.** Both full-record `flag=1` runs (the
+V6 default and the V7 no-recruitment control) emit millions of `NEGATIVE MASS PREDICTED`
+console alerts (`mod_PELAGIC_ECOLOGY.f90`'s existing, pre-branch safety clamp — confirmed
+present on `main` before this feature, not new code) against `NO3_N`, `ZOO_N` and `ZOO_P`,
+starting at `TIME=0`; the `flag=0` full-record run emits zero. Both `flag=1` runs still
+complete cleanly (exit 0, full 4016-day record, V4's mass identity holds to the print
+quantum), so this is not a crash. The two configurations differ only in the six staging
+option lines, so `flag=1` emitting these and `flag=0` not is a real correlation — but the
+causal route into three states the staging feature does not directly touch was not
+traced (which write branch fires depends on `ADVANCED_REDOX_SIMULATION`, not checked
+here), so this is reported as an open, undocumented-until-now behavioral difference, not
+an explained mechanism (Global Constraints: measurement and docs only). Worth a look
+before any further work on this branch.
+
+**The adoption question.** At default parameters, `NOST_STAGE_MODEL=1` changes nothing
+biological the October-gap motivation cared about (CHLA, PO4, Si, the FIX_TOT monthly
+story) because its own mechanism cannot outlive its first four years. It does deliver a
+measured TN/TP improvement (−9.5 %/−28 % RMSE), but that gain is confined to the
+2012–2013 spin-up window (the `AKI_C` initial charge draining faster under staging in the
+scored boxes) — a bulk-mass-accounting gain from ~10 % of the observation record, not a
+sustained one, and not (as traced) the same thing as the separately-observed multi-year
+freeze bug in the non-scored boxes. Turning it on today costs nothing on any of the
+metrics this project has tracked (identical CHLA/PO4/Si/NH4/DO/ZOO/composition from 2014
+onward), buys a modest spin-up-era TN/TP gain, but delivers none of the autumn-bloom
+biology the feature was built for, because the bed bank cannot survive to deliver it; it
+also introduces an unexplained increase in negative-mass-clamping events (previous
+section) that has not been root-caused. Whether to (a) adopt as a small, largely
+cosmetic, zero-biological-effect scoring gain, (b) hold and recalibrate
+`KR_GERM_BED`/`K_MORT_BED_AKI`/`I_FORM_AKI` so the bank can actually self-sustain before
+judging the biological payoff, or (c) shelve the branch pending the clamping question, is
+the user's call — this section
+reports what was measured, not a recommendation.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
