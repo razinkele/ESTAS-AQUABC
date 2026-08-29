@@ -121,6 +121,19 @@ PARAM_SETS = {
         ("CYN_C_TO_CHLA",           "lin", 36.0,  78.0),
         ("FIX_CYN_C_TO_CHLA",       "lin", 36.0,  78.0),
     ],
+    # Staged-fixer set (doc par. 30): tunes the staged NOST guild + the demoted FIX_CYN
+    # surrogate on a staging-enabled --inputs base (the T4 hand-optimum). The staging
+    # option-file scalars (T_GERM_AKI_STAGE/I_FORM_AKI/KR_GERM_BED) stay fixed at T4's
+    # values — this harness perturbs WCONST only. Run with --group-carbon so the fixer
+    # composition (obs FIX_CYN_C vs model FIX+NOST) stays in the objective.
+    "staged": [
+        ("KG_NOST_VEG_HET_OPT_TEMP", "lin", 2.0,   8.0),    # staged-guild growth (T4: 7.6)
+        ("KD_NOST_VEG_HET_20",       "log", 0.02,  0.2),    # staged-guild mortality (default 0.04)
+        ("KHS_DN_NOST_VEG_HET",      "log", 0.003, 0.03),   # staged-guild N affinity
+        ("KHS_DP_NOST_VEG_HET",      "log", 0.002, 0.03),   # staged-guild P affinity
+        ("KG_FIX_CYN_OPT_TEMP",      "lin", 0.5,   3.0),    # demoted surrogate growth (T4: 1.29)
+        ("KD_FIX_CYN_20",            "log", 0.04,  0.4),    # surrogate mortality (default 0.10)
+    ],
 }
 CAL_PARAMS = PARAM_SETS["all"]   # overridden by --paramset in main()
 CAL_PHI_VARS = ["NH4", "NO3", "PO4", "DO", "Si", "CHLA"]  # 5 EPA state vars + Chl-a guardrail
