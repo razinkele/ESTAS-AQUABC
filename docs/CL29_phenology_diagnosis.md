@@ -1563,6 +1563,29 @@ winter-edge January.
 
 ---
 
+## 32. The July build rate is not a fixer parameter: three lever families measured, none
+separates July from August (2026-08-29)
+
+The adopted configuration's July fixer excess (+14 µg L⁻¹ CHLA; obs-matched FIX_TOT Jun
+11.7×, Jul 3.6×, Aug 2.3×, Sep 1.7×) invited one more tuning pass. It closed negative, and
+completely: **(1) timing/seeding** (§30's T-ladder: germination onset shifted three weeks,
+seeding rate halved) does not move July — the seeded bloom reaches its resource ceiling
+within days regardless; **(2) the growth engine** (KG 7.6 vs 4.5, §30 T2/T3) does not move
+July — same ceiling; **(3) the thermal window** (T_min 8→12 and 8→14, this section) is the
+only lever that cuts July (Jul CHLA 36.9→29.4, nearly exact) — and it cannot be
+month-selective: August–September fall 13–17 µg with it, October collapses, seasonal r
++0.68→+0.52/+0.46, CHLA RMSE 24.2→26.3/27.1. Both probes rejected; the adopted
+configuration stands.
+
+The structural reading is the same one §28 and §30 already carry: the fixer's Jun–Oct excess
+is load-bearing compensation for the missing autumn guilds — in August–September it fills the
+absent CYN/diatom biomass (which is why cutting it there costs skill), in June–July nothing
+masks it (which is why it shows). The July residual therefore resolves with the autumn-guild
+structure (warm-water diatoms, the non-fixing cyanobacteria's summer guild, §28), not with
+any fixer-side constant. Three families of one-parameter evidence now pin that conclusion.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
