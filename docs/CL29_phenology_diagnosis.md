@@ -1530,7 +1530,8 @@ pays ~6 %.
 options ON with `T_GERM_AKI_STAGE 16.0`, `I_FORM_AKI 85.0`, `KR_GERM_BED 0.02` (other
 staging scalars at defaults), and WCONST `KG_NOST_VEG_HET_OPT_TEMP 7.6`,
 `NOST_VEG_HET_OPT_TEMP_LR 8.0`, `KG_FIX_CYN_OPT_TEMP 1.29`. For the paper-2 narrative: the
-invisible-parameter taxonomy gains a sixth class — **a niche held closed by a surrogate's
+invisible-parameter taxonomy gains a seventh class (the paper's count: the asymmetric
+boundary of §26 is the sixth) — **a niche held closed by a surrogate's
 calibration history**; every DE that tuned `FIX_CYN` upward was, unknowingly, voting the real
 species' life cycle out of existence.
 
