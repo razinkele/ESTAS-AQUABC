@@ -1536,6 +1536,32 @@ species' life cycle out of existence.
 
 ---
 
+## 31. Adoption: the staged fixer is operational CL29 (2026-08-29, user decision)
+
+The T4 configuration of §30 is adopted as operational, closing the arc §29 opened. The
+staging branch is merged to `main`; the live `INPUTS_CL29` carries `NOST_STAGE_MODEL 1`
+with `T_GERM_AKI_STAGE 16.0`, `I_FORM_AKI 85.0`, `KR_GERM_BED 0.02` (other staging scalars
+at defaults) and the three WCONST changes (`KG_NOST_VEG_HET_OPT_TEMP` 1.29→7.6,
+`NOST_VEG_HET_OPT_TEMP_LR` 16→8, `KG_FIX_CYN_OPT_TEMP` 7.62→1.29 — the fixer-role
+consolidation the staging spec deferred, now decided: the akinete-forming guild IS the
+fixer, the surrogate demoted). A shallow DE on the staged knobs (180 evals, `staged`
+paramset, doc §30 base) found nothing better than the hand optimum — the incumbent
+survived its own §27-style test.
+
+**Verified operational scores (fresh full-record run of the live config):** CHLA RMSE
+**24.22** (previous operational 25.52 — best ever), seasonal r **+0.68** (−0.02 vs
+previous), **peak month August, exact** (previously September), autumn/spring 2.01 vs
+observed 2.06, PO4 RMSE 0.0183 (−21 %), TN 0.859 (better), NH4 0.0521 (+7 %, the stated
+cost), FIX_TOT bias +0.92, ZOO −0.014; the akinete bank in the operational output runs
+215→282 g C/m² over the record, non-declining, annual formation/germination averaging
+≥1.2 — the life cycle is self-sustaining in production. ⚠ Scoring runs made BEFORE this
+adoption requires the pre-adoption WCONST via `--wconst` (KG/T_min changes; C:Chl
+unchanged). Remaining residuals, unchanged in attribution (§28/§30): July fixer build
+(+13), October–November (the autumn CYN/diatom guilds and OPA — the open structural items),
+winter-edge January.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
