@@ -1459,6 +1459,83 @@ section reports what was measured, not a recommendation.
 
 ---
 
+## 30. The vegetative-viability probes: the niche was the binding constraint — the role
+swap closes the life cycle, and the tuned optimum beats the operational configuration
+
+§29 ended with the staged guild built, verified, and unable to self-sustain: formation
+biomass-starved, the bank collapsing to a noise floor by 2016 in every box. This section
+reports the probe ladder that found *why*, and the hand-tuning that turned the answer into
+the best chlorophyll configuration the project has produced. All runs are scratch-config
+experiments on the staging branch binary (full record, staging ON); nothing here is adopted.
+
+**The 2×2+2 mechanism ladder.** Two parameter hypotheses and two structural ones, isolated:
+
+| Probe | Change vs staging defaults | Per-cycle return (ΣΔCUM_FORM/ΣΔCUM_GERM, real-number years) | Outcome |
+|---|---|---|---|
+| P1 | `NOST` T_min 16→8 °C (lit., *Aphanizomenon*) | 0.01–0.02 | collapse |
+| P2 | `KG_NOST` 1.29→7.6 (parity with the tuned engine) | 0.03–0.07 | collapse |
+| P3 | both | 0.05–0.08 (2012 VEG ×5) | collapse |
+| P5 | P3 + `KR_FORM_AKI` 0.1→0.5 (fast encystment) | 0.11–0.18 | collapse |
+| **P4** | **P3 + `KG_FIX_CYN` 7.62→1.29 (role swap)** | **1.1–1.7 every year** | **self-sustains** |
+
+The parameter levers help and lose: even with literature cardinals and engine parity the
+vegetative phase returned under a tenth of the carbon germination handed it, and winning the
+autumn encystment race (P5) only doubled a losing ratio. The binding constraint was the
+**niche**: `KG_NOST` sat at its untuned default (1.29/d) because NOST was extinct in every
+calibration the project ever ran, while its unstaged twin `FIX_CYN` — tuned to 7.62/d by
+those same calibrations — occupied the fixer niche at 2.3 mg C/L. A staged guild cannot
+invade a niche its unstaged surrogate holds. P4 hands the niche back (which is also the
+biologically honest arrangement — the lagoon's dominant fixer *Aphanizomenon* IS the
+akinete-former): the bank runs 241→314 g C/m² over eleven years, non-declining, a weak 2015
+buffered by the bank and recovered the following season — the CLC inter-year memory working
+as published — with vegetative blooms of 5–8 mg C/L every year through 2022.
+
+**P4 against observations** carried three firsts at a real cost: chlorophyll peak month
+August — exact, for the first time in the project (the operational configuration peaks
+September); Aug/Sep magnitudes 55.4/50.0 vs observed 50.8/50.2 (the operational −16 µg/L
+summer gap gone); PO4 RMSE 0.0167 (−28 % vs operational, project best). Costs: seasonal r
++0.54 (vs +0.70) from a June–July overshoot (39/51 vs 21/26 — the surrogate's documented
+early start, inherited and amplified) and an October early exit (16 vs 46 — the formation
+latch encysts the bloom in September); FIX_TOT bias +1.2; TN/TP up with the added fixation.
+
+**The tuning ladder (T1–T5, all self-sustaining).** Three physics-matched knobs against the
+two phase errors: T1 = timing pair (`T_GERM_AKI_STAGE` 12→16 °C — germination waits for the
+measured sustained->16 °C crossing, Jun 18–Jul 8; `I_FORM_AKI` 120→85 W/m² — the EMA crossing
+slides from mid-September to early October); T2 = `KG_NOST` 7.6→4.5 (dominated — and VEG
+maxima barely moved, the bloom is resource-capped, not KG-capped); T3 = both (Aug/Sep
+undershoot); T5 = T1 with `T_GERM` 18 °C (August 50.8 vs 50.8 exact, autumn/spring 2.05 vs
+2.06 — the aesthetic alternative, at a worse July); **T4 = T1 + `KR_GERM_BED` 0.05→0.02
+(the inoculum arrives over weeks, not days) — the optimum**:
+
+| | Operational (adopted §23/§27) | T4 |
+|---|---|---|
+| CHLA RMSE | 25.52 | **24.35 — project best** |
+| Seasonal r | +0.70 | +0.67 |
+| Peak month (obs Aug) | Sep (+1) | **Aug (exact)** |
+| Aug / Sep (obs 50.8/50.2) | 35.4/36.8 | **46.7/45.8** |
+| Oct (obs 46.4) | 23.6 | 22.5 |
+| PO4 RMSE | 0.0232 | **0.0182** |
+| TN RMSE | 0.951 | **0.844** |
+| FIX_TOT bias | +0.44 | +0.85 |
+| Staged life cycle | guild extinct | **self-sustaining (ratios ≥1.2 avg)** |
+
+**Residual attribution.** T4's remaining July overshoot (+14 µg/L: the seeded bloom still
+builds fast — a calibration target on the staged knobs) and the October/November deficits
+(22.5/2.8 vs 46.4/24.0) — which §28's decomposition already assigned to the *other* guilds
+(observed CYN ≈1.9 mg C/L vs model 0.27, OPA extinct): not this mechanism's job. The 0.03 r
+gap to the operational configuration consists almost entirely of those two known items; NH4
+pays ~6 %.
+
+**Recipe (scratch; adoption is a separate decision):** the live `INPUTS_CL29` plus staging
+options ON with `T_GERM_AKI_STAGE 16.0`, `I_FORM_AKI 85.0`, `KR_GERM_BED 0.02` (other
+staging scalars at defaults), and WCONST `KG_NOST_VEG_HET_OPT_TEMP 7.6`,
+`NOST_VEG_HET_OPT_TEMP_LR 8.0`, `KG_FIX_CYN_OPT_TEMP 1.29`. For the paper-2 narrative: the
+invisible-parameter taxonomy gains a sixth class — **a niche held closed by a surrogate's
+calibration history**; every DE that tuned `FIX_CYN` upward was, unknowingly, voting the real
+species' life cycle out of existence.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
