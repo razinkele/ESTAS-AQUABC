@@ -1586,6 +1586,42 @@ any fixer-side constant. Three families of one-parameter evidence now pin that c
 
 ---
 
+## 33. The autumn community is light-locked: the invasion ladder eliminates temperature,
+competition, and engine — the missing structure is a per-group light response (2026-08-30)
+
+Before designing the autumn-guild structure (§32's frontier), a three-rung config-only
+invasion ladder tested whether parameterization alone could open the Aug–Oct niche to the
+extinct groups. **W1**: OPA's cool envelope — the fourth taxon-temperature transplant
+(10/17/23 °C against an OBSERVED August peak of 0.88 mg C/L; August water 22–26 °C sits at
+its T_max) — corrected to a warm 12/22/30. **W2**: + CYN engine parity (KG 1.21→3.0, undoing
+the closure-DE's sacrifice). **W3**: + staged-fixer yield (KG_NOST 7.6→5.2, the staged DE's
+own pull direction).
+
+Result: **OPA did not move at all** — August 0.0009–0.0011 mg C/L in all three rungs,
+identical to the adopted configuration, identical to §26's boundary-supply/KG/recalibration
+triple. Nine independent interventions across two arcs have now failed to move OPA by even a
+factor of two. CYN crept 0.07→0.13 (obs 2.30) — weakly positive to parity AND to fixer yield
+(refuting the fixed-nitrogen-collapse counterhypothesis: less NOST mildly *helped* CYN), but
+plateaued at 6 % of observation. The fixer yielded as designed (Aug bias +0.92→+0.68; the
+akinete bank still self-sustains at KG 5.2, system maxima 122–216 g C/m²) — and the released
+share went to nutrients, not to the missing guilds. Headlines statistically unchanged
+throughout (CHLA RMSE 24.2–24.5, r +0.68–0.69).
+
+**By elimination, the exclusion mechanism is light** — the one axis no intervention varied,
+and the one §16/§17 measured in advance: all groups share ONE hardcoded Smith light response,
+and under honest optics (kd ≈ 2.9) the depth-averaged light factor is ceiling-capped at
+~0.23–0.37 for any group without a surface escape. The positioning ratchet gave that escape
+to the three buoyant cyanobacteria groups only; OPA sits fully under the ceiling, and CYN —
+positioned but photoinhibition-flagged (BETA 2) at the surface — is capped both above and
+below. The observed autumn community (*Oscillatoria*, *Limnothrix*, *Aphanocapsa*;
+*Actinocyclus*) is precisely a LOW-LIGHT-specialist assemblage (Oberhaus & Humbert 2007).
+⇒ **The missing structure, named by measurement: a per-group light response (shade
+adaptation — group-specific saturation/initial slope), the §16 prescription that was never
+built.** Parameterization of the autumn guilds is closed as a path; the design moves to the
+light formulation.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
