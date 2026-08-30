@@ -1,0 +1,31 @@
+# DESCRIPTION Curonian Lagoon 29-box EUTROPY-derived (VARN: CYN nitrogen quota, 37 state vars)
+# DESCRIPTION LINE 2
+# DESCRIPTION LINE 3
+# DESCRIPTION LINE 4
+# DESCRIPTION LINE 5
+# BASE_YEAR
+           2012
+# SIMULATION_START
+            0.0
+# SIMULATION_END
+         4016.0
+# NUM_REPEATS
+              1
+# TIME_STEPS_PER_DAY
+            240
+# PRINT_INTERVAL IN TIME STEPS
+             10
+# PELAGIC MODEL INPUT FOLDER write the folder always with / in the end
+INPUTS_CL29_VARN/
+# PELAGIC MODEL INPUT FILE
+            PELAGIC_INPUTS.txt
+# PELAGIC MODEL OUTPUT FOLDER write the folder always with / in the end
+OUTPUTS_CL29_VARN/
+# RESUSPENSION_OPTION
+          0
+# MODEL_SEDIMENTS
+          1
+# NUM_PRESCRIBED_SEDIMENT_FLUX_SETS
+          1
+# SEDIMENT MODEL INPUT FILE
+SED_FLUX_NO3_SINK.txt
