@@ -1822,9 +1822,23 @@ recovering the exactness **§31 already held and adopted (2026-08-29)** and that
 adoption gave up. **Read the margin before reading the flip**, which is what spec §7[b]
 asks for: §36 recorded the loss at a 2.3 µg margin, and here the recovery is by
 **0.035 µg/L** (Aug 47.81 vs Sep 47.78) against a baseline September lead of 0.42 µg —
-a coin flip either way, and *both* months move further from observed under the flag
-(|Aug−obs| 1.48 → 2.98, |Sep−obs| 0.47 → 2.43). DO RMSE is 7.924 → 7.925 — the O2 budget
-is untouched, as spec §2's FIX 2 wired it to be.
+itself a re-baselining, not noise: §37's X1-affinity adoption (KHS_DIN/KHS_DIP tightened)
+landed between §36 and this run and lifted CYN's whole-season climatology enough on its
+own to shrink the September lead from §36's 2.3 µg down to this run's 0.42 µg baseline
+before Droop-N ever ran — a coin flip either way, and *both* months move further from
+observed under the flag (|Aug−obs| 1.48 → 2.98, |Sep−obs| 0.47 → 2.43; these are the 2-dp
+presentation of the four `phase_summary()`-reported distances in the task-7 report's
+fix-round section — 1.4804/2.9790, 0.4707/2.4253 — reproduced exactly by rerunning
+`/tmp/varn_ab/t7/chla_margin.py` against each leg's own output tree. `phase_summary()`
+[`tools/validate_cl29_vs_epa.py:340`] recomputes the EPA-obs monthly mean per `--outputs`
+leg, restricted to that leg's own simulated window, so it is not guaranteed to return the
+same absolute obs figure on every invocation over the same `/tmp/cl29_obs_merged.csv`; a
+naive difference-of-means recomputation from the baseline/Droop-N/observed absolutes
+quoted in the task-7 report leaves a ~0.017 µg/L residual against the printed distances.
+This is flagged as an aggregation-order/vintage difference between that report's frozen
+numbers and today's rerun, not chased to a specific cause here — treat the printed
+distances above as the phase_summary-reported figures of record). DO RMSE is 7.924 →
+7.925 — the O2 budget is untouched, as spec §2's FIX 2 wired it to be.
 
 **But the gain is COMPOSITIONAL, not net new carbon — and the annual books close on it
 exactly.** Obs-weighted bias deltas over the same 317 obs-matched pairs:
@@ -1861,7 +1875,7 @@ One transport-side contributor to the high quota, stated so it is not mistaken f
 physiology: initial and open-boundary `CYN_N` enter at the seed `Q_SEED = CYN_N_TO_C =
 0.220` gN/gC — 88 % of Q_MAX, 0.80 of the band — so advected water arrives already nearly
 full. **The refutation survives it**: the biomass-weighted August quota is 0.216 (band
-position 0.77) and the 5th percentile 0.191, both still far above the 0.175 bar, and the
+position 0.77) and the domain p5 0.191, both still far above the 0.175 bar, and the
 budget below shows uptake keeping pace rather than a reserve draining.
 
 **Where the 2.3× actually comes from — measured, not inferred.** The per-term N budget
