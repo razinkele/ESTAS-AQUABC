@@ -679,3 +679,23 @@ def test_discover_wconst_files_reads_the_real_table_position():
 def test_zero_wconst_constant_raises_when_name_not_found():
     with pytest.raises(ValueError, match="NOT_A_REAL_CONSTANT"):
         mvi.zero_wconst_constant(_wconst_lines(), "NOT_A_REAL_CONSTANT")
+
+
+# --------------------------------------------------------------------------
+# generate(): src == dst guard (fix wave) -- refuse to shutil.rmtree(dst)
+# when dst is the same path as src (or nested inside it), which would
+# destroy the source tree before copytree() ever reads it.
+# --------------------------------------------------------------------------
+
+def test_generate_same_src_dst_raises_without_deleting_anything(tmp_path):
+    same = tmp_path / "same_dir"
+    same.mkdir()
+    marker = same / "marker.txt"
+    marker.write_text("do not delete me\n")
+
+    with pytest.raises(ValueError, match=r"same as or nested inside"):
+        mvi.generate(same, same)
+
+    assert same.exists()
+    assert marker.exists()
+    assert marker.read_text() == "do not delete me\n"

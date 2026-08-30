@@ -227,6 +227,9 @@ build-estas: build-lib
 # reverted from the patch. Deliberately depends on neither build-lib nor
 # build-estas (those trigger before the source is patched); it calls
 # $(MAKE) build-estas twice from inside its own recipe instead.
+# NOTE: `-n`/`-t`/`-q` are NOT safe dry runs for this target -- the recipe
+# contains $(MAKE), so the whole line executes: sed patches source, cp/mv
+# run; only the inner builds become no-ops.
 build-estas-varn:
 	cp SOURCE_CODE/ESTAS/mod_GLOBAL.f90 /tmp/.mG.bak && trap 'cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90' EXIT && sed -i 's/nstate                        = 32/nstate                        = 33/' SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && grep -c "nstate                        = 33" SOURCE_CODE/ESTAS/mod_GLOBAL.f90 | grep -qx 1 && $(MAKE) build-estas && mv ESTAS_II ESTAS_II_varN && cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && git diff --exit-code SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && $(MAKE) build-estas
 

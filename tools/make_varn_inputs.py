@@ -564,6 +564,12 @@ def _write(path, lines):
 def generate(src, dst, degenerate_cyn=False):
     src = Path(src)
     dst = Path(dst)
+    src_r = src.resolve()
+    dst_r = dst.resolve()
+    if dst_r == src_r or src_r in dst_r.parents:
+        raise ValueError(
+            f"refusing to shutil.rmtree(dst) -- dst ({dst} -> {dst_r}) is the same as "
+            f"or nested inside src ({src} -> {src_r})")
     if dst.exists():
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
