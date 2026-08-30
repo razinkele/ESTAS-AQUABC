@@ -707,6 +707,16 @@ contains
                       K_MIN_PHYT_AMIN_DOC = MODEL_CONSTANTS(316)
                       K_MIN_PHYT_AMIN_DON = MODEL_CONSTANTS(317)
                       K_MIN_PHYT_AMIN_DOP = MODEL_CONSTANTS(318)
+        ! Constants 319-323 (the per-group photoinhibition/shade block appended with the
+        ! Steele-BETA extension) were missing here since their introduction: this ESTAS-side
+        ! INIT is a parallel implementation of the AQUABC-side INSERT/INIT pair, and only the
+        ! 0D path received the block. Until this fix the CL29 path ran all BETAs at their
+        ! storage default (0.0) regardless of WCONST -- including the adopted BETA_CYN = 2.
+                                 BETA_DIA = MODEL_CONSTANTS(319)
+                                 BETA_CYN = MODEL_CONSTANTS(320)
+                             BETA_FIX_CYN = MODEL_CONSTANTS(321)
+                                 BETA_OPA = MODEL_CONSTANTS(322)
+                        BETA_NOST_VEG_HET = MODEL_CONSTANTS(323)
 
     end subroutine INIT_PELAGIC_MODEL_CONSTANTS
 
