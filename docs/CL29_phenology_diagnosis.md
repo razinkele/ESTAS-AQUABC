@@ -1716,6 +1716,23 @@ required to reach any of this.
 
 ---
 
+## 36. Adoption: the *Planktothrix* trait correction is operational (2026-08-30, user decision)
+
+The W6 configuration of §35 is adopted: live `INPUTS_CL29/WCONST_04.txt` carries
+`KD_CYN_20 0.04`, `PREF_ZOO_CYN 0.03`, `KG_CYN_OPT_TEMP 2.0` (with `BETA_CYN 2` active
+since §34's fix). The live file is byte-identical to the verified W6 probe configuration,
+so the W6 full-record scores ARE the operational scores: **CHLA RMSE 24.06 and PO4 RMSE
+0.01695 — both project bests — September chlorophyll exact, CYN present at 2–5× its former
+plateau across June–November, October 24.8.** Accepted costs, stated: the climatological
+peak month sits at September by a 2.3 µg margin over August (both within 4 µg of the
+observed values), July carries +11 µg (the §32 fixer overshoot plus the new June–July CYN),
+and the August CYN exclusion at bloom peak remains (0.16 vs 2.30). ⚠ Scoring runs made
+before this adoption requires the pre-W6 WCONST via `--wconst`. The remaining structural
+frontier, per §35: the August *Planktothrix* exclusion, the autumn chlorococcalean greens,
+and the (observation-side) *Mougeotia* tychoplankton share of OPA.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
