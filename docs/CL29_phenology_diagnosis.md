@@ -1733,6 +1733,37 @@ and the (observation-side) *Mougeotia* tychoplankton share of OPA.
 
 ---
 
+## 37. The August exclusion is nitrogen: the limitation decomposition, the affinity floor,
+and the Droop-N justification restored (2026-08-30)
+
+The §35 remainder — *Planktothrix* excluded at bloom peak (August 0.16 vs 2.30 mg C/L) —
+now has a measured mechanism. A monthly limitation decomposition of CYN on the canonical
+run (CTMI + Monod + the BETA-2 depth-averaged light, desk-computed from outputs and
+forcing): **August is the nitrogen minimum** — LIM_N 0.32 at DIN 0.004 mg N/L (the
+fixation window's deepest drawdown) exactly when the temperature factor peaks (0.78);
+μ ≈ 0.15 d⁻¹ against ≈ 0.14 d⁻¹ losses — net zero, nothing compounds. Two side findings:
+CYN's mixed-column light sits AT the physical ceiling (0.30 = e/(k_e·H); no light
+structure can help a polymictic column), and **surface positioning actively hurts the
+shade-adapted guild in summer** (L_surf 0.25 < L_mix 0.30 — the β=2 physiology is
+photoinhibited in the scum), explaining §34's W4b.
+
+**X1 — specialist Monod affinity** (KHS_DIN 0.009→0.003, KHS_DIP 0.008→0.004; *P.
+agardhii*-grade): CYN +25–40 % across the season with no cost anywhere (CYN RMSE 1.755,
+CHLA 24.05, PO4 0.0170, the fixer easing to +0.85) — **ADOPTED** — but August reaches only
+0.22: Monod on a 0.004 standing stock saturates at LIM_N ≈ 0.57 regardless of affinity.
+The standing stock is not the resource; the regeneration FLUX is.
+
+**⇒ The Droop-N pilot's 2026-08-01 contraindication is measured-removed.** That review's
+own decision rule — "first establish that a genuinely uptake-limited target exists
+(LIM_N ≪ 1), and reframe as a phenology question" — is now satisfied on both counts:
+August LIM_N 0.32, and the goal is *persistence of the August bloom on June-loaded
+reserves plus growth-decoupled flux capture* (phycobiliprotein N storage — *Planktothrix*
+biology), not DIN drawdown. The re-scoped design proceeds under the old review's §12.3(b)
+corrected-architecture checklist (compile-time state count, allelopathy-aware indexing,
+the BOUYANT-path target, the DON-sink conservation fix).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
