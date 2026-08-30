@@ -192,7 +192,7 @@ contains
 
             write (*,*) 'The number of pelagic state variables requested by AQUABC : ', &
                 NUM_CHECK_PELAGIC_STATE_VARS
-            stop "error stop"
+            error stop "error stop"
         end if
 
         if (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_MODEL_CONSTANTS.ne. &

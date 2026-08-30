@@ -2452,6 +2452,10 @@ contains
         PROCESS_RATES(ns:ne,CYN_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne)    * Q_CYN_N(ns:ne)
         PROCESS_RATES(ns:ne,CYN_N_INDEX, 3) = R_CYN_DEATH(ns:ne)       * Q_CYN_N(ns:ne)
         PROCESS_RATES(ns:ne,CYN_N_INDEX, 4) = R_CYN_EXCR(ns:ne)        * Q_CYN_N(ns:ne)
+        !Under ZOOP_OPTION_1=0 (ZOOPLANKTON_OPTION=0), DERIVATIVES(ZOO_N_INDEX) is ratio-derived from
+        !ZOO_C ("DERIVATIVES(ns:ne,ZOO_N_INDEX) = DERIVATIVES(ns:ne,ZOO_C_INDEX) * ACTUAL_ZOO_N_TO_C",
+        !below) rather than accumulated from PROCESS_RATES(ZOO_N_INDEX,:) slots, so this debit has no
+        !receiver and is a silent N loss under that option; CL29 runs ZOOP_OPTION_1=1.
         PROCESS_RATES(ns:ne,CYN_N_INDEX, 5) = R_ZOO_FEEDING_CYN(ns:ne) * Q_CYN_N(ns:ne)
 
         DERIVATIVES(ns:ne,CYN_N_INDEX) = &
