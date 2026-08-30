@@ -722,6 +722,7 @@ contains
 
 
     subroutine INIT_TRANSPORT_FIELDS(PELAGIC_BOX_MODEL_DATA)
+        use aquabc_pel_state_var_indexes, only: CYN_N_INDEX
         implicit none
         type(PELAGIC_BOX_MODEL_DS), intent(inout) :: PELAGIC_BOX_MODEL_DATA
 
@@ -733,6 +734,16 @@ contains
 
         PELAGIC_BOX_MODEL_DATA % SETTLING_ON(1:31)  = 1
         PELAGIC_BOX_MODEL_DATA % SETTLING_ON(32)    = 0
+
+        ! CYN nitrogen quota (VARN build, nstate = 33). The literal ranges
+        ! above stop at 32 and the allelopathy block below starts at nstate+1,
+        ! so without this the state-33 switches would stay uninitialised.
+        ! Dead in the standard build (nstate = 32).
+        if (nstate >= CYN_N_INDEX) then
+            PELAGIC_BOX_MODEL_DATA % ADVECTION_ON(CYN_N_INDEX) = 1
+            PELAGIC_BOX_MODEL_DATA % DIFFUSION_ON(CYN_N_INDEX) = 1
+            PELAGIC_BOX_MODEL_DATA % SETTLING_ON (CYN_N_INDEX) = 1
+        end if
 
         if (CONSIDER_ALLELOPATHY > 0) then
             PELAGIC_BOX_MODEL_DATA % &
@@ -1507,10 +1518,22 @@ subroutine PELAGIC_KINETICS &
 
     real(kind = DBL), dimension(nkn, NUM_ALLOLOPATHY_STATE_VARS) :: SEC_MET_DERIVATIVES
 
+    ! CYN nitrogen quota handed to the kinetics explicitly. In the standard
+    ! build (nstate = 32) column CYN_N_INDEX = 33 of STATE_VARIABLES is a
+    ! secondary metabolite, so it must NOT be read unless the Droop gate is on
+    ! (which READ_PELAGIC_MODEL_OPTIONS only permits at nstate = 33).
+    real(kind = DBL), dimension(nkn) :: AQUABC_CYN_N
+
     AQUABC_STATE_VARIABLES(:,:)   = STATE_VARIABLES(:, 1:nstate)
     AQUABC_DERIVATIVES    (:,:)   = 0.0D0
     SEC_MET_DERIVATIVES   (:,:)   = 0.0D0
     AQUABC_PROCESS_RATES  (:,:,:) = 0.0D0
+
+    if (CYN_VARIABLE_N > 0) then
+        AQUABC_CYN_N(:) = STATE_VARIABLES(:, CYN_N_INDEX)
+    else
+        AQUABC_CYN_N(:) = 0.0D0
+    end if
 
     if (.not.allocated(GROWTH_INHIB_FACTOR_DIA)) then
         allocate(GROWTH_INHIB_FACTOR_DIA(nkn))
@@ -1626,7 +1649,9 @@ subroutine PELAGIC_KINETICS &
           CYANO_POS_MODEL                                        , &
           H_SURF_POS                                             , &
           W_CRIT_POS_MIN                                         , &
-          NOST_STAGE_MODEL)
+          NOST_STAGE_MODEL                                       , &
+          CYN_VARIABLE_N                                         , &
+          AQUABC_CYN_N)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)
@@ -1709,9 +1734,12 @@ subroutine PELAGIC_KINETICS &
                     write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                     write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
             
-                   ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                   ! Detailed derivative breakdown for the allelopathy block
+                   ! (nstate+1 .. nstate+NUM_ALLOLOPATHY_STATE_VARS -- 33-36 in the
+                   ! standard build, 34-37 in the VARN build)
                    if (CONSIDER_ALLELOPATHY > 0) then
-                       if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then !
+                       if (STATE_VARIABLE_NO >= (nstate + 1) .and. &
+                           STATE_VARIABLE_NO <= (nstate + NUM_ALLOLOPATHY_STATE_VARS)) then
                            write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
                            write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                            write(6,*) '    DISPERSION=', &
@@ -1738,9 +1766,12 @@ subroutine PELAGIC_KINETICS &
                 write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                 write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
             
-                ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                ! Detailed derivative breakdown for the allelopathy block
+                ! (nstate+1 .. nstate+NUM_ALLOLOPATHY_STATE_VARS -- 33-36 in the
+                ! standard build, 34-37 in the VARN build)
                 if (CONSIDER_ALLELOPATHY > 0) then
-                    if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then
+                    if (STATE_VARIABLE_NO >= (nstate + 1) .and. &
+                        STATE_VARIABLE_NO <= (nstate + NUM_ALLOLOPATHY_STATE_VARS)) then
                         write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
                         write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                         write(6,*) '    DISPERSION=', PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)

@@ -917,7 +917,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use AQUABC_PEL_STATE_VAR_INDEXES
-    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS
+    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS, CYN_VARIABLE_N
 
     implicit none
 
@@ -1031,12 +1031,25 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
     FLUXES(3) = FLUXES_FROM_WC(DISS_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(DISS_ORG_N_INDEX)
 
     !PARTICULATE ORGANIC NITROGEN FLUX
-    FLUXES(4) = &
-       (FLUXES_FROM_WC(DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(DIA_C_INDEX) * DIA_N_TO_C) + &
-       (FLUXES_FROM_WC(CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(CYN_C_INDEX) * CYN_N_TO_C) + &
-       (FLUXES_FROM_WC(OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(OPA_C_INDEX) * OPA_N_TO_C) + &
-       (FLUXES_FROM_WC(ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(ZOO_N_INDEX)             ) + &
-       (FLUXES_FROM_WC(DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(DET_PART_ORG_N_INDEX)    )
+    ! Settled-N booking. Under the Droop gate CYN carries a transported
+    ! nitrogen state of its own, so the bed PON handoff books CYN_N's OWN
+    ! settling flux and drops the fixed-stoichiometry CYN_C term (spec sec 2:
+    ! all CYN N routing is quota-weighted; booking both would double-count).
+    if (CYN_VARIABLE_N > 0) then
+        FLUXES(4) = &
+           (FLUXES_FROM_WC(DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(DIA_C_INDEX) * DIA_N_TO_C) + &
+           (FLUXES_FROM_WC(CYN_N_INDEX)          * FRACTION_OF_DEPOSITION(CYN_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(OPA_C_INDEX) * OPA_N_TO_C) + &
+           (FLUXES_FROM_WC(ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(ZOO_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(DET_PART_ORG_N_INDEX)    )
+    else
+        FLUXES(4) = &
+           (FLUXES_FROM_WC(DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(DIA_C_INDEX) * DIA_N_TO_C) + &
+           (FLUXES_FROM_WC(CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(CYN_C_INDEX) * CYN_N_TO_C) + &
+           (FLUXES_FROM_WC(OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(OPA_C_INDEX) * OPA_N_TO_C) + &
+           (FLUXES_FROM_WC(ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(ZOO_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(DET_PART_ORG_N_INDEX)    )
+    end if
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
        FLUXES(4) = &
@@ -1152,7 +1165,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
         use AQUABC_PEL_STATE_VAR_INDEXES
-    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS
+    use GLOBAL, only: nstate, NUM_FLUXES_TO_SEDIMENTS, CYN_VARIABLE_N
 
     implicit none
 
@@ -1244,12 +1257,22 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
     FLUXES(:, 3) = FLUXES_FROM_WC(:, DISS_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(:, DISS_ORG_N_INDEX)
 
     !PARTICULATE ORGANIC NITROGEN FLUX
-    FLUXES(:, 4) = &
-       (FLUXES_FROM_WC(:, DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, DIA_C_INDEX) * DIA_N_TO_C) + &
-       (FLUXES_FROM_WC(:, CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(:, CYN_C_INDEX) * CYN_N_TO_C) + &
-       (FLUXES_FROM_WC(:, OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, OPA_C_INDEX) * OPA_N_TO_C) + &
-       (FLUXES_FROM_WC(:, ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(:, ZOO_N_INDEX)             ) + &
-       (FLUXES_FROM_WC(:, DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(:, DET_PART_ORG_N_INDEX)    )
+    ! Settled-N booking -- see the note in FLX_ALUKAS_II_TO_SED_MOD_1.
+    if (CYN_VARIABLE_N > 0) then
+        FLUXES(:, 4) = &
+           (FLUXES_FROM_WC(:, DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, DIA_C_INDEX) * DIA_N_TO_C) + &
+           (FLUXES_FROM_WC(:, CYN_N_INDEX)          * FRACTION_OF_DEPOSITION(:, CYN_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(:, OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, OPA_C_INDEX) * OPA_N_TO_C) + &
+           (FLUXES_FROM_WC(:, ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(:, ZOO_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(:, DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(:, DET_PART_ORG_N_INDEX)    )
+    else
+        FLUXES(:, 4) = &
+           (FLUXES_FROM_WC(:, DIA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, DIA_C_INDEX) * DIA_N_TO_C) + &
+           (FLUXES_FROM_WC(:, CYN_C_INDEX)          * FRACTION_OF_DEPOSITION(:, CYN_C_INDEX) * CYN_N_TO_C) + &
+           (FLUXES_FROM_WC(:, OPA_C_INDEX)          * FRACTION_OF_DEPOSITION(:, OPA_C_INDEX) * OPA_N_TO_C) + &
+           (FLUXES_FROM_WC(:, ZOO_N_INDEX)          * FRACTION_OF_DEPOSITION(:, ZOO_N_INDEX)             ) + &
+           (FLUXES_FROM_WC(:, DET_PART_ORG_N_INDEX) * FRACTION_OF_DEPOSITION(:, DET_PART_ORG_N_INDEX)    )
+    end if
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
        FLUXES(:, 4) = &

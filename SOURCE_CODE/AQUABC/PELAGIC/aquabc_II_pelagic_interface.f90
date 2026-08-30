@@ -266,6 +266,11 @@ subroutine aquabc_run                       ( &
 
     integer :: DAY_OF_YEAR              ! julian day
 
+    ! CYN nitrogen quota: the 0D path keeps the legacy Monod N-limitation
+    ! (gate 0 below), so the quota actual is a zero-filled dummy -- exactly
+    ! the treatment the staging/positioning gates get here.
+    double precision :: CYN_N_ZERO(nkn)
+
         if( .not. binitialized ) then
             write(6,*) 'AQUABC is not initialized'
             write(6,*) 'must call aquabc_init first'
@@ -273,6 +278,8 @@ subroutine aquabc_run                       ( &
         end if
 
         DAY_OF_YEAR   = 1 + mod(int(TIME)-1,365)
+
+        CYN_N_ZERO(:) = 0.0D0
 
         if( bfirstcall ) then
           bfirstcall = .false.
@@ -320,7 +327,9 @@ subroutine aquabc_run                       ( &
              0                       , &   ! CYANO_POS_MODEL: 0D path keeps the legacy gate
              0.5D0                   , &   ! H_SURF_POS       (unused when the model is 0)
              0.0D0                   , &   ! W_CRIT_POS_MIN   (unused when the model is 0)
-             0)                            ! NOST_STAGE_MODEL: 0D path keeps the legacy akinete gates
+             0                       , &   ! NOST_STAGE_MODEL: 0D path keeps the legacy akinete gates
+             0                       , &   ! CYN_VARIABLE_N: 0D path keeps the legacy Monod CYN N
+             CYN_N_ZERO)                   ! CYN_N quota state (unused when the gate is 0)
 
         STATE_VARIABLES = STATE_VARIABLES + DERIVATIVES * TIME_STEP
 

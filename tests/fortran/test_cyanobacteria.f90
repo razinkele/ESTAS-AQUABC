@@ -111,9 +111,12 @@ contains
         real(kind=DBL_PREC) :: R_CYN_INT_RESP(nkn), KD_CYN(nkn)
         real(kind=DBL_PREC) :: FAC_HYPOX_CYN_D(nkn)
         real(kind=DBL_PREC) :: PREF_NH4N_DON_CYN(nkn)
+        ! Droop gate off in this legacy helper: quota state unused, uptake zero
+        real(kind=DBL_PREC) :: CYN_N(nkn), R_CYN_N_UPTAKE(nkn)
 
         CYN_LIGHT_SAT = 0.0D0
         ALPHA_0 = 0.0D0; ALPHA_1 = 0.0D0
+        CYN_N = 0.0D0; R_CYN_N_UPTAKE = 0.0D0
         LIM_KG_CYN_LIGHT = 0.0D0; LIM_KG_CYN_DOXY = 0.0D0
         LIM_KG_CYN_P = 0.0D0; LIM_KG_CYN_NUTR = 0.0D0
         LIM_KG_CYN = 0.0D0
@@ -131,7 +134,8 @@ contains
                            LIM_KG_CYN_P, LIM_KG_CYN_NUTR, LIM_KG_CYN, &
                            R_CYN_GROWTH, R_CYN_MET, R_CYN_RESP, R_CYN_EXCR, &
                            R_CYN_INT_RESP, KD_CYN, FAC_HYPOX_CYN_D, &
-                           R_CYN_DEATH, PREF_NH4N_DON_CYN)
+                           R_CYN_DEATH, PREF_NH4N_DON_CYN, &
+                           0, CYN_N, R_CYN_N_UPTAKE)
     end subroutine run_cyn
 
     ! Smoke test: typical conditions produce plausible outputs
@@ -361,6 +365,8 @@ contains
         real(kind=DBL_PREC) :: R_CYN_INT_RESP(nkn), KD_CYN(nkn)
         real(kind=DBL_PREC) :: FAC_HYPOX_CYN_D(nkn), R_CYN_DEATH(nkn)
         real(kind=DBL_PREC) :: PREF_DIN_DON_CYN(nkn), PREF_NH4N_CYN(nkn)
+        ! Droop gate off: quota state unused, uptake output zero
+        real(kind=DBL_PREC) :: CYN_N_Q(nkn), R_CYN_N_UPT(nkn)
 
         print *, "Test: K_E=0 does not produce NaN/Inf (BOUYANT, SMITH=1)"
 
@@ -382,6 +388,7 @@ contains
         R_CYN_INT_RESP = 0.0D0; KD_CYN = 0.0D0
         FAC_HYPOX_CYN_D = 0.0D0; R_CYN_DEATH = 0.0D0
         PREF_DIN_DON_CYN = 0.0D0; PREF_NH4N_CYN = 0.0D0
+        CYN_N_Q = 0.0D0; R_CYN_N_UPT = 0.0D0
 
         ! Call BOUYANT variant with SMITH=1 to trigger euphotic depth
         S_TEST = 0.0D0
@@ -394,7 +401,8 @@ contains
                 R_CYN_GROWTH, R_CYN_MET, R_CYN_RESP, R_CYN_EXCR, &
                 R_CYN_INT_RESP, KD_CYN, FAC_HYPOX_CYN_D, &
                 R_CYN_DEATH, PREF_DIN_DON_CYN, PREF_NH4N_CYN, &
-                     0, 0.5D0, 0.0D0, S_TEST)
+                     0, 0.5D0, 0.0D0, S_TEST, &
+                     0, CYN_N_Q, R_CYN_N_UPT)
 
         call assert_finite(R_CYN_GROWTH(1), "Growth finite with K_E=0")
         call assert_finite(R_CYN_MET(1), "Metabolism finite with K_E=0")
@@ -467,15 +475,19 @@ contains
         real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn), LNU(nkn), LK(nkn)
         real(kind=DBL_PREC) :: RG(nkn), RM(nkn), RR(nkn), RE(nkn), RI(nkn)
         real(kind=DBL_PREC) :: KD(nkn), FH(nkn), RD(nkn), PDD(nkn), PNH(nkn)
+        ! Droop gate off: quota state unused, uptake output zero
+        real(kind=DBL_PREC) :: CYN_N_Q(nkn), R_CYN_N_UPT(nkn)
         CYN_LIGHT_SAT = 0.0D0; NH4 = 0.05D0; NO3 = 0.3D0; DON = 0.5D0
         PO4 = 0.05D0; CYN_C = biomass; ZOO_C = 0.01D0
         KG=0; A0=0; A1=0; LT=0; LL=0; LD=0; LN=0; LP=0; LNU=0; LK=0
         RG=0; RM=0; RR=0; RE=0; RI=0; KD=0; FH=0; RD=0; PDD=0; PNH=0
+        CYN_N_Q = 0.0D0; R_CYN_N_UPT = 0.0D0
         call CYANOBACTERIA_BOUYANT(params, env, CYN_LIGHT_SAT, &
                      NH4, NO3, DON, PO4, CYN_C, ZOO_C, 1.0D0, 1, nkn, &
                      KG, A0, A1, LT, LL, LD, LN, LP, LNU, LK, &
                      RG, RM, RR, RE, RI, KD, FH, RD, PDD, PNH, &
-                     2, 0.5D0, 3.0D0, S_R)
+                     2, 0.5D0, 3.0D0, S_R, &
+                     0, CYN_N_Q, R_CYN_N_UPT)
         LIM_OUT = LL
     end subroutine run_cyn_pos_c
 
@@ -493,17 +505,21 @@ contains
         real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn), LNU(nkn), LK(nkn)
         real(kind=DBL_PREC) :: RG(nkn), RM(nkn), RR(nkn), RE(nkn), RI(nkn)
         real(kind=DBL_PREC) :: KD(nkn), FH(nkn), RD(nkn), PDD(nkn), PNH(nkn)
+        ! Droop gate off: quota state unused, uptake output zero
+        real(kind=DBL_PREC) :: CYN_N_Q(nkn), R_CYN_N_UPT(nkn)
 
         CYN_LIGHT_SAT = 0.0D0; NH4 = 0.05D0; NO3 = 0.3D0; DON = 0.5D0
         PO4 = 0.05D0; CYN_C = 0.5D0; ZOO_C = 0.01D0
         KG=0; A0=0; A1=0; LT=0; LL=0; LD=0; LN=0; LP=0; LNU=0; LK=0
         RG=0; RM=0; RR=0; RE=0; RI=0; KD=0; FH=0; RD=0; PDD=0; PNH=0
+        CYN_N_Q = 0.0D0; R_CYN_N_UPT = 0.0D0
 
         call CYANOBACTERIA_BOUYANT(params, env, CYN_LIGHT_SAT, &
                      NH4, NO3, DON, PO4, CYN_C, ZOO_C, 1.0D0, 1, nkn, &
                      KG, A0, A1, LT, LL, LD, LN, LP, LNU, LK, &
                      RG, RM, RR, RE, RI, KD, FH, RD, PDD, PNH, &
-                     2, 0.5D0, 3.0D0, S_R)
+                     2, 0.5D0, 3.0D0, S_R, &
+                     0, CYN_N_Q, R_CYN_N_UPT)
         LIM_OUT = LL
     end subroutine run_cyn_pos
 

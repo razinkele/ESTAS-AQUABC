@@ -83,13 +83,16 @@ subroutine AQUABC_PELAGIC_KINETICS &
             CYANO_POS_MODEL                 , &
             H_SURF_POS                      , &
             W_CRIT_POS_MIN                  , &
-            NOST_STAGE_MODEL)
+            NOST_STAGE_MODEL                , &
+            CYN_VARIABLE_N                  , &
+            CYN_N)
 
     use CO2SYS_CDIAC
     use AQUABC_POSITIONING_STATE, only: S_POS, ENSURE_POSITIONING_STATE, &
                                         POS_CYN, POS_FIX, POS_NOST
     use AQUABC_NOST_STAGING, only: BED_AKI, FORM_LATCH, STG_SETTLE_FLUX, STG_GERM_FLUX, &
                                    STG_FORM_FLUX, STG_GERM_COND, ENSURE_NOST_STAGING_STATE
+    use AQUABC_CYN_DROOP, only: EPS_CYN_C
     use AQUABC_II_GLOBAL
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use aquabc_II_wc_ini
@@ -169,9 +172,24 @@ subroutine AQUABC_PELAGIC_KINETICS &
     ! are supplied from that module's state (ENSURE'd below), not threaded here --
     ! same treatment as S_POS above.
     integer                ,                          intent(in)    :: NOST_STAGE_MODEL
+    ! CYN nitrogen-quota (Droop) gate (0 legacy Monod / 1 quota kinetics, spec
+    ! sec 2) and the quota state itself. CYN_N is threaded explicitly rather
+    ! than unpacked from STATE_VARIABLES(:,CYN_N_INDEX): in the standard build
+    ! (nstate = 32) column 33 of the CALLER's array is a secondary metabolite,
+    ! so reading it here would be a live bug. The caller supplies zeros when
+    ! the gate is off.
+    integer                ,                          intent(in)    :: CYN_VARIABLE_N
+    real(kind = DBL_PREC)  , dimension(nkn),          intent(in)    :: CYN_N
     ! -------------------------------------------------------------------------------------------------------------------------
     ! END OF VARIABLES IN THE ARGUMENT LIST
     ! -------------------------------------------------------------------------------------------------------------------------
+
+    ! N uptake into the CYN quota (mg N/L/d) and the quota itself (gN/gC).
+    ! Both are exactly zero / unused when CYN_VARIABLE_N = 0. Shared across the
+    ! OpenMP region exactly like the AQUABC_PELAGIC_INTERNAL rate arrays: every
+    ! thread writes only its own [ns:ne] chunk.
+    real(kind = DBL_PREC), dimension(nkn) :: R_CYN_N_UPTAKE
+    real(kind = DBL_PREC), dimension(nkn) :: Q_CYN_N
 
     integer :: i
 
@@ -286,6 +304,8 @@ subroutine AQUABC_PELAGIC_KINETICS &
 
     PROCESS_RATES(:,:,:) = 0.0D0
     DERIVATIVES  (:,:)   = 0.0D0
+    R_CYN_N_UPTAKE(:)    = 0.0D0
+    Q_CYN_N       (:)    = 0.0D0
     error = 0
 
     DO_ADVANCED_REDOX_SIMULATION      = 0
@@ -1167,12 +1187,36 @@ contains
           CYANO_POS_MODEL               , &
           H_SURF_POS    , &
           W_CRIT_POS_MIN, &
-          S_POS(ns:ne, POS_CYN))
+          S_POS(ns:ne, POS_CYN)         , &
+          CYN_VARIABLE_N                , &
+          CYN_N(ns:ne)                  , &
+          R_CYN_N_UPTAKE(ns:ne))
 
     ! Consider the effect of growth inhibition which is supplied from outside
     ! by external models
     R_CYN_GROWTH(ns:ne) = R_CYN_GROWTH(ns:ne) * GROWTH_INHIB_FACTOR_CYN(ns:ne)
 
+    ! ----------------------------------------------------------------------
+    ! CYN nitrogen quota (Droop, spec sec 2). Q is evaluated ONCE here and is
+    ! the single Q used by every downstream N routing term, and the uptake is
+    ! capped ONCE, in place, against the DIN actually available in this step
+    ! (the house safeguard pattern) -- before it feeds the NH4 debit, the NO3
+    ! debit and the CYN_N source, so the three can never disagree.
+    ! ----------------------------------------------------------------------
+    if (CYN_VARIABLE_N > 0) then
+        do i = ns, ne
+            Q_CYN_N(i) = CYN_N(i) / max(CYN_C(i), EPS_CYN_C)
+
+            if (R_CYN_N_UPTAKE(i) > &
+                5.0D-1 * (NH4_N(i) + NO3_N(i)) / max(TIME_STEP, 1.0D-12)) then
+
+                R_CYN_N_UPTAKE(i) = &
+                    5.0D-1 * (NH4_N(i) + NO3_N(i)) / max(TIME_STEP, 1.0D-12)
+            end if
+
+            if (R_CYN_N_UPTAKE(i) < 0.0D0) R_CYN_N_UPTAKE(i) = 0.0D0
+        end do
+    end if
 
     !********************************
     ! NITROGEN FIXING CYANOBACTERIA !
@@ -2037,7 +2081,14 @@ contains
 
     !AMMONIA NITROGEN
     PROCESS_RATES(ns:ne,NH4_N_INDEX, 1) = R_DIA_TOT_RESP(ns:ne) * DIA_N_TO_C
-    PROCESS_RATES(ns:ne,NH4_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne) * CYN_N_TO_C
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop: respired CYN N is released at the CELL's quota, not at the
+        ! fixed CYN_N_TO_C (spec sec 2, "all Q-weighted").
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne) * Q_CYN_N(ns:ne)
+    else
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne) * CYN_N_TO_C
+    end if
+
     PROCESS_RATES(ns:ne,NH4_N_INDEX, 3) = R_OPA_TOT_RESP(ns:ne) * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -2049,7 +2100,13 @@ contains
     PROCESS_RATES(ns:ne,NH4_N_INDEX, 5) = R_ZOO_TOT_RESP(ns:ne) * ACTUAL_ZOO_N_TO_C(ns:ne)
     PROCESS_RATES(ns:ne,NH4_N_INDEX, 6) = R_DIA_GROWTH(ns:ne)   * PREF_NH4N_DIA(ns:ne) * DIA_N_TO_C
 
-    PROCESS_RATES(ns:ne,NH4_N_INDEX, 7) = R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * PREF_NH4N_CYN(ns:ne)
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop: CYN N uptake is decoupled from growth -- the DIN debit is the
+        ! explicit quota uptake, split NH4/NO3 by the existing preference.
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 7) = R_CYN_N_UPTAKE(ns:ne) * PREF_NH4N_CYN(ns:ne)
+    else
+        PROCESS_RATES(ns:ne,NH4_N_INDEX, 7) = R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * PREF_NH4N_CYN(ns:ne)
+    end if
 
     PROCESS_RATES(ns:ne,NH4_N_INDEX, 8) = R_OPA_GROWTH(ns:ne) * PREF_NH4N_OPA(ns:ne) * OPA_N_TO_C
 
@@ -2127,8 +2184,14 @@ contains
     PROCESS_RATES(ns:ne,NO3_N_INDEX, 3) = &
         R_DIA_GROWTH(ns:ne) * (1.0D0 - PREF_NH4N_DIA(ns:ne)) * DIA_N_TO_C
 
-    PROCESS_RATES(ns:ne,NO3_N_INDEX, 4) = &
-        R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * (1.0D0 - PREF_NH4N_CYN(ns:ne))
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop: the NO3 half of the same explicit quota uptake (spec sec 2).
+        PROCESS_RATES(ns:ne,NO3_N_INDEX, 4) = &
+            R_CYN_N_UPTAKE(ns:ne) * (1.0D0 - PREF_NH4N_CYN(ns:ne))
+    else
+        PROCESS_RATES(ns:ne,NO3_N_INDEX, 4) = &
+            R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * PREF_DIN_DON_CYN(ns:ne) * (1.0D0 - PREF_NH4N_CYN(ns:ne))
+    end if
 
     PROCESS_RATES(ns:ne,NO3_N_INDEX, 5) = R_OPA_GROWTH(ns:ne)         * (1.0D0 - PREF_NH4N_OPA(ns:ne))         * OPA_N_TO_C
 
@@ -2376,6 +2439,26 @@ contains
     end if
     !$omp end master
     !$omp barrier
+
+    !NON-NITROGEN FIXING CYANOBACTERIA NITROGEN QUOTA (Droop, spec sec 2).
+    !Dead code in the standard build: CYN_VARIABLE_N cannot be set unless
+    !nstate = 33 (guard in READ_PELAGIC_MODEL_OPTIONS), so index CYN_N_INDEX
+    !is never touched at nstate = 32.
+    if (CYN_VARIABLE_N > 0) then
+        !Source: the explicit DIN uptake (already capped against available DIN)
+        PROCESS_RATES(ns:ne,CYN_N_INDEX, 1) = R_CYN_N_UPTAKE(ns:ne)
+
+        !Sinks: every carbon loss carries N out at the cell quota Q
+        PROCESS_RATES(ns:ne,CYN_N_INDEX, 2) = R_CYN_TOT_RESP(ns:ne)    * Q_CYN_N(ns:ne)
+        PROCESS_RATES(ns:ne,CYN_N_INDEX, 3) = R_CYN_DEATH(ns:ne)       * Q_CYN_N(ns:ne)
+        PROCESS_RATES(ns:ne,CYN_N_INDEX, 4) = R_CYN_EXCR(ns:ne)        * Q_CYN_N(ns:ne)
+        PROCESS_RATES(ns:ne,CYN_N_INDEX, 5) = R_ZOO_FEEDING_CYN(ns:ne) * Q_CYN_N(ns:ne)
+
+        DERIVATIVES(ns:ne,CYN_N_INDEX) = &
+            PROCESS_RATES(ns:ne,CYN_N_INDEX, 1) - PROCESS_RATES(ns:ne,CYN_N_INDEX, 2) - &
+            PROCESS_RATES(ns:ne,CYN_N_INDEX, 3) - PROCESS_RATES(ns:ne,CYN_N_INDEX, 4) - &
+            PROCESS_RATES(ns:ne,CYN_N_INDEX, 5)
+    end if
 
     !NITROGEN FIXING CYANOBACTERIA CARBON
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -2769,7 +2852,12 @@ contains
     if (ZOOP_OPTION_1 > 0) then
 
             PROCESS_RATES(ns:ne,ZOO_N_INDEX, 1) = R_ZOO_FEEDING_DIA(ns:ne) * DIA_N_TO_C
-            PROCESS_RATES(ns:ne,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN(ns:ne) * CYN_N_TO_C
+            if (CYN_VARIABLE_N > 0) then
+                ! Droop: grazed CYN N enters the zooplankton at the cell quota.
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN(ns:ne) * Q_CYN_N(ns:ne)
+            else
+                PROCESS_RATES(ns:ne,ZOO_N_INDEX, 2) = R_ZOO_FEEDING_CYN(ns:ne) * CYN_N_TO_C
+            end if
             PROCESS_RATES(ns:ne,ZOO_N_INDEX, 3) = R_ZOO_FEEDING_OPA(ns:ne) * OPA_N_TO_C
 
             if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -2881,7 +2969,12 @@ contains
 
     !DEAD ORGANIC NITROGEN PARTICLES
     PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 1) = R_DIA_DEATH(ns:ne) * DIA_N_TO_C
-    PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 2) = R_CYN_DEATH(ns:ne) * CYN_N_TO_C
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop: dead CYN N enters detritus at the cell quota.
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 2) = R_CYN_DEATH(ns:ne) * Q_CYN_N(ns:ne)
+    else
+        PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 2) = R_CYN_DEATH(ns:ne) * CYN_N_TO_C
+    end if
     PROCESS_RATES(ns:ne,DET_PART_ORG_N_INDEX, 3) = R_OPA_DEATH(ns:ne) * OPA_N_TO_C
 
     if (DO_NON_OBLIGATORY_FIXERS > 0) then
@@ -3012,11 +3105,23 @@ contains
         R_ABIOTIC_DON_MIN_DOXY(ns:ne)   + R_ABIOTIC_DON_MIN_NO3N(ns:ne)     + R_ABIOTIC_DON_MIN_MN_IV(ns:ne) + &
         R_ABIOTIC_DON_MIN_FE_III(ns:ne) + R_ABIOTIC_DON_MIN_S_PLUS_6(ns:ne) + R_ABIOTIC_DON_MIN_DOC(ns:ne)
 
-    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
-        (R_DIA_EXCR(ns:ne) * DIA_N_TO_C) + (R_CYN_EXCR(ns:ne) * CYN_N_TO_C) + (R_OPA_EXCR(ns:ne) * OPA_N_TO_C)
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop: excreted CYN N leaves at the cell quota.
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
+            (R_DIA_EXCR(ns:ne) * DIA_N_TO_C) + (R_CYN_EXCR(ns:ne) * Q_CYN_N(ns:ne)) + &
+            (R_OPA_EXCR(ns:ne) * OPA_N_TO_C)
 
-    PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
-        R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne))
+        ! Wired invariant (spec sec 2 FIX 1): the legacy DON-uptake-during-
+        ! growth sink is ZEROED under the flag -- CYN N uptake is now the
+        ! explicit DIN-only R_CYN_N_UPTAKE.
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = 0.0D0
+    else
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 4) = &
+            (R_DIA_EXCR(ns:ne) * DIA_N_TO_C) + (R_CYN_EXCR(ns:ne) * CYN_N_TO_C) + (R_OPA_EXCR(ns:ne) * OPA_N_TO_C)
+
+        PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
+            R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne))
+    end if
 
     if(DO_NOSTOCALES > 0) then
         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 6) = &
@@ -3047,8 +3152,15 @@ contains
 
         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 11) = R_NOST_VEG_HET_EXCR(ns:ne) * NOST_N_TO_C
 
-         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
-        (R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne)))
+        ! NOTE: this re-assigns slot 5, which was already set above. CL29 runs
+        ! this branch, so the Droop zeroing (spec sec 2 FIX 1) MUST be repeated
+        ! here -- otherwise the flag-on science run silently destroys N.
+        if (CYN_VARIABLE_N > 0) then
+            PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = 0.0D0
+        else
+            PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 5) = &
+                (R_CYN_GROWTH(ns:ne) * CYN_N_TO_C * (1.D0 - PREF_DIN_DON_CYN(ns:ne)))
+        end if
     else
         PROCESS_RATES(ns:ne,DISS_ORG_N_INDEX, 11) = 0.0D0
     end if

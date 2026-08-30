@@ -7,8 +7,9 @@
 ! bound the quota Q = CYN_N/CYN_C [gN/gC]; CYN_N_VMAX [gN/gC/d] and
 ! CYN_N_KHS_UPT [mg N/L] parameterize the Monod-down-regulated uptake rate.
 ! EPS_CYN_C is the small-biomass floor used wherever Q = CYN_N/CYN_C is
-! evaluated (guards the division, spec sec 2). Task 3 adds the pure physics
-! helpers (F_DOWN, LIM_N_QUOTA, R_UPTAKE) to this same module.
+! evaluated (guards the division, spec sec 2). The three pure helpers below
+! (F_DOWN, LIM_N_QUOTA, R_UPTAKE) implement spec sec 2 verbatim and are the
+! single source of the quota physics for both CYANOBACTERIA variants.
 ! -----------------------------------------------------------------------------
 module AQUABC_CYN_DROOP
     use AQUABC_II_GLOBAL
@@ -34,5 +35,41 @@ contains
         CYN_N_VMAX    = vmax
         CYN_N_KHS_UPT = khs
     end subroutine SET_CYN_DROOP_PARAMS
+
+
+    ! Down-regulation of N uptake as the quota fills (spec sec 2):
+    !     f_down = max(0, (Q_MAX - Q)/(Q_MAX - Q_MIN))
+    ! Deliberately NOT clamped from above: below Q_MIN (reachable, because
+    ! CYN_N and CYN_C are transported independently) a starved population
+    ! takes up faster than VMAX*CYN_C, which is the intended behaviour.
+    pure function F_DOWN(Q) result(F)
+        real(kind = DBL_PREC), intent(in) :: Q
+        real(kind = DBL_PREC) :: F
+        F = max(0.0D0, (CYN_N_QMAX - Q) / max(CYN_N_QMAX - CYN_N_QMIN, EPS_CYN_C))
+    end function F_DOWN
+
+
+    ! Caperon-Meyer linear-quota growth limitation (spec sec 2):
+    !     LIM_KG_CYN_N = clamp((Q - Q_MIN)/(Q_MAX - Q_MIN), 0, 1)
+    pure function LIM_N_QUOTA(Q) result(LIM)
+        real(kind = DBL_PREC), intent(in) :: Q
+        real(kind = DBL_PREC) :: LIM
+        LIM = (Q - CYN_N_QMIN) / max(CYN_N_QMAX - CYN_N_QMIN, EPS_CYN_C)
+        LIM = max(0.0D0, min(1.0D0, LIM))
+    end function LIM_N_QUOTA
+
+
+    ! N uptake into the quota, mg N/L/d (spec sec 2):
+    !     R = VMAX * DIN/(KHS_UPT + DIN) * f_down(Q) * CYN_C
+    ! DIN is NH4_N + NO3_N only -- DON uptake into the quota is explicitly
+    ! out of scope (spec sec 4).
+    pure function R_UPTAKE(DIN, Q, CYN_C) result(R)
+        real(kind = DBL_PREC), intent(in) :: DIN
+        real(kind = DBL_PREC), intent(in) :: Q
+        real(kind = DBL_PREC), intent(in) :: CYN_C
+        real(kind = DBL_PREC) :: R
+        R = CYN_N_VMAX * (DIN / max(CYN_N_KHS_UPT + DIN, EPS_CYN_C)) * &
+            F_DOWN(Q) * CYN_C
+    end function R_UPTAKE
 
 end module AQUABC_CYN_DROOP

@@ -38,4 +38,11 @@ module aquabc_pel_state_var_indexes
 
     integer, parameter :: NOST_VEG_HET_C_INDEX = FIX_CYN_HET_C_INDEX
     integer, parameter :: NOST_AKI_C_INDEX     = FIX_CYN_AK_C_INDEX
+
+    ! CYN nitrogen quota (Droop). Live ONLY in the VARN build (nstate = 33);
+    ! in the standard build (nstate = 32) every use of it sits behind
+    ! CYN_VARIABLE_N > 0, which READ_PELAGIC_MODEL_OPTIONS refuses to set
+    ! unless nstate = 33. Nothing in the tree dimensions arrays by a *_INDEX
+    ! maximum, so declaring it here is inert for the standard build.
+    integer, parameter :: CYN_N_INDEX          = 33
 end module AQUABC_PEL_STATE_VAR_INDEXES

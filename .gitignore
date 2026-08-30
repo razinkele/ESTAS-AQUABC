@@ -69,6 +69,7 @@ tests/fortran/test_redox
 tests/fortran/test_sed_typemap
 tests/fortran/test_zooplankton
 tests/fortran/test_co2sys
+tests/fortran/test_cyn_droop
 tests/fortran/*.o
 tests/fortran/*.mod
 
