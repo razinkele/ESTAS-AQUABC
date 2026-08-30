@@ -1622,6 +1622,54 @@ light formulation.
 
 ---
 
+## 34. The dead BETA block: a parallel-reader gap in the operational model — and the
+autumn community closed as unrepresentable by parameters (2026-08-30)
+
+**The bug.** §33's shade-adaptation probes returned bit-identical outputs for different
+BETA values, and the trace found why: the ESTAS-side `INIT_PELAGIC_MODEL_CONSTANTS`
+(mod_PELAGIC_ECOLOGY) — a parallel implementation of the AQUABC-side registry pair — stops
+at constant 318. **Constants 319–323 (the per-group photoinhibition/shade block) were never
+read from WCONST on the CL29 path since their introduction**; only the 0D path was extended
+when the block was appended. Every CL29 run executed with all BETAs at storage-default 0.0 —
+including the adopted `BETA_CYN = 2`, documented as a live trait since the §17 Scheffer
+probe (whose four-change bundle never isolated BETA's contribution — which is how the
+divergence stayed invisible). The fail-loud constants reader cannot catch this class: the
+*file* is index-complete; the *consumer of the array* ignored its tail. Fixed in `ebab415`
+(five assignments), with a two-sided regression pair: BETA-zeroed WCONST → old and new
+binaries byte-identical (30 d); live WCONST → outputs diverge over a summer-crossing window
+(a January-only window cannot see it — CYN's CTMI is zero there, a reusable trap:
+**activation tests for seasonal parameters must span the season the parameter acts in**).
+
+**Operational impact: negligible.** Re-verified full-record with `BETA_CYN = 2` truly
+active: CHLA RMSE 24.21, seasonal r +0.67, PO4 0.0183, peak August — the adopted scores
+hold within noise. No adoption revision required; the record is corrected, not the decision.
+
+**The honest §33 completion.** With the machinery genuinely working: `BETA_OPA = 3` still
+leaves OPA at 0.0009 mg C/L in August. Desk arithmetic shows the shade route was fully
+exhausted, not under-dosed: OPA's adaptive saturation is ~70 ly/d PAR against an August
+surface irradiance of 155–270, so at β=3 the depth-averaged factor **reaches the
+e/(ke·H) ceiling (~0.31)** — and at the ceiling OPA's growth (≈0.3–0.4 d⁻¹) only ties its
+loss budget. Deeper CYN shade (β 2→4) slightly *hurts* (the surface-positioned fraction
+pays the photoinhibition). The last family, losses (W5: KD_OPA 0.11→0.04, grazing
+preference 0.37→0.10), produced the first genuine response — OPA **doubled** — to 0.0018
+against an observed 0.88: a factor of 2 on a gap of 500.
+
+**Conclusion.** Six parameter families — temperature envelope, competition, growth engine,
+boundary supply (§26), light response to its physical ceiling, and losses — are now
+measured on the autumn community, and none opens it. §33's "missing structure = per-group
+light response" is superseded: the response existed (dead, now fixed) and is insufficient
+by arithmetic. **The observed autumn assemblage (OPA ≈ 0.9, CYN ≈ 2.3 mg C/L under
+kd ≈ 3) is unrepresentable in the current model structure**: its real-world existence
+implies biology the model lacks (mixotrophy, taxon-level buoyancy regulation, littoral or
+resuspension-coupled production) — or an observation-mapping question (which taxa the
+monitoring aggregates into "other algae" and non-fixing cyanobacteria carbon, and whether
+the 29-box pelagic average can see them). The cheap next step is observational: audit the
+obs-side composition and station distribution of OPA_C/CYN_C before designing any new
+biology. The model-side floor stands at the adopted configuration (r +0.67, October −24
+µg L⁻¹, attributed).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
