@@ -1,128 +1,113 @@
-# CYN Droop-N (VARN build variant) Implementation Plan
+# CYN Droop-N (VARN build variant) Implementation Plan — r2 (post-review)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the opt-in CYN nitrogen-quota (Droop) mechanism as a compile-variant `VARN` build (`nstate=33`), with the admissibility-gated constants, the transport-free 0D conservation vehicle, and the falsifiable August science ladder.
+**Goal:** Build the opt-in CYN nitrogen-quota (Droop) mechanism as a compile-variant `VARN` build (`nstate=33`), with admissibility-gated constants, complete transport wiring for the new state, and the falsifiable August science ladder.
 
-**Architecture:** `CYN_N` becomes transported state 33 in a separate `ESTAS_II_varN` binary (trap-guarded in-place `nstate` patch at build time); the kinetics gain a flag-gated Droop branch in BOTH `CYANOBACTERIA` variants (quota limitation replaces the ambient-Monod N term; explicit VMAX uptake replaces the implicit growth-coupled DIN/DON sinks); the model routes all CYN nitrogen Q-weighted. Constants ride five graceful options lines; a committed desk-gate tool enforces the spec's admissibility identity before any run. The standard build stays byte-identical.
+**Architecture:** `CYN_N` becomes transported state 33 in a separate `ESTAS_II_varN` binary (trap-guarded in-place `nstate` patch); the kinetics gain a flag-gated Droop branch in BOTH `CYANOBACTERIA` variants; the model routes all CYN nitrogen Q-weighted, zeroes BOTH DON growth-sink assignments, initializes the new state's transport switches, and books settled quota-N conservatively. Lib, model, and call sites change in ONE task (implicit interfaces make a split unbuildable-safely). Constants ride five graceful options lines; a committed desk-gate tool enforces admissibility before any run.
 
-**Tech Stack:** Fortran 2008 (gfortran), tests/fortran harness, python3+numpy tools, the existing 0D example as the conservation vehicle.
+**Tech Stack:** Fortran 2008 (gfortran), tests/fortran harness, python3+numpy tools, a CYN-only degenerate scenario as the conservation vehicle.
 
-**Spec:** `docs/superpowers/specs/2026-08-30-cyn-droop-n-rescoped-design.md` — normative for every constant, gate, and invariant below. Its inherited base `docs/superpowers/specs/2026-08-01-variable-stoichiometry-cyn-droop-n-design.md` §3/§12 is background only.
+**Spec:** `docs/superpowers/specs/2026-08-30-cyn-droop-n-rescoped-design.md` — normative. This r2 plan incorporates the 2026-08-30 adversarial plan review (23 findings, 10 confirmed, 0 refuted; every confirmed/unverified/minor item is folded in below).
 
 ## Global Constraints
 
-- Standard `ESTAS_II` build **byte-identical** (0D golden + CL29 30-day A/B vs a Step-0 baseline); every new code path behind `CYN_VARIABLE_N > 0`; the tracked `mod_GLOBAL.f90` `nstate` line is patched ONLY transiently by the varn build target (trap-restored, `git diff --exit-code` proven).
-- Committed constants exactly (spec §2): `CYN_VARIABLE_N 0`, `CYN_N_QMIN 0.10`, `CYN_N_QMAX 0.25`, `CYN_N_VMAX 0.44`, `CYN_N_KHS_UPT 0.003`; `Q_SEED = CYN_N_TO_C = 0.220` (verify against WCONST #47 before use).
-- The admissibility gate (spec §2) must PASS at the committed constants before the science ladder runs: August `LIM_N*` (M=0.571, μ_max_eff=0.468) > 0.571 and June `Q*` approaching `Q_MAX`.
-- Units: `CYN_N` mg N/L; quota gN/gC; all routing Q-weighted; O2 stoichiometry unchanged (C-coupled); reported chlorophyll stays fixed C:Chl 78.
-- Conservation is asserted at the LIB-RATE level (unit) and on the transport-free 0D path (integration); never as a per-box water-column identity.
-- The flag on a standard (`nstate=32`) binary must `error stop` at options-read time.
-- Fortran house style, 132-col, no tabs; commits `feat(varn): ...`/`test(varn): ...` ending: Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
-- NEVER modify the live `INPUTS_CL29/` or `INPUT_CL29.txt`; the VARN setup is generated into `INPUTS_CL29_VARN/`.
+- Standard `ESTAS_II` build **byte-identical** (0D golden + CL29 30-day A/B vs a Step-0 baseline; the full-record A/B in T7 compares two DISTINCT binaries — assert their md5s differ before diffing); every new code path behind `CYN_VARIABLE_N > 0`; the tracked `mod_GLOBAL.f90` `nstate` line is patched only transiently by the varn target (trap-restored, `git diff --exit-code` proven).
+- Committed constants exactly (spec §2): `CYN_VARIABLE_N 0`, `CYN_N_QMIN 0.10`, `CYN_N_QMAX 0.25`, `CYN_N_VMAX 0.44`, `CYN_N_KHS_UPT 0.003`; `Q_SEED = CYN_N_TO_C = 0.220` (verify vs WCONST #47).
+- The admissibility gate (spec §2) must PASS before the science ladder.
+- Units: `CYN_N` mg N/L; quota gN/gC; routing Q-weighted; uptake capped per step by available DIN (reuse the existing loss-safeguard pattern — find it with `grep -n "safeguard\|MIN(.*NH4_N" aquabc_II_pelagic_model.f90` and mirror it); O2 stoichiometry unchanged; reported chlorophyll fixed C:Chl 78.
+- Conservation asserted at the LIB-RATE level (unit, with grazing as a test-injected input — the lib does not compute grazing) and on a **CYN-only degenerate 0D-style scenario** (all other biology zeroed by ICs/boundaries) — never as a per-box identity under transport, and never as a raw pool sum on a full-biology run.
+- Flag=1 on a standard (`nstate=32`) binary → `error stop` at options-read time.
+- House style, 132-col, no tabs; commits `feat(varn):`/`test(varn):` ending: Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+- NEVER modify the live `INPUTS_CL29/` or `INPUT_CL29.txt`. Residency: the driver `INPUT_CL29_VARN.txt` is tracked (like `INPUT_CL29.txt`); the generated `INPUTS_CL29_VARN/` and `OUTPUTS_CL29_VARN/` are gitignored here and versioned in the data repo on adoption only.
 
 ---
 
 ### Task 1: The admissibility-gate tool
 
-**Files:**
-- Create: `tools/droop_gate.py`
-- Test: `tests/python/test_droop_gate.py` (follow the layout of the existing tests/python files; if no runner exists there, executable-module self-test invoked by the step)
+**Files:** Create `tools/droop_gate.py`; Test `tests/python/test_droop_gate.py` (match the existing tests/python invocation style; CI runs `make test-python` — verify with `grep -n test-python Makefile .github/workflows/ci.yml` and register accordingly).
 
-**Interfaces (Produces):** `python3 tools/droop_gate.py --kg 2.0 --ftemp 0.78 --flight 0.30 --din 0.004 --khs 0.003 --qmin 0.10 --qmax 0.25 --vmax 0.44 [--m-override]` → prints `Q*`, `LIM_N*`, the June leg (`--din 0.022 --ftemp 0.63 --flight 0.33`), and exits 0 iff BOTH gate conditions hold (August LIM_N* > 0.571; June Q* ≥ 0.8·(Q_MAX−Q_MIN)+Q_MIN). Solves `VMAX·M·(Q_MAX−Q) = KG·ftemp·flight·Q·(Q−Q_MIN)` by bisection on [Q_MIN, Q_MAX].
+**Produces:** `python3 tools/droop_gate.py --kg 2.0 --ftemp 0.78 --flight 0.30 --din 0.004 --khs 0.003 --qmin 0.10 --qmax 0.25 --vmax 0.44` → prints August `Q*`, `LIM_N*`, the June leg (`--din 0.022 --ftemp 0.63 --flight 0.33`), exits 0 iff August `LIM_N*` > 0.571 AND June `Q*` ≥ Q_MIN + 0.8·(Q_MAX−Q_MIN). Bisection on `VMAX·M·(Q_MAX−Q) = KG·ftemp·flight·Q·(Q−Q_MIN)`, M = DIN/(KHS+DIN); the M=1 upper-bound short-circuit fails fast.
 
-- [ ] **Step 1: failing test** — assert: committed constants pass both legs (August LIM_N* in [0.70, 0.75]; June Q* ≥ 0.221−ε); the spec's rejected VMAX 0.06 FAILS (LIM_N* ≈ 0.33, exit 1); the M=1 upper-bound short-circuit fires for VMAX 0.06 (LIM_N*(M=1) < 0.571 → fail fast).
-- [ ] **Step 2: run, expect failure** (module missing).
-- [ ] **Step 3: implement** — bisection solver + the two gate legs + `--json` output; docstring carries the spec §2 identity verbatim.
-- [ ] **Step 4: run tests green**; run the tool once at committed values and paste the output into the commit message body.
-- [ ] **Step 5: commit** — `feat(varn): droop_gate admissibility tool (spec s.2 identity)`
+- [ ] **Step 1: failing test** — committed constants PASS both legs (assert `0.70 < LIM_N*_Aug < 0.75` and June leg passes; do NOT assert a rounded decimal — compute the reference inside the test with the same fractions); VMAX 0.06 FAILS with the M=1 short-circuit message; exit codes 0/1 asserted.
+- [ ] **Step 2:** run → module missing. **Step 3:** implement (docstring carries the spec §2 identity). **Step 4:** tests green; run at committed values, paste output into the commit body. **Step 5:** commit `feat(varn): droop_gate admissibility tool`.
 
-### Task 2: Options lines, flag global, mis-pair guard, baseline
+### Task 2: Options lines, the params module, flag global, mis-pair guard, baseline
 
 **Files:**
-- Modify: `SOURCE_CODE/ESTAS/mod_GLOBAL.f90` (~:207 region — `integer :: CYN_VARIABLE_N = 0` next to the other option globals; `nstate` at :16 is NOT touched here)
-- Modify: `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` `READ_PELAGIC_MODEL_OPTIONS` (five graceful pairs AFTER the staging block's `V_SETTLE_AKI` pair, BEFORE the `CYN_ALLELOPATHY_FILE_NAME` lines; same `end=900,err=900` pattern)
+- Create: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_cyn_droop.f90` — in THIS task (the review's orphan-setter fix): module `AQUABC_CYN_DROOP` with the four scalars (defaults 0.10/0.25/0.44/0.003), `SET_CYN_DROOP_PARAMS(qmin, qmax, vmax, khs)`, and parameter `EPS_CYN_C = 1.0D-10`; Task 3 extends it with the physics helpers.
+- Modify: `SOURCE_CODE/ESTAS/mod_GLOBAL.f90` (`integer :: CYN_VARIABLE_N = 0` beside the option globals; `nstate` at :16 untouched).
+- Modify: `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` `READ_PELAGIC_MODEL_OPTIONS`: five graceful pairs inserted AFTER the staging block's last read pair (the one reading `V_SETTLE_IN` — locate by `grep -n "V_SETTLE_IN" mod_PELAGIC_ECOLOGY.f90`, NOT by a comment string; the options FILE's matching lines are `# V_SETTLE_AKI …` + value) and BEFORE `900 continue`; setter call after label 900 beside the staging setter; ON-echo prints all four scalars; the guard.
 
-**Interfaces (Produces):** globals `CYN_VARIABLE_N` (int) and module-level `CYN_N_QMIN/QMAX/VMAX/KHS_UPT` reals (declare beside the staging `_IN` locals, pass to a `SET_CYN_DROOP_PARAMS(qmin,qmax,vmax,khs)` setter in the svindex-adjacent module of Task 3 — exact name binding for Tasks 3/4).
+- [ ] **Step 0: baseline** — current `main` build: 0D golden + scratch CL29 30-day (quoted paths, `ESTAS_HOLD_VOLUME=1`, from repo root) → `/tmp/varn_ab/baseline/`.
+- [ ] **Step 1:** module + reads + defaults + echo + guard `if (CYN_VARIABLE_N > 0 .and. nstate /= 33) error stop 'CYN_VARIABLE_N=1 requires the VARN build (nstate=33)'`.
+- [ ] **Step 2: gates** — `make build-estas` clean; 30-day rerun `diff -r` clean vs baseline; suite green.
+- [ ] **Step 3:** commit `feat(varn): CYN_VARIABLE_N flag + options + AQUABC_CYN_DROOP params module + guard`.
 
-- [ ] **Step 0: byte-identity baseline** — with the CURRENT `main` build: run the 0D golden and a scratch CL29 30-day (`cp INPUT_CL29.txt /tmp/varn_ab/INPUT_AB.txt`, `SIMULATION_END` 30.0, quoted scratch output dir, run from repo root with `ESTAS_HOLD_VOLUME=1`), save to `/tmp/varn_ab/baseline/`.
-- [ ] **Step 1: reads + defaults + echo** — five pairs; defaults set before the reads (`0`, `0.10`, `0.25`, `0.44`, `0.003`); ON-echo prints all four scalars (the pair-swap defense); OFF-echo one line.
-- [ ] **Step 2: the guard** — immediately after the reads resolve: `if (CYN_VARIABLE_N > 0 .and. nstate /= 33) error stop 'CYN_VARIABLE_N=1 requires the VARN build (nstate=33); this binary has nstate=32'` (`nstate` is in scope via GLOBAL — verify with the :31 usage).
-- [ ] **Step 3: gates** — `make build-estas`; CL29 30-day rerun `diff -r` clean vs baseline + `NOST staging:` and the new OFF echo both present; suite green.
-- [ ] **Step 4: commit** — `feat(varn): CYN_VARIABLE_N flag + five graceful option lines + nstate mis-pair guard`
-
-### Task 3: The Droop branch in both CYANOBACTERIA variants + lib-level tests
+### Task 3: The Droop mechanism — lib + model + transport, ONE task (review: a split is unbuildable-safely under implicit interfaces)
 
 **Files:**
-- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_svindex.f90` — `integer, parameter :: CYN_N_INDEX = 33` with a comment that it is live only in the VARN build (metabolites are already `nstate`-derived at mod_PELAGIC_ECOLOGY:739–745 — verify, do not touch)
-- Create: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_cyn_droop.f90` — small module: the four scalars + `SET_CYN_DROOP_PARAMS` + pure helpers `F_DOWN(Q)`, `LIM_N_QUOTA(Q)`, `R_UPTAKE(DIN,Q,CYN_C)` implementing spec §2 verbatim
-- Modify: `…AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_CYANOBACTERIA.f90` — BOTH `CYANOBACTERIA` and `CYANOBACTERIA_BOUYANT` (the CL29 path is BOUYANT — verify `call CYANOBACTERIA_BOUYANT` at model.f90:1134 and `CYANO_BOUYANT_STATE_SIMULATION 1` in the live options): new args `CYN_VARIABLE_N` (int), `CYN_N` (in, nkn), `R_CYN_N_UPTAKE` (out, nkn); under the flag `LIM_KG_CYN_N = LIM_N_QUOTA(Q)` with `Q = CYN_N/max(CYN_C,1e-10)` and `R_CYN_N_UPTAKE = R_UPTAKE(...)`; flag off: legacy verbatim, new outs zeroed
-- Create: `tests/fortran/test_cyn_droop.f90` + Makefile target + TEST_PROGS registration (link `aquabc_cyn_droop.o` + the CYANOBACTERIA lib chain like `test_cyanobacteria` does)
+- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_cyn_droop.f90` — add pure helpers `F_DOWN(Q)`, `LIM_N_QUOTA(Q)`, `R_UPTAKE(DIN, Q, CYN_C)` implementing spec §2 verbatim.
+- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_svindex.f90` — `integer, parameter :: CYN_N_INDEX = 33` (comment: live only in the VARN build; grep first that nothing dimensions by it in the standard build).
+- Modify: `…lib_CYANOBACTERIA.f90` BOTH variants (the CL29 path is `CYANOBACTERIA_BOUYANT`, called at model.f90:1134; the plain variant has NO model call — its callers are the 0D interface path and tests, verify with `grep -rn "call CYANOBACTERIA\b"`): new args `CYN_VARIABLE_N` (int), `CYN_N` (in), `R_CYN_N_UPTAKE` (out); flag on → `LIM_KG_CYN_N = LIM_N_QUOTA(CYN_N/max(CYN_C, EPS_CYN_C))`, uptake per helpers; flag off → legacy verbatim, new outs zeroed.
+- Modify: `aquabc_II_pelagic_model.f90` — in the SAME commit: both call-site extensions; `R_CYN_N_UPTAKE(nkn)`; the per-step DIN cap on uptake (the mirrored safeguard); `DERIVATIVES(:,CYN_N_INDEX)` from new PROCESS_RATES slots (uptake source; Q-weighted resp/death/excr/graze sinks); the routing replacements at ALL sites, each flag-gated: NH4 resp :2040, NH4 uptake :2052 → `R_CYN_N_UPTAKE·PREF_NH4N_CYN`, NO3 uptake :2131 → `R_CYN_N_UPTAKE·(1−PREF_NH4N_CYN)`, DON excr :3015, ZOO_N :2772, DET_N CYN-death (`grep -n "R_CYN_DEATH.*CYN_N_TO_C"`), **and BOTH DON growth-sink slot-5 assignments — :3018–3019 AND the duplicate inside `if (DO_NOSTOCALES > 0)` at :3050–3051** (verify-grep `grep -n "DISS_ORG_N_INDEX, 5" …model.f90` → exactly two assignment hits, both zeroed under the flag; CL29 runs the NOSTOCALES branch, so missing the second silently destroys N in the science run); O2 :2242 untouched.
+- Modify: `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` — flag+`CYN_N` threading into the kinetics call, **and `INIT_TRANSPORT_FIELDS` (:724–749): after the index-32 lines, `if (nstate >= 33)` set `ADVECTION_ON(33)=1; DIFFUSION_ON(33)=1; SETTLING_ON(33)=1`** (review blocker: the literal ranges 1:31/32 + the nstate-derived allelopathy block skip 33 → uninitialized transport switches in the VARN build); dead code at nstate=32.
+- **Settled-N booking (review blocker, spec-completing decision, option (a) conservative):** under the flag, the bed PON handoff books CYN_N's OWN settling flux and drops the `CYN_C-settling × CYN_N_TO_C` term — BOTH sites, `aquabc_II_pelagic_auxillary.f90:1035` and `:1249` (verify-grep `CYN_N_TO_C` in that file → exactly these two).
+- Modify: `mod_AQUATIC_MODEL.f90` count assert (~:179/:194–207) → `declared_total == nstate + merge(4,0,CONSIDER_ALLELOPATHY>0)`.
+- Modify: the negative-mass metabolite literal `33..36` → `nstate+1..nstate+NUM_ALLOLOPATHY_STATE_VARS` at **BOTH** sites (`grep -n "33" mod_PELAGIC_ECOLOGY.f90 | grep -v nstate`, read context; the review found two).
+- Modify: `aquabc_II_pelagic_interface.f90` — literal `0` flag + zero-filled `CYN_N` actual for the 0D path (mirror the staging-arg handling there).
+- Create: `tests/fortran/test_cyn_droop.f90` (+ Makefile target + TEST_PROGS); Modify `tests/fortran/test_cyanobacteria.f90` (signature).
 
-**Interfaces (Produces):** the module helpers above; the extended lib signatures (append after each variant's current last arg — record the exact final arg orders in the report for Task 4).
+**Test cases (write first, expect assertion-failures not compile-failures — no explicit interfaces):**
+1. `F_DOWN` endpoints; 2. `LIM_N_QUOTA` clamps; 3. uptake at DIN 0.004, Q 0.15, CYN_C 1.0 — expected computed IN the test as `0.44d0·(0.004d0/0.007d0)·((0.25d0−0.15d0)/0.15d0)` (≈0.16762; the review killed the rounded-decimal-at-1e-10 pattern — always compare to the exact expression); 4. flag=0 pass-through (legacy LIM unchanged, new outs zero); 5. the rate-level N balance **with grazing as a TEST-INJECTED input** (the lib does not compute grazing): `uptake − (resp+death+excr+graze_injected)·Q == quota-net` to 1e-12; 6. DON-sink invariant (routine's DON-uptake term ≡ 0 under flag).
 
-- [ ] **Step 1: failing tests** — cases: (1) `F_DOWN` endpoints (0 at Q_MAX, 1 at Q_MIN); (2) `LIM_N_QUOTA` clamp at both ends; (3) uptake arithmetic at committed constants: DIN 0.004, Q 0.15, CYN_C 1.0 → `0.44·0.571·(0.10/0.15)·1.0 = 0.1675` mg N/L/d (hand value, 1e-10); (4) flag=0 through the lib routine: legacy `LIM_KG_CYN_N` (ambient Monod) unchanged for a reference input, new outs zero; (5) flag=1: the rate-level N balance — `uptake − (resp+death+excr+graze)·Q` equals the quota-pool net the routine's outputs imply, to 1e-12 (the V1 conservation vehicle); (6) the DON-sink invariant: under the flag the routine's DON-uptake output term is exactly zero.
-- [ ] **Step 2: run, expect compile failures.**
-- [ ] **Step 3: implement** module + both lib branches. The BOUYANT variant's branch is IDENTICAL logic (copy, not shared helper call only if argument plumbing differs — prefer both calling the module helpers so the physics lives once).
-- [ ] **Step 4: full suite green; build-estas clean; 30-day A/B still byte-identical** (flag off zeroes everything; the new args are wired in Task 4 — until then the lib is compiled but its new dummies unreferenced by the model: to keep the build linking, Task 3 adds the args ONLY to the lib and its tests; the model call-site change is Task 4's first step, so Task 3's build gate is `make -C tests/fortran` only, NOT build-estas — state PASS/FAIL accordingly).
-- [ ] **Step 5: commit** — `feat(varn): Droop quota module + flag-gated branch in both CYANOBACTERIA variants (lib-level, TDD)`
+- [ ] **Steps:** tests first (RED as assertion failures) → implement everything above → full suite green → `make build-estas` clean → **0D golden + CL29 30-day A/B byte-identical vs baseline** → commit `feat(varn): Droop mechanism end-to-end (lib both variants + model routing + transport switches + settled-N booking + count assert), flag-gated`.
 
-### Task 4: Model wiring — derivative, Q-weighted routing, DON-sink zero, flag threading
+### Task 4: The `build-estas-varn` target
 
-**Files:**
-- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90`: extend both CYANOBACTERIA call sites (:1134 BOUYANT; find the plain variant's call) with the three new args; declare `R_CYN_N_UPTAKE(nkn)`; under the flag: `DERIVATIVES(:,CYN_N_INDEX) = uptake − (R_CYN_TOT_RESP+R_CYN_DEATH+R_CYN_EXCR+R_ZOO_FEEDING_CYN)·Q` via new PROCESS_RATES slots; replace `CYN_N_TO_C` with `Q` at the seven routing sites (NH4 resp :2040, NH4 uptake :2052→`R_CYN_N_UPTAKE·PREF_NH4N_CYN`, NO3 uptake :2131→`R_CYN_N_UPTAKE·(1−PREF_NH4N_CYN)`, DON excr :3015, ZOO_N :2772, DET_N CYN-death site — locate with `grep -n "R_CYN_DEATH.*CYN_N_TO_C"`, and ZERO the DON growth-sink slot 5 :3017–3018) — every replacement flag-gated so flag=0 is verbatim legacy; O2 site :2242 untouched (assert in review)
-- Modify: `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` (thread flag + CYN_N slice into `AQUABC_PELAGIC_KINETICS`'s call), `aquabc_II_pelagic_interface.f90` (literal 0 + a zero-filled CYN_N actual for the 0D path — mirror how the staging args were handled there), `SOURCE_CODE/ESTAS/mod_AQUATIC_MODEL.f90` count assert (~:179/:194–207): replace with the spec §3.2 single condition `declared_total == nstate + merge(4,0,CONSIDER_ALLELOPATHY>0)`
-- Modify: the negative-mass diagnostic literal `33..36` in mod_PELAGIC_ECOLOGY (locate with `grep -n "33" mod_PELAGIC_ECOLOGY.f90 | grep -v nstate` and read context) → `nstate+1 .. nstate+NUM_ALLOLOPATHY_STATE_VARS`
-- Modify: `tests/fortran/test_cyanobacteria.f90` (signature update)
-
-**Interfaces:** Consumes Task 3's exact signatures. Produces the full flag-on wiring Tasks 5–8 run.
-
-- [ ] **Step 1** extend test_cyanobacteria for the new signature (flag=0 pass-through cases), expect compile fail; **Step 2** implement the wiring above; **Step 3** suite green, `make build-estas` clean, 0D golden + CL29 30-day A/B byte-identical vs baseline; **Step 4** commit `feat(varn): CYN_N wiring -- Q-weighted routing, DON-sink zeroed under flag, count assert per spec s.3.2`.
-
-### Task 5: The `build-estas-varn` target
-
-**Files:** Modify `Makefile` (after `build-estas` at :205):
+**Files:** Modify `Makefile`. **Review fix: make runs each recipe line in a separate shell — the trap idiom requires `.ONESHELL:` or a single `&&`-joined line.** Use one line:
 
 ```make
 build-estas-varn:
-	@cp SOURCE_CODE/ESTAS/mod_GLOBAL.f90 /tmp/.mod_GLOBAL.varn.bak
-	@trap 'cp /tmp/.mod_GLOBAL.varn.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90' EXIT; \
-	 sed -i 's/:: nstate *= 32/:: nstate                        = 33/' SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && \
-	 $(MAKE) build-estas && mv ESTAS_II ESTAS_II_varN
-	@cp /tmp/.mod_GLOBAL.varn.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90
-	@git diff --exit-code SOURCE_CODE/ESTAS/mod_GLOBAL.f90
-	@$(MAKE) build-estas   # restore the standard binary
+	cp SOURCE_CODE/ESTAS/mod_GLOBAL.f90 /tmp/.mG.bak && trap 'cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90' EXIT && sed -i 's/nstate                        = 32/nstate                        = 33/' SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && grep -c "nstate                        = 33" SOURCE_CODE/ESTAS/mod_GLOBAL.f90 | grep -qx 1 && $(MAKE) build-estas && mv ESTAS_II ESTAS_II_varN && cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && git diff --exit-code SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && $(MAKE) build-estas
 ```
-(adjust the sed to the exact :16 spacing — verify first; the trailing standard rebuild leaves `ESTAS_II` = standard.)
+(verify the exact spacing of :16 first and adjust the sed; the `grep -qx 1` asserts exactly-one substitution; the 0D driver/interface `nstate=32` literals — interface.f90:74 `integer, save :: nstate = 32` and the 0D driver's own — are NOT patched: the 0D path stays 32-state, and the conservation vehicle is the degenerate CL29 scenario of Task 6, NOT the 0D example — review correction of the old V4.)
 
-- [ ] **Step 1** verify the sed matches exactly one line; **Step 2** implement; **Step 3** gates: `make build-estas-varn` → `ESTAS_II_varN` exists, `git status` clean, `ESTAS_II` still standard (rerun the 30-day A/B byte-identical), and the guard fires: running the STANDARD binary on a flag=1 options copy aborts with the Task-2 message; **Step 4** commit `feat(varn): build-estas-varn target (trap-guarded in-place nstate patch + cleanliness proof)`.
+- [ ] Verify sed uniqueness → implement → gates: `ESTAS_II_varN` exists; tree clean (`git status`); `ESTAS_II` standard (30-day A/B); the mis-pair guard fires (standard binary + flag=1 options copy aborts, assert exit≠0 AND the message text) → commit.
 
-### Task 6: The VARN setup generator
+### Task 5: The VARN setup generator
 
-**Files:** Create `tools/make_varn_inputs.py`; Create `INPUT_CL29_VARN.txt` (from `INPUT_CL29.txt`: input folder `INPUTS_CL29_VARN/`, output `OUTPUTS_CL29_VARN/`); Test `tests/python/test_make_varn_inputs.py`.
+**Files:** Create `tools/make_varn_inputs.py` + `INPUT_CL29_VARN.txt` (tracked) + `.gitignore` lines (`INPUTS_CL29_VARN/`, `OUTPUTS_CL29_VARN/`); Test `tests/python/test_make_varn_inputs.py`.
 
-**Produces:** `python3 tools/make_varn_inputs.py --src INPUTS_CL29 --dst INPUTS_CL29_VARN --qseed 0.220` — copies the setup, then: `PELAGIC_INPUTS.txt` variable table gains row 33 `CYN_N` (transported like CYN_C) and renumbers the 4 metabolite rows to 34–37 with declared total 36→37; every per-box IC block gains a var-33 row with `IC = 0.220·(CYN_C IC)`; `FORC_TS_*.txt` boundary files gain column 33 = `0.220 × column(CYN_C=15)` with the metabolite columns shifted right; options file gets `CYN_VARIABLE_N 1` + the four scalars appended (staging block preserved).
+**The generator's full job (review-corrected):** copy setup; `PELAGIC_INPUTS.txt`: declared total 36→37, variable-table row 33 `CYN_N` (transported like CYN_C), metabolite rows renumbered 34–37, **every per-box IC block** gains a var-33 row `0.220·(CYN_C IC)`, **and the per-state settling plumbing for var 33** (settling-velocity / dissolved-fraction / deposited-fraction rows mirroring CYN_C — the solver consumes them for any `SETTLING_ON` state; enumerate the blocks by reading the live file's per-box sections); `FORC_TS_*.txt`: **update the `NUMBER_OF_VARIABLES` header 36→37 AND the scale-factor row gains a column** (the review-found real header structure: DATA_SIZE / NUMBER_OF_VARIABLES / SCALE FACTORS lines — the fixture must reproduce all of them), data column 33 = `0.220 ×` column 15, metabolite columns shifted; options file: `CYN_VARIABLE_N 1` + the four scalars **INSERTED at the Task-2 read position** (after the staging pairs, before the `CYN_ALLELOPATHY_FILE_NAME` lines — NOT appended at EOF, which the graceful reader would silently default away; fixture test asserts the position).
 
-- [ ] **Step 1: failing tests** — on a MINIATURE synthetic 36-var fixture (committed under tests/python/fixtures/): column counts 37 everywhere after generation; `CYN_N` boundary column == 0.220×CYN_C column to 1e-12; metabolite rows/columns shifted not duplicated; idempotence guard (running on a 37-var dst refuses).
-- [ ] **Steps 2–4** implement, tests green, then run on the real setup and sanity-print the generated `PELAGIC_INPUTS.txt` header + `FORC_TS_1.txt` field count (must be 38 = time+37).
-- [ ] **Step 5** commit `feat(varn): 36->37-var setup generator + VARN driver input`.
+- [ ] Fixture-based TDD (fixture = miniature file set WITH the real header structures) → implement → run on the real setup, sanity: `FORC_TS_1.txt` data rows have 38 fields, header says 37, options parse echoes ON with four values (run the varN binary 1 day to check) → commit.
 
-### Task 7: Validator TN fix + VARN checker
+### Task 6: Validator TN fix + VARN checker + the conservation scenario
 
-**Files:** Modify `tools/validate_cl29_vs_epa.py` (in `add_derived` ~:107: when a `CYN_N` column exists, TN's CYN contribution uses it instead of `N_TO_C·CYN_C`; other groups unchanged — note `N_TO_C` is the shared 0.22 at :46); Create/extend a checker (`tools/check_varn_run.py`): `--mode smoke` (flag echo with four values == options file; `CYN_N` column present; `Q∈[0.095,0.255]` everywhere allowing 5 % numerics margin) and `--mode conserve0d` (the 0D run's full-series identity `Δ(DIN+CYN_N+DON+DET_N+ZOO_N) == 0` within 1e-9 relative — the transport-free vehicle).
+**Files:** Modify `tools/validate_cl29_vs_epa.py` (TN's CYN term uses the `CYN_N` column when present; else legacy `N_TO_C·CYN_C`); Create `tools/check_varn_run.py`: `--mode smoke` (echo values == options file; `CYN_N` column present; transport-flag echo line shows slot 33 == 1; `Q ∈ [0.095, 0.255]` **excluding samples where `CYN_C ≤ 2·MIN_CONCENTRATION` — the review's floor-artifact exemption — and reporting, not asserting, Q excursions in high-flush boxes since Q is not conservative under mixing**); `--mode conserve` (see scenario); `--mode nbudget` (the per-term CYN N-budget printout the spec's honesty items require: uptake, each Q-weighted loss, DON-sink residual — from PROCESS_RATES columns when available, else state-difference estimates, labeled).
+**The conservation scenario (review fix — a raw pool sum cannot close on any full-biology run):** Task 6 also creates, via the generator plus an option, a **CYN-only degenerate VARN scenario** (`--degenerate-cyn`): all other phyto/zoo ICs and boundary columns zeroed, NOST staging OFF, allelopathy retained (inert). On this scenario `Δ(DIN+CYN_N+DON+DET_N)` closes (no zoo, single box preferred: use box-1-only or accept whole-domain with zero boundary — the generator zeroes boundary inflow concentrations for the involved pools; the checker documents exactly which identity it closes and at what tolerance, 1e-9 relative).
 
-- [ ] TDD both; commit `feat(varn): validator CYN_N-aware TN + VARN checker (smoke, 0D conservation)`.
+- [ ] TDD all three modes + the degenerate generator option → commit.
 
-### Task 8: Verification battery + the science ladder
+### Task 7: Verification battery + science ladder
 
-- [ ] **V-gate order:** admissibility gate (Task 1 tool at committed values — must pass; paste output); V2 byte-identity (0D golden + CL29 30-day + the FULL-record standard A/B vs a `main`-built binary via a scratch worktree build, the staging-arc pattern); V3 VARN smoke (generated setup + `ESTAS_II_varN`, 30-day, checker `--mode smoke`; loud-stop cross-check per Task 5); V4 0D conservation: build a 0D VARN variant run (the interface path with flag on — the 0D driver's own nstate=32 literal at interface:74/:122 must also be patched by the varn target — VERIFY this during Task 5 and extend the patch if the 0D example is built from the same tree; if the 0D example cannot run VARN without its own variant, the conservation vehicle is the 0D-style single-box CL29 degenerate run instead: document which) then `--mode conserve0d`; V5 Euler-vs-RK2 90-day VARN (no NaN, Q in bounds, conservation via the same checker under both).
-- [ ] **Science ladder (spec §7):** full-record VARN run (adopted config + generator setup); score with the fixed validator (obs-matched monthly CYN_C; the [a] estimator = the same monthly table every arc has used); report [a] vs the 0.8/0.4 thresholds, [b] headline deltas vs CHLA 24.05/PO4 0.0170/r +0.68, [c] the quota seasonal signature (monthly mean Q from CYN_N/CYN_C: June ≥ 0.9·Q_MAX and August drawdown below mid-band, else mechanistic refutation), [d] sensitivity: VMAX 0.22 and 0.88, Q_MAX 0.30 (three more full-record runs, ~15 min each).
-- [ ] **Documentation:** doc §38 (results whichever way), BACKLOG row, adoption/NULL question presented to the user with the numbers. Commit `docs(cl29): s.38 -- Droop-N VARN ladder results`.
+- [ ] **Order:** admissibility gate (must pass; paste output) → V2 byte-identity: 0D golden, CL29 30-day, **and the full-record standard A/B: build `main` in a scratch worktree (`git worktree add /tmp/varn_mainwt main && (cd /tmp/varn_mainwt && make build-estas)`), run BOTH binaries (distinct paths, `md5sum` printed and asserted different) on the same scratch full-record input, `diff -r`, remove the worktree** → V3 VARN smoke (checker; loud-stop cross-check) → V4 conservation on the degenerate-CYN scenario (`--mode conserve`) → V5 Euler-vs-RK2 90-day VARN (no NaN; Q-bounds report; conserve on the degenerate scenario under both solvers).
+- [ ] **Science ladder (spec §7):** full-record VARN; score with the fixed validator; [a] obs-matched monthly CYN_C vs 0.8/0.4 thresholds; [b] headline deltas vs CHLA 24.05 / PO4 0.0170 / r +0.68; [c] the quota signature (monthly mean Q: June ≥ 0.9·Q_MAX band, August drawdown below mid-band — else mechanistic refutation); [d] sensitivity: VMAX 0.22, VMAX 0.88, Q_MAX 0.30 (three full-record runs); `--mode nbudget` on the main run.
+- [ ] **Documentation:** doc §38 carrying, verbatim from the spec, the three-sub-delta A/B statement and the FIX-3 bias statement alongside the results; BACKLOG row; the adoption/NULL question presented with numbers. Commit `docs(cl29): s.38 -- Droop-N VARN ladder results`.
 
 ---
 
-## Self-review notes (completed)
+## Review record (r2)
 
-- Spec coverage: §1 premise→T1 gate + T8 order; §2 formulation→T3 (helpers+branch) + T4 (routing) + constants→T2; §3.1→T5, §3.2→T4 (assert) + T6 (37 declaration), §3.3→T3 (both variants, BOUYANT verified), §3.4→T2 (guard) + T5 (cross-check), §3.5→T6; §5 table fully mapped incl. validator fix (T7) and the metabolite-literal fix (T4); §6 V1→T3 tests, V2/V3/V4/V5→T8 (V4's 0D-nstate caveat surfaced as an explicit verify-and-decide step, not silently assumed); §7→T8; §8 risks: the A/B bundle honesty and 0D vehicle both carried.
-- Type consistency: `SET_CYN_DROOP_PARAMS(qmin,qmax,vmax,khs)` bound in T2/T3; the three new lib args named identically in T3/T4; checker mode names consistent in T7/T8.
-- Known open verify-steps (deliberate): exact final arg order of both lib variants (T3 records for T4); the DET_N CYN-death site line; the 0D-path nstate question in V4; the negative-mass literal's exact line.
+Adversarial plan review 2026-08-30 (4 finders → refute-oriented verification, 14 agents,
+23 findings): **10 confirmed, 0 refuted**, 5 unverified majors, 8 minors — all folded into
+this r2: transport-switch initialization + settled-N booking (the two silent-corruption
+blockers), the duplicate DON-sink site in the live NOSTOCALES branch, the un-passable raw-sum
+conservation gate → the degenerate-CYN scenario, the orphan setter → module moved to Task 2,
+the T3/T4 merge (implicit-interface UB between commits), the per-step DIN cap step, the
+honesty/reporting steps, the generator's insert-position and real FORC header structure, the
+exact-expression test values (no rounded decimals at 1e-10), grazing as a test-injected input,
+the self-compare-proof md5 step, both metabolite-literal sites, the 0D-path nstate clarification
+(0D stays 32-state; the conservation vehicle is the degenerate scenario), the Q-bounds floor
+exemption and mixing caveat, and the residency/gitignore decisions.
