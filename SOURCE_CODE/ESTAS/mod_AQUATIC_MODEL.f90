@@ -167,13 +167,16 @@ contains
 
         nkn = AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_BOXES
 
-        if (CONSIDER_ALLELOPATHY > 0) then
-            NUM_CHECK_PELAGIC_STATE_VARS = &
-                AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
+        ! The input file declares the TOTAL state-variable count, i.e. the
+        ! AQUABC states plus the secondary-metabolite block when allelopathy is
+        ! on. The allelopathy branch used to compare that number with itself,
+        ! which asserted nothing; with a build-variant state count (VARN,
+        ! nstate = 33) a mis-paired setup must fail loudly instead.
+        NUM_CHECK_PELAGIC_STATE_VARS = &
+            nstate + merge(NUM_ALLOLOPATHY_STATE_VARS, 0, CONSIDER_ALLELOPATHY > 0)
 
+        if (CONSIDER_ALLELOPATHY > 0) then
             call ALLOC_ALLEOPATHY(nkn)
-        else
-            NUM_CHECK_PELAGIC_STATE_VARS = nstate
         end if
 
         if (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS.ne. &
@@ -187,8 +190,9 @@ contains
                 'The number of pelagic state variables                     : ', &
                 AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_PELAGIC_STATE_VARS
 
-            write (*,*) 'The number of pelagic state variables requested by AQUABC : ', nstate
-            stop "error stop"
+            write (*,*) 'The number of pelagic state variables requested by AQUABC : ', &
+                NUM_CHECK_PELAGIC_STATE_VARS
+            error stop "error stop"
         end if
 
         if (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_MODEL_CONSTANTS.ne. &

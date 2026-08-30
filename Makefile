@@ -1,4 +1,4 @@
-.PHONY: link-data build-lib build-example build-estas build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint benchmark-openmp build-docs
+.PHONY: link-data build-lib build-example build-estas build-estas-varn build-named rebuild rebuild-named run-example run-estas run-0d clean-model clean-lib clean-all show-config check-compiler test-all test-fortran test-python lint benchmark-openmp build-docs
 
 # =============================================================================
 # Compiler Configuration
@@ -215,6 +215,23 @@ build-estas: build-lib
 	@echo "  Compiler:   $(FC)"
 	@echo "  Build Type: $(BUILD_TYPE)"
 	@ls -lh $(EXE_NAME)
+
+# Build the nstate=33 (VARN, CYN nitrogen-quota / Droop) variant executable.
+# Transiently patches the tracked nstate literal in mod_GLOBAL.f90, builds the
+# standard ESTAS_II target against it, renames the result, then restores the
+# pristine source (trap ensures this happens even if the build fails midway)
+# and rebuilds the standard ESTAS_II so the tree is left in its normal state.
+# Must be a single `&&`-joined recipe line: make runs each recipe line in its
+# own shell, so a bare EXIT trap set on one line would never fire for a later
+# line -- and the `git diff --exit-code` at the end proves the source file
+# reverted from the patch. Deliberately depends on neither build-lib nor
+# build-estas (those trigger before the source is patched); it calls
+# $(MAKE) build-estas twice from inside its own recipe instead.
+# NOTE: `-n`/`-t`/`-q` are NOT safe dry runs for this target -- the recipe
+# contains $(MAKE), so the whole line executes: sed patches source, cp/mv
+# run; only the inner builds become no-ops.
+build-estas-varn:
+	cp SOURCE_CODE/ESTAS/mod_GLOBAL.f90 /tmp/.mG.bak && trap 'cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90' EXIT && sed -i 's/nstate                        = 32/nstate                        = 33/' SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && grep -c "nstate                        = 33" SOURCE_CODE/ESTAS/mod_GLOBAL.f90 | grep -qx 1 && $(MAKE) build-estas && mv ESTAS_II ESTAS_II_varN && cp /tmp/.mG.bak SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && git diff --exit-code SOURCE_CODE/ESTAS/mod_GLOBAL.f90 && $(MAKE) build-estas
 
 # Build with auto-generated name based on compiler and build type
 build-named: build-lib

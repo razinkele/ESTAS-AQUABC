@@ -722,6 +722,7 @@ contains
 
 
     subroutine INIT_TRANSPORT_FIELDS(PELAGIC_BOX_MODEL_DATA)
+        use aquabc_pel_state_var_indexes, only: CYN_N_INDEX
         implicit none
         type(PELAGIC_BOX_MODEL_DS), intent(inout) :: PELAGIC_BOX_MODEL_DATA
 
@@ -733,6 +734,16 @@ contains
 
         PELAGIC_BOX_MODEL_DATA % SETTLING_ON(1:31)  = 1
         PELAGIC_BOX_MODEL_DATA % SETTLING_ON(32)    = 0
+
+        ! CYN nitrogen quota (VARN build, nstate = 33). The literal ranges
+        ! above stop at 32 and the allelopathy block below starts at nstate+1,
+        ! so without this the state-33 switches would stay uninitialised.
+        ! Dead in the standard build (nstate = 32).
+        if (nstate >= CYN_N_INDEX) then
+            PELAGIC_BOX_MODEL_DATA % ADVECTION_ON(CYN_N_INDEX) = 1
+            PELAGIC_BOX_MODEL_DATA % DIFFUSION_ON(CYN_N_INDEX) = 1
+            PELAGIC_BOX_MODEL_DATA % SETTLING_ON (CYN_N_INDEX) = 1
+        end if
 
         if (CONSIDER_ALLELOPATHY > 0) then
             PELAGIC_BOX_MODEL_DATA % &
@@ -1085,6 +1096,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
+    use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
 
     implicit none
 
@@ -1092,6 +1104,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     integer :: TEMP_MODEL_OPT
     real(kind = DBL) :: K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN
     real(kind = DBL) :: T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN
+    real(kind = DBL) :: CYN_N_QMIN_IN, CYN_N_QMAX_IN, CYN_N_VMAX_IN, CYN_N_KHS_UPT_IN
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1160,6 +1173,9 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     K_POS_UP_IN = 3.0D0; K_POS_DISP_IN = 10.0D0; W_DISP_POS_IN = 4.0D0
     T_GERM_STG_IN = 12.0D0; I_FORM_IN = 120.0D0; KR_GERM_BED_IN = 0.05D0
     K_MORT_BED_IN = 1.0D-3; V_SETTLE_IN = 0.5D0
+    CYN_N_QMIN_IN = 0.10D0; CYN_N_QMAX_IN = 0.25D0
+    CYN_N_VMAX_IN = 0.44D0; CYN_N_KHS_UPT_IN = 0.003D0
+    CYN_VARIABLE_N = 0   ! explicit: don't rely on a failed read leaving the mod_GLOBAL initializer intact
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     read(IN_FILE + 1, *, end = 900, err = 900)
@@ -1231,15 +1247,45 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) V_SETTLE_IN
+
+    ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
+    ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
+    ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
+    ! max N-uptake rate (gN/gC/d), and uptake half-saturation (mg N/L). Graceful
+    ! like everything above; defaults live in mod_GLOBAL and this routine's locals.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_VARIABLE_N
+
+    if (CYN_VARIABLE_N > 0 .and. nstate /= 33) error stop 'CYN_VARIABLE_N=1 requires the VARN build (nstate=33)'
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMIN_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMAX_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_VMAX_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_KHS_UPT_IN
 900 continue
     call SET_POSITIONING_PARAMS(K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN)
     call SET_NOST_STAGING_PARAMS(T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN)
+    call SET_CYN_DROOP_PARAMS(CYN_N_QMIN_IN, CYN_N_QMAX_IN, CYN_N_VMAX_IN, CYN_N_KHS_UPT_IN)
     if (NOST_STAGE_MODEL > 0) then
         write(*,*) 'NOST staging: ON. T_GERM=', T_GERM_STG_IN, ' I_FORM=', I_FORM_IN, &
                    ' KR_GERM_BED=', KR_GERM_BED_IN, ' K_MORT_BED=', K_MORT_BED_IN, &
                    ' V_SETTLE=', V_SETTLE_IN
     else
         write(*,*) 'NOST staging: OFF (legacy akinete gates, default).'
+    end if
+    if (CYN_VARIABLE_N > 0) then
+        write(*,*) 'CYN variable N (Droop): ON. CYN_N_QMIN=', CYN_N_QMIN_IN, &
+                   ' CYN_N_QMAX=', CYN_N_QMAX_IN, ' CYN_N_VMAX=', CYN_N_VMAX_IN, &
+                   ' CYN_N_KHS_UPT=', CYN_N_KHS_UPT_IN
+    else
+        write(*,*) 'CYN variable N (Droop): OFF (legacy Monod CYN N-limitation, default).'
     end if
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
@@ -1472,10 +1518,22 @@ subroutine PELAGIC_KINETICS &
 
     real(kind = DBL), dimension(nkn, NUM_ALLOLOPATHY_STATE_VARS) :: SEC_MET_DERIVATIVES
 
+    ! CYN nitrogen quota handed to the kinetics explicitly. In the standard
+    ! build (nstate = 32) column CYN_N_INDEX = 33 of STATE_VARIABLES is a
+    ! secondary metabolite, so it must NOT be read unless the Droop gate is on
+    ! (which READ_PELAGIC_MODEL_OPTIONS only permits at nstate = 33).
+    real(kind = DBL), dimension(nkn) :: AQUABC_CYN_N
+
     AQUABC_STATE_VARIABLES(:,:)   = STATE_VARIABLES(:, 1:nstate)
     AQUABC_DERIVATIVES    (:,:)   = 0.0D0
     SEC_MET_DERIVATIVES   (:,:)   = 0.0D0
     AQUABC_PROCESS_RATES  (:,:,:) = 0.0D0
+
+    if (CYN_VARIABLE_N > 0) then
+        AQUABC_CYN_N(:) = STATE_VARIABLES(:, CYN_N_INDEX)
+    else
+        AQUABC_CYN_N(:) = 0.0D0
+    end if
 
     if (.not.allocated(GROWTH_INHIB_FACTOR_DIA)) then
         allocate(GROWTH_INHIB_FACTOR_DIA(nkn))
@@ -1591,7 +1649,9 @@ subroutine PELAGIC_KINETICS &
           CYANO_POS_MODEL                                        , &
           H_SURF_POS                                             , &
           W_CRIT_POS_MIN                                         , &
-          NOST_STAGE_MODEL)
+          NOST_STAGE_MODEL                                       , &
+          CYN_VARIABLE_N                                         , &
+          AQUABC_CYN_N)
 
     pcore%DERIVATIVES  (:,1:nstate)    = AQUABC_DERIVATIVES  (:,:)
     PROCESS_RATES(:,1:nstate, :) = AQUABC_PROCESS_RATES(:,:,:)
@@ -1674,9 +1734,12 @@ subroutine PELAGIC_KINETICS &
                     write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                     write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
             
-                   ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                   ! Detailed derivative breakdown for the allelopathy block
+                   ! (nstate+1 .. nstate+NUM_ALLOLOPATHY_STATE_VARS -- 33-36 in the
+                   ! standard build, 34-37 in the VARN build)
                    if (CONSIDER_ALLELOPATHY > 0) then
-                       if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then !
+                       if (STATE_VARIABLE_NO >= (nstate + 1) .and. &
+                           STATE_VARIABLE_NO <= (nstate + NUM_ALLOLOPATHY_STATE_VARS)) then
                            write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
                            write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                            write(6,*) '    DISPERSION=', &
@@ -1703,9 +1766,12 @@ subroutine PELAGIC_KINETICS &
                 write(6,*) '  CONC_BEFORE=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                 write(6,*) '  VOLUME=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
             
-                ! Detailed derivative breakdown for states 33-36 (allelopathy)
+                ! Detailed derivative breakdown for the allelopathy block
+                ! (nstate+1 .. nstate+NUM_ALLOLOPATHY_STATE_VARS -- 33-36 in the
+                ! standard build, 34-37 in the VARN build)
                 if (CONSIDER_ALLELOPATHY > 0) then
-                    if (STATE_VARIABLE_NO >= 33 .and. STATE_VARIABLE_NO <= 36) then
+                    if (STATE_VARIABLE_NO >= (nstate + 1) .and. &
+                        STATE_VARIABLE_NO <= (nstate + NUM_ALLOLOPATHY_STATE_VARS)) then
                         write(6,*) '  DERIV BREAKDOWN for STATE', STATE_VARIABLE_NO, ':'
                         write(6,*) '    ADVECTION=', PELAGIC_BOX_MODEL_DATA % ECOL_ADVECTION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                         write(6,*) '    DISPERSION=', PELAGIC_BOX_MODEL_DATA % ECOL_DISPERSION_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)

@@ -19,12 +19,13 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
 POSITIONING_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_positioning_state.f90
 NOST_STAGING_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_nost_staging.f90
+CYN_DROOP_SRC = $(AQUABC_SRC)/PELAGIC/aquabc_cyn_droop.f90
 PRECISION_KINDS_SRC = $(CORE_UTILS)/precision_kinds.f90
 SEDIMENT_SRC = $(AQUABC_SRC)/SEDIMENTS
 
@@ -197,9 +198,27 @@ test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSE
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
 	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
+	$(FC) $(FFLAGS) -c $(CYN_DROOP_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CYANOBACTERIA.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_cyanobacteria.f90 *.o
+
+# Compile test_cyn_droop (nitrogen-quota helpers + the flag-gated branch in
+# both CYANOBACTERIA variants). Same source set as test_cyanobacteria plus
+# the AQUABC_CYN_DROOP module, which the library routines now use.
+test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET) $(CYN_DROOP_SRC)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
+	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
+	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
+	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
+	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
+	$(FC) $(FFLAGS) -c $(CYN_DROOP_SRC)
+	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CYANOBACTERIA.f90
+	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
+	$(FC) $(FFLAGS) -o $@ test_cyn_droop.f90 *.o
 
 # Compile test_zooplankton (kinetics test)
 test_zooplankton: test_zooplankton.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)

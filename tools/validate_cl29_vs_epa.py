@@ -101,10 +101,26 @@ def add_derived(df):
     Tot_N/Tot_P sum the inorganic, dissolved-organic, detrital, zooplankton and
     phytoplankton (carbon x N:C or P:C) pools; Chl_a sums each phytoplankton
     carbon pool divided by its C:Chl ratio (x1000 for mg/L -> ug/L).
+
+    TN's CYN contribution: if this output carries a CYN_N column (a VARN/Droop-
+    mechanism run, CYN_VARIABLE_N=1), use it directly -- it is the model's own
+    tracked N-quota state variable, mg N/L already. Otherwise fall back to the
+    legacy fixed N_TO_C*CYN_C ratio, UNCHANGED from before this branch existed,
+    so a standard (non-VARN) run scores byte-identically. The model's own
+    Fortran-side derived TN (GENERATE_PELAGIC_DERIVED_VARS,
+    mod_PELAGIC_ECOLOGY.f90:369) always uses the legacy ratio, even under
+    CYN_VARIABLE_N=1 -- it does not read CYN_N -- so it is wrong for VARN runs;
+    this Python-side reconstruction is the source of truth for TN in that case.
     """
     phyto_c = sum((_col(df, c) for c in PHYTO_C), pd.Series(0.0, index=df.index))
-    df["TN"] = (_col(df, "NH4_N") + _col(df, "NO3_N") + _col(df, "DISS_ORG_N")
-                + _col(df, "DET_PART_ORG_N") + _col(df, "ZOO_N") + N_TO_C * phyto_c)
+    if "CYN_N" in df.columns:
+        non_cyn_phyto_c = phyto_c - _col(df, "CYN_C")
+        df["TN"] = (_col(df, "NH4_N") + _col(df, "NO3_N") + _col(df, "DISS_ORG_N")
+                    + _col(df, "DET_PART_ORG_N") + _col(df, "ZOO_N")
+                    + N_TO_C * non_cyn_phyto_c + df["CYN_N"].astype(float))
+    else:
+        df["TN"] = (_col(df, "NH4_N") + _col(df, "NO3_N") + _col(df, "DISS_ORG_N")
+                    + _col(df, "DET_PART_ORG_N") + _col(df, "ZOO_N") + N_TO_C * phyto_c)
     df["TP"] = (_col(df, "PO4_P") + _col(df, "DISS_ORG_P")
                 + _col(df, "DET_PART_ORG_P") + _col(df, "ZOO_P") + P_TO_C * phyto_c)
     df["CHLA"] = 1000.0 * sum((_col(df, c) / r for c, r in _c_to_chla().items()),

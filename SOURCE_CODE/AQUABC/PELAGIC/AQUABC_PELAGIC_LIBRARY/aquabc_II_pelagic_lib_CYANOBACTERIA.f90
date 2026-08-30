@@ -35,11 +35,15 @@ subroutine CYANOBACTERIA &
             KD_CYN                  , &
             FAC_HYPOX_CYN_D         , &
             R_CYN_DEATH             , &
-            PREF_NH4N_DON_CYN)
+            PREF_NH4N_DON_CYN       , &
+            CYN_VARIABLE_N          , &
+            CYN_N                   , &
+            R_CYN_N_UPTAKE)
 
     use AQUABC_II_GLOBAL
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
+    use AQUABC_CYN_DROOP, only: LIM_N_QUOTA, R_UPTAKE, EPS_CYN_C
     implicit none
 
     ! -------------------------------------------------------------------------
@@ -60,6 +64,13 @@ subroutine CYANOBACTERIA &
 
     integer, intent(in) :: SMITH
     integer, intent(in) :: nkn
+
+    ! CYN nitrogen-quota (Droop) gate: 0 = legacy Monod N-limitation (default),
+    ! 1 = Caperon-Meyer quota limitation + explicit growth-decoupled N uptake
+    ! (spec sec 2). CYN_N is the quota state (mg N/L); it is meaningless and
+    ! unread when the gate is 0.
+    integer, intent(in) :: CYN_VARIABLE_N
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CYN_N
     ! -------------------------------------------------------------------------
     ! End of ingoing variables
     ! -------------------------------------------------------------------------
@@ -87,12 +98,16 @@ subroutine CYANOBACTERIA &
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: R_CYN_DEATH
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: PREF_NH4N_DON_CYN
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
+    ! N taken up into the quota, mg N/L/d; exactly zero when CYN_VARIABLE_N = 0
+    real(kind = DBL_PREC), dimension(nkn), intent(inout) :: R_CYN_N_UPTAKE
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
     ! Local variables for mass-balance safeguard
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
+    ! Nitrogen quota Q = CYN_N/CYN_C [gN/gC], Droop branch only
+    real(kind = DBL_PREC) :: Q_CYN
 
     associate( &
         KG_CYN_OPT_TEMP          => params%KG_CYN_OPT_TEMP, &
@@ -162,11 +177,27 @@ subroutine CYANOBACTERIA &
 
     LIM_KG_CYN_DOXY = DISS_OXYGEN / (KHS_O2_CYN + DISS_OXYGEN)
 
-    LIM_KG_CYN_N    = (NH4_N + (DON * frac_avail_DON) + NO3_N) / &
-                      (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop branch (spec sec 2): growth is limited by the internal quota
+        ! Q = CYN_N/CYN_C (Caperon-Meyer, linear), and N uptake becomes an
+        ! explicit growth-decoupled flux out of DIN (NH4 + NO3) only -- DON
+        ! uptake into the quota is out of scope (spec sec 4), which is what
+        ! zeroes the legacy DON growth sink on the model side.
+        do i = 1, nkn
+            Q_CYN             = CYN_N(i) / max(CYN_C(i), EPS_CYN_C)
+            LIM_KG_CYN_N(i)   = LIM_N_QUOTA(Q_CYN)
+            R_CYN_N_UPTAKE(i) = R_UPTAKE(NH4_N(i) + NO3_N(i), Q_CYN, CYN_C(i))
+        end do
+    else
+        LIM_KG_CYN_N    = (NH4_N + (DON * frac_avail_DON) + NO3_N) / &
+                          (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
+
+        R_CYN_N_UPTAKE  = 0.0D0
+    end if
 
     LIM_KG_CYN_P    = PO4_P   / (KHS_DIP_CYN + PO4_P)
-    ! Synthesizing Unit colimitation (Saito et al. 2008)
+    ! Synthesizing Unit colimitation (Saito et al. 2008); unchanged under the
+    ! Droop gate -- only the N term above is replaced (spec sec 2).
     LIM_KG_CYN_NUTR = LIM_KG_CYN_N * LIM_KG_CYN_P / &
         max(LIM_KG_CYN_N + LIM_KG_CYN_P - LIM_KG_CYN_N * LIM_KG_CYN_P, 1.0D-20)
     LIM_KG_CYN      = LIM_KG_CYN_LIGHT*min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR)
@@ -265,13 +296,17 @@ subroutine CYANOBACTERIA_BOUYANT &
             CYANO_POS_MODEL         , &
             H_SURF_POS                   , &
             W_CRIT_POS_MIN               , &
-            S_CHUNK)
+            S_CHUNK                      , &
+            CYN_VARIABLE_N               , &
+            CYN_N                        , &
+            R_CYN_N_UPTAKE)
 
     use AQUABC_II_GLOBAL
     use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
     use AQUABC_PHYSICAL_CONSTANTS, only: safe_exp
     use para_aqua
     use AQUABC_PELAGIC_TYPES, only: t_cyn_params, t_phyto_env
+    use AQUABC_CYN_DROOP, only: LIM_N_QUOTA, R_UPTAKE, EPS_CYN_C
 
     implicit none
 
@@ -329,6 +364,14 @@ subroutine CYANOBACTERIA_BOUYANT &
     ! CYANO_POS_MODEL >= 2; inert zeros otherwise
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: S_CHUNK
     real(kind = DBL_PREC), dimension(nkn), intent(inout) :: CYN_LIGHT_SAT
+    ! CYN nitrogen-quota (Droop) gate: 0 = legacy Monod N-limitation (default),
+    ! 1 = Caperon-Meyer quota limitation + explicit growth-decoupled N uptake
+    ! (spec sec 2). CYN_N is the quota state (mg N/L); it is meaningless and
+    ! unread when the gate is 0.
+    integer, intent(in) :: CYN_VARIABLE_N
+    real(kind = DBL_PREC), dimension(nkn), intent(in) :: CYN_N
+    ! N taken up into the quota, mg N/L/d; exactly zero when CYN_VARIABLE_N = 0
+    real(kind = DBL_PREC), dimension(nkn), intent(inout) :: R_CYN_N_UPTAKE
     real(kind = DBL_PREC) :: CYANO_DEPTH   (nkn)     ! Depth where bacteria are concentrated
     real(kind = DBL_PREC) :: EUPHOTIC_DEPTH (nkn)    ! Euphotic depth
     real(kind = DBL_PREC) :: MIX_DEPTH    (nkn)      ! Mixing depth
@@ -336,6 +379,8 @@ subroutine CYANOBACTERIA_BOUYANT &
     real(kind = DBL_PREC), dimension(nkn) :: X_POS, F_CALM, H_SURF_ARR, LIM_SURF, SAT_SCRATCH, K_SURF_POS
     integer :: i
     real(kind = DBL_PREC) :: loss, scale_loss
+    ! Nitrogen quota Q = CYN_N/CYN_C [gN/gC], Droop branch only
+    real(kind = DBL_PREC) :: Q_CYN
     ! -------------------------------------------------------------------------
     ! End of outgoing variables
     ! -------------------------------------------------------------------------
@@ -476,11 +521,27 @@ subroutine CYANOBACTERIA_BOUYANT &
 
     LIM_KG_CYN_DOXY = DISS_OXYGEN / (KHS_O2_CYN + DISS_OXYGEN)
 
-    LIM_KG_CYN_N    = (NH4_N + (DON * frac_avail_DON) + NO3_N) / &
-                      (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
+    if (CYN_VARIABLE_N > 0) then
+        ! Droop branch (spec sec 2): growth is limited by the internal quota
+        ! Q = CYN_N/CYN_C (Caperon-Meyer, linear), and N uptake becomes an
+        ! explicit growth-decoupled flux out of DIN (NH4 + NO3) only -- DON
+        ! uptake into the quota is out of scope (spec sec 4), which is what
+        ! zeroes the legacy DON growth sink on the model side.
+        do i = 1, nkn
+            Q_CYN             = CYN_N(i) / max(CYN_C(i), EPS_CYN_C)
+            LIM_KG_CYN_N(i)   = LIM_N_QUOTA(Q_CYN)
+            R_CYN_N_UPTAKE(i) = R_UPTAKE(NH4_N(i) + NO3_N(i), Q_CYN, CYN_C(i))
+        end do
+    else
+        LIM_KG_CYN_N    = (NH4_N + (DON * frac_avail_DON) + NO3_N) / &
+                          (KHS_DIN_CYN + NH4_N + (DON * frac_avail_DON) + NO3_N)
+
+        R_CYN_N_UPTAKE  = 0.0D0
+    end if
 
     LIM_KG_CYN_P    = PO4_P   / (KHS_DIP_CYN + PO4_P)
-    ! Synthesizing Unit colimitation (Saito et al. 2008)
+    ! Synthesizing Unit colimitation (Saito et al. 2008); unchanged under the
+    ! Droop gate -- only the N term above is replaced (spec sec 2).
     LIM_KG_CYN_NUTR = LIM_KG_CYN_N * LIM_KG_CYN_P / &
         max(LIM_KG_CYN_N + LIM_KG_CYN_P - LIM_KG_CYN_N * LIM_KG_CYN_P, 1.0D-20)
     LIM_KG_CYN      = LIM_KG_CYN_LIGHT*min(LIM_KG_CYN_DOXY, LIM_KG_CYN_NUTR)
