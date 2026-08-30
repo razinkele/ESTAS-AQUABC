@@ -1085,6 +1085,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
+    use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
 
     implicit none
 
@@ -1092,6 +1093,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     integer :: TEMP_MODEL_OPT
     real(kind = DBL) :: K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN
     real(kind = DBL) :: T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN
+    real(kind = DBL) :: CYN_N_QMIN_IN, CYN_N_QMAX_IN, CYN_N_VMAX_IN, CYN_N_KHS_UPT_IN
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1160,6 +1162,9 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     K_POS_UP_IN = 3.0D0; K_POS_DISP_IN = 10.0D0; W_DISP_POS_IN = 4.0D0
     T_GERM_STG_IN = 12.0D0; I_FORM_IN = 120.0D0; KR_GERM_BED_IN = 0.05D0
     K_MORT_BED_IN = 1.0D-3; V_SETTLE_IN = 0.5D0
+    CYN_N_QMIN_IN = 0.10D0; CYN_N_QMAX_IN = 0.25D0
+    CYN_N_VMAX_IN = 0.44D0; CYN_N_KHS_UPT_IN = 0.003D0
+    CYN_VARIABLE_N = 0   ! explicit: don't rely on a failed read leaving the mod_GLOBAL initializer intact
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     read(IN_FILE + 1, *, end = 900, err = 900)
@@ -1231,15 +1236,45 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) V_SETTLE_IN
+
+    ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
+    ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
+    ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
+    ! max N-uptake rate (gN/gC/d), and uptake half-saturation (mg N/L). Graceful
+    ! like everything above; defaults live in mod_GLOBAL and this routine's locals.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_VARIABLE_N
+
+    if (CYN_VARIABLE_N > 0 .and. nstate /= 33) error stop 'CYN_VARIABLE_N=1 requires the VARN build (nstate=33)'
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMIN_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMAX_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_VMAX_IN
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_KHS_UPT_IN
 900 continue
     call SET_POSITIONING_PARAMS(K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN)
     call SET_NOST_STAGING_PARAMS(T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN)
+    call SET_CYN_DROOP_PARAMS(CYN_N_QMIN_IN, CYN_N_QMAX_IN, CYN_N_VMAX_IN, CYN_N_KHS_UPT_IN)
     if (NOST_STAGE_MODEL > 0) then
         write(*,*) 'NOST staging: ON. T_GERM=', T_GERM_STG_IN, ' I_FORM=', I_FORM_IN, &
                    ' KR_GERM_BED=', KR_GERM_BED_IN, ' K_MORT_BED=', K_MORT_BED_IN, &
                    ' V_SETTLE=', V_SETTLE_IN
     else
         write(*,*) 'NOST staging: OFF (legacy akinete gates, default).'
+    end if
+    if (CYN_VARIABLE_N > 0) then
+        write(*,*) 'CYN variable N (Droop): ON. CYN_N_QMIN=', CYN_N_QMIN_IN, &
+                   ' CYN_N_QMAX=', CYN_N_QMAX_IN, ' CYN_N_VMAX=', CYN_N_VMAX_IN, &
+                   ' CYN_N_KHS_UPT=', CYN_N_KHS_UPT_IN
+    else
+        write(*,*) 'CYN variable N (Droop): OFF (legacy Monod CYN N-limitation, default).'
     end if
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &

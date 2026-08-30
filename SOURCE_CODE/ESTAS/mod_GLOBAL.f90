@@ -217,6 +217,13 @@ module GLOBAL
     ! staging-design.md): 0 = legacy akinete gates only (default, byte-identical);
     ! 1 = bed akinete bank with a radiation-driven formation/germination latch.
     integer :: NOST_STAGE_MODEL = 0
+
+    ! CYN nitrogen-quota (Droop) mechanism (docs/superpowers/specs/2026-08-30-cyn-
+    ! droop-n-rescoped-design.md): 0 = legacy Monod CYN N-limitation (default,
+    ! byte-identical); 1 = variable-stoichiometry quota N storage/uptake. Requires
+    ! the VARN compile variant (nstate = 33) -- enforced by a guard at options-read
+    ! time in READ_PELAGIC_MODEL_OPTIONS.
+    integer :: CYN_VARIABLE_N = 0
     integer :: CONSIDER_ALLELOPATHY
 
     integer, parameter :: NUM_ALLOLOPATHY_STATE_VARS = 4
