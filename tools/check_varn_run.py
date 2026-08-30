@@ -169,9 +169,9 @@ def parse_options_echo(log_lines):
 TRANSPORT_ANCHOR_RE = re.compile(r"Process rates will be written")
 
 
-def parse_transport_echo(log_lines, total=TOTAL_TRANSPORT_SLOTS):
+def parse_transport_echo(log_lines, total=TOTAL_TRANSPORT_SLOTS, max_intervening=20):
     """Find mod_PELAGIC_ECOLOGY.f90:759's `write(*,*) ADVECTION_ON(:)` --
-    printed immediately after the 'Process rates will be written' line
+    printed after the 'Process rates will be written' line
     (mod_INITIALIZE_PELAGIC_BOX_MODEL.f90:161 calls INIT_TRANSPORT_FIELDS
     right after sub_READ_PELAGIC_INPUTS.f90:221/223 prints that anchor).
     sub_READ_PELAGIC_INPUTS.f90 prints TWO variants of this line depending on
@@ -180,9 +180,17 @@ def parse_transport_echo(log_lines, total=TOTAL_TRANSPORT_SLOTS):
     "Process rates will be written" prefix deliberately, so both variants
     anchor correctly -- do not tighten this to match one unit suffix.
     gfortran's list-directed write may put all `total` integers on one line
-    or wrap across several -- join whitespace-tokenized lines, stopping at
-    the first line that doesn't look like more 0/1 tokens, until `total`
-    tokens are collected."""
+    or wrap across several -- join whitespace-tokenized lines. This does NOT
+    require the flag echo's lines to be immediately adjacent to the anchor or
+    to each other: a realistic intervener is
+    sub_READ_PELAGIC_INPUTS.f90:272/277's 'Warning: constants file "..." not
+    found. Falling back to WCONST_04.txt', which prints exactly when a
+    scenario's WCONST is misnamed -- a plausible failure mode for the next
+    task's battery of scenario runs. So this scans forward for the first RUN
+    of `total` 0/1 tokens, SKIPPING (not stopping at) any line that isn't
+    entirely 0/1 tokens, up to `max_intervening` skipped lines -- past that
+    bound a genuinely absent/malformed echo still raises, rather than
+    scanning arbitrarily far into the rest of the log."""
     start = None
     for i, l in enumerate(log_lines):
         if TRANSPORT_ANCHOR_RE.search(l):
@@ -191,17 +199,20 @@ def parse_transport_echo(log_lines, total=TOTAL_TRANSPORT_SLOTS):
     if start is None:
         raise ValueError("anchor line 'Process rates will be written' not found in the log")
     toks = []
+    skipped = 0
     j = start
-    while j < len(log_lines) and len(toks) < total:
+    while j < len(log_lines) and len(toks) < total and skipped <= max_intervening:
         line_toks = _tokens(log_lines[j])
-        if not line_toks or any(t not in ("0", "1") for t in line_toks):
-            break
-        toks.extend(line_toks)
+        if line_toks and all(t in ("0", "1") for t in line_toks):
+            toks.extend(line_toks)
+        else:
+            skipped += 1
         j += 1
     if len(toks) != total:
         raise ValueError(
             f"expected {total} 0/1 tokens for the ADVECTION_ON transport-flag echo "
-            f"starting after 'Process rates will be written', got {len(toks)}: {toks}")
+            f"starting after 'Process rates will be written' (skipped {skipped} "
+            f"non-matching intervening line(s) along the way), got {len(toks)}: {toks}")
     return [int(t) for t in toks]
 
 
@@ -226,15 +237,25 @@ def run_smoke(a):
     print(f"[1] options echo vs {a.options}: "
           f"{'OK (' + echo['CYN_VARIABLE_N'] + ')' if not problems else 'MISMATCH'}")
 
-    # (2) CYN_N column present
+    # (2) CYN_N column present -- read every output file ONCE here (not just
+    # paths[0]) and reuse the parsed (header, rows) for check (4) below.
     paths = box_out_paths(a.outputs)
     if not paths:
         raise ValueError(f"no PELAGIC_BOX_*.out files found in {a.outputs}")
-    header0, _ = read_box_out(paths[0])
-    has_cyn_n = "CYN_N" in header0
-    if not has_cyn_n:
-        problems.append(f"CYN_N column not present in {paths[0]}")
-    print(f"[2] CYN_N column present in outputs: {'OK' if has_cyn_n else 'MISSING'}")
+    file_data = []  # [(path, box, header, rows), ...]
+    for p in paths:
+        header, rows = read_box_out(p)
+        file_data.append((p, box_number(p), header, rows))
+
+    missing_cyn_n_files = [p for p, _, header, _ in file_data if "CYN_N" not in header]
+    has_cyn_n = not missing_cyn_n_files
+    if missing_cyn_n_files:
+        problems.append(f"CYN_N column not present in {len(missing_cyn_n_files)}/{len(paths)} "
+                         f"output file(s): {missing_cyn_n_files}")
+    print(f"[2] CYN_N column present in outputs: "
+          f"{'OK (' + str(len(paths)) + ' file(s))' if has_cyn_n else 'MISSING in ' + str(len(missing_cyn_n_files)) + '/' + str(len(paths)) + ' file(s)'}")
+    print("    per-file row counts: " +
+          ", ".join(f"box{box}={len(rows)}" for _, box, _, rows in file_data))
 
     # (3) transport-flag echo: slot 33 (CYN_N) and slots 34:37 (allelopathy) == 1
     flags = parse_transport_echo(log_lines)
@@ -248,42 +269,58 @@ def run_smoke(a):
     print(f"[3] transport flags: slot33={flags[CYN_N_INDEX - 1]}, "
           f"slots34:37={slots_34_37}: {'OK' if slot33_ok and slots_ok else 'MISMATCH'}")
 
-    # (4) quota Q = CYN_N/CYN_C in [Q_ASSERT_MIN, Q_ASSERT_MAX]
+    # (4) quota Q = CYN_N/CYN_C in [Q_ASSERT_MIN, Q_ASSERT_MAX]. Every file in
+    # file_data is visited regardless of `has_cyn_n` -- a file missing CYN_C
+    # and/or CYN_N is COUNTED and REPORTED here, not silently `continue`d past,
+    # so a run that produced no usable columns anywhere cannot smoke-PASS by
+    # simply contributing nothing to n_in/n_out.
     high_flush = set(a.high_flush_boxes)
     n_floor = n_high_flush = n_high_flush_bad = n_in = n_out = 0
+    n_missing_cols_rows = 0
+    missing_cols_files = []
     by_box_out = {}
-    if has_cyn_n:
-        for p in paths:
-            box = box_number(p)
-            header, rows = read_box_out(p)
-            if "CYN_C" not in header or "CYN_N" not in header:
+    for p, box, header, rows in file_data:
+        if "CYN_C" not in header or "CYN_N" not in header:
+            missing_cols_files.append(p)
+            n_missing_cols_rows += len(rows)
+            continue
+        ic, in_ = header.index("CYN_C"), header.index("CYN_N")
+        for r in rows:
+            c, nn = r[ic], r[in_]
+            if c <= 2 * MIN_CONCENTRATION:
+                n_floor += 1
                 continue
-            ic, in_ = header.index("CYN_C"), header.index("CYN_N")
-            for r in rows:
-                c, nn = r[ic], r[in_]
-                if c <= 2 * MIN_CONCENTRATION:
-                    n_floor += 1
-                    continue
-                q = nn / c
-                in_bounds = Q_ASSERT_MIN <= q <= Q_ASSERT_MAX
-                if box in high_flush:
-                    n_high_flush += 1
-                    if not in_bounds:
-                        n_high_flush_bad += 1
-                        by_box_out[box] = by_box_out.get(box, 0) + 1
-                    continue
-                if in_bounds:
-                    n_in += 1
-                else:
-                    n_out += 1
+            q = nn / c
+            in_bounds = Q_ASSERT_MIN <= q <= Q_ASSERT_MAX
+            if box in high_flush:
+                n_high_flush += 1
+                if not in_bounds:
+                    n_high_flush_bad += 1
                     by_box_out[box] = by_box_out.get(box, 0) + 1
+                continue
+            if in_bounds:
+                n_in += 1
+            else:
+                n_out += 1
+                by_box_out[box] = by_box_out.get(box, 0) + 1
     if n_out:
         problems.append(f"{n_out} quota samples outside [{Q_ASSERT_MIN},{Q_ASSERT_MAX}] "
                          f"in non-exempt boxes (by box: {by_box_out})")
+    if missing_cols_files:
+        problems.append(f"{len(missing_cols_files)}/{len(paths)} output file(s) missing "
+                         f"CYN_C and/or CYN_N, skipped from the quota check "
+                         f"({n_missing_cols_rows} row(s) unaccounted for): {missing_cols_files}")
+    if n_in + n_out + n_floor == 0:
+        problems.append(
+            "zero quota samples processed (n_in+n_out+n_floor == 0) across all output "
+            "files -- the run produced no usable CYN_C/CYN_N data (crashed, header-only "
+            "outputs, or every file missing the required columns); a run with no data "
+            "must not smoke-PASS")
     print(f"[4] quota Q in [{Q_ASSERT_MIN},{Q_ASSERT_MAX}]: {n_in} OK, {n_out} FAIL asserted "
           f"| reported only (not asserted): {n_floor} floor-artifact "
           f"(CYN_C<=2*MIN_CONCENTRATION={2 * MIN_CONCENTRATION:g}), "
-          f"{n_high_flush} high-flush-box samples ({n_high_flush_bad} out of bounds)")
+          f"{n_high_flush} high-flush-box samples ({n_high_flush_bad} out of bounds), "
+          f"{n_missing_cols_rows} row(s) in {len(missing_cols_files)} file(s) missing columns")
 
     print()
     if problems:
@@ -402,14 +439,41 @@ def run_conserve(a):
     else:
         print("\n(every sample had all five KINETICS terms exactly 0.0 -- no per-sample "
               "relative ratio to report)")
-    print(f"\nspec target is 1e-9 relative; MASS_BALANCES.out is printed 'f20.6' (six decimal "
-          f"places), which floors the achievable per-term precision at ~5e-7 absolute regardless "
-          f"of model correctness -- 1e-9 relative is not reachable through this ASCII output path "
-          f"(see task-6-report.md for the measured floor and the before/after-fix evidence that "
-          f"the residual IS that floor, not a real leak).")
+    print(f"\nspec target is 1e-9 relative; MASS_BALANCES.out's 7 mass-balance term columns "
+          f"are printed with Fortran format 'F30.6' (mod_SIMULATE.f90:587's "
+          f"'(F10.4, 2i10, 7F30.6)', six decimal places), which floors the achievable "
+          f"per-term precision at ~5e-7 absolute regardless of model correctness -- 1e-9 "
+          f"relative is not reachable through this ASCII output path (see task-6-report.md "
+          f"for the measured floor and the before/after-fix evidence that the residual IS "
+          f"that floor, not a real leak).")
 
-    ok = rel_gross <= a.rel_tol
+    # Earned absolute bound: with the residual's support set proven to be exactly
+    # {0, +-1e-6, +-2e-6} (five F30.6-rounded terms, each off by at most half an ulp
+    # in either direction), the worst case where every term's rounding error carries
+    # the same sign is len(N_POOL_VARS) * 0.5e-6 = 2.5e-6 for the five tracked pools.
+    # This is scale-free (unlike rel_gross, it cannot be hidden behind a large
+    # gross_flux denominator), so it is strictly more leak-discriminating -- checked
+    # ALONGSIDE, not instead of, the looser relative outer bound (--rel-tol, default 1e-4).
+    abs_tol = len(N_POOL_VARS) * 0.5e-6
+    print(f"\nabsolute tolerance: {abs_tol:.6e} g/m^3/day, checked against the single "
+          f"worst-sample |sum KINETICS| reported above -- the earned bound: "
+          f"{len(N_POOL_VARS)} pools each F30.6-rounded contribute at most 0.5e-6 of "
+          f"rounding error apiece, so a residual entirely from print rounding cannot "
+          f"exceed {len(N_POOL_VARS)}*0.5e-6 = {abs_tol:.1e} even if every term's rounding "
+          f"error has the same sign. Scale-free and strictly more leak-discriminating than "
+          f"the relative metric alone.")
+    print(f"relative tolerance: {a.rel_tol:g} (loose outer bound, checked against the "
+          f"conservative rel_gross measure above)")
+
+    ok_rel = rel_gross <= a.rel_tol
+    ok_abs = max_abs <= abs_tol
+    ok = ok_rel and ok_abs
     print()
+    if not ok:
+        if not ok_rel:
+            print(f"  FAIL: relative {rel_gross:.6e} > tolerance {a.rel_tol:g}")
+        if not ok_abs:
+            print(f"  FAIL: absolute {max_abs:.6e} > tolerance {abs_tol:.6e}")
     print("CONSERVE: PASS" if ok else "CONSERVE: FAIL")
     return 0 if ok else 1
 
@@ -512,9 +576,12 @@ def main(argv=None):
     ap.add_argument("--mass-balances", help="[conserve] path to MASS_BALANCES.out from the "
                                              "degenerate-CYN scenario run")
     ap.add_argument("--rel-tol", type=float, default=1e-4,
-                     help="[conserve] relative-residual tolerance (default 1e-4; the spec's "
-                          "1e-9 target is not reachable given MASS_BALANCES.out's f20.6 "
-                          "print precision -- see task-6-report.md)")
+                     help="[conserve] loose relative-residual outer bound (default 1e-4; the "
+                          "spec's 1e-9 target is not reachable given MASS_BALANCES.out's "
+                          "7-term-column F30.6 print precision -- see task-6-report.md). "
+                          "Checked ALONGSIDE a non-configurable, scale-free absolute bound "
+                          "(len(N_POOL_VARS)*0.5e-6) derived from that same print precision -- "
+                          "both must pass for CONSERVE: PASS")
     # nbudget
     ap.add_argument("--box", type=int, help="[nbudget] box number")
     a = ap.parse_args(argv)

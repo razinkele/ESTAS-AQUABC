@@ -38,6 +38,12 @@ REAL_OPTIONS_ECHO_OFF_LINE = (
     " CYN variable N (Droop): OFF (legacy Monod CYN N-limitation, default)."
 )
 REAL_TRANSPORT_ANCHOR_LINE = " Process rates will be written in g/m^3/day"
+# sub_READ_PELAGIC_INPUTS.f90:272/277's exact WCONST-fallback warning text --
+# fires exactly when a scenario's WCONST file is misnamed, a realistic
+# intervener between transport-echo lines for the next task's scenario battery.
+REAL_WCONST_FALLBACK_WARNING_LINE = (
+    ' Warning: constants file "WCONST_BAD.txt" not found. Falling back to WCONST_04.txt'
+)
 REAL_TRANSPORT_ECHO_LINE = (
     "           1           1           1           1           1           1"
     "           1           1           1           1           1           1"
@@ -144,6 +150,28 @@ def test_parse_transport_echo_wrong_count_raises():
         chk.parse_transport_echo(log)
 
 
+def test_parse_transport_echo_tolerates_interleaved_warning_line():
+    # The echo's lines need not be adjacent to the anchor or to each other --
+    # a genuine WCONST-fallback warning line landing mid-echo must be skipped,
+    # not treated as the end of the flag block.
+    toks = ["1"] * 20 + ["0"] + ["1"] * 16
+    assert len(toks) == 37
+    part1 = " ".join(toks[:20])
+    part2 = " ".join(toks[20:])
+    log = [REAL_TRANSPORT_ANCHOR_LINE, part1, REAL_WCONST_FALLBACK_WARNING_LINE, part2,
+           "RESUSPENSION_OPTION :            0"]
+    flags = chk.parse_transport_echo(log)
+    assert flags == [int(t) for t in toks]
+
+
+def test_parse_transport_echo_gives_up_past_max_intervening_lines():
+    # A genuinely absent/malformed echo must still raise -- tolerance for
+    # intervening lines is bounded, not unlimited scanning of the rest of the log.
+    log = [REAL_TRANSPORT_ANCHOR_LINE] + ["not a flag line"] * 25
+    with pytest.raises(ValueError, match="expected 37"):
+        chk.parse_transport_echo(log)
+
+
 # ---------------------------------------------------------------------------
 # read_options_file
 # ---------------------------------------------------------------------------
@@ -238,8 +266,14 @@ def test_run_smoke_excludes_floor_artifact_samples(tmp_path):
 
 
 def test_run_smoke_high_flush_box_reported_not_asserted(tmp_path):
-    # box 1 has an out-of-bounds sample but is declared high-flush -> reported only
-    log, outputs, options = _write_smoke_fixture(tmp_path, {1: [(0.0, 0.68, 0.30)]})
+    # box 1 has an out-of-bounds sample but is declared high-flush -> reported
+    # only. Box 2 is an ordinary, non-exempt, in-bounds box -- a real smoke
+    # run always has other boxes too; without one, n_in+n_out+n_floor would be
+    # 0 purely because every processed sample happened to be exempted, which
+    # is a different situation from "the run produced no data" and must not
+    # trip the zero-data check below.
+    log, outputs, options = _write_smoke_fixture(
+        tmp_path, {1: [(0.0, 0.68, 0.30)], 2: [(0.0, 0.68, 0.68 * 0.20)]})
     a = chk.argparse.Namespace(log=log, outputs=outputs, options=options, high_flush_boxes=[1])
     assert chk.run_smoke(a) == 0
 
@@ -251,6 +285,47 @@ def test_run_smoke_fails_when_options_echo_mismatches_file(tmp_path):
     bad_options = tmp_path / "PELAGIC_MODEL_OPTIONS.txt"
     bad_options.write_text(REAL_OPTIONS_FILE_TEXT.replace("0.10", "0.20"))
     a = chk.argparse.Namespace(log=log, outputs=outputs, options=str(bad_options), high_flush_boxes=[])
+    assert chk.run_smoke(a) == 1
+
+
+def test_run_smoke_fails_on_header_only_outputs_no_vacuous_pass(tmp_path):
+    # A crashed/incomplete run can leave header-only .out files (zero data
+    # rows): n_in=n_out=n_floor=0 with NOTHING in `problems` under the old
+    # check-4 logic, so smoke PASSed on a run that produced no data at all.
+    # It must FAIL instead.
+    outputs = tmp_path / "out"
+    outputs.mkdir()
+    (outputs / "PELAGIC_BOX_00001.out").write_text("TIME_DAYS CYN_C CYN_N\n")
+    options = tmp_path / "PELAGIC_MODEL_OPTIONS.txt"
+    options.write_text(REAL_OPTIONS_FILE_TEXT)
+    log = tmp_path / "run.log"
+    log.write_text("\n".join([
+        REAL_OPTIONS_ECHO_ON_LINE, REAL_TRANSPORT_ANCHOR_LINE, REAL_TRANSPORT_ECHO_LINE,
+    ]) + "\n")
+    a = chk.argparse.Namespace(log=str(log), outputs=str(outputs), options=str(options),
+                                high_flush_boxes=[])
+    assert chk.run_smoke(a) == 1
+
+
+def test_run_smoke_prints_per_file_row_counts(tmp_path, capsys):
+    log, outputs, options = _write_smoke_fixture(
+        tmp_path, {1: [(0.0, 0.68, 0.68 * 0.20), (1.0, 0.70, 0.70 * 0.18)]})
+    a = chk.argparse.Namespace(log=log, outputs=outputs, options=options, high_flush_boxes=[])
+    chk.run_smoke(a)
+    out = capsys.readouterr().out
+    assert "box1=2" in out  # 2 data rows written for box 1
+
+
+def test_run_smoke_counts_and_reports_files_missing_quota_columns(tmp_path):
+    # box 2's output file has CYN_N (so check (2) alone would not catch this)
+    # but is missing CYN_C -- the check-4 loop must count and REPORT this
+    # file, not silently `continue` past it as if it never existed.
+    log, outputs, options = _write_smoke_fixture(
+        tmp_path, {1: [(0.0, 0.68, 0.68 * 0.20)]})
+    p2 = os.path.join(outputs, "PELAGIC_BOX_00002.out")
+    with open(p2, "w") as fh:
+        fh.write("TIME_DAYS CYN_N\n0.0 0.14\n0.5 0.15\n")
+    a = chk.argparse.Namespace(log=log, outputs=outputs, options=options, high_flush_boxes=[])
     assert chk.run_smoke(a) == 1
 
 
@@ -324,6 +399,37 @@ def test_run_conserve_raises_on_no_matching_vars(tmp_path):
     a = chk.argparse.Namespace(mass_balances=str(p), rel_tol=1e-4)
     with pytest.raises(ValueError, match="no rows"):
         chk.run_conserve(a)
+
+
+def test_run_conserve_fails_absolute_bound_even_when_relative_passes(tmp_path):
+    # A single residual of 3e-6 is above the earned, scale-free absolute bound
+    # (len(N_POOL_VARS)*0.5e-6 == 2.5e-6 for the five tracked pools) but is
+    # swamped by a large gross_flux (~2000), so rel_gross alone is ~1.5e-9 and
+    # would PASS even a strict --rel-tol. The absolute bound must still FAIL --
+    # it cannot be hidden behind a large denominator the way the relative one can.
+    mb = _write_mb(tmp_path, {
+        (1, 1.0): {1: -1000.0, 2: 0.0, 10: 0.0, 13: 0.0, 33: 1000.000003},
+    })
+    a = chk.argparse.Namespace(mass_balances=mb, rel_tol=1e-4)
+    assert chk.run_conserve(a) == 1
+
+
+def test_run_conserve_absolute_bound_is_2_5e_minus_6_for_five_pools(tmp_path):
+    # Pins the len(N_POOL_VARS)*0.5e-6 == 2.5e-6 formula itself (not just "some"
+    # absolute check): a residual just under it (~2e-6) must PASS, one just
+    # over it (~3e-6, the same value the previous test uses) must FAIL. Both
+    # residuals are literal F30.6-rounded values (0.050002/0.050003 against
+    # 0.050000), not floats hand-picked to land exactly on 2.5e-6 -- an exact
+    # half-integer multiple of 1e-6 cannot arise from summing two already-
+    # 6-decimal-quantized terms, so "at the bound" isn't constructible this way.
+    assert len(chk.N_POOL_VARS) == 5
+    mb_under = _write_mb(tmp_path, {(1, 1.0): {1: -0.05, 2: 0.0, 10: 0.0, 13: 0.0, 33: 0.050002}})
+    a_under = chk.argparse.Namespace(mass_balances=mb_under, rel_tol=1e-4)
+    assert chk.run_conserve(a_under) == 0
+
+    mb_over = _write_mb(tmp_path, {(2, 1.0): {1: -0.05, 2: 0.0, 10: 0.0, 13: 0.0, 33: 0.050003}})
+    a_over = chk.argparse.Namespace(mass_balances=mb_over, rel_tol=1e-4)
+    assert chk.run_conserve(a_over) == 1
 
 
 # ---------------------------------------------------------------------------
