@@ -176,9 +176,11 @@ the VARN build the operational binary — a deployment question flagged for that
 ## 8. Risks
 
 The 2026-08-01 review's findings 5/9/14/16/21 are each addressed above by construction
-(generator instead of converter edits; O2 invariant; single-mechanism A/B — the Droop
-branch is the ONLY delta vs the adopted config; flag-ON smoke; conservation test in the
-named harness). Residual risks: the storage magnitude may be insufficient against
+(generator instead of converter edits; O2 invariant; the A/B is honestly a ONE-MECHANISM,
+THREE-SUB-DELTA bundle — quota limitation + explicit uptake replacing the implicit DON
+share + Q-weighted routing — with attribution inside the bundle from the §7[c] quota
+signature and a per-term N-budget printout, not from pretending a single delta; flag-ON
+smoke; the conservation vehicle is the transport-free 0D path per V4). Residual risks: the storage magnitude may be insufficient against
 transport dilution (the null outcome — acceptable); the 37-var boundary file doubles a
 §26-era artifact chain (generator-tested); build-variant divergence over time (mitigated:
 the patch is one line, CI builds both targets).
