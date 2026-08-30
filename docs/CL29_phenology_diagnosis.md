@@ -1792,26 +1792,39 @@ echoes matching. Conservation on the degenerate-CYN scenario PASS under both sol
 (max |Σ KINETICS| = 2.0e-6 g/m³/d = the `F30.6` print floor; `rel_net` 1.3e-7 ≪
 `rel_conservative` 1.2e-5, the unbiased-rounding signature) — **after zeroing the five
 non-CYN growth constants; the scenario as generated FAILS past day 66, see the reusable
-trap below.** Euler and RK2 both run 90 days clean with the quota in bounds.
+trap below.** Two limits on what that PASS means: the scenario must zero zooplankton
+(`ZOO_N` is outside the identity's five pools), so **the grazing route `zoo_feed·Q →
+ZOO_N` is not exercised at run level** — only by the rate-level unit tests; and the
+identity covers biological transformation among five pools, **not a full water-column
+mass balance** (transport and the driver's prescribed sediment N flux are out of its
+scope by construction). Euler and RK2 both run 90 days clean with the quota in bounds.
 
 **[a] Biomass — PARTIAL (2.3×), below the success bar, above the null bar.**
 
-| obs-matched monthly CYN_C (mg C/L) | Jun | Jul | **Aug** | Sep | Oct | annual |
-|---|---|---|---|---|---|---|
-| observed | 1.053 | 1.066 | **2.304** | 1.875 | 1.056 | 1.013 |
-| baseline (Monod + X1) | 0.666 | 0.274 | **0.218** | 0.313 | 0.246 | 0.273 |
-| Droop-N (VMAX 0.44) | 0.708 | 0.454 | **0.503** | 0.596 | 0.311 | 0.382 |
+| obs-matched monthly CYN_C (mg C/L) | Jun | Jul | **Aug** | Sep | Oct | Nov | annual |
+|---|---|---|---|---|---|---|---|
+| observed | 1.053 | 1.066 | **2.304** | 1.875 | 1.056 | 0.343 | 1.013 |
+| baseline (Monod + X1) | 0.666 | 0.274 | **0.218** | 0.313 | 0.246 | 0.0905 | 0.273 |
+| Droop-N (VMAX 0.44) | 0.708 | 0.454 | **0.503** | 0.596 | 0.311 | 0.0971 | 0.382 |
 
 August 0.503 against the pre-registered **≥ 0.8 = success / < 0.4 = NULL**: neither — the
-spec's own "judgment call presented with the numbers". July +66 %, September +90 %,
-October +26 %; the annual bias closes from −0.740 to −0.631.
+spec's own "judgment call presented with the numbers". July +66 %, September +90 %; the
+annual bias closes from −0.740 to −0.631. **The October–November persistence spec §7[c]
+asks about improves only marginally — October +26 %, November +7 % — leaving both at
+roughly 0.29 of observed**, so the autumn residual §28/§33 assigned to the autumn guilds
+is not touched by this mechanism.
 
-**[b] No headline regression; the phenology improves.** CHLA RMSE 24.05 → **24.02**,
+**[b] No headline regression; the phenology claim is thinner than it looks.** CHLA RMSE 24.05 → **24.02**,
 CYN_C RMSE 1.755 → **1.734**, TN 0.864 → 0.852, TP 0.0468 → 0.0449, the over-predicting
 fixer easing from +0.854 to +0.699 as CYN takes back N. Costs: PO4 RMSE 0.01701 → 0.01737
-(+2.1 %) and seasonal r +0.68 → +0.66. **The chlorophyll peak month moves 9 → 8, matching
-observations exactly for the first time.** DO RMSE is 7.924 → 7.925 — the O2 budget is
-untouched, as spec §2's FIX 2 wired it to be.
+(+2.1 %) and seasonal r +0.68 → +0.66. The chlorophyll peak month moves 9 → 8 (obs 8) —
+recovering the exactness **§31 already held and adopted (2026-08-29)** and that §36's W6
+adoption gave up. **Read the margin before reading the flip**, which is what spec §7[b]
+asks for: §36 recorded the loss at a 2.3 µg margin, and here the recovery is by
+**0.035 µg/L** (Aug 47.81 vs Sep 47.78) against a baseline September lead of 0.42 µg —
+a coin flip either way, and *both* months move further from observed under the flag
+(|Aug−obs| 1.48 → 2.98, |Sep−obs| 0.47 → 2.43). DO RMSE is 7.924 → 7.925 — the O2 budget
+is untouched, as spec §2's FIX 2 wired it to be.
 
 **But the gain is COMPOSITIONAL, not net new carbon — and the annual books close on it
 exactly.** Obs-weighted bias deltas over the same 317 obs-matched pairs:
@@ -1822,8 +1835,8 @@ exactly.** Obs-weighted bias deltas over the same 317 obs-matched pairs:
 
 The CYN gain is *more* than offset by the diazotroph loss, and total phytoplankton carbon
 falls slightly (PHYTO_TOT_C RMSE 2.5016 → 2.5070, bias −0.5013 → −0.5485). The summer
-chlorophyll climatology says the same thing independently — Jul 42.2 → 41.1, Aug 49.3 →
-47.8, Sep 49.7 → 47.8 — which is why the CHLA bias *worsens* (−4.92 → −5.43) while CYN
+chlorophyll climatology says the same thing independently — Jul 42.2 → 41.1, Aug 49.29 →
+47.81, Sep 49.71 → 47.78 — which is why the CHLA bias *worsens* (−4.92 → −5.43) while CYN
 biomass rises: CYN and FIX share C:Chl 78, so a better-than-1:1 substitution reads as
 slightly less chlorophyll. Easing an over-predicted fixer is a real gain and the CYN/TN/TP
 RMSEs improve because of it, but **the mechanism moved nitrogen between two guilds; it did
@@ -1837,12 +1850,19 @@ the storage hypothesis is mechanistically refuted regardless of biomass*.
 |---|---|---|---|---|---|---|---|
 | Droop-N | 0.249 | 0.247 | **0.240** | 0.233 | **0.231** | 0.237 | 0.249 |
 
-June passes — but only because **the quota is pinned at Q_MAX all year** (98–99 % of
-winter samples sit above the 0.9-band line), so "reaching Q_MAX in June" carries no
-information. August fails outright: 0.231 against a 0.175 bar. This is not a
-mean-across-a-threshold artifact — the August **5th percentile is 0.191** and only
-**1.9 %** of 9,889 August samples fall below mid-band. **There is no June→August
+June passes — but only because **the quota is pinned at Q_MAX all year** (98.7 % of
+January and 99.1 % of December samples already sit above the 0.9-band line), so "reaching
+Q_MAX in June" carries no information. August fails outright: 0.231 against a 0.175 bar.
+This is not a mean-across-a-threshold artifact — the August **5th percentile is 0.191**
+and only **1.9 %** of 9,889 August samples fall below mid-band. **There is no June→August
 drawdown. The storage hypothesis is refuted on its own pre-registered criterion.**
+
+One transport-side contributor to the high quota, stated so it is not mistaken for pure
+physiology: initial and open-boundary `CYN_N` enter at the seed `Q_SEED = CYN_N_TO_C =
+0.220` gN/gC — 88 % of Q_MAX, 0.80 of the band — so advected water arrives already nearly
+full. **The refutation survives it**: the biomass-weighted August quota is 0.216 (band
+position 0.77) and the 5th percentile 0.191, both still far above the 0.175 bar, and the
+budget below shows uptake keeping pace rather than a reserve draining.
 
 **Where the 2.3× actually comes from — measured, not inferred.** The per-term N budget
 (box 14, `PROCESS_RATES`, monthly means, mg N/L/d):
@@ -1861,7 +1881,9 @@ quota by continuous in-situ capture of the regeneration flux, not by spending a 
 reserve. §37's "the standing stock is not the resource; the regeneration FLUX is" is
 therefore **confirmed**, while the storage half of the same sentence is refuted. The
 working sub-delta is explicit high-affinity uptake raising August LIM_N from the Monod
-ceiling 0.57 to (0.231−0.10)/0.15 = **0.87**; storage contributes nothing measurable.
+ceiling 0.57 to **0.77–0.90** depending on which quota summary is used —
+(0.2312−0.10)/0.15 = 0.87 on the unweighted domain mean, 0.77 biomass-weighted, 0.90 over
+the six observation boxes; storage contributes nothing measurable.
 Note the honest scale of what was ever on offer: the quota seed is `CYN_N_TO_C` = 0.220
 and Q_MAX is 0.25, so the luxury band above the seed is only 0.03 gN/gC.
 
@@ -1873,7 +1895,7 @@ and Q_MAX is 0.25, so the luxury band above the seed is only 0.03 gN/gC.
 | CHLA RMSE | 24.05 | **24.02** | 24.04 | 23.99 | 24.02 |
 | PO4 RMSE | 0.01701 | **0.01737** | 0.01728 | 0.01746 | 0.01739 |
 | seasonal r | +0.68 | **+0.66** | +0.67 | +0.66 | +0.67 |
-| CHLA peak month | 9 | **8** | 9 | 8 | 8 |
+| CHLA peak month (see [b] on the margin) | 9 | **8** | 9 | 8 | 8 |
 | Aug mean Q | — | **0.231** | 0.224 | 0.235 | 0.270 |
 | Aug mid-band bar | — | 0.175 | 0.175 | 0.175 | 0.200 |
 
@@ -1924,14 +1946,17 @@ fails the June leg, VMAX 0.88 passes both, Q_MAX 0.30 fails June.
 operational binary and `INPUTS_CL29_VARN/` (generated, 37 state variables) the operational
 setup — a deployment change, not a constants change, and one that must be carried by every
 downstream tool that reads state-variable positions. What it buys: August *Planktothrix*
-0.218 → 0.503 mg C/L (obs 2.304), July/September similarly, the CHLA peak month corrected
-9 → 8, CYN/TN/TP/fixer all slightly better. What it costs: PO4 RMSE +2.1 %, seasonal r
+0.218 → 0.503 mg C/L (obs 2.304), July/September similarly, CYN/TN/TP/fixer all slightly
+better, and the August CHLA peak month back — but by a **0.035 µg/L** margin, restoring
+what §31 already held and §36's W6 adoption traded away, with both summer months landing
+further from observed than the baseline's. What it costs: PO4 RMSE +2.1 %, seasonal r
 −0.02, total phytoplankton carbon slightly *down*, a second build target to keep alive, and
 a mechanism whose own pre-registered signature says it is **not** doing what it was adopted
 to do — the biomass comes from explicit uptake, not from nitrogen storage, and it is taken
 from the diazotrophs rather than added. A simpler uptake reformulation inside the 32-state
-build would buy the same ×2.3, and would face the same compositional trade. **Recommendation
-stated, not taken: shelve the build as spec §7 provides for, and record the measured result
+build **may** buy the same ×2.3 — untested here — and would face the same compositional
+trade. **Recommendation stated, not taken: shelve the build as spec §7 provides for, and
+record the measured result
 — the August deficit is an uptake-flux problem, not a storage problem; it is fought out
 between CYN and the fixers over one nitrogen pool; and 0.5 of 2.3 mg C/L says the remaining
 4.6× is still elsewhere.**
