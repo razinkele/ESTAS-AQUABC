@@ -268,7 +268,13 @@ def transform_pelagic_inputs(lines):
     ftf_start = i_ftf + 1
     ftf_end = _consume_data_block(lines, ftf_start)
     ts_name_by_no = {int(_token(l, 0)): _token(l, 1) for l in lines[ftf_start:ftf_end]}
-    boundary_forc_ts_names = sorted({ts_name_by_no[n] for n in boundary_ts_nos if n in ts_name_by_no})
+    missing = sorted(n for n in boundary_ts_nos if n not in ts_name_by_no)
+    if missing:
+        raise ValueError(
+            f"OPEN BOUNDARIES block references forcing-ts no(s) {missing} that are not "
+            f"present in the FORCING TIME SERIES file-name table -- cannot resolve which "
+            f"FORC_TS file(s) to transform for those boundaries")
+    boundary_forc_ts_names = sorted({ts_name_by_no[n] for n in boundary_ts_nos})
 
     return lines, init_conc_names, boundary_forc_ts_names
 
@@ -386,8 +392,51 @@ def transform_boxstate_file(lines):
     return header + new_data
 
 
+_OLD_TOTAL = CYN_N_INDEX + N_META - 1  # 36 -- declared state-var count pre-transform
+
+
 def is_boxstate_file(lines):
-    return any(BOXSTATE_HEADER_RE.search(l) for l in lines[:5])
+    """True iff `lines` is a per-box x per-state-variable forcing-assignment
+    file (e.g. SED_FLUX_NO3_SINK.txt): its header matches the box/state-var/
+    forcing-ts column signature AND its data rows actually shape-check as
+    that table (first data row's state-var no == 1, and every box's row
+    count == the declared 36-state-var total).
+
+    The header regex alone is not a safe signature -- it is textually
+    identical to the OPEN BOUNDARIES block's column header inside
+    PELAGIC_INPUTS.txt (that file is excluded via the caller's `skip` set,
+    not via this check, so this function must not silently rely on that).
+    A header match that FAILS the shape check is therefore NOT treated as
+    "not a boxstate file" (a graceful `return False` here would be exactly
+    the silent-mis-transform failure mode this check exists to prevent) --
+    it raises instead, so a false-positive header match on some other file
+    is caught loudly rather than silently mis-widened or silently skipped.
+    """
+    if not any(BOXSTATE_HEADER_RE.search(l) for l in lines[:5]):
+        return False
+
+    data = [l for l in lines[2:] if l.strip()]
+    if not data:
+        raise ValueError(
+            "file matches the box-state-var header signature but has no data rows "
+            "below the two header lines -- refusing to guess its shape")
+
+    first_var_no = int(_token(data[0], 1))
+    if first_var_no != 1:
+        raise ValueError(
+            f"file matches the box-state-var header signature but its first data "
+            f"row's state-var no is {first_var_no}, not 1 -- this does not look like "
+            f"a box x state-var table, refusing to silently treat it as one")
+
+    groups = _split_groups(data)
+    bad_boxes = {_token(g[0], 0): len(g) for g in groups if len(g) != _OLD_TOTAL}
+    if bad_boxes:
+        raise ValueError(
+            f"file matches the box-state-var header signature but has rows-per-box "
+            f"counts inconsistent with the declared {_OLD_TOTAL} state variables: "
+            f"{bad_boxes} -- refusing to silently treat it as a box x state-var table")
+
+    return True
 
 
 # --------------------------------------------------------------------------

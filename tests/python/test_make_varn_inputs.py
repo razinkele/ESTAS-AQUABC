@@ -455,3 +455,65 @@ def test_generate_returns_discovered_filenames(fixture_src, tmp_path):
     result = mvi.generate(fixture_src, dst)
     assert sorted(result["init_conc"]) == ["INIT_CONC_1.txt", "INIT_CONC_2.txt"]
     assert sorted(result["forc_ts"]) == ["FORC_TS_1.txt", "FORC_TS_2.txt"]
+
+
+# --------------------------------------------------------------------------
+# hardening: loud failure rather than silent under-transform / mis-detect
+# --------------------------------------------------------------------------
+
+def test_dangling_boundary_forcing_ts_raises(fixture_src, tmp_path):
+    """OPEN BOUNDARIES references forcing-ts no 2 (boundary 2's own series),
+    but the FORCING TIME SERIES file-name table no longer lists an entry for
+    ts no 2. Silently dropping it (the old `if n in ts_name_by_no` filter)
+    would produce an under-transformed FORC_TS_2.txt with no error -- this
+    must raise instead, naming the dangling ts no."""
+    lines = _lines(fixture_src / "PELAGIC_INPUTS.txt")
+    new_lines = [l for l in lines if not l.strip().endswith("FORC_TS_2.txt")]
+    assert len(new_lines) == len(lines) - 1  # exactly the one file-name-table row removed
+    (fixture_src / "PELAGIC_INPUTS.txt").write_text("\n".join(new_lines) + "\n")
+
+    dst = tmp_path / "out"
+    with pytest.raises(ValueError) as excinfo:
+        mvi.generate(fixture_src, dst)
+    assert "forcing-ts no" in str(excinfo.value)
+    assert "[2]" in str(excinfo.value)  # names the dangling ts no, not just "something's wrong"
+
+
+def test_boxstate_header_match_with_wrong_first_var_no_raises(fixture_src, tmp_path):
+    """A file can textually match the box/state-var/forcing-ts header
+    signature (it's identical to the OPEN BOUNDARIES column header inside
+    PELAGIC_INPUTS.txt) without actually being a box x state-var table.
+    Silently treating a header match as sufficient risks mis-widening an
+    unrelated file; silently treating a header MISMATCH as sufficient to
+    say "not a boxstate file" is fine, but a header MATCH that fails the
+    shape check must raise, not fall through as "not a boxstate file"."""
+    bad = fixture_src / "BAD_SHAPE_LIKE_SED_FLUX.txt"
+    header = [
+        "# fixture: header matches but data doesn't start at var 1",
+        "#         BOX NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO",
+    ]
+    rows = [f"{1:>20}{i:>20}{15:>20}{1:>20}" for i in range(2, 38)]  # starts at var 2, not 1
+    bad.write_text("\n".join(header + rows) + "\n")
+
+    dst = tmp_path / "out"
+    with pytest.raises(ValueError, match="state-var no is 2, not 1"):
+        mvi.generate(fixture_src, dst)
+
+
+def test_boxstate_header_match_with_inconsistent_row_count_raises(fixture_src, tmp_path):
+    """Same header-signature false-positive risk as above, but the shape
+    defect is a short box (one box missing a row) instead of a bad start."""
+    bad = fixture_src / "BAD_ROWCOUNT_LIKE_SED_FLUX.txt"
+    header = [
+        "# fixture: header matches but box 2 is missing a row",
+        "#         BOX NO        STATE VAR NO       FORCING TS NO   FORCING TS VAR NO",
+    ]
+    rows = []
+    for box, n in ((1, 36), (2, 35)):  # box 2 short one row vs the declared 36 state vars
+        for i in range(1, n + 1):
+            rows.append(f"{box:>20}{i:>20}{15:>20}{1:>20}")
+    bad.write_text("\n".join(header + rows) + "\n")
+
+    dst = tmp_path / "out"
+    with pytest.raises(ValueError, match="rows-per-box counts inconsistent"):
+        mvi.generate(fixture_src, dst)
