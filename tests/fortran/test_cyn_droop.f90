@@ -158,7 +158,7 @@ contains
         real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
         real(kind=DBL_PREC) :: NH4_N(nkn), NO3_N(nkn), DON(nkn), PO4_P(nkn)
         real(kind=DBL_PREC) :: CYN_C(nkn), ZOO_C(nkn), CYN_N(nkn)
-        real(kind=DBL_PREC) :: LIM_N(nkn), UPT(nkn), PREF_NH4(nkn)
+        real(kind=DBL_PREC) :: LIM_N(nkn), UPT(nkn), PREF_NH4(nkn), R_GROWTH(nkn)
         real(kind=DBL_PREC) :: expected_lim, avail_n
 
         print *, "Test: flag = 0 pass-through (legacy Monod, new outs zero)"
@@ -179,14 +179,14 @@ contains
         expected_lim = avail_n / (params%KHS_DIN_CYN + avail_n)
 
         call run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                         0, CYN_N, LIM_N, UPT, PREF_NH4)
+                         0, CYN_N, LIM_N, UPT, PREF_NH4, R_GROWTH)
         call assert_close(LIM_N(1), expected_lim, 1.0D-14, &
             "BOUYANT flag=0: LIM_KG_CYN_N is the legacy Monod")
         call assert_close(UPT(1), 0.0D0, 0.0D0, &
             "BOUYANT flag=0: R_CYN_N_UPTAKE is exactly zero")
 
         call run_plain(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                       0, CYN_N, LIM_N, UPT)
+                       0, CYN_N, LIM_N, UPT, R_GROWTH)
         call assert_close(LIM_N(1), expected_lim, 1.0D-14, &
             "plain flag=0: LIM_KG_CYN_N is the legacy Monod")
         call assert_close(UPT(1), 0.0D0, 0.0D0, &
@@ -194,12 +194,40 @@ contains
 
         ! Flag on, same inputs: the N limitation must come from the quota
         ! instead (Q = 0.15 -> 1/3), proving the branch actually switches.
+        ! Asserted for BOTH library variants -- the Droop block is duplicated
+        ! in each, so a divergence between the two copies must be caught here.
         CYN_N = 0.15D0 * CYN_C
         call run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                         1, CYN_N, LIM_N, UPT, PREF_NH4)
+                         1, CYN_N, LIM_N, UPT, PREF_NH4, R_GROWTH)
         call assert_close(LIM_N(1), (0.15D0 - QMIN_D) / (QMAX_D - QMIN_D), 1.0D-14, &
             "BOUYANT flag=1: LIM_KG_CYN_N is the Caperon-Meyer quota term")
         call assert_true(UPT(1) > 0.0D0, "BOUYANT flag=1: uptake is positive")
+
+        call run_plain(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
+                       1, CYN_N, LIM_N, UPT, R_GROWTH)
+        call assert_close(LIM_N(1), (0.15D0 - QMIN_D) / (QMAX_D - QMIN_D), 1.0D-14, &
+            "plain flag=1: LIM_KG_CYN_N is the Caperon-Meyer quota term")
+        call assert_close(UPT(1), &
+            0.44d0*((0.004d0+0.010d0)/(0.003d0+0.004d0+0.010d0)) &
+                  *((0.25d0-0.15d0)/0.15d0)*1.0d0, 1.0D-14, &
+            "plain flag=1: R_CYN_N_UPTAKE matches R_UPTAKE(NH4+NO3, Q, CYN_C)")
+
+        ! The quota term must actually REACH the growth rate through the Saito
+        ! SU co-limitation -- at Q = Q_MIN the N limitation is exactly 0, so
+        ! growth must be exactly 0 in BOTH variants. Nothing else verifies that
+        ! LIM_KG_CYN_N is used rather than computed and discarded.
+        CYN_N = QMIN_D * CYN_C
+        call run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
+                         1, CYN_N, LIM_N, UPT, PREF_NH4, R_GROWTH)
+        call assert_close(LIM_N(1), 0.0D0, 0.0D0, "BOUYANT flag=1: LIM_N = 0 at Q = Q_MIN")
+        call assert_close(R_GROWTH(1), 0.0D0, 0.0D0, &
+            "BOUYANT flag=1: growth is exactly 0 at Q = Q_MIN (quota reaches LIM_KG_CYN)")
+
+        call run_plain(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
+                       1, CYN_N, LIM_N, UPT, R_GROWTH)
+        call assert_close(LIM_N(1), 0.0D0, 0.0D0, "plain flag=1: LIM_N = 0 at Q = Q_MIN")
+        call assert_close(R_GROWTH(1), 0.0D0, 0.0D0, &
+            "plain flag=1: growth is exactly 0 at Q = Q_MIN (quota reaches LIM_KG_CYN)")
     end subroutine test_flag_off_passthrough
 
     ! -------------------------------------------------------------------------
@@ -209,7 +237,14 @@ contains
     ! death -> DET_N, excretion -> DON, grazing -> ZOO_N, all Q-weighted;
     ! uptake debits NH4/NO3 split by PREF_NH4N_CYN.
     !     d(CYN_N)/dt = uptake - Q * (resp_tot + death + excr + graze)
-    ! and the whole CYN-attributable N budget must close to 1e-12.
+    !
+    ! HONESTY NOTE: assembled from the routine's returned rates, the closure
+    ! below cancels SYMBOLICALLY -- it checks that the routing algebra written
+    ! here (and mirrored in aquabc_II_pelagic_model.f90) creates and destroys
+    ! nothing, not that the model wires it up that way. The empirical
+    ! conservation gate is spec sec 6 V4 (flag-on 0D integration), which is a
+    ! later task. What is genuinely tested here is that the flag-on routine
+    ! returns a positive uptake and non-zero losses to feed that algebra.
     ! -------------------------------------------------------------------------
     subroutine test_rate_level_n_balance()
         integer, parameter :: nkn = 1
@@ -284,7 +319,7 @@ contains
         ! Full closure: no N created or destroyed by the CYN routing.
         total = d_nh4 + d_no3 + d_cyn_n + d_don + d_det_n + d_zoo_n
         call assert_close(total, 0.0D0, 1.0D-12, &
-            "N budget closes: d(DIN+CYN_N+DON+DET_N+ZOO_N)|CYN = 0")
+            "routing algebra conserves N (symbolic identity; V4 is the empirical gate)")
     end subroutine test_rate_level_n_balance
 
     ! -------------------------------------------------------------------------
@@ -303,8 +338,8 @@ contains
         real(kind=DBL_PREC), target :: DO_arr(nkn), WINDS(nkn)
         real(kind=DBL_PREC) :: NH4_N(nkn), NO3_N(nkn), DON(nkn), PO4_P(nkn)
         real(kind=DBL_PREC) :: CYN_C(nkn), ZOO_C(nkn), CYN_N(nkn)
-        real(kind=DBL_PREC) :: LIM_LO(nkn), UPT_LO(nkn), PREF_LO(nkn)
-        real(kind=DBL_PREC) :: LIM_HI(nkn), UPT_HI(nkn), PREF_HI(nkn)
+        real(kind=DBL_PREC) :: LIM_LO(nkn), UPT_LO(nkn), PREF_LO(nkn), RG_LO(nkn)
+        real(kind=DBL_PREC) :: LIM_HI(nkn), UPT_HI(nkn), PREF_HI(nkn), RG_HI(nkn)
 
         print *, "Test: DON-sink invariant under the flag"
         call reset_droop_defaults()
@@ -322,15 +357,17 @@ contains
 
         DON = 0.0D0
         call run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                         1, CYN_N, LIM_LO, UPT_LO, PREF_LO)
+                         1, CYN_N, LIM_LO, UPT_LO, PREF_LO, RG_LO)
         DON = 10.0D0
         call run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                         1, CYN_N, LIM_HI, UPT_HI, PREF_HI)
+                         1, CYN_N, LIM_HI, UPT_HI, PREF_HI, RG_HI)
 
         call assert_close(LIM_HI(1), LIM_LO(1), 0.0D0, &
             "flag=1: LIM_KG_CYN_N is bit-identical for DON 0 vs 10")
         call assert_close(UPT_HI(1), UPT_LO(1), 0.0D0, &
             "flag=1: R_CYN_N_UPTAKE is bit-identical for DON 0 vs 10")
+        call assert_close(RG_HI(1), RG_LO(1), 0.0D0, &
+            "flag=1: R_CYN_GROWTH is bit-identical for DON 0 vs 10")
         call assert_true(UPT_LO(1) > 0.0D0, "flag=1: uptake non-trivial in the DON test")
     end subroutine test_don_invariance_under_flag
 
@@ -339,13 +376,14 @@ contains
     ! outputs. Every dummy is initialised so -fcheck=all never sees garbage.
     ! -------------------------------------------------------------------------
     subroutine run_bouyant(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                           FLAG, CYN_N, LIM_N_OUT, UPT_OUT, PREF_NH4_OUT)
+                           FLAG, CYN_N, LIM_N_OUT, UPT_OUT, PREF_NH4_OUT, GROWTH_OUT)
         type(t_cyn_params), intent(in) :: params
         type(t_phyto_env), intent(in) :: env
         real(kind=DBL_PREC), intent(in) :: NH4_N(1), NO3_N(1), DON(1), PO4_P(1)
         real(kind=DBL_PREC), intent(in) :: CYN_C(1), ZOO_C(1), CYN_N(1)
         integer, intent(in) :: FLAG
         real(kind=DBL_PREC), intent(out) :: LIM_N_OUT(1), UPT_OUT(1), PREF_NH4_OUT(1)
+        real(kind=DBL_PREC), intent(out) :: GROWTH_OUT(1)
         integer, parameter :: nkn = 1
         real(kind=DBL_PREC) :: CYN_LIGHT_SAT(nkn), KG(nkn), A0(nkn), A1(nkn)
         real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn)
@@ -368,16 +406,17 @@ contains
         LIM_N_OUT    = LN
         UPT_OUT      = UPT
         PREF_NH4_OUT = PNH
+        GROWTH_OUT   = RG
     end subroutine run_bouyant
 
     subroutine run_plain(params, env, NH4_N, NO3_N, DON, PO4_P, CYN_C, ZOO_C, &
-                         FLAG, CYN_N, LIM_N_OUT, UPT_OUT)
+                         FLAG, CYN_N, LIM_N_OUT, UPT_OUT, GROWTH_OUT)
         type(t_cyn_params), intent(in) :: params
         type(t_phyto_env), intent(in) :: env
         real(kind=DBL_PREC), intent(in) :: NH4_N(1), NO3_N(1), DON(1), PO4_P(1)
         real(kind=DBL_PREC), intent(in) :: CYN_C(1), ZOO_C(1), CYN_N(1)
         integer, intent(in) :: FLAG
-        real(kind=DBL_PREC), intent(out) :: LIM_N_OUT(1), UPT_OUT(1)
+        real(kind=DBL_PREC), intent(out) :: LIM_N_OUT(1), UPT_OUT(1), GROWTH_OUT(1)
         integer, parameter :: nkn = 1
         real(kind=DBL_PREC) :: CYN_LIGHT_SAT(nkn), KG(nkn), A0(nkn), A1(nkn)
         real(kind=DBL_PREC) :: LT(nkn), LL(nkn), LD(nkn), LN(nkn), LP(nkn)
@@ -395,8 +434,9 @@ contains
                 RG, RM, RR, RE, RI, KD, FH, RD, PND, &
                 FLAG, CYN_N, UPT)
 
-        LIM_N_OUT = LN
-        UPT_OUT   = UPT
+        LIM_N_OUT  = LN
+        UPT_OUT    = UPT
+        GROWTH_OUT = RG
     end subroutine run_plain
 
 end program test_cyn_droop
