@@ -117,3 +117,50 @@ def test_add_derived_tolerates_missing_pools():
     assert out["TN"].iloc[0] == pytest.approx(0.5)
     assert out["TP"].iloc[0] == pytest.approx(0.0)
     assert out["CHLA"].iloc[0] == pytest.approx(0.0)
+
+
+# --- CYN_N-aware TN (VARN/Droop-mechanism outputs, Task 6) -----------------
+
+def _n_pool_frame(cyn_n=None):
+    """DIA_C/FIX_CYN_C/OPA_C/NOST_VEG_HET_C/AKI_C are all present alongside
+    CYN_C so a test can prove ONLY CYN_C's contribution is replaced by CYN_N
+    -- the other four phyto pools must still use the legacy N_TO_C ratio."""
+    cols = {
+        "NH4_N": [0.10], "NO3_N": [0.20], "DISS_ORG_N": [0.30],
+        "DET_PART_ORG_N": [0.40], "ZOO_N": [0.05],
+        "DIA_C": [1.0], "CYN_C": [2.0], "FIX_CYN_C": [0.5],
+        "OPA_C": [0.3], "NOST_VEG_HET_C": [0.1], "AKI_C": [0.0],
+    }
+    if cyn_n is not None:
+        cols["CYN_N"] = [cyn_n]
+    return pd.DataFrame(cols)
+
+
+def test_add_derived_uses_cyn_n_column_when_present():
+    # CYN_N deliberately NOT equal to N_TO_C*CYN_C (0.22*2.0=0.44) -- 0.30 --
+    # so a passing assert can only mean the CYN_N column was actually read,
+    # not that the legacy ratio happened to coincide.
+    df = _n_pool_frame(cyn_n=0.30)
+    out = val.add_derived(df)
+    non_cyn_phyto_c = 1.0 + 0.5 + 0.3 + 0.1 + 0.0  # DIA+FIX_CYN+OPA+NOST+AKI
+    expected = (0.10 + 0.20 + 0.30 + 0.40 + 0.05
+                + val.N_TO_C * non_cyn_phyto_c + 0.30)
+    assert out["TN"].iloc[0] == pytest.approx(expected)
+    # sanity: NOT the legacy value (proves the branch actually fired)
+    legacy = (0.10 + 0.20 + 0.30 + 0.40 + 0.05
+              + val.N_TO_C * (non_cyn_phyto_c + 2.0))
+    assert out["TN"].iloc[0] != pytest.approx(legacy)
+
+
+def test_add_derived_without_cyn_n_matches_legacy_ratio_exactly():
+    """Backward-compat proof (unit-test form): the no-CYN_N branch is the
+    ORIGINAL expression, unmodified -- byte-for-byte, not just numerically
+    equivalent to a decomposed reconstruction (floating-point associativity
+    can differ even when two forms are mathematically equal)."""
+    df = _n_pool_frame(cyn_n=None)
+    out = val.add_derived(df)
+    phyto_c = 1.0 + 2.0 + 0.5 + 0.3 + 0.1 + 0.0
+    legacy_expr = (val._col(df, "NH4_N") + val._col(df, "NO3_N") + val._col(df, "DISS_ORG_N")
+                   + val._col(df, "DET_PART_ORG_N") + val._col(df, "ZOO_N")
+                   + val.N_TO_C * phyto_c)
+    assert (out["TN"] == legacy_expr).all()  # exact, not approx: same expression

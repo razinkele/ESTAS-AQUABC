@@ -88,14 +88,51 @@ def _sed_flux_file(nboxes):
     return lines
 
 
-def _init_conc_file(set_no, cyn_c_val, last_val):
+def _init_conc_file(set_no, cyn_c_val, last_val, phyto_zoo_val=0.0):
+    """phyto_zoo_val defaults to 0.0 (every existing non-degenerate test relies
+    on this) -- Task 6's --degenerate-cyn tests pass a distinctive nonzero
+    value so zeroing is observable (can't tell "zeroed by the code" from
+    "just happened to be 0" otherwise)."""
     lines = [
         f"# PELAGIC INITIAL CONDITION SET {set_no} (fixture)",
         "#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION",
     ]
     for i, name in enumerate(STATE_VAR_NAMES, start=1):
-        val = cyn_c_val if name == "CYN_C" else (last_val if name == "SEC_METAB_NOST" else 0.0)
+        if name == "CYN_C":
+            val = cyn_c_val
+        elif name == "SEC_METAB_NOST":
+            val = last_val
+        elif i in mvi.DEGENERATE_ZERO_PHYTO_ZOO:
+            val = phyto_zoo_val
+        else:
+            val = 0.0
         lines.append(mvi._fmt_ic_row(i, val, name))
+    return lines
+
+
+def _wconst_lines():
+    """A small fixture WCONST-style file: the two real constant NAMES the
+    --degenerate-cyn scenario must zero, at non-obvious line/constant numbers
+    among unrelated constants, so zero_wconst_constant() must be proven to
+    find them BY NAME (not by hard-coded position)."""
+    return [
+        "     1                                K_A              -1.0  !  1   Aeration coefficient (if negative calculates internally)",
+        "     2                          THETA_K_A              1.04  !  2   Temperature correction factor for aeration",
+        "   165                  K_MIN_DOC_NO3N_20           2.97874  !165   Mineralization rate constant of DOC at 20 C for nitrate as final electron acceptor",
+        "   166                 K_MIN_DOC_MN_IV_20             0.025  !166   Mineralization rate constant of DOC at 20 C for Mn IV as final electron acceptor",
+    ]
+
+
+def _wconst_file_table(nboxes, fname="WCONST_MINI.txt"):
+    """The 'PELAGIC MODEL CONSTANTS FILE NAME' table -- discover_wconst_files()
+    reads this, independent of transform_pelagic_inputs()'s own section walk
+    (mirrors the real file's own layout: right after the variable table)."""
+    lines = [
+        "# ********************* PELAGIC MODEL CONSTANTS *********************",
+        "#     PELAGIC BOX NO       PELAGIC MODEL CONSTANTS FILE NAME",
+    ]
+    for box in range(1, nboxes + 1):
+        lines.append(f"{box:>20}{fname:>30}")
     return lines
 
 
@@ -166,7 +203,7 @@ def _pelagic_inputs_lines():
         "# PROCESS RATE OUTPUT TYPE, 1 Volume based 2 Area based",
         "1",
     ]
-    body = header + _var_table_block() + _settling_block(2) + _open_boundaries_block(2) + [
+    body = header + _var_table_block() + _wconst_file_table(2) + _settling_block(2) + _open_boundaries_block(2) + [
         "# ********************* MASS LOADS *********************",
         "#   MASS LOAD NO   STATE VAR NO   FORCING TS NO   FORCING TS VAR NO",
         "# ********************* MASS WITHDRAWALS *********************",
@@ -205,13 +242,19 @@ def fixture_src(tmp_path):
     src.mkdir()
     (src / "PELAGIC_INPUTS.txt").write_text("\n".join(_pelagic_inputs_lines()) + "\n")
     (src / "PELAGIC_MODEL_OPTIONS.txt").write_text("\n".join(_options_lines()) + "\n")
-    (src / "INIT_CONC_1.txt").write_text("\n".join(_init_conc_file(1, 0.680000, 0.111000)) + "\n")
-    (src / "INIT_CONC_2.txt").write_text("\n".join(_init_conc_file(2, 0.500000, 0.222000)) + "\n")
+    # phyto_zoo_val=3.5: a nonzero placeholder for the DEGENERATE_ZERO_PHYTO_ZOO
+    # state vars, so Task 6's --degenerate-cyn tests can observe them being
+    # zeroed (existing tests only check CYN_C/CYN_N/SEC_METAB_NOST, unaffected).
+    (src / "INIT_CONC_1.txt").write_text(
+        "\n".join(_init_conc_file(1, 0.680000, 0.111000, phyto_zoo_val=3.5)) + "\n")
+    (src / "INIT_CONC_2.txt").write_text(
+        "\n".join(_init_conc_file(2, 0.500000, 0.222000, phyto_zoo_val=3.5)) + "\n")
     (src / "FORC_TS_1.txt").write_text(
         "\n".join(_forc_ts_file(1, [2.0, 4.0], [9.0, 10.0])) + "\n")
     (src / "FORC_TS_2.txt").write_text(
         "\n".join(_forc_ts_file(2, [3.0, 6.0], [11.0, 12.0])) + "\n")
     (src / "SED_FLUX_NO3_SINK.txt").write_text("\n".join(_sed_flux_file(2)) + "\n")
+    (src / "WCONST_MINI.txt").write_text("\n".join(_wconst_lines()) + "\n")
     (src / "PELAGIC_OUTPUT_INFORMATION_FILE.txt").write_text(
         "#  BOX_NO   STATE_VAR_OUT\n           1           1\n           2           1\n")
     (src / "BATHYMETRY_1.txt").write_text("# untouched fixture file\n1 2 3\n")
@@ -517,3 +560,122 @@ def test_boxstate_header_match_with_inconsistent_row_count_raises(fixture_src, t
     dst = tmp_path / "out"
     with pytest.raises(ValueError, match="rows-per-box counts inconsistent"):
         mvi.generate(fixture_src, dst)
+
+
+# --------------------------------------------------------------------------
+# --degenerate-cyn (Task 6): the CYN-only conservation scenario
+# --------------------------------------------------------------------------
+
+def test_degenerate_cyn_zeros_phyto_zoo_ic_leaves_cyn_untouched(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst, degenerate_cyn=True)
+    for set_no, cyn_c_val in ((1, 0.680000), (2, 0.500000)):
+        lines = _lines(dst / f"INIT_CONC_{set_no}.txt")
+        data = [l for l in lines[2:] if l.strip()]
+        by_no = {int(mvi._token(r, 0)): r for r in data}
+        for sv in mvi.DEGENERATE_ZERO_PHYTO_ZOO:
+            assert float(mvi._token(by_no[sv], 1)) == 0.0, f"state var {sv} not zeroed"
+        # CYN_C (15) and CYN_N (33) are the whole point of the scenario -- untouched
+        assert float(mvi._token(by_no[15], 1)) == cyn_c_val
+        assert float(mvi._token(by_no[33], 1)) == round(cyn_c_val * mvi.Q_SEED, 6)
+
+
+def test_degenerate_cyn_zeros_boundary_columns_leaves_cyn_untouched(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst, degenerate_cyn=True)
+    for boundary_no, cyn_c_vals in ((1, [2.0, 4.0]), (2, [3.0, 6.0])):
+        lines = _lines(dst / f"FORC_TS_{boundary_no}.txt")
+        i_tv = next(i for i, l in enumerate(lines) if l.strip() == "# TIME AND VALUES")
+        data = [l for l in lines[i_tv + 1:] if l.strip()]
+        for row, cyn_c_val in zip(data, cyn_c_vals):
+            fields = row.split()
+            for sv in mvi.DEGENERATE_ZERO_PHYTO_ZOO + mvi.DEGENERATE_ZERO_BOUNDARY_N:
+                assert float(fields[sv]) == 0.0, f"state var {sv} boundary not zeroed"
+            assert float(fields[15]) == cyn_c_val  # CYN_C untouched
+            assert float(fields[33]) == round(cyn_c_val * mvi.Q_SEED, 6)  # CYN_N untouched
+
+
+def test_degenerate_cyn_leaves_allelopathy_and_other_state_vars_alone(fixture_src, tmp_path):
+    """Allelopathy states (34-37) are explicitly meant to stay present (inert
+    zero ICs are fine, but --degenerate-cyn must not treat them specially --
+    they must be left exactly as the fixture set them, whatever that value is).
+    34-36 happen to be 0.0 in the fixture, same as every non-phyto/zoo pool;
+    37 is deliberately given a nonzero fixture value (0.111000) so this test
+    proves --degenerate-cyn leaves it alone rather than merely observing an
+    already-zero value pass through untouched."""
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst, degenerate_cyn=True)
+    lines = _lines(dst / "INIT_CONC_1.txt")
+    data = [l for l in lines[2:] if l.strip()]
+    by_no = {int(mvi._token(r, 0)): r for r in data}
+    for sv in (34, 35, 36):  # SEC_METAB_DIA/NOFIX_CYN/FIX_CYN -- present, untouched at 0.0
+        assert float(mvi._token(by_no[sv], 1)) == 0.0
+    assert float(mvi._token(by_no[37], 1)) == 0.111000  # SEC_METAB_NOST's nonzero fixture value, untouched
+
+
+def test_degenerate_cyn_sets_nost_staging_off(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst, degenerate_cyn=True)
+    lines = _lines(dst / "PELAGIC_MODEL_OPTIONS.txt")
+    i = next(i for i, l in enumerate(lines) if l.strip().startswith("# NOST_STAGE_MODEL"))
+    assert lines[i + 1].strip() == "0"
+
+
+def test_degenerate_cyn_zeros_wconst_constants_by_name(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst, degenerate_cyn=True)
+    lines = _lines(dst / "WCONST_MINI.txt")
+    by_name = {mvi._token(l, 1): mvi._token(l, 2) for l in lines if l.strip()}
+    assert by_name["K_A"] == "0.0"
+    assert by_name["K_MIN_DOC_NO3N_20"] == "0.0"
+    # unrelated constants at nearby line/constant numbers must NOT be touched
+    assert by_name["THETA_K_A"] == "1.04"
+    assert by_name["K_MIN_DOC_MN_IV_20"] == "0.025"
+
+
+def test_degenerate_cyn_off_by_default_leaves_wconst_and_options_untouched(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst)  # degenerate_cyn defaults to False
+    wconst = _lines(dst / "WCONST_MINI.txt")
+    by_name = {mvi._token(l, 1): mvi._token(l, 2) for l in wconst if l.strip()}
+    assert by_name["K_A"] == "-1.0"
+    assert by_name["K_MIN_DOC_NO3N_20"] == "2.97874"
+
+    opts = _lines(dst / "PELAGIC_MODEL_OPTIONS.txt")
+    i = next(i for i, l in enumerate(opts) if l.strip().startswith("# NOST_STAGE_MODEL"))
+    assert opts[i + 1].strip() == "1"  # unchanged from the fixture's own value
+
+    ic = _lines(dst / "INIT_CONC_1.txt")
+    data = [l for l in ic[2:] if l.strip()]
+    by_no = {int(mvi._token(r, 0)): r for r in data}
+    for sv in mvi.DEGENERATE_ZERO_PHYTO_ZOO:
+        assert float(mvi._token(by_no[sv], 1)) == 3.5  # the fixture's placeholder, NOT zeroed
+
+
+def test_generate_result_reports_degenerate_cyn_and_wconst(fixture_src, tmp_path):
+    dst = tmp_path / "out"
+    off = mvi.generate(fixture_src, dst)
+    assert off["degenerate_cyn"] is False
+    assert off["wconst"] == []
+
+    dst2 = tmp_path / "out2"
+    on = mvi.generate(fixture_src, dst2, degenerate_cyn=True)
+    assert on["degenerate_cyn"] is True
+    assert on["wconst"] == ["WCONST_MINI.txt"]
+
+
+def test_discover_wconst_files_reads_the_real_table_position():
+    """Independent of generate() -- discover_wconst_files() must find the
+    table by its own content signature, not rely on any specific line
+    number, and de-duplicate when every box shares one file."""
+    lines = (
+        ["# preamble", "# more preamble"]
+        + _wconst_file_table(3, fname="SHARED_WCONST.txt")
+        + ["# ********************* SOMETHING ELSE *********************"]
+    )
+    assert mvi.discover_wconst_files(lines) == ["SHARED_WCONST.txt"]
+
+
+def test_zero_wconst_constant_raises_when_name_not_found():
+    with pytest.raises(ValueError, match="NOT_A_REAL_CONSTANT"):
+        mvi.zero_wconst_constant(_wconst_lines(), "NOT_A_REAL_CONSTANT")

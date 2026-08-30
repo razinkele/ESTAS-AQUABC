@@ -85,6 +85,44 @@ CYN_N_INDEX = 33         # aquabc_II_pelagic_svindex.f90::CYN_N_INDEX
 N_META = 4               # SEC_METAB_DIA/NOFIX_CYN/FIX_CYN/NOST, trailing state vars
 Q_SEED = 0.220            # CYN_N_TO_C -- CYN_N IC/boundary = Q_SEED * CYN_C
 
+# --degenerate-cyn: state-var numbers (pre- and post-insertion identical -- all
+# below CYN_N_INDEX=33, so unaffected by the CYN_N insertion) for the CYN-only
+# conservation scenario, read from INPUTS_CL29/PELAGIC_INPUTS.txt's own
+# "PELAGIC STATE VARIABLES" table.
+#   phyto/zoo state vars to zero (IC + boundary), i.e. every phyto/zoo pool
+#   EXCEPT CYN_C(15)/CYN_N(33): DIA_C, ZOO_C, ZOO_N, ZOO_P, OPA_C, FIX_CYN_C,
+#   NOST_VEG_HET_C, AKI_C (the dormant akinete pool -- zeroed too so it cannot
+#   later germinate into NOST_VEG_HET_C even though NOST staging is off).
+DEGENERATE_ZERO_PHYTO_ZOO = [5, 6, 7, 8, 16, 19, 31, 32]
+#   N pools in the conservation identity Delta(NH4+NO3+DON+DET_N+CYN_N): only
+#   their BOUNDARY inflow is zeroed (not their IC -- they seed the N the CYN
+#   population draws down and returns to).
+DEGENERATE_ZERO_BOUNDARY_N = [1, 2, 10, 13]  # NH4_N, NO3_N, DET_PART_ORG_N, DISS_ORG_N
+#   Internal N-destroying kinetic processes not attributable to any
+#   MASS_BALANCES.out column (both are lumped into KINETICS along with
+#   every N-conserving transformation, so they cannot be subtracted out
+#   after the fact -- they must be disabled at the source):
+#     - water-column denitrification (aquabc_II_pelagic_model.f90:1880,
+#       R_DENITRIFICATION = 0.93 * R_ABIOTIC_DOC_MIN_NO3N, rate constant
+#       K_MIN_DOC_NO3N_20, WCONST constant no.165): NO3_N -> N2 gas.
+#     - ammonia volatilization (aquabc_II_pelagic_model.f90:1965,
+#       AMMONIA_VOLATILIZATION() driven by K_A_CALC, which literally IS the
+#       WCONST K_A constant no.1 whenever K_A >= 0 -- see
+#       aquabc_II_pelagic_model.f90:1030-1037, K_A<0 means "compute from
+#       wind" and K_A>=0 means "use this constant directly", so K_A=0.0 is
+#       a real, exact "no gas exchange" setting, not a special case):
+#       NH4_N -> NH3 gas (this doubles as disabling O2 reaeration, which is
+#       fine -- DISS_OXYGEN is not part of the conservation identity).
+#   Zeroed in the scenario's own WCONST file(s) (discovered from
+#   PELAGIC_INPUTS.txt's "PELAGIC MODEL CONSTANTS FILE NAME" table, not
+#   hard-coded to WCONST_04.txt) so the identity closes WITHOUT having to
+#   also disable transport (ADVECTION/DIFFUSION/SETTLING/SEDIMENT FLUXES
+#   stay real and are accounted for explicitly by check_varn_run.py
+#   --mode conserve from MASS_BALANCES.out, since CL29's net advective
+#   flushing means zero boundary concentration alone does not close a
+#   whole-domain sum).
+DEGENERATE_ZERO_WCONST_NAMES = ["K_MIN_DOC_NO3N_20", "K_A"]
+
 BOXSTATE_HEADER_RE = re.compile(r'STATE VAR NO\s+FORCING TS NO\s+FORCING TS VAR NO')
 
 
@@ -279,6 +317,33 @@ def transform_pelagic_inputs(lines):
     return lines, init_conc_names, boundary_forc_ts_names
 
 
+def discover_wconst_files(lines):
+    """Every distinct PELAGIC MODEL CONSTANTS FILE NAME referenced (usually
+    one file shared by every box, but not assumed) -- independent of
+    transform_pelagic_inputs()'s section-ordering-sensitive walk, since this
+    table's position is never modified by it."""
+    i = _find(lines, lambda l: "PELAGIC MODEL CONSTANTS FILE NAME" in l)
+    start = i + 1
+    end = _consume_data_block(lines, start)
+    return sorted({_token(l, 1) for l in lines[start:end]})
+
+
+# --------------------------------------------------------------------------
+# WCONST_*.txt (per-box pelagic model constants)
+# --------------------------------------------------------------------------
+
+def zero_wconst_constant(lines, name):
+    """Set the named constant's value (token[2]) to 0.0, leaving its comment
+    and every other constant untouched. Raises if the name is not found."""
+    lines = list(lines)
+    for i, l in enumerate(lines):
+        toks = _tokens(l)
+        if len(toks) >= 3 and toks[1].group() == name:
+            lines[i] = _set_token(l, 2, "0.0")
+            return lines
+    raise ValueError(f"WCONST constant {name!r} not found -- cannot disable it")
+
+
 # --------------------------------------------------------------------------
 # INIT_CONC_*.txt
 # --------------------------------------------------------------------------
@@ -440,6 +505,51 @@ def is_boxstate_file(lines):
 
 
 # --------------------------------------------------------------------------
+# --degenerate-cyn: the CYN-only conservation scenario
+# --------------------------------------------------------------------------
+
+def zero_init_conc_rows(lines, state_vars):
+    """Zero the IC value of every row whose state-var no is in `state_vars`
+    (token[1]), leaving every other row and all formatting untouched."""
+    header = lines[:2]
+    data = [l for l in lines[2:] if l.strip()]
+    state_vars = set(state_vars)
+    out = []
+    for row in data:
+        no = int(_token(row, 0))
+        if no in state_vars:
+            row = _set_token(row, 1, f"{0.0:.6f}")
+        out.append(row)
+    return header + out
+
+
+def zero_forc_ts_columns(lines, state_vars):
+    """Zero the data column(s) for `state_vars` in every '# TIME AND VALUES'
+    row of a FORC_TS_*.txt (fields[0] is time, fields[k] is state var k)."""
+    lines = list(lines)
+    state_vars = set(state_vars)
+    i_tv = _find(lines, lambda l: l.strip() == "# TIME AND VALUES")
+    for j in range(i_tv + 1, len(lines)):
+        if not lines[j].strip():
+            continue
+        fields = lines[j].split()
+        for sv in state_vars:
+            fields[sv] = "0.000000"
+        lines[j] = " ".join(fields)
+    return lines
+
+
+def set_nost_staging_off(lines):
+    """Set NOST_STAGE_MODEL's value to 0 (legacy akinete gates / staging off)
+    in PELAGIC_MODEL_OPTIONS.txt -- this line predates the CYN_VARIABLE_N
+    OPTIONS_INSERT block and is untouched by transform_options()."""
+    lines = list(lines)
+    idx = _find(lines, lambda l: l.strip().startswith("# NOST_STAGE_MODEL"))
+    lines[idx + 1] = _set_token(lines[idx + 1], 0, 0)
+    return lines
+
+
+# --------------------------------------------------------------------------
 # orchestration
 # --------------------------------------------------------------------------
 
@@ -451,7 +561,7 @@ def _write(path, lines):
     path.write_text("\n".join(lines) + "\n")
 
 
-def generate(src, dst):
+def generate(src, dst, degenerate_cyn=False):
     src = Path(src)
     dst = Path(dst)
     if dst.exists():
@@ -483,10 +593,35 @@ def generate(src, dst):
             boxstate_names.append(p.name)
             _write(p, transform_boxstate_file(lines))
 
+    wconst_names = []
+    if degenerate_cyn:
+        for name in init_conc_names:
+            p = dst / name
+            _write(p, zero_init_conc_rows(_read(p), DEGENERATE_ZERO_PHYTO_ZOO))
+
+        for name in forc_ts_names:
+            p = dst / name
+            _write(p, zero_forc_ts_columns(
+                _read(p), DEGENERATE_ZERO_PHYTO_ZOO + DEGENERATE_ZERO_BOUNDARY_N))
+
+        _write(opts_path, set_nost_staging_off(_read(opts_path)))
+
+        # discovered from the ORIGINAL (pre-transform) PELAGIC_INPUTS.txt --
+        # this table's position/content is untouched by transform_pelagic_inputs()
+        wconst_names = discover_wconst_files(_read(pel_path))
+        for name in wconst_names:
+            p = dst / name
+            wlines = _read(p)
+            for const_name in DEGENERATE_ZERO_WCONST_NAMES:
+                wlines = zero_wconst_constant(wlines, const_name)
+            _write(p, wlines)
+
     return {
         "init_conc": init_conc_names,
         "forc_ts": forc_ts_names,
         "boxstate": boxstate_names,
+        "degenerate_cyn": degenerate_cyn,
+        "wconst": wconst_names,
     }
 
 
@@ -494,14 +629,24 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("src_dir", help="source setup folder (36-variable CL29, e.g. INPUTS_CL29/)")
     ap.add_argument("dst_dir", help="destination setup folder to (re)create (e.g. INPUTS_CL29_VARN/)")
+    ap.add_argument("--degenerate-cyn", action="store_true",
+                     help="additionally zero every other phyto/zoo pool's IC + boundary "
+                          "(all except CYN_C/CYN_N), zero NH4/NO3/DON/DET_N boundary inflow, "
+                          "and turn NOST staging off -- the CYN-only nitrogen-conservation "
+                          "scenario used by 'check_varn_run.py --mode conserve'")
     args = ap.parse_args(argv)
-    result = generate(args.src_dir, args.dst_dir)
+    result = generate(args.src_dir, args.dst_dir, degenerate_cyn=args.degenerate_cyn)
     print(f"PELAGIC_INPUTS.txt: declared total, variable table, settling velocities, "
           f"open boundaries transformed")
     print(f"INIT_CONC files transformed: {result['init_conc']}")
     print(f"FORC_TS files transformed: {result['forc_ts']}")
     print(f"box-state forcing-assignment files transformed (discovered): {result['boxstate']}")
     print("PELAGIC_MODEL_OPTIONS.txt: five CYN_VARIABLE_N/CYN_N_* pairs inserted")
+    if args.degenerate_cyn:
+        print(f"--degenerate-cyn: zeroed IC+boundary for phyto/zoo state vars "
+              f"{DEGENERATE_ZERO_PHYTO_ZOO}, zeroed boundary for N pools "
+              f"{DEGENERATE_ZERO_BOUNDARY_N}, NOST_STAGE_MODEL set to 0, "
+              f"zeroed {DEGENERATE_ZERO_WCONST_NAMES} in {result['wconst']}")
 
 
 if __name__ == "__main__":
