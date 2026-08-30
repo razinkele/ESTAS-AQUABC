@@ -1670,6 +1670,52 @@ biology. The model-side floor stands at the adopted configuration (r +0.67, Octo
 
 ---
 
+## 35. The obs-mapping audit names the biology — and the *Planktothrix* loss-side probe
+partially reopens the autumn community (2026-08-30)
+
+§34 closed the autumn community as parameter-unrepresentable and prescribed an
+observation-side audit before any new-biology design. The audit (species-level
+recomposition of the ingested monitoring record, 40,131 in-window rows, 2016–2022, five
+LTK stations) answers both open questions by name:
+
+**What carries obs `OPA_C`:** *Mougeotia* 30.5 % (Zygnematales — a tychoplanktonic
+filamentous green, classically of littoral/benthic-mat origin, advected into the water
+column), then genuinely planktonic chlorococcaleans (*Pediastrum* 25.8 %, *Desmodesmus*
+11.5 %, *Oocystis* 5.1 %). The monthly structure splits the residual cleanly: *Mougeotia*
+peaks in **August at 45 %** of OPA wet biomass — the summer OPA gap is roughly **half an
+observation-mapping artifact** (advected mat material no pelagic growth formulation should
+reproduce) — while October–November OPA is *Pediastrum*/*Desmodesmus* (42 %/23 % in Oct):
+real plankton, a real residual, at ~half the previously assumed magnitude.
+
+**What carries summer `CYN_C`:** ***Planktothrix* 65–70 % of every month June–October**,
+plus *Limnothrix* (8–17 %) — the guild is essentially one organism, *P. agardhii*, the
+canonical turbid-shallow-lake steady-state cyanobacterium: mixed-column, ceiling-light
+tolerant, and persistent through **minimal losses** (grazing-resistant filaments, low
+mortality). The model's CYN carried the opposite loss profile (KD 0.125 d⁻¹ — the highest
+cyanobacterial mortality in the file — and grazing preference 0.10), and the invasion
+ladder (§33) had only ever tested its *engine*.
+
+**W6 — CYN as *Planktothrix*** (KD 0.125→0.04, grazing preference 0.10→0.03, KG 1.21→2.0,
+BETA 2 now genuinely active after §34's fix): **the first real CYN response of the arc** —
+June 0.55 mg C/L (obs 1.05; every prior probe ≤0.13), September 0.26, October 0.22,
+November 0.085 (2–5× the ladder's plateau) — and two project bests: **CHLA RMSE 24.06**
+(adopted: 24.21) and **PO4 RMSE 0.01695** (adopted: 0.0183), with September chlorophyll
+exact (49.5 vs 50.2) and October 24.8 (from 22.4). Costs: July rises too (37.6 vs obs
+26.2, stacking on the fixer's documented overshoot), slipping the climatological **peak
+month to September by a 2.3 µg margin** (Aug 47.2 / Sep 49.5); seasonal r unchanged at
++0.68; and the August CYN hole itself persists (0.16 vs 2.30) — at bloom peak the
+competition still excludes it.
+
+**Standing after §§33–35:** the autumn-community residual decomposes into (i) a quantified
+observation artifact (the *Mougeotia* share of OPA), (ii) a literature-anchored trait
+correction that buys real skill (W6, adoption-grade question), and (iii) two named
+irreducibles — the August *Planktothrix* exclusion at bloom peak and the autumn
+chlorococcalean greens — which are the honest remainder for any future structural work
+(depth-regulating filament biology; a littoral/advective OPA source). No new code was
+required to reach any of this.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
