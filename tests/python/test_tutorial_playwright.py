@@ -798,10 +798,12 @@ class TestMap:
         """Map settings controls (style, lat, lon, zoom) are present."""
         goto_app(page, app)
         navigate_to(page, "nav_map")
-        expect(page.locator("#map_style")).to_be_visible()
-        expect(page.locator("#map_lat")).to_be_visible()
-        expect(page.locator("#map_lon")).to_be_visible()
-        expect(page.locator("#map_zoom")).to_be_visible()
+        # The map tab is a Shiny module mounted as map_ui("map"), so its input
+        # ids are namespaced (#map-<id>) -- bare ids never match.
+        expect(page.locator("#map-map_style")).to_be_visible()
+        expect(page.locator("#map-map_lat")).to_be_visible()
+        expect(page.locator("#map-map_lon")).to_be_visible()
+        expect(page.locator("#map-map_zoom")).to_be_visible()
 
 
 # ===================================================================
