@@ -100,7 +100,9 @@ compile_err.txt
 INPUTS/*.bak
 INPUT.txt.*.bak
 INPUT.txt.backup_*
-INPUT_30day.txt
+# INPUT_30day.txt is tracked: the bundled tutorial tells users to select it, it
+# drives the tutorial Playwright suite in CI, and it only references the tracked
+# INPUTS/ folder (nothing machine-specific).
 INPUT_debug_run.txt
 
 # Archives and patches

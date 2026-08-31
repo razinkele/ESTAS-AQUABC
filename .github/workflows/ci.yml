@@ -48,8 +48,26 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install --with-deps chromium
 
+      # The tutorial suite drives the app's own Run Model / Quick Run path, which
+      # spawns ./ESTAS_II. Without the binary that test skips, so build it here --
+      # it is the only CI coverage of the app-to-model boundary (a broken Quick Run
+      # button shipped undetected while this suite ran nowhere).
+      - name: Install Fortran toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gfortran make
+
+      - name: Build ESTAS_II (for the tutorial Quick Run test)
+        run: |
+          make build-estas
+          # OUTPUTS_30day/ is gitignored, so a fresh checkout does not have it and
+          # the model cannot create it -- the run would fail on its first write.
+          mkdir -p OUTPUTS_30day
+
       - name: Run Playwright integration tests
-        run: python -m pytest tests/python/test_app_playwright.py -v --tb=short
+        run: |
+          python -m pytest tests/python/test_app_playwright.py \
+                           tests/python/test_tutorial_playwright.py -v --tb=short
 
   build-and-run:
     runs-on: ${{ matrix.os }}
