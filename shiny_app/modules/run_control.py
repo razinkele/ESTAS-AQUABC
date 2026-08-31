@@ -390,7 +390,24 @@ def run_control_server(input, output, session, state):
     # run_control -> dashboard: the quick-run constants-validation inputs
     @reactive.calc
     def _constants_config():
-        return (input.cmd_constants_file(), input.cmd_binary_enabled(), input.cmd_shear_stress_file())
+        # Read defensively, exactly as command_config() and
+        # constants_validation_status() do: these inputs can be unset --
+        # cmd_shear_stress_file has no UI widget at all (only the orphaned
+        # update_select above) -- and an unguarded read raises SilentException,
+        # which aborted the dashboard's Quick Run before the model launched.
+        try:
+            const_file = input.cmd_constants_file()
+        except Exception:
+            const_file = None
+        try:
+            binary_enabled = input.cmd_binary_enabled()
+        except Exception:
+            binary_enabled = False
+        try:
+            shear_file = input.cmd_shear_stress_file()
+        except Exception:
+            shear_file = None
+        return (const_file, binary_enabled, shear_file)
     run.constants_config = _constants_config
 
     def get_executable_info(exe_name):
