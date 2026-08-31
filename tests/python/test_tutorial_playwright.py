@@ -27,9 +27,20 @@ Requires: playwright, pytest, shiny[test]
 """
 
 
+from pathlib import Path
+
+import pytest
 from playwright.sync_api import Page, expect
 from shiny.pytest import create_app_fixture
 from shiny.run import ShinyAppProc
+
+# Prerequisites for the tests that need artifacts rather than just the UI.
+# These skip (never fail) when absent, so a fresh clone or worktree reports
+# "skipped", not a 600 s timeout.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_MODEL_RUN_READY = (_REPO_ROOT / "ESTAS_II").is_file() and (_REPO_ROOT / "INPUT_30day.txt").is_file()
+_OBS_DIR = _REPO_ROOT / "OBSERVATIONS"
+_OBS_READY = _OBS_DIR.is_dir() and any(_OBS_DIR.iterdir())
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -452,6 +463,23 @@ class TestStep7SimulationConfig:
         text = page.locator("#run_control-cmd_constants_file").inner_text()
         assert "WCONST_04" in text
 
+    def test_shear_stress_file_dropdown(self, page: Page, app: ShinyAppProc):
+        """Shear stress file selector (command arg 4) exists and is populated.
+
+        The widget was missing entirely for a while -- only an orphaned
+        update_select referenced it -- which made arg 4 unreachable from the UI
+        and broke the dashboard's Quick Run.
+        """
+        goto_app(page, app)
+        navigate_to(page, "nav_model_control")
+        click_tab(page, "Run Model")
+        page.wait_for_timeout(ACTION_WAIT)
+        sel = page.locator("#run_control-cmd_shear_stress_file")
+        expect(sel).to_be_visible()
+        text = sel.inner_text()
+        assert "not used" in text.lower(), f"missing the default choice: {text[:200]}"
+        assert "SHEAR" in text.upper(), f"choices not populated from INPUTS/: {text[:200]}"
+
     def test_command_preview(self, page: Page, app: ShinyAppProc):
         """Command Preview shows an executable command string."""
         goto_app(page, app)
@@ -499,6 +527,10 @@ class TestStep8RunSimulation:
     It requires the ESTAS_II executable to be present.
     """
 
+    @pytest.mark.skipif(
+        not _MODEL_RUN_READY,
+        reason="needs a built ESTAS_II and INPUT_30day.txt at the repo root",
+    )
     def test_quick_run_30day(self, page: Page, app: ShinyAppProc):
         """Run a 30-day simulation via Quick Run and wait for completion."""
         goto_app(page, app)
@@ -701,6 +733,9 @@ class TestStep11Observations:
         navigate_to(page, "nav_observations")
         expect(page.locator("#observations-obs_scan_dir")).to_be_visible()
 
+    @pytest.mark.skipif(
+        not _OBS_READY, reason="needs a non-empty OBSERVATIONS/ directory (untracked)"
+    )
     def test_scan_and_list_files(self, page: Page, app: ShinyAppProc):
         """Scanning the OBSERVATIONS directory populates the file list."""
         goto_app(page, app)

@@ -151,6 +151,21 @@ def run_control_ui():
                     ),
                 ),
 
+                # Shear stress file (Arg 4 - optional). Choices are replaced at
+                # session start by the update_select in the server (scans
+                # INPUTS/ for *SHEAR*.txt); keep "" first so "not used" is the
+                # default and the model is invoked without argument 4.
+                ui.tooltip(
+                    ui.input_select(
+                        "cmd_shear_stress_file",
+                        "Shear Stress File:",
+                        choices={"": "(not used)"},
+                        selected=""
+                    ),
+                    "Bed shear-stress time series passed as command argument 4, "
+                    "used by the resuspension model. Populated from INPUTS/*SHEAR*.txt."
+                ),
+
                 # Pelagic solver selection
                 ui.tooltip(
                     ui.input_select(
