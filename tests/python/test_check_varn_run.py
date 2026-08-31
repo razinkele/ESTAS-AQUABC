@@ -22,7 +22,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "tools"))
 
 import check_varn_run as chk  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # real captured log fixtures (verbatim, from /tmp/varn_smoke/run.log,
 # 2026-08-30, ESTAS_II_varN on INPUTS_CL29_VARN, 5-day run)
