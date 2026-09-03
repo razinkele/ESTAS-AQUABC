@@ -1,6 +1,8 @@
 # Warm diatom guild (`DIA2_C`) — design **v2**
 
-**Status:** design, **not approved for build**; §0's premise test gates everything below.
+**Status:** design, **not approved for build**. §0 (revised) is a light-climate work item in
+its own right and **no longer gates the guild**; the guild stands or falls on August–September
+(§2.2), which is where its evidence actually lives.
 **Date:** 2026-09-03, revised 2026-09-04 after adversarial review (38 findings, 10 verified,
 **9 confirmed / 1 refuted**). Every §-reference below is `docs/CL29_phenology_diagnosis.md`.
 **Cost model:** the Droop-N VARN arc (spec `2026-08-30-cyn-droop-n-rescoped-design.md`) — same
@@ -15,38 +17,52 @@ re-establishing it.
 
 **What was wrong.** §46.3 claimed "November wants C:Chl ≈34, February wants ≈53" as a third,
 model-mechanics axis proving two guilds. On the adopted ice baseline §45.4 implies February
-wants **≈27.5**, and §43.2's only local measurement is 34.2 [29.5, 39.1] with a winter-subset
-median of 32.4. **27.5 and 34 both sit inside that interval: the two months agree on pigment
-and diverge only on growth** — the signature of a residual production error, not of a second
-organism.
+wants **≈27.5**, and §43.2's local measurement is 34.2 with a winter-subset median of 32.4 and
+a **winter IQR of 19.9–44.2**. ⚠ 27.5 sits *outside* the mean's CI [29.5, 39.1] but inside that
+IQR — and the IQR is the right comparison, since one seasonal constant must span the spread of
+real values, not the uncertainty in their mean. **On that basis both are ordinary winter
+values: the two months agree on pigment and diverge only on growth.**
 
-**And there is a named, unfixed production error.** §44.2: `FDAY` (day length) never reaches
-CL29's growth calculation — `smith = 1` at `aquabc_II_pelagic_model.f90:299` routes to
-`LIM_LIGHT`, whose signature has no FDAY. §44.3 measured that FDAY alone takes February net
-growth +0.283 → +0.128/d and, with the background extinction at its measured floor, →
-+0.045/d. **FDAY is more month-differential than the ice correction already adopted** —
-monthly-mean Feb 0.389 / May 0.665 = 1.71× against ice's 1.61× — so §45.3/§46.4's grounds for
-deferring it ("near-uniform across months") are wrong.
+**And the production error that was supposed to explain it has now been retired (§47).** The
+two candidates were `FDAY` and the background extinction. Both were measured on 2026-09-04,
+**before** spending a run:
 
-⭐ **Two facts found 2026-09-04 that make this cheap.** (a) The day-length series already
-exists and is correct: `INPUTS_CL29/FORC_TS_9.txt`, 4,017 daily records, all 29 boxes, 0.2898
-on 1 January = 6.96 h at 55 °N. **No data work.** (b) The repo contains its own reference
-implementation — `FDAY` is fully wired on the `smith == 0` branch of all six phytoplankton
-library routines (`..._lib_DIATOMS.f90:150` and five siblings) as
-`((2.718*FDAY)/(K_E*DEPTH)) * (exp(-ALPHA_1) - exp(-ALPHA_0))`. Only the `smith == 1` branch
-CL29 runs bypasses it.
+- **`FDAY` done correctly is an offset, not a February lever.** `I_A` is a daily integral, so
+  the physically correct (WASP) form `FDAY·f(I_A/FDAY)` gives **−22.1 % February / −19.0 % May
+  — a 1.04× differential.** The 1.71× belongs to the *forcing*, not to the model's response to
+  it; in the light-limited regime the FDAY cancels, which is correct — spreading a fixed daily
+  dose over more hours cannot change a near-linear daily integral. §44.3's FDAY row (×0.452)
+  used the **incorrect** form (`FDAY·f(I_A)`, which silently discards (1−FDAY) of each day's
+  light — 71 % of it in December). §47.2 has the full 12-month table.
+- **The extinction is near-uniform and has no winter measurement.** Model kd is 2.24–2.70
+  (Feb 2.276 / May 2.331 = 0.98), and `light_mixing_Nida_2015.csv` covers **May–November only**
+  (§44.3, corrected). It is worth fixing — the model is 15–42 % too transparent in every
+  measured month — but it darkens **autumn** most (Sep 2.47 vs measured 4.27), so it *costs*
+  October rather than buying it.
 
-**The test (cheap, and it may cancel the whole build).**
-1. Implement `FDAY` in `LIM_LIGHT` (a bug fix, not a knob — §44.2). ⚠ Two defensible forms:
-   the in-repo `smith=0` one multiplies by FDAY only; `CUR_SMITH`'s `IAV = 0.9·ITOT/FDAY`
-   implies also dividing `I_A` by FDAY (the WASP form) since `I_A` is a daily integral
-   (`model.f90:393`). They differ materially in February. The plan picks one and tests both.
-2. Set the background extinction to the measured kd floor (§44.3; campaign kd 2.26–5.72 vs the
-   model's 2.20 Feb / 1.25 Nov).
-3. Re-run C:Chl 34 (§46.1's A/B) on that baseline.
+**So February's C:Chl conflict has no identified production error left to blame**, and the
+§0 gate as originally drafted cannot fire the way it was designed to.
 
-⚠ **Registered prediction:** FDAY cuts autumn light too (Oct 0.418, Nov 0.333), so it will make
-the October deficit **worse** before anything improves it. Gate [a] is scored after, not before.
+⭐ Still cheap and still worth running, for its own sake rather than as a guild gate: the
+day-length series already exists and is correct (`INPUTS_CL29/FORC_TS_9.txt`, 4,017 daily
+records, 0.2898 on 1 January = 6.96 h at 55 °N — **no data work**), and the repo contains its
+own reference implementation on the `smith == 0` branch of all six library routines.
+
+**The revised test — three independent arms, not one bundle** (bundling is how §44.3's total
+became unsupportable):
+1. **Form B `FDAY`** behind `LIGHT_DAYLENGTH_OPTION` (0 = current/byte-identical, 1 = Form A
+   for the record, 2 = Form B). A correctness fix with a ~−20 % near-uniform cost.
+2. **Background extinction** to the measured May–Nov level, as its own arm. ⚠ Registered
+   prediction: costs May and October.
+3. **C:Chl 34** re-run on whatever baseline (1) and (2) leave.
+
+⚠ **The guild is no longer gated on this.** Arms 1–3 answer "is C:Chl 34 adoptable?"; the guild
+answers "can anything grow Aug–Oct diatoms?" — and §41.2 plus the CTMI table in §2.2 speak to
+that directly. Coupling the two is what produced the overstated axis 3 in the first place.
+**And §47.4 names the likelier exit for the C:Chl question specifically: photoacclimative
+C:Chl** (§22, BACKLOG P2), because the constant is simultaneously a pigment conversion and a
+growth parameter (it sets `I_s`) and no single value can serve both across a 20× seasonal light
+range. That is better-targeted at this residual than a warm guild is.
 
 **Gate.** If February `DIA_C` stays ≤1.3× observed with C:Chl 34 applied, **the guild is not
 needed for this residual** — adopt the measured C:Chl, record the negative, and stop. Only if

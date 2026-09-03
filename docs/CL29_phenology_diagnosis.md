@@ -2886,10 +2886,12 @@ climate.**
 presented as a third independent axis proving two guilds. It contradicts this document two
 sections earlier: **§45.4 reads February's pigment error the other way** — observed February
 chlorophyll 10.2 against a modelled 3.18 at correct biomass implies February wants
-**C:Chl ≈ 27.5**. And §43.2's only local measurement is 34.2 [29.5, 39.1] with a winter-subset
-median of 32.4. **27.5 and 34 both sit inside that interval.** The two months do not disagree
-about pigment at all; they disagree about *growth* — which is the signature of a residual
-production error, not of a second organism.
+**C:Chl ≈ 27.5**. And §43.2's local measurement is 34.2 with a winter-subset median of 32.4
+and a **winter IQR of 19.9–44.2**. ⚠ Be precise about which interval: 27.5 falls *outside* the
+mean's confidence interval [29.5, 39.1] but comfortably *inside* the observed winter IQR — and
+the IQR is the right comparison, since a single seasonal constant must cover the spread of
+real values, not the uncertainty in their mean. **On that basis 27.5 and 34 are both ordinary
+winter values.** The two months do not disagree about pigment; they disagree about *growth*.
 
 **And the production error is named, measured, and unfixed.** §44.3: February net growth is
 +0.283/d as-is, +0.128/d with `FDAY` implemented, **+0.045/d** with the background extinction
@@ -2959,11 +2961,21 @@ shows the intended form.
 
 **The road forward is therefore ordered, and the guild is not first.** Land FDAY and the
 extinction floor (both correctness fixes, neither a knob), then re-run C:Chl 34 on that
-baseline. Only if February still demands ≈53 there does the model-mechanics case for a second
-guild exist at all. §41.2's taxonomy and phenology remain the real case for the warm guild;
-they are also two readings of one dataset, and they speak to **August–September**, where the
-cold envelope shuts down (CTMI 0.40 at 18.5 °C against T_max 21), not to October — no valid
-warm cardinal set beats the incumbent's October CTMI of 0.935.
+baseline.
+
+⚠⚠ **Superseded within a day — see §47.** The FDAY promotion in this section did not survive
+its own arithmetic. Evaluated directly, the *correct* day-length form is **−22 % February /
+−19 % May, a 1.04× differential** — an offset, not a February lever; the 1.71× belongs to the
+forcing, not to the model's response to it. §44.3's FDAY row turns out to have used the
+*incorrect* form (Form A, which discards light). **Neither remaining correctness item is a
+February lever**, and February's C:Chl conflict has no identified production error left to
+blame. §47.4 names the real exit: photoacclimative C:Chl, because the constant serves two
+roles at once.
+
+§41.2's taxonomy and phenology remain the real case for the warm guild; they are also two
+readings of one dataset, and they speak to **August–September**, where the cold envelope shuts
+down (CTMI 0.40 at 18.5 °C against T_max 21), not to October — no valid warm cardinal set
+beats the incumbent's October CTMI of 0.935.
 
 **Reusable.** ⭐⭐ **Two corrections that act on the same term from opposite directions can
 each be right and still cancel.** Ice (−38 % February light) and C:Chl (+45 % light
@@ -2972,6 +2984,98 @@ started. Check what a candidate shares a *term* with, not just what it shares a 
 ⭐ **A shared constant is a hidden coupling between things the model treats as one organism** —
 the cleanest possible argument for splitting the guild, and it arrived from mechanics rather
 than biology.
+
+---
+
+## 47. The `FDAY` premise, measured algebraically: the *correct* form is not a
+## February lever, and §44.3's probe used the *incorrect* one
+
+**2026-09-04.** §46.4 (corrected) promoted `FDAY` from "near-uniform correctness item" to "the
+strongest February lever identified", on the strength of the forcing series being 1.71×
+differential (Feb 0.389 / May 0.665). Before spending a 14-minute run on it, the two candidate
+implementations were evaluated directly from the code's own algebra. **The promotion does not
+survive, and the reason is instructive.**
+
+### 47.1 Two forms, and only one of them is physics
+
+`I_A` is a **daily integral** (`model.f90:393`: W/m² × 0.5 PAR × 86 400 s × 0.238846 J→cal ÷ 10⁴
+= langley/day). A day-length correction can therefore enter two ways:
+
+| | form | in-repo precedent |
+|---|---|---|
+| **A** | `LLIGHT = FDAY · f(I_A)` — multiply only | the live `smith == 0` branch, all six library routines (`..._lib_DIATOMS.f90:150`) |
+| **B** | `LLIGHT = FDAY · f(I_A / FDAY)` — concentrate the dose into the photoperiod, *then* weight by it | `CUR_SMITH`'s `IAV = 0.9·ITOT/FDAY` (WASP/EUTRO) |
+
+**B is correct and A is a bug.** Steele's depth-averaged factor is very nearly linear in
+`I/I_s` while light-limited, so in that regime B's `FDAY` **cancels exactly** — which is the
+right answer: spreading a fixed daily light *dose* over more or fewer hours cannot change the
+daily photosynthetic integral when the response is linear. A, by multiplying without
+concentrating, silently **discards a fraction (1 − FDAY) of each day's light** — in December,
+71 % of it. B departs from the current code only through the **curvature** of the P–I curve,
+i.e. the genuine penalty for receiving the same dose at higher intensity.
+
+### 47.2 Measured: `LIM_LIGHT` evaluated three ways over the full record
+
+Live constants and forcings (KG_DIA 8.10, C:Chl 53, XKC 0.08, PHIMX 720), CTMI-gated to
+growth days, `I_A` through the `:393` conversion with the adopted ice attenuation, model kd by
+month (§44.3 corrected), H = 3.5 m:
+
+| month | I/I_s | current | Form A | Form B | A/cur | B/cur |
+|---|---|---|---|---|---|---|
+| Jan | 0.10 | 0.0325 | 0.0103 | 0.0286 | **0.318** | 0.879 |
+| **Feb** | 0.30 | 0.0855 | 0.0338 | 0.0666 | **0.395** | **0.779** |
+| Mar | 0.72 | 0.1617 | 0.0785 | 0.1164 | 0.485 | 0.720 |
+| Apr | 0.99 | 0.2012 | 0.1166 | 0.1511 | 0.580 | 0.751 |
+| **May** | 1.04 | 0.2101 | 0.1397 | 0.1702 | **0.665** | **0.810** |
+| Jun | 1.25 | 0.2267 | 0.1612 | 0.1869 | 0.711 | 0.824 |
+| Jul | 2.03 | 0.2582 | 0.1776 | 0.1954 | 0.688 | 0.757 |
+| Aug | 2.46 | 0.2594 | 0.1585 | 0.1769 | 0.611 | 0.682 |
+| Sep | 0.95 | 0.1755 | 0.0913 | 0.1249 | 0.520 | 0.712 |
+| **Oct** | 0.29 | 0.0805 | 0.0342 | 0.0654 | **0.425** | **0.812** |
+| Nov | 0.11 | 0.0348 | 0.0117 | 0.0308 | 0.336 | 0.885 |
+| Dec | 0.06 | 0.0209 | 0.0060 | 0.0190 | 0.289 | 0.908 |
+
+**Form A: −60.5 % February, −33.5 % May — differential 1.68×.**
+**Form B: −22.1 % February, −19.0 % May — differential 1.04×, i.e. an offset.**
+
+### 47.3 What this retires
+
+- ⭐⭐ **§44.3's FDAY row is a Form-A number.** Its measured 0.283 → 0.128/d is ×0.452, matching
+  Form A's ×0.395 light factor and nothing like Form B's ×0.779. **The probe that promoted
+  `FDAY` used the incorrect implementation.** With both this and §44.3's extinction row
+  withdrawn (§44.3, corrected), **no row of that table survives** — and with it goes the
+  quantitative case that February's growth error is large enough to explain the C:Chl conflict.
+- ⭐ **§46.4's promotion of `FDAY` to "the strongest February lever" is withdrawn** — one section
+  after it was written. The *forcing* is 1.71× differential; the *correct response to it* is
+  1.04×. **A differential input does not imply a differential effect** when the operator
+  applied to it is a near-linear integral. That is the reusable error, and it is the same shape
+  as §46's cancellation: check what the model does with a quantity, not just how the quantity
+  varies.
+- **Form B is still worth landing** — it is a −20 % production correction across the board and
+  it is correct physics — but as a **correctness fix with a near-uniform cost**, exactly the
+  status §46.4 originally assigned it and which I wrongly overturned.
+- ⚠ **Form A should not be adopted even though it "works" better** on February. It works by
+  deleting light the lagoon receives. It is also a genuine, if inert, bug in the `smith == 0`
+  branch, worth fixing there whenever that path is next touched.
+
+### 47.4 Where this leaves the arc
+
+Both of §44.5's "remaining correctness items" are now measured, and **neither is a February
+lever**: `FDAY` done correctly is −22 %/−19 % (this section), and the extinction is
+Feb/May 0.98 with no winter measurement at all (§44.3, corrected). **February's C:Chl conflict
+therefore has no identified production error left to blame.**
+
+That does not resurrect §46.3's withdrawn "two guilds" reading — 27.5 and 34 still both sit
+inside the measured winter IQR (19.9–44.2), so the months still agree on pigment. What it
+means is that the honest diagnosis of C:Chl is the one §22 and BACKLOG P2 already name:
+**C:Chl in this model is simultaneously a pigment conversion and a growth parameter** (it sets
+`I_s`), and a single constant cannot serve both roles across a 20-fold seasonal light range.
+The exit is **photoacclimative C:Chl**, not a second guild — and not a better fixed number.
+
+⭐ **Reusable — this section cost nothing.** The whole result is twenty lines of Python over the
+model's own constants and forcings, evaluated before committing a run or a build. Two prior
+sections' conclusions were overturned by arithmetic that could have been done at any point in
+the preceding week. **Evaluate the operator before you probe the input.**
 
 ---
 
