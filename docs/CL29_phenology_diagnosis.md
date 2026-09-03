@@ -2310,6 +2310,108 @@ the November headline 9.7 % → 34.5 %, and a single number would have hidden th
 
 ---
 
+## 42. The light trait is real, the model can only express it as C:Chl — and the
+observations say C:Chl is wrong in autumn (2026-09-03)
+
+**The question.** §41.3 named the warm guild (*Actinocyclus normanii*, 44.5 % of autumn
+planktonic diatom biomass) and set one precondition before any build: a warm guild still has
+to clear §40.1's **+0.056/d rebuild bar**, so *its light traits are the thing to check
+first*, not its cardinals. Checked — and the answer redirects the frontier.
+
+### 42.1 The trait exists in the literature
+
+*A. normanii* was studied across four German North Sea estuaries with accompanying laboratory
+work (Rehbehn, Schuchardt & Schirmer 1993, doi:10.1007/bf02334784): it "is **well adapted to
+strongly changing light situations** and thus adapted to estuaries with **high vertical
+turbulent mixing and low values of Zeu/Zmix**", and "the downstream limit of the habitat of
+*A. normanii* is mainly determined by **light limitation** rather than by hyperosmotic
+stress." That is CL29's light climate stated in the abstract of a paper about another system:
+kd ≈ 3, a fully mixed 3.8 m column, Zeu/Zmix ≪ 1. Supporting: it is a cosmopolitan
+alkalibiontic/halophilous indicator of eutrophic waters whose Great Lakes populations peak at
+**≈20 °C** (Vidaković et al. 2016, doi:10.17110/studbot.2016.47.2.201) — warm cardinals,
+against the model's single T_opt 10 envelope.
+
+### 42.2 The model cannot express it through growth rate — the ceiling is KG-independent
+
+`LIM_LIGHT` uses a depth-averaged Steele with an **adaptive** saturation intensity
+(`aquabc_II_pelagic_auxillary.f90`): `I_s = GITMAX · CCHL_RATIO · e / (0.083·PHIMX·XKC)`.
+Because `I_s ∝ GITMAX`, a faster guild raises its own saturation intensity in lockstep. At
+October conditions (ke 3.18, H 3.8, I_surf ≈ 54 langley/d PAR, nutrient product 0.517,
+losses 0.166/d):
+
+| KG | I_s | LIM_LIGHT | µ | net |
+|---|---|---|---|---|
+| 2.0 | 56 | 0.139 | 0.134 | −0.032 |
+| **8.10 (current)** | 228 | 0.047 | 0.186 | **+0.020** |
+| 40.0 | 1127 | 0.011 | 0.204 | +0.038 |
+| **KG → ∞** | — | — | **0.209** | **+0.043** |
+
+**No growth constant at any value clears the +0.056/d bar** — the limit is 0.225·(I_surf/k)·N
+with `k = CCHL·e/(0.083·PHIMX·XKC)`, independent of KG. This is §17's "caps production at ANY
+KG" wall, now derived analytically for the autumn diatoms. The *only* term in the formulation
+that moves it is `CCHL_RATIO`, since `I_s ∝ CCHL` too: **C:Chl 53 → +0.020 (short), 40 →
++0.071 (clears), 30 → +0.135, 25 → +0.182.** And low C:Chl *is* the shade-adaptation trait —
+more pigment per carbon — i.e. the literature trait of §42.1 is expressible in this model
+**only** as C:Chl.
+
+### 42.3 The observations say the model's autumn C:Chl is 25–31 % too high
+
+Measured in-situ C:Chl (paired same-box/same-date observed phytoplankton carbon ÷ observed
+chlorophyll, 2012–2022) runs **Feb 24.3 → Mar 27.6 → May 62.8 → Aug 102.1 → Sep 90.7 → Oct
+50.8 → Nov 52.3**. Applying the model's *fixed* ratios (DIA/OPA 53, CYN/FIX/NOST 78) to the
+**observed** monthly composition and comparing:
+
+| month | model-implied | observed | model/obs |
+|---|---|---|---|
+| Mar | 54.6 | 27.6 | **1.98** |
+| May | 58.1 | 62.8 | 0.92 |
+| Aug | 69.2 | 102.1 | **0.68** |
+| Sep | 70.7 | 90.7 | 0.78 |
+| **Oct** | 66.7 | **50.8** | **1.31** |
+| **Nov** | 65.5 | **52.3** | **1.25** |
+
+The fixed ratio is wrong in **both directions seasonally** — too little pigment in late
+winter and autumn, too much in summer — which is textbook photoacclimation, and no single
+value can span an observed range of 24 → 102. Critically for §40.1: in October the model
+assumes **31 % too little chlorophyll per carbon**, so its `I_s` is ~31 % too high and
+`LIM_LIGHT` correspondingly suppressed. Correcting October C:Chl to the observed level
+(≈40 for the diatom guild) is exactly the +0.071/d case in §42.2's table — **it clears the
+rebuild bar on its own.**
+
+### 42.4 Re-scoping: photoacclimation comes before a second guild
+
+**The autumn diatom deficit and the photoacclimative-C:Chl backlog item are the same
+problem.** §22 found C:Chl as the fifth compensation channel and fixed it at measured annual
+values, listing "photoacclimative C:Chl (structure — never a knob)" as the honest closure;
+§41 named the missing guild; §42 shows the guild's defining trait is only expressible as
+C:Chl and that the fixed C:Chl is already measurably wrong in the season concerned. So the
+order of work inverts:
+
+1. **Photoacclimative C:Chl (structure).** Cheaper than a guild — no new state variable, no
+   routing, no VARN-class deployment change — already a named BACKLOG P2 item, driven by a
+   measurement that now exists (§42.3), and it corrects every group in every season rather
+   than one guild in one season. It is also a precondition: without it, a warm guild inherits
+   the same suppressed `LIM_LIGHT` and fails the rebuild bar for the same reason.
+2. **The warm diatom guild** (§41.2's *Actinocyclus*/*Skeletonema*) — still the right
+   structural answer to the two-guild observation, but it should be built *after* the light
+   climate can express its defining trait, or its test is confounded.
+
+⚠ **The §22 trap, restated.** C:Chl must never be a calibration knob: handed to the
+objective it fills the chlorophyll gap with pigment instead of biomass (§22 measured Feb 54
+vs obs 10, r collapsing to +0.47). §42.3 is *not* that — it is a measured seasonal ratio
+from paired observations, not a fitted one — but it sits close enough to the trap that an
+implementation must be **driven by the measurement and validated on biomass (group carbon),
+never on chlorophyll**, or it reproduces the exact failure §22 caught.
+
+**Reusable.** ⭐⭐ **Check whether the model can express a trait before sourcing its value.**
+The obvious next step after naming *Actinocyclus* was to hunt cardinal temperatures and a
+growth rate; the formulation says growth rate is inert here (KG-independent ceiling) and the
+whole trait lives in one constant nobody would have looked at. ⭐ **An adaptive parameter
+couples what you tune to what limits it** — `I_s ∝ GITMAX` means raising growth raises the
+light requirement, which is why the wall held against every previous growth-side probe.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
