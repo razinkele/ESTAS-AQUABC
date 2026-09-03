@@ -399,6 +399,15 @@ subroutine AQUABC_PELAGIC_KINETICS &
     K_B_E    (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 9)
     ice_cover(1:nkn) = DRIVING_FUNCTIONS(1:nkn,10)
 
+    ! Ice attenuation of the light reaching the water (doc s.44/s.45).
+    ! Areal blend of open water and the under-ice fraction:
+    !     I_eff = I * ((1 - f) + f * T)  =  I * (1 - f * (1 - T))
+    ! with f = ice_cover and T = ICE_LIGHT_TRANS (under-ice PAR transmittance).
+    ! Byte-identical wherever ice_cover = 0, which is every box of every setup
+    ! that still carries the all-zero ICE_COVER placeholder.
+    I_A(1:nkn) = I_A(1:nkn) * &
+                 (1.0D0 - (ice_cover(1:nkn) * (1.0D0 - ICE_LIGHT_TRANS)))
+
     !INITIALIZE FLAGS
     if(nflags .ne. NFLAGS_CHECK) then
        write(*,*) 'PELAGIC_KINETICS: Number of elements in FLAGS is wrong', nflags

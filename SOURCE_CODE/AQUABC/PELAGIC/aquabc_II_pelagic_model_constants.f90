@@ -346,6 +346,7 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
     real(kind = DBL_PREC) ::                      BETA_FIX_CYN !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
     real(kind = DBL_PREC) ::                          BETA_OPA !Model constant no 322 : OtherPhyto photoinhibition parameter
     real(kind = DBL_PREC) ::                 BETA_NOST_VEG_HET !Model constant no 323 : Nostocales photoinhibition parameter
+    real(kind = DBL_PREC) ::                  ICE_LIGHT_TRANS !Model constant no 324 : under-ice PAR transmittance (0-1)
 
 !==========================================================================
 end module AQUABC_PELAGIC_MODEL_CONSTANTS
@@ -681,6 +682,13 @@ subroutine INIT_PELAGIC_MODEL_CONSTANTS
     call para_get_value('BETA_FIX_CYN'                     ,                      BETA_FIX_CYN) !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
     call para_get_value('BETA_OPA'                         ,                          BETA_OPA) !Model constant no 322 : OtherPhyto photoinhibition parameter
     call para_get_value('BETA_NOST_VEG_HET'                ,                 BETA_NOST_VEG_HET) !Model constant no 323 : Nostocales photoinhibition parameter
+    ! Optional: setups predating the ice-light coupling do not carry this name, and
+    ! para_get_value hard-stops on a missing key. Absent => 1.0 (no attenuation).
+    if (para_index_value('ICE_LIGHT_TRANS') > 0) then
+        call para_get_value('ICE_LIGHT_TRANS', ICE_LIGHT_TRANS) !Model constant no 324
+    else
+        ICE_LIGHT_TRANS = 1.0D0
+    end if
 
     call VALIDATE_PELAGIC_MODEL_CONSTANTS()
 
@@ -940,6 +948,11 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     if (BETA_NOST_VEG_HET < 0.0D0) then
         write(*,*) 'WARNING: BETA_NOST_VEG_HET < 0, setting to 0'
         BETA_NOST_VEG_HET = 0.0D0
+    end if
+
+    if (ICE_LIGHT_TRANS < 0.0D0 .or. ICE_LIGHT_TRANS > 1.0D0) then
+        write(*,*) 'WARNING: ICE_LIGHT_TRANS outside [0,1], clamping: ', ICE_LIGHT_TRANS
+        ICE_LIGHT_TRANS = min(1.0D0, max(0.0D0, ICE_LIGHT_TRANS))
         n_fixes = n_fixes + 1
     end if
 
@@ -1315,6 +1328,7 @@ subroutine INSERT_PELAGIC_MODEL_CONSTANTS
     call para_insert_value('BETA_FIX_CYN'                     ,                      BETA_FIX_CYN) !Model constant no 321 : Fixing cyanobacteria photoinhibition parameter
     call para_insert_value('BETA_OPA'                         ,                          BETA_OPA) !Model constant no 322 : OtherPhyto photoinhibition parameter
     call para_insert_value('BETA_NOST_VEG_HET'                ,                 BETA_NOST_VEG_HET) !Model constant no 323 : Nostocales photoinhibition parameter
+    call para_insert_value('ICE_LIGHT_TRANS'                  ,                   ICE_LIGHT_TRANS) !Model constant no 324 : under-ice PAR transmittance
 
 end subroutine INSERT_PELAGIC_MODEL_CONSTANTS
 
@@ -1648,6 +1662,7 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                          BETA_FIX_CYN =   0.00  !Fixing cyanobacteria photoinhibition
                              BETA_OPA =   0.00  !OtherPhyto photoinhibition
                     BETA_NOST_VEG_HET =   0.00  !Nostocales photoinhibition
+                      ICE_LIGHT_TRANS =   0.05  !under-ice PAR transmittance (snow-covered ice)
 
 end subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
 

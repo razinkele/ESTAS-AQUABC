@@ -72,7 +72,7 @@ module aquabc_II_pelagic_interface
     ! which is 12 at the interface level (GLOBAL has nflags = 5 for kinetics only;
     ! the interface packs additional options into flags 6-12).
     integer, save :: nstate              = 32
-    integer, save :: nconst              = 323
+    integer, save :: nconst              = 324
     integer, save :: n_driving_functions = 10
     integer, save :: nflags              = 12
     integer, save :: n_saved_outputs     = 5    ! was 4 -> bug (ggu)

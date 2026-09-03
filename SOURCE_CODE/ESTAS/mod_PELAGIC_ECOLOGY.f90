@@ -717,6 +717,14 @@ contains
                              BETA_FIX_CYN = MODEL_CONSTANTS(321)
                                  BETA_OPA = MODEL_CONSTANTS(322)
                         BETA_NOST_VEG_HET = MODEL_CONSTANTS(323)
+        ! Constant 324 (under-ice PAR transmittance) is optional: setups predating the
+        ! ice-light coupling declare only 323 constants, and must keep running unchanged.
+        ! Absent => 1.0 (fully transparent ice), i.e. no attenuation, byte-identical.
+        if (size(MODEL_CONSTANTS) >= 324) then
+            ICE_LIGHT_TRANS = MODEL_CONSTANTS(324)
+        else
+            ICE_LIGHT_TRANS = 1.0D0
+        end if
 
     end subroutine INIT_PELAGIC_MODEL_CONSTANTS
 

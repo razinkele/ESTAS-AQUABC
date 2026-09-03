@@ -321,3 +321,4 @@
    321                       BETA_FIX_CYN   0.000000D+00
    322                           BETA_OPA   0.000000D+00
    323                  BETA_NOST_VEG_HET   0.000000D+00
+   324                ICE_LIGHT_TRANS              1.00  !324   Under-ice PAR transmittance (1.0 = no attenuation; set <1 only with real ICE_COVER data)

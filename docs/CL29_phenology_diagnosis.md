@@ -2626,6 +2626,123 @@ real mismatch and invites a "fix" that would introduce one.
 
 ---
 
+## 45. Ice built: February fixed to 0.99×, seasonal r +0.74 — the study's best
+(2026-09-03)
+
+**The build.** §44 named February's blocker as a winter light-climate gap and ranked ice
+first, because it is the only *winter-specific* lever (day length and background extinction
+are near-uniform across months, §44.3/§45.4). Built and measured.
+
+### 45.1 Data: the lagoon does freeze, and the series proves itself
+
+`tools/fetch_ice_cover.py` pulls daily sea-ice area fraction (`siconc`) from the CMEMS Baltic
+physics reanalysis (`cmems_mod_bal_phy_my_P1D-m`) over the lagoon interior (lon 20.95–21.30,
+lat 55.00–55.65 — inside the Curonian Spit, so the mean is the lagoon's own ice, not the open
+sea's). The lagoon is properly resolved: 368 wet cells of 507 in that strip.
+
+**4,018 daily records, mean 64 ice days/year** (>10 % cover) — squarely inside the
+literature's 40–100 for this lagoon. Per winter: 2012 **90**, 2013 **100**, 2014 68, 2015 55,
+2016 41, 2017 55, 2018 **101**, 2019 48, **2020 zero**, 2021 88, 2022 57. ⭐ **The 2020 zero
+is the validation**: 2019/20 was the record-mild Baltic winter, and the series reproduces
+that anomaly without being asked to — evidence it carries real inter-annual signal rather
+than a climatology.
+
+### 45.2 Code: ice attenuates light, and the wiring is proven inert
+
+Ice now attenuates the light reaching the water as an areal blend of open and ice-covered
+fractions, applied to `I_A` immediately after `ice_cover` is read
+(`aquabc_II_pelagic_model.f90`):
+
+```
+I_eff = I · ((1 − f) + f·T) = I · (1 − f·(1 − T))       f = ice_cover, T = ICE_LIGHT_TRANS
+```
+
+`ICE_LIGHT_TRANS` is **model constant 324**, not a hidden literal, and it is added to **both**
+parallel readers — the AQUABC name-based `para_get_value` path and the ESTAS
+`INIT_PELAGIC_MODEL_CONSTANTS` index path that carried the §34 BETA bug. Both reads are
+guarded (absent ⇒ 1.0 = no attenuation), and all eight constants files plus five declared
+counts were updated with a **default of 1.00**, so every pre-existing setup is unchanged.
+
+**The safety property that makes the result interpretable:** with the shipped all-zero
+`ICE_COVER.txt`, the multiplier is exactly 1.0, so the code change *cannot* alter any
+result. Verified end-to-end — a full-record run with the constant present at 1.0 is
+**byte-identical** (`diff -r` clean, 32 files, day 4016) to the canonical adopted run. Every
+difference below is therefore attributable to the ice data alone.
+
+### 45.3 Result: February fixed, phase at a study best, ice-free months untouched
+
+Prediction registered before the run (Feb light multiplier 0.62, growth turning negative
+under ice, `DIA_C` falling from 0.852 toward obs 0.280, May–Nov untouched):
+
+| | canonical | with real ice |
+|---|---|---|
+| **Feb DIA_C** (obs 0.280) | 0.810 (**2.89×**) | **0.278 (0.99×)** |
+| Feb PHYTO_TOT_C (obs 0.404) | 0.866 (2.15×) | 0.335 (0.83×) |
+| **seasonal r** | +0.67 | **+0.74 — best of the study** |
+| CHLA RMSE | 23.9644 | **23.8300** |
+| DIA_C RMSE | 0.71299 | **0.70154** |
+| PHYTO_TOT_C RMSE | 2.50090 | **2.49703** |
+| May / Aug / Oct / Nov | — | **unchanged** |
+| autumn:spring (obs 2.06) | 1.97 | 2.25 |
+| PO4 / TN / Si RMSE | 0.01684 / 0.8606 / 0.8609 | 0.01755 / 0.8729 / 0.8697 |
+
+Every ice-free month is untouched — the correction is genuinely differential, which is
+exactly what §44 said neither day length nor background extinction could deliver. Costs are
+small and of the expected sign: suppressing the winter bloom leaves nutrients unconsumed
+(PO4, TN, Si each slightly worse), and autumn:spring overshoots 2.06 where the baseline's
+1.97 undershot it.
+
+**Sensitivity — the result does not rest on the unmeasured constant.** A 7.5× range in
+transmittance moves nothing:
+
+| T | CHLA | DIA_C | seasonal r | Feb DIA_C (obs 0.280) |
+|---|---|---|---|---|
+| 0.02 | 23.8263 | 0.70055 | +0.74 | 0.270 (0.96×) |
+| **0.05** | 23.8300 | 0.70154 | **+0.74** | **0.278 (0.99×)** |
+| 0.15 | 23.8396 | 0.70312 | +0.73 | 0.309 (1.10×) |
+
+⭐ **Why it is flat:** at ~40 % mean February ice cover the multiplier `1 − f(1−T)` is
+dominated by the *fraction* iced, not by what the ice transmits. **The physics is carried by
+the measured CMEMS series, not by the one number nobody has measured here** — the opposite of
+§43's C:Chl, where the result hinged entirely on the value. That is the best available
+outcome for a newly introduced constant.
+
+### 45.4 What this unblocks
+
+**§43's C:Chl correction is now back in reach, and the ordering §44.5 prescribed is
+empirically justified.** With February biomass finally correct (0.99×), February chlorophyll
+reads 3.18 against an observed 10.2 — the *pigment* error, exposed only once the biomass
+error was removed. Observed February implies C:Chl ≈ 27.5, squarely on §43's measured winter
+value of 32.4 (IQR 19.9–44.2) against the model's 53. The two corrections are complementary,
+and the failed §43 probe (which fixed November but amplified February) is now explained: it
+was correct physics landing on an unfixed error, exactly as §43.3 concluded.
+
+Still open and unchanged by this: the autumn deficit (§40.1's light wall, §41.2's warm
+guild), and the two near-uniform light-climate items — `FDAY`, still read and never used
+(§44.2), and the background extinction below the measured kd floor. Neither is winter-
+specific, so both remain separately-decided correctness fixes.
+
+**Adoption is an open user decision.** Unlike §40.5 this is a code change plus a new forcing
+file plus a constant, not a config edit: the live setup already carries constant 324 at 1.0
+(byte-identical), so adopting means installing the real `ICE_COVER.txt` and setting the
+transmittance.
+
+**Reusable.**
+- ⭐⭐ **A count can be defined in more places than the compiler will tell you about.**
+  `nconst` lives in `aquabc_II_pelagic_interface.f90` *and* as a `parameter` in
+  `mod_GLOBAL.f90` — the ESTAS path uses the latter. Changing one and rebuilding gave a clean
+  build and a run that aborted on the stale count; only *running* it revealed the third
+  definition. Same duplicated-count structure as `nstate` in the VARN work.
+- ⭐⭐ **Design the change so the code is provably inert, and the data carries the science.**
+  Wiring ice to light while the forcing is all zeros is byte-identical by construction, which
+  separates code risk from science risk completely and made one `diff -r` sufficient to trust
+  the whole build.
+- ⭐ **Adding a model constant costs eight files and five counts here** (plus the CI's 0D
+  example) — and `para_get_value` hard-stops on a missing name, so a new constant is
+  backward-incompatible unless every read is guarded and every setup defaulted.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
