@@ -2218,6 +2218,98 @@ limits.
 
 ---
 
+## 41. The diatom observation audit: the artifact is small, and the guild is named
+(2026-09-03)
+
+**The question.** §40.1 left the autumn diatom deficit with two branches: either the target
+is unreachable for any pelagic-growth formulation in kd ≈ 3 water, or those diatoms are
+largely **benthic and resuspended** — an observation-mapping artifact like the *Mougeotia*
+share of OPA (§35), which no growth formulation should be asked to reproduce. That is an
+observation-side question, so it was measured on the observation side.
+
+**Method.** The AAA open-data monitoring NDJSON (`JTD/monitoringasjsonl`, the same
+species-level source §35 used) streamed for `Fitoplanktonas` rows at the eight CL29-mapped
+LTK stations, 2016–2022, filtered to the two diatom orders present (`Eupodiscales`,
+`Bacillariales`): **3,579 rows, 790.6 wet-biomass units.** Genera were split into
+holoplanktonic versus periphytic/epipelic/epiphytic (tychoplankton) by habit; 2.5 % of
+biomass stayed unclassified. Tool: `/tmp/varn_ab/diatom_habit.py`.
+
+### 41.1 The artifact is small — the light wall is a real model failure
+
+| month | benthic share (headline) | upper bound (*Fragilaria* counted benthic) |
+|---|---|---|
+| Aug | 7.6 % | 9.5 % |
+| **Oct** | **4.5 %** | 15.0 % |
+| **Nov** | **9.7 %** | 34.5 % |
+
+Annual peak is May (26.2 %); every other month is single-digit to mid-teens. **This is
+nothing like the *Mougeotia* case** (30.5 % of OPA annually, 45 % in August). The autumn
+diatom observations are ~90 % genuinely planktonic, and October stays ≤15 % under the most
+pessimistic classification defensible. ⚠ *Fragilaria* is the swing taxon — several species
+in it are tychoplanktonic, and moving the whole genus takes November from 9.7 % to 34.5 %;
+October is robust either way. **⇒ The benthic branch of §40.1 is refuted. The ~0.64 mg C/L
+of October diatoms is pelagic biomass the model must actually grow, and §40.1's light wall
+stands as a real model failure rather than a mapping artifact.**
+
+### 41.2 What the audit found instead: two guilds, three months apart
+
+The audit was sent to size an artifact and returned a structure. Autumn (Oct–Nov)
+planktonic diatom biomass is **44.5 % *Actinocyclus normanii*** — three forms, all in the
+top three species (f. *subsalsus* 17.5 %, f. *normanii* 13.6 %, *normanii* 13.2 %) — then
+*Stephanodiscus* 20.0 % (*hantzschii*, *rotula*), *Fragilaria* 19.1 % (*heidenii*,
+*capucina*, *crotonensis*), *Aulacoseira islandica* 6.2 %, ***Skeletonema subsalsum*** 6.2 %.
+
+Monthly biomass by genus splits the observed diatoms cleanly in two:
+
+| genus | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | wtd. mean month |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Asterionella | 3.6 | 8.9 | 11.6 | 18.2 | 1.5 | 0.1 | 0.2 | 0.1 | 0.3 | 1.6 | **4.4** |
+| Stephanodiscus | 9.0 | 28.3 | 52.7 | **102.7** | 26.7 | 12.5 | 3.4 | 2.7 | 12.2 | 6.2 | **5.1** |
+| Aulacoseira | 3.1 | 12.6 | 23.2 | 1.8 | 1.3 | 2.5 | 28.5 | 15.3 | 2.8 | 2.9 | **6.3** |
+| Fragilaria | 3.1 | 4.9 | 7.2 | 3.0 | 2.0 | 4.3 | 1.8 | 1.8 | 6.3 | 11.2 | 7.1 |
+| *Skeletonema* | 0.0 | 0.1 | 3.3 | 1.6 | 0.1 | 2.2 | 4.5 | 9.3 | 5.4 | 0.3 | **8.0** |
+| ***Actinocyclus*** | 1.2 | 2.1 | 3.7 | 10.7 | 13.2 | 13.6 | **41.6** | **42.9** | 25.5 | 15.4 | **8.2** |
+
+A **cold/spring guild** (*Asterionella*, *Stephanodiscus*, *Aulacoseira*; weighted mean
+month 4.4–6.3, peaking May) and a **warm/late guild** (*Skeletonema subsalsum*,
+*Actinocyclus normanii*; 8.0–8.2, peaking Aug–Sep and carrying October). **The model has one
+envelope — `DIA_OPT_TEMP_LR` −2, `DIA_OPT_TEMP_UR` 10, `KAPPA_DIA_OVER_OPT_TEMP` 21 — which
+is the cold guild exactly.** That single fact explains both halves of the diatom error at
+once: February 3.04× and the spring over-prediction (the cold guild, over-grown), and
+July–October 0.00–0.08 (the warm guild, structurally absent). It also explains the autumn
+starting point — §40.1's diatoms cannot rebuild in autumn because the summer collapse that
+empties them is the *absence of the guild that owns the summer*, not a rate problem.
+
+### 41.3 Correction to §40, and what a second guild would take
+
+§40 concluded "not a new guild". **That holds for CYN** (a cardinal constant fixed it, §40.5)
+**and for OPA** (competitive exclusion, §40.3) — **but not for the diatoms**, and the
+correction is on the evidence, not on preference. BACKLOG P2 named the warm guild as
+"*Actinocyclus*/*Skeletonema subsalsum*, no clean published cardinals"; the audit now
+supplies the organism, its share (44.5 % of autumn planktonic diatom biomass), and its
+phenology (peak Aug–Sep, persisting through November). It is no longer a speculative
+addition — it is a named, quantified, taxonomically-evidenced gap.
+
+**Scoping, not a proposal.** A second diatom guild means a new state variable and its full
+routing (the §38 VARN work is the cost model for that: byte-identity discipline, a
+transported state, every downstream reader). Before any of that, the cheap prior test is
+whether the *existing* envelope can be re-pointed: the cold guild is over-predicted in
+spring (Feb 3.04×) and absent in summer, so **widening/warming the single envelope trades
+one error for the other** — which §11's wide-envelope experiment already measured, and it
+destroyed June. That is the argument for two guilds rather than one re-tuned one, and it is
+now backed by the observation that the two assemblages are three months apart in the data.
+⚠ Also unresolved: §40.1's light arithmetic applies to whatever guild occupies October, so a
+warm guild must be shown to clear the same +0.056/d rebuild bar — *Actinocyclus normanii* is
+a large brackish centric of turbid systems, so its light traits are the thing to check first.
+
+**Reusable.** ⭐ **Send an observation audit to size an artifact and let it answer a
+different question.** §35 sized *Mougeotia* and named *Planktothrix*; §41 sized the diatom
+tychoplankton — small — and named the missing guild. In both cases the audit's *by-product*
+was worth more than its commission. ⭐ Report the swing taxon: one genus (*Fragilaria*) moves
+the November headline 9.7 % → 34.5 %, and a single number would have hidden that.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
