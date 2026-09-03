@@ -1977,6 +1977,101 @@ between CYN and the fixers over one nitrogen pool; and 0.5 of 2.3 mg C/L says th
 
 ---
 
+## 39. The autumn collapse is not a nutrient problem: four falsifications
+(2026-09-03)
+
+**The question.** After §37/§38 closed the August *Planktothrix* exclusion on the
+acquisition side, the named remainder was the autumn community — the warm-water diatom
+guild and the autumn greens. The intended work was to design that guild. It was
+re-measured first, and the measurement said not to build it.
+
+**Where the model actually fails now.** Scored against the obs-matched monthly climatology
+(current operational config, T7-verified full-record baseline `OUT_STD_MAIN`), August and
+September are no longer the problem — CHLA ratios 0.92 and 0.98. The collapse is
+**October–November**:
+
+| month | CHLA obs / model | ratio | PHYTO_TOT_C ratio | DIA_C ratio | CYN_C ratio |
+|---|---|---|---|---|---|
+| Aug | 50.8 / 47.0 | 0.92 | 0.72 | 0.00 | 0.09 |
+| Sep | 50.2 / 49.2 | 0.98 | 0.75 | 0.01 | 0.17 |
+| Oct | 46.4 / 24.7 | **0.53** | 0.68 | 0.03 | 0.23 |
+| Nov | 24.0 / 3.1 | **0.13** | **0.16** | 0.24 | 0.26 |
+
+**The resource signature pointed at nitrogen — and was wrong.** In the same window silica
+sits at 2.14× observed and phosphate at 5.6×, while DIN runs 4–5× *under* (Oct model 0.028
+vs obs 0.113; Nov 0.101 vs 0.493). Two nutrients accumulating while one is scarce is the
+textbook picture of a niche closed by that one nutrient. Four candidate mechanisms were
+tested; **all four are refuted**, and together they close the resource side entirely.
+
+1. **The prescribed benthic denitrification sink — refuted by bound.** It is summer-peaked
+   (−0.040 gN/m²/d in August, −0.013 in October); over a ~3.8 m column that October value is
+   ~0.10 mg N/L per month, *larger than the entire 0.068 mg/L deficit*. A ladder at ×1 / ×0.5
+   / ×0 moves October NO3 monotonically (0.0059 → 0.0079 → 0.0115) and moves the biology not
+   at all: October CHLA ratio 0.53 → 0.54 → 0.54, November 0.13 at every rung. Even deleted
+   entirely the sink recovers a small fraction of the gap and buys no biomass.
+2. **Water-column denitrification — refuted by arithmetic.** `K_MIN_DOC_NO3N_20 = 2.98`
+   looks alarming beside its oxygen counterpart at 0.010, but the no-advanced-redox limiter
+   is `(NO3/(NO3+1.0))·(K_HS_DOXY_RED_INHB/(DO+K_HS_DOXY_RED_INHB))`; at 10 mg/L oxygen and
+   `K_HS_DOXY_RED_INHB = 0.10` that is ~6e-5 of the rate constant. The pathway is off.
+3. **Nitrogen immobilised in organic pools — refuted by arithmetic, against my own
+   framing.** The partition looked damning (box 7, August: DIN 0.005 vs DON 0.540 and PON
+   0.432 mg N/L — DIN is 0.5 % of the pool, and TN is over-predicted by +0.56 while DIN is
+   4–5× under). But the DON base rate is `K_MIN_DON_DOXY_20 = 0.100`/d at 20 °C, θ = 1.08;
+   at 10 °C that is 0.046/d on a 0.59 mg N/L pool = **0.027 mg N/L/d, ~0.85 mg N/L over
+   October — ten times the 0.085 mg/L gap**, and the standing DIN turns over in 2.1 days.
+   Supply is not short; low DIN is a *symptom* of fast recycling. A probe lowering the
+   phytoplankton-driven mineralization threshold (`K_MIN_PHYT_AMIN_DON` 4.00 → 1.50, chosen
+   because the model's PHYT_TOT_C peaks at 3.87 while observations reach 5.35) returned an
+   exact null — and was **under-powered by construction**: the accelerator adds
+   `FAC_PHYT_AMIN_DON·(PHYT_TOT_C − threshold)` = 0.008 × 0.5 ≈ 0.004/d against a 0.100/d
+   base, a 4 % change. Check a term's coefficient before spending a run on its threshold.
+4. **Riverine nitrate erased by the strait exchange — mechanism real, effect nil.** The
+   forcing is correct: the river boundaries carry NO3 0.363 (Oct) and 0.602 (Nov) mg/L,
+   matching observations, and box 24 receives it at full strength (Nov 0.595). But the
+   strait exchange runs **78,565 m³/s in / 79,246 out** — a correct net of −681 m³/s wrapped
+   around a gross exchange ~130× the river discharge, enough to turn the ~6 km³ lagoon over
+   daily — and every interior box then sits at the *Baltic boundary's* value: model Nov
+   0.117–0.173 vs boundary 0.120, against an observed lagoon-wide 0.452. The physical
+   objection is real (water returning through the strait is mostly lagoon water that just
+   left, so it should not carry pristine-Baltic concentrations), so autumn boundary NO3 was
+   raised ×3.75 to lagoon-like values. **Interior nitrate responded exactly as predicted —
+   October 0.0059 → 0.0235, ratio 0.08 → 0.32 — and the biology did not move**: CHLA Oct
+   24.69 → 24.96, Nov 3.12 → 3.21; PHYTO_TOT Nov 0.215 → 0.220; DIA_C, CYN_C, Si and PO4 all
+   unchanged.
+
+**The conclusion.** In October the model has silica at 2.1×, phosphate at 5.6×, and — when
+supplied — nitrate at 4×, and still grows nothing. **The autumn niche is not closed by
+nutrients.** §38 closed nitrogen *acquisition*; §39 closes nitrogen *supply*. What remains
+for the October–November collapse is the growth-versus-loss balance: light in a kd ≈ 3
+column at 8-hour November days, and the loss terms behind an 8× biomass drop between
+October and November (net ~0.07/d). That is the *Planktothrix* low-loss story §35/§36 began
+and did not finish — a shade-adapted, grazing-resistant, low-mortality guild that
+observations carry at 0.343 mg C/L in November while the model holds 0.091 — **not a new
+guild to be added**. The next probe family is the autumn light response and the loss terms,
+not another consumer and not another nutrient.
+
+**Reusable, and cheaply learned.**
+- ⭐ **Two accumulating nutrients plus one scarce one does not prove the scarce one is
+  limiting.** Here the scarce pool was simply the fast-turnover one; supplying it 4× changed
+  nothing. Test a limitation claim by *supplying the resource*, not by reading its
+  concentration.
+- ⭐ **The driver file is parsed with a list-directed Fortran `read`, in which `/`
+  terminates the input list.** An unquoted absolute path silently reads back blank and the
+  run dies on an empty filename. **Quote every path** in a scratch driver — the working
+  idiom is `"/tmp/.../INPUTS_X/"`.
+- ⚠ Full-record runs emit a multi-line negative-concentration diagnostic (`ALERT: NEGATIVE
+  CONC AFTER UPDATE`, `OLD_MASS=`, `VOLUME=`, `CONC=`) at millions of blocks per run —
+  **5–10 GB of log each**. ZOO_N/ZOO_P (states 7/8) are clamped continuously from TIME=0 in
+  *production* runs, not just probes (baseline-equivalent runs: 7.8M and 15.3M alerts); that
+  is an open finding of its own. Filter on that block's own vocabulary at *analysis* time,
+  and note that a capture-time filter here both violated the §29 lesson and failed to match.
+
+**Nothing adopted; the live configuration is untouched.** All four probes ran on scratch
+copies under `/tmp/varn_ab/autumn/` (`INPUTS_S050`, `INPUTS_S000`, `INPUTS_MIN15`,
+`INPUTS_BND` with their `OUT_*` sets retained for re-scoring).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
