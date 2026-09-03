@@ -2519,6 +2519,113 @@ next thing to explain.
 
 ---
 
+## 44. The February over-prediction is a winter light-climate gap: no ice, no day length
+(2026-09-03)
+
+**The question.** §43 named the blocker: the model grows ~3× too many winter diatoms, and
+until that is fixed the *correct* diatom C:Chl (≈34, §43.2) cannot be used because accurate
+physics applied on top of an unfixed error amplifies it. So: why is February over-grown?
+
+**It is timing, not magnitude.** Observations *build* to a May peak; the model is already
+flat-out in February:
+
+| | Feb | Mar | Apr | May |
+|---|---|---|---|---|
+| obs DIA_C | 0.280 | 0.626 | 0.829 | 0.857 |
+| model | 0.852 | 1.075 | 1.037 | 1.076 |
+| ratio | **3.04** | 1.72 | 1.25 | **1.26** |
+
+May is nearly right. The model starts its bloom about two months early, and its February net
+growth is **+0.283/d** — a runaway checked only by nutrient draw-down and self-shading.
+Nothing in the formulation stops it: temperature only half-limits (CTMI 0.462 at 1.8 °C, the
+guild is cold-adapted by construction), nutrients are at their winter maximum, losses are
+low (0.137/d, mortality scaling down with temperature), and — the counter-intuitive part —
+**February's `LIM_LIGHT` (0.118) is twice October's (0.057) despite less surface light**,
+because cold water lowers GITMAX, which lowers the adaptive `I_s`, which raises light
+efficiency (the §42.2 coupling running in reverse).
+
+### 44.1 The lagoon never freezes, and ice could not have stopped it anyway
+
+**`INPUTS_CL29/ICE_COVER.txt` is a two-row, all-zero placeholder** — `0.0` at day 0, `0.0`
+at day 4016, interpolated — so the modelled lagoon is ice-free for the entire 11-year
+hindcast. The real Curonian Lagoon carries ice roughly 40–100 days in most winters.
+
+**And the mechanism is wired to the wrong processes.** `ice_cover`
+(`DRIVING_FUNCTIONS(:,10)`) is consumed at exactly three sites — `R_AERATION`
+(`aquabc_II_pelagic_model.f90:1044`), `R_AMMONIA_VOLATIL` (`:1971`) and `CO2_ATM_EXHANGE`
+(`:3311`) — **all gas exchange, none of them light or growth.** Even with a correct
+ice-fraction series loaded, phytoplankton would receive full irradiance under a metre of ice.
+This is the §12 placeholder-forcing class for the third time in this study, with an extra
+twist: here the placeholder hides a mechanism that would not have worked if fed.
+
+### 44.2 `FDAY` is read, bundled, and never used
+
+The day-length driving function is read (`DRIVING_FUNCTIONS(:,4)`), allocated, and pointed
+into the per-thread environment bundle — and appears in **no calculation anywhere**. Its
+only occurrence in a formula is inside the dead `CUR_SMITH` routine, where it is hardcoded
+to `1.0`. **The model gives each day's mean irradiance 24 hours a day.** Because the P–I
+curve is concave, that over-states production, and it over-states it *most* where days are
+shortest — which is exactly February.
+
+### 44.3 The two gaps are differential in the way February needs
+
+| net growth | February | May (must not break) |
+|---|---|---|
+| as-is | **+0.283/d** | +0.932/d |
+| + day length (FDAY ≈ 0.29 / 0.60) | +0.128/d | — |
+| + background extinction at the measured floor | +0.152/d | — |
+| **+ both** | **+0.045/d** | **+0.472/d** |
+
+February falls from runaway to near-balance — consistent with the observed 0.28 mg C/L
+standing stock — while May's bloom survives at +0.472/d. Neither correction is a tuned
+knob: FDAY is a *bug fix* (a driving function that is read and discarded), and the
+background extinction is measured — this study's own campaign gives kd 3.18 mean / 2.92
+median / range **2.26–5.72**, while the model's `kd = kdb + 0.4 + 0.02·CHLA` yields 2.20 in
+February and **1.25 in November**, below anything ever measured in this lagoon.
+
+### 44.4 Checked and cleared
+
+Recorded so they are not re-litigated:
+- **Solar units.** `SOLAR_RAD_TS.txt` is W/m² total solar (annual mean 124.5, matching ~110
+  W/m² expected at 55 °N) while `LIM_LIGHT` documents langleys/day PAR. The conversion is
+  ×2.07 (W/m² → langley/d) ×0.45 (PAR fraction) = **×0.93** — so passing the raw number is
+  coincidentally within 7 % of correct. Not a bug; do not "fix" it without redoing the
+  arithmetic.
+- **River turbidity.** Suspended matter at the CL29 stations is flat seasonally (monthly
+  medians 7.8–14.0 mg/L, no winter/spring spike, n = 481), so a seasonal
+  river-turbidity term does not explain February. The extinction problem is the *constant*
+  background, not its seasonality.
+- **Growth rate.** February sits below light saturation (I/I_s = 0.45), where
+  `µ → N·I_surf·(0.083·PHIMX·XKC)/(ke·H·CCHL)` and GITMAX cancels — so `KG_DIA` is
+  irrelevant to the February bloom, the same algebra as §42.2.
+
+### 44.5 What this unblocks, and what it would cost
+
+The February blocker is now explained rather than merely located, which puts §43's measured
+C:Chl back in reach: with the winter light climate corrected, the correction that fixed
+November (ratio 0.24 → 1.03) would no longer amplify a February error that should not exist.
+**The order is: fix the winter light climate, then re-test C:Chl 34, then revisit the warm
+guild (§41.2).**
+
+Cost, stated honestly: this is a build, not a constant change. Real ice-fraction forcing has
+to be sourced (the placeholder carries no data), `ice_cover` has to be wired to light as
+well as gas exchange, and `FDAY` has to be applied in `LIM_LIGHT` — each a code change with
+byte-identity discipline and its own verification. ⚠ And one consequence must be faced up
+front: raising the background extinction to the measured floor **darkens November too**
+(ke 1.25 → ~2.25), which makes the already-deficient autumn *harder*, not easier. That is
+the honest physics, and it strengthens rather than weakens §41.2's case that autumn needs
+the warm guild rather than more light.
+
+**Reusable.** ⭐⭐ **A mechanism can be present, fed a placeholder, AND wired to the wrong
+process.** Ice exists here, is zero everywhere, and damps only gas exchange — three separate
+failures stacked, any one of which alone would have looked like "the model has no ice".
+⭐ **Check whether a driving function is consumed, not just read.** `FDAY` and `ice_cover`
+were both read, allocated and bundled; only a grep for their use in *formulas* shows the
+difference. ⭐ Coincidental unit agreement (×0.93) is a trap in both directions — it hides a
+real mismatch and invites a "fix" that would introduce one.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
