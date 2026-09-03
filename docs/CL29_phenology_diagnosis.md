@@ -2072,6 +2072,126 @@ copies under `/tmp/varn_ab/autumn/` (`INPUTS_S050`, `INPUTS_S000`, `INPUTS_MIN15
 
 ---
 
+## 40. Light and losses: the autumn deficit is three different failures
+(2026-09-03)
+
+**The question.** §39 closed the resource side — in October the model has silica at 2.1×,
+phosphate at 5.6×, and nitrate at 4× when supplied, and still grows nothing. That leaves
+growth-versus-loss. Probing it decomposed the "autumn guild deficit" into **three separate
+failures with three different binders**, only one of which is fixable by a constant.
+
+**The temperature decomposition.** Water temperature (forcing `TEMP_TS.txt`) is Aug 18.5,
+Sep 16.6, Oct 12.8, **Nov 9.2 °C**. Against the three non-fixing guilds' CTMI cardinals:
+
+| guild | T_min | T_opt | T_max | KG | Oct CTMI (µ/d) | Nov CTMI (µ/d) |
+|---|---|---|---|---|---|---|
+| DIA | −2.0 | 10.0 | 21.0 | 8.10 | 0.935 (**7.58**) | 0.995 (**8.06**) |
+| CYN | **5.0** | 26.0 | 34.0 | 2.00 | 0.262 (0.52) | **0.083** (0.17) |
+| OPA | **10.0** | 17.0 | 23.0 | 2.58 | 0.751 (1.94) | **0.000** |
+
+Two of the three guilds have autumn growth shut by a `T_min` floor, and the diatoms — the
+largest absolute autumn deficit — have near-perfect temperature and grow anyway.
+
+### 40.1 Diatoms: a light wall, short by a factor of two
+
+October diatoms have every term but one in their favour. Assembling the model's own
+multiplicative factors at October conditions (T 12.8 °C, DIN 0.0281, PO4 0.0206, Si 1.18,
+`KHS_DIN_DIA` 0.010, `KHS_DIP_DIA` 0.0084, `KHS_DSi_DIA` 0.013):
+
+| term | value |
+|---|---|
+| CTMI | 0.935 |
+| LIM_Si | 0.989 |
+| LIM_N | 0.738 |
+| LIM_P | 0.709 |
+| **LIM_LIGHT** | **≈0.050** |
+
+`µ = 8.10 × Π = 0.196/d`. Losses are settling `v/H` = 0.093/3.8 = 0.024, mortality
+0.104 (`KD_DIA_20` 0.12 at 12.8 °C), respiration 0.038 — **0.166/d total**, leaving a net of
+**+0.030/d**. Rebuilding the summer-excluded population (0.0235) to the observed 0.670
+across the ~60-day autumn window requires **+0.056/d — very nearly twice the achievable
+net.** Light alone accounts for the shortfall: at LIM_LIGHT = 1 the same configuration would
+run at 3.92/d. The depth-averaged Steele ceiling is `e/(ke·H)` = 2.718/(3.18×3.8) ≈ 0.225,
+and October's realised value is a fifth of that.
+
+**This is the documented light wall (§17/§22), reappearing for a guild that has no exit from
+it.** Cyanobacteria escaped by buoyancy — the positional ratchet of §20 concentrates them
+where the light is. Diatoms do not float. So the autumn diatom target is either unreachable
+for *any* pelagic-growth formulation in kd ≈ 3 water, or those autumn diatoms are largely
+**benthic and resuspended**, which would make it the same observation-mapping question §35
+settled for *Mougeotia* rather than a growth defect at all. **Sizing the resuspended/benthic
+share of the autumn diatom observations is the next measurement — on the observation side,
+not the model side.**
+
+### 40.2 CYN: the minimum growth temperature is too high — the one positive result
+
+`CYN_OPT_TEMP_LR = 5.0 °C` leaves the guild at **CTMI 0.083** in a 9.2 °C November: growth
+0.17/d against comparable losses. Lowering it to **2.0 °C** (full record, single constant):
+
+| Nov | baseline | T_min 2.0 |
+|---|---|---|
+| CYN_C | 0.0905 (ratio 0.26) | **0.1457 (0.42)** |
+| CHLA | 3.12 (0.13) | **3.76 (0.16)** |
+| PHYTO_TOT_C | 0.215 (0.16) | 0.266 (0.20) |
+| Oct CYN_C | 0.2458 (0.23) | 0.2903 (0.27) |
+
+**at no cost anywhere**: annual CHLA 27.97 vs 27.98, August CHLA ratio 0.92 unchanged, PO4
+unchanged (Oct 5.55× vs 5.57×, Nov 3.18× vs 3.26×). This is the §9 pattern a second time — a
+never-calibrated cardinal constant closing a season for a taxon that does not obey it.
+
+**Literature.** §35 established the summer guild is 65–70 % *Planktothrix agardhii*, and
+*P. agardhii* is the canonical cold-persistent shallow-lake cyanobacterium: its annual cycle
+restarts in March **from overwintered filaments** (Poulíčková et al. 2004,
+doi:10.1002/iroh.200310716); it forms **perennial** blooms in Western Polish lakes at our
+latitude, sampled through winter (Mankiewicz-Boczek et al. 2011, doi:10.1002/tox.20524); and
+it retains relatively more growth at low temperature than competing bloom-formers (Davis &
+Walsby 2002, doi:10.1046/j.1469-8137.2002.00495.x). ⚠ **The evidence is qualitative** —
+overwintering, perenniality, relative cold performance — not a measured T_min, so 2.0 °C is
+*defensible*, not derived. Honest size: November chlorophyll moves 0.13 → 0.16 of observed.
+It explains a slice of the collapse, not the collapse.
+
+### 40.3 OPA and grazing: two more refutations
+
+- **OPA's temperature floor is irrelevant.** `OPA_OPT_TEMP_LR = 10.0` makes November growth
+  *exactly zero* (water 9.2 °C), which looks decisive. Lowering it to 4.0 moves OPA from
+  0.0015 to 0.0028 mg C/L — ratio 0.01, still extinct. **The floor was a second lock on an
+  already-locked door: OPA is competitively excluded (§24–27), independently re-confirmed.**
+- **Grazing is not the binder, and the hypothesis that raised it was mine and wrong.** The
+  §36 W6 adoption set `PREF_ZOO_CYN` 0.10 → 0.03, which leaves diatoms (0.26) and OPA (0.37)
+  carrying the grazing — suggesting W6 concentrated predation onto exactly the two missing
+  guilds. Zeroing zooplankton growth entirely (`KG_ZOO_OPT_TEMP` 0.6 → 0.0; ZOO_C collapses
+  to 0.008) moves October diatoms 0.0235 → 0.0242 and OPA not at all, and makes total
+  phytoplankton **worse** (Oct 1.97 → 1.84, CHLA 24.69 → 23.03) — grazer-mediated recycling
+  is worth more than the grazing pressure costs. W6 is exonerated.
+
+### 40.4 Where this leaves the autumn
+
+**Three failures, three different answers.** CYN is partly a cardinal-constant artifact and
+is fixable now. OPA is competitive exclusion, already a documented structural limit — no
+constant reaches it. DIA is the light wall with no buoyancy exit, and the next move there is
+to size the benthic/resuspended share of the observations rather than to grow more
+phytoplankton. **None of the three is "a missing warm-water guild", which is what this arc
+set out to build** (§28/§39). Combined with §38 (acquisition) and §39 (supply), the autumn
+residual is now attributed rather than open.
+
+**The adoption question, for the user.** `CYN_OPT_TEMP_LR` 5.0 → 2.0 is a one-constant,
+literature-defensible change that buys November CYN +61 % and November CHLA +21 % at no
+measured cost on any other metric or month. It does not close the autumn gap. Adoption is a
+user decision; nothing has been changed in `INPUTS_CL29/`.
+
+**Reusable.**
+- ⭐ **Compute the growth budget before probing it.** The diatom answer (net +0.030/d against
+  the +0.056/d needed) came from arithmetic on the model's own terms in seconds, and framed
+  every probe that followed. Break-even is not the test — *rebuild rate within the available
+  window* is.
+- ⭐ **A closed door can have two locks.** OPA's `T_min` genuinely zeroes November growth and
+  removing it changes nothing, because exclusion binds first. Test the lock you think is
+  binding by *removing* it, not by observing that it is closed.
+- Probes: `/tmp/varn_ab/autumn/INPUTS_{PCYN,POPA,PGRZ}` + `OUT_*`; baseline
+  `/tmp/varn_ab/t7/OUT_STD_MAIN`.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
