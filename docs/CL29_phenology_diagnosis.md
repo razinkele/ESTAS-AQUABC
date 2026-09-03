@@ -2412,6 +2412,113 @@ light requirement, which is why the wall held against every previous growth-side
 
 ---
 
+## 43. C:Chl measured independently: the light chain is confirmed, the correction is
+not adoptable (2026-09-03)
+
+**The question.** §42.4 proposed photoacclimative C:Chl as the autumn lever and ranked it
+ahead of the warm guild. The design gate killed that proposal before a line was written, and
+the measurement that replaced it confirms §40–42's mechanism while blocking its use.
+
+### 43.1 Photoacclimation refuted at the design gate
+
+Fitting a Cloern-form relation (`Chl:C = a + b·e^{cT}·e^{−dE}·μ_nut`) to the measured
+monthly C:Chl against the model's own drivers:
+
+| predictor | R² |
+|---|---|
+| temperature alone | **0.843** |
+| light (depth-averaged Emix) alone | **0.023** |
+| T + light | 0.844 |
+| T + light + nutrients | 0.847 |
+| Cloern form, fitted | 0.832 (with an **inverted** temperature coefficient) |
+
+Light explains nothing and enters with the wrong sign, because **August is simultaneously
+the dimmest month** (self-shading drives Emix to 9.6) **and the most pigment-poor** (C:Chl
+102) — the opposite of photoacclimation. Worse for the purpose, the fitted law predicts
+**October at 65.6 against an observed 50.8**, its single worst residual: it would not have
+delivered the correction it was scoped to deliver. **Fixed per-group ratios fit better than
+any seasonal law (R² = 0.903 vs 0.84): the observed 24 → 102 swing is composition — diatom
+winter, cyanobacteria summer — not acclimation.** No structure was built; the gate paid for
+itself.
+
+### 43.2 The independent measurement: diatom C:Chl is ≈34, not 53
+
+The monitoring dump carries a separate `ChlorofilasA` dataset that joins to the
+species-level phytoplankton **by sampling event** (`reg_nr`), giving **311 paired events** at
+the CL29 stations — measured chlorophyll against species biomass converted with the
+project's own empirical C:wet ratios (DIA 0.065, CYN 0.18, FIX 0.16, OPA 0.15, i.e. the same
+conversion the model's group carbon uses, so the comparison is like-for-like). Three routes:
+
+| route | n | DIA C:Chl |
+|---|---|---|
+| direct read, samples ≥70 % diatom | 82 | 36.1 |
+| direct read, ≥80 % / ≥90 % | 48 / 12 | 35.5 / 32.1 |
+| sample-level NNLS + bootstrap | 311 | **34.2 [29.5, 39.1]** |
+| monthly-mean inversion (§42-era) | 10 | 28–39 |
+
+**Diatom C:Chl ≈ 34; the model's 53 is ~1.55× too high.** Other groups are weaker: CYN reads
+121–208 against 78 (direction clear, magnitude poorly constrained), OPA ≈73 on 5 samples,
+FIX 55 [37, 96]. Tool: `tools/measure_group_cchl.py`.
+
+⚠ **Which guild the number belongs to.** Diatoms are dominant only in winter/spring samples
+(n = 34, median 32.4, IQR 19.9–44.2); in summer/autumn they never reach 70 % of biomass
+(n = 3). **So 34 is the COLD guild's ratio. The warm guild's pigment ratio is not measurable
+from this record at all** — §41.2's guild cannot be parameterised on the pigment axis here.
+
+### 43.3 The probe: prediction registered, mechanism confirmed, adoption blocked
+
+Before running, the prediction was written down: at C:Chl 34 the October diatom `I_s` falls
+228 → 146, `LIM_LIGHT` rises 0.054 → 0.078, and net growth goes **+0.044 → +0.138/d** —
+across §40.1's +0.056/d rebuild bar. Full record, `DIA_C_TO_CHLA` 53 → 34, nothing else:
+
+| | baseline | C:Chl 34 |
+|---|---|---|
+| **Nov DIA_C** (obs 0.307) | 0.077 (ratio 0.24) | **0.314 (ratio 1.03)** |
+| Nov PHYTO_TOT_C | 0.215 (0.16) | 0.503 (0.37) |
+| CHLA RMSE | 23.964 | **23.642** |
+| PO4 RMSE | 0.01684 | **0.01532** (−9 %) |
+| TN / TP | 0.86056 / 0.04594 | 0.85514 / 0.04543 |
+| **seasonal r** | **+0.67** | **+0.51** |
+| **autumn:spring** (obs 2.06) | **1.97** | **1.29** |
+| **Feb CHLA** (obs 10.2) | 15.0 | **34.5** |
+| Oct DIA_C ratio | 0.03 | 0.05 |
+
+**The mechanism is confirmed exactly as predicted** — November diatoms land on the observed
+value (ratio 1.03) and every aggregate metric improves, both headline RMSEs to nominal
+study bests. **It is still not adoptable**, for three reasons:
+
+1. **It amplifies an unfixed error.** February diatom carbon goes 3.04× → 4.17× observed and
+   February chlorophyll to 3.4×; seasonal r falls 0.16 and autumn:spring moves *away* from
+   observed. On this study's own repeatedly-demonstrated standard (§§7, 19, 22) phase beats
+   aggregate RMSE, and "both headline RMSEs improved" is precisely the signature that has
+   concealed a phenology regression before.
+2. **It does not fix the target month.** October is unmoved (0.03 → 0.05): the population
+   still cannot rebuild inside the window from the summer collapse — §41.2's point stands.
+3. **The value belongs to the wrong guild for the job** (§43.2): it is the cold guild's
+   ratio, and the cold guild is what February over-grows.
+
+**The blocker is now named.** The model grows ~3× too many winter diatoms, and until that is
+resolved a *correct* C:Chl cannot be used — accurate physics applied on top of an unfixed
+error makes the error worse. The February over-prediction, not the autumn deficit, is the
+next thing to explain.
+
+**Reusable.**
+- ⭐⭐ **The design gate is worth its cost.** The approved work (photoacclimative structure)
+  was refuted by a 30-minute fit before any code existed — light explains 2 % of the
+  variance here and the fitted law missed the very month it was for.
+- ⭐ **Register the prediction before the run.** "I_s 228→146, net +0.044→+0.138/d, so autumn
+  DIA_C should rise" was written down first; the run then landing November at ratio 1.03
+  is evidence, where the same numbers quoted afterwards would have been a story.
+- ⚠ **Scoring trap:** `/tmp/monthly_residuals.py` loads C:Chl from the **live**
+  `INPUTS_CL29/WCONST_04.txt`, so a probe that changes C:Chl is scored with the wrong
+  conversion unless the validator is pointed at the probe's own WCONST (`--wconst`). Carbon
+  metrics are immune; chlorophyll is not. Caught here after the first scoring pass.
+- ⭐ **A measurement can be right and still not adoptable.** Correct value, confirmed
+  mechanism, improved aggregates — and it still fails, because it lands on top of a
+  different unfixed error.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
