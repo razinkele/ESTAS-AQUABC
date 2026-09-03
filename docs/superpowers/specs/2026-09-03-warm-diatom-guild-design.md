@@ -34,11 +34,11 @@ two candidates were `FDAY` and the background extinction. Both were measured on 
   dose over more hours cannot change a near-linear daily integral. §44.3's FDAY row (×0.452)
   used the **incorrect** form (`FDAY·f(I_A)`, which silently discards (1−FDAY) of each day's
   light — 71 % of it in December). §47.2 has the full 12-month table.
-- **The extinction is near-uniform and has no winter measurement.** Model kd is 2.24–2.70
-  (Feb 2.276 / May 2.331 = 0.98), and `light_mixing_Nida_2015.csv` covers **May–November only**
-  (§44.3, corrected). It is worth fixing — the model is 15–42 % too transparent in every
-  measured month — but it darkens **autumn** most (Sep 2.47 vs measured 4.27), so it *costs*
-  October rather than buying it.
+- **The extinction is near-uniform and has no winter measurement.** Model kd is 2.60–2.93
+  (Feb 2.617 / May 2.648 = 0.988), and `light_mixing_Nida_2015.csv` covers **May–November only**
+  (§44.3, corrected). The model is within 5–8 % of measurement in five of seven measured months
+  and fails in exactly two — **September −36 % and October −21 %** — so fixing it darkens
+  **autumn** most and *costs* October rather than buying it.
 
 **So February's C:Chl conflict has no identified production error left to blame**, and the
 §0 gate as originally drafted cannot fire the way it was designed to.

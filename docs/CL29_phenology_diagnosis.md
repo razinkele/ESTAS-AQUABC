@@ -2596,23 +2596,24 @@ standing stock — while May's bloom survives at +0.472/d. Neither correction is
 knob: FDAY is a *bug fix* (a driving function that is read and discarded), and the
 background extinction is measured.
 
-⚠⚠ **Corrected 2026-09-04 — the extinction half of this section was wrong in three ways, and
-the measurement that replaces it points the opposite way.** The original text read: "this
-study's own campaign gives kd 3.18 mean / 2.92 median / range 2.26–5.72, while the model's
-`kd = kdb + 0.4 + 0.02·CHLA` yields 2.20 in February and **1.25 in November**, below anything
-ever measured in this lagoon."
+⚠⚠ **Corrected 2026-09-04.** The original text read: "the model's `kd = kdb + 0.4 + 0.02·CHLA`
+yields 2.20 in February and **1.25 in November**, below anything ever measured in this lagoon."
+**The formula is right; the numbers are not, and the gap is far smaller than they imply.**
 
-1. **That is not the model's formula.** `aquabc_II_pelagic_model.f90:1099`
-   (`LIGHT_EXTINCTION_OPTION = 1`, CL29's setting) computes
-   `K_E = K_B_E + 8.8e-3·CHLA + 5.4e-2·CHLA^(2/3)`, with `K_B_E = 2.18` read from
-   `INPUTS_CL29/EXTRA_WCONST.txt`. There is no `+0.4` and no `0.02·CHLA`.
-2. **The model's kd is never 1.25 and is nearly flat.** Recomputed from the canonical
-   `OUTPUTS_CL29` run (box 1, all groups at their live C:Chl): **annual range 2.24–2.70, mean
-   2.358**; February 2.28 and November 2.28 are *the same*, not 2.20 and 1.25. `K_B_E` is a
-   floor the total can never go below.
+1. **The formula checks out.** `INPUTS_CL29/PELAGIC_MODEL_OPTIONS.txt` sets
+   `LIGHT_EXTINCTION_OPTION 0`, which routes to `light_kd`
+   (`aquabc_II_pelagic_auxillary.f90:713`): `kd = kdb + 0.4 + 0.02·chla` for chla ≤ 50, with
+   `kdb = K_B_E = 2.18` from `INPUTS_CL29/EXTRA_WCONST.txt`. (⚠ Note for future readers: the
+   `case (1)` branch a few lines away uses an entirely different expression, and the AQUABC
+   interface *defaults* to 1 — the ESTAS option file is what selects 0. Read the option file,
+   not the default.)
+2. **The model's kd is never 1.25, and it is nearly flat.** Recomputed from the canonical
+   `OUTPUTS_CL29` run (box 1, all groups at their live C:Chl): **annual range 2.60–2.93**;
+   February **2.617** and November **2.618** are the same number, not 2.20 and 1.25. `kdb+0.4`
+   = 2.58 is a floor the total can never fall below.
 3. **Therefore the extinction correction is near-uniform, not differential** — model Feb/May
-   kd = 2.276/2.331, a ratio of 0.98. §46.4's original instinct was right about *extinction*
-   (and wrong only about FDAY): this one is an offset, not a seasonal lever.
+   kd = 2.617/2.648, a ratio of **0.988**. §46.4's original instinct was right about
+   *extinction* (and wrong only about FDAY): this one is an offset, not a seasonal lever.
 
 **And the measurement itself is May–November only.** `curonian/model_inputs/light_mixing_Nida_2015.csv`
 (n = 199 daily, 2015-05-03 → 2015-11-17) has **no winter coverage at all**, so it cannot
@@ -2621,28 +2622,37 @@ too transparent *everywhere it is measured*:
 
 | month | measured kd (mean / median) | model kd | model deficit |
 |---|---|---|---|
-| May | 2.87 / 2.86 | 2.33 | −19 % |
-| Jun | 2.85 / 2.81 | 2.37 | −17 % |
-| Jul | 2.89 / 2.85 | 2.47 | −15 % |
-| Aug | 2.98 / 2.98 | 2.48 | −17 % |
-| **Sep** | **4.27 / 4.48** | **2.47** | **−42 %** |
-| **Oct** | **3.41 / 3.27** | **2.38** | **−30 %** |
-| Nov | 2.82 / 2.92 | 2.28 | −19 % |
+| May | 2.87 / 2.86 | 2.648 | −7.7 % |
+| Jun | 2.85 / 2.81 | 2.674 | −6.2 % |
+| Jul | 2.89 / 2.85 | 2.747 | −4.9 % |
+| Aug | 2.98 / 2.98 | 2.750 | −7.7 % |
+| **Sep** | **4.27 / 4.48** | **2.743** | **−35.8 %** |
+| **Oct** | **3.41 / 3.27** | **2.679** | **−21.4 %** |
+| Nov | 2.82 / 2.92 | 2.618 | −7.2 % |
 
-⭐⭐ **This inverts the autumn story and it is the most consequential correction in this
-section.** Even subtracting the September bloom's own self-shading (measured chl-a ≈ 50 µg/L
-contributes ≈1.17 to kd), the *background* is ≈3.10 against the model's 2.18. **The real
-lagoon is far darker in September–October than the model believes — exactly where the model
-already cannot grow autumn biomass.** Correcting the extinction honestly will therefore make
-the autumn deficit **worse**, not better, and §40.1's light wall is *understated* rather than
-overstated. Any autumn-guild build inherits a darker water column than the one its case was
-argued in.
+**The model's light climate is broadly right — within 5–8 % of measurement in five of the seven
+measured months.** It fails in exactly two: **September (−36 %) and October (−21 %)**.
+
+⭐⭐ **And that inverts the autumn story.** Even subtracting the September bloom's own
+self-shading (measured chl-a ≈ 50 µg/L contributes ≈1.0 to kd through this formula), the
+observed September background is ≈3.3 against the model's effective 2.7. **The real lagoon is
+substantially darker in September–October than the model believes — exactly where the model
+already cannot grow autumn biomass.** Correcting the extinction honestly therefore makes the
+autumn deficit **worse**, not better; §40.1's light wall is *understated*. Any autumn-guild
+build inherits a darker water column than the one its case was argued in.
 
 ⚠ Consequence for §44.3's own arithmetic: the "+0.152/d with the extinction at its measured
-floor" row assumed a much larger kd change than the measurements support for February (where
-there are none). **The FDAY row survives; the extinction row does not, and neither does the
-"+ both" total.** Re-measure both by running them, which is what the implementation plan's
-Task 1 does.
+floor" row assumed a kd change far larger than the ~5–8 % the measurements support outside
+September–October — and none at all for February, where there is no measurement. **That row
+does not survive, and neither does the "+ both" total.** (The FDAY row does not survive either,
+for a different reason — see §47.)
+
+⚠ **Method note against myself.** My first pass at this correction used the `case (1)` formula
+because the AQUABC interface defaults `LIGHT_EXTINCTION_OPTION` to 1, and reported deficits of
+15–19 % with a model kd of 2.24–2.70. The live ESTAS option file sets it to **0**. The
+qualitative conclusions were unaffected — flat kd, too transparent, worst in autumn — but the
+magnitudes were roughly double the truth. ⭐ **A code default is not a configuration: read the
+option file the run actually loads.** Same family as the §34 parallel-code-paths trap.
 
 ### 44.4 Checked and cleared
 
@@ -2941,18 +2951,18 @@ sent the arc to a guild build prematurely:
 - ⚠ **And FDAY cuts autumn too** — Oct 0.418, Nov 0.333. It will make the October deficit
   *worse* before anything else improves it. That is a registered prediction, not a surprise to
   absorb later.
-- **The background extinction is the near-uniform one** — model kd Feb 2.276 / May 2.331, a
-  ratio of 0.98 (§44.3, corrected). My first pass at this section wrongly grouped it with FDAY
+- **The background extinction is the near-uniform one** — model kd Feb 2.617 / May 2.648, a
+  ratio of 0.988 (§44.3, corrected). My first pass at this section wrongly grouped it with FDAY
   as "a lever on autumn"; it is an offset. It is still worth fixing, because the model sits
-  15–42 % below every kd ever measured here — and fixing it makes **autumn worse**, since the
-  September–October measurements are the ones the model misses by the most.
+  5–8 % below the measured kd in most months and **21–36 % below in September–October** — and
+  fixing it makes **autumn worse**, since those two months are the ones it misses.
 - ⭐ **`FDAY` carries real data already.** `INPUTS_CL29/FORC_TS_9.txt` is a computed day-length
   series — 4,017 daily records, all 29 boxes, 0.2898 on 1 January (6.96 h, correct for 55 °N).
   Unlike ice, this needs **no data work at all**: the series is present, correct, read into
   `DRIVING_FUNCTIONS(4)` and bundled into `ENV_CHUNK%FDAY`. Only the consumption is missing.
 - **The background extinction floor** is measured for May–November only (§44.3, corrected):
-  `K_B_E = 2.18` puts the model 15–42 % below every measured month, worst in September (2.47
-  vs 4.27). Raising it is justified — and it darkens autumn most, so it *costs* October.
+  `K_B_E = 2.18` puts the model 5–8 % below most measured months but **36 % below in September**
+  (2.74 vs 4.27) and 21 % in October. Raising it darkens autumn most, so it *costs* October.
 
 ⚠ Implementation note for `FDAY`: `I_A` is already a **daily integral** (`model.f90:396`), so
 the correction is not a bare multiply — it divides to a daylight-mean irradiance inside the
@@ -3017,8 +3027,11 @@ i.e. the genuine penalty for receiving the same dose at higher intensity.
 ### 47.2 Measured: `LIM_LIGHT` evaluated three ways over the full record
 
 Live constants and forcings (KG_DIA 8.10, C:Chl 53, XKC 0.08, PHIMX 720), CTMI-gated to
-growth days, `I_A` through the `:393` conversion with the adopted ice attenuation, model kd by
-month (§44.3 corrected), H = 3.5 m:
+growth days, `I_A` through the `:393` conversion with the adopted ice attenuation, daily kd via
+`light_kd` from the canonical run's own chlorophyll (`LIGHT_EXTINCTION_OPTION 0`, §44.3
+corrected), H = 3.5 m. ⭐ The A/cur and B/cur **ratios are kd-independent** — both forms share
+the same kd — so an early draft of this table computed with the wrong extinction branch gave
+these columns identical to three decimals:
 
 | month | I/I_s | current | Form A | Form B | A/cur | B/cur |
 |---|---|---|---|---|---|---|
@@ -3062,7 +3075,7 @@ month (§44.3 corrected), H = 3.5 m:
 
 Both of §44.5's "remaining correctness items" are now measured, and **neither is a February
 lever**: `FDAY` done correctly is −22 %/−19 % (this section), and the extinction is
-Feb/May 0.98 with no winter measurement at all (§44.3, corrected). **February's C:Chl conflict
+Feb/May 0.988 with no winter measurement at all (§44.3, corrected). **February's C:Chl conflict
 therefore has no identified production error left to blame.**
 
 That does not resurrect §46.3's withdrawn "two guilds" reading — 27.5 and 34 still both sit
