@@ -2174,10 +2174,36 @@ phytoplankton. **None of the three is "a missing warm-water guild", which is wha
 set out to build** (§28/§39). Combined with §38 (acquisition) and §39 (supply), the autumn
 residual is now attributed rather than open.
 
-**The adoption question, for the user.** `CYN_OPT_TEMP_LR` 5.0 → 2.0 is a one-constant,
-literature-defensible change that buys November CYN +61 % and November CHLA +21 % at no
-measured cost on any other metric or month. It does not close the autumn gap. Adoption is a
-user decision; nothing has been changed in `INPUTS_CL29/`.
+### 40.5 Adoption: `CYN_OPT_TEMP_LR` 5.0 → 2.0 is operational (2026-09-03, user decision)
+
+Adopted. The full-record scorecard (n-weighted pooled RMSE against the harmonized
+observations, scored with the live C:Chl) improves or holds **every** headline metric:
+
+| variable | n | baseline | adopted | |
+|---|---|---|---|---|
+| **CHLA** | 760 | 24.05451 | **23.96441** | −0.0901, study best |
+| **PO4** | 3064 | 0.01701 | **0.01684** | −0.00017, study best |
+| TN | 3225 | 0.86384 | 0.86056 | −0.0033 |
+| TP | 3060 | 0.04681 | 0.04594 | −0.0009 |
+| CYN_C | 317 | 1.75455 | 1.74959 | −0.0050 |
+| DIA_C | 317 | 0.71612 | 0.71299 | −0.0031 |
+| PHYTO_TOT_C | 317 | 2.50160 | 2.50090 | −0.0007 |
+| NH4 / DO | 3066 / 3002 | 0.05223 / 7.92394 | unchanged | |
+| NO3 / Si | 3065 / 3224 | 0.45777 / 0.85858 | +0.00037 / +0.00232 | the only debits |
+
+Verification: the canonical run (`OUTPUTS_CL29/`, day 4016, 32 files) reproduces the probe
+run's scorecard **exactly** — 0.0e+00 difference on all eleven variables.
+
+Seasonal r **+0.67** (from +0.68) and the climatological peak month stays September — the
+one debit, and it is within the noise of the §36 peak-month margin discussion. The autumn
+gain that motivated it: November CYN 0.091 → 0.146 mg C/L (ratio 0.26 → 0.42), November
+CHLA 3.12 → 3.76 µg/L, October CYN +18 %.
+
+Live config `INPUTS_CL29/WCONST_04.txt` constant 30 changed (one line; canonical run
+refreshed into `OUTPUTS_CL29/`), mirrored to the data repo. **What it does not do:** close
+the autumn collapse — November chlorophyll is still 0.16 of observed. §40.1's diatom light
+wall and §40.3's OPA exclusion are untouched by it, and remain the standing structural
+limits.
 
 **Reusable.**
 - ⭐ **Compute the growth budget before probing it.** The diatom answer (net +0.030/d against
