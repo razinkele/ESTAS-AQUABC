@@ -2722,10 +2722,35 @@ guild), and the two near-uniform light-climate items — `FDAY`, still read and 
 (§44.2), and the background extinction below the measured kd floor. Neither is winter-
 specific, so both remain separately-decided correctness fixes.
 
-**Adoption is an open user decision.** Unlike §40.5 this is a code change plus a new forcing
-file plus a constant, not a config edit: the live setup already carries constant 324 at 1.0
-(byte-identical), so adopting means installing the real `ICE_COVER.txt` and setting the
-transmittance.
+### 45.5 Adoption: ice is operational (2026-09-03, user decision)
+
+Adopted. The live `INPUTS_CL29/` now carries the real `ICE_COVER.txt` (4,018 daily records
+from the CMEMS Baltic reanalysis) and `ICE_LIGHT_TRANS = 0.05`; `OUTPUTS_CL29/` refreshed and
+the data repo updated (`b856085`). Verification: the canonical run reproduces the probe scorecard **exactly** — 0.0e+00 difference on all ten variables. This is the study's **first adopted change that is code + forcing
+rather than a constant** — the model gained a process it did not have, fed by measured data.
+
+**Operational scorecard** (full record, n-weighted pooled RMSE, scored with the live C:Chl):
+
+| | previous operational | **adopted (ice)** | |
+|---|---|---|---|
+| **seasonal r** | +0.67 | **+0.74** | **best of the study** (−0.70 at its start) |
+| **Feb DIA_C** (obs 0.280) | 0.810 (2.89×) | **0.278 (0.99×)** | the §44 blocker, closed |
+| CHLA RMSE | 23.9644 | **23.8300** | |
+| DIA_C RMSE | 0.71299 | **0.70154** | |
+| PHYTO_TOT_C RMSE | 2.50090 | **2.49703** | |
+| autumn:spring (obs 2.06) | 1.97 | 2.25 | overshoots where it undershot |
+| PO4 / TN / Si RMSE | 0.01684 / 0.8606 / 0.8609 | 0.01755 / 0.8729 / 0.8697 | the cost |
+| peak month | Sep (obs Aug) | Sep | unchanged |
+
+**What it does not do:** the autumn deficit is untouched (October DIA_C ratio 0.03,
+November chlorophyll 0.16 of observed) — as designed, since there is no ice then. The
+nutrient metrics pay a small, expected price for the un-consumed winter nutrients.
+
+**Live state:** `INPUTS_CL29/ICE_COVER.txt` (real series), `WCONST_04.txt` constant 324 =
+0.05, `NUM_MODEL_CONSTANTS` = 324. Pre-adoption backups: `/tmp/varn_ab/WCONST_pre_ice.bak`
+and `/tmp/varn_ab/ICE_COVER_placeholder.bak`. ⚠ **Every other setup in the repo keeps
+`ICE_LIGHT_TRANS = 1.00` and its own all-zero `ICE_COVER.txt`, so all of them remain
+byte-identical** — the adoption is CL29-only.
 
 **Reusable.**
 - ⭐⭐ **A count can be defined in more places than the compiler will tell you about.**
