@@ -2558,14 +2558,29 @@ ice-fraction series loaded, phytoplankton would receive full irradiance under a 
 This is the §12 placeholder-forcing class for the third time in this study, with an extra
 twist: here the placeholder hides a mechanism that would not have worked if fed.
 
-### 44.2 `FDAY` is read, bundled, and never used
+### 44.2 `FDAY` is read, bundled, and never reaches the branch CL29 runs
 
 The day-length driving function is read (`DRIVING_FUNCTIONS(:,4)`), allocated, and pointed
-into the per-thread environment bundle — and appears in **no calculation anywhere**. Its
-only occurrence in a formula is inside the dead `CUR_SMITH` routine, where it is hardcoded
-to `1.0`. **The model gives each day's mean irradiance 24 hours a day.** Because the P–I
-curve is concave, that over-states production, and it over-states it *most* where days are
-shortest — which is exactly February.
+into the per-thread environment bundle — and never reaches CL29's growth calculation.
+**The model gives each day's mean irradiance 24 hours a day.** Because the P–I curve is
+concave, that over-states production, and it over-states it *most* where days are shortest —
+which is exactly February.
+
+⚠ **Corrected 2026-09-04.** This section originally said FDAY "appears in **no calculation
+anywhere**". That is wrong, and the correction makes the fix easier rather than harder — this
+is the §34 parallel-code-paths trap again, in its mildest form:
+
+- **`FDAY` is fully wired on the `smith == 0` branch**, in all six phytoplankton library
+  routines (`..._lib_DIATOMS.f90:150`, `_CYANOBACTERIA:167`/`:445`, `_FIX_CYANOBACTERIA:166`/
+  `:466`, `_NOSTACALES:226`, `_OTHER_PLANKTONIC_ALGAE:148`), in the Steele form
+  `((2.718 * FDAY) / (K_E * DEPTH)) * (exp(-ALPHA_1) - exp(-ALPHA_0))`.
+- **CL29 runs `smith = 1`** (`aquabc_II_pelagic_model.f90:299`), which calls `LIM_LIGHT` —
+  whose argument list has no `FDAY`. The unused-ness is real for CL29 and only for CL29.
+- ⭐ So the repository contains its **own reference implementation**, by the original authors,
+  three lines above the call that bypasses it. ⚠ Note it multiplies by FDAY but does *not*
+  divide `I_A` by FDAY, i.e. it is the day-length factor without the intensity compensation;
+  `CUR_SMITH`'s `IAV = 0.9·ITOT/FDAY` is the in-repo evidence for the compensating divide.
+  Which of the two forms to adopt is a real modelling choice — see the implementation plan.
 
 ### 44.3 The two gaps are differential in the way February needs
 
@@ -2586,11 +2601,13 @@ February and **1.25 in November**, below anything ever measured in this lagoon.
 ### 44.4 Checked and cleared
 
 Recorded so they are not re-litigated:
-- **Solar units.** `SOLAR_RAD_TS.txt` is W/m² total solar (annual mean 124.5, matching ~110
-  W/m² expected at 55 °N) while `LIM_LIGHT` documents langleys/day PAR. The conversion is
-  ×2.07 (W/m² → langley/d) ×0.45 (PAR fraction) = **×0.93** — so passing the raw number is
-  coincidentally within 7 % of correct. Not a bug; do not "fix" it without redoing the
-  arithmetic.
+- **Solar units.** ⚠ **Corrected 2026-09-04:** this bullet originally called the agreement a
+  coincidence. It is not — the conversion is *explicit in the code*.
+  `aquabc_II_pelagic_model.f90:393` reads
+  `I_A = (DRIVING_FUNCTIONS(:,3) * 0.5 * 8.64D4 * 0.238846) / 1.0D4`, i.e. W/m² × 0.5 (PAR
+  fraction) × 86400 s (to J/m²/d) × 0.238846 (J→cal) ÷ 10⁴ (m²→cm²) = langley/d PAR, done
+  correctly and deliberately. `SOLAR_RAD_TS.txt` is W/m² total solar (annual mean 124.5,
+  matching ~110 W/m² expected at 55 °N). Not a bug, and not luck — a written conversion.
 - **River turbidity.** Suspended matter at the CL29 stations is flat seasonally (monthly
   medians 7.8–14.0 mg/L, no winter/spring spike, n = 481), so a seasonal
   river-turbidity term does not explain February. The extinction problem is the *constant*
@@ -2811,40 +2828,90 @@ before them). The pattern is now reliable enough to state as a rule for this sys
 better model until the phase metrics are checked** — the two aggregates are the ones a
 pigment or light-efficiency change moves first and most.
 
-### 46.3 What it proves: the two-guild case, on a third independent axis
+### 46.3 What it proves — and what it does not
 
-The measured 34 is not wrong. **It cannot be used because one C:Chl sets both guilds' light
-efficiency**, and the two guilds need different values: November wants ≈34, February wants
-≈53. A single-envelope model cannot hold both.
+**Corrected 2026-09-04, after an adversarial review of the spec built on this section.**
 
-That is §41.2's conclusion — reached there from *taxonomy* (autumn is 44.5 % *Actinocyclus
-normanii*, absent from the model's cold envelope) and *phenology* (two assemblages three
-months apart in weighted mean month) — now demonstrated a third time, from *model
-mechanics*, without reference to either. Three independent lines converge:
+The measured 34 is not wrong, and it cannot be adopted *now*. What §46.1 demonstrates is
+narrower than first claimed: **one C:Chl cannot serve both months under the current light
+climate.**
+
+**The claim I made and am withdrawing** was that "November wants ≈34, February wants ≈53",
+presented as a third independent axis proving two guilds. It contradicts this document two
+sections earlier: **§45.4 reads February's pigment error the other way** — observed February
+chlorophyll 10.2 against a modelled 3.18 at correct biomass implies February wants
+**C:Chl ≈ 27.5**. And §43.2's only local measurement is 34.2 [29.5, 39.1] with a winter-subset
+median of 32.4. **27.5 and 34 both sit inside that interval.** The two months do not disagree
+about pigment at all; they disagree about *growth* — which is the signature of a residual
+production error, not of a second organism.
+
+**And the production error is named, measured, and unfixed.** §44.3: February net growth is
++0.283/d as-is, +0.128/d with `FDAY` implemented, **+0.045/d** with the background extinction
+also at its measured floor — against an observed standing stock consistent with near-balance.
+The C:Chl 34 probe of §46.1 was run on a baseline still carrying both. A ×1.45 light-efficiency
+gain applied to a February that is already growing 6× too fast will re-break February whatever
+its pigment content is.
+
+So the honest reading of §46 is **an ordering result, not a taxonomic one**: C:Chl cannot be
+adopted before the production errors it multiplies are fixed. Whether it can be adopted *after*
+is an open, cheap, and untested question — and it is now the premise test gating the warm-guild
+build (spec `2026-09-03-warm-diatom-guild-design.md` §0).
+
+**What survives for the two-guild case** is §41.2's two axes, both real and both from
+observations:
 
 | axis | evidence | source |
 |---|---|---|
 | taxonomy | autumn = *Actinocyclus*/*Skeletonema*, spring = *Stephanodiscus*/*Asterionella* | §41.2 |
 | phenology | weighted mean month 4.4–6.3 vs 8.0–8.2 | §41.2 |
-| **model mechanics** | **one C:Chl cannot serve both seasons; the fix for one is the break for the other** | **§46** |
+| ~~model mechanics~~ | ~~one C:Chl cannot serve both seasons~~ — **withdrawn**: the two months agree on pigment and differ on growth, and the growth error is §44's, not a guild's | §46 (corrected) |
 
-**Verdict: C:Chl 34 stays shelved, now for a demonstrated reason rather than a suspected
-one.** §43 could only say it landed on an unfixed error; §46 shows that with that error
-fixed it still cannot be adopted, because the constant is shared by two organisms the model
-represents as one.
+⚠ And the two surviving axes are **not independent of each other**: both are computed from the
+same §41.2 species table. Two readings of one dataset, not two datasets.
+
+**Verdict: C:Chl 34 stays shelved — but for a different and smaller reason than §46 first
+claimed.** Not "the constant is shared by two organisms", which the numbers do not support;
+rather "the constant multiplies an error that has not been fixed yet."
 
 ### 46.4 Where the arc stands
 
 §44.5's chain has run to its end. Ice is adopted and operational (§45.5). C:Chl is measured
-(§43.2), re-tested (§46.1) and refuted with the mechanism understood. **Both remaining roads
-converge on the same object: the warm diatom guild of §41.2 — which needs its own cardinal
-temperatures *and* its own C:Chl**, and would carry the autumn residual that §40.1's light
-arithmetic says the current envelope cannot reach. October is untouched by everything tried
-here (0.03 → 0.05), as it has been since §39.
+(§43.2) and re-tested (§46.1) — **deferred, not refuted** (§46.3, corrected). October is
+untouched by everything tried here (0.03 → 0.05), as it has been since §39.
 
-Still open and unrelated: `FDAY`, read and never used (§44.2), and the background extinction
-below the measured kd floor — both near-uniform across months, so both remain
-separately-decided correctness fixes rather than levers on any residual.
+**Corrected 2026-09-04.** This section originally dismissed the two open light-climate items
+as "near-uniform across months, so both remain separately-decided correctness fixes rather
+than levers on any residual." That is wrong on its own numbers, and it is the reasoning that
+sent the arc to a guild build prematurely:
+
+- **`FDAY` is strongly month-differential** — more so than the ice correction that was adopted
+  on exactly that ground. Monthly means of the live `FORC_TS_9.txt`: **Feb 0.389 (9.3 h) / May
+  0.665 (16.0 h) = 1.71×**, against ice's 1.61× (−38 % February, −0 % May). (§44.3's table
+  quotes 0.29/0.60; those are point-day values, not monthly means — the monthly ratio is the
+  fairer comparison and it still exceeds ice's.) It is not a neutral correctness item; it is a
+  February lever, and a bug fix rather than a forcing addition.
+- ⚠ **And FDAY cuts autumn too** — Oct 0.418, Nov 0.333. It will make the October deficit
+  *worse* before anything else improves it. That is a registered prediction, not a surprise to
+  absorb later.
+- ⭐ **`FDAY` carries real data already.** `INPUTS_CL29/FORC_TS_9.txt` is a computed day-length
+  series — 4,017 daily records, all 29 boxes, 0.2898 on 1 January (6.96 h, correct for 55 °N).
+  Unlike ice, this needs **no data work at all**: the series is present, correct, read into
+  `DRIVING_FUNCTIONS(4)` and bundled into `ENV_CHUNK%FDAY`. Only the consumption is missing.
+- **The background extinction floor** is measured (§44.3: campaign kd 2.26–5.72 against the
+  model's 1.25 November) and acts hardest where the model is most transparent, which is autumn.
+
+⚠ Implementation note for `FDAY`: `I_A` is already a **daily integral** (`model.f90:396`), so
+the correction is not a bare multiply — it divides to a daylight-mean irradiance inside the
+P–I curve and multiplies the result back by the day fraction. The dead `CUR_SMITH` branch
+shows the intended form.
+
+**The road forward is therefore ordered, and the guild is not first.** Land FDAY and the
+extinction floor (both correctness fixes, neither a knob), then re-run C:Chl 34 on that
+baseline. Only if February still demands ≈53 there does the model-mechanics case for a second
+guild exist at all. §41.2's taxonomy and phenology remain the real case for the warm guild;
+they are also two readings of one dataset, and they speak to **August–September**, where the
+cold envelope shuts down (CTMI 0.40 at 18.5 °C against T_max 21), not to October — no valid
+warm cardinal set beats the incumbent's October CTMI of 0.935.
 
 **Reusable.** ⭐⭐ **Two corrections that act on the same term from opposite directions can
 each be right and still cancel.** Ice (−38 % February light) and C:Chl (+45 % light
