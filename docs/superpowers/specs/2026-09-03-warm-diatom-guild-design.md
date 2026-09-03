@@ -10,10 +10,12 @@ its own right and **no longer gates the guild**; the guild stands or falls on Au
 
 ---
 
-## 0. Premise test — do this first, and possibly stop here
+## 0. The light-climate arms — do these first, but they no longer gate the guild
 
-The review refuted the reasoning that made this build look necessary, so the build is gated on
-re-establishing it.
+The review refuted the reasoning that made this build look necessary. Re-establishing it was
+attempted and **failed**: §47 retired the production error the gate depended on. What remains
+here is a set of light-climate correctness items worth landing on their own merits — and a
+sequencing argument (§0.1) for doing them before any guild build.
 
 **What was wrong.** §46.3 claimed "November wants C:Chl ≈34, February wants ≈53" as a third,
 model-mechanics axis proving two guilds. On the adopted ice baseline §45.4 implies February
@@ -64,10 +66,18 @@ C:Chl** (§22, BACKLOG P2), because the constant is simultaneously a pigment con
 growth parameter (it sets `I_s`) and no single value can serve both across a 20× seasonal light
 range. That is better-targeted at this residual than a warm guild is.
 
-**Gate.** If February `DIA_C` stays ≤1.3× observed with C:Chl 34 applied, **the guild is not
-needed for this residual** — adopt the measured C:Chl, record the negative, and stop. Only if
-February still demands ≈53 does the two-guild premise survive on mechanics, and even then
-axes 1–2 below are the load-bearing ones.
+### 0.1 Why these still come first — sequencing, not gating
+
+⭐ **Arm 1 changes production by ≈−20 % in every month and arm 2 darkens September–October by
+21–36 %.** A guild built and tuned against today's light climate would be tuned against a
+climate that is about to move, and its one fitted constant (`KG_DIA2_OPT_TEMP`) would silently
+absorb the difference — the compensation pattern this study has now documented five times
+(§22's pigment channel most recently). **Land the light climate, re-baseline, then build.**
+
+**Outcome for C:Chl specifically.** If February `DIA_C` stays ≤1.3× observed with C:Chl 34
+applied on the corrected baseline, adopt the measured C:Chl and record it. If it does not,
+§47.4's reading is confirmed rather than refuted — the constant is doing two jobs at once and
+the exit is photoacclimative C:Chl, still not a second guild.
 
 ---
 
@@ -87,8 +97,9 @@ signal is ~90 % genuinely planktonic (benthic share 4.5 % Oct / 9.7 % Nov, §41.
 model must grow, not a mapping artifact.
 
 ⚠ **Axes 1 and 2 both derive from the same §41.2 table**, so this is two lines of evidence from
-one dataset, not three independent ones. The former "axis 3" is demoted to: *one C:Chl cannot
-serve both months **under the current light climate*** — a statement about §0's unfixed error.
+one dataset, not three independent ones. The former "axis 3" is **withdrawn entirely** (§46.3,
+§47.3): the two months agree on pigment within the measured winter IQR and differ on growth,
+and §47 then showed the growth error it was blamed on does not exist at the size required.
 
 **Rejected alternatives:** widening the single envelope (§11 measured it destroying June);
 re-tuning its C:Chl (§46, cancels against ice — but see §0); repurposing the extinct `OPA` slot
