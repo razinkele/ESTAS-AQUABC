@@ -2768,6 +2768,94 @@ byte-identical** — the adoption is CL29-only.
 
 ---
 
+## 46. C:Chl re-tested on the ice baseline: the two corrections cancel, and the
+two-guild case is now demonstrated (2026-09-03)
+
+**The question.** §44.5 prescribed an order — fix the winter light climate, then re-test the
+measured diatom C:Chl (§43.2: **34**, from 311 paired samples), then revisit the warm guild.
+§45 adopted ice and closed February (2.89× → 0.99×). This is step two, run on the adopted
+baseline with the prediction registered first, including its risk case: *lowering C:Chl
+raises pigment **and** growth, so February could re-break.*
+
+### 46.1 It re-breaks February, by the amount ice fixed
+
+| | adopted (ice) | + C:Chl 34 |
+|---|---|---|
+| **Feb DIA_C** (obs 0.280) | **0.278 (0.99×)** | **0.798 (2.85×)** |
+| **Nov DIA_C** (obs 0.307) | 0.070 (0.23×) | **0.314 (1.02×)** |
+| Oct DIA_C (obs 0.670) | 0.023 (0.03×) | 0.033 (0.05×) |
+| **seasonal r** | **+0.74** | **+0.64** |
+| **autumn:spring** (obs 2.06) | 2.25 | **1.38** |
+| Feb CHLA (obs 10.2) | 3.18 | 23.6 |
+| CHLA RMSE | 23.830 | **23.134** |
+| PO4 RMSE | 0.01755 | **0.01569** |
+
+November is fixed exactly as it was in §43 (ratio 1.02) — that half of the correction was
+never in doubt. But **February returns to 2.85×, essentially its pre-ice value**: the C:Chl
+change undoes the ice fix.
+
+**The arithmetic of the cancellation.** Lowering C:Chl 53 → 34 lowers `I_s` by 36 %, which
+raises `LIM_LIGHT` by roughly 45 %; ice cuts February light by ~38 %. **Equal magnitude,
+opposite sign** — so the two corrections annihilate each other in exactly the month where one
+was adopted to work. This is not a tuning accident: both act on the same term, `I_s`, from
+opposite directions.
+
+### 46.2 The third instance of the same trap
+
+Both headline RMSEs reach study bests here — **CHLA 23.134 and PO4 0.01569** — on a
+configuration whose seasonal correlation fell 0.10 and whose autumn:spring moved from 2.25
+to 1.38 against an observed 2.06. **That is the third time in this arc that both aggregate
+scores improved while the phenology degraded** (§43.3, §46, and the §22 pigment channel
+before them). The pattern is now reliable enough to state as a rule for this system:
+**in CL29, a simultaneous improvement in chlorophyll and phosphate RMSE is not evidence of a
+better model until the phase metrics are checked** — the two aggregates are the ones a
+pigment or light-efficiency change moves first and most.
+
+### 46.3 What it proves: the two-guild case, on a third independent axis
+
+The measured 34 is not wrong. **It cannot be used because one C:Chl sets both guilds' light
+efficiency**, and the two guilds need different values: November wants ≈34, February wants
+≈53. A single-envelope model cannot hold both.
+
+That is §41.2's conclusion — reached there from *taxonomy* (autumn is 44.5 % *Actinocyclus
+normanii*, absent from the model's cold envelope) and *phenology* (two assemblages three
+months apart in weighted mean month) — now demonstrated a third time, from *model
+mechanics*, without reference to either. Three independent lines converge:
+
+| axis | evidence | source |
+|---|---|---|
+| taxonomy | autumn = *Actinocyclus*/*Skeletonema*, spring = *Stephanodiscus*/*Asterionella* | §41.2 |
+| phenology | weighted mean month 4.4–6.3 vs 8.0–8.2 | §41.2 |
+| **model mechanics** | **one C:Chl cannot serve both seasons; the fix for one is the break for the other** | **§46** |
+
+**Verdict: C:Chl 34 stays shelved, now for a demonstrated reason rather than a suspected
+one.** §43 could only say it landed on an unfixed error; §46 shows that with that error
+fixed it still cannot be adopted, because the constant is shared by two organisms the model
+represents as one.
+
+### 46.4 Where the arc stands
+
+§44.5's chain has run to its end. Ice is adopted and operational (§45.5). C:Chl is measured
+(§43.2), re-tested (§46.1) and refuted with the mechanism understood. **Both remaining roads
+converge on the same object: the warm diatom guild of §41.2 — which needs its own cardinal
+temperatures *and* its own C:Chl**, and would carry the autumn residual that §40.1's light
+arithmetic says the current envelope cannot reach. October is untouched by everything tried
+here (0.03 → 0.05), as it has been since §39.
+
+Still open and unrelated: `FDAY`, read and never used (§44.2), and the background extinction
+below the measured kd floor — both near-uniform across months, so both remain
+separately-decided correctness fixes rather than levers on any residual.
+
+**Reusable.** ⭐⭐ **Two corrections that act on the same term from opposite directions can
+each be right and still cancel.** Ice (−38 % February light) and C:Chl (+45 % light
+efficiency) are both measurement-anchored, and applying both leaves February exactly where it
+started. Check what a candidate shares a *term* with, not just what it shares a *month* with.
+⭐ **A shared constant is a hidden coupling between things the model treats as one organism** —
+the cleanest possible argument for splitting the guild, and it arrived from mechanics rather
+than biology.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
