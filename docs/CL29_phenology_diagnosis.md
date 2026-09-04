@@ -3321,9 +3321,32 @@ autumn:spring moves *away* from observation (2.16 → 2.30 against 2.06). Octobe
 ### 49.4 Verdict
 
 **Option 2 of §48.4 fails. The compensation is not recoverable through these constants under
-this objective.** What remains is option 1 (leave `LIGHT_DAYLENGTH_OPTION` opt-in at 0, the
-default, zero risk) or option 3 (record Form B as a measured negative alongside Droop-N §38 and
-akinete staging §29). **Both are the user's call; nothing has been adopted.**
+this objective.**
+
+### ✅ DECIDED 2026-09-04 (user): recorded as a MEASURED NEGATIVE
+
+Option 3. `LIGHT_DAYLENGTH_OPTION` stays merged and **opt-in at `0`**; no shipped options file
+carries the line, no live input changed, and the standard build is byte-identical at full record
+and on the 0D golden. Form B joins the Droop-N (§38) and the first akinete-staging ladder (§29)
+as a built, measured, documented negative. Registered in `BACKLOG.md` §4 and `CHANGELOG.md`
+`[Unreleased]`.
+
+**What the negative asserts, stated so it is not over-read later:** the *formulation* is right
+and Form A is a real bug in the `smith == 0` branch. What fails is landing the correct
+formulation **on a model whose constants were fitted against the incorrect one** — and then
+recovering that fit by re-tuning those constants. The finding is about CL29's calibration state,
+not about day-length physics.
+
+**What it leaves usable:**
+- The option itself, for anyone building a CL29 variant from a light climate *forward* rather
+  than re-fitting one backward — the correct form is one flag away.
+- `tools/probe_lim_light.py`, which answers "what would this light-climate change do?" from the
+  model's own constants in seconds, without a run.
+- The `smith == 0` Form A bug is now documented; fix it there whenever that path is next touched.
+
+**What it forecloses:** §48.4's option 2 is closed, and with it the idea that the autumn/February
+residuals can be reached by re-fitting growth and loss constants. §49.4's bound is the reason —
+the one effective parameter is insufficient at its extreme, before any search begins.
 
 Be precise about what this does and does not establish:
 

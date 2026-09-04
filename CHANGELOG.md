@@ -8,6 +8,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **`LIGHT_DAYLENGTH_OPTION` — day-length weighting of the light limitation** (opt-in, default
+  `0` = current behaviour, byte-identical at full record and on the 0D golden). `FDAY` (day
+  length) was read from `DRIVING_FUNCTIONS(:,4)`, allocated and bundled into the per-thread
+  environment, and fully wired on the `smith == 0` branch of all six phytoplankton library
+  routines — but never reached `LIM_LIGHT`, which is the branch CL29 runs. The forcing series
+  already existed and was correct (`INPUTS_CL29/FORC_TS_9.txt`, 4,017 daily records, 0.2898 on
+  1 January = 6.96 h at 55 °N), so only the consumption was missing.
+  - `1` = **Form A**, `LLIGHT = FDAY·f(I_A)` — the form the `smith == 0` branch uses, and a
+    genuine bug there: it weights by the photoperiod without concentrating the daily dose into
+    it, discarding (1−FDAY) of each day's light (71 % of it in December). Shipped only to
+    reproduce the comparison in `docs/CL29_phenology_diagnosis.md` §47; warns at startup and is
+    **not for adoption**.
+  - `2` = **Form B**, `LLIGHT = FDAY·f(I_A/FDAY)` (WASP/EUTRO) — correct. `I_A` is a daily
+    integral, and the depth-averaged Steele curve is near-linear while light-limited, so the
+    `FDAY` cancels there; Form B departs from the legacy expression only through P–I curvature.
+  - New Fortran unit test `test_lim_light_daylength` (10 assertions) covering the two identities
+    that make the option safe: Form A equals `FDAY·base` exactly, and Form B converges to the
+    legacy result as `FDAY → 1`.
+  - New `tools/probe_lim_light.py`: evaluates all three forms from the model's own constants and
+    forcings, no model run required.
+
+### Changed
+- **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
+  constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap
+  with pigment rather than biomass).
+- **Calibration harness**: worker run timeout raised 600 s → 3600 s, overridable via
+  `CL29_RUN_TIMEOUT`. The timeout guards against a *hung* run, not a merely long one, and a
+  timed-out run scores as `PENALTY` — indistinguishable from a genuinely bad parameter set, and
+  silent. Measured: a 1461-day window with 24 concurrent workers takes ~541 s, only a 10 %
+  margin under the old ceiling, so the slower individuals of every generation were being
+  penalised for being slow rather than wrong.
+
+### Notes
+- **Form B is correct physics and is NOT adopted** — recorded as a measured negative
+  (`docs/CL29_phenology_diagnosis.md` §47–49, BACKLOG §4). Landing it costs ≈20 % of production
+  in every month and undoes the adopted ice correction (February `DIA_C` 0.99× → 0.22× against
+  an observed 0.280), because CL29's growth constants were fitted against a model that gave every
+  day 24 hours of light. A 192-evaluation DE over `formb_closure` then failed to recover the
+  compensation, improving Φ by 4.6 % on its calibration window while driving February to 0.15×.
+  No shipped setup changes; `LIGHT_DAYLENGTH_OPTION` is absent from every options file and
+  defaults to `0`.
+
 ## [0.11.0] - 2026-08-06
 
 > 🎉 **Released — [AQUABC v0.11.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.11.0)**
