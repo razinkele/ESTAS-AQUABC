@@ -3814,6 +3814,132 @@ mechanisms remain available, byte-identical when off, for whoever picks this up.
 
 ---
 
+## 54. Eight parameter directions later: the two-guild coexistence is
+## **over-determined** — no parameterisation satisfies both constraints
+
+**2026-09-05.** §53.4 named grazing, vertical separation and within-season succession as the
+candidates left after the nitrogen economy was exhausted. This section tests the first, then
+follows the theory to its conclusion. **Nothing here is adopted; every run is a config copy.**
+
+### 54.1 Differential grazing is inert — in BOTH directions
+
+`PREF_ZOO_NOST_VEG_HET` is **0.00**: the guild carrying the entire fixer biomass is completely
+ungrazed, while its direct competitor CYN is grazed at 0.03 (and `FIX_CYN`, whose role §31 gave
+to NOST, at 0.07). ⭐ That is the **same class of defect as §51.3** — the role swap moved the
+fixer role to a guild parameterised differently — found in a second parameter.
+
+| `PREF_CYN` | `PREF_NOST` | CYN | FIX | share | total | ZOO |
+|---|---|---|---|---|---|---|
+| 0.03 | **0.00** (adopted) | 0.298 | 3.563 | 0.077 | 1.00× | 0.0365 |
+| 0.03 | 0.07 | 0.291 | 3.973 | 0.068 | 1.10× | 0.0671 |
+| 0.03 | 0.15 | 0.287 | **4.255** | **0.063** | **1.18×** | 0.0853 |
+| **0.00** | 0.00 | **0.298** | 3.552 | 0.077 | 1.00× | 0.0359 |
+| 0.00 | 0.07 | 0.291 | 3.965 | 0.068 | 1.10× | 0.0669 |
+
+⭐⭐ **Grazing NOST makes NOST grow MORE.** Two mechanisms compound: grazed carbon goes to
+zooplankton, which remineralise nutrients that NOST — the dominant competitor — recaptures; and
+adding NOST to the food pool grows ZOO, raising grazing pressure on *everything*, which weak CYN
+feels proportionally more. ⚠ ZOO also overshoots (0.0853 vs 0.0263 observed, 3.2×).
+
+⭐⭐ **And removing CYN's grazing entirely changes CYN by 0.2 %** (0.2976 → 0.2980). **CYN is not
+grazing-limited at all** — it is purely DIN-competition-limited, so no grazing parameterisation
+can reach this partition from either side. §53.4's grazing candidate is **refuted**.
+
+**What the +0.136 lift does establish:** the (share, total) frontier is **not** a
+production-capacity constraint. Production *can* be added — grazing adds it, via recycling. What
+cannot be changed is which guild captures it.
+
+### 54.2 Why: self-limitation equals cross-limitation
+
+Stable coexistence requires each species to limit itself more than it limits the other. Both
+guilds draw on one resource (DIN) with near-identical affinities — `KHS_DP_NOST` 0.005 against
+`KHS_DIP_CYN` 0.004, both DIN-limited. **Self-limitation therefore equals cross-limitation: the
+neutral case, where the outcome is winner-take-all and the balance point is a knife-edge rather
+than an attractor.** Every sweep in §51–53 was searching for a stable point the model's
+structure cannot contain. Those were not five failed levers; they were five confirmations that
+the guilds are ecologically interchangeable here.
+
+### 54.3 Two-resource partitioning, tested properly and then completely
+
+The classic exit is two resources with a trade-off, and for diazotrophs it is specific:
+N-fixers carry a **higher P demand** (nitrogenase is P-expensive; they become P-limited exactly
+when N-replete). Raising `KHS_DP_NOST` above CYN's 0.004:
+
+| config | CYN | FIX | share | total | lift |
+|---|---|---|---|---|---|
+| P 0.030, **switch OFF** | 0.640 | 2.160 | 0.229 | 0.73× | **−0.097** |
+| P 0.060, switch OFF | 1.454 | 0.157 | 0.903 | 0.42× | **−0.243** |
+| switch ON + P 0.015 | 0.492 | 3.096 | 0.137 | 0.93× | **+0.050** |
+| switch ON + P 0.030 | 2.215 | 0.262 | 0.894 | 0.64× | −0.019 |
+
+⚠ **The switch-OFF runs were a mis-specified test** and are reported as such: with the fixed
+10 % fixation share NOST is still 90 % DIN-dependent, so both guilds compete for N and
+P-limitation merely weakens NOST — hence the negative lift. With the switch ON the best lift of
+the entire arc appears (**+0.050** at P 0.015), but the flip persists: 0.137 → 0.894 between
+P 0.015 and 0.030.
+
+**The theory-complete configuration.** Tilman coexistence needs NOST to be the *inferior* N
+competitor — `KG_NOST` **below** `KG_CYN` = 2.0 — with the fixation refuge and P-limitation
+supplying its niche. That is the one combination none of the earlier directions tested:
+
+| config | CYN | **FIX** | share | total | lift |
+|---|---|---|---|---|---|
+| switch, KG **1.5** | 1.776 | **0.0736** | 0.960 | 0.48× | −0.181 |
+| switch, KG 1.5 + P 0.015 | 1.616 | **0.0436** | 0.974 | 0.43× | −0.230 |
+| switch, KG 1.2 + P 0.015 | 1.545 | **0.0336** | 0.979 | 0.41× | −0.251 |
+| **observed** | 1.875 | **1.9797** | 0.486 | 1.00× | — |
+
+⭐⭐⭐ **The fixer goes functionally extinct — 0.037× of observed — even with the switch
+protecting it.**
+
+### 54.4 The result: the model is over-determined
+
+Two requirements, and they are mutually exclusive in this parameterisation:
+
+1. **Coexistence** requires NOST to be the inferior nitrogen competitor (`KG_NOST` < 2.0), so
+   that CYN wins while DIN is available.
+2. **Fixer persistence** requires `KG_NOST` high enough to self-sustain — §31 set 7.6 precisely
+   because the staged guild could not persist at lower rates, and §54.3 confirms it dies at 1.2–1.5
+   even with the DIN-gated switch, which §52.3 measured as worth 2.3–4.7× in fixer biomass.
+
+The two windows do not overlap. Measured boundaries: at `KG_NOST` ≳ 2.6 NOST dominates and CYN
+is suppressed to ≤0.30×; at ≲ 2.0 NOST is extinct and CYN stands alone at ~1.6–1.8 (close to its
+observed 1.875, which is the tantalising part). **There is no value in between that holds both.**
+
+**Eight parameter directions, one outcome.** `KG_NOST`; `NOST_FIX_SWITCH`; `R_FIX_NOST`;
+`PREF_ZOO_NOST`; `PREF_ZOO_CYN`; `KHS_DP_NOST` alone; switch + P; and switch + P + inferior
+`KG_NOST`. Best lift achieved anywhere: **+0.050**. Gate needed: a share of 0.35–0.65 *with*
+total ≥ 0.80×. **Never both.**
+
+### 54.5 Verdict and what would actually be required
+
+**This is a bounded structural limit, of the same class as the Droop-N (§38) and
+akinete-staging (§29) negatives** — and it is a stronger statement than either, because it is
+supported by coexistence theory rather than by exhaustion alone: two consumers on one limiting
+resource, with self-limitation equal to cross-limitation, admit no stable coexistence, and every
+measurement is consistent with that.
+
+**What the model would need**, none of which is a parameter:
+
+- **A resource only one guild uses.** Fixation is meant to be that, but the switch grants a
+  *refuge* (a niche when DIN is scarce), not a *separate resource* — NOST's non-fixing channel
+  still competes for the same nitrogen whenever it is present.
+- **Density-dependent self-limitation** beyond nutrient drawdown — the quadratic closure the
+  zooplankton already use (§36's `ZOO_FOOD_MODEL`), applied to the phytoplankton guilds.
+- **Vertical or temporal separation** with real state: the positional ratchet exists
+  (`CYANO_POS_MODEL`) and currently applies to both guilds identically; applying it to one and
+  not the other is untested and is the last of §53.4's candidates still standing.
+
+⚠ **Nothing adopted.** `NOST_FIX_SWITCH` = 0, `R_FIX_NOST` = 1.0, all grazing and half-saturation
+constants unchanged, live `INPUTS_CL29/` untouched, §31's configuration stands. Both built
+mechanisms remain available and byte-identical when off.
+
+⭐ **Ops lesson.** This arc accumulated **52 GB** across ~40 short-window runs (~1 GB each) and
+an external kill followed at 93 % disk. Reduce each run to its summary and discard the raw
+series *as you go* — the September means for all 39 completed runs compress to a single JSON.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
