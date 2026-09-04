@@ -160,8 +160,15 @@ def forward(args):
         with open(os.path.join(wd, "INPUT.txt"), "w") as f:
             f.writelines(out)
         env = dict(os.environ, ESTAS_HOLD_VOLUME="1")
+        # Timeout guards against a HUNG run, not a merely long one -- a timed-out run
+        # returns None and the caller scores it as PENALTY, which is indistinguishable
+        # from a genuinely bad parameter set. Measured 2026-09-04: a 1461-day window
+        # with 24 concurrent workers takes ~541 s, i.e. only a 10 % margin under the
+        # old 600 s ceiling, so the slower individuals of each generation were being
+        # silently penalised. Sized for the longest window this harness is used with.
         r = subprocess.run([BIN, "INPUT.txt"], cwd=wd, env=env,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=600)
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=int(os.environ.get("CL29_RUN_TIMEOUT", "3600")))
         if r.returncode != 0 or not os.path.exists(os.path.join(wd, "OUT", "PELAGIC_BOX_00023.out")):
             return (idx, None)
         subprocess.run(["python3", VALIDATOR, "--outputs", os.path.join(wd, "OUT"),
