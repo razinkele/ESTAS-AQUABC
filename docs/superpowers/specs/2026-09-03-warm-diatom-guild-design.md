@@ -164,6 +164,16 @@ read guarded (§45: `para_get_value` hard-stops on a missing name).
 
 ### 2.2 Cardinals: the guild's value is summer persistence, not October rate
 
+⚠⚠ **QUALIFIED BY §50 (2026-09-04) — read before building on this section.** The autumn
+re-measurement on the adopted baseline says `DIA` −1.435 mg C/L **is** the largest single *net*
+autumn deficit, so the guild's premise stands — but it is ~45 % of a −3.217 total, and the
+Aug–Sep window this section argues for is **precisely where the model already produces the right
+total cyanobacterial carbon (Aug 0.99×, Sep 0.96×) in the wrong guild**. A warm diatom guild
+added there enters a niche the model over-fills, against a fixer running
+`KG_NOST_VEG_HET_OPT_TEMP` 7.6 versus `KG_CYN_OPT_TEMP` 2.0 — the same competition that holds
+CYN at 0.10–0.27×. **Settle the cyanobacterial partitioning before sizing the guild**, or its one
+fitted constant will absorb that error too.
+
 **v1's error:** it justified the October gate on the guild's October growth. **No warm-guild
 cardinal set beats the incumbent in October** — cold guild CTMI 0.935 at 12.8 °C versus 0.819
 (4,17,26), 0.773 (4,18,28), 0.575 (v1's 4,20,28). The guild's value is **August–September**,

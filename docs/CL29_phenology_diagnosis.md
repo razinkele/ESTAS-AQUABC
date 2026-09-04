@@ -3381,6 +3381,118 @@ the reported "best" can be worse than the starting point with nothing to reveal 
 
 ---
 
+## 50. Autumn re-measured on the adopted baseline: it is **three** problems,
+## and the biggest one in Aug–Oct is PARTITIONING, not missing biomass
+
+**2026-09-04.** Re-measurement on the canonical `OUTPUTS_CL29` (ice adopted §45, `CYN_OPT_TEMP_LR`
+2.0 §40, staged fixer §31, W6 §36, symmetric boundary §27), following the §28 practice of
+re-measuring a residual after each adoption rather than carrying an older characterisation
+forward. Nothing was changed to produce it; the binary was verified byte-identical to this
+baseline twice the same day.
+
+### 50.1 The decomposition, and why the headline number misleads
+
+Autumn (Sep+Oct+Nov) phytoplankton carbon, obs-matched. `PHYTO_TOT = DIA + CYN + FIX + OPA`
+closes to four decimals, so the split is exact:
+
+| component | gross deficit | |
+|---|---|---|
+| **`CYN_C`** | **−2.512** | the single most-wrong group |
+| `DIA_C` | −1.435 | |
+| `OPA_C` | −1.126 | |
+| `FIX_CYN_C` | **+1.856** | over-predicted |
+| **TOTAL** | **−3.217** | |
+
+⚠ **Two legitimate framings, and they rank the components differently.** By *gross* error CYN
+is the worst group. But CYN and FIX are the same functional pool measured two ways, and they
+largely cancel — **net cyanobacteria −0.656**, against `DIA` −1.435 and `OPA` −1.126, which
+together are −2.561 of the −3.217. Quote whichever is relevant, never silently switch.
+
+### 50.2 The finding: Aug–Oct total cyanobacterial carbon is essentially EXACT
+
+| month | obs CYN+FIX | model | **total** | CYN | FIX |
+|---|---|---|---|---|---|
+| Aug | 3.909 | 3.872 | **0.99×** | 0.10× | 2.27× |
+| Sep | 3.854 | 3.710 | **0.96×** | 0.17× | 1.71× |
+| Oct | 1.869 | 1.962 | **1.05×** | 0.27× | 2.06× |
+| Nov | 0.800 | 0.195 | **0.24×** | 0.42× | 0.11× |
+
+⭐⭐ **From August to October the model produces the right total cyanobacterial carbon to within
+1–5 % and puts it in the wrong guild.** That is not a biomass deficit at all — it is a
+partitioning error between two cyanobacterial guilds, and it has been invisible because every
+aggregate metric sums them.
+
+### 50.3 The partition is movable — measured, not inferred
+
+⚠ **The obvious probe is the wrong one.** `FIX_CYN_C` is **0.002** in autumn: after §31's
+role swap the entire fixer pool is `NOST_VEG_HET_C` (4.59 in September), and the validator
+scores observed fixer carbon against `FIX_TOT_C = FIX_CYN_C + NOST_VEG_HET_C`. Suppressing
+`KG_FIX_CYN_OPT_TEMP` — the parameter named for the process — would have changed nothing and
+produced a false negative. Same family as [[aquabc-parallel-code-paths]]: **the parameter named
+for a process is not always the one driving it.** The knob is `KG_NOST_VEG_HET_OPT_TEMP` (7.6,
+raised from 1.3 by §31's tuning ladder).
+
+Suppressing it to 1.0 — a bound, not a calibration — on the adopted baseline, 1461 days,
+boxes 7/14/17/23:
+
+| month | FIX_TOT base → supp | CYN base → supp | **CYN ×** |
+|---|---|---|---|
+| Jul | 3.00 → 0.09 | 0.431 → 1.371 | 3.18 |
+| Aug | 3.73 → 0.05 | 0.210 → 1.542 | **7.34** |
+| Sep | 3.56 → 0.02 | 0.298 → 1.442 | **4.85** |
+| Oct | 1.58 → 0.006 | 0.312 → 1.356 | 4.34 |
+| Nov | 0.03 → 0.005 | 0.148 → 0.642 | 4.35 |
+
+**The CYN deficit is fixer competition, and it is fully reversible.** Indicatively (the probe is
+model-only on four boxes, so treat the cross-basis comparison as approximate while the
+base→supp ratios are same-basis and exact), CYN moves from 0.16–0.43× of observed to
+0.77–1.87×.
+
+⚠ **This is a diagnostic, not a fix.** It overshoots CYN in Oct/Nov and annihilates the fixers,
+which the observations do not support (obs September FIX 1.98 *and* CYN 1.87). **Neither end of
+the seesaw is the observed system.** The model can hold ~3.9 mg C/L of total autumn
+cyanobacteria; it cannot yet split it ~50/50 the way the lagoon does.
+
+⭐ The mechanism is plain once the pools are separated: `KG_NOST_VEG_HET_OPT_TEMP` **7.6**
+against `KG_CYN_OPT_TEMP` **2.0**. The staged guild out-competes CYN for the regenerated DIN,
+which the model draws to ~5 % of observed in autumn (NO3 0.0003 vs 0.0234, NH4 0.0038 vs
+0.0510). ⚠ Note the DIN *falls further* under suppression (Oct 0.051 → 0.018) — because the
+released CYN consumes it. The resource is genuinely contested, which is why §39's nitrate-supply
+tests moved nothing: **adding a resource does not help when the competitor consuming it is
+over-grown.**
+
+⚠⚠ **This is the cost of §31's adoption, now visible.** Akinete staging was adopted on CHLA
+RMSE 24.22 (best ever) with the August peak exact — and it bought that by raising the fixer
+growth constant 1.3 → 7.6, which crushed CYN. The reverse trade is already on record: §25's full
+DE "fixed CYN by crushing fixers". **The seesaw has now been measured from both ends, and the
+adopted configuration sits at one of them.** Neither end is the lagoon.
+
+### 50.4 What autumn actually is
+
+Not one residual. **Three, with different remedies:**
+
+1. **Aug–Oct cyanobacterial partitioning** — right total, wrong guild, reversible by a growth
+   constant. The largest *gross* error (−2.512) and nearly free of net biomass consequence.
+   Needs a mechanism that lets both guilds coexist, not a bigger pool.
+2. **November collapse** — total cyanobacteria 0.24×, *both* guilds crashing, plus DIA 0.23× and
+   OPA 0.01×. This is the genuine autumn hole and it is not a partitioning artifact.
+3. **Diatoms (−1.435) and OPA (−1.126) across all three months** — separate, persistent, and
+   between them −2.561 of the −3.217 net.
+
+**For the warm-guild spec** (`2026-09-03-warm-diatom-guild-design.md`): its premise survives and
+its priority does not go unqualified. `DIA` −1.435 **is** the largest single *net* component, so
+the guild addresses the biggest net gap — but that is ~45 % of the autumn deficit, and §2.2's
+"the guild's case is Aug–Sep" now needs a footnote: **Aug–Sep is precisely where the
+cyanobacterial partitioning error is largest and where total cyano carbon is already correct.**
+A warm diatom guild added there competes for a niche the model already over-fills.
+
+⭐⭐ **The reusable result.** September chlorophyll is **0.98× with the composition entirely
+wrong** — FIX 1.71×, CYN 0.17×, DIA 0.01×, OPA 0.00×. Right pigment, wrong organisms, in one
+row. §22's rule ("validate on group carbon, never chlorophyll") now has its sharpest number: a
+2 % chlorophyll error concealing a four-group compositional failure.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
