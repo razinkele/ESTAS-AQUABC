@@ -29,6 +29,11 @@ values: the two months agree on pigment and diverge only on growth.**
 two candidates were `FDAY` and the background extinction. Both were measured on 2026-09-04,
 **before** spending a run:
 
+- ⚠⚠ **RETRACTED by §48.1 (2026-09-04): `FDAY` IS a February lever.** The claim below is true of
+  the *rate* and false of the *biomass* — run at full record, Form B's Feb/May biomass
+  differential is **4.66×**, and it drives February `DIA_C` from 0.99× to **0.22×**, undoing
+  §45's adopted ice fix. Form B is correct physics but is **not adopted** (§48.4). The original
+  text is kept below for the record:
 - **`FDAY` done correctly is an offset, not a February lever.** `I_A` is a daily integral, so
   the physically correct (WASP) form `FDAY·f(I_A/FDAY)` gives **−22.1 % February / −19.0 % May
   — a 1.04× differential.** The 1.71× belongs to the *forcing*, not to the model's response to
@@ -44,6 +49,12 @@ two candidates were `FDAY` and the background extinction. Both were measured on 
 
 **So February's C:Chl conflict has no identified production error left to blame**, and the
 §0 gate as originally drafted cannot fire the way it was designed to.
+
+⚠ **Updated after §48:** February *does* have a production error — but it points the **wrong
+way**. February needs *more* biomass to match observations, and Form B removes biomass. Applying
+the measured C:Chl 34 on a Form B baseline would compound the under-prediction. Arm 3 is
+therefore **not** worth running on a Form B baseline; the exit for C:Chl remains photoacclimative
+structure (§22, BACKLOG P2).
 
 ⭐ Still cheap and still worth running, for its own sake rather than as a guild gate: the
 day-length series already exists and is correct (`INPUTS_CL29/FORC_TS_9.txt`, 4,017 daily

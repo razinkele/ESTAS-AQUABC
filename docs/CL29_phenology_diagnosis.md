@@ -3053,6 +3053,16 @@ these columns identical to three decimals:
 
 ### 47.3 What this retires
 
+> ⚠⚠ **RETRACTED IN PART BY §48.1 — read that first.** The second bullet below withdraws `FDAY`
+> as a February lever on the strength of the *rate* being near-uniform (1.04×). Run at full
+> record, Form B's **biomass** differential is **4.66×** (`DIA_C` Feb 0.223 vs May 1.039): in
+> months near the growth/loss balance a uniform proportional cut to growth flips the sign of the
+> net rate, which biomass integrates exponentially. `FDAY` **is** a February lever — strong
+> enough to undo §45's adopted ice fix. The rate table in §47.2 is correct; believing it
+> answered a question about *biomass* was the error. **Evaluate the operator — and in a
+> dynamical model the operator is the integration, not just the algebra of the term changed.**
+> The third bullet's "near-uniform cost" is wrong for the same reason.
+
 - ⭐⭐ **§44.3's FDAY row is a Form-A number.** Its measured 0.283 → 0.128/d is ×0.452, matching
   Form A's ×0.395 light factor and nothing like Form B's ×0.779. **The probe that promoted
   `FDAY` used the incorrect implementation.** With both this and §44.3's extinction row
