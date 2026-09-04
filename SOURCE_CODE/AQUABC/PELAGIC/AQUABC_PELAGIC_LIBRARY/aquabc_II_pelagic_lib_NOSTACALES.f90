@@ -60,7 +60,7 @@ subroutine NOSTOCALES &
    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    use AQUABC_NOST_STAGING, only: KR_GERM_BED, V_SETTLE_AKI, T_GERM_AKI_STAGE, EPS_GERM_TEMP_LIM
-   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST
+   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -353,7 +353,10 @@ subroutine NOSTOCALES &
        FRAC_FIX_EFF = FRAC_NOST_GROWTH
    end if
 
-   R_NOST_VEG_HET_FIX_GROWTH     = FRAC_FIX_EFF * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_FIX * NOST_VEG_HET_C
+   ! R_FIX_NOST scales the FIXING channel only (mirrors FIX_CYN's R_FIX, WCONST 73).
+   ! < 1 is an energetic cost on N2 fixation; 1.0 (default) is no cost and is
+   ! byte-identical to the pre-existing expression.
+   R_NOST_VEG_HET_FIX_GROWTH     = R_FIX_NOST * FRAC_FIX_EFF * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_FIX * NOST_VEG_HET_C
    R_NOST_VEG_HET_NON_FIX_GROWTH = (1.D0 - FRAC_FIX_EFF) * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_NON_FIX * NOST_VEG_HET_C
    R_NOST_VEG_HET_GROWTH         = R_NOST_VEG_HET_FIX_GROWTH + R_NOST_VEG_HET_NON_FIX_GROWTH
    ! ------------------------------------------------------------------------------------

@@ -1102,7 +1102,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use GLOBAL
     use ALLELOPATHY
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10, LIGHT_DAYLENGTH_OPTION, &
-                               NOST_FIX_SWITCH, K_FIX_NOST
+                               NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
     use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
@@ -1190,6 +1190,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     LIGHT_DAYLENGTH_OPTION = 0  ! explicit: 0 = legacy 24 h light, byte-identical
     NOST_FIX_SWITCH = 0         ! explicit: 0 = legacy fixed fixation share, byte-identical
     K_FIX_NOST = 0.008D0        ! FIX_CYN's K_FIX value for the same quantity
+    R_FIX_NOST = 1.0D0          ! explicit: 1.0 = no fixation cost, byte-identical
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
@@ -1285,6 +1286,12 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) K_FIX_NOST
 
+    ! Relative productivity of the Nostocales fixing channel (1.0 = no cost,
+    ! default and byte-identical; < 1 = an energetic cost on N2 fixation).
+    ! Graceful; default lives in mod_AQUABC_II_GLOBAL.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) R_FIX_NOST
+
     ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
     ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
     ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
@@ -1326,7 +1333,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     end if
     if (NOST_FIX_SWITCH > 0) then
         write(*,*) 'Nostocales fixation: DIN-GATED (inverse Monod, heterocyst ', &
-                   'induction). K_FIX_NOST =', K_FIX_NOST
+                   'induction). K_FIX_NOST =', K_FIX_NOST, ' R_FIX_NOST =', R_FIX_NOST
     else
         write(*,*) 'Nostocales fixation: OFF (legacy fixed FRAC_NOST_GROWTH share, default).'
     end if

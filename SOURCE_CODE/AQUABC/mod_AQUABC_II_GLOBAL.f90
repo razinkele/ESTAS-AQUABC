@@ -60,4 +60,25 @@ module AQUABC_II_GLOBAL
     ! PELAGIC_MODEL_OPTIONS.txt.
     integer :: NOST_FIX_SWITCH = 0
     real(kind = DBL_PREC) :: K_FIX_NOST = 0.008_DBL_PREC
+
+    ! Relative productivity of the Nostocales FIXING channel, mirroring the R_FIX
+    ! constant FIX_CYN already carries (WCONST 73, also 1.0 there).
+    !
+    !   1.0 (default)  no cost -- fixation is as productive per unit biomass as
+    !                  growth on dissolved nitrogen. Byte-identical to the
+    !                  pre-existing behaviour.
+    !   < 1.0          an ENERGETIC COST on fixation: nitrogenase and heterocyst
+    !                  maintenance make N2 a more expensive nitrogen source than
+    !                  DIN uptake. This is the ecologically standard asymmetry and
+    !                  the second half of the trade-off coexistence needs.
+    !   > 1.0          the reverse. Not physical as a "cost", but retained as a
+    !                  continuous knob because the model's fixer may need its
+    !                  low-DIN niche strengthened rather than weakened -- see the
+    !                  registered prediction in doc section 53.
+    !
+    ! ⚠ This multiplies the FIXING channel only. It therefore acts where DIN is
+    ! SCARCE (the fixer's niche), and leaves the DIN-replete regime untouched. If
+    ! the binding asymmetry turns out to be the fixer's advantage at HIGH DIN,
+    ! this knob cannot reach it -- that would need the non-fixing channel instead.
+    real(kind = DBL_PREC) :: R_FIX_NOST = 1.0_DBL_PREC
 end module AQUABC_II_GLOBAL
