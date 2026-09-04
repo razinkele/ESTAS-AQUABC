@@ -251,7 +251,7 @@ subroutine NOSTOCALES &
 
         call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, NOST_VEG_HET_DEPTH, K_E, &
                        LIM_KG_NOST_VEG_HET_LIGHT , NOST_C_TO_CHLA, I_S_NOST_VEG_HET, &
-                       NOST_LIGHT_SAT, nkn, BETA_NOST_VEG_HET)
+                       NOST_LIGHT_SAT, nkn, BETA_NOST_VEG_HET, FDAY)
 
         ! ------------------------------------------------------------------
         ! Sub-daily surface-positioning blend (CYANO_POS_MODEL = 1, opt-in).
@@ -268,7 +268,7 @@ subroutine NOSTOCALES &
             F_CALM = CALM_FRACTION(WINDS, X_POS)
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
             call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, H_SURF_ARR, K_E, &
-                 LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET)
+                 LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET, FDAY)
             LIM_KG_NOST_VEG_HET_LIGHT = (1.0D0 - F_CALM) * LIM_KG_NOST_VEG_HET_LIGHT + F_CALM * LIM_SURF
         end if
 
@@ -294,7 +294,7 @@ subroutine NOSTOCALES &
                 max(NOST_VEG_HET_C * 1.0D3 / NOST_C_TO_CHLA * S_CHUNK * &
                     (DEPTH / max(H_SURF_ARR, 1.0D-2) - 1.0D0), 0.0D0)
             call LIM_LIGHT(I_A, CHLA, KG_NOST_VEG_HET, H_SURF_ARR, K_SURF_POS, &
-                 LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET)
+                 LIM_SURF, NOST_C_TO_CHLA, I_S_NOST_VEG_HET, SAT_SCRATCH, nkn, BETA_NOST_VEG_HET, FDAY)
             LIM_KG_NOST_VEG_HET_LIGHT = (1.0D0 - F_CALM) * LIM_KG_NOST_VEG_HET_LIGHT + F_CALM * LIM_SURF
         end if
     end if

@@ -1101,7 +1101,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     use GLOBAL
     use ALLELOPATHY
-    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10, LIGHT_DAYLENGTH_OPTION
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
     use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
@@ -1186,6 +1186,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     CYN_VARIABLE_N = 0   ! explicit: don't rely on a failed read leaving the mod_GLOBAL initializer intact
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
+    LIGHT_DAYLENGTH_OPTION = 0  ! explicit: 0 = legacy 24 h light, byte-identical
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
@@ -1256,6 +1257,20 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) V_SETTLE_IN
 
+    ! Day-length weighting of the light limitation (0 = legacy 24 h, default;
+    ! 1 = Form A, photoperiod weight only -- discards (1-FDAY) of the daily dose,
+    ! kept only to reproduce doc section 47 and NOT for adoption; 2 = Form B,
+    ! dose concentrated into the photoperiod then weighted -- WASP/EUTRO, the
+    ! correct form). Graceful like everything above; the default lives in
+    ! mod_AQUABC_II_GLOBAL and is re-asserted explicitly above.
+    !
+    ! Placement matters: this must sit immediately after V_SETTLE_AKI and before
+    ! the CYN Droop block. No shipped options file carries the CYN lines, so the
+    ! reader always exits at 900 on CYN_VARIABLE_N -- a read placed after that
+    ! block would be unreachable for every existing setup.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) LIGHT_DAYLENGTH_OPTION
+
     ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
     ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
     ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
@@ -1295,6 +1310,17 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     else
         write(*,*) 'CYN variable N (Droop): OFF (legacy Monod CYN N-limitation, default).'
     end if
+    select case (LIGHT_DAYLENGTH_OPTION)
+        case (1)
+            write(*,*) 'Day-length weighting: Form A (photoperiod weight only). ', &
+                       'WARNING: this form discards (1-FDAY) of the daily light dose ', &
+                       'and is retained for comparison only -- not for adoption.'
+        case (2)
+            write(*,*) 'Day-length weighting: Form B (dose concentrated into the ', &
+                       'photoperiod, then weighted; WASP/EUTRO).'
+        case default
+            write(*,*) 'Day-length weighting: OFF (legacy 24 h light, default).'
+    end select
     if (ZOO_FOOD_MODEL > 0) then
         write(*,*) 'Zooplankton food model: saturating total-food response, ', &
                    'KHS_FOOD_TOT_ZOO =', KHS_FOOD_TOT_ZOO

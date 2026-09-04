@@ -179,7 +179,7 @@ subroutine FIX_CYANOBACTERIA  &
 
          call LIM_LIGHT &
                       (I_A, CHLA, KG_FIX_CYN, DEPTH, K_E, LIM_KG_FIX_CYN_LIGHT, &
-                           FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
+                           FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN, FDAY)
 
          LIM_KG_FIX_CYN_LIGHT = FIX_CYN_DEPTH*LIM_KG_FIX_CYN_LIGHT
     end if
@@ -489,7 +489,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         end where
 
         call LIM_LIGHT(I_A, CHLA, KG_FIX_CYN, FIX_CYN_DEPTH, K_E, &
-             LIM_KG_FIX_CYN_LIGHT, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN)
+             LIM_KG_FIX_CYN_LIGHT, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, FIX_CYN_LIGHT_SAT, nkn, BETA_FIX_CYN, FDAY)
 
         ! ------------------------------------------------------------------
         ! Sub-daily surface-positioning blend (CYANO_POS_MODEL = 1, opt-in).
@@ -509,7 +509,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
             F_CALM = CALM_FRACTION(WINDS, X_POS)
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
             call LIM_LIGHT(I_A, CHLA, KG_FIX_CYN, H_SURF_ARR, K_E, &
-                 LIM_SURF, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, SAT_SCRATCH, nkn, BETA_FIX_CYN)
+                 LIM_SURF, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, SAT_SCRATCH, nkn, BETA_FIX_CYN, FDAY)
             LIM_KG_FIX_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_FIX_CYN_LIGHT + F_CALM * LIM_SURF
         end if
 
@@ -535,7 +535,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
                 max(FIX_CYN_C * 1.0D3 / FIX_CYN_C_TO_CHLA * S_CHUNK * &
                     (DEPTH / max(H_SURF_ARR, 1.0D-2) - 1.0D0), 0.0D0)
             call LIM_LIGHT(I_A, CHLA, KG_FIX_CYN, H_SURF_ARR, K_SURF_POS, &
-                 LIM_SURF, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, SAT_SCRATCH, nkn, BETA_FIX_CYN)
+                 LIM_SURF, FIX_CYN_C_TO_CHLA, I_S_FIX_CYN, SAT_SCRATCH, nkn, BETA_FIX_CYN, FDAY)
             LIM_KG_FIX_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_FIX_CYN_LIGHT + F_CALM * LIM_SURF
         end if
     end if

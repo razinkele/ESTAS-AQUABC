@@ -185,10 +185,12 @@ end subroutine AMMONIA_DON_PREFS
 !---------------------------------------------------------------------------
 ! LIM_LIGHT - Depth-averaged Steele light limitation with photoinhibition
 !---------------------------------------------------------------------------
-subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn, BETA)
+subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn, BETA, &
+                     FDAY)
 
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use AQUABC_PHYSICAL_CONSTANTS, only: EULER_E, safe_exp
+    use AQUABC_II_GLOBAL, only: LIGHT_DAYLENGTH_OPTION
     use, intrinsic :: ieee_arithmetic
 
     implicit none
@@ -204,12 +206,15 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     double precision, intent(out) :: LLIGHT(nkn)
     double precision, intent(out) :: LIGHT_SAT(nkn)
     double precision, intent(in)  :: BETA
+    double precision, intent(in)  :: FDAY(nkn)
 
     double precision :: SKE(nkn)
     double precision :: TEMP1(nkn)
     double precision :: TEMP2(nkn)
     double precision :: TEMP3(nkn)
     double precision :: BETA_LOC
+    double precision :: IA_EFF(nkn)
+    double precision :: FD_W(nkn)
 
     logical VALUE_strange(nkn)
     integer STRANGERSD
@@ -299,8 +304,23 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
 
     TEMP2 = TEMP2 * (1.0D0 + BETA_LOC)
 
+    ! Day-length handling -- mirrors aquabc_II_pelagic_auxillary.f90 exactly.
+    ! 0 = legacy (no FDAY), 1 = Form A (weight only), 2 = Form B (WASP).
+    select case (LIGHT_DAYLENGTH_OPTION)
+        case (1)
+            IA_EFF = Ia
+            FD_W   = max(1.0D-6, min(1.0D0, FDAY))
+        case (2)
+            FD_W   = max(1.0D-6, min(1.0D0, FDAY))
+            IA_EFF = Ia / FD_W
+        case default
+            IA_EFF = Ia
+            FD_W   = 1.0D0
+    end select
+
     TEMP3  = safe_exp( - TEMP1)
-    LLIGHT = (EULER_E / TEMP1) * (safe_exp( -TEMP2 * Ia * TEMP3) - safe_exp( -TEMP2 * Ia))
+    LLIGHT = FD_W * (EULER_E / TEMP1) * &
+             (safe_exp( -TEMP2 * IA_EFF * TEMP3) - safe_exp( -TEMP2 * IA_EFF))
 
     if (STRANGERSD(LLIGHT,VALUE_strange,nkn).eq.1) then
         write(6,*) 'LIM_LIGT: Light limitation value is strange'

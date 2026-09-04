@@ -514,7 +514,8 @@ end function KAWIND
 
 !********************************************************************
 !********************************************************************
-subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn, BETA)
+subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, LIGHT_SAT, nkn, BETA, &
+                     FDAY)
 
     !   Depth-averaged Steele light limitation with tunable photoinhibition
     !
@@ -540,6 +541,10 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     !      ke         -   light extinction coefficient, 1/m
     !      K_LIGHT_SAT-   user defined light saturation, langleys/day PAR
     !      BETA       -   photoinhibition parameter (0=Steele default, >0=stronger)
+    !      FDAY       -   fraction of the day with light (photoperiod), 0-1.
+    !                     Used only when LIGHT_DAYLENGTH_OPTION > 0; see the
+    !                     module comment in mod_AQUABC_II_GLOBAL.f90 for the two
+    !                     forms and their measured effect.
     ! Outputs:
     !      LLIGHT     -   light limitation factor [0,~1]
     !      LIGHT_SAT  -   saturation light intensity, returned for control
@@ -550,6 +555,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
 
     use AQUABC_PELAGIC_MODEL_CONSTANTS
     use AQUABC_PHYSICAL_CONSTANTS, only: EULER_E, safe_exp
+    use AQUABC_II_GLOBAL, only: LIGHT_DAYLENGTH_OPTION
     use, intrinsic :: ieee_arithmetic
 
     implicit none
@@ -565,12 +571,15 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     double precision, intent(out) :: LLIGHT(nkn)
     double precision, intent(out) :: LIGHT_SAT(nkn)
     double precision, intent(in)  :: BETA
+    double precision, intent(in)  :: FDAY(nkn)
 
     double precision :: SKE(nkn)
     double precision :: TEMP1(nkn)
     double precision :: TEMP2(nkn)
     double precision :: TEMP3(nkn)
     double precision :: BETA_LOC  ! local copy of photoinhibition parameter
+    double precision :: IA_EFF(nkn)  ! irradiance entering the P-I curve
+    double precision :: FD_W(nkn)    ! outer day-length weight
 
     logical VALUE_strange(nkn)
     integer STRANGERSD
@@ -669,8 +678,27 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     ! When BETA=0 this is a no-op and the formula is the original Steele.
     TEMP2 = TEMP2 * (1.0D0 + BETA_LOC)
 
+    ! Day-length handling (LIGHT_DAYLENGTH_OPTION, mod_AQUABC_II_GLOBAL.f90):
+    !   0  legacy -- no FDAY, the daily mean applied for a full 24 h
+    !   1  Form A -- weight by the photoperiod without concentrating the dose
+    !   2  Form B -- concentrate the dose into the photoperiod, then weight (WASP)
+    ! Option 0 leaves IA_EFF = Ia and FD_W = 1, reproducing the original
+    ! expression bit-for-bit.
+    select case (LIGHT_DAYLENGTH_OPTION)
+        case (1)
+            IA_EFF = Ia
+            FD_W   = max(1.0D-6, min(1.0D0, FDAY))
+        case (2)
+            FD_W   = max(1.0D-6, min(1.0D0, FDAY))
+            IA_EFF = Ia / FD_W
+        case default
+            IA_EFF = Ia
+            FD_W   = 1.0D0
+    end select
+
     TEMP3  = safe_exp( - TEMP1)
-    LLIGHT = (EULER_E / TEMP1) * (safe_exp( -TEMP2 * Ia * TEMP3) - safe_exp( -TEMP2 * Ia))
+    LLIGHT = FD_W * (EULER_E / TEMP1) * &
+             (safe_exp( -TEMP2 * IA_EFF * TEMP3) - safe_exp( -TEMP2 * IA_EFF))
 
     ! Clamp to [0,1]: the Steele/Platt formula can produce tiny negatives
     ! at dusk due to floating-point arithmetic when I_a is near zero.

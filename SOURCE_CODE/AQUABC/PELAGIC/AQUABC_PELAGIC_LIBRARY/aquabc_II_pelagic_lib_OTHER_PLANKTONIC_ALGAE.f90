@@ -153,7 +153,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
 
     if (smith .eq. 1) then
         call LIM_LIGHT(I_A, CHLA, KG_OPA, DEPTH, K_E, LIM_KG_OPA_LIGHT, &
-                       OPA_C_TO_CHLA, I_S_OPA, OPA_LIGHT_SAT, nkn, BETA_OPA)
+                       OPA_C_TO_CHLA, I_S_OPA, OPA_LIGHT_SAT, nkn, BETA_OPA, FDAY)
     end if
 
 

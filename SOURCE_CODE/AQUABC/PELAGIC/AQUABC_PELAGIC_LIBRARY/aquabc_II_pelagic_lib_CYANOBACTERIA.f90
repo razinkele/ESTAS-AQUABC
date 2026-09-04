@@ -172,7 +172,7 @@ subroutine CYANOBACTERIA &
 
     if (smith .eq. 1) then
         call LIM_LIGHT(I_A, CHLA, KG_CYN, DEPTH, K_E, LIM_KG_CYN_LIGHT, &
-                       CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
+                       CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN, FDAY)
     end if
 
     LIM_KG_CYN_DOXY = DISS_OXYGEN / (KHS_O2_CYN + DISS_OXYGEN)
@@ -469,7 +469,7 @@ subroutine CYANOBACTERIA_BOUYANT &
 
         call LIM_LIGHT&
              (I_A          , CHLA, KG_CYN, CYANO_DEPTH, K_E, LIM_KG_CYN_LIGHT, &
-              CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN)
+              CYN_C_TO_CHLA, I_S_CYN, CYN_LIGHT_SAT, nkn, BETA_CYN, FDAY)
 
         ! ------------------------------------------------------------------
         ! Sub-daily surface-positioning blend (CYANO_POS_MODEL = 1, opt-in).
@@ -486,7 +486,7 @@ subroutine CYANOBACTERIA_BOUYANT &
             F_CALM = CALM_FRACTION(WINDS, X_POS)
             H_SURF_ARR = min(H_SURF_POS, DEPTH)
             call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_E, &
-                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)
+                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN, FDAY)
             LIM_KG_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_CYN_LIGHT + F_CALM * LIM_SURF
         end if
 
@@ -512,7 +512,7 @@ subroutine CYANOBACTERIA_BOUYANT &
                 max(CYN_C * 1.0D3 / CYN_C_TO_CHLA * S_CHUNK * &
                     (DEPTH / max(H_SURF_ARR, 1.0D-2) - 1.0D0), 0.0D0)
             call LIM_LIGHT(I_A, CHLA, KG_CYN, H_SURF_ARR, K_SURF_POS, &
-                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN)
+                 LIM_SURF, CYN_C_TO_CHLA, I_S_CYN, SAT_SCRATCH, nkn, BETA_CYN, FDAY)
             LIM_KG_CYN_LIGHT = (1.0D0 - F_CALM) * LIM_KG_CYN_LIGHT + F_CALM * LIM_SURF
         end if
     end if

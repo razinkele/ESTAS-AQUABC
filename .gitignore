@@ -70,6 +70,7 @@ tests/fortran/test_sed_typemap
 tests/fortran/test_zooplankton
 tests/fortran/test_co2sys
 tests/fortran/test_cyn_droop
+tests/fortran/test_lim_light_daylength
 tests/fortran/*.o
 tests/fortran/*.mod
 

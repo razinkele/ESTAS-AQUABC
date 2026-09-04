@@ -155,7 +155,7 @@ subroutine DIATOMS(params                      , &
 
      if (smith .eq. 1) then
         call LIM_LIGHT(I_A, CHLA, KG_DIA, DEPTH, K_E, LIM_KG_DIA_LIGHT, &
-                       DIA_C_TO_CHLA, I_S_DIA, DIA_LIGHT_SAT, nkn, BETA_DIA)
+                       DIA_C_TO_CHLA, I_S_DIA, DIA_LIGHT_SAT, nkn, BETA_DIA, FDAY)
     end if
 
 

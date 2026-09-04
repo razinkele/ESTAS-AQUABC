@@ -48,12 +48,11 @@ Evidence: `docs/CL29_phenology_diagnosis.md` §44 (corrected), §45, §46 (corre
 
 | file | responsibility | arm |
 |---|---|---|
-| `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90` | `LIM_LIGHT` gains `FDAY` + `DAYLENGTH_OPT` args and the two forms | 1 |
-| `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model.f90` | pass `FDAY(ns:ne)` and the option into all six `LIM_LIGHT` call sites | 1 |
-| `SOURCE_CODE/AQUABC/PELAGIC/AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_*.f90` | the six callers' signatures | 1 |
-| `SOURCE_CODE/ESTAS/mod_GLOBAL.f90` | `LIGHT_DAYLENGTH_OPTION` declaration + default 0 | 1 |
-| `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` | graceful read; pass through to the AQUABC interface | 1 |
-| `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_interface.f90` | carry the option in `FLAGS` | 1 |
+| `SOURCE_CODE/AQUABC/mod_AQUABC_II_GLOBAL.f90` | `LIGHT_DAYLENGTH_OPTION` declaration + default 0 | 1 |
+| `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90` | `LIM_LIGHT` gains an `FDAY` arg and the two forms | 1 |
+| `SOURCE_CODE/AQUABC/PELAGIC/AQUABC_PELAGIC_LIBRARY/aquabc_II_pelagic_lib_*.f90` | **13** call sites gain the `FDAY` argument | 1 |
+| `tests/fortran/test_pelagic_aux_subset.f90` | **duplicate copy of `LIM_LIGHT`** — must mirror exactly | 1 |
+| `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90` | graceful read + startup report | 1 |
 | `INPUTS_CL29/PELAGIC_MODEL_OPTIONS.txt` (copy) | the new option line | 1 |
 | `INPUTS_CL29/EXTRA_WCONST.txt` (copy) | `K_B_E` | 2 |
 | `INPUTS_CL29/WCONST_04.txt` (copy) | `DIA_C_TO_CHLA` | 3 |
@@ -65,13 +64,13 @@ Evidence: `docs/CL29_phenology_diagnosis.md` §44 (corrected), §45, §46 (corre
 ## Task 1: `LIM_LIGHT` day-length forms, behind a guarded option
 
 **Files:**
-- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90:517` (signature) and `:672-676`
-  (the `LLIGHT` expression)
-- Modify: the six library callers — `aquabc_II_pelagic_lib_DIATOMS.f90:156`,
-  `_CYANOBACTERIA.f90` (two sites), `_FIX_CYANOBACTERIA.f90` (two sites), `_NOSTACALES.f90`,
-  `_OTHER_PLANKTONIC_ALGAE.f90`
-- Modify: `SOURCE_CODE/ESTAS/mod_GLOBAL.f90`, `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90`,
-  `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_interface.f90`
+- Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90` — `LIM_LIGHT` signature
+  and the `LLIGHT` expression
+- Modify: **13** library call sites — `_DIATOMS.f90` ×1, `_OTHER_PLANKTONIC_ALGAE.f90` ×1,
+  `_CYANOBACTERIA.f90` ×4, `_FIX_CYANOBACTERIA.f90` ×4, `_NOSTACALES.f90` ×3
+- Modify: `tests/fortran/test_pelagic_aux_subset.f90` (the duplicate `LIM_LIGHT`)
+- Modify: `SOURCE_CODE/AQUABC/mod_AQUABC_II_GLOBAL.f90`,
+  `SOURCE_CODE/ESTAS/mod_PELAGIC_ECOLOGY.f90`
 - Create: `tools/probe_lim_light.py`
 - Test: `tests/fortran/test_lim_light_daylength.f90`
 
@@ -79,8 +78,19 @@ Evidence: `docs/CL29_phenology_diagnosis.md` §44 (corrected), §45, §46 (corre
 - Consumes: `FDAY(nkn)` — already read at `aquabc_II_pelagic_model.f90:394` from
   `DRIVING_FUNCTIONS(:,4)` and bundled as `ENV_CHUNK%FDAY`. **No new forcing.** Live series is
   `INPUTS_CL29/FORC_TS_9.txt` (4,017 daily records, 0.2898 on 1 Jan = 6.96 h at 55 °N).
-- Produces: `LIM_LIGHT(..., FDAY, DAYLENGTH_OPT)` — two new trailing args, so the six callers change
-  in one mechanical batch. `LIGHT_DAYLENGTH_OPTION` reaches AQUABC through `FLAGS`.
+- Produces: `LIM_LIGHT(..., BETA, FDAY)` — **one** new trailing arg, so the 13 callers change in one
+  mechanical batch. The option itself is a module scalar in `AQUABC_II_GLOBAL`, which every library
+  routine already `use`s and which already carries `USE_CTMI_TEMP` and `FEPO4_KSP_LOG10` — so **no
+  `FLAGS` plumbing and no signature churn in the five library routines.**
+
+⚠ **Three corrections this task made to the plan as first written** (all found during the build):
+1. **13 call sites, not 6.** The 6 came from counting `FDAY => env%FDAY` associate blocks, not calls.
+   The surface-positioned calls (`H_SURF_ARR`, `K_SURF_POS`) of the ratchet need the argument too.
+2. **`tests/fortran/test_pelagic_aux_subset.f90` holds a second copy of `LIM_LIGHT`** which five
+   kinetics tests link. It must move in lockstep or they fail to compile.
+3. **Read placement is load-bearing.** No shipped options file carries the CYN Droop lines, so the
+   graceful-read chain always exits at `CYN_VARIABLE_N`. The new read must sit **before** that
+   block (right after `V_SETTLE_AKI`) or it is unreachable for every existing setup.
 
 - [ ] **Step 1: Write the failing unit test**
 
