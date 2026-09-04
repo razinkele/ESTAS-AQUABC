@@ -38,4 +38,26 @@ module AQUABC_II_GLOBAL
     ! -33.5 % May (a 1.68x differential); Form B -22.1 % / -19.0 % (1.04x, an
     ! offset). ESTAS sets this from PELAGIC_MODEL_OPTIONS.txt.
     integer :: LIGHT_DAYLENGTH_OPTION = 0
+
+    ! Nostocales fixation switch (doc section 51).
+    !
+    !   0  legacy (default): the fixation share of NOST growth is the fixed
+    !      constant FRAC_NOST_GROWTH (0.10), independent of dissolved inorganic
+    !      nitrogen. Measured consequence: fixation supplies only 10-21 % of the
+    !      guild's growth, so the guild carrying the entire modelled fixer
+    !      biomass actually grows 80-90 % on DIN -- it competes head-to-head
+    !      with CYN rather than occupying a diazotroph niche, and the two cannot
+    !      coexist (section 51.1 measured the partition as a bifurcation).
+    !   1  DIN-gated: the fixation share becomes an inverse Monod in DIN,
+    !      K_FIX_NOST / (K_FIX_NOST + DIN + DON) -- fixation suppressed while
+    !      nitrogen is available and enabled as it depletes. This is heterocyst
+    !      induction, and it MIRRORS THE SWITCH FIX_CYN ALREADY USES
+    !      (aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90:205); section 31's role
+    !      swap moved the fixer role to NOST, which lacked it.
+    !
+    ! K_FIX_NOST defaults to 0.008 mg N/L, the value FIX_CYN uses for the same
+    ! physical quantity (WCONST 74, K_FIX). ESTAS sets both from
+    ! PELAGIC_MODEL_OPTIONS.txt.
+    integer :: NOST_FIX_SWITCH = 0
+    real(kind = DBL_PREC) :: K_FIX_NOST = 0.008_DBL_PREC
 end module AQUABC_II_GLOBAL

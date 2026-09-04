@@ -1101,7 +1101,8 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
 
     use GLOBAL
     use ALLELOPATHY
-    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10, LIGHT_DAYLENGTH_OPTION
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10, LIGHT_DAYLENGTH_OPTION, &
+                               NOST_FIX_SWITCH, K_FIX_NOST
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
     use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
@@ -1187,6 +1188,8 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     USE_CTMI_TEMP = .false.
     FEPO4_KSP_LOG10 = -26.4D0   ! default; kept if the read below is absent
     LIGHT_DAYLENGTH_OPTION = 0  ! explicit: 0 = legacy 24 h light, byte-identical
+    NOST_FIX_SWITCH = 0         ! explicit: 0 = legacy fixed fixation share, byte-identical
+    K_FIX_NOST = 0.008D0        ! FIX_CYN's K_FIX value for the same quantity
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
@@ -1271,6 +1274,17 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) LIGHT_DAYLENGTH_OPTION
 
+    ! Nostocales fixation switch (0 = legacy fixed FRAC_NOST_GROWTH, default;
+    ! 1 = DIN-gated inverse Monod, mirroring the switch FIX_CYN already uses) and
+    ! its half-saturation in mg N/L. Graceful like everything above; defaults live
+    ! in mod_AQUABC_II_GLOBAL and are re-asserted explicitly above. Placement is
+    ! load-bearing for the same reason as the line above -- see that comment.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) NOST_FIX_SWITCH
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) K_FIX_NOST
+
     ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
     ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
     ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
@@ -1309,6 +1323,12 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
                    ' CYN_N_KHS_UPT=', CYN_N_KHS_UPT_IN
     else
         write(*,*) 'CYN variable N (Droop): OFF (legacy Monod CYN N-limitation, default).'
+    end if
+    if (NOST_FIX_SWITCH > 0) then
+        write(*,*) 'Nostocales fixation: DIN-GATED (inverse Monod, heterocyst ', &
+                   'induction). K_FIX_NOST =', K_FIX_NOST
+    else
+        write(*,*) 'Nostocales fixation: OFF (legacy fixed FRAC_NOST_GROWTH share, default).'
     end if
     select case (LIGHT_DAYLENGTH_OPTION)
         case (1)

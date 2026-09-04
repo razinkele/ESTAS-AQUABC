@@ -60,6 +60,7 @@ subroutine NOSTOCALES &
    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    use AQUABC_NOST_STAGING, only: KR_GERM_BED, V_SETTLE_AKI, T_GERM_AKI_STAGE, EPS_GERM_TEMP_LIM
+   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -140,6 +141,7 @@ subroutine NOSTOCALES &
    !double precision, dimension(nkn) :: R_MORT_DENS_NOST_VEG_HET
    double precision, dimension(nkn) :: AKI_GERM ! Germination rate constanst for Akinetes
    double precision, dimension(nkn) :: AKI_FORM ! Formation rate constanst for Akinetes
+   double precision, dimension(nkn) :: FRAC_FIX_EFF ! effective fixation share of growth
 
    double precision NOST_LIGHT_SAT(nkn) !light saturation obtained fom lim_light, just for control
 
@@ -326,8 +328,33 @@ subroutine NOSTOCALES &
          max(LIM_KG_NOST_VEG_HET_P + LIM_KG_NOST_VEG_HET_N - &
              LIM_KG_NOST_VEG_HET_P * LIM_KG_NOST_VEG_HET_N, 1.0D-20))
 
-   R_NOST_VEG_HET_FIX_GROWTH     = FRAC_NOST_GROWTH * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_FIX * NOST_VEG_HET_C
-   R_NOST_VEG_HET_NON_FIX_GROWTH = (1.D0 -FRAC_NOST_GROWTH) * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_NON_FIX * NOST_VEG_HET_C
+   ! ------------------------------------------------------------------------------------
+   ! Fixation share of growth (NOST_FIX_SWITCH, mod_AQUABC_II_GLOBAL.f90).
+   !
+   !   0 (default) legacy: a FIXED share, independent of nitrogen. Measured
+   !     consequence (doc s.51.3): fixation then supplies only 10-21 % of this
+   !     guild's growth, so the guild carrying the entire modelled fixer biomass
+   !     grows 80-90 % on DIN and competes head-to-head with CYN instead of
+   !     occupying a diazotroph niche.
+   !   1 DIN-gated: an inverse Monod in dissolved nitrogen -- fixation is
+   !     suppressed while N is available and enabled as it depletes, which is
+   !     heterocyst induction. Mirrors the switch FIX_CYN already uses
+   !     (aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90:205); s.31's role swap moved
+   !     the fixer role to THIS guild, which lacked it.
+   !
+   ! DIN here is (NH4 + NO3) and DON arrives already scaled by
+   ! frac_avail_DON_NOST, so the expression matches FIX_CYN's term for term.
+   ! Option 0 leaves FRAC_FIX_EFF = FRAC_NOST_GROWTH, reproducing the original
+   ! two lines exactly.
+   ! ------------------------------------------------------------------------------------
+   if (NOST_FIX_SWITCH > 0) then
+       FRAC_FIX_EFF = K_FIX_NOST / (K_FIX_NOST + DIN + DON)
+   else
+       FRAC_FIX_EFF = FRAC_NOST_GROWTH
+   end if
+
+   R_NOST_VEG_HET_FIX_GROWTH     = FRAC_FIX_EFF * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_FIX * NOST_VEG_HET_C
+   R_NOST_VEG_HET_NON_FIX_GROWTH = (1.D0 - FRAC_FIX_EFF) * KG_NOST_VEG_HET * LIM_KG_NOST_VEG_HET_NON_FIX * NOST_VEG_HET_C
    R_NOST_VEG_HET_GROWTH         = R_NOST_VEG_HET_FIX_GROWTH + R_NOST_VEG_HET_NON_FIX_GROWTH
    ! ------------------------------------------------------------------------------------
    ! END OF CODE TO CALCULATE THE GROWTH RATE OF VEGATATIVE + HETEROCYST STAGE
