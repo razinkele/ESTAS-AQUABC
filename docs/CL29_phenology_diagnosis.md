@@ -3229,6 +3229,130 @@ exit for C:Chl remains photoacclimative structure (§22, BACKLOG P2).
 
 ---
 
+## 49. Recalibrating on Form B: the compensation is NOT recoverable — the
+## optimizer pays for a 4.6 % Φ gain by degrading February a further 33 %
+
+**2026-09-04.** §48.4 offered three options; this section runs option 2 — adopt Form B and
+re-fit the constants it exposed. The answer is a clean negative, and the *route* to it is the
+more useful part.
+
+### 49.1 The paramset had to be corrected first — `light` cannot move February
+
+The obvious set is `light` (4 × `KG` + 4 × N-cycle), and it is the wrong one. §42 already
+established that `I_s = GITMAX·CCHL·e/(0.083·PHIMX·XKC)` is **proportional to GITMAX**, so
+GITMAX cancels out of `growth = GITMAX · LIM_LIGHT` in the light-limited regime. February sits
+at `I/I_s = 0.295`, deep inside it. Measured over 730 days on the Form B base (boxes
+7/14/17/23):
+
+| knob | change | Feb `DIA_C` |
+|---|---|---|
+| `KG_DIA_OPT_TEMP` 8.10 → 10.0 | +23 % | ×1.072 |
+| `KR_DIA_20` 0.05 → 0.02 | −60 % | ×1.155 |
+| **`KD_DIA_20` 0.12 → 0.04** | −67 % | **×3.680** |
+
+**The February compensation lives on the loss side, and `light` contains no loss term at all.**
+A DE on it would have spent its whole budget without touching the disqualifying metric — while
+inflating summer, where `KG` *does* bite (May +8.4 % for the same change). §48.4's own phrasing,
+"recalibrate the **growth** constants", baked that error in. New paramset `formb_closure`
+(`93193f3`): 2 loss + 3 growth + 3 cycling, C:Chl excluded on principle (§22).
+
+⭐ Note the arithmetic that makes this a *bounded* question rather than an open one: restoring
+February from Form B's 0.0619 to the observed 0.280 needs **×4.52**, and the maximum available
+mortality cut — `KD_DIA_20` at its lower bound — yields only **×3.68**. Even the extreme of the
+one effective parameter falls short before the DE begins.
+
+### 49.2 What the optimizer actually did
+
+192 evaluations, converged at generation 7. Φ **15.4539 → 14.7367 (+4.6 %)** on the 1461-day
+window, group carbon included in the objective, seeded at the Form B defaults so the result has
+a real reference.
+
+| parameter | default | calibrated | |
+|---|---|---|---|
+| **`KD_DIA_20`** | 0.12 | **0.1719** | **+43 % — mortality UP** |
+| `KG_DIA_OPT_TEMP` | 8.10 | **9.837** | +21 %, bound is 10.0 |
+| `KG_CYN_OPT_TEMP` | 2.00 | 3.13 | +57 % |
+| `KG_FIX_CYN_OPT_TEMP` | 1.29 | 1.905 | +48 % |
+| `KHS_DIP_DIA` | 0.008437 | 0.005088 | −40 % |
+| `K_NITR_20` / `KDISS_PON` / `KD_CYN_20` | — | −6 % / +9 % / ~0 | |
+
+**Every growth rate up, and diatom mortality up 43 %.** The optimizer bought its Φ gain by
+running a **higher-turnover** system: more production where light saturates, more loss
+everywhere. `KG_DIA` finished effectively pinned at its bound — the same "KG maxed" signature
+§40.1 recorded in the coupled light DE.
+
+That is a coherent response to the objective and a destructive one for phenology, for the
+reason §49.1 gives: raising `KG` buys summer, where light saturates; raising `KD` costs
+February, where `KG` cannot compensate because it has cancelled out. **The trajectory shows the
+trade being made** — generation 4 moved `KD_DIA_20` *down* to 0.1035, then generation 5 reversed
+it to 0.1854 and Φ improved. The wall was visible in the optimizer's path, not only in its
+result.
+
+### 49.3 The result, phase first
+
+Full record, 4016 days. `full_base` reproduces §48's Form B scorecard exactly (CHLA 24.72,
+PO4 0.02344, Si 0.8731, DIA_C 0.7015) — a clean cross-check that the harness and the manual run
+agree.
+
+| | adopted CL29 | Form B | **Form B + DE** |
+|---|---|---|---|
+| **seasonal r** | **+0.74** | +0.72 | +0.72 |
+| **autumn:spring** (obs 2.06) | 2.25 | **2.16** | 2.30 |
+| peak month (obs 8) | 9 | 8 | 8 |
+| **Feb `DIA_C`** (obs 0.280) | **0.99×** | 0.22× | **0.15×** |
+| CHLA RMSE | **23.83** | 24.72 | 24.88 |
+| PO4 RMSE | **0.01755** | 0.02344 | 0.02354 |
+| Si RMSE | 0.8697 | 0.8731 | **0.8249** |
+| DIA_C RMSE | 0.7015 | 0.7015 | 0.6893 |
+| CYN_C / FIX_CYN_C | 1.75 / 2.091 | 1.769 / 1.955 | 1.738 / **1.911** |
+| TP RMSE | 0.04608 | 0.03713 | 0.0368 |
+
+**On the full record the recalibration buys almost nothing.** Silica −5.5 % is the only gain
+worth naming; CHLA and PO4 are marginally *worse*; everything else moves by under 2 %. The
++4.6 % Φ measured on the 1461-day calibration window does not survive extension to eleven
+years — a plain window-overfit, and the same non-transferability recorded for the PEST
+posteriors in [[cl29-pest-posterior-nonstationarity]].
+
+**And it is paid for in the currency that matters.** February `DIA_C` falls from 0.22× to
+**0.15×** — a further 33 % degradation of the month §45's ice adoption was made on — while
+autumn:spring moves *away* from observation (2.16 → 2.30 against 2.06). October is untouched at
+0.50×. July diatoms fall 0.07× → 0.02×.
+
+### 49.4 Verdict
+
+**Option 2 of §48.4 fails. The compensation is not recoverable through these constants under
+this objective.** What remains is option 1 (leave `LIGHT_DAYLENGTH_OPTION` opt-in at 0, the
+default, zero risk) or option 3 (record Form B as a measured negative alongside Droop-N §38 and
+akinete staging §29). **Both are the user's call; nothing has been adopted.**
+
+Be precise about what this does and does not establish:
+
+- **Established:** a Φ-driven DE over 8 growth/loss/cycling constants, seeded at the defaults
+  and given group-carbon composition, cannot restore February on a Form B baseline — and
+  improves Φ by making February worse.
+- **Established independently of the DE:** even `KD_DIA_20` at its *lower bound* gives ×3.68
+  against the ×4.52 February needs. The one effective parameter is insufficient at its extreme,
+  so this is not a matter of a longer search.
+- **NOT established:** that no formulation could. A phase-aware objective, or a winter-specific
+  loss term, is untested. But note both would be *new structure*, not recalibration.
+
+⭐⭐ **The reusable result is about the objective, not the parameters.** Φ is
+`Σ (1/obs_mean)·RMSE` with **no seasonal r, no autumn:spring, no peak month**, and February is
+~1/12 of the `DIA_C` samples inside an RMSE dominated by the Aug–Oct near-absence. The DE
+optimised exactly what it was shown. **This is the fourth time in this study that an optimizer
+improved the aggregates while degrading the phase** (§22 pigment, §43.3, §46, §49) — and the
+first time it was watched doing it generation by generation. §46's rule stands and should now
+be treated as a property of this objective rather than a recurring coincidence: **a CHLA/PO4/Φ
+improvement in CL29 is not evidence of a better model until the phase metrics are checked.**
+
+⚠ Two harness defects were found and fixed en route, both capable of silently corrupting a
+calibration: the worker run timeout was **600 s against 541 s evaluations** (a timed-out run
+scores as `PENALTY`, indistinguishable from a bad parameter set — `03eff90`, now 3600 s), and
+`--seed-result` is the *only* way to put the defaults in the initial population, without which
+the reported "best" can be worse than the starting point with nothing to reveal it.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth

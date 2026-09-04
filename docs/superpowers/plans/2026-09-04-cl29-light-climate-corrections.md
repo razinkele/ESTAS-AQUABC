@@ -320,7 +320,14 @@ Verified byte-identical at flag 0, full record and 0D golden."
 
 ---
 
-## Task 2: Arm 1 probe — score Form B (and Form A, for the record)
+## Task 2: Arm 1 probe — score Form B (and Form A, for the record) — ✅ DONE (doc §48–49)
+
+**Form B run at full record and scored (§48); recalibration attempted and failed (§49).**
+Correct physics, NOT adopted: it undoes §45's ice fix (Feb `DIA_C` 0.99× → 0.22×), and a
+192-evaluation DE over the `formb_closure` set makes February *worse still* (0.15×) while
+buying only +4.6 % Φ on the calibration window and ~nothing on the full record. Form A was not
+run — §47.2's algebra plus §48.1's biomass result made it unnecessary, and it is a known bug
+retained only for the record. Arms 2–3 below are unaffected and still open.
 
 **Files:**
 - Create (scratchpad only): `probe_fdayB/` and `probe_fdayA/` copies of `INPUTS_CL29/`, each with the
@@ -441,6 +448,11 @@ month) **and** its cost is acceptable. Report both halves; the adoption call is 
 - Produces: the answer to "is the measured C:Chl adoptable yet?"
 
 - [ ] **Step 1: Stage from the adopted baseline only**
+
+⚠⚠ **Arm 1 was NOT adopted (§48.4/§49.4), so as written this task is now a no-op** — and §48.4
+adds a second reason to skip it: February's production error points the *wrong way*. February
+needs **more** biomass and Form B removes it, so C:Chl 34 on a Form B baseline would compound
+the under-prediction. Run this only if arm 2 is adopted on its own.
 
 ⚠ If neither arm 1 nor arm 2 is adopted, **skip this task** — it would reproduce §46.1 and tell us
 nothing new.
