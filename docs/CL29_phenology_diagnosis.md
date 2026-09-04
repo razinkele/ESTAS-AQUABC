@@ -3493,8 +3493,11 @@ row. §22's rule ("validate on group carbon, never chlorophyll") now has its sha
 
 ---
 
-## 51. The cyanobacterial partition is NOT settleable by constants — it is a
-## bifurcation, and §31's role swap moved the fixer to the guild without the switch
+## 51. The cyanobacterial partition is not settleable by constants, and §31's
+## role swap moved the fixer to the guild without the fixation switch
+
+> ⚠ **Title corrected 2026-09-04**: this section originally read "…it is a bifurcation…". §52.5
+> retracts that — the transition is steep but continuous. The section's other findings stand.
 
 **2026-09-04.** §50 found the model holds the right *total* autumn cyanobacterial carbon
 (Aug–Oct 0.99×/0.96×/1.05×) and splits it into the wrong guilds, and that suppressing the fixer
@@ -3515,10 +3518,14 @@ the observed ~50/50 coexistence. **It does not, and the reason is structural.**
 | 1.0 | 1.442 | 0.022 | 0.985 | 0.996 |
 | **observed** | **1.875** | **1.980** | **0.486** | **0.565** |
 
-⭐⭐ **Between 3.5 and 2.5 the September share jumps 0.122 → 0.833, stepping straight over the
-observed 0.486.** The system has two stable states — fixer-dominated and CYN-dominated — and no
-intermediate. That is textbook competitive exclusion: two consumers on one limiting resource
-admit no stable coexistence, so this is theory behaving correctly, **not a tuning failure**.
+⚠⚠ **RETRACTED BY §52.5 — this paragraph's conclusion is wrong.** It read: *"Between 3.5 and
+2.5 the September share jumps 0.122 → 0.833, stepping straight over the observed 0.486. The
+system has two stable states — fixer-dominated and CYN-dominated — and no intermediate."* The
+jump is real, but it was inferred from a **1.0-resolution sweep that stepped across the whole
+transition**. Re-run at 0.1 resolution the transition is **steep but continuous** (legacy already
+reaches share 0.712 at `KG_NOST` 2.8). A sweep too coarse to resolve a transition cannot
+distinguish a bifurcation from a steep slope. What survives is the weaker, still-decisive claim:
+**no intermediate satisfies both the split and the total** (§52.4).
 
 ### 51.2 Three further results from the same sweep
 
@@ -3593,6 +3600,123 @@ Two candidate builds, neither started:
 ⚠ Either is a **structural change to an adopted configuration**, and §31's adoption rests on
 CHLA RMSE 24.22 and an exact August peak. Both would need the full ladder: byte-identical
 default, opt-in flag, pre-registered gates, phase checked before aggregates (§46).
+
+---
+
+## 52. The DIN-gated fixation switch: built, and it IS the mechanism — but it
+## relocates the trade rather than removing it
+
+**2026-09-04.** §51.4 named two candidate builds for the cyanobacterial partition and the first
+was chosen: port the DIN-inhibition switch `FIX_CYN` already carries to the Nostocales guild,
+which §31's role swap made the carrier of the entire modelled fixer biomass but which lacked it.
+
+### 52.1 The build
+
+`NOST_FIX_SWITCH` (merged `d9896b7`), in `aquabc_II_pelagic_lib_NOSTACALES.f90`:
+
+```fortran
+if (NOST_FIX_SWITCH > 0) then
+    FRAC_FIX_EFF = K_FIX_NOST / (K_FIX_NOST + DIN + DON)
+else
+    FRAC_FIX_EFF = FRAC_NOST_GROWTH
+end if
+```
+
+`DIN` is already (NH4 + NO3) and `DON` already carries the `frac_avail_DON_NOST` scaling at the
+call site, so the expression mirrors `FIX_CYN`'s term for term. ⭐ Both the flag and
+`K_FIX_NOST` (default 0.008 — the value `FIX_CYN` uses for the same physical quantity) live in
+`AQUABC_II_GLOBAL` and are read from `PELAGIC_MODEL_OPTIONS.txt`, **deliberately not new WCONST
+constants**, so `nconst` stays 324 and neither §45's three-definition trap nor the eight
+constants files are touched.
+
+Verified: **byte-identical at flag 0 over the full record** (all 61 artefacts, 0 differ), 0D
+golden unchanged, full Fortran suite passing, and the switch demonstrably reaching the kinetics.
+
+### 52.2 Predictions, registered before the runs
+
+Two of three held. From `LIM_NON_FIX ≤ LIM_FIX` (the non-fixing fraction carries a
+Synthesizing-Unit colimitation, the fixing one does not), shifting weight toward fixation can
+only *raise* NOST's growth, and autumn DIN ≈ 0.005 gives share_fix = 0.008/0.013 = 0.62 against
+the legacy 0.10.
+
+- ✅ **P1: at the adopted `KG_NOST` 7.6 the switch makes the partition WORSE** — FIX 3.563 →
+  3.707, share 0.077 → 0.074. The switch working correctly; the problem is `KG_NOST`.
+- ✅ **P2: the switch makes a much lower `KG_NOST` viable for the fixer** — §52.3 quantifies it.
+- ❌ **P3: coexistence at `KG_NOST` 2–4.** The share still steps over the observed 0.486.
+
+### 52.3 The control — the switch is what produces the coexistence
+
+September, matched growth rates, legacy against switch:
+
+| `KG_NOST` | legacy FIX | **switch FIX** | legacy total | **switch total** |
+|---|---|---|---|---|
+| 2.8 | 0.567 | **2.691 (4.7×)** | 0.51× | **0.85×** |
+| 2.6 | 0.365 | **1.077 (3.0×)** | 0.45× | **0.74×** |
+| 2.5 | 0.281 | 0.646 (2.3×) | 0.44× | 0.66× |
+
+⭐⭐ **At every matched rate the switch holds 2.3–4.7× more fixer biomass and a far better
+total, and its 2.6 rung beats *every* legacy rung on both share and total simultaneously.**
+That is precisely the designed mechanism: under the legacy structure lowering `KG_NOST` starves
+the fixer because only 10 % of its growth is N-free; with the switch the fixer draws its full
+growth rate through the fixation channel once DIN depletes, so it survives at a rate that no
+longer crushes CYN. **The switch is necessary, and it is doing the work.**
+
+### 52.4 But no setting passes both gates
+
+Pre-registered (§46 order — composition decides, aggregates are not consulted yet): September
+CYN share in [0.35, 0.65], **and** total cyanobacterial carbon ≥ 0.80× the adopted run's.
+
+| `KG_NOST` | CYN | FIX | share | total | /adopted | gates |
+|---|---|---|---|---|---|---|
+| 7.6 | 0.297 | 3.707 | 0.074 | 4.003 | 1.04 | total only |
+| 3.0 | 0.461 | 2.938 | 0.136 | 3.399 | 0.88 | total only |
+| 2.8 | 0.581 | 2.691 | 0.178 | 3.272 | 0.85 | total only |
+| 2.7 | 0.735 | 2.425 | 0.233 | 3.160 | 0.82 | total only |
+| 2.65 | 0.944 | 2.117 | 0.308 | 3.061 | 0.79 | **neither** |
+| **2.6** | 1.773 | 1.077 | **0.622** | 2.850 | 0.74 | **share only** |
+| 2.5 | 1.887 | 0.646 | 0.745 | 2.533 | 0.66 | neither |
+| **observed** | **1.875** | **1.980** | **0.486** | **3.854** | 1.00 | — |
+
+**Share and total trade off monotonically: every step toward the observed split costs total
+biomass.** The best split (2.6, share 0.622) holds only 74 % of the carbon; the best total
+(7.6, 1.04×) has a share of 0.074. **This is §51.2's trade relocated, not removed.**
+
+⚠ And `DIA_C` is unmoved throughout — 0.0042 to 0.0053 against an observed 0.557 — confirming
+§51.2 from inside the new mechanism: the autumn diatom deficit is not downstream of the fixer
+excess, and no cyanobacterial rearrangement touches it.
+
+### 52.5 Two corrections to the record
+
+⚠⚠ **§51's "bifurcation, not a continuum" is WRONG and is retracted.** It rested on a
+1.0-resolution sweep (7.6 / 5.0 / 3.5 / 2.5) that stepped across the whole transition. At
+0.1 resolution the transition is **steep but continuous, in both structures** — legacy reaches
+share 0.712 already at 2.8, and the switch runs 0.178 → 0.233 → 0.308 → 0.622 across 2.8–2.6.
+The conclusion §51 drew from it (that no intermediate exists) is false; what is true is the
+weaker and still-decisive statement that **no intermediate satisfies both gates**. ⭐ The lesson
+is the plain one: *a sweep too coarse to resolve a transition cannot distinguish a bifurcation
+from a steep slope*, and I asserted the stronger reading from four points.
+
+⚠ **A number reported mid-session was read from an incomplete run.** `KG_NOST` 2.6 was quoted as
+share 0.501 / total 3.167 while its output file was still being written; the completed run gives
+**0.622 / 2.850**. All figures in this section come from runs verified at 35,066 lines. ⭐ Add a
+completeness assertion before reading any run's output — the file exists long before it is done.
+
+### 52.6 Where this leaves the partition
+
+**The mechanism was missing and is now present**, demonstrated against a proper control rather
+than asserted. What the switch does not do is reproduce the observed autumn split *at observed
+biomass*, because a second asymmetry is still absent: nothing makes the fixer **worse** than CYN
+while DIN is available. The switch gives it a niche when DIN is scarce; it does not take away
+its advantage when DIN is not. Coexistence at full biomass needs both halves of the trade-off.
+
+The remaining candidate is therefore the one §51.3 set aside for a reason that no longer
+applies: **an energetic cost on fixation** (`R_FIX`-style, which `FIX_CYN` carries at 1.0 = no
+cost). §51.3 retired it because the fixation channel was only 10–21 % of growth — *under the
+legacy structure*. With the switch the channel carries ~62 % in autumn, so a cost on it is now
+a first-order lever rather than a rounding error. **That is a further build and is not started.**
+
+⚠ Nothing is adopted. `NOST_FIX_SWITCH` defaults to 0, no shipped options file carries the
+line, live `INPUTS_CL29/` is untouched, and §31's configuration stands.
 
 ---
 

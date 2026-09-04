@@ -52,6 +52,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     on the `smith == 1` path uses `EULER_E`; changing it here would alter the branch's numerics
     for a reason unrelated to this bug.
 
+- **`NOST_FIX_SWITCH` — DIN-gated fixation share for Nostocales** (opt-in, default `0` =
+  current behaviour, byte-identical at full record and on the 0D golden). Ports the
+  DIN-inhibition switch `FIX_CYN` already uses to the Nostocales guild, which carries the entire
+  modelled fixer biomass but lacked it. `1` sets the fixation share to
+  `K_FIX_NOST / (K_FIX_NOST + DIN + DON)` — an inverse Monod suppressing fixation while nitrogen
+  is available and enabling it as nitrogen depletes (heterocyst induction). `NOST_FIX_SWITCH`
+  and `K_FIX_NOST` are read from `PELAGIC_MODEL_OPTIONS.txt` via `AQUABC_II_GLOBAL`, not as
+  WCONST constants, so `nconst` is unchanged.
+  - Measured against a matched-rate control (`docs/CL29_phenology_diagnosis.md` §52.3): the
+    switch holds 2.3–4.7× more fixer biomass and a substantially better total than the legacy
+    fixed share. **Not adopted** — no setting reproduces the observed autumn split at observed
+    biomass (§52.4), and the flag stays at `0`.
+
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap
