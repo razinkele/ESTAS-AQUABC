@@ -121,6 +121,31 @@ PARAM_SETS = {
         ("CYN_C_TO_CHLA",           "lin", 36.0,  78.0),
         ("FIX_CYN_C_TO_CHLA",       "lin", 36.0,  78.0),
     ],
+    # Form B closure set (doc par. 48/49): re-fit the constants that were compensating
+    # for the 24-h-light error which LIGHT_DAYLENGTH_OPTION=2 removes. Run against a
+    # Form B --inputs base.
+    #
+    # ⚠ This deliberately is NOT the 'light' set, and the reason is measured. In the
+    # light-limited regime I_s = GITMAX*CCHL*e/(0.083*PHIMX*XKC) is PROPORTIONAL to
+    # GITMAX, so GITMAX cancels out of growth = GITMAX*LIM_LIGHT (doc par. 42). February
+    # sits at I/I_s = 0.295, deep inside that regime, so the KG knobs are inert there:
+    # measured over 730 days on the Form B base, KG_DIA 8.10 -> 10.0 moves February
+    # DIA_C by x1.07 while KD_DIA_20 0.12 -> 0.04 moves it by x3.68. The February
+    # compensation lives on the LOSS side; 'light' has no loss term at all and would
+    # burn the whole DE budget without touching the metric that matters.
+    #
+    # C:Chl is excluded on purpose (doc par. 22): handed to the objective it fills the
+    # chlorophyll gap with pigment rather than biomass. It is never a calibration knob.
+    "formb_closure": [
+        ("KD_DIA_20",               "log", 0.04,   0.4),    # THE February lever (x3.68)
+        ("KD_CYN_20",               "log", 0.04,   0.4),    # same lever for CYN
+        ("KG_DIA_OPT_TEMP",         "lin", 2.0,   10.0),    # bites in summer, not winter
+        ("KG_CYN_OPT_TEMP",         "lin", 1.0,    8.0),
+        ("KG_FIX_CYN_OPT_TEMP",     "lin", 1.0,    8.0),
+        ("K_NITR_20",               "log", 0.2,    2.0),
+        ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
+        ("KHS_DIP_DIA",             "log", 0.002,  0.03),
+    ],
     # Staged-fixer set (doc par. 30): tunes the staged NOST guild + the demoted FIX_CYN
     # surrogate on a staging-enabled --inputs base (the T4 hand-optimum). The staging
     # option-file scalars (T_GERM_AKI_STAGE/I_FORM_AKI/KR_GERM_BED) stay fixed at T4's
