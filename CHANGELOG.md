@@ -65,6 +65,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     fixed share. **Not adopted** — no setting reproduces the observed autumn split at observed
     biomass (§52.4), and the flag stays at `0`.
 
+- **`R_FIX_NOST` — relative productivity of the Nostocales fixing channel** (opt-in, default
+  `1.0` = no cost, byte-identical at full record). Mirrors the `R_FIX` constant `FIX_CYN`
+  carries; `< 1` is an energetic cost on N2 fixation. Read from `PELAGIC_MODEL_OPTIONS.txt` via
+  `AQUABC_II_GLOBAL`, not a WCONST constant.
+  - Measured (`docs/CL29_phenology_diagnosis.md` §53): a real but weak second lever — it lifts
+    the (share, total) frontier by +0.004 to +0.042 — which **falsified the prediction** that a
+    cost acting only at low DIN could not reach the binding asymmetry. **Not adopted**: no
+    setting passes both composition gates, the closest approach misses by 0.026 and 0.01, and
+    the region is a knife-edge (1 % in the constant moves the September composition by up to
+    7 percentage points).
+
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap

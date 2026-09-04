@@ -3720,6 +3720,100 @@ line, live `INPUTS_CL29/` is untouched, and §31's configuration stands.
 
 ---
 
+## 53. The fixation cost: a real second lever, and it grazes the gate corner
+## without passing it — the coexistence region is a knife-edge
+
+**2026-09-04.** §52.6 named an energetic cost on fixation as the remaining candidate for the
+second half of the trade-off. Built as `R_FIX_NOST` (merged `47a1ea2`, byte-identical at the
+1.0 default over the full record — all 61 artefacts, 0 differ), mirroring the `R_FIX` constant
+`FIX_CYN` already carries. It scales the **fixing channel only**:
+`R_FIX = R_FIX_NOST · FRAC_FIX_EFF · KG · LIM_FIX · C`.
+
+### 53.1 My prediction was falsified, and that is the finding
+
+Registered before any run: because `R_FIX_NOST` acts only where the fixing channel is active
+(low DIN) and the fixer's advantage lies where DIN is *plentiful*, its (share, total) points
+should fall **on or below** the frontier `KG_NOST` alone traces (§52.4). The falsification test
+was stated as "a point strictly above that curve".
+
+**Every point lands above it:**
+
+| point | share | total | KG-only frontier at same share | **lift** |
+|---|---|---|---|---|
+| cost 0.50 (KG 7.6) | 0.083 | 1.01 | 1.006 | +0.004 |
+| **cost 0.25** (KG 7.6) | 0.101 | 0.96 | 0.939 | **+0.021** |
+| boost 1.5 (KG 2.6) | 0.139 | 0.88 | 0.878 | +0.002 |
+| **boost 2.0** (KG 2.0) | 0.718 | 0.72 | 0.678 | **+0.042** |
+
+⭐ **`R_FIX_NOST` is a genuine second lever.** The static algebra that predicted otherwise
+treated the two channels as independent; they are coupled through the nutrient field, so
+changing the fixing channel's productivity alters the DIN the non-fixing channel and CYN then
+compete for. The lifts are small (+0.004 to +0.042) but consistently positive.
+
+### 53.2 The gate corner is grazed, not passed
+
+The `KG_NOST`-only frontier reaches total 0.783 at share 0.35, missing the 0.80 gate by
+**0.017** — while the best observed lift is **+0.042**, larger than the miss. That made a
+two-dimensional point look reachable. Resolving the band at `KG_NOST` 2.6:
+
+| `R_FIX_NOST` | CYN | FIX | share | total | /adopted | gates |
+|---|---|---|---|---|---|---|
+| 1.00 | 1.773 | 1.077 | **0.622** | 2.850 | 0.74 | share only |
+| **1.03** | 1.217 | 1.762 | **0.409** | 2.979 | 0.77 | share only |
+| **1.06** | 0.987 | 2.063 | 0.324 | 3.050 | **0.79** | *neither, by 0.026 and 0.01* |
+| 1.10 | 0.820 | 2.300 | 0.263 | 3.120 | **0.81** | total only |
+| 1.20 | 0.638 | 2.592 | 0.197 | 3.229 | 0.84 | total only |
+| **observed** | 1.875 | 1.980 | **0.486** | 3.854 | 1.00 | — |
+
+**No point passes both gates.** The closest approach is `R_FIX_NOST` 1.06, missing the share
+gate by 0.026 and the total gate by 0.01. The frontier grazes the corner and turns away.
+
+### 53.3 And a point there would not be defensible anyway
+
+| step | share change | sensitivity |
+|---|---|---|
+| `R_FIX_NOST` 1.00 → 1.03 (+3 %) | 0.622 → 0.409 | **0.071 share per 1 %** |
+| 1.03 → 1.06 (+3 %) | 0.409 → 0.324 | 0.029 per 1 % |
+| 1.06 → 1.10 (+4 %) | 0.324 → 0.263 | 0.016 per 1 % |
+| 1.10 → 1.20 (+9 %) | 0.263 → 0.197 | 0.007 per 1 % |
+
+⭐⭐ **A 1 % change in one constant moves the September composition by up to 7 percentage
+points.** Even had a point passed both gates, a configuration that sensitive is a fitted
+coincidence, not a mechanism: it would not survive a change of window, boundary, or any other
+adopted constant. **Report the grazing, never a "passing" point found inside that band.**
+
+This is the third parameter direction to show the same behaviour — `KG_NOST` flips between 2.7
+and 2.6 (§52.4), `R_FIX_NOST` between 1.00 and 1.06, and the legacy `FRAC_NOST_GROWTH` structure
+between 3.5 and 2.8 (§51.1, as corrected). **However the model is pushed, the two guilds trade
+dominance across a narrow band instead of coexisting.**
+
+### 53.4 What the whole §50–§53 arc establishes
+
+1. **The autumn residual is three problems** (§50): an Aug–Oct cyanobacterial *partitioning*
+   error with the total already correct; a November collapse; and separate diatom/OPA deficits.
+2. **The partitioning error is real and its mechanism was missing** — §31's role swap moved the
+   fixer role to the guild lacking the DIN-gated fixation switch (§51.3).
+3. **The switch was built and is necessary** — against a matched-rate control it holds 2.3–4.7×
+   more fixer biomass and a far better total (§52.3).
+4. **The fixation cost was built and is a real but weak second lever** (§53.1).
+5. **Neither reproduces the observed split at observed biomass.** Two mechanisms and two
+   constants later, the (share, total) frontier still passes just below the corner, and the
+   region is a knife-edge.
+
+⇒ **The remaining asymmetry is not in the nitrogen economy.** Both knobs act on how the fixer
+acquires nitrogen; neither changes the fact that the two guilds are otherwise interchangeable
+consumers. Coexistence in the lagoon plausibly rests on something these do not represent —
+**differential grazing** (`PREF_ZOO_*` differs by group and §36's W6 adoption already used it to
+rescue CYN once), **vertical separation** (the positional ratchet exists for buoyant
+cyanobacteria and could apply to one guild and not the other), or genuine within-season
+succession finer than a monthly climatology can resolve. Those are separate investigations.
+
+⚠ **Nothing is adopted.** `NOST_FIX_SWITCH` = 0, `R_FIX_NOST` = 1.0, no shipped options file
+carries any of the lines, live `INPUTS_CL29/` untouched, §31's configuration stands. Both
+mechanisms remain available, byte-identical when off, for whoever picks this up.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
