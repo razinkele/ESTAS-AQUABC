@@ -30,6 +30,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - New `tools/probe_lim_light.py`: evaluates all three forms from the model's own constants and
     forcings, no model run required.
 
+### Fixed
+- **Day-length handling in the `smith == 0` phytoplankton branch** (7 sites across 5 library
+  routines: DIATOMS, OTHER_PLANKTONIC_ALGAE, NOSTACALES, CYANOBACTERIA ×2,
+  FIX_CYANOBACTERIA ×2). `I_A` is a **daily integral**, so the depth-averaged Steele form must
+  see the *daylight-mean* irradiance `I_A/FDAY` inside the P–I curve and be weighted by `FDAY`
+  outside. The branch multiplied by `FDAY` **without** dividing, silently discarding (1−FDAY) of
+  each day's light — 71 % of it in December. `ALPHA_0/ALPHA_1` now use `I_A/FDAY`, and both the
+  ratio and the outer weight carry a `max(1.0D-6, min(1.0D0, FDAY))` guard against a
+  polar-night divide-by-zero.
+  - **No operational effect: `smith` is hardcoded to 1** (`aquabc_II_pelagic_model.f90:299`), so
+    this branch is unreached in every shipped configuration — which is why the bug survived, and
+    why the full-record run and the 0D golden are both unchanged. The fix matters for anyone
+    enabling the branch.
+  - Regression test added (`test_diatoms`, `test_smith0_daylength`): the old form was exactly
+    `FDAY × (the FDAY=1 value)`, so that product is the target. Its relation to the correct form
+    is **regime dependent** and both sides are pinned — light-limited (I/I_s = 0.3) the correct
+    form is *larger* (it recovers discarded light), saturated (I/I_s = 3.0) it is *smaller* (the
+    concentrated dose pushes past saturation and P–I curvature dominates).
+  - ⚠ Left deliberately unchanged: the branch's `2.718` literal for *e* (0.01 % low). `LIM_LIGHT`
+    on the `smith == 1` path uses `EULER_E`; changing it here would alter the branch's numerics
+    for a reason unrelated to this bug.
+
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap

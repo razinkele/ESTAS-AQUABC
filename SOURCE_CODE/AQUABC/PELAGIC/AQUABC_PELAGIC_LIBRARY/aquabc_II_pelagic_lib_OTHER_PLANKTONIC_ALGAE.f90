@@ -125,8 +125,10 @@ subroutine OTHER_PLANKTONIC_ALGAE &
         DISS_OXYGEN  => env%DISS_OXYGEN   &
     )
 
-    ALPHA_0 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * 0.0D0)
-    ALPHA_1 = (I_A / I_S_OPA) * safe_exp(-1.0D0 * K_E * DEPTH)
+    ! I_A is a DAILY INTEGRAL, so the P-I curve must see the DAYLIGHT-MEAN
+    ! irradiance I_A/FDAY; the result is then weighted by FDAY below.
+    ALPHA_0 = I_A / (max(1.0D-6, min(1.0D0, FDAY)) * I_S_OPA)
+    ALPHA_1 = ALPHA_0 * safe_exp(-1.0D0 * K_E * DEPTH)
 
     ! Temperature limitation for growth
     call GROWTH_AT_TEMP &
@@ -145,7 +147,7 @@ subroutine OTHER_PLANKTONIC_ALGAE &
     if (smith .eq. 0) then
         !May be replaced by Smith formulation
         LIM_KG_OPA_LIGHT = &
-             (((2.718 * FDAY) / (K_E * DEPTH)) * &
+             (((2.718 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
               (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
         ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
         LIM_KG_OPA_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_OPA_LIGHT))

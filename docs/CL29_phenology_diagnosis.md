@@ -3342,7 +3342,12 @@ not about day-length physics.
   than re-fitting one backward — the correct form is one flag away.
 - `tools/probe_lim_light.py`, which answers "what would this light-climate change do?" from the
   model's own constants in seconds, without a run.
-- The `smith == 0` Form A bug is now documented; fix it there whenever that path is next touched.
+- ✅ **The `smith == 0` Form A bug is FIXED** (2026-09-04, same day): all 7 sites across the 5
+  library routines now divide `I_A` by `FDAY` inside the P–I curve, with a polar-night guard,
+  and `test_diatoms::test_smith0_daylength` pins the correct form from **both** regimes —
+  light-limited it must exceed the old `FDAY × f(I_A)`, saturated it must fall below it.
+  Operationally inert (`smith` is hardcoded to 1), and verified so: full-record byte-identical
+  and the 0D golden unchanged.
 
 **What it forecloses:** §48.4's option 2 is closed, and with it the idea that the autumn/February
 residuals can be reached by re-fitting growth and loss constants. §49.4's bound is the reason —

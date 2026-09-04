@@ -219,11 +219,13 @@ subroutine NOSTOCALES &
    ! Calculate the light limitation factor
    ! ------------------------------------------------------------------------------------
     if (smith .eq. 0) then
-        ALPHA_0 = (I_A / I_S_NOST_VEG_HET) * safe_exp(-1.0D0 * K_E * 0.0D0)
-        ALPHA_1 = (I_A / I_S_NOST_VEG_HET) * safe_exp(-1.0D0 * K_E * DEPTH)
+        ! I_A is a DAILY INTEGRAL, so the P-I curve must see the DAYLIGHT-MEAN
+        ! irradiance I_A/FDAY; the result is then weighted by FDAY below.
+        ALPHA_0 = I_A / (max(1.0D-6, min(1.0D0, FDAY)) * I_S_NOST_VEG_HET)
+        ALPHA_1 = ALPHA_0 * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_NOST_VEG_HET_LIGHT = &
-            (((2.718 * FDAY) / (K_E * DEPTH)) * &
+            (((2.718 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
              (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
         ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
         LIM_KG_NOST_VEG_HET_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_NOST_VEG_HET_LIGHT))
