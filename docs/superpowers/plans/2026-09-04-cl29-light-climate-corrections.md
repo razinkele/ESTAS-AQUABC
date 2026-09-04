@@ -61,7 +61,13 @@ Evidence: `docs/CL29_phenology_diagnosis.md` §44 (corrected), §45, §46 (corre
 
 ---
 
-## Task 1: `LIM_LIGHT` day-length forms, behind a guarded option
+## Task 1: `LIM_LIGHT` day-length forms, behind a guarded option — ✅ DONE (`60772ae`)
+
+**Verified 2026-09-04:** byte-identity at option 0 over the **full record** — all 61 output
+artefacts in `OUTPUTS_CL29` compare equal, matching MD5 — **and** the 0D golden (526 rows × 22
+cols, rtol 1e-6). 10/10 new unit tests; full Fortran suite, `fail_loud_constants` and the 0D
+example tests pass. End-to-end in the model: day-60 `DIA_C` 0.05839 (A) < 0.06204 (B) < 0.06463
+(legacy). `INPUTS/` still defaults to OFF. Live `INPUTS_CL29/` untouched.
 
 **Files:**
 - Modify: `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90` — `LIM_LIGHT` signature
@@ -92,7 +98,7 @@ Evidence: `docs/CL29_phenology_diagnosis.md` §44 (corrected), §45, §46 (corre
    graceful-read chain always exits at `CYN_VARIABLE_N`. The new read must sit **before** that
    block (right after `V_SETTLE_AKI`) or it is unreachable for every existing setup.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 `tests/fortran/test_lim_light_daylength.f90` — three assertions at a single known point
 (`Ia = 60.0`, `Is = 200.0`, `ke = 2.617`, `H = 3.5`, `FDAY = 0.389`, one node):
@@ -140,12 +146,12 @@ program test_lim_light_daylength
 end program test_lim_light_daylength
 ```
 
-- [ ] **Step 2: Run it and confirm it fails to compile**
+- [x] **Step 2: Run it and confirm it fails to compile**
 
 Run: `gfortran -J tests/fortran -I tests/fortran tests/fortran/test_lim_light_daylength.f90 SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90 -o /tmp/t_lld 2>&1 | head`
 Expected: an argument-count/rank error on `LIM_LIGHT` — the two new args do not exist yet.
 
-- [ ] **Step 3: Extend the `LIM_LIGHT` signature and add the two forms**
+- [x] **Step 3: Extend the `LIM_LIGHT` signature and add the two forms**
 
 In `aquabc_II_pelagic_auxillary.f90:517`, append two dummy args:
 
@@ -205,7 +211,7 @@ Leave the existing `LLIGHT = max(0.0D0, min(1.0D0, LLIGHT))` clamp directly afte
 ⚠ The `1.0D-6` floor on `FDAY` guards the polar-night division; the live series never goes below
 0.2887, so it is defensive only and must not alter any CL29 result.
 
-- [ ] **Step 4: Run the unit test to verify it passes**
+- [x] **Step 4: Run the unit test to verify it passes**
 
 Run: `gfortran -J tests/fortran -I tests/fortran tests/fortran/test_lim_light_daylength.f90 SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_auxillary.f90 SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_model_constants.f90 SOURCE_CODE/AQUABC/aquabc_II_physical_constants.f90 -o /tmp/t_lld && /tmp/t_lld`
 Expected: `PASS test_lim_light_daylength`
@@ -213,7 +219,7 @@ Expected: `PASS test_lim_light_daylength`
 (If module dependencies bite, build against `tests/fortran/*.o` the way the existing Fortran tests do
 — the object tree is already there.)
 
-- [ ] **Step 5: Update the six callers**
+- [x] **Step 5: Update the six callers**
 
 One mechanical batch. In each of the six library routines, the `smith .eq. 1` call gains the two
 trailing args. Example, `aquabc_II_pelagic_lib_DIATOMS.f90:156`:
@@ -234,7 +240,7 @@ Verify the count, do not line-anchor:
 Run: `grep -rn "call LIM_LIGHT" SOURCE_CODE/ | wc -l`
 Expected: `6`
 
-- [ ] **Step 6: Wire the option end to end**
+- [x] **Step 6: Wire the option end to end**
 
 `SOURCE_CODE/ESTAS/mod_GLOBAL.f90` — declare beside the other options:
 
@@ -264,7 +270,7 @@ next free slot and mirror both the pack and the unpack (`:165` and `:232`).
 mismatch produced a wrong published kd table on 2026-09-04 (§44.3 method note). Default the new
 option to 0 in **both** places.
 
-- [ ] **Step 7: Build and prove byte-identity at flag 0**
+- [x] **Step 7: Build and prove byte-identity at flag 0**
 
 ```bash
 make clean-all && make build-estas 2>&1 | tail -5
@@ -279,7 +285,7 @@ Expected: **0.0e+00 on all ten variables.** Then the 0D golden:
 Run: `make test-fortran`
 Expected: all existing Fortran tests pass, including the 0D golden.
 
-- [ ] **Step 8: Land the §47 algebra as a regression oracle**
+- [x] **Step 8: Land the §47 algebra as a regression oracle**
 
 Create `tools/probe_lim_light.py` — the exact script that produced §47.2, parameterised on the
 WCONST/options/forcing paths, printing the 12-month `A/cur` and `B/cur` table. It is the cheap check
@@ -289,7 +295,7 @@ the input" lesson is worth operationally.
 Run: `python3 tools/probe_lim_light.py --inputs INPUTS_CL29 --outputs OUTPUTS_CL29`
 Expected: February `A/cur` 0.395, `B/cur` 0.779; May 0.665 / 0.810 (±0.002).
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add SOURCE_CODE tests/fortran/test_lim_light_daylength.f90 tools/probe_lim_light.py
