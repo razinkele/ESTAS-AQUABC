@@ -3493,6 +3493,109 @@ row. §22's rule ("validate on group carbon, never chlorophyll") now has its sha
 
 ---
 
+## 51. The cyanobacterial partition is NOT settleable by constants — it is a
+## bifurcation, and §31's role swap moved the fixer to the guild without the switch
+
+**2026-09-04.** §50 found the model holds the right *total* autumn cyanobacterial carbon
+(Aug–Oct 0.99×/0.96×/1.05×) and splits it into the wrong guilds, and that suppressing the fixer
+releases CYN 4.3–7.3×. This section asks whether any value of the controlling constant produces
+the observed ~50/50 coexistence. **It does not, and the reason is structural.**
+
+### 51.1 The sweep: a bifurcation, not a continuum
+
+`KG_NOST_VEG_HET_OPT_TEMP` swept 7.6 (adopted) → 5.0 → 3.5 → 2.5 → 1.0 on the adopted baseline,
+1461 days, boxes 7/14/17/23. CYN's share of total cyanobacterial carbon:
+
+| `KG_NOST` | Sep CYN | Sep FIX | **Sep share** | Oct share |
+|---|---|---|---|---|
+| **7.6 (adopted)** | 0.298 | 3.563 | **0.077** | 0.165 |
+| 5.0 | 0.329 | 3.275 | 0.091 | 0.208 |
+| 3.5 | 0.401 | 2.877 | **0.122** | 0.275 |
+| 2.5 | 1.401 | 0.281 | **0.833** | 0.945 |
+| 1.0 | 1.442 | 0.022 | 0.985 | 0.996 |
+| **observed** | **1.875** | **1.980** | **0.486** | **0.565** |
+
+⭐⭐ **Between 3.5 and 2.5 the September share jumps 0.122 → 0.833, stepping straight over the
+observed 0.486.** The system has two stable states — fixer-dominated and CYN-dominated — and no
+intermediate. That is textbook competitive exclusion: two consumers on one limiting resource
+admit no stable coexistence, so this is theory behaving correctly, **not a tuning failure**.
+
+### 51.2 Three further results from the same sweep
+
+- **The total never improves.** Autumn total cyanobacterial carbon across the rungs: 0.75 →
+  0.69 → 0.63 → 0.66 → 0.64 (×obs, this basis). **The adopted 7.6 has the best total**, and
+  every step toward a better *split* degrades it. There is no rung that holds both.
+- **Diatoms do not benefit.** `DIA_C` 0.09 → 0.11 → 0.13 → **0.04 → 0.03**: a slight gain while
+  the fixer still dominates, then *worse* once CYN takes over — the released CYN out-competes
+  diatoms for the same DIN. **Freeing the fixer niche does not feed the diatoms; it feeds CYN.**
+  ⚠ This matters for the warm-guild spec: the autumn diatom deficit is not downstream of the
+  fixer excess, so fixing one will not fix the other.
+- **OPA is completely inert** — 0.00× at every rung, to four decimals. Relieving fixer pressure
+  does nothing for it, independently confirming §24–27's competitive-exclusion verdict from a
+  direction those sections did not test.
+
+### 51.3 Why: the model's "fixer" barely fixes, and the guild with the switch was demoted
+
+Two structural facts, both measured:
+
+**(a) The fixation channel supplies only 10–21 % of NOST's growth.** From the code,
+`R_FIX = FRAC·KG·LIM_FIX·C` and `R_NON_FIX = (1−FRAC)·KG·LIM_NON_FIX·C`, so `LIM_LIGHT`, `KG`
+and biomass cancel exactly from the share. With `FRAC_NOST_GROWTH = 0.10`, autumn DIN and DO
+from the canonical run, and `LIM_P` scanned over 0.4–1.0, the fixation share is **0.15–0.21 in
+Aug–Sep and 0.10–0.11 in Oct–Nov** — robust across the whole `LIM_P` range. **The guild carrying
+the entire fixer biomass grows 80–90 % on dissolved inorganic nitrogen.** It is not functioning
+as a diazotroph; it is a fast DIN competitor with a small N-free side-channel.
+
+⇒ This retires the obvious remedy before it is tried: adding an *energetic cost* to fixation
+would act on 10–20 % of the guild's growth and change nothing. The channel is too small to be
+the fixer's niche.
+
+**(b) `FIX_CYN` has the correct structure and `NOST` does not.**
+
+```fortran
+! aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90:205
+LIM_KG_FIX_FIX_CYN_N = K_FIX / (K_FIX + NH4_N + DON*frac_avail_DON + NO3_N)
+```
+
+An **inverse Monod**: fixation is suppressed while DIN is available and enabled as DIN depletes —
+correct heterocyst induction, and the mechanism §3.4 measured working (the switch at its annual
+widest in Oct/Nov). `NOSTOCALES` has no such gate: a fixed `FRAC_NOST_GROWTH = 0.10` regardless
+of DIN.
+
+⚠⚠ **§31's role swap moved the fixer role to the guild that lacks the fixation switch.**
+`FIX_CYN`, which has it, sits at **0.002 mg C/L** — demoted to a surrogate. The competitive
+asymmetry that follows is plain: `KG_NOST` 7.6 against `KG_CYN` 2.0 on the same DIN pool
+(`KHS_DIN` 0.0072 vs 0.003, so CYN has the better affinity and loses anyway on max rate).
+
+⭐ It also explains §39. Supplying 4× nitrate moved nothing because the "fixer" consuming it is
+an over-grown DIN competitor, not a diazotroph — **adding a resource cannot help when the
+species drawing it down is mis-specified.**
+
+### 51.4 Verdict, and the decision this puts to the user
+
+**Settled — as not settleable by constants.** The partition is a bifurcation; the observed
+coexistence lies in the gap between the model's two stable states, and no value of
+`KG_NOST_VEG_HET_OPT_TEMP` reaches it. Nothing has been changed; the adopted baseline stands.
+
+Coexistence needs a **resource trade-off the model does not currently have** — the fixer cheap
+in nitrogen but expensive in energy, so CYN wins while DIN is available and the fixer wins once
+it is not. The machinery for exactly that already exists in this codebase, one routine away.
+Two candidate builds, neither started:
+
+1. **Port the DIN-gated switch to NOST** — replace the fixed `FRAC_NOST_GROWTH` with the
+   `K_FIX/(K_FIX + DIN)` form `FIX_CYN` already uses, so the fixation share rises as DIN
+   depletes. Smallest change, reuses a proven formulation, and directly creates the temporal
+   niche separation coexistence requires.
+2. **Reverse §31's role swap** — restore `FIX_CYN` (which has the switch) as the fixer and
+   demote NOST. Larger, and it would re-open §29/§30's self-sustainment problem, which the swap
+   was adopted to solve.
+
+⚠ Either is a **structural change to an adopted configuration**, and §31's adoption rests on
+CHLA RMSE 24.22 and an exact August peak. Both would need the full ladder: byte-identical
+default, opt-in flag, pre-registered gates, phase checked before aggregates (§46).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
