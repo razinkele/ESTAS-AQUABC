@@ -3092,6 +3092,133 @@ the preceding week. **Evaluate the operator before you probe the input.**
 
 ---
 
+## 48. Form B run at full record: correct physics, and it **is** a February lever
+## after all — because a uniform *rate* change is not a uniform *biomass* change
+
+**2026-09-04.** `LIGHT_DAYLENGTH_OPTION = 2` (Form B, WASP) built and merged (`60772ae`,
+byte-identical at option 0 over the full record and on the 0D golden), then run over
+2012–2022 against the adopted baseline. Predictions were registered in writing before the run.
+
+### 48.1 The headline: §47's "offset, not a lever" was measured on the wrong quantity
+
+§47 evaluated the two day-length forms on the **light-limitation factor** and concluded Form B
+is a near-uniform offset — Feb 0.779 / May 0.810, a **1.04× differential** — and on that basis
+§47.3 *withdrew* `FDAY` as a February lever. The run says the rate is indeed near-uniform and
+the **biomass is not**:
+
+| month | §47 rate factor | `DIA_C` biomass | `PHYTO_TOT_C` biomass |
+|---|---|---|---|
+| **Feb** | 0.779 | **0.223** | **0.352** |
+| May | 0.810 | 1.039 | 1.016 |
+| Aug | 0.682 | 1.000 | 0.915 |
+| Sep | 0.712 | 1.000 | 0.899 |
+| Oct | 0.813 | 1.087 | 0.727 |
+| Nov | 0.885 | 0.971 | 0.711 |
+
+**Feb/May differential — rate 1.04×, `DIA_C` biomass 4.66×, total phytoplankton 2.89×.**
+
+The mechanism is not subtle once stated: biomass is the time integral of (growth − losses), and
+in months sitting near the balance point a small proportional cut to the growth term flips the
+sign of the *net* rate, which biomass then integrates exponentially. February is exactly such a
+month — §44.3 measured its net growth at +0.283/d against a May +0.932/d. May absorbs a 19 %
+rate cut and barely moves; February absorbs a 22 % cut and loses three quarters of its biomass.
+
+⭐⭐⭐ **I have now been wrong about `FDAY` in both directions, and the second error is the more
+instructive.** §46.4 promoted it to "the strongest February lever" from the *forcing's* 1.71×
+variation. §47.3 withdrew it from the *rate's* 1.04× uniformity. Both readings stopped one
+operator short of the answer. The reusable form of the lesson is stronger than §47's:
+
+> **Evaluate the operator — and in a dynamical model the operator is the integration, not just
+> the algebra of the term you changed.** A rate factor that is flat across months can still
+> produce a wildly differential state response, because the system's distance from its balance
+> point varies across those same months.
+
+§47.2's algebra was correct and cost nothing; the error was in believing the rate table
+answered a question about biomass. §47.3's withdrawal is **retracted**; §46.4's promotion is
+*accidentally* vindicated, but its stated reason (a differential input) remains wrong.
+
+### 48.2 Scorecard, phase first
+
+Both runs scored identically: `validate_cl29_vs_epa.py --obs /tmp/cl29_obs_merged.csv --phase
+--wconst INPUTS_CL29/WCONST_04.txt`, full record.
+
+| | baseline (adopted) | Form B |
+|---|---|---|
+| **seasonal r** | **+0.74** | +0.71 |
+| **autumn:spring** (obs 2.06) | 2.25 | **2.13** |
+| **peak month** (obs 8) | 9 | **8** |
+| CHLA RMSE | **23.83** (−5.22) | 24.72 (−8.17) |
+| PO4 RMSE | **0.01755** | 0.02344 (**+34 %**) |
+| TP RMSE | 0.04608 | **0.03713 (−19 %)** |
+| TN RMSE | 0.8729 | **0.8327 (−4.6 %)** |
+| NH4 / NO3 RMSE | 0.05088 / 0.4561 | **0.04994 / 0.4520** |
+| PHYTO_TOT_C RMSE | **2.497** (−0.524) | 2.597 (−0.766) |
+| FIX_CYN_C RMSE | 2.091 (+0.845) | **1.955 (−6.5 %)** |
+| DIA_C RMSE | 0.7015 | 0.7015 (bias −0.17 → −0.19) |
+| OPA_C RMSE | 0.6821 | 0.6821 — **bit-identical** |
+
+`OPA_C` unchanged to the last digit is a useful negative control: OPA has been extinct in every
+configuration since §24, so no light change can move it, and the run behaved accordingly.
+
+**Two of three phase metrics improved and every over-predicted nutrient improved, while every
+biomass and chlorophyll metric got worse.** The nutrients improve for the obvious reason —
+less production leaves more N and P unconsumed, and TN/TP/NH4/NO3 were all biased high.
+
+⚠ **PO4 is the exception that breaks that pattern and it is the largest single regression
+(+34 %).** Its bias is already **positive** (+0.00446) — the model over-predicts PO4 on the
+annual mean — so reducing uptake makes it worse, not better. My registered prediction said PO4
+would improve, reasoning from §28's *summer* PO4 finding; generalising a seasonal result to an
+annual metric was the error.
+
+⚠ **The peak-month improvement is fragile and should not be quoted as a headline.** Aug 45.5
+against Sep 44.5 is a 2 % margin, and in the baseline Aug 49.4 against Sep 49.7 is 0.6 %. The
+month label flipped because two nearly-equal values swapped order, not because the model
+acquired a August peak. Report it as "the Aug/Sep pair is now marginally the right way round".
+
+### 48.3 The disqualifying result: Form B undoes §45's adopted February fix
+
+| Feb, obs 0.280 mg C/L | value | ratio |
+|---|---|---|
+| pre-ice (§45) | 0.810 | 2.89× |
+| **adopted, with ice (§45.5)** | **0.278** | **0.99×** |
+| + Form B | **0.062** | **0.22×** |
+
+Ice was adopted — the study's first code+forcing change — on the strength of taking February
+from 2.89× to 0.99×. Form B takes it to **0.22×**, a 4.5× under-prediction, and total February
+phytoplankton from 0.83× to 0.29×. **A correction that lands one adopted result in the ditch is
+not adoptable on its own**, whatever its physics.
+
+October compounds it: `PHYTO_TOT_C` 0.68× → **0.50×**, precisely the deepening §47.4 registered
+in advance. The autumn hole is now half again as deep.
+
+### 48.4 Verdict and what it actually means
+
+**Form B is correct physics and is NOT adopted.** Not because the formulation is wrong — it is
+right, and Form A is a genuine bug — but because CL29's growth constants were calibrated
+against a model that gave every day 24 hours of light. Removing that error without re-fitting
+the constants it was compensating for exposes the compensation rather than the truth. This is
+the same shape as §27 (KG inflation compensating a missing boundary supply) and §22 (pigment
+compensating a light error) — **the sixth documented instance of a compensation channel in this
+model, and the first found by making the model *more* correct.**
+
+The honest options, in order of cost:
+
+1. **Leave it opt-in at 0.** Zero risk, and the finding is recorded. This is the default.
+2. **Adopt Form B and recalibrate the growth constants against it** — a DE on the closure subset,
+   as after the T_min change (§23) and W6 (§36). This is the only route that both keeps the
+   correct formulation and restores February. It is also the only one that tests whether the
+   compensation is *recoverable*, which §40.1's light wall suggests it may not be.
+3. **Adopt nothing and record Form B as a measured negative**, alongside the Droop-N (§38) and
+   akinete-staging (§29) results.
+
+⭐ **What this does NOT do is rescue the C:Chl question.** §47.4 concluded February has no
+production error left to blame; §48.1 shows it does have one after all — but it points the
+*wrong way*. February needs **more** biomass to match, and Form B removes biomass. Applying the
+measured C:Chl 34 on a Form B baseline would compound the under-prediction, not fix it. The
+exit for C:Chl remains photoacclimative structure (§22, BACKLOG P2).
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
