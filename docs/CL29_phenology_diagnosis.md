@@ -4033,6 +4033,78 @@ configuration stands. All three mechanisms remain available and byte-identical w
 
 ---
 
+## 56. The partition is ALLELOPATHIC, not competitive — recorded, work deferred
+
+**2026-09-05.** §51–55 spent nine parameter directions rebalancing *resource* competition. Two
+probes then falsified that framing, and a third identified the real mechanism. **Recorded here
+in full; the follow-up work is deliberately deferred (user decision).**
+
+### 56.1 CYN responds to nothing except removing NOST
+
+| perturbation | CYN response |
+|---|---|
+| remove its grazing **entirely** (§54.1) | **×1.002** |
+| triple autumn DIN (`KDISS_PON` ×10 — DIN 0.0054 → 0.0156) | **×1.02** |
+| suppress NOST (§51, `KG_NOST` → 1.0) | **×4.85** |
+
+⭐⭐ Not grazing-limited, **not DIN-limited**, and responsive only to the competitor's removal:
+that is the signature of **interference competition**, not resource competition. And the model
+has an interference mechanism — `CONSIDER_ALLELOPATHY` is **1** in CL29.
+
+### 56.2 The measurement
+
+`SEC_METAB_NOST` reaches **0.01449** in September against
+`K_HS_SEC_METAB_NOST_NOFIX_CYN` = **0.004**, so the inhibition factor
+`K_HS/(K_HS + metab)` = **0.263** — CYN grows at about a quarter of its unimpeded rate, and
+`R_CYN_GROWTH` is multiplied by it directly (`aquabc_II_pelagic_model.f90:1206`).
+
+⚠ **The allelopathy is strongly asymmetric.** NOST → CYN inhibits to 0.263; CYN → NOST only to
+0.741 (`K_HS` 0.002 against a metabolite of 0.00070). **Cross-limitation exceeds
+self-limitation ~3×** — the analytic guarantee of competitive exclusion, *and* a positive
+feedback (more NOST ⇒ more metabolite ⇒ less CYN ⇒ more resources for NOST).
+
+### 56.3 The test: predicted ×4.6, measured ×5.03
+
+One constant changed, everything else identical — not `CONSIDER_ALLELOPATHY 0`, which fails
+loudly because the four metabolites are state variables (AQUABC requests 32, `PELAGIC_INPUTS`
+declares 36) and would need input-file surgery.
+
+| `K_HS` | inhibition | CYN | ×base | FIX | **share** | total |
+|---|---|---|---|---|---|---|
+| 0.004 (live) | 0.263 | 0.298 | 1.00 | 3.563 | 0.077 | 1.00× |
+| **0.05** | 0.924 | **1.497** | **×5.03** | 1.202 | **0.555** | 0.70× |
+| 1000 | 1.000 | 1.669 | ×5.61 | 0.884 | 0.654 | 0.66× |
+| **observed** | — | **1.875** | ×6.30 | **1.980** | **0.486** | 1.00× |
+
+⭐⭐⭐ **`K_HS` 0.05 is the first configuration in the whole arc to land the share inside the
+pre-registered gate** (0.555 against an observed 0.486). It fails only on total (0.70× vs the
+0.80 floor) — and unlike every earlier near-miss this one is **not** a knife-edge: the response
+across 0.004 → 0.05 → 1000 is monotone and smooth.
+
+### 56.4 What this means for §51–55, and what is deferred
+
+**§54's over-determination result stands but its stated cause is wrong.** §54.2 attributed the
+winner-take-all to self-limitation equalling cross-limitation on a shared resource — the
+*neutral* case. The truth is worse and more specific: **cross-limitation EXCEEDS
+self-limitation by ~3×** through an asymmetric interference term. That is not neutrality, it is
+a guaranteed exclusion with positive feedback, which is why nine resource-side levers all
+produced the same flip. **The nine directions were rebalancing a contest whose outcome was set
+elsewhere.**
+
+⚠ **Deferred (user decision, 2026-09-05).** Nothing changed; `K_HS_SEC_METAB_NOST_NOFIX_CYN`
+stays at 0.004 and live `INPUTS_CL29/` is untouched. When resumed, the open questions are:
+1. **Is 0.004 defensible?** It is one of a block of allelopathy constants set at uniform
+   round values (0.001–0.005, degradation 0.1–0.25, yields 0.005–0.020) — the signature of
+   placeholders rather than measurements. Their provenance needs establishing before any
+   re-fit: a mechanism this powerful should not rest on an unsourced constant.
+2. **Where does the missing 30 % of total carbon come from?** Removing the inhibition moves
+   the split correctly but costs biomass; the total gate is the remaining obstacle.
+3. **The other 19 allelopathy pairs are untested** — DIA and OPA are also inhibited, and OPA
+   has been extinct in every configuration ever run (§24–27). That verdict was reached without
+   examining allelopathy at all, and should be revisited in the same pass.
+
+---
+
 ## Method note
 
 The per-group limitation tables were produced only after correcting a labelling error worth
