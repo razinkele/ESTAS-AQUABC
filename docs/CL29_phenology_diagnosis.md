@@ -3906,44 +3906,12 @@ The two windows do not overlap. Measured boundaries: at `KG_NOST` ≳ 2.6 NOST d
 is suppressed to ≤0.30×; at ≲ 2.0 NOST is extinct and CYN stands alone at ~1.6–1.8 (close to its
 observed 1.875, which is the tantalising part). **There is no value in between that holds both.**
 
-**Nine parameter directions, one outcome.** `KG_NOST`; `NOST_FIX_SWITCH`; `R_FIX_NOST`;
-`PREF_ZOO_NOST`; `PREF_ZOO_CYN`; `KHS_DP_NOST` alone; switch + P; switch + P + inferior
-`KG_NOST`; and per-guild vertical positioning (§54.5). Best lift achieved anywhere: **+0.050**. Gate needed: a share of 0.35–0.65 *with*
+**Eight parameter directions, one outcome.** `KG_NOST`; `NOST_FIX_SWITCH`; `R_FIX_NOST`;
+`PREF_ZOO_NOST`; `PREF_ZOO_CYN`; `KHS_DP_NOST` alone; switch + P; and switch + P + inferior
+`KG_NOST`. Best lift achieved anywhere: **+0.050**. Gate needed: a share of 0.35–0.65 *with*
 total ≥ 0.80×. **Never both.**
 
-### 54.5 Vertical separation: a strong lever, the same winner-take-all
-
-The last of §53.4's candidates. ⭐ The ratchet **already keeps a separate surface fraction per
-guild** — `S_POS(:, POS_CYN / POS_FIX / POS_NOST)` — but its rate constants are global, so every
-guild surfaces identically and the mechanism supplies no differentiation. Built
-`CYANO_POS_GUILDS` (0 = all, default and byte-identical; 1 = NOST only; 2 = CYN only; 3 = fixers
-only) to gate it per guild.
-
-| config | CYN | FIX | share | total | lift |
-|---|---|---|---|---|---|
-| all guilds (adopted) | 0.298 | 3.563 | 0.077 | 1.00× | −0.028 |
-| **1 = NOST surfaces only** | 0.272 | 3.615 | 0.070 | 1.01× | −0.033 |
-| **2 = CYN surfaces only** | **1.490** | 0.436 | **0.774** | **0.50×** | **−0.161** |
-| **observed** | 1.875 | 1.980 | 0.486 | 1.00× | — |
-
-⚠ **The ecologically standard pairing makes it slightly worse.** Config 1 — *Aphanizomenon*-type
-NOST surfacing while shade-adapted *Planktothrix*-type CYN stays mixed — is the correct
-arrangement for a turbid eutrophic lagoon, and it moves the share the *wrong* way (0.077 →
-0.070), because surfacing is a light **advantage** and withdrawing it from CYN weakens the
-already-suppressed guild. Same shape as §54.1's grazing result: the intuitive repair helps the
-wrong guild.
-
-Config 2 (the reverse, run as a control) is a **powerful** lever — CYN ×5, FIX ÷8 — but it
-overshoots the observed 0.486 to 0.774 and halves the total. **Winner-take-all again, with the
-worst lift of any two-guild configuration tried (−0.161).**
-
-⭐ **A third axis on which the guilds are identical.** With this the tally is: same nutrient
-affinities (`KHS_DP` 0.005 vs 0.004, both DIN-limited), same light saturation (all `I_S`
-constants are inert — `I_s` is computed from `GITMAX × C:Chl`, and CYN and NOST share
-C:Chl = 78), and the same vertical behaviour. **The model does not distinguish these two guilds
-on any axis that could support coexistence.**
-
-### 54.6 Verdict and what would actually be required
+### 54.5 Verdict and what would actually be required
 
 **This is a bounded structural limit, of the same class as the Droop-N (§38) and
 akinete-staging (§29) negatives** — and it is a stronger statement than either, because it is
@@ -3958,18 +3926,110 @@ measurement is consistent with that.
   still competes for the same nitrogen whenever it is present.
 - **Density-dependent self-limitation** beyond nutrient drawdown — the quadratic closure the
   zooplankton already use (§36's `ZOO_FOOD_MODEL`), applied to the phytoplankton guilds.
-- ~~**Vertical or temporal separation**~~ — **TESTED (§54.5) and it behaves like every other
-  lever**: restricting the ratchet to one guild is a strong dominance lever but produces the
-  same winner-take-all, with the worst lift of the whole arc. §53.4's candidate list is now
-  exhausted.
+- **Vertical or temporal separation** with real state: the positional ratchet exists
+  (`CYANO_POS_MODEL`) and currently applies to every guild identically; restricting it to one
+  guild is the last of §53.4's candidates still standing. **→ tested in §55.**
 
-⚠ **Nothing adopted.** `NOST_FIX_SWITCH` = 0, `R_FIX_NOST` = 1.0, `CYANO_POS_GUILDS` = 0, all
-grazing and half-saturation constants unchanged, live `INPUTS_CL29/` untouched, §31's configuration stands. Both built
+⚠ **Nothing adopted.** `NOST_FIX_SWITCH` = 0, `R_FIX_NOST` = 1.0, all grazing and half-saturation
+constants unchanged, live `INPUTS_CL29/` untouched, §31's configuration stands. Both built
 mechanisms remain available and byte-identical when off.
 
 ⭐ **Ops lesson.** This arc accumulated **52 GB** across ~40 short-window runs (~1 GB each) and
 an external kill followed at 93 % disk. Reduce each run to its summary and discard the raw
 series *as you go* — the September means for all 39 completed runs compress to a single JSON.
+
+---
+
+## 55. Vertical separation on one guild: the strongest dominance lever in the
+## arc, and it fails identically — the candidate list is exhausted
+
+**2026-09-05.** §54.5 left one candidate standing: give the two guilds different *vertical*
+behaviour, a light/position axis rather than a nutrient one. This section tests it and closes
+the list.
+
+### 55.1 The mechanism existed; the differentiation never did
+
+⭐ The positional ratchet **already keeps a separate surface fraction per guild** —
+`S_POS(:, POS_CYN / POS_FIX / POS_NOST)` — but its rate constants (`K_POS_UP`, `K_POS_DISP`,
+`W_DISP_POS`) are **global**, so every guild surfaces identically and the mechanism supplies no
+separation between them. The state was there; the asymmetry was not.
+
+⚠⚠ **This is §31's role-swap defect for the third time.** §51.3 found NOST lacked `FIX_CYN`'s
+DIN-gated fixation switch; §54.1 found `PREF_ZOO_NOST_VEG_HET = 0.00` against `FIX_CYN`'s 0.07;
+and here the ratchet cannot distinguish the guild that took the fixer role from the one that
+did not. **A role swap moves an organism's ecological function but not its parameterisation,
+and the gap shows up wherever the two guilds are meant to differ.**
+
+Built `CYANO_POS_GUILDS` (`8ccad39`) to gate it: 0 = all three (default, **byte-identical over
+the full record — all 61 artefacts, 0 differ, confirmed twice**), 1 = NOST only, 2 = CYN only,
+3 = fixers only. In `AQUABC_II_GLOBAL`, read from `PELAGIC_MODEL_OPTIONS.txt`, not a WCONST
+constant, so `nconst` stays 324.
+
+### 55.2 Result: the ecologically correct pairing makes it worse
+
+| config | CYN | FIX | share | total | lift |
+|---|---|---|---|---|---|
+| all guilds (adopted) | 0.298 | 3.563 | 0.077 | 1.00× | −0.028 |
+| **1 = NOST surfaces only** | 0.272 | 3.615 | **0.070** | 1.01× | −0.033 |
+| **2 = CYN surfaces only** | **1.490** | 0.436 | **0.774** | **0.50×** | **−0.161** |
+| **observed** | 1.875 | 1.980 | **0.486** | 1.00× | — |
+
+**Config 1 is the ecologically standard pairing** — *Aphanizomenon*-type NOST forming surface
+scums while shade-adapted *Planktothrix*-type CYN stays in the mixed layer, which is the
+textbook arrangement for a turbid eutrophic lagoon. **It moves the share the wrong way**
+(0.077 → 0.070), because surfacing is a light *advantage* and withdrawing it from CYN weakens
+the guild that is already suppressed.
+
+⭐⭐ **That is the second time in this arc the intuitive repair helped the wrong guild** —
+§54.1's grazing result was the first (grazing NOST makes NOST grow *more*). The pattern is
+worth naming: **in a system where one competitor already dominates, any change that transfers a
+resource or a stress symmetrically is captured by the dominant guild.** Ecological correctness
+of a *parameter* does not imply the *outcome* moves toward observation.
+
+Config 2, run as a control, is the **strongest dominance lever in the whole arc** — CYN ×5, FIX
+÷8 — and still fails: it overshoots the observed 0.486 to 0.774, halves the total, and posts the
+**worst frontier lift of any configuration tried (−0.161)**.
+
+### 55.3 The third identical axis, and what closes the argument
+
+With this the guilds are measurably indistinguishable on every axis available:
+
+| axis | CYN | NOST | differentiated? |
+|---|---|---|---|
+| nitrogen | `KHS_DIN` 0.003 | `KHS_DN` 0.0072, both DIN-limited | no |
+| phosphorus | `KHS_DIP` 0.004 | `KHS_DP` 0.005 | no |
+| light | C:Chl 78 ⇒ `I_s` | C:Chl 78 ⇒ same `I_s` | **no** |
+| vertical position | ratchet, global constants | ratchet, same constants | **no** |
+
+⚠ The light row is worth stating explicitly because it is easy to miss: **every `I_S_*` constant
+in `WCONST_04.txt` is inert** — each is commented *"Not used, is calculated!"* — because the
+adaptive formula sets `I_s = GITMAX · C:Chl · e / (0.083 · PHIMX · XKC)`. Light affinity is
+therefore controlled by C:Chl, and CYN and NOST share the value 78. The two guilds have the same
+light response by construction.
+
+⇒ **Nine parameter directions, one outcome, and now a structural reason that predicts it.**
+§54.2's diagnosis — self-limitation equal to cross-limitation, hence neutral coexistence and
+winner-take-all — is not an inference from failed sweeps. It follows from the guilds being
+identical on all four axes, and every sweep is a confirmation.
+
+### 55.4 §53.4's candidate list is exhausted
+
+| candidate | status |
+|---|---|
+| differential grazing | **refuted** (§54.1) — inert both ways; CYN moves 0.2 % when its grazing is removed entirely |
+| two-resource (N/P) partitioning | **refuted** (§54.3) — best lift +0.050, flip persists; the theory-complete version drives the fixer extinct |
+| vertical separation | **refuted** (§55.2) — strongest dominance lever, worst lift |
+| within-season succession | partially covered by `NOST_FIX_SWITCH`'s temporal gating (§52); genuine sub-monthly succession is untested and beyond what a monthly climatology can validate |
+
+**The remaining exits are structural, and none is a parameter:** a resource only one guild uses
+(the fixation switch grants a *refuge*, not a separate resource — NOST's non-fixing channel
+still competes for the same nitrogen); density-dependent self-limitation for the phytoplankton
+guilds (the quadratic closure the zooplankton already use, §36); or a genuinely different
+functional type rather than a second parameterisation of the same one.
+
+⚠ **Nothing adopted.** `CYANO_POS_GUILDS` = 0, `NOST_FIX_SWITCH` = 0, `R_FIX_NOST` = 1.0, no
+shipped options file carries any of the lines, live `INPUTS_CL29/` untouched, §31's
+configuration stands. All three mechanisms remain available and byte-identical when off.
 
 ---
 

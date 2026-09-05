@@ -82,7 +82,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   so every guild surfaced identically and the mechanism supplied no niche separation. `1` =
   NOST only, `2` = CYN only, `3` = fixers only. Read from `PELAGIC_MODEL_OPTIONS.txt` via
   `AQUABC_II_GLOBAL`.
-  - Measured (`docs/CL29_phenology_diagnosis.md` §54.5): a powerful dominance lever (CYN ×5,
+  - Measured (`docs/CL29_phenology_diagnosis.md` §55): a powerful dominance lever (CYN ×5,
     FIX ÷8 in the CYN-only config) that produces the same winner-take-all as every other
     direction, with the worst frontier lift of the arc (−0.161). **Not adopted.**
 
