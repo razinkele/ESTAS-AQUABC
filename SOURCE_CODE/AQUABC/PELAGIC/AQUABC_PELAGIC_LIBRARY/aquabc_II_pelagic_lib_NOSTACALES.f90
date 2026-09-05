@@ -60,7 +60,7 @@ subroutine NOSTOCALES &
    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    use AQUABC_NOST_STAGING, only: KR_GERM_BED, V_SETTLE_AKI, T_GERM_AKI_STAGE, EPS_GERM_TEMP_LIM
-   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST
+   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST, CYANO_POS_GUILDS
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -281,7 +281,8 @@ subroutine NOSTOCALES &
         ! persisting across time steps (module AQUABC_POSITIONING_STATE).
         ! Forward Euler on the kinetic step, clamped to [0,1]. The blend then
         ! uses S instead of the memoryless within-day calm fraction.
-        if (CYANO_POS_MODEL >= 2) then
+        ! Guild gate: CYANO_POS_GUILDS selects which guilds surface (default 0 = all).
+        if (CYANO_POS_MODEL >= 2 .and. (CYANO_POS_GUILDS == 0 .or. CYANO_POS_GUILDS == 1 .or. CYANO_POS_GUILDS == 3)) then
             X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
             F_CALM = CALM_FRACTION(WINDS, X_POS)
             LIM_SURF = 1.0D0 - CALM_FRACTION(WINDS, W_DISP_POS)   ! storm fraction (scratch use)

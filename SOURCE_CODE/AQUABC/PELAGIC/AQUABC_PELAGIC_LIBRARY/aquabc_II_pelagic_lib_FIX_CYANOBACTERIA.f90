@@ -522,7 +522,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         ! persisting across time steps (module AQUABC_POSITIONING_STATE).
         ! Forward Euler on the kinetic step, clamped to [0,1]. The blend then
         ! uses S instead of the memoryless within-day calm fraction.
-        if (CYANO_POS_MODEL >= 2) then
+        ! Guild gate: CYANO_POS_GUILDS selects which guilds surface (default 0 = all).
+        if (CYANO_POS_MODEL >= 2 .and. (CYANO_POS_GUILDS == 0 .or. CYANO_POS_GUILDS == 3)) then
             X_POS = max((EUPHOTIC_DEPTH - 0.7006D0) / 0.8121D0, W_CRIT_POS_MIN, 0.0D0)
             F_CALM = CALM_FRACTION(WINDS, X_POS)
             LIM_SURF = 1.0D0 - CALM_FRACTION(WINDS, W_DISP_POS)   ! storm fraction (scratch use)

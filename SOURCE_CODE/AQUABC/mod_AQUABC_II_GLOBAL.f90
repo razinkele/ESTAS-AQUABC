@@ -81,4 +81,21 @@ module AQUABC_II_GLOBAL
     ! the binding asymmetry turns out to be the fixer's advantage at HIGH DIN,
     ! this knob cannot reach it -- that would need the non-fixing channel instead.
     real(kind = DBL_PREC) :: R_FIX_NOST = 1.0_DBL_PREC
+
+    ! Which cyanobacterial guilds the positional ratchet (CYANO_POS_MODEL >= 2)
+    ! applies to. The ratchet already keeps a SEPARATE surface fraction per guild
+    ! -- S_POS(:, POS_CYN / POS_FIX / POS_NOST) -- but its rate constants are
+    ! global, so every guild surfaces identically and the mechanism supplies no
+    ! niche separation between them (doc section 54.5).
+    !
+    !   0 (default)  all three guilds, as before -- byte-identical
+    !   1            NOST only  (Aphanizomenon-type scum former surfaces;
+    !                Planktothrix-type CYN stays mixed -- the ecologically
+    !                standard pairing for a turbid eutrophic lagoon)
+    !   2            CYN only   (the reverse, as a control)
+    !   3            the fixers only (FIX_CYN + NOST)
+    !
+    ! This is the vertical-separation candidate: a light/position axis rather
+    ! than a nutrient one, and the last of section 53.4's candidates.
+    integer :: CYANO_POS_GUILDS = 0
 end module AQUABC_II_GLOBAL

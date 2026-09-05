@@ -76,6 +76,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     the region is a knife-edge (1 % in the constant moves the September composition by up to
     7 percentage points).
 
+- **`CYANO_POS_GUILDS` — per-guild control of the positional ratchet** (opt-in, default `0` =
+  all guilds, byte-identical at full record). The ratchet already kept a separate surface
+  fraction per guild (`S_POS(:, POS_CYN/POS_FIX/POS_NOST)`) but its rate constants are global,
+  so every guild surfaced identically and the mechanism supplied no niche separation. `1` =
+  NOST only, `2` = CYN only, `3` = fixers only. Read from `PELAGIC_MODEL_OPTIONS.txt` via
+  `AQUABC_II_GLOBAL`.
+  - Measured (`docs/CL29_phenology_diagnosis.md` §54.5): a powerful dominance lever (CYN ×5,
+    FIX ÷8 in the CYN-only config) that produces the same winner-take-all as every other
+    direction, with the worst frontier lift of the arc (−0.161). **Not adopted.**
+
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap
