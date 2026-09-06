@@ -16,7 +16,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "figures", "morris_screening.png")
+FIG_DIR = os.path.join(HERE, "figures")
+os.makedirs(FIG_DIR, exist_ok=True)   # figures/ is git-ignored: absent in a fresh checkout
+OUT = os.path.join(FIG_DIR, "morris_screening.png")
 
 # (short label, mu*, sigma, tier) -- transcribed from the doc's result table.
 DATA = [

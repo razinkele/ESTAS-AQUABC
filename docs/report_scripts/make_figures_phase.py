@@ -21,12 +21,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-REPO = "/home/razinka/AQUABCv0.2"
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# docs/report_scripts/<this file>  ->  repository root
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import validate_cl29_vs_epa as V  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG_DIR = os.path.join(HERE, "figures")
+os.makedirs(FIG_DIR, exist_ok=True)   # figures/ is git-ignored: absent in a fresh checkout
 OUT_DIR = os.environ.get("CL29_FIG_OUT", os.path.join(REPO, "OUTPUTS_CL29"))
 V._ACTIVE_C_TO_CHLA = V.load_c_to_chla(os.path.join(REPO, "INPUTS_CL29", "WCONST_04.txt"))
 

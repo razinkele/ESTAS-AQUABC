@@ -17,7 +17,8 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 
-REPO = "/home/razinka/AQUABCv0.2"
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# docs/report_scripts/<this file>  ->  repository root
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import validate_cl29_vs_epa as V  # noqa: E402
 

@@ -494,6 +494,22 @@ saturation `CYN_N_KHS_UPT`. **Requires the VARN build** (`nstate = 33`, adding t
 variable); enabling it against a standard build halts the run with an explicit `error stop` rather
 than proceeding with a mis-indexed state array.
 
+**Declaring the state count.** The number of pelagic state variables is read from the pelagic input
+file and used to size every per-variable array, so it must match what the build actually carries.
+The allelopathy module appends its four metabolites to the pelagic set, and the variable-quota
+build adds one further state, giving four valid combinations:
+
+| Build | `CONSIDER_ALLELOPATHY` | Declared pelagic state variables |
+|:---|:---:|:---:|
+| Standard | 0 | 32 |
+| Standard | 1 | **36** (32 + 4) |
+| VARN (`CYN_VARIABLE_N = 1`) | 0 | 33 |
+| VARN (`CYN_VARIABLE_N = 1`) | 1 | **37** (33 + 4) |
+
+A mismatch is not silently tolerated: the model requests one count and the input file declares
+another, and the run fails at initialisation. Change the declared count whenever either option is
+switched.
+
 ## Day-Length Weighting (`LIGHT_DAYLENGTH_OPTION`)
 
 $I_A$ is a daily integral, so a photoperiod correction can enter two ways. Form A

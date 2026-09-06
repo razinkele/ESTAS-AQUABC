@@ -42,9 +42,15 @@ BOX_LABEL_NUDGE = {
 }
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(os.path.dirname(HERE))   # docs/report_scripts/ -> repo root
 FIG_DIR = os.path.join(HERE, "figures")
+os.makedirs(FIG_DIR, exist_ok=True)   # figures/ is git-ignored: absent in a fresh checkout
+# The box/station geometry lives in the sibling `curonian` project, not in this
+# repository, so its location cannot be derived from __file__. Set CL29_GPKG to
+# point at it; the default assumes the usual side-by-side checkout.
 GPKG = os.environ.get(
-    "CL29_GPKG", "/home/razinka/curonian/curonian_db.gpkg")
+    "CL29_GPKG",
+    os.path.join(os.path.dirname(REPO), "curonian", "curonian_db.gpkg"))
 OUT = os.path.join(FIG_DIR, "study_area.png")
 
 # The nine boxes carrying scored observations (see the station table below).
