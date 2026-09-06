@@ -30,6 +30,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - New `tools/probe_lim_light.py`: evaluates all three forms from the model's own constants and
     forcings, no model run required.
 
+- **`PHYTO_CLOSURE_MODEL` / `PHYTO_CLOSURE_REF` — density-dependent closure on the
+  cyanobacterial guilds** (opt-in, default `0` = linear death, byte-identical). The specific
+  death rate is scaled by `C / PHYTO_CLOSURE_REF`, making total loss **quadratic** in biomass and
+  mirroring the closure the zooplankton already use: at `C = PHYTO_CLOSURE_REF` the specific rate
+  equals the calibrated `KD`, weaker below and stronger above.
+  - **Why this and not another parameter.** `docs/CL29_phenology_diagnosis.md` §50–55 measured
+    nine parameter directions and found the two-guild coexistence **over-determined**: the guilds
+    are identical on nitrogen, phosphorus, light and vertical position, so self-limitation equals
+    cross-limitation — the neutral case of competition theory, which admits winner-take-all but
+    no stable interior equilibrium. Stable coexistence needs each guild to limit *itself* more
+    than it limits the other. This is therefore a change of **mechanism**, not of tuning: it
+    alters the stability of the equilibrium, not its position. Ecologically it stands in for
+    losses that scale with bloom density and are otherwise absent — colony aggregation and
+    sinking, cyanophage lysis, scum senescence.
+  - Applied at all five cyanobacterial death sites (`CYANOBACTERIA` and `CYANOBACTERIA_BOUYANT`,
+    `FIX_CYANOBACTERIA` and `FIX_CYANOBACTERIA_BOUYANT`, `NOSTOCALES`) as a `merge(...)` factor
+    that is exactly `1.0D0` when disabled — byte-identical **by construction** (multiplication by
+    one is exact without `-ffast-math`) as well as by full-record measurement.
+  - The factor's numerator is clamped, `max(C, 0)`. Without the clamp an *enabled* closure turns
+    a negative biomass into a **positive** death rate — negative × negative — applying a loss to
+    an already-negative pool and growing it quadratically, past a mass-balance safeguard gated on
+    `C > 0` that can never fire. The linear default is self-correcting there (a negative `C`
+    gives a negative death rate, which acts as a gain); the quadratic form is not.
+  - Constants live in `AQUABC_II_GLOBAL`, not WCONST, so `nconst` stays **324** and the
+    three-definition trap is avoided. Read from `PELAGIC_MODEL_OPTIONS.txt` through the usual
+    graceful reads; **no shipped options file carries the lines.**
+
 ### Fixed
 - **Day-length handling in the `smith == 0` phytoplankton branch** (7 sites across 5 library
   routines: DIATOMS, OTHER_PLANKTONIC_ALGAE, NOSTACALES, CYANOBACTERIA ×2,
@@ -97,6 +124,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   margin under the old ceiling, so the slower individuals of every generation were being
   penalised for being slow rather than wrong.
 
+### Documentation
+- **Both reference manuals brought up to date with the code.** Every one of the **14 runtime
+  options and constants** added during the CL29 work was undocumented, and both carried stale
+  dimension counts (`nconst` 318 and "323 parameters" against an actual **324**).
+  - `ESTAS_Reference_Manual`: a full **`PELAGIC_MODEL_OPTIONS.txt` reference** — the 36-entry
+    ordered table with types and defaults, plus the two properties that govern how the file must
+    be edited and were written down nowhere: it is **positional** (the reader never matches on
+    the comment text, so inserting or reordering an entry silently reassigns every value after
+    it) and reads past the seventh entry are **graceful**. Together these make a mis-placed
+    option a **silent no-op rather than an error**, since the trailing `CYN_ALLELOPATHY_FILE_NAME`
+    line terminates the numeric sequence. Also a driving-functions table (all 10 indices, units,
+    the `FDAY` caveat), and a note that `nconst` is defined in two places — changing one compiles
+    cleanly and aborts at run time.
+  - `AQUABC_Reference_Manual`: category 21 (`ICE_LIGHT_TRANS`); the ice attenuation term and the
+    adaptive-saturation note (`G_max` cancels in the light-limited regime); a new **Optional
+    Mechanisms** section covering all eight opt-in mechanisms, including two constraints not
+    evident from the code — the quadratic closure is **not optional** with `ZOO_FOOD_MODEL = 1`,
+    and `CYN_VARIABLE_N` halts outside the VARN build; the two parallel constant readers; and the
+    valid pelagic state-variable counts (**32 / 36 / 33 / 37**) for the allelopathy and VARN
+    combinations.
+  - ⚠ `pdflatex` rejects U+26A0 and similar exotic Unicode: the manuals must stay within the
+    existing ASCII/latin-1 symbol set or `make build-docs` fails.
+- **Manuscript figure generators are now tracked.** `docs/report_scripts/` remains ignored for the
+  manuscript build chain and the satellite exploration scripts, but the generators for published
+  figures must be reproducible, so `make_figures*.py` are exempted. New: `make_figures_map.py`
+  (study-area map — parses GeoPackage geometry directly, since shapely/geopandas/pyproj are not
+  in the environment) and `make_figures_morris.py` (μ*–σ screening plot). All four now create
+  `figures/` on demand and derive paths from `__file__` rather than an absolute author path.
+
 ### Notes
 - **Form B is correct physics and is NOT adopted** — recorded as a measured negative
   (`docs/CL29_phenology_diagnosis.md` §47–49, BACKLOG §4). Landing it costs ≈20 % of production
@@ -106,6 +162,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   compensation, improving Φ by 4.6 % on its calibration window while driving February to 0.15×.
   No shipped setup changes; `LIGHT_DAYLENGTH_OPTION` is absent from every options file and
   defaults to `0`.
+
+- **The density-dependent closure is NOT adopted** — it ships disabled and is reported as the
+  most promising *unclosed* item of the coexistence work (`docs/CL29_phenology_diagnosis.md`
+  §55.4), not as a result. The nine directions that preceded it are the argument for why a
+  mechanism, rather than another parameter, is what the problem needs.
 
 ## [0.11.0] - 2026-08-06
 
