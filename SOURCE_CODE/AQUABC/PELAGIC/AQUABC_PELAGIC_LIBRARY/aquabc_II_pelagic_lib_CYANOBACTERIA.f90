@@ -238,7 +238,7 @@ subroutine CYANOBACTERIA &
 
     !Non-fixing cyanobacteria death rate
     R_CYN_DEATH = KD_CYN * FAC_HYPOX_CYN_D * CYN_C * &
-        merge(CYN_C / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
+        merge(max(CYN_C, 0.0D0) / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn
@@ -588,7 +588,7 @@ subroutine CYANOBACTERIA_BOUYANT &
 
     !Non-fixing cyanobacteria death rate
     R_CYN_DEATH = KD_CYN * FAC_HYPOX_CYN_D * CYN_C * &
-        merge(CYN_C / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
+        merge(max(CYN_C, 0.0D0) / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn

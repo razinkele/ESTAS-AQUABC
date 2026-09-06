@@ -407,7 +407,7 @@ subroutine NOSTOCALES &
 
     !Vegeatative + heterocyst stage nostacles death rate
     R_NOST_VEG_HET_DEATH = RD_NOST_VEG_HET * FAC_HYPOX_NOST_VEG_HET_D * NOST_VEG_HET_C * &
-        merge(NOST_VEG_HET_C / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
+        merge(max(NOST_VEG_HET_C, 0.0D0) / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn
