@@ -257,7 +257,8 @@ subroutine FIX_CYANOBACTERIA  &
     end if
 
     !Nitrogen fixing cyanobacteria death rate
-    R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C
+    R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C * &
+        merge(max(FIX_CYN_C, 0.0D0) / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     ! This prevents negative concentrations when loss rates exceed growth
@@ -617,7 +618,8 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
     end if
 
     !Nitrogen fixing cyanobacteria death rate
-    R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C
+    R_FIX_CYN_DEATH = KD_FIX_CYN * FAC_HYPOX_FIX_CYN_D * FIX_CYN_C * &
+        merge(max(FIX_CYN_C, 0.0D0) / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn
