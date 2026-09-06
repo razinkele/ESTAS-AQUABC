@@ -1,7 +1,7 @@
 ---
 title: "AQUABC v0.3 — Ecological Model Reference Manual"
 author: "ESTAS-AQUABC Development Team"
-date: "February 2026"
+date: "September 2026"
 geometry: "margin=2.5cm"
 fontsize: 11pt
 toc: true
@@ -133,6 +133,24 @@ Steele/Smith formulation with optional Platt-style photoinhibition:
 $$f_I = \frac{I}{I_s} \exp\left(1 - \frac{I}{I_s}\right) \cdot \exp\left(-\beta \cdot I\right)$$
 
 where $I$ is the depth-averaged PAR (Photosynthetically Active Radiation), $I_s$ is the light saturation parameter, and $\beta$ controls photoinhibition intensity.
+
+**Adaptive saturation.** $I_s$ is not a free constant: it is derived as
+$I_s = G_{max}\,\theta_{C:Chl}\,e / (0.083\,\phi_{max}\,X_{KC})$. Because $I_s$ scales with the
+maximum growth rate, $G_{max}$ **cancels in the light-limited regime** — raising a group's growth
+constant cannot increase production where light is the binding constraint. This is a frequent
+source of confusion when calibrating: an apparently insensitive growth constant may simply be
+operating below light saturation.
+
+**Ice attenuation.** Incident PAR is reduced before it enters the light limitation as an areal
+blend of open and ice-covered water,
+
+$$I_{eff} = I \cdot \left[(1 - f) + f\,T\right] = I \cdot \left[1 - f\,(1 - T)\right]$$
+
+where $f$ is the ice areal fraction (driving function 10) and $T$ is `ICE_LIGHT_TRANS`
+(model constant 324). With either $f = 0$ everywhere or $T = 1$ the multiplier is exactly unity
+and results are unchanged. Note that the ice fraction also damps surface aeration, ammonia
+volatilisation and atmospheric CO$_2$ exchange; before the light coupling was added, those three
+gas-exchange terms were its **only** consumers.
 
 ### Nutrient Limitation (Synthesizing Unit)
 
@@ -399,11 +417,120 @@ $$f_{\text{inhib}} = 1 - \frac{[\text{SEC-METAB}]}{[\text{SEC-METAB}] + K_{\text
 
 \newpage
 
+# Optional Mechanisms
+
+The mechanisms below are opt-in. Each defaults to a setting that is **byte-identical** to the model
+without it, so a configuration that enables none of them reproduces the legacy formulation exactly.
+All are selected in `PELAGIC_MODEL_OPTIONS.txt` (see the ESTAS manual for the file's positional
+format and the ordering constraint).
+
+## Zooplankton Food Limitation (`ZOO_FOOD_MODEL`)
+
+The legacy formulation sums preference-weighted per-prey Monod terms. Because each term is diluted
+by its preference, the sum saturates well below unity even at high total food, which can cap
+ingestion below the mortality rate at *any* food concentration — a ceiling no coefficient can lift.
+Setting `ZOO_FOOD_MODEL = 1` replaces it with a saturating response to total preferred food,
+
+$$f_{food} = \frac{F_{tot}}{K_{food} + F_{tot}}, \qquad F_{tot} = \sum_j p_j C_j$$
+
+with $K_{food}$ = `KHS_FOOD_TOT_ZOO`.
+
+> **Warning — The quadratic closure is not optional with this setting.** Removing the legacy ceiling also
+> removes the implicit stabilisation it provided; with a linear closure the zooplankton state
+> diverges (Steele-type runaway). `ZOO_FOOD_MODEL = 1` therefore also applies a density-dependent
+> closure referenced to `ZOO_CLOSURE_REF`, at which biomass the specific loss equals the calibrated
+> rate. The ceiling and the stability were the same artifact, and the two changes must be tested as
+> a pair.
+
+## Cyanobacterial Surface Positioning (`CYANO_POS_MODEL`, `CYANO_POS_GUILDS`)
+
+Depth-averaged light limitation cannot represent a buoyant guild that escapes the average by
+accumulating at the surface. Option 1 applies a sub-daily calm-fraction surface blend; option 2
+adds a persistence state — a per-box surface-accumulated fraction $S$ that builds during calm
+spells and is dispersed by storms:
+
+$$\frac{dS}{dt} = K_{up}\,F_{calm}\,(1 - S) \;-\; K_{disp}\,F_{storm}\,S$$
+
+with formation and dispersal wind thresholds (`W_CRIT_POS_MIN`, `W_DISP_POS`) giving hysteresis,
+and self-shading applied to the concentrated fraction over depth `H_SURF_POS`. `CYANO_POS_GUILDS`
+restricts the mechanism to a subset of guilds; note that the ratchet keeps a separate $S$ per guild
+but its rate constants are global, so all selected guilds surface identically.
+
+## Nostocales Akinete Staging (`NOST_STAGE_MODEL`)
+
+Replaces the legacy akinete gates with an explicit benthic resting-stage bank: akinetes settle at
+`V_SETTLE_AKI`, germinate from the bed at `KR_GERM_BED` subject to a temperature guard
+(`T_GERM_AKI_STAGE`), are lost to burial at `K_MORT_BED_AKI`, and form under a declining-radiation
+latch (`I_FORM_AKI`). The bed bank is conservative and is reported in `NOST_STAGING.out`.
+
+## Nostocales Fixation Switch (`NOST_FIX_SWITCH`, `K_FIX_NOST`, `R_FIX_NOST`)
+
+By default the fixation share of Nostocales growth is the fixed constant `FRAC_NOST_GROWTH`,
+independent of available nitrogen — so the guild grows predominantly on DIN and competes directly
+with non-fixers rather than occupying a diazotroph niche. Setting `NOST_FIX_SWITCH = 1` makes the
+share an inverse Monod in dissolved nitrogen, mirroring the switch the facultative fixer already
+uses (heterocyst induction):
+
+$$\phi_{fix} = \frac{K_{fix}}{K_{fix} + \mathrm{DIN} + \mathrm{DON}}$$
+
+`R_FIX_NOST` scales the productivity of the fixing channel only; values below 1 impose an energetic
+cost on N$_2$ fixation. Because it multiplies the fixing channel, it acts where nitrogen is scarce
+and has essentially no effect where nitrogen is replete.
+
+## Density-Dependent Phytoplankton Closure (`PHYTO_CLOSURE_MODEL`)
+
+Scales the cyanobacterial specific death rate by $C / C_{ref}$ (`PHYTO_CLOSURE_REF`), making total
+loss quadratic in biomass — the same closure the zooplankton use. It stands in for losses that
+scale with bloom density and are otherwise absent (colony aggregation and sinking, cyanophage
+lysis, scum senescence). This changes the *stability* of the equilibrium, not merely its position:
+stable coexistence of competing guilds requires each to limit itself more than it limits the other,
+which a linear loss cannot supply.
+
+## CYN Nitrogen Quota (`CYN_VARIABLE_N`) — VARN build only
+
+Replaces Monod nitrogen limitation for non-fixing cyanobacteria with a Droop quota: an internal
+nitrogen store between `CYN_N_QMIN` and `CYN_N_QMAX`, filled by uptake at `CYN_N_VMAX` with half
+saturation `CYN_N_KHS_UPT`. **Requires the VARN build** (`nstate = 33`, adding the quota state
+variable); enabling it against a standard build halts the run with an explicit `error stop` rather
+than proceeding with a mis-indexed state array.
+
+**Declaring the state count.** The number of pelagic state variables is read from the pelagic input
+file and used to size every per-variable array, so it must match what the build actually carries.
+The allelopathy module appends its four metabolites to the pelagic set, and the variable-quota
+build adds one further state, giving four valid combinations:
+
+| Build | `CONSIDER_ALLELOPATHY` | Declared pelagic state variables |
+|:---|:---:|:---:|
+| Standard | 0 | 32 |
+| Standard | 1 | **36** (32 + 4) |
+| VARN (`CYN_VARIABLE_N = 1`) | 0 | 33 |
+| VARN (`CYN_VARIABLE_N = 1`) | 1 | **37** (33 + 4) |
+
+A mismatch is not silently tolerated: the model requests one count and the input file declares
+another, and the run fails at initialisation. Change the declared count whenever either option is
+switched.
+
+## Day-Length Weighting (`LIGHT_DAYLENGTH_OPTION`)
+
+$I_A$ is a daily integral, so a photoperiod correction can enter two ways. Form A
+($f_I \to F_{day}\,f(I_A)$) weights by the photoperiod without concentrating the dose into it, and
+therefore discards $(1 - F_{day})$ of each day's light; it is retained **only** to reproduce a
+published comparison and is not intended for use. Form B ($f_I \to F_{day}\,f(I_A / F_{day})$)
+concentrates the daily dose into the photoperiod before weighting, following WASP/EUTRO, and is the
+correct construction. Note that while light-limited the P--I curve is near-linear, so $F_{day}$
+largely cancels in Form B — it departs from the default only through curvature.
+
+> Note: Evaluating either form on the instantaneous rate is misleading. In a dynamical model the
+> quantity that matters is the *integrated* effect on biomass, which can differ from the rate
+> multiplier by a large factor once growth and loss re-equilibrate.
+
+\newpage
+
 # Model Constants
 
-## Pelagic Model Constants (323 parameters)
+## Pelagic Model Constants (324 parameters)
 
-The pelagic model uses 323 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)` array and 5 additional photoinhibition parameters (`BETA_*`) accessed via the named-parameter dictionary (`para_get_value`). Organised in 20 categories:
+The pelagic model uses 324 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)` array, 5 additional photoinhibition parameters (`BETA_*`) accessed via the named-parameter dictionary (`para_get_value`), and the under-ice PAR transmittance. Organised in 21 categories:
 
 1. **General** (1--4): Temperature ranges, O$_2$ tolerances
 2. **Diatoms** (5--31): Growth, respiration, mortality, nutrient kinetics, Si:C ratio
@@ -425,6 +552,9 @@ The pelagic model uses 323 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)
 18. **DOM availability fractions** (310--315): DON/DOP availability fractions per process
 19. **Phytoplankton mineralisation caps** (316--318): Max phytoplankton-mediated mineralisation rates
 20. **Photoinhibition BETA** (319--323): Five $\beta$ photoinhibition constants for each phytoplankton group, accessed via `para_get_value` using names `BETA_*`
+21. **Under-ice light** (324): `ICE_LIGHT_TRANS` — PAR transmittance through ice cover (0--1). Default **1.00** (no attenuation, byte-identical to a build without the mechanism). Both readers guard on its presence, so constants files that predate it load unchanged; values outside $[0, 1]$ are clamped with a warning
+
+> **Warning — Constants reach the model through two parallel readers** — the AQUABC name-based `para_get_value` path and the ESTAS index-based `INIT_PELAGIC_MODEL_CONSTANTS` path. A constant registered in only one of them is present in the file, readable by name, and **silently inert in the executing path**. Both the BETA block (categories 20) and `ICE_LIGHT_TRANS` (21) must appear in both. The diagnostic for this failure is a deliberate perturbation returning bit-identical output: a parameter whose variation changes nothing is not insensitive, it is disconnected.
 
 > **Note on paper vs. code:** Ert\u00fcrk et al. (2023) report 183 calibrated constants — this refers to the subset actively calibrated for the Curonian Lagoon case study, not the full model constant set.
 

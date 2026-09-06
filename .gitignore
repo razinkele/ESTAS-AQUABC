@@ -141,7 +141,11 @@ verify_baseline/
 docs/CL29_Calibration_Paper_Draft.md
 docs/ESTAS_AQUABC_2023_paper_vs_2026.md
 docs/CL29_Setup_and_Calibration_Report_*.docx
-docs/report_scripts/
+# The manuscript build chain (build_docx / merge_report) and the satellite
+# exploration scripts stay out; the manuscript FIGURE GENERATORS are tracked,
+# since the figures they produce are published results and must be reproducible.
+docs/report_scripts/*
+!docs/report_scripts/make_figures*.py
 
 # Generated observation outputs (regenerable from ~/ESTAS-AQUABC-DATA via
 # tools/ingest_epa_obs / tools/ingest_km_plankton; NEVER regenerate mid-DE)
@@ -158,3 +162,4 @@ km_plankton_out/
 /RV[0-9]*/
 /SB[0-9]*/
 /SF[0-9]*/
+docs/CL29_Model_Enhancements_Paper_Draft.md
