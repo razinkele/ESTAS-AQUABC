@@ -98,4 +98,30 @@ module AQUABC_II_GLOBAL
     ! This is the vertical-separation candidate: a light/position axis rather
     ! than a nutrient one, and the last of section 53.4's candidates.
     integer :: CYANO_POS_GUILDS = 0
+
+    ! Density-dependent (quadratic) closure on the CYANOBACTERIAL guilds' death
+    ! rate -- the structural exit named in doc section 55.4.
+    !
+    !   0 (default)  linear specific death rate KD*THETA^(T-20); byte-identical
+    !   1            the specific rate is scaled by (C / PHYTO_CLOSURE_REF), so
+    !                total loss is QUADRATIC in biomass. Mirrors the closure the
+    !                zooplankton already use (ZOO_CLOSURE_REF, doc section 36):
+    !                at C = PHYTO_CLOSURE_REF the specific rate equals the
+    !                calibrated KD -- weaker below it, stronger above it.
+    !
+    ! ⭐ WHY THIS AND NOT ANOTHER PARAMETER. Doc sections 50-55 measured nine
+    ! parameter directions and found the two-guild coexistence OVER-DETERMINED:
+    ! the guilds are identical on nitrogen, phosphorus, light and vertical
+    ! position, so self-limitation EQUALS cross-limitation -- the neutral case,
+    ! which admits only winner-take-all with a knife-edge instead of an
+    ! attractor. Stable coexistence requires each guild to limit ITSELF more
+    ! than it limits the other, and a density-dependent loss is the standard way
+    ! to supply that. This is a change of MECHANISM, not of tuning: it alters
+    ! the stability of the equilibrium, not merely its position.
+    !
+    ! Ecologically it stands in for the losses that scale with bloom density and
+    ! are absent here -- colony aggregation and sinking, cyanophage lysis, and
+    ! scum senescence.
+    integer :: PHYTO_CLOSURE_MODEL = 0
+    real(kind = DBL_PREC) :: PHYTO_CLOSURE_REF = 1.0_DBL_PREC
 end module AQUABC_II_GLOBAL

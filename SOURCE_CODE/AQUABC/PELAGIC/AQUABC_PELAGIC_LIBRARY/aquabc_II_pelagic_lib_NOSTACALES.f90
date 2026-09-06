@@ -60,7 +60,7 @@ subroutine NOSTOCALES &
    use AQUABC_POSITIONING_STATE, only: CALM_FRACTION, K_POS_UP, K_POS_DISP, W_DISP_POS, KD_PER_CHL_POS
    use AQUABC_PELAGIC_TYPES, only: t_nost_params, t_phyto_env
    use AQUABC_NOST_STAGING, only: KR_GERM_BED, V_SETTLE_AKI, T_GERM_AKI_STAGE, EPS_GERM_TEMP_LIM
-   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST, CYANO_POS_GUILDS
+   use AQUABC_II_GLOBAL, only: NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST, CYANO_POS_GUILDS, PHYTO_CLOSURE_MODEL, PHYTO_CLOSURE_REF
    implicit none
 
    ! ------------------------------------------------------------------------------------
@@ -406,7 +406,8 @@ subroutine NOSTOCALES &
     end if
 
     !Vegeatative + heterocyst stage nostacles death rate
-    R_NOST_VEG_HET_DEATH = RD_NOST_VEG_HET * FAC_HYPOX_NOST_VEG_HET_D * NOST_VEG_HET_C
+    R_NOST_VEG_HET_DEATH = RD_NOST_VEG_HET * FAC_HYPOX_NOST_VEG_HET_D * NOST_VEG_HET_C * &
+        merge(NOST_VEG_HET_C / max(PHYTO_CLOSURE_REF, 1.0D-12), 1.0D0, PHYTO_CLOSURE_MODEL > 0)
 
     ! Mass-balance safeguard: limit total losses to available biomass per TIME_STEP
     do i = 1, nkn

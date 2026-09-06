@@ -1102,7 +1102,8 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     use GLOBAL
     use ALLELOPATHY
     use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP, FEPO4_KSP_LOG10, LIGHT_DAYLENGTH_OPTION, &
-                               NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST, CYANO_POS_GUILDS
+                               NOST_FIX_SWITCH, K_FIX_NOST, R_FIX_NOST, CYANO_POS_GUILDS, &
+                               PHYTO_CLOSURE_MODEL, PHYTO_CLOSURE_REF
     use AQUABC_POSITIONING_STATE, only: SET_POSITIONING_PARAMS
     use AQUABC_NOST_STAGING, only: SET_NOST_STAGING_PARAMS
     use AQUABC_CYN_DROOP, only: SET_CYN_DROOP_PARAMS
@@ -1192,6 +1193,8 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     K_FIX_NOST = 0.008D0        ! FIX_CYN's K_FIX value for the same quantity
     R_FIX_NOST = 1.0D0          ! explicit: 1.0 = no fixation cost, byte-identical
     CYANO_POS_GUILDS = 0        ! explicit: 0 = ratchet on all guilds, byte-identical
+    PHYTO_CLOSURE_MODEL = 0     ! explicit: 0 = linear phyto death, byte-identical
+    PHYTO_CLOSURE_REF = 1.0D0   ! mg C/L; at this biomass the specific rate equals KD
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
@@ -1298,6 +1301,15 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     read(IN_FILE + 1, *, end = 900, err = 900)
     read(IN_FILE + 1, *, end = 900, err = 900) CYANO_POS_GUILDS
 
+    ! Density-dependent (quadratic) closure on the cyanobacterial guilds' death
+    ! rate (0 = linear, default and byte-identical; 1 = quadratic) and its
+    ! reference biomass in mg C/L. Graceful; defaults in mod_AQUABC_II_GLOBAL.
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) PHYTO_CLOSURE_MODEL
+
+    read(IN_FILE + 1, *, end = 900, err = 900)
+    read(IN_FILE + 1, *, end = 900, err = 900) PHYTO_CLOSURE_REF
+
     ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
     ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
     ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
@@ -1342,6 +1354,10 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
                    'induction). K_FIX_NOST =', K_FIX_NOST, ' R_FIX_NOST =', R_FIX_NOST
     else
         write(*,*) 'Nostocales fixation: OFF (legacy fixed FRAC_NOST_GROWTH share, default).'
+    end if
+    if (PHYTO_CLOSURE_MODEL > 0) then
+        write(*,*) 'Cyanobacterial closure: QUADRATIC (density-dependent). ', &
+                   'PHYTO_CLOSURE_REF =', PHYTO_CLOSURE_REF, ' mg C/L'
     end if
     if (CYANO_POS_GUILDS /= 0) then
         write(*,*) 'Positional ratchet restricted to guild set ', CYANO_POS_GUILDS, &
