@@ -146,6 +146,8 @@ docs/CL29_Setup_and_Calibration_Report_*.docx
 # since the figures they produce are published results and must be reproducible.
 docs/report_scripts/*
 !docs/report_scripts/make_figures*.py
+# small data inputs the figure generators depend on (not generated output)
+!docs/report_scripts/*.csv
 
 # Generated observation outputs (regenerable from ~/ESTAS-AQUABC-DATA via
 # tools/ingest_epa_obs / tools/ingest_km_plankton; NEVER regenerate mid-DE)
