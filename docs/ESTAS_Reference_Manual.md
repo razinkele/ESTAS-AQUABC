@@ -1,7 +1,7 @@
 ---
 title: "ESTAS-II — Transport Framework Reference Manual"
 author: "ESTAS-AQUABC Development Team"
-date: "February 2026"
+date: "September 2026"
 geometry: "margin=2.5cm"
 fontsize: 11pt
 toc: true
@@ -96,8 +96,8 @@ The `mod_GLOBAL` module defines the fixed dimensions of the coupled system:
 
 | Parameter | Value | Description |
 |:---|:---:|:---|
-| `nstate` | 32 | Pelagic state variables |
-| `nconst` | 318 | Pelagic model constants |
+| `nstate` | 32 | Pelagic state variables (33 in the optional VARN build, see `CYN_VARIABLE_N`) |
+| `nconst` | 324 | Pelagic model constants |
 | `n_driving_functions` | 10 | Environmental driving functions |
 | `nflags` | 5 | Pelagic flag variables |
 | `n_saved_outputs` | 5 | Saved pelagic outputs carried across time steps |
@@ -114,6 +114,12 @@ The `mod_GLOBAL` module defines the fixed dimensions of the coupled system:
 | `NUM_ALLOLOPATHY_STATE_VARS` | 4 | Allelopathic state variables (appended to pelagic) |
 
 The number of boxes (`nkn`) is determined at runtime from the box-model input file.
+
+> **Warning — `nconst` is defined in two places.** It is a `parameter` in `mod_GLOBAL.f90` (used by the
+> ESTAS path) *and* a saved variable in `aquabc_II_pelagic_interface.f90` (used by the standalone
+> AQUABC path). Adding a model constant requires updating **both**, plus every constants file and
+> the declared count each one carries. Changing only one yields a clean compile and a run that
+> aborts on the stale count — the mismatch is not detectable until execution.
 
 \newpage
 
@@ -152,10 +158,100 @@ The pelagic input folder must contain the file named in record 13 (typically `PE
 - **Flow time series** — `FLOW_TS.txt` and individual `FORC_TS_*.txt` files
 - **Boundary conditions** — open-boundary concentrations per state variable
 - **Initial conditions** — per-box starting concentrations (files or inline)
-- **Forcing time series** — air temperature, cloud cover, evaporation, wind speed, solar radiation
+- **Forcing time series** — air temperature, cloud cover, evaporation, wind speed, solar radiation, ice cover
 - **Bathymetry** — `BATHYMETRY_*.txt` (one per box): depth--area--volume profiles
 - **Mass loads** — tributary inflows with concentrations
 - **Mass withdrawals** — outflow points
+
+### Driving Functions
+
+ESTAS assembles `n_driving_functions = 10` per-box environmental drivers each time step and passes
+them to AQUABC as the `DRIVING_FUNCTIONS(nkn, 10)` array. The index order is fixed and is consumed
+in `aquabc_II_pelagic_model.f90`:
+
+| Index | Quantity | Units | Notes |
+|:---:|:---|:---|:---|
+| 1 | Water temperature | $^\circ$C | Also drives the top sediment layer in Mode 2 |
+| 2 | Salinity | PSU | |
+| 3 | Solar radiation | W m$^{-2}$ (total) | Converted internally to langley d$^{-1}$ PAR: $\times 0.5$ (PAR fraction) $\times 86400$ $\times 0.238846$ (J$\to$cal) $\div 10^4$ |
+| 4 | Day length `FDAY` | fraction of 24 h | Note: Read and bundled, but consumed **only** on the `smith = 0` library branch; the `smith = 1` path (`LIM_LIGHT`) ignores it unless `LIGHT_DAYLENGTH_OPTION > 0` |
+| 5 | Air temperature | $^\circ$C | |
+| 6 | Wind speed | m s$^{-1}$ | Drives reaeration and the cyanobacterial positioning gates |
+| 7 | Water-surface elevation | m | |
+| 8 | Depth | m | |
+| 9 | Background light extinction `K_B_E` | m$^{-1}$ | Used when `LIGHT_EXTINCTION_OPTION = 0` |
+| 10 | Ice areal cover | fraction, 0--1 | Supplied by `ICE_COVER.txt`. Damps surface aeration, ammonia volatilisation and atmospheric CO$_2$ exchange, **and** attenuates PAR via `ICE_LIGHT_TRANS` |
+
+> **Ice cover.** `ICE_COVER.txt` is a time series of areal ice fraction. Setups that do not model
+> ice ship an all-zero placeholder, for which the light attenuation multiplier is exactly 1.0 and
+> results are byte-identical to a build without the mechanism. Supplying a real series **and**
+> leaving `ICE_LIGHT_TRANS` at its default of 1.0 attenuates nothing; both are required.
+
+## Pelagic Model Options (`PELAGIC_MODEL_OPTIONS.txt`)
+
+Optional mechanisms and their parameters are configured in `PELAGIC_MODEL_OPTIONS.txt`, read by
+`READ_PELAGIC_MODEL_OPTIONS` (`mod_PELAGIC_ECOLOGY.f90`). Two properties of this file govern how
+it must be edited:
+
+**The file is positional, not name-keyed.** Each entry occupies exactly two records: a comment
+line (conventionally `# NAME (description)`) and a value line. The reader consumes them strictly
+in the order below and **never matches on the comment text** — so the comment is documentation
+only, and inserting, removing or reordering an entry silently reassigns every value after it.
+
+**Reads after entry 7 are graceful.** From `TEMPERATURE_MODEL` onward every read carries
+`end=900, err=900`, so a file that stops early — or whose next line cannot be parsed as the
+expected type — leaves all remaining options at their defaults without raising an error. This is
+what allows one binary to run older option files unchanged.
+
+**Warning — Consequence for editing.** Because the trailing `CYN_ALLELOPATHY_FILE_NAME` line is not
+numeric, the reader terminates on it. Any option you wish to enable must therefore be inserted
+**before** that line, in its correct position in the sequence. An option appended after it is
+unreachable, and the run will start normally with the option silently at its default — the
+failure mode is a silent no-op, not an error.
+
+| # | Name | Type | Default | Meaning |
+|:---:|:---|:---:|:---:|:---|
+| 1 | `ZOOPLANKTON_OPTION` | int | — | 0 = simplified zooplankton C:N:P partitioning |
+| 2 | `ADVANCED_REDOX_SIMULATION` | int | — | 1 = full Mn/Fe/SO$_4$/methane redox cycle |
+| 3 | `LIGHT_EXTINCTION_OPTION` | int | — | 0 = empirical $k_d$ sub-model; 1 = value supplied in `KD` |
+| 4 | `CYANO_BOUYANT_STATE_SIMULATION` | int | — | Buoyant cyanobacteria (Nostocales always buoyant) |
+| 5 | `CONSIDER_NON_OBLIGATORY_FIXERS` | int | — | Simulate facultative N$_2$ fixers |
+| 6 | `CONSIDER_NOSTOCALES` | int | — | Simulate heterocystous fixers + akinetes |
+| 7 | `CONSIDER_ALLELOPATHY` | int | — | Adds 4 state variables |
+| 8 | `TEMPERATURE_MODEL` | int | 0 | 0 = piecewise plateau; 1 = CTMI. Sets the AQUABC-side flag `USE_CTMI_TEMP` that `GROWTH_AT_TEMP` reads |
+| 9 | `FEPO4_KSP_LOG10` | real | $-26.4$ | log$_{10}$ FePO$_4$ solubility product; larger = weaker P binding |
+| 10 | `ZOO_FOOD_MODEL` | int | 0 | 0 = legacy summed per-prey Monods; 1 = saturating total-food response |
+| 11 | `KHS_FOOD_TOT_ZOO` | real | 0.5 | Total-food half saturation, mg C L$^{-1}$ |
+| 12 | `ZOO_CLOSURE_REF` | real | — | Quadratic-closure reference biomass, mg C L$^{-1}$ |
+| 13 | `CYANO_POS_MODEL` | int | 0 | 0 = legacy daily gate; 1 = calm-fraction surface blend; 2 = positional ratchet |
+| 14 | `H_SURF_POS` | real | — | Surface-layer depth for the positioned fraction, m |
+| 15 | `W_CRIT_POS_MIN` | real | — | Floor on the positioning-critical wind (scum threshold), m s$^{-1}$ |
+| 16 | `K_POS_UP` | real | 3.0 | Ratchet surfacing rate, d$^{-1}$ |
+| 17 | `K_POS_DISP` | real | 10.0 | Storm dispersal rate, d$^{-1}$ |
+| 18 | `W_DISP_POS` | real | 4.0 | Dispersal wind threshold, m s$^{-1}$ |
+| 19 | `NOST_STAGE_MODEL` | int | 0 | 0 = legacy akinete gates; 1 = bed akinete bank + radiation latch |
+| 20 | `T_GERM_AKI_STAGE` | real | 12.0 | Pre-season germination temperature guard, $^\circ$C |
+| 21 | `I_FORM_AKI` | real | 120.0 | Formation-latch irradiance threshold, W m$^{-2}$ |
+| 22 | `KR_GERM_BED` | real | 0.05 | Bed germination rate, d$^{-1}$ |
+| 23 | `K_MORT_BED_AKI` | real | $10^{-3}$ | Bed mortality / burial rate, d$^{-1}$ |
+| 24 | `V_SETTLE_AKI` | real | 0.5 | Akinete settling velocity, m d$^{-1}$ |
+| 25 | `LIGHT_DAYLENGTH_OPTION` | int | 0 | 0 = legacy 24 h light; 1 = Form A (comparison only, **not for adoption**); 2 = Form B (WASP/EUTRO) |
+| 26 | `NOST_FIX_SWITCH` | int | 0 | 0 = fixed `FRAC_NOST_GROWTH` share; 1 = DIN-gated inverse Monod (heterocyst induction) |
+| 27 | `K_FIX_NOST` | real | 0.008 | Fixation-switch half saturation, mg N L$^{-1}$ |
+| 28 | `R_FIX_NOST` | real | 1.0 | Relative productivity of the fixing channel; $< 1$ imposes an energetic cost |
+| 29 | `CYANO_POS_GUILDS` | int | 0 | Guilds the ratchet applies to: 0 = all, 1 = NOST, 2 = CYN, 3 = fixers |
+| 30 | `PHYTO_CLOSURE_MODEL` | int | 0 | 0 = linear cyanobacterial death; 1 = density-dependent (quadratic) |
+| 31 | `PHYTO_CLOSURE_REF` | real | 1.0 | Closure reference biomass, mg C L$^{-1}$ |
+| 32 | `CYN_VARIABLE_N` | int | 0 | 0 = Monod CYN N-limitation; 1 = Droop quota. **Requires the VARN build (`nstate = 33`)** — otherwise the run halts with `error stop` |
+| 33 | `CYN_N_QMIN` | real | 0.10 | Quota floor, gN gC$^{-1}$ |
+| 34 | `CYN_N_QMAX` | real | 0.25 | Quota ceiling, gN gC$^{-1}$ |
+| 35 | `CYN_N_VMAX` | real | 0.44 | Max N-uptake rate, gN gC$^{-1}$ d$^{-1}$ |
+| 36 | `CYN_N_KHS_UPT` | real | 0.003 | N-uptake half saturation, mg N L$^{-1}$ |
+| — | `CYN_ALLELOPATHY_FILE_NAME` | text | — | Trailing filename record; terminates the numeric sequence |
+
+Every option from 25 onward defaults to a **byte-identical no-op**, so enabling none of them
+reproduces the legacy model exactly. The startup log echoes the resolved state of each optional
+mechanism, which is the fastest way to confirm that an inserted line was actually reached.
 
 ## Sediment Input Files
 
