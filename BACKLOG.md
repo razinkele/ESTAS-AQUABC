@@ -6,7 +6,7 @@ paper (`~/curonian/docs/EUTROPY_AQUABC_comparison*` §10.3 / §11.2), and the sc
 campaigns tracked in project notes. **Detailed task specs live in the referenced sources — this
 file is the prioritized index, not a duplicate**, so it can't drift from the plan.
 
-**Last updated:** 2026-09-06 · **Latest release:** v0.11.0 (`main` is ahead of it — the doc §20–27
+**Last updated:** 2026-09-15 · **Latest release:** v0.11.0 (`main` is ahead of it — the doc §20–27
 honest-configuration + boundary arc is merged unreleased) · Fortran-plan Phases 1–4 and every item
 in `FIXES_AND_IMPROVEMENTS.md` are complete; the only open GitHub issue is the v0.11.0
 release-announcement pointer (#112). (#76 FIX_CYN phenology was investigated and closed as
@@ -171,7 +171,7 @@ Standard runs byte-identical. Only the optional Phase 2 (shear-driven erosion re
 | Housekeeping: dead/vestigial buoyancy code | P3 | `CYANO_BOUYANT_STATE_SIMULATION` is read, printed, passed and never used (a placebo switch since ≥2019); the non-buoyant `FIX_CYANOBACTERIA` first variant carries a vestigial `FIX_CYN_DEPTH = 1.0` scalar multiplier (2013 "×1.2 surface layer", neutralized 2014) — not the CL29 path. Remove or wire both when next touching the libs. |
 | Variable-stoichiometry option for key groups (Si:C, N:C plasticity) | P2 — **CL29 Droop-N BUILT + LADDERED, storage REFUTED (doc §38, 2026-08-30); adoption is an open user decision** | **The 2026-08-02 contraindication below was MEASURED-REMOVED first (doc §37): August CYN LIM_N 0.32 at DIN 0.004 with the goal re-scoped to phenology, satisfying that review's own decision rule — the pilot did not defy a standing contraindication, it ran after the precondition was met. 2026-08-30 result: the re-scoped CYN Droop-N pilot ships as opt-in `CYN_VARIABLE_N` on the `ESTAS_II_varN` build variant (standard build byte-identical to `main` at full record); August *Planktothrix* 0.218 → 0.503 mg C/L (obs 2.304, ×2.3), CHLA 24.05 → 24.02, CHLA peak month 9 → 8 (recovering what §31 held and §36's W6 gave up, but by a 0.035 µg/L margin and with both summer months landing further from observed), at PO4 +2.1 % and r −0.02 — but the pre-registered quota signature REFUTES the storage hypothesis (August Q 0.231 vs a 0.175 mid-band bar, only 1.9 % of samples below it): the gain is explicit high-affinity uptake of the regeneration flux (5.6 DIN-stock turnovers/day in August), not June→August storage, so a 32-state uptake reformulation may buy the same without the build variant. Also learned, reusable: a "turn group X off" scenario must zero X's GROWTH constant — `MIN_CONCENTRATION` (1e-10) reseeding regrew diatoms 1e-10 → 1.89 mg C/L in 30 days and broke the N-conservation gate.** Stands as a *general model-richness* goal (selective ERSEM-style, no full rewrite). **⚠️ The earlier (2026-07-25) "variable N:C would strip summer DIN to depletion" motivation is now CONTRAINDICATED for CL29 (2026-08-02).** A scoped Droop-N pilot on CYN was designed and adversarially **Workflow-reviewed (21 confirmed findings, 8 BLOCKING)**; the premise fails — CL29 summer DIN is **regeneration/boundary-floored** (CYN already ~90% N-replete, `KHS_DIN_CYN=0.009`), so a luxury quota is a small bounded store that remineralizes back into the EPA-matching NH4 floor (net export second-order). This is the **3rd phyto-side lever** (after Nostocales, FIX_CYN/#76) to die on the same wall → the CL29 nutrient over-prediction is likely **boundary-forcing / regeneration structural, not phyto-fixable**. Before any future var-stoich (or phyto-kinetics) work, first establish that a genuinely *uptake-limited* target exists; if the wall is boundary-driven, the lever is open-boundary forcing (`cl29-epa-validation`, boundary×0.5). Full write-up: `docs/superpowers/specs/2026-08-01-variable-stoichiometry-cyn-droop-n-design.md` §12. |
 | **Benthic P-retention / burial process — ~~the summer-PO4 residual~~** | **P3 / blocked-on-akinete — the premise is DEAD (re-measured 2026-08-23, doc §28)** — summer PO4 is now UNDER-predicted (Jul/Aug/Sep model/obs 0.16/0.16/0.24); the residual MOVED to **autumn: Oct 6.1×, Nov 4.9× (bias +0.052)** + Jun 4.1×, coinciding month-for-month with the missing autumn bloom (CHLA Oct −25.9, Nov −20.4) — likely the SAME defect as the Oct gap (missing autumn biomass = missing P consumer), and a benthic sink would now WORSEN Jul–Sep. **Re-measure again after akinete staging.** Historical detail below kept for the record: | CL29 over-predicts SUMMER PO4 ~10× (obs 0.005 → model 0.047; winter matches). Confirmed a **structural residual** (2026-08, v0.11.0): it resisted over-growing biomass (Chl-a +11), a config-only benthic PO4 sink (crashes Chl-a 25→8), var-stoich-P (baseline nutrient-**replete**, LIM_P=0.85 → fails the `LIM≪1` precondition), and boundary-P supply (a small clean gain *was* adopted — `CL29_BOUNDARY_PO4_SUMMER_PEAK` 2.0→1.0, #108). The model interior summer PO4 **>** the boundary PO4 → **internal-regeneration-dominated**; closing it needs a genuine P *removal* process the water-column model lacks: **redox-dependent oxic (Fe-oxyhydroxide-bound) P burial**, or **benthic primary-producer P uptake** (macrophyte/periphyton). A **Fortran model-richness effort** (new process/state variable), NOT config/kinetics tuning. ⚠️ Hard prereq: any candidate must draw PO4 down **without** inducing P-limitation (the wall) — i.e. remove the P the replete bloom isn't using; a fixed sink over-draws and crashes Chl-a (tested). See `docs/CL29_Calibration_Results.md` §"Summer PO4" + [[cl29-calibration-wall]]. |
-| **⭐ Density-dependent closure on the cyanobacterial guilds (`PHYTO_CLOSURE_MODEL`)** | **P2 — BUILT AND MERGED 2026-09-06 (PR #121), ships DISABLED** | The structural exit named by doc §55.4 and the one remaining candidate the nine-direction result does not exclude. Doc §§50–55 found the two-guild coexistence **over-determined**: the guilds are identical on nitrogen, phosphorus, light and vertical position, so self-limitation equals cross-limitation — the neutral case, which admits winner-take-all but no stable interior equilibrium. Stable coexistence needs each guild to limit *itself* more than the other, which a density-dependent loss supplies; this is a change of **mechanism**, not tuning. Applied at all five cyanobacterial death sites, byte-identical when off, numerator clamped at `max(C, 0)` (without it an enabled closure turns negative biomass into a *positive* death rate past a guard gated on `C > 0`). **Not adopted** — reported as the most promising unclosed item. Next step is a bounded `PHYTO_CLOSURE_REF` sweep against the pre-registered coexistence gate (September share 0.35–0.65 *with* total cyano carbon ≥0.80×). |
+| **⭐ Density-dependent closure on the cyanobacterial guilds (`PHYTO_CLOSURE_MODEL`)** | **P2 — BUILT AND MERGED 2026-09-06 (PR #121), ships DISABLED** | The structural exit named by doc §55.4 and the one remaining candidate the nine-direction result does not exclude. Doc §§50–55 found the two-guild coexistence **over-determined**: the guilds are identical on nitrogen, phosphorus, light and vertical position, so self-limitation equals cross-limitation — the neutral case, which admits winner-take-all but no stable interior equilibrium. Stable coexistence needs each guild to limit *itself* more than the other, which a density-dependent loss supplies; this is a change of **mechanism**, not tuning. Applied at all five cyanobacterial death sites, byte-identical when off, numerator clamped at `max(C, 0)` (without it an enabled closure turns negative biomass into a *positive* death rate past a guard gated on `C > 0`). **Not adopted.** ⚠ **Superseded 2026-09-15:** the bounded `PHYTO_CLOSURE_REF` sweep (0.5–4.0) was run — smooth, but September share 0.135 against obs 0.486, so it does not reach the gate. §56 then found the real lever (allelopathy, share 0.555), which is **deferred to a third paper** — see §5. The closure is no longer the most promising unclosed item and needs no further sweeping. |
 | Re-introduce explicit bacteria as a library (nitrifiers / heterotrophs / denitrifiers + electron acceptors) | P2 | Restores dynamic remineralization; corrects the organic-carbon underestimate. |
 | Function-oriented zoobenthos library (filters / shredders / predators; e.g. *Dreissena*) | P3 | General, not Curonian-specific. |
 | Unify ESTAS box ↔ SHYFEM 3-D (one kinetic core, two deployments) | P3 | Removes drift between standalone and SHYFEM-bundled versions. |
@@ -206,6 +206,43 @@ science (§3, esp. akinete staging and the second diatom guild — variable N:C 
 waiting on data/decisions (§4). The next *substantive*
 engineering lift would be an actual de-coupling (lift `pcore`/`bsed`/`wsc`/`resusp` out of `GLOBAL` into
 their own modules) — a design effort, not a mechanical slice.
+
+## 5. Deferred to a THIRD PAPER — the cyanobacterial allelopathy result (§56)
+
+**⛔ Do not work on this.** User decision, 2026-09-15: the §56 finding is not a backlog item, it is a
+**third manuscript**, alongside Paper I (model enhancements → GMD) and Paper II (calibration → EMS).
+Do not probe, re-fit, sweep or reopen it — including the follow-ups listed below — unless the user
+opens the work. Nothing in `INPUTS_CL29/` changed and it stays that way.
+
+**The result** (`a07b8bb`, full ledger `docs/CL29_phenology_diagnosis.md` §56): the cyanobacterial
+partition is **interference competition, not resource competition**. CYN responds to nothing except
+its competitor's removal — removing its grazing entirely ×1.002, tripling autumn DIN ×1.02,
+suppressing NOST **×4.85** — and CL29 runs `CONSIDER_ALLELOPATHY = 1`. `SEC_METAB_NOST` reaches
+0.01449 in September against `K_HS_SEC_METAB_NOST_NOFIX_CYN = 0.004`, an inhibition factor of 0.263
+applied straight to `R_CYN_GROWTH` (`model.f90:1206`). It is **asymmetric** (NOST→CYN 0.263,
+CYN→NOST 0.741): cross-limitation exceeds self-limitation ~3×, the analytic guarantee of exclusion
+plus a positive feedback. `K_HS = 0.05` gives share **0.555** against obs 0.486 — the **first
+configuration in the entire §50–56 arc inside the pre-registered share gate**, monotone and smooth
+across 0.004→0.05→1000 rather than a knife-edge; it fails only on total carbon (0.70× vs the
+0.80 bar).
+
+⚠⚠ **This corrects §54 in place:** the over-determination *result* STANDS, but its stated *cause*
+is wrong. §54.2 attributed the winner-take-all to self-limitation **equalling** cross-limitation (the
+neutral case); the truth is that cross-limitation **exceeds** it ~3× through an asymmetric
+interference term. The nine parameter directions of §51–55 were rebalancing a contest whose outcome
+was set elsewhere. The §4 row "Two-guild cyanobacterial coexistence" should be read with this
+correction attached.
+
+**Recorded open questions — for the paper, NOT for the backlog:** whether `0.004` is defensible (it
+sits in a block of uniform round values that look like placeholders, and their provenance needs
+establishing before any re-fit); where the missing 30 % of total carbon comes from; and the other 19
+allelopathy pairs — **including the OPA extinction verdict (§24–27), which was reached without
+examining allelopathy at all** and which this could reopen.
+
+**Gotcha for whoever does eventually run it:** `CONSIDER_ALLELOPATHY 0` fails loudly, because the
+four metabolites are state variables — test by moving the `K_HS` constant, not the master switch.
+
+---
 
 ## Sources (authoritative detail — do not duplicate here)
 
