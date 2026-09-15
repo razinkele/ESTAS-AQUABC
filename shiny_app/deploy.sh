@@ -2,6 +2,17 @@
 set -euo pipefail
 # Deployment helper for running the Python Shiny app as a systemd service
 # Usage (from repo root): sudo bash shiny_app/deploy.sh
+#
+# RE-RUN THIS AFTER MOVING OR RENAMING THE REPO. The symlink this creates points at an
+# absolute path derived from wherever the repo was when it last ran, so a rename leaves
+# /srv/shiny-server/AQUABC dangling, shiny-server cannot resolve app_dir, and every request
+# to /AQUABC/ returns 500 with nothing obviously wrong in nginx.
+#
+# That happened on 2026-09-15: the repo had been renamed AQUABCv0.2 -> aquabc and the app had
+# been down since at least 6 September. Re-pointing the symlink was the whole fix; the config,
+# the interpreter and the app were all fine. Diagnose with:
+#   ls -l /srv/shiny-server/AQUABC        # dangling?
+#   curl -so /dev/null -w '%{http_code}\n' http://127.0.0.1:3838/AQUABC/
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SHINY_SERVER_DIR="/srv/shiny-server"
