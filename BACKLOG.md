@@ -216,6 +216,36 @@ waiting on data/decisions (§4). The next *substantive*
 engineering lift would be an actual de-coupling (lift `pcore`/`bsed`/`wsc`/`resusp` out of `GLOBAL` into
 their own modules) — a design effort, not a mechanical slice.
 
+## 4b. Candidate experiment — spring-peaked, facies-differentiated benthic denitrification
+
+**Not run. Raised 2026-09-15 by checking the configuration against its own source.** The adopted
+`CL29_BENTHIC_DENIT` sink (`tools/eutropy_poc/eutropy_to_estas.py`, `peak_mmol 3.0`, `peak_doy 220`,
+`width 55`, `floor_mmol 0.36`, applied uniformly to all 29 boxes) departs from Bartoli et al. (2021)
+— **verified against the full text via scite, every figure quoted below is verbatim** — in three ways:
+
+1. **The peak exceeds the largest measured daily rate.** Spring daily N₂ production was
+   *“1.1 and 2.0 mmol N m⁻² day⁻¹ at muddy sites”*; the prescribed 3.0 corresponds to the peak
+   hourly rate (135.5 µmol N m⁻² h⁻¹) extrapolated over 24 h ≈ 3.25 — an upper bound, not a mean.
+2. **The seasonality is inverted.** The sink peaks on day 220 (8 August), while the source reports
+   *“In summer, D_tot rates measured at muddy sites decreased significantly as compared with the
+   values measured during spring, whereas at sandy sites, D_tot remained similar”*.
+3. **One uniform flux ignores the paper's central finding** — sandy spring rates were
+   *“about one order of magnitude lower, between 0.14 and 0.31 mmol N m⁻² day⁻¹”* than muddy.
+
+**What it would test:** §3.4 reports the mechanism closing only ~20 % of the summer nitrate gap.
+An inverted seasonal shape is a plausible contributor to that shortfall. A spring-peaked variant
+(and, if the facies map ever resolves, a muddy/sandy split) would say whether the residual is
+shape-driven or genuinely elsewhere. Cost: one variant config + ~11-min full-record run + validation.
+
+⚠ **Constraints:** do NOT edit `INPUTS_CL29/` — generate a variant. `CL29_BENTHIC_DENIT` and
+`CL29_ENABLE_SEDIMENTS` are mutually exclusive in the converter (it fails loudly, see the guard at
+`eutropy_to_estas.py:597`). The facies-differentiated version is **data-blocked** on the sediment
+facies map (§4), so only the seasonal-shape half is testable today. §3.4's 20 % is a load-bearing
+number in Paper II — changing it reopens a results section, so this is a user decision, not a
+default. Both papers now STATE these three departures as limitations rather than tuning them.
+
+---
+
 ## 5. Deferred to a THIRD PAPER — the cyanobacterial allelopathy result (§56)
 
 **⛔ Do not work on this.** User decision, 2026-09-15: the §56 finding is not a backlog item, it is a
