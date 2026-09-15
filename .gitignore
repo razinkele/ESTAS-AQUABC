@@ -165,3 +165,5 @@ km_plankton_out/
 /SB[0-9]*/
 /SF[0-9]*/
 docs/CL29_Model_Enhancements_Paper_Draft.md
+# Correspondence drafts: versioned in the PRIVATE ESTAS-AQUABC-DATA repo, symlinked here.
+docs/CL29_EPA_data_permission_request.md
