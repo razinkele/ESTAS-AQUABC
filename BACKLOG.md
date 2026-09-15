@@ -216,9 +216,28 @@ waiting on data/decisions (§4). The next *substantive*
 engineering lift would be an actual de-coupling (lift `pcore`/`bsed`/`wsc`/`resusp` out of `GLOBAL` into
 their own modules) — a design effort, not a mechanical slice.
 
-## 4b. Candidate experiment — spring-peaked, facies-differentiated benthic denitrification
+## 4b. ✅ RUN AND CLOSED — spring-peaked benthic denitrification is a MEASURED NEGATIVE
 
-**Not run. Raised 2026-09-15 by checking the configuration against its own source.** The adopted
+**Run 2026-09-15 (user decision). Result: worse, and the mechanism is inert anyway. Nothing adopted; `INPUTS_CL29/` untouched.**
+
+⭐ **The finding is not the negative, it is WHY.** In the adopted configuration **summer nitrate is already floored at zero** — model 0.0007 against an observed 0.0178 mg N L⁻¹, 25× under — so a summer sink has nothing to remove. The mechanism was justified against the §3.4 BASELINE, where summer NO₃ was *over*-predicted (+0.040) and the sink closed ~20 % of that gap. The boundary correction (§26–27), the ice–light coupling (§45) and the *Planktothrix* trait correction (§36) removed that nitrate in the meantime. **The sink's rationale expired and nobody noticed** — the ninth instance of this study's own thesis, found by testing a mechanism rather than re-reading it.
+
+**Design (clean single-variable test).** Copied the input set; rewrote ONLY `FORC_NO3_SINK.txt` with `peak_doy` 220 → 105, everything else identical (`diff -rq` shows exactly one file). The reimplemented Gaussian reproduces the shipped baseline file to 5×10⁻⁷, proving it is the converter's own shape function. **Annual mean flux held at 1.059 → 1.065 mmol N m⁻² d⁻¹**, so total N removed is unchanged and only the SHAPE varies — without that constraint the test would confound shape with magnitude, which is §2.1's other flagged discrepancy.
+
+**Result** (full record, identical observations, adopted run's own `WCONST_04.txt`):
+
+| variable | RMSE baseline | RMSE spring | Δ |
+|---|---|---|---|
+| **NO3** | 0.45609 | 0.48011 | **+5.27 %** (bias −0.0758 → −0.1208) |
+| TN | 0.87291 | 0.83685 | −4.13 % |
+| PO4 | 0.017554 | 0.017427 | −0.72 % |
+| CHLA | 23.83 | 23.898 | +0.28 % |
+
+Everything else moved <1 %; group carbon essentially untouched (OPA_C identical to 5 s.f.). **Summer NO₃ RMSE is unchanged to four significant figures (0.07796 vs 0.07795)** — the sink does nothing in summer either way. The damage is in winter/shoulder, where the model already under-predicts nitrate and the relocated sink deepens it (shoulder bias −0.132 → −0.217). TN improves only because TN is over-predicted in every season, so removing N helps regardless of when — not evidence for the shape.
+
+**Still untested and now lower value:** the facies-differentiated version (muddy ≈ order of magnitude faster than sandy) remains data-blocked on the sediment facies map (§4). Given the sink is inert in the adopted configuration, a spatial split would likely also be inert; it is worth doing only if a future configuration restores summer nitrate. **§2.1 now states this outcome**; the artefacts (`INPUTS_CL29_SPRINGDENIT/`, `OUTPUTS_CL29_SPRINGDENIT/`, 2.9 GB) are scratch and can be deleted.
+
+*Original framing, kept for the record — raised by checking the configuration against its own source:* The adopted
 `CL29_BENTHIC_DENIT` sink (`tools/eutropy_poc/eutropy_to_estas.py`, `peak_mmol 3.0`, `peak_doy 220`,
 `width 55`, `floor_mmol 0.36`, applied uniformly to all 29 boxes) departs from Bartoli et al. (2021)
 — **verified against the full text via scite, every figure quoted below is verbatim** — in three ways:
