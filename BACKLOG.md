@@ -24,6 +24,15 @@ release-announcement pointer (#112). (#76 FIX_CYN phenology was investigated and
   taxonomy). The taxonomy spans both, so Paper II keeps all nine classes and cites Paper I for the
   three whose mechanisms moved. Recommended venues: **GMD** for Paper I (its verification is
   internal, so the EPA data-licensing blocker barely touches it) and **EMS** for Paper II.
+  ⚠ **Corrected 2026-09-15 — Paper II is NOT blocked on EPA licensing.** EMS accepts the
+  restricted-data statement already drafted, so under the recommended venue there is no blocker;
+  the question binds only if GMD is chosen. And even GMD is not closed to it: its code-and-data
+  policy has an explicit restricted-data path (state the restrictions, plus confidential access for
+  the editor and reviewers), so the draft's ⟨DECISION REQUIRED⟩ block overstates the stakes. A
+  permission request for a **derived product** (three tiers: station-resolved matched pairs /
+  monthly per-box means / summary statistics only) is drafted EN+LT at
+  `docs/CL29_EPA_data_permission_request.md` (untracked, same class as the drafts) — worth sending,
+  but an upgrade path, not a gate.
   Both drafts remain gitignored; the pair is on OneDrive `ali/` with invites sent.
   Merged to `main` the same day: `PHYTO_CLOSURE_MODEL` (below), both **reference manuals brought
   up to date** with the 14 previously undocumented runtime options and the corrected dimension
