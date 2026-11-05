@@ -161,6 +161,23 @@ def test_ingest_legacy_sheet_ion_conversion():
 
 
 # --- .dates writer -------------------------------------------------------------
+def test_do_above_the_plausible_ceiling_is_dropped_and_counted():
+    """2019 rows of 90 under "DO mg/l" are percent saturation, not mg/L: they
+    are dropped and counted, while a strong-bloom 22 mg/L reading is kept."""
+    df = pd.DataFrame({
+        "Date of sampling": ["2019-10-08", "2019-10-08", "2019-07-01"],
+        "MV code": ["LTK1", "LTK1", "LTK1"],
+        "DO mg/l": [90.0, 10.2, 22.0],
+    })
+    stats = new_stats()
+    rows = list(ing.ingest_sheet(df, "2013-2021", ing.SHEET_SPECS["2013-2021"],
+                                 STATION_BOX, stats))
+    do = sorted(r["value"] for r in rows if r["variable"] == "DO")
+    assert do == [pytest.approx(10.2), pytest.approx(22.0)]
+    assert stats["implausible"][("DO", "2013-2021")] == 1
+    assert ing.PLAUSIBLE_MAX["DO"] == 40.0
+
+
 def test_write_dates_averages_and_formats(tmp_path):
     rows = [
         {"station": "LTK1", "box": 7, "model_index": 2, "date": "2019-02-13",
