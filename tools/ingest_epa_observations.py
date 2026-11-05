@@ -199,6 +199,13 @@ CHLA_SPECS = {
 
 
 # --- Pure helpers (unit-tested) --------------------------------------------------
+#: Ceilings no genuine value in model units can reach. Dissolved oxygen in this
+#: lagoon reaches ~20-22 mg/L in strong blooms (kept), but the 2013-2021 sheet
+#: holds 2019 readings of 90 under "DO mg/l": percent saturation filed as mg/L.
+#: Values above the ceiling are dropped and counted per (variable, sheet).
+PLAUSIBLE_MAX = {"DO": 40.0}
+
+
 def clean_value(raw):
     """Parse one raw cell to a float, or NaN if it is not a usable measurement.
 
@@ -325,6 +332,9 @@ def ingest_sheet(df, sheet, spec, station_box, stats):
             if math.isnan(val):
                 continue
             model = to_model_units(val, unit, basis)
+            if model > PLAUSIBLE_MAX.get(var, math.inf):
+                stats.setdefault("implausible", defaultdict(int))[(var, sheet)] += 1
+                continue
             idx = VARIABLES[var][0]
             yield {
                 "station": info["label"], "box": info["box"],
@@ -467,6 +477,9 @@ def print_summary(rows, stats, dates_written):
               f"{MIN_YEAR}-{MAX_YEAR}): {stats['bad_dates']}")
     if stats["skipped_sheets"]:
         print(f"\nSkipped sheets: {', '.join(stats['skipped_sheets'])}")
+    if stats.get("implausible"):
+        parts = ", ".join(f"{v} {s}={n}" for (v, s), n in sorted(stats["implausible"].items()))
+        print(f"\nDropped as implausible (above PLAUSIBLE_MAX): {parts}")
 
 
 def main(argv=None):
@@ -491,7 +504,7 @@ def main(argv=None):
     os.makedirs(a.out, exist_ok=True)
     station_box = load_station_box(a.stations)
     stats = {"dropped_stations": defaultdict(int), "unmatched": [],
-             "bad_dates": 0, "skipped_sheets": []}
+             "bad_dates": 0, "skipped_sheets": [], "implausible": defaultdict(int)}
 
     rows = ingest(a.wq, a.chla, station_box, stats)
     if not rows:
