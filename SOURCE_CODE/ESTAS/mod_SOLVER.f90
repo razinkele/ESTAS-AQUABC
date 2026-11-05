@@ -792,7 +792,7 @@ contains
                 EFFECTIVE_DISSLOVED_FRACTIONS , &
                 EFFECTIVE_DEPOSITION_FRACTIONS, &
                 DEPOSITION_AREA_RATIOS        , &
-                nkn, nstate, NUM_ALLOLOPATHY_STATE_VARS)
+                nboxes, nstate, NUM_ALLOLOPATHY_STATE_VARS)
 
         use, intrinsic :: IEEE_ARITHMETIC, only: IEEE_IS_NAN
         implicit none
@@ -813,24 +813,27 @@ contains
 
         integer, intent(in) :: DERIV_NO
 
-        integer, intent(in) :: nkn
+        integer, intent(in) :: nboxes
+        ! Named nboxes, not nkn: ifx 2026.2 reports nkn in this body as an entity
+        ! from different modules (error #6405), although a dummy argument hides any
+        ! module-level nkn. gfortran and ifx <= 2026.1 accept the old name.
         integer, intent(in) :: nstate
         integer, intent(in) :: NUM_ALLOLOPATHY_STATE_VARS
 
         real(kind = DBL), &
-            dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
+            dimension(nboxes, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
             intent(inout) :: EFFECTIVE_DISSLOVED_FRACTIONS
 
         real(kind = DBL), &
-            dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
+            dimension(nboxes, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
             intent(inout) :: EFFECTIVE_DEPOSITION_FRACTIONS
 
         real(kind = DBL), &
-            dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
+            dimension(nboxes, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
             intent(inout) :: DEPOSITION_AREA_RATIOS
 
         real(kind = DBL), &
-            dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
+            dimension(nboxes, (nstate + NUM_ALLOLOPATHY_STATE_VARS)), &
             intent(inout) :: PRESCRIBED_SEDIMENT_FLUXES
 
         integer :: i
@@ -880,16 +883,16 @@ contains
 
         real(kind = DBL) :: RESUSPENSION_VELOCITY
         
-        real(kind = DBL), dimension(nkn) :: RESUSPENSION_VELOCITIES
+        real(kind = DBL), dimension(nboxes) :: RESUSPENSION_VELOCITIES
 
         real(kind = DBL), dimension((nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &
              RESUSPENSION_CONCENTRATIONS
 
         real(kind = DBL) :: SHEAR_STRESS
 
-        real(kind = DBL), dimension(nkn) :: SETTLING_VELOCITY_FACTORS
+        real(kind = DBL), dimension(nboxes) :: SETTLING_VELOCITY_FACTORS
 
-        real(kind = DBL), dimension(nkn, (nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &
+        real(kind = DBL), dimension(nboxes, (nstate + NUM_ALLOLOPATHY_STATE_VARS)) :: &
              SEDIMENT_FLUXES
 
         call CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
@@ -915,8 +918,8 @@ contains
 
         !Initialize the derivatives from previous calculations to zero
         ! These five whole-array resets are loop-invariant (not indexed by the box
-        ! loop and not written inside it), so hoist them out -- they were zeroed nkn
-        ! times each, O(nkn^2) write traffic (PROCESS_RATES is nkn x 36 x 30).
+        ! loop and not written inside it), so hoist them out -- they were zeroed nboxes
+        ! times each, O(nboxes^2) write traffic (PROCESS_RATES is nboxes x 36 x 30).
         ! Byte-identical (TODO 4.5).
         MODEL_CONSTANTS   = 0.0D0
         pcore%DRIVING_FUNCTIONS = 0.0D0
@@ -1471,7 +1474,7 @@ contains
         SEDIMENT_FLUXES(:, :) = 0.0D0
 
         if (MODEL_BOTTOM_SEDIMENTS == 1) then
-            do i = 1, nkn
+            do i = 1, nboxes
                 do j = 1, nstate
 
                     SEDIMENT_FLUXES(i, j) = &
@@ -1487,7 +1490,7 @@ contains
               CALLED_BEFORE)
         !write(*,*) '    PELAGIC_KINETICS'
         
-        do i = 1, nkn
+        do i = 1, nboxes
             do j = 1, nstate
                 if (IEEE_IS_NAN(STATE_VARIABLES(i,j))) then
                     open (unit = 88, file = 'ERROR_LOG.txt', status = 'UNKNOWN')
@@ -1525,7 +1528,7 @@ contains
                 case(1)
 
                     ! Loop of pegalic boxes
-                    do i = 1, nkn
+                    do i = 1, nboxes
                         if (resusp%ACTIVATE_RESUSPENSIONS(i) > 0) then
 
                             ! Get the resuspension velocity (in m/days)
@@ -1558,7 +1561,7 @@ contains
                 case(3)
 
                     ! Loop of pegalic boxes
-                    do i = 1, nkn
+                    do i = 1, nboxes
                         if (resusp%ACTIVATE_RESUSPENSIONS(i) > 0) then
 
                             ! Get the resuspension velocity (in m/days)
@@ -1593,7 +1596,7 @@ contains
                   bsed%INIT_SED_STATE_VARS(:,:,15)   , & ! Salt
                   bsed%SED_FLAGS                     , &
                   NUM_SED_FLAGS                 , &
-                  nkn                           , &
+                  nboxes                           , &
                   NUM_SED_LAYERS                , &
                   NUM_SED_VARS                  , &
                   MODEL_BENTHIC_ANIMALS)
@@ -1637,7 +1640,7 @@ contains
             wsc%FRACTION_OF_DEPOSITION = EFFECTIVE_DEPOSITION_FRACTIONS
 
             call FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
-               (STATE_VARIABLES    , nkn        , nstate, &
+               (STATE_VARIABLES    , nboxes        , nstate, &
                 MODEL_CONSTANTS    , nconst     ,         &
                 pcore%DRIVING_FUNCTIONS  , n_driving_functions, &
                 SETTLING_VELOCITIES, wsc%DISSOLVED_FRACTIONS, &
@@ -1654,7 +1657,7 @@ contains
 
             !Call sediment submodel
             call AQUABC_SEDIMENT_MODEL_1 &
-                (nkn,bsed%INIT_SED_STATE_VARS, bsed%SED_DEPTHS , bsed%SED_POROSITIES,  &
+                (nboxes,bsed%INIT_SED_STATE_VARS, bsed%SED_DEPTHS , bsed%SED_POROSITIES,  &
                  bsed%SED_DENSITIES          , bsed%PART_MIXING_COEFFS         ,  &
                  bsed%SED_DIFFUSIONS         , bsed%SURF_MIXLEN, bsed%SED_BURRIALS  ,  &
                  bsed%SURF_WATER_CONCS       , bsed%SED_TEMPS                  ,  &
@@ -1680,7 +1683,7 @@ contains
 
             ! The sediment->water mapping (FLX_SED_MOD_1_TO_ALUKAS_II_VEC) only fills
             ! the nstate pelagic columns of FLUXES_TO_WATER_COLUMN. The array is sized
-            ! (nkn, nstate+NUM_ALLOLOPATHY_STATE_VARS), so without this the allelopathy
+            ! (nboxes, nstate+NUM_ALLOLOPATHY_STATE_VARS), so without this the allelopathy
             ! tail (nstate+1:) carries stale values that get added to the secondary-
             ! metabolite derivatives below, blowing them up and (via the growth-inhibition
             ! factor) collapsing phytoplankton growth. Zero it first so the tail stays 0.
@@ -1688,7 +1691,7 @@ contains
 
             call FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
                  (bsed%FLUXES_FROM_SEDIMENTS , NUM_FLUXES_FROM_SEDIMENTS, &
-                  wsc%FLUXES_TO_WATER_COLUMN, nkn, nstate)
+                  wsc%FLUXES_TO_WATER_COLUMN, nboxes, nstate)
             !write(*,*) '        FLX_SED_MOD_1_TO_ALUKAS_II_VEC'
             ! NOT_DEPOSITED_FLUXES
             ! --------------------
