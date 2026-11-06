@@ -68,6 +68,44 @@ def load_c_to_chla(wconst_path):
                 except ValueError:
                     pass
     return out
+
+
+def _master_folders(path):
+    """(input folder, output folder) named by an ESTAS master input file, or (None, None)."""
+    try:
+        lines = open(path, errors="replace").read().split("\n")
+    except OSError:
+        return None, None
+    found = {}
+    for i, ln in enumerate(lines):
+        for key in ("INPUT FOLDER", "OUTPUT FOLDER"):
+            if ln.lstrip().startswith("#") and f"PELAGIC MODEL {key}" in ln.upper():
+                nxt = next((x.strip() for x in lines[i + 1:] if x.strip()), "")
+                found[key] = nxt
+    return found.get("INPUT FOLDER"), found.get("OUTPUT FOLDER")
+
+
+def find_run_wconst(outputs_dir):
+    """The WCONST_04.txt of the run that wrote outputs_dir, or None if that cannot be told.
+
+    ESTAS records neither its constants nor its input folder in the output folder, so the
+    run is identified by the master input file (INPUT*.txt, beside the output folder or in
+    the current directory) whose output-folder line resolves to outputs_dir. Folders in a
+    master file are relative to the directory it is run from, taken to be its own. Several
+    masters naming the same inputs are fine; masters that disagree make the answer unknown.
+    """
+    target = os.path.realpath(outputs_dir)
+    dirs = {os.path.dirname(target), os.path.realpath(os.getcwd())}
+    hits = set()
+    for d in dirs:
+        for master in glob.glob(os.path.join(d, "INPUT*.txt")):
+            inp, out = _master_folders(master)
+            if not inp or not out or os.path.realpath(os.path.join(d, out)) != target:
+                continue
+            wconst = os.path.realpath(os.path.join(d, inp, "WCONST_04.txt"))
+            if os.path.exists(wconst):
+                hits.add(wconst)
+    return hits.pop() if len(hits) == 1 else None
 # EPA key -> comparison column: a direct .out column, or a derived column of the
 # same name added by add_derived().
 MODEL_COL = {**DIRECT_COL, "TN": "TN", "TP": "TP", "CHLA": "CHLA"}
@@ -392,27 +430,44 @@ def main(argv=None):
     p.add_argument("--until", default=None, metavar="YYYY-MM-DD",
                    help="only score observations on/before this date")
     p.add_argument("--wconst", default=None,
-                   help="read the C:Chl ratios from this run's WCONST_04.txt instead of the "
-                        "shipped defaults (required when scoring a run with perturbed C:Chl — "
-                        "they are model parameters, not just a reporting convention)")
+                   help="read the C:Chl ratios from this WCONST_04.txt. By default they come from "
+                        "the run's own WCONST_04.txt, found through the master input file that "
+                        "wrote --outputs; if that cannot be found, Chl-a is not scored. C:Chl is a "
+                        "model parameter, not a reporting convention")
+    p.add_argument("--template-c-to-chla", action="store_true",
+                   help="score Chl-a with the template ratios (30/40) when the run's own cannot "
+                        "be found; CL29 itself uses 53/78")
     a = p.parse_args(argv)
-
-    if a.wconst:
-        global _ACTIVE_C_TO_CHLA
-        _ACTIVE_C_TO_CHLA = load_c_to_chla(a.wconst)
-        print(f"C:Chl from {a.wconst}: "
-              + ", ".join(f"{k}={v:g}" for k, v in _ACTIVE_C_TO_CHLA.items()))
 
     if not os.path.isdir(a.outputs):
         p.error(f"model output folder not found: {a.outputs}")
+    global _ACTIVE_C_TO_CHLA
+    wconst, how, chla_unknown = a.wconst, "", False
+    if not wconst and not a.template_c_to_chla:
+        wconst = find_run_wconst(a.outputs)
+        how = " (auto-detected from the run's master input file)"
+        chla_unknown = wconst is None
+    if wconst:
+        _ACTIVE_C_TO_CHLA = load_c_to_chla(wconst)
+        print(f"C:Chl from {wconst}{how}: "
+              + ", ".join(f"{k}={v:g}" for k, v in _ACTIVE_C_TO_CHLA.items()))
+    elif a.template_c_to_chla:
+        print("C:Chl: template ratios (" + ", ".join(f"{k}={v:g}" for k, v in C_TO_CHLA.items()) + ")")
     obs = load_obs(a.obs, since=a.since, until=a.until)
+    if chla_unknown:
+        print("CHLA not scored: this run's C:Chl ratios could not be determined (no master input "
+              "file names this output folder). Pass --wconst <run inputs>/WCONST_04.txt, or "
+              "--template-c-to-chla for the template 30/40.")
+        obs = {k: v for k, v in obs.items() if k[1] != "CHLA"}
     rows = build_table(a.outputs, a.base_year, obs)
     print_table(rows)
     if not rows:
         return 1
     if a.by_season:
         print_season_table(season_summary(a.outputs, a.base_year, obs))
-    if a.phase:
+    if a.phase and chla_unknown:
+        print("\nSeasonal phase not reported: it is a chlorophyll-a metric and CHLA is not scored.")
+    elif a.phase:
         m, model_by_month, obs_by_month = phase_summary(a.outputs, a.base_year, obs)
         print("\nSeasonal phase (chlorophyll-a, monthly climatology):")
         print(format_report(m))
