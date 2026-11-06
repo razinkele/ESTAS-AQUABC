@@ -1776,6 +1776,7 @@ subroutine PELAGIC_KINETICS &
         use PELAGIC_BOX_MODEL
         use GLOBAL
         use aquabc_pel_state_var_indexes
+        use ESTAS_ALERTS
 
         implicit none
 
@@ -1787,6 +1788,7 @@ subroutine PELAGIC_KINETICS &
         real(kind = DBL), intent(in) :: TIME_STEP
         integer, intent(in) :: BOX_NO
         integer, intent(in) :: STATE_VARIABLE_NO
+        logical :: show
     
         if ((STATE_VARIABLE_NO .ne. NH4_N_INDEX         ) .and. & 
             (STATE_VARIABLE_NO .ne. NO3_N_INDEX         ) .and. &
@@ -1814,6 +1816,8 @@ subroutine PELAGIC_KINETICS &
 
                 if (new_mass < 0.0D0) then
                     !$omp critical
+                    call COUNT_ALERT(ALERT_KIND_NEG_MASS, show)
+                    if (show) then
                     write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
                     write(6,*) '  OLD_MASS=', old_mass
                     write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
@@ -1840,12 +1844,15 @@ subroutine PELAGIC_KINETICS &
                                PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                        end if
                     end if
+                    end if
                     !$omp end critical
                 end if    
             end if
         else
             if (new_mass < 0.0D0) then
                 !$omp critical
+                call COUNT_ALERT(ALERT_KIND_NEG_MASS, show)
+                if (show) then
                 write(6,*) 'NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
                 write(6,*) '  OLD_MASS=', old_mass
                 write(6,*) '  TOT_DERIV=', tot_deriv, ' TIME_STEP=', TIME_STEP
@@ -1871,6 +1878,7 @@ subroutine PELAGIC_KINETICS &
                             PELAGIC_BOX_MODEL_DATA % ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(BOX_NO, STATE_VARIABLE_NO, 1)
                     end if
                 end if
+                end if
                 !$omp end critical
             end if
         end if
@@ -1887,6 +1895,7 @@ subroutine PELAGIC_KINETICS &
         use PELAGIC_BOX_MODEL
         use GLOBAL
         use aquabc_pel_state_var_indexes
+        use ESTAS_ALERTS
 
         implicit none
 
@@ -1897,6 +1906,7 @@ subroutine PELAGIC_KINETICS &
         real(kind = DBL), intent(in) :: TIME_STEP
         integer, intent(in) :: BOX_NO
         integer, intent(in) :: STATE_VARIABLE_NO
+        logical :: show
     
         if ((STATE_VARIABLE_NO .ne. NH4_N_INDEX         ) .and. & 
             (STATE_VARIABLE_NO .ne. NO3_N_INDEX         ) .and. &
@@ -1924,12 +1934,15 @@ subroutine PELAGIC_KINETICS &
                 ! Diagnostic: if concentration becomes strongly negative, print context
                 if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO) < -1.0D-12) then
                     !$omp critical
+                    call COUNT_ALERT(ALERT_KIND_NEG_CONC, show)
+                    if (show) then
                     write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
                     write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
                     write(6,*) '  CONC='
                     write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                     write(6,*) '  VOLUME='
                     write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+                    end if
                     !$omp end critical
                 end if
             end if
@@ -1937,12 +1950,15 @@ subroutine PELAGIC_KINETICS &
             ! Diagnostic: if concentration becomes strongly negative, print context
             if (PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO) < -1.0D-12) then
                 !$omp critical
+                call COUNT_ALERT(ALERT_KIND_NEG_CONC, show)
+                if (show) then
                 write(6,*) 'ALERT: NEGATIVE CONC AFTER UPDATE: TIME=', TIME, ' BOX=', BOX_NO, ' STATE=', STATE_VARIABLE_NO
                 write(6,*) '  NEW_MASS=', new_mass, ' OLD_MASS=', old_mass, ' TIME_STEP=', TIME_STEP
                 write(6,*) '  CONC='
                 write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % CONCENTRATIONS(STATE_VARIABLE_NO)
                 write(6,*) '  VOLUME='
                 write(6,*) PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % VOLUME
+                end if
                 !$omp end critical
             end if
         end if

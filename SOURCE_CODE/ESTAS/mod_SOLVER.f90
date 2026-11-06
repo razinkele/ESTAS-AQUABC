@@ -59,6 +59,7 @@ contains
 
         use AQUABC_NOST_STAGING, only: ADVANCE_NOST_STAGING, STG_SETTLE_FLUX, STG_GERM_FLUX, &
                                         STG_FORM_FLUX, STG_GERM_COND
+        use ESTAS_ALERTS, only: COUNT_ALERT, ALERT_KIND_RK2_NEG_MASS
         implicit none
         type(PELAGIC_BOX_MODEL_DS), intent(inout) :: PELAGIC_BOX_MODEL_DATA
         real(kind = DBL)          , intent(in)    :: TIME
@@ -88,6 +89,7 @@ contains
         integer :: i
         integer :: j
         integer :: k
+        logical :: show_alert
 
         ! Debug temporaries for mass update diagnostics
         real(kind = DBL) :: tot_deriv, old_mass, new_mass
@@ -473,8 +475,13 @@ contains
                         new_mass = old_mass + 0.5D0 * (k1_deriv + k2_deriv) * TIME_STEP
 
                         if (new_mass < 0.0D0) then
+                            !$omp critical
+                            call COUNT_ALERT(ALERT_KIND_RK2_NEG_MASS, show_alert)
+                            if (show_alert) then
                             write(6,*) 'RK2: NEGATIVE MASS PREDICTED: TIME=', TIME, ' BOX=', i, ' STATE=', j
                             write(6,*) '  OLD_MASS=', old_mass, ' K1=', k1_deriv, ' K2=', k2_deriv
+                            end if
+                            !$omp end critical
                         end if
 
                         PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % MASSES(j) = new_mass
