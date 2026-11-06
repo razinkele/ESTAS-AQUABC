@@ -1175,8 +1175,21 @@ configuration.)
 >   observed 0.65-0.74. The measured Baltic climatology (EPA marine monitoring, mean ≈0.47;
 >   curonian `shyfem_box/extract_baltic_silicon.py`) is the defensible one.
 >
-> **Status.** The adopted `INPUTS_CL29/FORC_TS_1.txt` and the published data set still carry the
-> rows; resetting them to 1.0 is an owner decision. Full A/B results are in the PR #127 comments.
+> **Status (2026-11-07): corrected and published.** The adopted `INPUTS_CL29/FORC_TS_1.txt` now has
+> both factor rows at 1.0. Its Baltic DISS_Si is the measured climatology, not the 3.0 placeholder:
+> resetting the rows alone would restore that placeholder and cost +18.8 % of the objective. The
+> values are written by curonian `extract_baltic_silicon.py --write-forcing`, and the old file is
+> kept locally as `FORC_TS_1.txt.factorbug_20260817`.
+>
+> Against the previously adopted file (full record, pooled, `--wconst`):
+> - the objective rises +1.7 %;
+> - Chl-a bias −7.7 → −5.2, NH4 bias halved, PO4 bias +0.0039 → +0.0057.
+>
+> ESTAS-AQUABC-DATA now publishes the identical set:
+> - #1 (e2fea07): this boundary, plus the settling series extended to 2022;
+> - #2 (554f830): the NO3-sink inputs and the boost-free river PO4.
+>
+> Full A/B results are in the PR #127 comments.
 
 **What the Baltic archive says.** Deriving all four groups by one method from one source
 (`Fitoplanktonas_BJ_*`, 34,301 rows 2018–2023, Curonian plume zone LT3/LT4/LT5, the same
