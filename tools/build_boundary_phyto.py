@@ -121,31 +121,33 @@ def monthly_climatology(rows, stations):
 
 
 def rewrite_forcing(src, dst, clim, base_year=2012):
-    """Rewrite FORC_TS_1: replace the four phyto columns with the climatology."""
+    """Rewrite FORC_TS_1: replace the four phyto columns with the climatology.
+
+    Only the rows after the ``# TIME AND VALUES`` line are data. The SCALE FACTORS
+    and UNIT CONVERSION FACTORS rows above it are numeric as well but have no time
+    column, and ESTAS multiplies every value by both, so they are copied unchanged.
+    """
     import datetime as dt
 
-    header, data = [], []
-    for line in open(src):
-        (header if line.startswith("#") or len(line.split()) < 5 else data).append(line)
+    lines = open(src).readlines()
+    start = next((i + 1 for i, ln in enumerate(lines)
+                  if ln.strip().upper().startswith("# TIME AND VALUES")), None)
+    if start is None:
+        raise ValueError(f"{src}: no '# TIME AND VALUES' line, so the data rows "
+                         "cannot be told from the factor rows")
     base = dt.date(base_year, 1, 1)
-    out, changed = [], 0
-    for line in data:
+    out, changed = lines[:start], 0
+    for line in lines[start:]:
         parts = line.split()
-        t = float(parts[0])
-        month = (base + dt.timedelta(days=t)).month
+        if not parts or line.startswith("#"):
+            out.append(line)
+            continue
+        month = (base + dt.timedelta(days=float(parts[0]))).month
         for grp, sv in STATE_VAR.items():
             parts[sv] = f"{clim[grp][month - 1]:.6f}"
         changed += 1
         out.append(" ".join(parts) + "\n")
-    # interleave preserved header lines in their original positions
-    written, di = [], 0
-    for line in open(src):
-        if line.startswith("#") or len(line.split()) < 5:
-            written.append(line)
-        else:
-            written.append(out[di])
-            di += 1
-    open(dst, "w").writelines(written)
+    open(dst, "w").writelines(out)
     return changed
 
 

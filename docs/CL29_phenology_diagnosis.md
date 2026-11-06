@@ -1090,6 +1090,12 @@ Two consequences, both uncomfortable and both worth stating in the paper:
 > stated — but the causal claim below was **refuted by experiment**: raising OPA's boundary
 > supply 18-fold made modelled OPA *fall*. OPA's extinction is internal competitive exclusion.
 > The boundary fix is still worth making, for silica.
+>
+> **Correction to the correction (2026-11-07, PR #127):** that experiment never raised OPA's
+> supply. `build_boundary_phyto.py` also wrote into the file's factor rows, so OPA_C's applied
+> boundary was scaled by ≈0.0014 and *fell*. Run with the supply actually applied, lagoon OPA
+> rises 6× (0.0020 → 0.0117 mg C/L) yet stays ~40× below observed (0.478). The conclusion of
+> internal exclusion therefore survives, on better evidence. See the §26 correction below.
 
 **The fix is data, not code**: Baltic-boundary phytoplankton composition for the strait
 (the HELCOM/Klaipėda monitoring holds group-resolved biomass at the boundary stations), used
@@ -1140,6 +1146,37 @@ solved
 
 (2026-08-17; `tools/build_boundary_phyto.py`, commit `1399e9f`; A/B against the adopted
 configuration.)
+
+> ⚠ **Correction (2026-11-07, ESTAS-AQUABC PR #127): this experiment's file was corrupted, and
+> the silica result below is an artifact.**
+>
+> **The bug.** `rewrite_forcing()` treated the SCALE FACTORS and UNIT CONVERSION FACTORS rows
+> of `FORC_TS_1` as data. It wrote the January DIA/CYN/OPA/FIX climatology into fields
+> 5/15/16/19 of both rows. Those rows have no time column, so the values landed on ZOO_C, OPA_C,
+> DISS_Si and INORG_C. ESTAS multiplies by both rows, so the symmetric boundary applied ZOO_C
+> ×0.0021, **OPA_C ×0.0014**, **DISS_Si ×0.0005** (Baltic Si 3.0 → 0.0015 mg/L) and **INORG_C
+> ×0.00008** (Baltic DIC effectively zero). DIA, CYN and FIX were applied correctly.
+>
+> **Provenance.** The data repo's pre-§26 commit `79afed2` has all-1.0 rows; `b1e3064` (this
+> adoption) introduced the values. A replay of the old function regenerates today's file byte
+> for byte.
+>
+> **What it does to this section.**
+> - *OPA:* the "18-fold" supply was in fact cut. With the supply truly applied, OPA rises 6× but
+>   stays ~40× low. The exclusion reading stands; its evidence here does not.
+> - *Silica:* on today's adopted configuration (fixed settling), restoring **only** the Baltic
+>   DISS_Si factor moves the full-record Si RMSE/bias from 0.95/+0.43 to **1.78/+1.54**.
+>   Nothing else changes to the third decimal. That is the same size as the whole 1.59/+1.28 →
+>   0.82/+0.21 gain below.
+> - So the "missing boundary diatom supply" explains little or none of it; the gain came from
+>   the boundary silica being zeroed by accident. (The proxy run is on today's configuration,
+>   not a replay of 08-17, so read this as a bound.)
+> - Neither boundary is right. The 3.0 placeholder puts the strait at 2.4-2.5 mg/L against
+>   observed 0.65-0.74. The measured Baltic climatology (EPA marine monitoring, mean ≈0.47;
+>   curonian `shyfem_box/extract_baltic_silicon.py`) is the defensible one.
+>
+> **Status.** The adopted `INPUTS_CL29/FORC_TS_1.txt` and the published data set still carry the
+> rows; resetting them to 1.0 is an owner decision. Full A/B results are in the PR #127 comments.
 
 **What the Baltic archive says.** Deriving all four groups by one method from one source
 (`Fitoplanktonas_BJ_*`, 34,301 rows 2018–2023, Curonian plume zone LT3/LT4/LT5, the same
