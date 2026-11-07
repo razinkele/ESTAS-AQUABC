@@ -4770,7 +4770,9 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   radiation crossings at every threshold (85 W/m²: 1st and 2nd; 120: 1st and 3rd; 150: 1st and tied 2nd). The
   model's own latch dates put 2018 and 2015 as the two latest (October 22 and 17), and its October fixers are
   higher in those years. So the model responds in the right years, but a month late and weakly. A registered
-  August-September radiation check would be the honest test.
+  August-September radiation check would be the honest test. (§61.14: the ranking depends on the threshold.
+  At the threshold that matches an August-25 onset (171 W/m²), 2015 and 2018 rank third and sixth, and a
+  radiation-cued settling onset does not move the bloom years.)
 - Nothing adopted.
 
 **61.7 The model's Nostocales are flushed out, not killed off.** Two steps, each registered before its run (note
@@ -4992,8 +4994,64 @@ lines are L1-L4 of §61.9 (timing, S1, the Chl-a floors, the gate) plus L5: the 
     that is why D1 stays near zero. A cue-driven onset would be the mechanistic version: buoyancy loss with
     falling temperature (Carey et al., 2012, via Munkes et al., 2021), or the latch's radiation average. It is the
     only version that could reproduce 2015 and 2018, whose radiation crossings and latch dates were the latest
-    (§61.6).
+    (§61.6). Tested in §61.14.
   - That the Nostocales were carrying late-summer Chl-a that the missing autumn community should carry is an
     inference. The non-fixers rose only slightly (July 1.53 to 1.78, September 1.91 to 1.98) and not in October.
     L3's failure is what points at the missing autumn community.
 - Nothing adopted.
+
+**61.14 A temperature-cued settling onset: the bloom years respond, weakly; exit timing is a modulator.** Registered
+before the runs (note item 44, 2026-11-08 00:05). The onsets are precomputed from the forcing, because the cue is
+exogenous. Each threshold is matched so that the mean onset falls near the calendar run's August 25, leaving
+year-to-year variation as the only change. Both runs use 0.1 m/d from onset to December 31:
+- **temperature cue:** the first day the 7-day lagoon-mean water temperature falls below 18.5 °C after the year's
+  maximum (the literature mechanism, buoyancy loss with cooling);
+- **radiation contrast:** the latch's 7-day radiation average falling below 171 W/m².
+
+The new line, L6: the bloom response D1 (§61.1) reaches ≤ −0.10. The mechanism counts as supported if the
+temperature cue meets L6 and the radiation cue does not.
+
+| onset | S1 | T1 | D1 | Sep share 2015 / 2018 | range | Chl-a Sep / Oct | Φ full | r |
+|---|---|---|---|---|---|---|---|---|
+| calendar, Aug 25 (§61.13) | 0.734 | 0.880 | −0.042 | 0.693 / 0.720 | 0.243 | 34.2 / 25.7 | 6.8989 | +0.74 |
+| temperature cue | 0.696 | 0.852 | **−0.111** | 0.606 / 0.624 | 0.181 | 35.9 / 26.3 | 6.9051 | +0.75 |
+| radiation cue | 0.717 | 0.887 | −0.046 | 0.645 / 0.717 | 0.317 | 34.6 / 25.9 | 6.8983 | +0.74 |
+| observed | 0.826 | | −0.673 | 0.276 / 0.089 | 0.838 | 50.2 / 46.4 | | |
+
+- **SUPPORTED by the registered contrast:** the temperature cue's D1 is −0.111, the radiation cue's −0.046. The gain
+  comes from the bloom years themselves: their mean share fell 0.707 → 0.615, while the other years' median fell
+  only 0.749 → 0.726.
+- **A measured dose-response.** Across the eight years, the change in September share against the change in onset
+  date is linear: −0.0028 per day of later onset (r −0.96; −0.0041 per day and r −0.95 without 2019). The bloom years
+  had the latest temperature onsets (+14 and +22 days), which accounts for their −0.09 and −0.10.
+- **Timing is a modulator, not the bloom-year mechanism.** At that slope, bringing 2018 from 0.72 to the observed
+  0.09 would need an onset 225 days later. The bloom years' observed biomass (6.0 and 10.5 mg C/L, against 2.4-4.6
+  in the model every year) is a summer-growth question that no exit timing touches. The cue closes about 11 % of the
+  D1 gap.
+- **Design limits:**
+  - 2019's July 7 onset (that year peaked in June and then cooled) pulls the mean onset to August 27, while the
+    other seven years average about September 1. That is why the temperature cue's September fixers sit higher than
+    the calendar run's. A version with an August floor was not run.
+  - The temperature cue is FLAT by §61.1's rule (range 0.181 < 0.2): 2019 rises while the bloom years fall, which
+    compresses the range. This is a separate line from L6 and does not change the contrast verdict.
+- **L1-L5: PARTIAL for both cues.** Timing is fixed (September fixers −46 %), S1 stays in band, the seed bank stays at
+  0.22-0.23, and L3 fails narrowly (temperature cue: October 26.3 against 26.5, September passes). Φ fails at both
+  thresholds: 6.9051, and 6.8983 against 6.898 (and E4's exact 6.8977).
+- **The L3 pattern.** Four settling runs now miss the Chl-a floors by 0.2-0.8 µg/L. L3 is measuring the autumn
+  community the Nostocales were standing in for, not the exit mechanism. Any mechanism that removes September
+  Nostocales will land here until that community exists.
+- Nothing adopted.
+
+**61.15 Status: candidates for the missing autumn Nostocales exit (2026-11-07/08).**
+
+| candidate | tested by | verdict | lines that fail |
+|---|---|---|---|
+| earlier akinete latch (`I_FORM_AKI` 120, 150) | §61.9, two runs | no effect on September; the error moves to October and the next summer through the seed bank | L1, L2; L4 (r, S1, TN); L3 at 150 |
+| death rate with weaker temperature dependence | §61.10, code read | ruled out: losses already barely respond to cooling (θ = 1 adds 0.008/d of the 0.032 needed) | — |
+| September phosphorus relief as an artifact | §61.11, observations | ruled out: the observed September PO4 rises like the model's | — |
+| higher growth T_min | §61.12, literature | not justified: T_min 8-10 °C; *A. flos-aquae* near-optimal at 16 °C | — |
+| autumn settling, calendar onset (0.1, 0.3 m/d) | §61.13, two runs | PARTIAL: at 0.1, S1 passes, timing fixed, bank settles; 0.3 overshoots | L3 (by 0.8); L4 (Φ, r, Chl-a bias) |
+| autumn settling, temperature-cued onset (0.1 m/d) | §61.14, two runs incl. a radiation contrast | PARTIAL; the bloom years respond (D1 −0.111; −0.003 per day of onset) | L3 (October by 0.2); L4; FLAT |
+
+Open: the bloom years' summer biomass (no exit timing reaches it), and the missing autumn community (L3, the Chl-a
+bias, the October phosphate excess).
