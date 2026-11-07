@@ -5212,3 +5212,34 @@ The lines:
 - **What this points at:** a diatom population that survives the summer, i.e. the warm-tolerant summer-autumn
   diatoms the observations hold (July 0.41, August 0.56 mg C/L). Spec §8's warm guild failed as a *summer grower*;
   as an autumn inoculum the question is different. Nothing adopted.
+
+**62.2 A summer-capable diatom temperature curve does not open the summer niche.** Registered before the literature
+search and the runs (note items 55-56, 2026-11-08 03:40 and 03:55).
+
+The model has one diatom guild with CTMI −2 / 10 / 21 °C, and CTMI validity ties T_max to T_opt. The literature on
+the dominant summer-autumn diatom, *Actinocyclus normanii*, gives a maximum abundance "at a water temperature around
+20 °C" in the Great Lakes (Kipp et al., 2012, via Vidaković et al., 2016), and blooms "in summer and autumn" and
+"During heatwaves in August" in the Oder/Szczecin Lagoon (Schernewski et al., 2025). No highest growth temperature is
+reported, so the registered fallback set T_max 26 °C and T_opt 13 °C. This curve allows growth of 0.71 / 0.52 / 0.29
+of the maximum at 20 / 22 / 24 °C (base 0.17 / 0 / 0), at some cost to cold-water growth in spring.
+
+| run | Jul-Aug diatoms | Oct-Nov diatoms | Sep-1 inoculum | Mar-May (× base) | Chl-a Sep / Oct | T1 | D1 |
+|---|---|---|---|---|---|---|---|
+| base (§62) | 0.006 | 0.069 | 1.7 % | | 35.9 / 26.3 | 0.85 | −0.111 |
+| temperature curve | 0.015 | 0.070 | 2.2 % | ×1.01 | 35.3 / 25.7 | 0.84 | −0.151 |
+| base with `KHS_DIP_DIA` 0.0030 (§62.1) | 0.010 | 0.125 | 2.2 % | | 35.4 / 26.0 | 0.85 | −0.161 |
+| temperature curve + `KHS_DIP_DIA` 0.0030 | 0.040 | 0.151 | 5.3 % | ×0.99 | 34.7 / 25.3 | 0.82 | −0.180 |
+| observed | ~0.48 | 0.364 | | | 50.2 / 46.4 | | −0.673 |
+
+- **No effect for the temperature curve alone.** Combined with the higher P affinity, the effect is weak: the
+  inoculum line passes for the first time (5.3 %), but the summer (≥ 0.10), autumn (≥ 0.20) and Chl-a lines fail.
+- **The spring guard holds in both runs.** T1 falls below its line in the combined run (0.82), and the October
+  phosphate excess is unchanged.
+- **The summer niche stays closed even when temperature allows growth.** Light, phosphorus and the death rate (0.12
+  per day) still bind, as spec §8 found. Of the levers §62 names, only the death rate (§30's "February lever")
+  remains untested.
+- Nothing adopted.
+
+References: Vidaković, D., Krizmanić, J. Ž., Subakov Simić, G., et al. (2016). *Studia Botanica Hungarica*, 47(2).
+https://doi.org/10.17110/studbot.2016.47.2.201 · Schernewski, G., Neumann, T., von Weber, M., et al. (2025).
+*Environments*, 12(10), 370. https://doi.org/10.3390/environments12100370
