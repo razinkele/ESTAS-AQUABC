@@ -8,6 +8,7 @@ program ESTAS_II
     use SIMULATE
     use BOTTOM_SEDIMENTS
     use PELAGIC_SOLVER, only: CLEANUP_SOLVER
+    use ESTAS_ALERTS, only: ALERT_LIMIT, ALERT_SUMMARY
     
     implicit none
 
@@ -15,6 +16,9 @@ program ESTAS_II
     character(len = 2048)  :: INPUT_FILE_NAME
     type(AQUATIC_MODEL_DS) :: AQUATIC_MODEL_DATA
 
+
+    write(*, '(a, i0, a)') ' Alert print limit: ', ALERT_LIMIT(), &
+        ' per kind (ESTAS_ALERT_LIMIT; negative = print all)'
 
     USE_PELAGIC_CONSTANTS_FILE_NAME    = 0
     PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT = 0
@@ -131,6 +135,7 @@ program ESTAS_II
  
     call CLEANUP_SOLVER()
 
+    call ALERT_SUMMARY()
     write(*,*) 'simulation finished'
 
     close(1000)

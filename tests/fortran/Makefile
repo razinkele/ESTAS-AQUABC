@@ -19,7 +19,7 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength test_estas_alerts
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
@@ -184,6 +184,11 @@ test_lim_light_daylength: test_lim_light_daylength.f90 $(TEST_AUX_SUBSET)
 # Compile test_settling_suppres (standalone - includes subroutine copies)
 test_settling_suppres: test_settling_suppres.f90
 	$(FC) $(FFLAGS) -o $@ test_settling_suppres.f90
+
+# Compile test_estas_alerts (ESTAS per-timestep alert rate limiting)
+ESTAS_ALERTS_SRC = ../../SOURCE_CODE/ESTAS/mod_ESTAS_ALERTS.f90
+test_estas_alerts: test_estas_alerts.f90 $(ESTAS_ALERTS_SRC)
+	$(FC) $(FFLAGS) -o $@ $(ESTAS_ALERTS_SRC) test_estas_alerts.f90
 
 # Compile test_file_unit (standalone - includes subroutine copies)
 test_file_unit: test_file_unit.f90
