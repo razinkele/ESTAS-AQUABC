@@ -4294,11 +4294,12 @@ producers. In the adopted run, May-Oct box-days 2012-2022:
 | OPA | 0.31 | 0.20 | 0.73 |
 | ZOO | 0.31 | 0.20 | 0.42 |
 
-Uncalibrated constants removed 25-60 % of every group's summer growth. That is a large,
-unconstrained process, not a small term.
+On the median box-day, uncalibrated constants removed 26-69 % of each group's summer growth
+(27-58 % carbon-weighted). That is a large, unconstrained process, not a small term.
 
 **58.3 Adopted: E4** (published as ESTAS-AQUABC-DATA #4). All 20 `K_HS_SEC_METAB_*` = 1000.
-E4's metabolite peaks are ≤ 0.018 mg/L, so every factor exceeds 0.99999998. Calibrator Φ:
+E4's highest metabolite peak is 0.0182 mg/L (NOST), so every factor stays above 0.99998
+(inhibition under 0.002 %). Calibrator Φ:
 
 | period | adopted before | allelopathy off | change |
 |---|---|---|---|
@@ -4326,6 +4327,7 @@ variables is a follow-up, if wanted.
 **58.5 Still open.**
 - The partition is still fixer-dominated (0.175 against 0.486). The diatom and OPA gap is
   unchanged, so the warm-guild case (spec §7) stands.
-- Re-enable allelopathy only with literature or calibrated constants (§56.4 a/b).
+- Re-enable allelopathy only with literature or calibrated constants (the provenance question,
+  §56.4 Q1).
   `calibrate_cl29.py` cannot perturb `EXTRA_WCONST` yet. The previous values are in the local
   `INPUTS_CL29/EXTRA_WCONST.txt.pre_allelo_off_20261107` and in the DATA history.
