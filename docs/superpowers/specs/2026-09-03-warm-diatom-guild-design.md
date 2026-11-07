@@ -272,3 +272,58 @@ held or improved, and the guild self-sustaining without taking the fixers' nitro
 missing-organism problem either, leaving §40.1's light wall as a genuine limit of pelagic-growth
 formulations in kd ≈ 3 water — the same shape of answer as §29's akinete negative and §38's
 Droop negative, and publishable as such.
+
+---
+
+## 7. Addendum 2026-11-07: what the corrected boundary and the silica work change
+
+Status unchanged: **design, not approved for build.** This section re-checks §1–§6 against the
+2026-11-06/07 findings (diagnosis §57; ESTAS-AQUABC #127–#130; ESTAS-AQUABC-DATA #1–#3).
+
+**7.1 The baseline the guild was sized on was corrupted.**
+- §2.2's qualifier and the §50 decomposition were measured on the configuration adopted in §26.
+  Its `FORC_TS_1` carried the `build_boundary_phyto.py` factor-row bug (#127): the Baltic
+  boundary applied OPA_C ×0.0014, DISS_Si ×0.0005, ZOO_C ×0.0021 and INORG_C ×0.00008.
+- The adopted configuration is now the corrected boundary with measured Baltic Si, Table-2
+  seasonal river DSi and DIA_Si_TO_C 0.30.
+- Re-measured on it (mg C/L, KM lagoon boxes, model FIX = FIX_CYN + NOST):
+
+| Aug / Sep / Oct / Nov | obs | adopted 2026-11-07 |
+|---|---|---|
+| DIA_C | 0.56 / 0.56 / 0.67 / 0.31 | 0.003 / 0.006 / 0.024 / 0.062 |
+| CYN_C | 2.30 / 1.88 / 1.06 / 0.34 | 0.26 / 0.34 / 0.31 / 0.14 |
+| FIX | 1.61 / 1.98 / 0.81 / 0.46 | 3.63 / 3.67 / 1.79 / 0.07 |
+| OPA_C | 0.88 / 0.52 / 0.38 / 0.24 | 0.008 / 0.012 / 0.015 / 0.010 |
+| total, model/obs | | 0.73 / 0.82 / 0.73 / 0.21 |
+
+- **§2.2's qualifier survives the correction.** August-September total cyanobacteria are right
+  (CYN+FIX 3.89 / 4.01 against observed 3.91 / 3.86) but in the wrong guild: fixers ~2× over,
+  CYN 11-18 %. "Settle the cyanobacterial partitioning before sizing the guild" still holds.
+- §56's allelopathic reading of the partition was also made on the corrupted boundary. Its
+  re-check belongs in that arc, not here.
+
+**7.2 Silica is now evidence for the guild, not a risk (revises §5).**
+- §5 called a second Si consumer a perturbation of "the budget §26 solved via the boundary".
+  §26's Si gain was the bug zeroing Baltic silica (diagnosis §57: −1.0 % of the objective from
+  the phytoplankton climatology, ~−14 % from Baltic Si).
+- On the corrected, silica-adopted configuration the interior Si cycle matches May (0.47 vs
+  0.33) and July (0.62 vs 0.51), but sits **+0.6 to +0.9 mg Si/L above observed in Aug-Oct**
+  (1.05 / 1.28 / 1.60 vs 0.47 / 0.56 / 0.67), the guild's window.
+- The observed summer diatom stock (~0.5 mg C/L) at Si:C 0.30 could remove that several times
+  over.
+- **New gate [f]:** Aug-Oct interior Si bias at least halved, May-July not worse than ±0.15
+  mg Si/L.
+
+**7.3 Constants and tooling.**
+- `DIA2_Si_TO_C`: start at the adopted cold-guild 0.30 (Brzezinski 1985 mean, 0.13 molar). No
+  guild-specific value was found.
+- **Setup generator (§3), the #127 lesson.** ESTAS SCALE / UNIT-CONVERSION rows have no time
+  column: in a data row, field *j* (0-based, time at 0) is variable *j*; in a factor row it is
+  field *j−1*. "Mirror field 5 into the inserted column" therefore means different indices in
+  the two kinds of row. Test it as #127 did: a byte-level check that the factor rows hold the
+  intended values and that nothing else moved.
+- **Validator (§3).** #129 makes the validator read C:Chl from the run's own WCONST (else Chl-a
+  is not scored). DIA2 still needs the `C_TO_CHLA` / `WCONST_CHLA_KEYS` / `PHYTO_C` entries of §3.
+- **Runs.** #130 limits ESTAS alert printing (an unfiltered CL29 run writes ~9 GB). Until it
+  merges, use curonian `shyfem_box/run_estas_filtered.sh`.
+- (4, 17, 26) still passes the CTMI validity gate (2·17 > 30).
