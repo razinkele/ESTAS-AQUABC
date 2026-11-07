@@ -5085,3 +5085,41 @@ lie above the others' range, and counts as PARTIAL if both lie above their media
   *Aphanizomenon* drew about 85 % of its phosphorus from DOP, and another (Vahtera et al., 2007b) in which it could
   not use DOP. A registered `frac_avail_DOP` probe would test whether DOP access lifts the bloom years, 2018 most.
 - Nothing adopted.
+
+**61.17 Nostocales access to dissolved organic phosphorus does not carry the bloom-year signal.** Registered before
+the runs (note item 48, 2026-11-08 01:10). The switch@2.6 inputs with `frac_avail_DOP` 0.1 and 0.3, a Nostocales-only
+constant; no settling, to isolate the summer. The values are modest by design: the base's summer medians are PO4
+0.0009 and DOP 0.0056 mg P/L, so the P factor rises about 1.5× and 2.2×.
+
+The lines:
+- B1, the bloom signal: each bloom year's biomass in its build-up window (§61.16), relative to the other years'
+  median, gains at least 10 points;
+- B2: D1 reaches ≤ −0.130;
+- B3: the bloom years' September total ratio rises;
+- plus the cost lines.
+
+| `frac_avail_DOP` | B1, 2015 / 2018 against the median | D1 | S1 | typical Jul / Aug fixers | Φ | Chl-a bias | TN / TP bias |
+|---|---|---|---|---|---|---|---|
+| 0 (base) | +4.3 / +5.7 % | −0.080 | 0.548 | 1.03 / 1.70 | 6.906 | −6.33 | +0.31 / +0.0035 |
+| 0.1 | +8.0 / +9.2 % | −0.077 | 0.299 | 1.75 / 2.67 | 6.858 | −4.83 | +0.36 / +0.0057 |
+| 0.3 | +6.8 / +8.5 % | −0.066 | 0.238 | 2.15 / 2.91 | 6.840 | −4.12 | +0.38 / +0.0066 |
+| observed | bloom years 3-6× typical | −0.673 | 0.826 | 0.28 / 0.84 | | | |
+
+- **Not carried, by the rule.** B1 gains only 2.4-3.7 points, and B2 is not met. B3 holds, barely.
+- **DOP access lifts the Nostocales in every year,** not differentially in the bloom years: typical July fixers rise
+  69-108 %. The composition collapses toward fixers (S1 0.30 and 0.24), and the TN and TP biases worsen, while Φ and
+  the Chl-a bias improve. It is the Φ-versus-composition trade of §52 again.
+- **Predictions:** the level at 0.1 held, but that level is not the registered gain. The rest were refuted: B1 at
+  0.3, D1, the size of the summer overshoot, and S1.
+- **The bloom-year candidates so far:**
+
+| candidate | tested by | carries the bloom signal? |
+|---|---|---|
+| forcing: temperature, inflow, river loads, wind | §61.4 | no |
+| the model's Nostocales growth factors | §61.16 | no (each bloom year's favourable factor is cancelled by another) |
+| exit timing (a temperature-cued settling onset) | §61.14 | a modulator only (about 11 % of the bloom response) |
+| Nostocales access to DOP | §61.17 | no (lifts every year) |
+
+  Untested: the inoculum (observed July 2015 fixers were already eight times typical, while the model's spring 2018
+  seed bank was the lowest of any year), surface accumulation in calm spells, and observational patchiness.
+- Nothing adopted.
