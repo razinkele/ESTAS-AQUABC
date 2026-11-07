@@ -5058,7 +5058,7 @@ temperature cue meets L6 and the radiation cue does not.
 | autumn settling, calendar onset (0.1, 0.3 m/d) | §61.13, two runs | PARTIAL: at 0.1, S1 passes, timing fixed, bank settles; 0.3 overshoots | L3 (by 0.8); L4 (Φ, r, Chl-a bias) |
 | autumn settling, temperature-cued onset (0.1 m/d) | §61.14, two runs incl. a radiation contrast | PARTIAL; the bloom years respond (D1 −0.111; −0.003 per day of onset) | L3 (October by 0.2); L4; FLAT |
 
-Open: the bloom years' summer biomass (no exit timing reaches it; §61.16 shows the forcing does not carry the bloom
+Open: the bloom years' biomass (the tested exit timings do not reach it; §61.16 shows the forcing does not carry the bloom
 signal into the model's growth), and the missing autumn community (L3, the Chl-a bias, the October phosphate
 excess).
 
