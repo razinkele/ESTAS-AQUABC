@@ -4255,3 +4255,77 @@ with positive r in 8 of 9.
   ~2.2× over, DIA and OPA ~1 %.
 - **Not adopted.** A small, composition-neutral gain; the result is in
   `cal_work_20261107_light/result.json`.
+
+---
+
+## 58. 2026-11-07: allelopathy switched off, as a deliberate simplification
+
+**58.1 §56 re-checked on the corrected boundary.** Runs: 2012-2022 on the adopted 2026-11-07
+configuration, KM lagoon boxes. Share = September CYN/(CYN+FIX), obs 0.486; group carbon in
+mg C/L.
+
+| run | share | total (model/obs) | DIA Aug-Oct | OPA Aug-Oct | Φ_cal | Chl-a bias |
+|---|---|---|---|---|---|---|
+| adopted (ladder on) | 0.086 | 1.04 | 0.011 | 0.012 | 7.284 | −5.13 |
+| E1 NOST→CYN K_HS 0.05 | 0.627 | 0.73 | 0.010 | 0.012 | 7.322 | −8.67 |
+| E2 NOST→CYN off | 0.682 | 0.70 | 0.010 | 0.012 | 7.351 | −8.95 |
+| E3 all NOST pairs off | 0.681 | 0.70 | 0.010 | 0.012 | 7.347 | −8.95 |
+| **E4 all 20 pairs off** | **0.175** | **1.04** | **0.033** | **0.013** | **6.898** | **−3.71** |
+
+(obs DIA Aug-Oct 0.597, OPA 0.591)
+
+- **§56 survives.** The NOST→CYN pair alone decides the split. Opening it costs total biomass
+  and Chl-a, as it did on the corrupted boundary; the other NOST pairs do nothing (E3 = E2).
+- **Allelopathy is not what keeps the summer-autumn diatoms and OPA out.** With every pair off,
+  DIA Aug-Oct reaches only 0.033 and OPA 0.013 (answers §56.4 Q3).
+
+**58.2 How hard the placeholder ladder was pressing.** The 20 constants are a regular ladder by
+producer, with no provenance (§56.4): K_HS 0.001 / 0.002 / 0.003 / 0.004 for DIA / CYN /
+FIX_CYN / NOST metabolites, the same K for every target; degradation 0.10-0.25 /d; yields
+0.005-0.020. A target's growth factor is the minimum of K/(K + metabolite) over the other
+producers. In the adopted run, May-Oct box-days 2012-2022:
+
+| target | median | 10th pct | carbon-weighted |
+|---|---|---|---|
+| DIA | 0.44 | 0.23 | 0.72 |
+| CYN | 0.32 | 0.20 | 0.49 |
+| FIX_CYN | 0.31 | 0.20 | 0.66 |
+| NOST | 0.74 | 0.21 | 0.73 |
+| OPA | 0.31 | 0.20 | 0.73 |
+| ZOO | 0.31 | 0.20 | 0.42 |
+
+Uncalibrated constants removed 25-60 % of every group's summer growth. That is a large,
+unconstrained process, not a small term.
+
+**58.3 Adopted: E4** (published as ESTAS-AQUABC-DATA #4). All 20 `K_HS_SEC_METAB_*` = 1000.
+E4's metabolite peaks are ≤ 0.018 mg/L, so every factor exceeds 0.99999998. Calibrator Φ:
+
+| period | adopted before | allelopathy off | change |
+|---|---|---|---|
+| full 2012-22 | 7.284 | 6.898 | −5.3 % |
+| 2012-16 | 7.995 | 7.361 | −7.9 % |
+| 2017-21 | 7.066 | 6.742 | −4.6 % |
+
+- Pooled RMSE, full record: PO4 −15.4 %, TP −9.2 %, Chl-a −3.6 % (bias −5.13 → −3.71),
+  TN −1.7 %, Si −0.5 %. Worse: NH4 +2.7 %, NO3 +1.3 %, DO +0.6 %.
+- Phase (the §46 rule): seasonal r +0.75 → +0.78; autumn/spring 2.59 → 2.53 (obs 2.06);
+  peak month 9 in both (obs 8).
+- Share 0.086 → 0.175; DIA Aug-Oct 0.011 → 0.033.
+- Scored run: master `INPUT_CL29_allelo_E4.txt` (`PRINT_INTERVAL 240`, daily output), inputs
+  `INPUTS_CL29_allelo_E4/`. The adopted folder differs from those inputs only by backups.
+  Verified: the adopted folder itself, re-run with that master, reproduces all 61 E4 output
+  files byte for byte.
+
+**58.4 Why K_HS = 1000, not the model's switch.** `CONSIDER_ALLELOPATHY 0`
+(`PELAGIC_MODEL_OPTIONS.txt`) drops the four metabolite states, but the input set declares 36
+(`PELAGIC_INPUTS.txt`: the count, the per-variable table and per-box rows). The model stops at
+startup: "number of pelagic state variables are not compitable … 36 … requested by AQUABC: 32".
+Setting K_HS to 1000 gives the same numbers and keeps the layout. Rebuilding the set for 32
+variables is a follow-up, if wanted.
+
+**58.5 Still open.**
+- The partition is still fixer-dominated (0.175 against 0.486). The diatom and OPA gap is
+  unchanged, so the warm-guild case (spec §7) stands.
+- Re-enable allelopathy only with literature or calibrated constants (§56.4 a/b).
+  `calibrate_cl29.py` cannot perturb `EXTRA_WCONST` yet. The previous values are in the local
+  `INPUTS_CL29/EXTRA_WCONST.txt.pre_allelo_off_20261107` and in the DATA history.
