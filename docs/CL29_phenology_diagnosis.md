@@ -4814,7 +4814,53 @@ process-rate reconstruction (r 1.0000).
 - The observed August-September collapse has no kinetic counterpart in the model. The akinete latch is the only
   kinetic exit (§61.6: not what removes them now), and it fires a month after the observed collapse.
 - The observations cannot settle whether the real collapse is kinetic or hydrodynamic.
-- Untested candidates for the missing kinetic exit, each needing its own registration: an earlier latch
-  (`I_FORM_AKI` 120 or 150 W/m², firing around September 20 or September 7); a death rate that falls more
-  slowly with temperature than growth does; an autumn settling velocity for the Nostocales (none now).
+- Candidates for the missing kinetic exit, each needing its own registration: an earlier latch (`I_FORM_AKI` 120
+  or 150 W/m²; tested in §61.9: it is coupled to the seed bank, not a single-setting fix); a death rate that
+  falls more slowly with temperature than growth does; an autumn settling velocity for the Nostocales (none
+  now).
 - Nothing adopted.
+
+**61.9 An earlier akinete latch: no effect on September; it moves the error to October and the next summer.**
+Registered before the runs (note item 35, 2026-11-07 21:30). The switch@2.6 inputs with `I_FORM_AKI` 120 and 150
+W/m² (base 85); nothing else changed. The lines:
+- L1, timing fixed: the typical-year median September fixer biomass (matched boxes, as in §61.6) falls ≥ 30 % and
+  the October/August ratio is ≤ 0.10;
+- L2: S1;
+- L3, the acceptable loss stated in advance: September and October model Chl-a in the validator's monthly
+  climatology each ≥ 80 % of the base's;
+- L4: the full gate with S1 / T1, reported for context.
+
+| `I_FORM_AKI` | Sep fixers | Oct/Aug | S1 | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 | r | TN RMSE | Chl-a bias |
+|---|---|---|---|---|---|---|---|---|
+| 85 (base) | 1.414 | 0.205 | 0.548 | 43.8 / 33.1 | 6.906 / 7.320 / 6.768 | +0.81 | 0.781 | −6.33 |
+| 120 | 1.638 | 0.056 | 0.510 | 45.5 / 28.7 | 6.837 / 7.244 / 6.701 | +0.77 | 0.824 | −5.79 |
+| 150 | 1.379 | 0.024 | 0.584 | 42.0 / 26.4 | 6.814 / 7.211 / 6.680 | +0.72 | 0.839 | −5.73 |
+| observed | 0.324 | 0.061 | 0.826 | 50.2 / 46.4 | | | | |
+
+- **No effect on the September target at either threshold, by the rule.** September fixers *rise* 16 % at 120 and
+  fall 2 % at 150; S1 falls at 120 and reaches only 0.584 at 150. At 120 this is a counter-effect, which the rule
+  had no category for.
+- **The effect moved elsewhere.** The October/August ratio reaches the observed level (0.056 at 120), October
+  Chl-a falls, and at 150 it misses its floor by 0.1 µg/L (marginal, applied as written). Φ improves by 1.0-1.3 %
+  and the Chl-a bias by 0.5. But r drops below 0.78 and TN worsens: L4 passes 6 of 9 at both thresholds.
+- Predictions: three refuted (September fixers do not fall; S1 does not rise at 120 and stays under the predicted
+  range at 150; at 150 it is October, not September, that misses its floor); one held (L3 at 120).
+
+**Why: the latch is wired to the seed bank** (diagnostic, outside the registered lines; the same six boxes,
+typical years, six-box means):
+
+| `I_FORM_AKI` | latch fires | akinetes formed Jul-Dec (g C/m²) | spring bed bank | germinated Apr-Jul | fixers Jun / Jul / Aug / Sep / Oct |
+|---|---|---|---|---|---|
+| 85 | Oct 6-16 | 1.37 | 1.25 | 0.81 | 0.33 / 1.14 / 1.70 / 1.53 / 0.43 |
+| 120 | Sep 11-28 | 3.92 | 3.46 | 2.23 | 0.58 / 1.56 / 2.10 / 1.68 / 0.19 |
+| 150 | Aug 29-Sep 12 | 6.29 | 5.42 | 3.50 | 0.75 / 1.81 / 2.32 / 1.35 / 0.09 |
+
+- An earlier latch encysts the biomass that export used to remove. The bed bank grows 2.8-4.3×, germination the
+  next spring grows in proportion, and the next bloom starts earlier and larger (observed July 0.28 and August
+  0.84 mg C/L).
+- **Reconciling §61.7:** the latch is the model's only kinetic exit, and it is wired to the next year's inoculum.
+  Using it as the exit moves the error from the autumn to the following summer. Fixing the timing therefore needs
+  the bank decoupled (bed mortality or burial, germination; `KR_GERM_BED` was tuned in §30) or an exit that does
+  not route biomass into akinetes.
+- Nothing adopted. Even with its Φ gain, 120 is not a candidate: r and TN fail, and it worsens the summer
+  composition.
