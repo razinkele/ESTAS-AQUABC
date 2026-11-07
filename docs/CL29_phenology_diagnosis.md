@@ -4718,7 +4718,9 @@ month, SINGLE DATE if neither does, MIXED otherwise.
 |---|---|---|---|---|
 | 2015 | 2.21 (0.435) | 3.72 (0.406) | 4.37 (0.276) | 2.78 (0.323) |
 | 2018 | 0.16 (0.689) | 0.77 (0.402) | 9.59 (0.089) | 0.47 (0.357) |
-| median of the other six years | 0.28 (0.722) | 0.84 (0.759) | 0.39 (0.856) | 0.06 (0.949) |
+| median of the other six years* | 0.28 (0.722) | 0.84 (0.759) | 0.32 (0.856) | 0.06 (0.949) |
+
+\* July: five years (there are no July 2022 samples).
 
 - **SEASON, 2 of 2.** 2015 was a whole-season fixer bloom: August and October both corroborate it, and July
   was already eight times the usual biomass. 2018 bloomed late: August is ordinary, the bloom peaked in
