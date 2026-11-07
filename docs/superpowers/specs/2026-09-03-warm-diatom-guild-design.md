@@ -360,8 +360,8 @@ of E4 reproduces E4's 29 state outputs byte for byte. This is a **probe, not a c
 **8.2 Gates.**
 - **[a] October ≥ 0.40 fails as specified, below the NULL line.** The gate is DIA_C + DIA2_C:
   E4's cold guild (0.088) plus the warm envelope (0.053) is 0.14, under the 0.15 NULL.
-- **[f] Silica fails as specified.** The Aug-Oct interior Si bias is +0.80 in E4 and +0.85 with the warm
-  envelope; it was to be at least halved.
+- **[f] Silica fails as specified.** The Aug-Oct interior Si bias is +0.80 in E4 and +0.85 with
+  the warm envelope; it was to be at least halved.
 - **[d] already fails on E4, before any guild.** Autumn/spring is 2.53 against the [1.8, 2.4]
   band (seasonal r +0.78 passes). A guild adds autumn Chl-a, so it pushes the wrong way unless the
   fixers fall. §2.2's "settle the partition first" is therefore a gate consequence, not only a
