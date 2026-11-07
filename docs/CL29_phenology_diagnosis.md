@@ -4842,7 +4842,7 @@ W/m² (base 85); nothing else changed. The lines:
   had no category for.
 - **The effect moved elsewhere.** The October/August ratio reaches the observed level (0.056 at 120), October
   Chl-a falls, and at 150 it misses its floor by 0.1 µg/L (marginal, applied as written). Φ improves by 1.0-1.3 %
-  and the Chl-a bias by 0.5. But r drops below 0.78 and TN worsens: L4 passes 6 of 9 at both thresholds.
+  and the Chl-a bias by 0.5-0.6. But r drops below 0.78 and TN worsens: L4 passes 6 of 9 at both thresholds.
 - Predictions: three refuted (September fixers do not fall; S1 does not rise at 120 and stays under the predicted
   range at 150; at 150 it is October, not September, that misses its floor); one held (L3 at 120).
 
