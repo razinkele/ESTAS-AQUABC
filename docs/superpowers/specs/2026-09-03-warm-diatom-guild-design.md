@@ -442,3 +442,42 @@ relieved (0.64 / 0.35), light becomes the main summer limit (0.16).
    fixer-dominance / summer-N diagnosis, and it also bears on the partition (§2.2, gate [d]).
 3. **Either route is re-screened by §8.5 before any build**, and the light cap (summer LIGHT
    0.16) bounds what any summer diatom can reach.
+
+**8.8 Literature check (2026-11-07): the ×4 affinity of route 1 is not supported.** Searched with
+scite (abstracts, open full text, citation statements); no editorial notices on any source used.
+- **No constants exist for the two species.** No N or P half-saturation constant, for uptake or
+  growth, was found for *Skeletonema subsalsum* or *Actinocyclus normanii*. The kinetic-term search
+  on the two names (plus *S. potamos*) returns 89 records, none with a constant.
+- **Size points the other way for the dominant species.** Half-saturation constants for nutrient
+  uptake rise with cell volume, and between-taxon differences are "nearly always due to
+  between-taxon variation in volume" (Edwards et al. 2012, doi:10.4319/lo.2012.57.2.0554; also
+  Hillebrand et al. 2021, doi:10.1111/1365-2435.13986). *A. normanii* is a large centric: a 40 µm
+  valve diameter separates its small and large cells (Vidal et al. 2018,
+  doi:10.18257/raccefyn.713), against ~10 µm for the cold guild's *Stephanodiscus*. By
+  allometry its constants would be higher, not 4× lower, and it carries 44.5 % of the observed
+  autumn diatom biomass (§1). Only the small *S. subsalsum* could plausibly sit below the cold
+  guild.
+- **The ecology does not separate the guilds.** *A. normanii* is "indicator of eutrophied,
+  polluted waters" (Vidaković et al. 2016, doi:10.17110/studbot.2016.47.2.201) and of "high
+  trophic conditions" (Pérez et al. 2017, doi:10.1080/00288330.2017.1417318). *S. subsalsum* is
+  listed as "tolerant to nutrient pollution" (Bilous et al. 2021, doi:10.3897/phytokeys.178.64426),
+  but in the same list as the cold guild's *Stephanodiscus hantzschii*.
+- **The only congener number is 1.8×, not 4×.** *S. costatum*'s ammonium uptake Ks is 0.4 µM
+  (Conway et al. 1976, doi:10.1007/BF00390940), against the model's 0.71 µM. *S. subsalsum* is a
+  separate lineage from the *S. costatum* complex, whose literature "calls for reinterpretation"
+  (Sarno et al. 2005, doi:10.1111/j.1529-8817.2005.04067.x).
+- **Uptake and growth constants are not interchangeable for P.** For nitrate, Ks for uptake and
+  growth are "similar if not identical" (Eppley & Thomas 1969,
+  doi:10.1111/j.1529-8817.1969.tb02628.x). For phosphate, *Asterionella* and *Cyclotella*
+  differed in growth K but not in uptake K (Tilman & Kilham 1976,
+  doi:10.1111/j.1529-8817.1976.tb02860.x). The model's Monod `KHS_DIP_DIA` therefore cannot be
+  checked against uptake compilations.
+- **The temperature niche is supported.** *S. subsalsum* is a "heat-preferring species" with an
+  optimum of 16-22 °C in the Volga reservoirs (Kulizin et al. 2023, doi:10.3390/life14010061,
+  citing earlier Volga work). *A. normanii* "frequently occurs in summer and autumn" and formed
+  blooms in the Szczecin Lagoon; it made up over 95 % of August heatwave biovolume there, though
+  the authors flag that as possibly an artefact of few samples (Schernewski et al. 2025,
+  doi:10.3390/environments12100370). The cardinals (4, 17, 26) are consistent with both.
+- **So route 1 of §8.7 is closed.** A ×4 affinity would be a fitted constant, against the
+  allometry for the guild's main species. Route 2 (the summer-N deficit, §8.4) remains the
+  defensible way to open the summer niche.
