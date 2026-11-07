@@ -4591,3 +4591,81 @@ of 2026-11-07's earlier calibrations (§57.7 and §58.6). §15 and §21 have not
 
 - Nothing adopted; `INPUTS_CL29` is unchanged. Record: `cal_work_20261107_nost/` (`result.json`,
   `calibrate.log`, `gen_history.csv`).
+
+**60.5 Addendum (2026-11-07 19:10): the two composition lines rest on a ratio that two bloom years dominate.**
+The September share target (0.486) and the total's denominator (3.855 mg C/L) are 2012-2022 ratios of means. The
+2015 and 2018 fixer blooms dominate them: in five of the eight observed Septembers, non-fixers make up more than
+80 % of the cyanobacteria (§61). The 1461-day calibration window holds only one of these Septembers, 2015, a
+fixer-heavy year (share 0.276), and the calibrated point's 0.307 tracks it. The verdict above stands as registered
+(6 of 10). Later gates replace the two lines with the per-year lines of §61.
+
+---
+
+## 61. 2026-11-07: September composition by year — the registered metric, and what the two regimes do
+
+**Why.** The gate's composition lines (§60.1) score one ratio of means over 2012-2022. Year by year, the
+observations swing between fixer blooms and non-fixer dominance:
+
+| September, observed | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2012-22 ratio of means |
+|---|---|---|---|---|---|---|---|---|---|
+| non-fixer share | 0.276 | 0.412 | 0.927 | 0.089 | 0.823 | 0.883 | 0.892 | 0.828 | 0.486 |
+| CYN + FIX (mg C/L) | 6.03 | 0.78 | 1.73 | 10.52 | 3.35 | 5.59 | 1.76 | 0.73 | 3.855 |
+
+In the 1461-day calibration window (from 2012-01-01), every KM plankton record except ZOO_C is from 2015. The
+calibration's group-carbon terms therefore fitted a single, fixer-heavy September. A share band in that
+calibration would import 2016-2022 information and fight its only composition data. The owner chose to fix the
+metric before constraining on it.
+
+**61.1 The registered metric** (note item 24, 2026-11-07 19:05; written before it was computed for any run).
+- Years 2015-2022: every year with September KM observations.
+- Year y. Obs: the KM September records of CYN_C and FIX_CYN_C in the gate's boxes. Model: the September mean
+  in each box that holds an obs record that September, averaged over those boxes (model FIX = FIX_CYN_C +
+  NOST_VEG_HET_C). share_y = CYN / (CYN + FIX); ratio_y = (CYN + FIX)_model / (CYN + FIX)_obs.
+- Gate lines, replacing the share and total lines:
+  - S1: the median share over the eight years in [0.676, 0.976] (the observed median 0.826 ± 0.15, the old
+    band's half-width);
+  - T1: the median ratio ≥ 0.85 (the old threshold).
+- Diagnostics, not gating: D1, the bloom response (the mean share in 2015 and 2018 minus the median share of the
+  other six years; observed −0.673); D2 and D3, Spearman correlations of the model's yearly share and total
+  with the observed (n = 8).
+- Feasibility: a run whose share range over the eight years is below 0.2 (observed 0.84) counts as flat.
+- Earlier verdicts stand; re-scoring an earlier candidate under S1 / T1 would be post hoc.
+- Obs 2020 has two records in box 7, so that year's obs mean is record-weighted while the model is
+  box-weighted, as registered. It changes nothing material.
+
+**61.2 The two regimes.** E4 is the adopted run (`OUTPUTS_CL29_allelo_E4`, Φ 6.8977). The switch at KG_NOST 2.6
+was rebuilt (`INPUTS_CL29_yr_sw26`) and reproduces §59's probe exactly (Φ 6.9057 / 7.3201 / 6.7681).
+
+| September share | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | median | range | D1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| observed | 0.276 | 0.412 | 0.927 | 0.089 | 0.823 | 0.883 | 0.892 | 0.828 | 0.826 | 0.838 | −0.673 |
+| E4 | 0.080 | 0.227 | 0.297 | 0.191 | 0.127 | 0.150 | 0.142 | 0.182 | 0.166 | 0.217 | −0.030 |
+| switch, KG_NOST 2.6 | 0.413 | 0.583 | 0.686 | 0.554 | 0.386 | 0.542 | 0.418 | 0.624 | 0.548 | 0.299 | −0.080 |
+
+| September CYN + FIX (mg C/L) | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | median ratio |
+|---|---|---|---|---|---|---|---|---|---|
+| observed | 6.03 | 0.78 | 1.73 | 10.52 | 3.35 | 5.59 | 1.76 | 0.73 | |
+| E4 | 3.48 | 4.59 | 3.98 | 4.19 | 3.02 | 3.65 | 3.97 | 4.07 | 1.58 |
+| switch, KG_NOST 2.6 | 2.52 | 4.17 | 3.67 | 3.59 | 2.40 | 2.96 | 3.19 | 3.55 | 1.27 |
+
+- **S1 fails for both.** The adopted model is fixer-dominated in every September (median 0.166). The switch
+  moves the typical year to 0.548, still below the band.
+- **T1 passes for both, and the pass is uninformative.** The line is one-sided. Both runs pass by overshooting
+  the typical years (median ratio 1.27-1.58) while falling short in the bloom years by a factor of 1.7-2.9. A
+  future registration should make the line two-sided.
+- **Neither run is flat by the registered rule** (ranges 0.217 and 0.299). The diagnostics show that the
+  variation the model has is not the observed one:
+  - no bloom response (D1 −0.03 and −0.08, against −0.67);
+  - ρ for the share +0.21 and +0.31, ρ for the total −0.38 and −0.45;
+  - model September biomass stays at 2.4-4.6 mg C/L in every year, while the observations span 0.73-10.5.
+- **The two statistics agree for the model and not for the observations.** For the switch run, the
+  ratio-of-means share (0.545) and the per-year median (0.548) agree, because its September biomass is nearly
+  constant. For the observations they differ (0.486 against 0.826), because biomass varies 14-fold. That gap is
+  the signature of the missing interannual variability, and it is why the ratio-of-means lines misled.
+
+**61.3 Reading.** The typical-year composition responds to parameters: the switch plus KG_NOST moves it by 0.38.
+The bloom years appear in neither regime. A hypothesis, not tested: the blooms need a summer phosphorus supply
+that the model does not have (§59.1: there is no benthic PO4 return). §59 found the same missing term behind the
+summer diatom gap.
+- Later gates use S1 and T1 in place of the two ratio-of-means lines.
+- Nothing adopted; `INPUTS_CL29` is unchanged.
