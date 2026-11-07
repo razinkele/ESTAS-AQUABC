@@ -4593,8 +4593,9 @@ of 2026-11-07's earlier calibrations (§57.7 and §58.6). §15 and §21 have not
   `calibrate.log`, `gen_history.csv`).
 
 **60.5 Addendum (2026-11-07 19:10): the two composition lines rest on a ratio that two bloom years dominate.**
-The September share target (0.486) and the total's denominator (3.855 mg C/L) are 2012-2022 ratios of means. The
-2015 and 2018 fixer blooms dominate them: in five of the eight observed Septembers, non-fixers make up more than
+The September share target (0.486) is a 2012-2022 ratio of means, and the total line's denominator (3.855 mg C/L) is
+the observed 2012-2022 mean total (the total line divides the model's mean by it). The 2015 and 2018 fixer blooms
+dominate both: in five of the eight observed Septembers, non-fixers make up more than
 80 % of the cyanobacteria (§61). The 1461-day calibration window holds only one of these Septembers, 2015, a
 fixer-heavy year (share 0.276), and the calibrated point's 0.307 tracks it. The verdict above stands as registered
 (6 of 10). Later gates replace the two lines with the per-year lines of §61.
@@ -4606,7 +4607,7 @@ fixer-heavy year (share 0.276), and the calibrated point's 0.307 tracks it. The 
 **Why.** The gate's composition lines (§60.1) score one ratio of means over 2012-2022. Year by year, the
 observations swing between fixer blooms and non-fixer dominance:
 
-| September, observed | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2012-22 ratio of means |
+| September, observed | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2012-22 (share: ratio of means; total: mean) |
 |---|---|---|---|---|---|---|---|---|---|
 | non-fixer share | 0.276 | 0.412 | 0.927 | 0.089 | 0.823 | 0.883 | 0.892 | 0.828 | 0.486 |
 | CYN + FIX (mg C/L) | 6.03 | 0.78 | 1.73 | 10.52 | 3.35 | 5.59 | 1.76 | 0.73 | 3.855 |
@@ -4692,8 +4693,9 @@ that. E4 is the model reference; model TP comes from the validator's own loader.
 | 2021 | 22.17 | 238.1 | 316.2 | 1.3 | — | — | — | 5.76 |
 | 2022 | 21.69 | 365.5 | 470.1 | 1.0 | — | — | — | 5.70 |
 
-- **P3 fails on both halves.** Observed TP is not elevated in the bloom years: 2015 has the lowest value of the six
-  years with data, and 2018 the third highest. The model over-predicts TP more in the bloom years (gap −0.028
+- **P3 fails on both halves.** Observed TP in 2015 (0.0592, the lowest of the six years with data) is below the
+  others' median (about 0.0712); 2018 (0.0754) is above it, and P3 needs both. The model over-predicts TP more in
+  the bloom years (gap −0.028
   and −0.018, against the others' median −0.011). The failure is robust to the data limits: 2015 is the lowest
   and the most negative whichever comparison years are used.
 - **P1 holds, but it is not evidence.** 2018 is the second-warmest summer, and 2015 has the third-lowest
@@ -4730,8 +4732,8 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   (October shares 0.90-0.98). A bloom year is one in which the fixers persist into autumn.
 - Sampling is one date per station per month in almost every month. The adjacent months still corroborate
   the September values, so S1 stands as registered.
-- A connection, not yet scored: the adopted E4 keeps its fixers through September-October in every year
-  (§61.2), so its composition resembles a permanent 2015.
+- A connection, not yet scored: E4 is fixer-dominated in every September (§61.2). Its typical-year median
+  October non-fixer share is 0.369 (§61.6), against 0.323 observed in 2015.
 
 **61.6 Where in the season the model goes wrong.** Registered before any model month was computed (note item 30,
 2026-11-07 19:55). The model is matched to the observations' boxes month by month (Jul-Oct); typical years are
@@ -4772,7 +4774,8 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   higher in those years. So the model responds in the right years, but a month late and weakly. A registered
   August-September radiation check would be the honest test. (§61.14: the ranking depends on the threshold.
   At the threshold that matches an August-25 onset (171 W/m²), 2015 and 2018 rank third and sixth, and a
-  radiation-cued settling onset does not move the bloom years.)
+  radiation-cued settling onset does not materially improve D1: it lowers 2015's share from 0.693 to 0.645 but
+  barely changes 2018's.)
 - Nothing adopted.
 
 **61.7 The model's Nostocales are flushed out, not killed off.** Two steps, each registered before its run (note
@@ -5025,9 +5028,10 @@ temperature cue meets L6 and the radiation cue does not.
   date is linear: −0.0028 per day of later onset (r −0.96; −0.0041 per day and r −0.95 without 2019). The bloom years
   had the latest temperature onsets (+14 and +22 days), which accounts for their −0.09 and −0.10.
 - **Timing is a modulator, not the bloom-year mechanism.** At that slope, bringing 2018 from 0.72 to the observed
-  0.09 would need an onset 225 days later. The bloom years' observed biomass (6.0 and 10.5 mg C/L, against 2.4-4.6
-  in the model every year) is a summer-growth question that no exit timing touches. The cue closes about 11 % of the
-  D1 gap.
+  0.09 would need an onset 225 days later. The tested onsets do not explain the bloom years' observed biomass (6.0
+  and 10.5 mg C/L, against 2.4-4.6 in the model every year). That does not locate the cause: 2018's August fixer
+  biomass was typical and its bloom peaked in September, and other growth, loss or transport differences are not
+  ruled out. The cue closes about 11 % of the D1 gap.
 - **Design limits:**
   - 2019's July 7 onset (that year peaked in June and then cooled) pulls the mean onset to August 27, while the
     other seven years average about September 1. That is why the temperature cue's September fixers sit higher than
@@ -5037,7 +5041,8 @@ temperature cue meets L6 and the radiation cue does not.
 - **L1-L5: PARTIAL for both cues.** Timing is fixed (September fixers −46 %), S1 stays in band, the seed bank stays at
   0.22-0.23, and L3 fails narrowly (temperature cue: October 26.3 against 26.5, September passes). Φ fails at both
   thresholds: 6.9051, and 6.8983 against 6.898 (and E4's exact 6.8977).
-- **The L3 pattern.** Four settling runs now miss the Chl-a floors by 0.2-0.8 µg/L. L3 is measuring the autumn
+- **The L3 pattern.** Three of the four settling runs (0.1 m/d with a calendar onset, and both cues) miss the Chl-a
+  floors by 0.2-0.8 µg/L; the 0.3 m/d run misses them by 5.4 (September) and 3.0 (October). L3 is measuring the autumn
   community the Nostocales were standing in for, not the exit mechanism. Any mechanism that removes September
   Nostocales will land here until that community exists.
 - Nothing adopted.
@@ -5048,7 +5053,7 @@ temperature cue meets L6 and the radiation cue does not.
 |---|---|---|---|
 | earlier akinete latch (`I_FORM_AKI` 120, 150) | §61.9, two runs | no effect on September; the error moves to October and the next summer through the seed bank | L1, L2; L4 (r, S1, TN); L3 at 150 |
 | death rate with weaker temperature dependence | §61.10, code read | ruled out: losses already barely respond to cooling (θ = 1 adds 0.008/d of the 0.032 needed) | — |
-| September phosphorus relief as an artifact | §61.11, observations | ruled out: the observed September PO4 rises like the model's | — |
+| September phosphorus relief as an artifact | §61.11, observations | not supported: the share of samples above 0.005 mg P/L rises like the model's (a frequency test; the relief's magnitude and growth effect cannot be checked against censored data) | — |
 | higher growth T_min | §61.12, literature | not justified: T_min 8-10 °C; *A. flos-aquae* near-optimal at 16 °C | — |
 | autumn settling, calendar onset (0.1, 0.3 m/d) | §61.13, two runs | PARTIAL: at 0.1, S1 passes, timing fixed, bank settles; 0.3 overshoots | L3 (by 0.8); L4 (Φ, r, Chl-a bias) |
 | autumn settling, temperature-cued onset (0.1 m/d) | §61.14, two runs incl. a radiation contrast | PARTIAL; the bloom years respond (D1 −0.111; −0.003 per day of onset) | L3 (October by 0.2); L4; FLAT |
