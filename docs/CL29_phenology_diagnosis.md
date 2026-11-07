@@ -4591,3 +4591,540 @@ of 2026-11-07's earlier calibrations (§57.7 and §58.6). §15 and §21 have not
 
 - Nothing adopted; `INPUTS_CL29` is unchanged. Record: `cal_work_20261107_nost/` (`result.json`,
   `calibrate.log`, `gen_history.csv`).
+
+**60.5 Addendum (2026-11-07 19:10): the two composition lines rest on a ratio that two bloom years dominate.**
+The September share target (0.486) is a 2012-2022 ratio of means, and the total line's denominator (3.855 mg C/L) is
+the observed 2012-2022 mean total (the total line divides the model's mean by it). The 2015 and 2018 fixer blooms
+dominate both: in five of the eight observed Septembers, non-fixers make up more than
+80 % of the cyanobacteria (§61). The 1461-day calibration window holds only one of these Septembers, 2015, a
+fixer-heavy year (share 0.276), and the calibrated point's 0.307 tracks it. The verdict above stands as registered
+(6 of 10). Later gates replace the two lines with the per-year lines of §61.
+
+---
+
+## 61. 2026-11-07: September composition by year — the registered metric, and what the two regimes do
+
+**Why.** The gate's composition lines (§60.1) score one ratio of means over 2012-2022. Year by year, the
+observations swing between fixer blooms and non-fixer dominance:
+
+| September, observed | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | 2012-22 (share: ratio of means; total: mean) |
+|---|---|---|---|---|---|---|---|---|---|
+| non-fixer share | 0.276 | 0.412 | 0.927 | 0.089 | 0.823 | 0.883 | 0.892 | 0.828 | 0.486 |
+| CYN + FIX (mg C/L) | 6.03 | 0.78 | 1.73 | 10.52 | 3.35 | 5.59 | 1.76 | 0.73 | 3.855 |
+
+In the 1461-day calibration window (from 2012-01-01), every KM plankton record except ZOO_C is from 2015. The
+calibration's group-carbon terms therefore fitted a single, fixer-heavy September. A share band in that
+calibration would import 2016-2022 information and fight its only composition data. The owner chose to fix the
+metric before constraining on it.
+
+**61.1 The registered metric** (note item 24, 2026-11-07 19:05; written before it was computed for any run).
+- Years 2015-2022: every year with September KM observations.
+- Year y. Obs: the KM September records of CYN_C and FIX_CYN_C in the gate's boxes. Model: the September mean
+  in each box that holds an obs record that September, averaged over those boxes (model FIX = FIX_CYN_C +
+  NOST_VEG_HET_C). share_y = CYN / (CYN + FIX); ratio_y = (CYN + FIX)_model / (CYN + FIX)_obs.
+- Gate lines, replacing the share and total lines:
+  - S1: the median share over the eight years in [0.676, 0.976] (the observed median 0.826 ± 0.15, the old
+    band's half-width);
+  - T1: the median ratio ≥ 0.85 (the old threshold).
+- Diagnostics, not gating: D1, the bloom response (the mean share in 2015 and 2018 minus the median share of the
+  other six years; observed −0.673); D2 and D3, Spearman correlations of the model's yearly share and total
+  with the observed (n = 8).
+- Feasibility: a run whose share range over the eight years is below 0.2 (observed 0.84) counts as flat.
+- Earlier verdicts stand; re-scoring an earlier candidate under S1 / T1 would be post hoc.
+- Obs 2020 has two records in box 7, so that year's obs mean is record-weighted while the model is
+  box-weighted, as registered. It changes nothing material.
+
+**61.2 The two regimes.** E4 is the adopted run (`OUTPUTS_CL29_allelo_E4`, Φ 6.8977). The switch at KG_NOST 2.6
+was rebuilt (`INPUTS_CL29_yr_sw26`) and reproduces §59's probe exactly (Φ 6.9057 / 7.3201 / 6.7681).
+
+| September share | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | median | range | D1 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| observed | 0.276 | 0.412 | 0.927 | 0.089 | 0.823 | 0.883 | 0.892 | 0.828 | 0.826 | 0.838 | −0.673 |
+| E4 | 0.080 | 0.227 | 0.297 | 0.191 | 0.127 | 0.150 | 0.142 | 0.182 | 0.166 | 0.217 | −0.030 |
+| switch, KG_NOST 2.6 | 0.413 | 0.583 | 0.686 | 0.554 | 0.386 | 0.542 | 0.418 | 0.624 | 0.548 | 0.299 | −0.080 |
+
+| September CYN + FIX (mg C/L) | 2015 | 2016 | 2017 | 2018 | 2019 | 2020 | 2021 | 2022 | median ratio |
+|---|---|---|---|---|---|---|---|---|---|
+| observed | 6.03 | 0.78 | 1.73 | 10.52 | 3.35 | 5.59 | 1.76 | 0.73 | |
+| E4 | 3.48 | 4.59 | 3.98 | 4.19 | 3.02 | 3.65 | 3.97 | 4.07 | 1.58 |
+| switch, KG_NOST 2.6 | 2.52 | 4.17 | 3.67 | 3.59 | 2.40 | 2.96 | 3.19 | 3.55 | 1.27 |
+
+- **S1 fails for both.** The adopted model is fixer-dominated in every September (median 0.166). The switch
+  moves the typical year to 0.548, still below the band.
+- **T1 passes for both, and the pass is uninformative.** The line is one-sided. Both runs pass by overshooting
+  the typical years (median ratio 1.27-1.58) while falling short in the bloom years by a factor of 1.7-2.9. A
+  future registration should make the line two-sided.
+- **Neither run is flat by the registered rule** (ranges 0.217 and 0.299). The diagnostics show that the
+  variation the model has is not the observed one:
+  - no bloom response (D1 −0.03 and −0.08, against −0.67);
+  - ρ for the share +0.21 and +0.31, ρ for the total −0.38 and −0.45;
+  - model September biomass stays at 2.4-4.6 mg C/L in every year, while the observations span 0.73-10.5.
+- **The two statistics agree for the model and not for the observations.** For the switch run, the
+  ratio-of-means share (0.545) and the per-year median (0.548) agree, because its September biomass is nearly
+  constant. For the observations they differ (0.486 against 0.826), because biomass varies 14-fold. That gap is
+  the signature of the missing interannual variability, and it is why the ratio-of-means lines misled.
+
+**61.3 Reading.** The typical-year composition responds to parameters: the switch plus KG_NOST moves it by 0.38.
+The bloom years appear in neither regime. The hypothesis that the blooms need a summer phosphorus supply the
+model lacks (§59.1: no benthic PO4 return) was tested in §61.4 and is not supported.
+- Later gates use S1 and T1 in place of the two ratio-of-means lines.
+- Nothing adopted; `INPUTS_CL29` is unchanged.
+
+**61.4 What drives the bloom years? The summer-phosphorus hypothesis is not supported.** Registered before any
+year-wise value was computed (note item 26, 2026-11-07 19:25), and descriptive: 2 bloom years (2015, 2018)
+against 6 others. H: a summer internal P supply drives the fixer blooms, and the model lacks it. Predictions:
+- P1: both bloom years rank among the 3 warmest Jul-Aug summers or the 3 lowest Jun-Sep Nemunas inflows;
+- P2: their river TP load is not above the others' median;
+- P3: observed Jul-Sep in-lagoon TP (EPA same-day pairs, the nine lagoon boxes) is above the others' median in
+  both years, and the obs − model gap is larger in both;
+- P4 (secondary): a lower river DIN:TP and/or calmer summers.
+
+H was to count as supported only if P1, P2 and P3 all held; the sediment-PO4 sensitivity run was conditional on
+that. E4 is the model reference; model TP comes from the validator's own loader.
+
+| year | Jul-Aug T (°C) | Jun-Sep Nemunas Q (m³/s) | river TP load (t) | river DIN:TP | obs Jul-Sep TP | model TP | obs − model | wind (m/s) |
+|---|---|---|---|---|---|---|---|---|
+| **2015** | 20.45 | 175.3 | 237.1 | 1.5 | 0.0592 | 0.0870 | −0.0277 | 6.13 |
+| 2016 | 20.43 | 226.1 | 343.1 | 0.7 | 0.0811 | 0.0892 | −0.0082 | 5.68 |
+| 2017 | 19.94 | 406.7 | 567.1 | 1.4 | 0.0791 | 0.0904 | −0.0113 | 6.40 |
+| **2018** | 22.13 | 209.0 | 299.7 | 0.8 | 0.0754 | 0.0930 | −0.0176 | 5.97 |
+| 2019 | 20.37 | 164.6 | 234.5 | 1.4 | 0.0632 | 0.0745 | −0.0113 | 6.26 |
+| 2020 | 20.69 | 174.8 | 241.2 | 0.9 | 0.0596 | 0.0841 | −0.0245 | 5.84 |
+| 2021 | 22.17 | 238.1 | 316.2 | 1.3 | — | — | — | 5.76 |
+| 2022 | 21.69 | 365.5 | 470.1 | 1.0 | — | — | — | 5.70 |
+
+- **P3 fails on both halves.** Observed TP in 2015 (0.0592, the lowest of the six years with data) is below the
+  others' median (about 0.0712); 2018 (0.0754) is above it, and P3 needs both. The model over-predicts TP more in
+  the bloom years (gap −0.028
+  and −0.018, against the others' median −0.011). The failure is robust to the data limits: 2015 is the lowest
+  and the most negative whichever comparison years are used.
+- **P1 holds, but it is not evidence.** 2018 is the second-warmest summer, and 2015 has the third-lowest
+  inflow, level with the non-bloom 2020 (175.3 against 174.8 m³/s). Every condition the bloom years show is
+  shared by non-bloom years: 2019 and 2020 were dry, 2021 and 2022 hot. The quantities tested here (Jul-Aug
+  temperature, Jun-Sep inflow, river loads, wind) do not separate the bloom years from the others.
+  Late-summer radiation was not tested here; see §61.6.
+- **P2 holds:** the bloom years' river TP loads (237 and 300 t) are below the others' median (330 t).
+- **P4 does not hold:** 2015 has the highest river DIN:TP, and neither bloom summer was calmer.
+- Limits: there are no EPA TP observations in Jul-Sep 2021-2022, so P3 compares four years (2016, 2017, 2019,
+  2020). 2019 has 671 TP pairs, from dense sampling, against about 50 in the other years.
+- **Outcome:** H is not supported. By the registered rule, the sediment-PO4 sensitivity run does not follow.
+  Untested alternatives: a sampling coincidence (one September date per station against short, patchy blooms),
+  seeding from the previous season, and spring conditions. Nothing adopted.
+
+**61.5 A bloom year is a season, not one sampling date.** Registered before any August or October value was
+computed by year (note item 28, 2026-11-07 19:40), using observations only. An adjacent month (August, October)
+of a bloom year corroborates the bloom if its fixer biomass is above the other six years' median for that month
+AND its share is below their median share. The verdict is SEASON if both bloom years have a corroborating
+month, SINGLE DATE if neither does, MIXED otherwise.
+
+| obs fixer biomass, mg C/L (share) | Jul | Aug | Sep | Oct |
+|---|---|---|---|---|
+| 2015 | 2.21 (0.435) | 3.72 (0.406) | 4.37 (0.276) | 2.78 (0.323) |
+| 2018 | 0.16 (0.689) | 0.77 (0.402) | 9.59 (0.089) | 0.47 (0.357) |
+| median of the other six years* | 0.28 (0.722) | 0.84 (0.759) | 0.32 (0.856) | 0.06 (0.949) |
+
+\* July: five years (there are no July 2022 samples).
+
+- **SEASON, 2 of 2.** 2015 was a whole-season fixer bloom: August and October both corroborate it, and July
+  was already eight times the usual biomass. 2018 bloomed late: August is ordinary, the bloom peaked in
+  September, and October corroborates it (0.47 against 0.06; share 0.357 against 0.949).
+- **The typical succession.** Fixers peak in July-August, and non-fixers take over in September-October
+  (October shares 0.90-0.98). A bloom year is one in which the fixers persist into autumn.
+- Sampling is one date per station per month in almost every month. The adjacent months still corroborate
+  the September values, so S1 stands as registered.
+- A connection, not yet scored: E4 is fixer-dominated in every September (§61.2). Its typical-year median
+  October non-fixer share is 0.369 (§61.6), against 0.323 observed in 2015.
+
+**61.6 Where in the season the model goes wrong.** Registered before any model month was computed (note item 30,
+2026-11-07 19:55). The model is matched to the observations' boxes month by month (Jul-Oct); typical years are
+2016, 2017 and 2019-2022. The rule:
+- the autumn exit, judged by the typical-year median October/August fixer ratio: HAS it at ≤ 0.25, LACKS it above
+  0.5, PARTIAL in between (observed 0.061);
+- with it, whether the non-fixers take over by October (October share > 0.5);
+- and whether the fixer peak month is July or August.
+
+| typical-year median | Jul | Aug | Sep | Oct | median Oct/Aug ratio | median Oct share |
+|---|---|---|---|---|---|---|
+| observed fixers (mg C/L) | 0.28 | 0.84 | 0.32 | 0.06 | 0.061 | 0.949 |
+| E4 fixers | 2.50 | 3.21 | 3.22 | 1.19 | 0.388 | 0.369 |
+| switch, KG_NOST 2.6, fixers | 1.03 | 1.70 | 1.41 | 0.37 | 0.205 | 0.812 |
+| observed non-fixers | 0.77 | 2.36 | 1.59 | 0.84 | | |
+| E4 non-fixers | 0.56 | 0.44 | 0.65 | 0.71 | | |
+| switch non-fixers | 1.53 | 1.62 | 1.91 | 1.60 | | |
+
+- **E4 is PARTIAL, and the non-fixers never take over** (October share 0.369). By the rule its peak month is
+  September, but August and September tie (3.213 against 3.215): E4's fixers plateau through August-September.
+- **The switch run has the exit**, the non-fixers take over, and its peak month is right. Its September
+  shortfall is timing. The observed fixers fall 62 % from August to September; the model's fall 17 %, then 74 %
+  from September to October.
+- 99 % of the model's fixer carbon is Nostocales (NOST_VEG_HET_C).
+- **What sets the timing is not the akinete latch** (checked in the model's own `NOST_STAGING.out`). The latch
+  fires when the 7-day radiation average drops below `I_FORM_AKI`, which is 85 W/m² since §30 moved it from 120
+  to cure an October Chl-a deficit. It fires on October 6-22. But in boxes 9 and 17 (2017, 2019) the
+  Nostocales peak on August 24-September 4 and have already fallen 71-86 % by the latch date, with zero formation
+  flux before it; the latch only removes the residual. The shortfall is a late peak and a slow pre-latch
+  decline, and their driver (temperature, light, mortality or grazing) is not yet identified. §61.7 identifies
+  it: the decline is export, and the latch is the model's only kinetic exit.
+- **`I_FORM_AKI` 85 looks like a compensation.** It keeps that residual into October, standing in for October
+  biomass that the observations put in non-fixers, diatoms (0.67 mg C/L) and OPA (0.38), all three short in the
+  model.
+- **An unregistered observation.** The bloom years had sunnier late summers: they are among the latest
+  radiation crossings at every threshold (85 W/m²: 1st and 2nd; 120: 1st and 3rd; 150: 1st and tied 2nd). The
+  model's own latch dates put 2018 and 2015 as the two latest (October 22 and 17), and its October fixers are
+  higher in those years. So the model responds in the right years, but a month late and weakly. A registered
+  August-September radiation check would be the honest test. (§61.14: the ranking depends on the threshold.
+  At the threshold that matches an August-25 onset (171 W/m²), 2015 and 2018 rank third and sixth, and a
+  radiation-cued settling onset does not materially improve D1: it lowers 2015's share from 0.693 to 0.645 but
+  barely changes 2018's.)
+- Nothing adopted.
+
+**61.7 The model's Nostocales are flushed out, not killed off.** Two steps, each registered before its run (note
+items 32 and 33, 2026-11-07 20:35 and 20:50). Both use the switch@2.6 inputs; every run's state output is
+byte-identical to §61.2's.
+
+*Step 1, the kinetic budget.* Process rates in boxes 7, 9, 14, 17, 19 and 23. The windows are PRE, the 30 days
+before the Nostocales peak, and DEC, from the peak to the akinete latch.
+
+| median over 36 box-years (1/d) | PRE | DEC |
+|---|---|---|
+| specific growth | 0.124 | 0.084 |
+| specific loss (respiration, excretion, death, density mortality) | 0.111 | 0.085 |
+| limitation, temperature / light / P / N | 0.78 / 0.57 / 0.12 / 0.73 | 0.32 / 0.44 / 0.42 / 0.60 |
+
+- As registered: GROWTH-SIDE in 36 of 36 box-years, temperature turns growth down (−56 %), and phosphorus binds
+  the July run-up (0.17).
+- Zooplankton grazing on the Nostocales is zero throughout, and akinete formation is zero before the latch.
+- **The rule's premise fails.** Its categories assumed a kinetic decline, and the model does not have one: the
+  kinetic net stays near zero. (Why: §61.10. The losses do not share growth's temperature factor; the
+  Nostocales' phosphorus limitation eases as the season turns and offsets the cooling.) Integrated from the
+  peak to the latch, kinetics explain a median 11 % of the fall (−1.8 of −56.1 mg C/L summed over the
+  box-years).
+
+*Step 2, the mass balance* (`MASS_BALANCE_OUT` in all 29 boxes). Its kinetics term for the Nostocales equals the
+process-rate reconstruction (r 1.0000).
+- **Box level: TRANSPORT.** Advection accounts for a median 103 % of the non-kinetic residual; dispersion,
+  settling, loads and sediment terms are zero. The exception is box 7 (the strait, 0.04 km³), with an
+  unaccounted −0.6 to −1.15 mg C/L in five of six years.
+- **Lagoon-wide: EXPORT.** From September 1 to October 5 of the typical years, the 28 lagoon boxes (without sea
+  box 12) lose −36,211 t C by transport and gain +8,471 t C kinetically. The registered 29-box version gives
+  −76,882 and +44,395, because sea box 12 grows Nostocales itself and exports them to the Baltic.
+- **Measured against the stock:** the lagoon holds 9,498 t C of Nostocales on September 1 (mean of the six
+  years). Export removes 64 % of it per window, kinetics add 15 %, and the stock falls 29-63 %.
+- **The water balance is not closed under `ESTAS_HOLD_VOLUME`.** The lagoon's net inflow over the window is +6,
+  −8, +9, −8, −14 and −1 % of its volume in the six years, the same order as the river inflow (about 10 %). Its
+  largest possible effect, the imbalance times the mean concentration, is 2-21 % of a single year's export, and
+  3 % over the six windows. So the export is mostly real exchange with the sea box. The imbalance itself is a
+  model-integrity item.
+
+**61.8 Reading.**
+- The model's late-summer Nostocales decline is export to the sea while the population still grows net-positive.
+- The observed August-September collapse has no kinetic counterpart in the model. The akinete latch is the only
+  kinetic exit (§61.6: not what removes them now), and it fires a month after the observed collapse.
+- The observations cannot settle whether the real collapse is kinetic or hydrodynamic.
+- Candidates for the missing kinetic exit, each needing its own registration: an earlier latch (`I_FORM_AKI` 120
+  or 150 W/m²; tested in §61.9: it is coupled to the seed bank, not a single-setting fix); a death rate that
+  falls more slowly with temperature than growth does (ruled out in §61.10); an autumn settling velocity for
+  the Nostocales (none now; tested in §61.13).
+- Nothing adopted.
+
+**61.9 An earlier akinete latch: no effect on September; it moves the error to October and the next summer.**
+Registered before the runs (note item 35, 2026-11-07 21:30). The switch@2.6 inputs with `I_FORM_AKI` 120 and 150
+W/m² (base 85); nothing else changed. The lines:
+- L1, timing fixed: the typical-year median September fixer biomass (matched boxes, as in §61.6) falls ≥ 30 % and
+  the October/August ratio is ≤ 0.10;
+- L2: S1;
+- L3, the acceptable loss stated in advance: September and October model Chl-a in the validator's monthly
+  climatology each ≥ 80 % of the base's;
+- L4: the full gate with S1 / T1, reported for context.
+
+| `I_FORM_AKI` | Sep fixers | Oct/Aug | S1 | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 | r | TN RMSE | Chl-a bias |
+|---|---|---|---|---|---|---|---|---|
+| 85 (base) | 1.414 | 0.205 | 0.548 | 43.8 / 33.1 | 6.906 / 7.320 / 6.768 | +0.81 | 0.781 | −6.33 |
+| 120 | 1.638 | 0.056 | 0.510 | 45.5 / 28.7 | 6.837 / 7.244 / 6.701 | +0.77 | 0.824 | −5.79 |
+| 150 | 1.379 | 0.024 | 0.584 | 42.0 / 26.4 | 6.814 / 7.211 / 6.680 | +0.72 | 0.839 | −5.73 |
+| observed | 0.324 | 0.061 | 0.826 | 50.2 / 46.4 | | | | |
+
+- **No effect on the September target at either threshold, by the rule.** September fixers *rise* 16 % at 120 and
+  fall 2 % at 150; S1 falls at 120 and reaches only 0.584 at 150. At 120 this is a counter-effect, which the rule
+  had no category for.
+- **The effect moved elsewhere.** The October/August ratio reaches the observed level (0.056 at 120), October
+  Chl-a falls, and at 150 it misses its floor by 0.1 µg/L (marginal, applied as written). Φ improves by 1.0-1.3 %
+  and the Chl-a bias by 0.5-0.6. But r drops below 0.78 and TN worsens: L4 passes 6 of 9 at both thresholds.
+- Predictions: three refuted (September fixers do not fall; S1 does not rise at 120 and stays under the predicted
+  range at 150; at 150 it is October, not September, that misses its floor); one held (L3 at 120).
+
+**Why: the latch is wired to the seed bank** (diagnostic, outside the registered lines; the same six boxes,
+typical years, six-box means):
+
+| `I_FORM_AKI` | latch fires | akinetes formed Jul-Dec (g C/m²) | spring bed bank | germinated Apr-Jul | fixers Jun / Jul / Aug / Sep / Oct |
+|---|---|---|---|---|---|
+| 85 | Oct 6-16 | 1.37 | 1.25 | 0.81 | 0.33 / 1.14 / 1.70 / 1.53 / 0.43 |
+| 120 | Sep 11-28 | 3.92 | 3.46 | 2.23 | 0.58 / 1.56 / 2.10 / 1.68 / 0.19 |
+| 150 | Aug 29-Sep 12 | 6.29 | 5.42 | 3.50 | 0.75 / 1.81 / 2.32 / 1.35 / 0.09 |
+
+- An earlier latch encysts the biomass that export used to remove. The bed bank grows 2.8-4.3×, germination the
+  next spring grows in proportion, and the next bloom starts earlier and larger (observed July 0.28 and August
+  0.84 mg C/L).
+- **Reconciling §61.7:** the latch is the model's only kinetic exit, and it is wired to the next year's inoculum.
+  Using it as the exit moves the error from the autumn to the following summer. Fixing the timing therefore needs
+  the bank decoupled (bed mortality or burial, germination; `KR_GERM_BED` was tuned in §30) or an exit that does
+  not route biomass into akinetes.
+- Nothing adopted. Even with its Φ gain, 120 is not a candidate: r and TN fail, and it worsens the summer
+  composition.
+
+**61.10 Why the kinetic net stays near zero: phosphorus relief, not a shared temperature factor.** A code read of
+`aquabc_II_pelagic_lib_NOSTACALES.f90` and `GROWTH_AT_TEMP`; no run.
+- **Growth** = `KG_NOST` × the temperature factor × the light, nutrient and fixation factors. The temperature
+  factor is CTMI with T_min 8, T_opt 26 and T_max 33 °C; the logged factor matches CTMI to four decimals.
+- **Metabolic respiration and excretion** are 5 % of growth (`EFF_NOST_VEG_HET_GROWTH` 0.95), so they share
+  growth's factor exactly.
+- **Dark respiration** is 0.06 × 1.04^(T−20) per day, and **death** 0.040 × 1.05^(T−20), linear (closure off).
+  There is no zooplankton grazing on the Nostocales.
+
+| T (°C) | growth temperature factor (relative to 21 °C) | death (/d) | dark respiration (/d) |
+|---|---|---|---|
+| 21 | 0.772 (1.00) | 0.042 | 0.062 |
+| 18 | 0.527 (0.68) | 0.036 | 0.056 |
+| 15.5 | 0.326 (0.42) | 0.032 | 0.050 |
+| 12 | 0.103 (0.13) | 0.027 | 0.044 |
+
+- **Death does not share growth's temperature factor.** From 21 to 15.5 °C growth's factor falls 58 %, death
+  24 % and dark respiration 19 %. Removing death's temperature dependence entirely (θ = 1.0) would add only
+  0.008 per day at 15.5 °C, a quarter of the roughly 0.032 per day an observed-style collapse needs (−62 % in
+  about 30 days). There is no one-setting test of that kind.
+- **Phosphorus relief holds the net at zero.** A per-row decomposition from the 30 days before the peak to the
+  decline (36 box-years): specific growth ×0.65 = temperature ×0.44 × everything else ×1.90. Within the rest,
+  light is ×0.77, and the nutrient and fixation part ×2.64 (P limitation ×2.88, N ×0.85). The Nostocales'
+  phosphorus limitation eases about threefold as the season turns, which props growth up against the cooling.
+  Losses fall ×0.77, so the net stays near zero.
+- Candidates this points at, each needing its own registration:
+  - the September phosphorus relief itself (does the model's PO4 rise from August to October more than the
+    observed?);
+  - the CTMI T_min of 8 °C (raising it steepens the autumn fall in growth but delays the spring start; it needs
+    literature values for the Curonian Nostocales);
+  - autumn settling.
+
+**61.11 The September phosphorus relief is observed; the October phosphate excess is not.** Registered before any
+month-wise value was computed (note item 38, 2026-11-07 22:25). The Nostocales see dissolved inorganic P only
+(DP = PO4 × the Fe-P dissolved fraction; no available DOP), and 68 % of the August-October observations sit at
+the 0.0025 detection substitute. So the test uses a censoring-robust statistic: F5, the fraction of same-day
+pairs (nine lagoon boxes, 2012-2022) with PO4 ≥ 0.005 mg P/L. The relief counts as OBSERVED-LIKE if the observed
+F5 rises from August to September by at least half the model's rise, EXAGGERATED if by less, and NOT RESOLVABLE
+if the model's F5 stays below 0.2.
+
+| same-day pairs | Aug | Sep | Oct |
+|---|---|---|---|
+| F5, observed | 0.16 | 0.41 | 0.13 |
+| F5, switch at KG_NOST 2.6 | 0.06 | 0.44 | 0.98 |
+| F5, E4 | 0.03 | 0.08 | 0.96 |
+| median PO4 (mg P/L), observed / switch / E4 | 0.0025 / 0.0006 / 0.0005 | 0.0025 / 0.0038 / 0.0015 | 0.0025 / 0.0130 / 0.0139 |
+| mean TP, observed / switch / E4 | 0.082 / 0.070 / 0.088 | 0.061 / 0.071 / 0.081 | 0.064 / 0.084 / 0.107 |
+
+- **August to September: OBSERVED-LIKE.** Observed F5 rises +0.25, against the model's +0.38. The phosphate rise
+  that props up the switch run's Nostocales (§61.10) is in the observations too, and the observed fixers
+  collapse despite it. So the missing die-off is not a nutrient effect. That is an inference: real Nostocales
+  could also draw on stored phosphorus.
+- **August to October (secondary): EXAGGERATED.** The model's phosphate keeps rising (median 0.013; 98 % above
+  detection) while the observed falls back below detection. The model's TP rises while the observed stays at
+  0.064. This matches the missing autumn community: observed October diatoms 0.67 and OPA 0.38 mg C/L, both
+  near-absent in the model, which would draw that phosphorus down.
+- E4's September phosphate stays low (F5 0.08) because its large Nostocales stock holds it down; the switch
+  regime reproduces the observed September rise.
+- The remaining candidates for the missing autumn die-off, each needing its own registration: the CTMI T_min,
+  autumn settling, and akinete formation decoupled from the seed bank. Nothing adopted.
+
+**61.12 The literature does not support a steeper Nostocales temperature decline.** Registered before the search
+(note item 40, 2026-11-07 22:45): a T_min probe would be justified only if published data for the dominant
+Curonian Nostocales showed T_min ≥ 12 °C, or growth at about 15 °C at most 0.3 of the rate at 20-21 °C. Searched with
+scite; no editorial notices on any source used.
+- **The dominant taxa.** *Aphanizomenon flos-aquae* is "a dominant species in the Curonian Lagoon" (Overlingė et
+  al., 2021), with *Dolichospermum* spp. In 2018, "Between August and November, N2-fixing cyanobacteria dominated
+  the community (86 % of total biomass)" (Žilius et al., 2021). That is the 2018 bloom year of §61.4-61.5.
+- **The temperature response.** A Lake Biwa strain of *A. flos-aquae* "could grow at above 8°C with an optimum
+  temperature ranging from 23 to 29°C" (Ishikawa & Tsukada, 2001), which matches the model's T_min 8 °C and T_opt 26
+  °C. The Baltic review by Munkes et al. (2021) compiles an optimal range "from 16 to 31 °C" for *A. flos-aquae*,
+  with growth "down to 10 °C", and for *Dolichospermum* an optimum "between 18 and 25 °C. Growth starts at 10 °C".
+- **Verdict: not justified.** The literature puts T_min at 8-10 °C and *A. flos-aquae* near its optimum at 16 °C,
+  where the model has 0.47 of its 21 °C rate. If anything, the model's growth already declines more steeply
+  between 21 and 15.5 °C than the Baltic compilation implies. A higher T_min would move it further from the
+  literature, so temperature is not the missing exit. The caveat: these are compiled ranges, and no
+  Curonian-strain growth curve was found.
+- **For the sinking candidate:** "Cyanobacteria might, however, lose their buoyancy due to decreasing temperatures
+  in autumn (Carey et al., 2012)", and "inshore populations have generally weaker gas vesicles" (Munkes et al.,
+  2021). Tested in §61.13.
+
+References: Ishikawa, K., & Tsukada, H. (2001). *Phycological Research*, 49(4), 275-280.
+https://doi.org/10.1046/j.1440-1835.2001.00255.x · Munkes, B., Löptien, U., & Dietze, H. (2021). *Biogeosciences*,
+18(7), 2347-2378. https://doi.org/10.5194/bg-18-2347-2021 · Overlingė, D., Toruńska-Sitarz, A., Kataržytė, M., et
+al. (2021). *Toxins*, 13(12), 838. https://doi.org/10.3390/toxins13120838 · Žilius, M., Vybernaite-Lubiene, I.,
+Vaičiūtė, D., et al. (2021). *Biogeosciences*, 18, 1857. https://doi.org/10.5194/bg-18-1857-2021
+
+**61.13 Autumn settling fixes the September composition without feeding the seed bank; it costs Chl-a.** Registered
+before the runs (note item 42, 2026-11-07 23:20). The switch@2.6 inputs plus a seasonal settling velocity for the
+Nostocales in all 29 boxes: 0 until August 24, then v from August 25 to December 31, every year. The deposited
+fraction (0.9) and the Chl-a suppression flag are as for the other settling groups, and settled matter is removed.
+v = 0.1 and 0.3 m/d lie within the vertical speeds Munkes et al. (2021) give for *Dolichospermum* (0.1-0.3 m/d). The
+lines are L1-L4 of §61.9 (timing, S1, the Chl-a floors, the gate) plus L5: the spring seed bank must not grow.
+
+| settling | Sep fixers | Oct/Aug | S1 | T1 | Chl-a Sep / Oct | spring bank (g C/m²) | Φ / 2012-16 / 2017-21 | r | Chl-a bias | TP bias |
+|---|---|---|---|---|---|---|---|---|---|---|
+| none (base) | 1.414 | 0.205 | 0.548 | 1.27 | 43.8 / 33.1 | 1.25 | 6.906 / 7.320 / 6.768 | +0.81 | −6.33 | +0.0035 |
+| 0.1 m/d | 0.684 | 0.070 | 0.734 | 0.88 | 34.2 / 25.7 | 0.22 | 6.899 / 7.295 / 6.764 | +0.74 | −9.12 | −0.0036 |
+| 0.3 m/d | 0.253 | 0.018 | 0.900 | 0.74 | 29.6 / 23.5 | 0.02 | 6.954 / 7.351 / 6.820 | +0.68 | −9.97 | −0.0051 |
+| observed | 0.324 | 0.061 | 0.826 | | 50.2 / 46.4 | | | | | |
+
+- **PARTIAL at both velocities, by the rule.** L1 (timing) and L5 (the bank) hold, but L3 fails. At 0.1 m/d the
+  September and October Chl-a miss their floors by 0.8 µg/L; marginal, applied as written.
+- **0.1 m/d is the first run to pass S1** (0.734, with T1 0.88). But it is not a candidate:
+  - it fails the Chl-a bias (−9.12) and r (0.74);
+  - Φ is 6.8989, which fails both the gate's 6.898 and E4's exact 6.8977;
+  - the gate passes 5 of 9.
+
+  0.3 m/d overshoots: the September fixers fall below the observed level, S1 is flat across the years (range
+  0.08), and T1 fails.
+- **The TP bias flips sign.** It goes from +0.0035 to −0.0036 and −0.0051: the sink over-corrects phosphorus. TN
+  bias falls as predicted (+0.31 to +0.22 and +0.20), while TN RMSE rises slightly.
+- **The seed bank settles at a lower level** rather than draining. At 0.1 m/d the spring bank draws down from 1.04
+  to about 0.13 over 2013-2016, then fluctuates at 0.1-0.5 with no trend, and July-August Nostocales hold at
+  0.8-1.5 mg C/L. So the typical years 2016-2022 are a quasi-steady state, not a transient.
+- **The succession now has the observed shape** (diagnostic). Typical-year fixers from July to October are
+  0.62 / 1.24 / 0.68 / 0.10 mg C/L, against an observed 0.28 / 0.84 / 0.32 / 0.06: the shape is right at 1.5-2×
+  the level. The bloom years are still absent (D1 −0.04 against −0.67).
+- **Predictions:** the magnitudes were refuted at both velocities (the effects were about twice those predicted),
+  and L3 failed at both (predicted only as "may fail" at 0.3). L5 and the direction of the TN and TP changes held.
+- **Two limits on the reading:**
+  - The onset is a calendar date, not a mechanism, and a prescribed date cannot produce interannual variability;
+    that is why D1 stays near zero. A cue-driven onset would be the mechanistic version: buoyancy loss with
+    falling temperature (Carey et al., 2012, via Munkes et al., 2021), or the latch's radiation average. It is the
+    only version that could reproduce 2015 and 2018, whose radiation crossings and latch dates were the latest
+    (§61.6). Tested in §61.14.
+  - That the Nostocales were carrying late-summer Chl-a that the missing autumn community should carry is an
+    inference. The non-fixers rose only slightly (July 1.53 to 1.78, September 1.91 to 1.98) and not in October.
+    L3's failure is what points at the missing autumn community.
+- Nothing adopted.
+
+**61.14 A temperature-cued settling onset: the bloom years respond, weakly; exit timing is a modulator.** Registered
+before the runs (note item 44, 2026-11-08 00:05). The onsets are precomputed from the forcing, because the cue is
+exogenous. Each threshold is matched so that the mean onset falls near the calendar run's August 25, leaving
+year-to-year variation as the only change. Both runs use 0.1 m/d from onset to December 31:
+- **temperature cue:** the first day the 7-day lagoon-mean water temperature falls below 18.5 °C after the year's
+  maximum (the literature mechanism, buoyancy loss with cooling);
+- **radiation contrast:** the latch's 7-day radiation average falling below 171 W/m².
+
+The new line, L6: the bloom response D1 (§61.1) reaches ≤ −0.10. The mechanism counts as supported if the
+temperature cue meets L6 and the radiation cue does not.
+
+| onset | S1 | T1 | D1 | Sep share 2015 / 2018 | range | Chl-a Sep / Oct | Φ full | r |
+|---|---|---|---|---|---|---|---|---|
+| calendar, Aug 25 (§61.13) | 0.734 | 0.880 | −0.042 | 0.693 / 0.720 | 0.243 | 34.2 / 25.7 | 6.8989 | +0.74 |
+| temperature cue | 0.696 | 0.852 | **−0.111** | 0.606 / 0.624 | 0.181 | 35.9 / 26.3 | 6.9051 | +0.75 |
+| radiation cue | 0.717 | 0.887 | −0.046 | 0.645 / 0.717 | 0.317 | 34.6 / 25.9 | 6.8983 | +0.74 |
+| observed | 0.826 | | −0.673 | 0.276 / 0.089 | 0.838 | 50.2 / 46.4 | | |
+
+- **SUPPORTED by the registered contrast:** the temperature cue's D1 is −0.111, the radiation cue's −0.046. The gain
+  comes from the bloom years themselves: their mean share fell 0.707 → 0.615, while the other years' median fell
+  only 0.749 → 0.726.
+- **A measured dose-response.** Across the eight years, the change in September share against the change in onset
+  date is linear: −0.0028 per day of later onset (r −0.96; −0.0041 per day and r −0.95 without 2019). The bloom years
+  had the latest temperature onsets (+14 and +22 days), which accounts for their −0.09 and −0.10.
+- **Timing is a modulator, not the bloom-year mechanism.** At that slope, bringing 2018 from 0.72 to the observed
+  0.09 would need an onset 225 days later. The tested onsets do not explain the bloom years' observed biomass (6.0
+  and 10.5 mg C/L, against 2.4-4.6 in the model every year). That does not locate the cause: 2018's August fixer
+  biomass was typical and its bloom peaked in September, and other growth, loss or transport differences are not
+  ruled out. The cue closes about 11 % of the D1 gap.
+- **Design limits:**
+  - 2019's July 7 onset (that year peaked in June and then cooled) pulls the mean onset to August 27, while the
+    other seven years average about September 1. That is why the temperature cue's September fixers sit higher than
+    the calendar run's. A version with an August floor was not run.
+  - The temperature cue is FLAT by §61.1's rule (range 0.181 < 0.2): 2019 rises while the bloom years fall, which
+    compresses the range. This is a separate line from L6 and does not change the contrast verdict.
+- **L1-L5: PARTIAL for both cues.** Timing is fixed (September fixers −46 %), S1 stays in band, the seed bank stays at
+  0.22-0.23, and L3 fails narrowly (temperature cue: October 26.3 against 26.5, September passes). Φ fails at both
+  thresholds: 6.9051, and 6.8983 against 6.898 (and E4's exact 6.8977).
+- **The L3 pattern.** Three of the four settling runs (0.1 m/d with a calendar onset, and both cues) miss the Chl-a
+  floors by 0.2-0.8 µg/L; the 0.3 m/d run misses them by 5.4 (September) and 3.0 (October). L3 is measuring the autumn
+  community the Nostocales were standing in for, not the exit mechanism. Any mechanism that removes September
+  Nostocales will land here until that community exists.
+- Nothing adopted.
+
+**61.15 Status: candidates for the missing autumn Nostocales exit (2026-11-07/08).**
+
+| candidate | tested by | verdict | lines that fail |
+|---|---|---|---|
+| earlier akinete latch (`I_FORM_AKI` 120, 150) | §61.9, two runs | no effect on September; the error moves to October and the next summer through the seed bank | L1, L2; L4 (r, S1, TN); L3 at 150 |
+| death rate with weaker temperature dependence | §61.10, code read | ruled out: losses already barely respond to cooling (θ = 1 adds 0.008/d of the 0.032 needed) | — |
+| September phosphorus relief as an artifact | §61.11, observations | not supported: the share of samples above 0.005 mg P/L rises like the model's (a frequency test; the relief's magnitude and growth effect cannot be checked against censored data) | — |
+| higher growth T_min | §61.12, literature | not justified: T_min 8-10 °C; *A. flos-aquae* near-optimal at 16 °C | — |
+| autumn settling, calendar onset (0.1, 0.3 m/d) | §61.13, two runs | PARTIAL: at 0.1, S1 passes, timing fixed, bank settles; 0.3 overshoots | L3 (by 0.8); L4 (Φ, r, Chl-a bias) |
+| autumn settling, temperature-cued onset (0.1 m/d) | §61.14, two runs incl. a radiation contrast | PARTIAL; the bloom years respond (D1 −0.111; −0.003 per day of onset) | L3 (October by 0.2); L4; FLAT |
+
+Open: the bloom years' biomass (the tested exit timings do not reach it; §61.16 shows the forcing does not carry the bloom
+signal into the model's growth), and the missing autumn community (L3, the Chl-a bias, the October phosphate
+excess).
+
+**61.16 The model's Nostocales growth does not carry the bloom-year signal.** Registered before computing (note
+item 46, 2026-11-08 00:45), with no run (process rates of §61.7). Each bloom year is judged in its own build-up
+window, set from the observations: 2015, a whole-season bloom, in June-August; 2018, a late bloom, from August 15 to
+September 15. Each is compared with the six other years in the same window. A quantity SEPARATES if both bloom years
+lie above the others' range, and counts as PARTIAL if both lie above their median.
+
+| quantity | 2015, Jun-Aug | others' range (median) | 2018, Aug 15-Sep 15 | others' range (median) | verdict |
+|---|---|---|---|---|---|
+| temperature factor | 0.651 | 0.637-0.796 (0.729) | 0.700 | 0.515-0.707 (0.624) | no |
+| light factor | 0.480 | 0.480-0.612 (0.559) | **0.572, above the range** | 0.442-0.534 (0.485) | no |
+| P factor | **0.236, above the range** | 0.186-0.228 (0.209) | 0.145, below the range | 0.181-0.251 (0.215) | no |
+| N factor | 0.694 | 0.628-0.740 (0.681) | 0.728 | 0.653-0.773 (0.697) | partial |
+| specific growth (/d) | 0.141 | 0.133-0.175 (0.159) | 0.121 | 0.106-0.125 (0.119) | no |
+| specific net kinetics (/d) | 0.038 | 0.031-0.059 (0.050) | 0.017 | 0.009-0.026 (0.015) | no |
+| Nostocales biomass (mg C/L) | 1.024 | 0.842-1.423 (0.982) | 1.780 | 1.531-2.121 (1.684) | partial |
+
+- **No factor separates both bloom years.** By the registered reading, the forcing does not carry the bloom signal
+  into the model's growth. The model's Nostocales are only 4-6 % above the median in the bloom years, against
+  observed bloom-year biomass three to six times typical.
+- **Each bloom year's distinctive condition does reach the model, and is cancelled by another limitation.** 2015
+  has the most phosphorus but is cooler and darker. 2018 has the most light (the sunny late summer of §61.6) and the
+  strongest phosphorus limitation of any year.
+- **A post-hoc hypothesis, not registered.** In 2018 the model's Nostocales are phosphorus-starved just when light
+  favours them, and in the model they cannot use dissolved organic phosphorus: `frac_avail_DOP` = 0, a constant used
+  only in the Nostocales call. The literature conflicts. Munkes et al. (2021) report one study in which
+  *Aphanizomenon* drew about 85 % of its phosphorus from DOP, and another (Vahtera et al., 2007b) in which it could
+  not use DOP. A registered `frac_avail_DOP` probe would test whether DOP access lifts the bloom years, 2018 most.
+- Nothing adopted.
+
+**61.17 Nostocales access to dissolved organic phosphorus does not carry the bloom-year signal.** Registered before
+the runs (note item 48, 2026-11-08 01:10). The switch@2.6 inputs with `frac_avail_DOP` 0.1 and 0.3, a Nostocales-only
+constant; no settling, to isolate the summer. The values are modest by design: the base's summer medians are PO4
+0.0009 and DOP 0.0056 mg P/L, so the P factor rises about 1.5× and 2.2×.
+
+The lines:
+- B1, the bloom signal: each bloom year's biomass in its build-up window (§61.16), relative to the other years'
+  median, gains at least 10 points;
+- B2: D1 reaches ≤ −0.130;
+- B3: the bloom years' September total ratio rises;
+- plus the cost lines.
+
+| `frac_avail_DOP` | B1, 2015 / 2018 against the median | D1 | S1 | typical Jul / Aug fixers | Φ | Chl-a bias | TN / TP bias |
+|---|---|---|---|---|---|---|---|
+| 0 (base) | +4.3 / +5.7 % | −0.080 | 0.548 | 1.03 / 1.70 | 6.906 | −6.33 | +0.31 / +0.0035 |
+| 0.1 | +8.0 / +9.2 % | −0.077 | 0.299 | 1.75 / 2.67 | 6.858 | −4.83 | +0.36 / +0.0057 |
+| 0.3 | +6.8 / +8.5 % | −0.066 | 0.238 | 2.15 / 2.91 | 6.840 | −4.12 | +0.38 / +0.0066 |
+| observed | bloom years 3-6× typical | −0.673 | 0.826 | 0.28 / 0.84 | | | |
+
+- **Not carried, by the rule.** B1 gains only 2.4-3.7 points, and B2 is not met. B3 holds, barely.
+- **DOP access lifts the Nostocales in every year,** not differentially in the bloom years: typical July fixers rise
+  69-108 %. The composition collapses toward fixers (S1 0.30 and 0.24), and the TN and TP biases worsen, while Φ and
+  the Chl-a bias improve. It is the Φ-versus-composition trade of §52 again.
+- **Predictions:** the level at 0.1 held, but that level is not the registered gain. The rest were refuted: B1 at
+  0.3, D1, the size of the summer overshoot, and S1.
+- **The bloom-year candidates so far:**
+
+| candidate | tested by | carries the bloom signal? |
+|---|---|---|
+| forcing: temperature, inflow, river loads, wind | §61.4 | no |
+| the model's Nostocales growth factors | §61.16 | no (each bloom year's favourable factor is cancelled by another) |
+| exit timing (a temperature-cued settling onset) | §61.14 | a modulator only (about 11 % of the bloom response) |
+| Nostocales access to DOP | §61.17 | no (lifts every year) |
+
+  Untested: the inoculum (observed July 2015 fixers were already eight times typical, while the model's spring 2018
+  seed bank was the lowest of any year), surface accumulation in calm spells, and observational patchiness.
+- Nothing adopted.
