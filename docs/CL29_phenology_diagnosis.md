@@ -4818,8 +4818,8 @@ process-rate reconstruction (r 1.0000).
 - The observations cannot settle whether the real collapse is kinetic or hydrodynamic.
 - Candidates for the missing kinetic exit, each needing its own registration: an earlier latch (`I_FORM_AKI` 120
   or 150 W/m²; tested in §61.9: it is coupled to the seed bank, not a single-setting fix); a death rate that
-  falls more slowly with temperature than growth does; an autumn settling velocity for the Nostocales (none
-  now).
+  falls more slowly with temperature than growth does (ruled out in §61.10); an autumn settling velocity for
+  the Nostocales (none now; tested in §61.13).
 - Nothing adopted.
 
 **61.9 An earlier akinete latch: no effect on September; it moves the error to October and the next summer.**
@@ -4946,10 +4946,54 @@ scite; no editorial notices on any source used.
   Curonian-strain growth curve was found.
 - **For the sinking candidate:** "Cyanobacteria might, however, lose their buoyancy due to decreasing temperatures
   in autumn (Carey et al., 2012)", and "inshore populations have generally weaker gas vesicles" (Munkes et al.,
-  2021).
+  2021). Tested in §61.13.
 
 References: Ishikawa, K., & Tsukada, H. (2001). *Phycological Research*, 49(4), 275-280.
 https://doi.org/10.1046/j.1440-1835.2001.00255.x · Munkes, B., Löptien, U., & Dietze, H. (2021). *Biogeosciences*,
 18(7), 2347-2378. https://doi.org/10.5194/bg-18-2347-2021 · Overlingė, D., Toruńska-Sitarz, A., Kataržytė, M., et
 al. (2021). *Toxins*, 13(12), 838. https://doi.org/10.3390/toxins13120838 · Žilius, M., Vybernaite-Lubiene, I.,
 Vaičiūtė, D., et al. (2021). *Biogeosciences*, 18, 1857. https://doi.org/10.5194/bg-18-1857-2021
+
+**61.13 Autumn settling fixes the September composition without feeding the seed bank; it costs Chl-a.** Registered
+before the runs (note item 42, 2026-11-07 23:20). The switch@2.6 inputs plus a seasonal settling velocity for the
+Nostocales in all 29 boxes: 0 until August 24, then v from August 25 to December 31, every year. The deposited
+fraction (0.9) and the Chl-a suppression flag are as for the other settling groups, and settled matter is removed.
+v = 0.1 and 0.3 m/d lie within the vertical speeds Munkes et al. (2021) give for *Dolichospermum* (0.1-0.3 m/d). The
+lines are L1-L4 of §61.9 (timing, S1, the Chl-a floors, the gate) plus L5: the spring seed bank must not grow.
+
+| settling | Sep fixers | Oct/Aug | S1 | T1 | Chl-a Sep / Oct | spring bank (g C/m²) | Φ / 2012-16 / 2017-21 | r | Chl-a bias | TP bias |
+|---|---|---|---|---|---|---|---|---|---|---|
+| none (base) | 1.414 | 0.205 | 0.548 | 1.27 | 43.8 / 33.1 | 1.25 | 6.906 / 7.320 / 6.768 | +0.81 | −6.33 | +0.0035 |
+| 0.1 m/d | 0.684 | 0.070 | 0.734 | 0.88 | 34.2 / 25.7 | 0.22 | 6.899 / 7.295 / 6.764 | +0.74 | −9.12 | −0.0036 |
+| 0.3 m/d | 0.253 | 0.018 | 0.900 | 0.74 | 29.6 / 23.5 | 0.02 | 6.954 / 7.351 / 6.820 | +0.68 | −9.97 | −0.0051 |
+| observed | 0.324 | 0.061 | 0.826 | | 50.2 / 46.4 | | | | | |
+
+- **PARTIAL at both velocities, by the rule.** L1 (timing) and L5 (the bank) hold, but L3 fails. At 0.1 m/d the
+  September and October Chl-a miss their floors by 0.8 µg/L; marginal, applied as written.
+- **0.1 m/d is the first run to pass S1** (0.734, with T1 0.88). But it is not a candidate:
+  - it fails the Chl-a bias (−9.12) and r (0.74);
+  - Φ is 6.8989, which fails both the gate's 6.898 and E4's exact 6.8977;
+  - the gate passes 5 of 9.
+
+  0.3 m/d overshoots: the September fixers fall below the observed level, S1 is flat across the years (range
+  0.08), and T1 fails.
+- **The TP bias flips sign.** It goes from +0.0035 to −0.0036 and −0.0051: the sink over-corrects phosphorus. TN
+  bias falls as predicted (+0.31 to +0.22 and +0.20), while TN RMSE rises slightly.
+- **The seed bank settles at a lower level** rather than draining. At 0.1 m/d the spring bank draws down from 1.04
+  to about 0.13 over 2013-2016, then fluctuates at 0.1-0.5 with no trend, and July-August Nostocales hold at
+  0.8-1.5 mg C/L. So the typical years 2016-2022 are a quasi-steady state, not a transient.
+- **The succession now has the observed shape** (diagnostic). Typical-year fixers from July to October are
+  0.62 / 1.24 / 0.68 / 0.10 mg C/L, against an observed 0.28 / 0.84 / 0.32 / 0.06: the shape is right at 1.5-2×
+  the level. The bloom years are still absent (D1 −0.04 against −0.67).
+- **Predictions:** the magnitudes were refuted at both velocities (the effects were about twice those predicted),
+  and L3 failed at both (predicted only as "may fail" at 0.3). L5 and the direction of the TN and TP changes held.
+- **Two limits on the reading:**
+  - The onset is a calendar date, not a mechanism, and a prescribed date cannot produce interannual variability;
+    that is why D1 stays near zero. A cue-driven onset would be the mechanistic version: buoyancy loss with
+    falling temperature (Carey et al., 2012, via Munkes et al., 2021), or the latch's radiation average. It is the
+    only version that could reproduce 2015 and 2018, whose radiation crossings and latch dates were the latest
+    (§61.6).
+  - That the Nostocales were carrying late-summer Chl-a that the missing autumn community should carry is an
+    inference. The non-fixers rose only slightly (July 1.53 to 1.78, September 1.91 to 1.98) and not in October.
+    L3's failure is what points at the missing autumn community.
+- Nothing adopted.
