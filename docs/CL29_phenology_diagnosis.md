@@ -4664,8 +4664,46 @@ was rebuilt (`INPUTS_CL29_yr_sw26`) and reproduces §59's probe exactly (Φ 6.90
   the signature of the missing interannual variability, and it is why the ratio-of-means lines misled.
 
 **61.3 Reading.** The typical-year composition responds to parameters: the switch plus KG_NOST moves it by 0.38.
-The bloom years appear in neither regime. A hypothesis, not tested: the blooms need a summer phosphorus supply
-that the model does not have (§59.1: there is no benthic PO4 return). §59 found the same missing term behind the
-summer diatom gap.
+The bloom years appear in neither regime. The hypothesis that the blooms need a summer phosphorus supply the
+model lacks (§59.1: no benthic PO4 return) was tested in §61.4 and is not supported.
 - Later gates use S1 and T1 in place of the two ratio-of-means lines.
 - Nothing adopted; `INPUTS_CL29` is unchanged.
+
+**61.4 What drives the bloom years? The summer-phosphorus hypothesis is not supported.** Registered before any
+year-wise value was computed (note item 26, 2026-11-07 19:25), and descriptive: 2 bloom years (2015, 2018)
+against 6 others. H: a summer internal P supply drives the fixer blooms, and the model lacks it. Predictions:
+- P1: both bloom years rank among the 3 warmest Jul-Aug summers or the 3 lowest Jun-Sep Nemunas inflows;
+- P2: their river TP load is not above the others' median;
+- P3: observed Jul-Sep in-lagoon TP (EPA same-day pairs, the nine lagoon boxes) is above the others' median in
+  both years, and the obs − model gap is larger in both;
+- P4 (secondary): a lower river DIN:TP and/or calmer summers.
+
+H was to count as supported only if P1, P2 and P3 all held; the sediment-PO4 sensitivity run was conditional on
+that. E4 is the model reference; model TP comes from the validator's own loader.
+
+| year | Jul-Aug T (°C) | Jun-Sep Nemunas Q (m³/s) | river TP load (t) | river DIN:TP | obs Jul-Sep TP | model TP | obs − model | wind (m/s) |
+|---|---|---|---|---|---|---|---|---|
+| **2015** | 20.45 | 175.3 | 237.1 | 1.5 | 0.0592 | 0.0870 | −0.0277 | 6.13 |
+| 2016 | 20.43 | 226.1 | 343.1 | 0.7 | 0.0811 | 0.0892 | −0.0082 | 5.68 |
+| 2017 | 19.94 | 406.7 | 567.1 | 1.4 | 0.0791 | 0.0904 | −0.0113 | 6.40 |
+| **2018** | 22.13 | 209.0 | 299.7 | 0.8 | 0.0754 | 0.0930 | −0.0176 | 5.97 |
+| 2019 | 20.37 | 164.6 | 234.5 | 1.4 | 0.0632 | 0.0745 | −0.0113 | 6.26 |
+| 2020 | 20.69 | 174.8 | 241.2 | 0.9 | 0.0596 | 0.0841 | −0.0245 | 5.84 |
+| 2021 | 22.17 | 238.1 | 316.2 | 1.3 | — | — | — | 5.76 |
+| 2022 | 21.69 | 365.5 | 470.1 | 1.0 | — | — | — | 5.70 |
+
+- **P3 fails on both halves.** Observed TP is not elevated in the bloom years: 2015 has the lowest value of the six
+  years with data, and 2018 the third highest. The model over-predicts TP more in the bloom years (gap −0.028
+  and −0.018, against the others' median −0.011). The failure is robust to the data limits: 2015 is the lowest
+  and the most negative whichever comparison years are used.
+- **P1 holds, but it is not evidence.** 2018 is the second-warmest summer, and 2015 has the third-lowest
+  inflow, level with the non-bloom 2020 (175.3 against 174.8 m³/s). Every condition the bloom years show is
+  shared by non-bloom years: 2019 and 2020 were dry, 2021 and 2022 hot. The forcing in `INPUTS_CL29` does not separate the bloom
+  years from the others.
+- **P2 holds:** the bloom years' river TP loads (237 and 300 t) are below the others' median (330 t).
+- **P4 does not hold:** 2015 has the highest river DIN:TP, and neither bloom summer was calmer.
+- Limits: there are no EPA TP observations in Jul-Sep 2021-2022, so P3 compares four years (2016, 2017, 2019,
+  2020). 2019 has 671 TP pairs, from dense sampling, against about 50 in the other years.
+- **Outcome:** H is not supported. By the registered rule, the sediment-PO4 sensitivity run does not follow.
+  Untested alternatives: a sampling coincidence (one September date per station against short, patchy blooms),
+  seeding from the previous season, and spring conditions. Nothing adopted.
