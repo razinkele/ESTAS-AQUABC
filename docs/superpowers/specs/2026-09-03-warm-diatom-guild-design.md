@@ -496,3 +496,10 @@ checked (Tilman & Kilham's values were not retrievable).
   constant, against the allometry for the guild's main species (it is not refuted for
   *S. subsalsum* alone). Route 2 (the summer-N deficit, §8.4) remains the defensible way to open
   the summer niche.
+
+**8.9 Route 2 tested (2026-11-07): restoring summer nitrogen does not open the niche.** See
+diagnosis §59. The summer DIN pool is a Nostocales loop (84 % of NH4 uptake, turnover 3 h). The
+DIN-gated fixation switch (`NOST_FIX_SWITCH 1`) restores summer NH4 to the observed level, yet the
+§8.5 swap screen still fails gate [a]: October with the cold guild is 0.157 at KG_NOST 7.6 and
+0.123 at 2.6. Once nitrogen is relieved, phosphorus (0.12-0.20) and light (0.15-0.16) bind. Both
+routes of §8.7 are now closed; the guild's open question is phosphorus and light.
