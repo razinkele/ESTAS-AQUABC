@@ -5324,20 +5324,29 @@ and 23). The windows are those of §61.7: Nostocales peak to akinete latch, per 
   predicted.
 - **Why the sign is systematic.** The daily rows sit on the flow series' daily knots (00:00), where the linearly
   interpolated flows change slope. Taken at other hours of the day, the daily estimate varies by 0.82 mg C/L (median
-  over the windows), and midnight is its most negative hour in every window. So a fast box is sampled at a
-  phase-locked extreme of its response within the day.
-- **What changes.** §61.7's "unaccounted" line is withdrawn. Its box-level TRANSPORT reading and its lagoon-wide
-  EXPORT reading stand, because neither depended on box 7. For budgets in boxes that flush faster than about once a
-  day, print the mass balance hourly (`PRINT_INTERVAL` 10), restricted to the boxes needed: with two mass-balance
-  boxes the 2012-2022 run writes 2.7 GB, 1.5 GB of it the mass balance.
+  over the windows), and midnight is its most negative hour in five of six windows. (In the sixth, 01:00 is lower, by
+  0.005 mg C/L.) So a fast box is sampled at a phase-locked extreme of its response within the day.
+- **What changes.** §61.7's "unaccounted" line is withdrawn.
+  - §61.7's lagoon-wide figures were built from the same daily rows, so they carry this bias too, but it is small
+    where the mass is. As mass, the residual is −20 t C per window in box 7 and 0 to +8 t C in the other measured
+    boxes (medians over the windows).
+  - Even if all 28 lagoon boxes carried 0.1 mg C/L (box 19's level, at a flushing of about once a day), the bias
+    would be 731 t C per window. That is 12 % of §61.7's mean transport per window (−6,035 t C). The residuals
+    come from this section's run and the export from §61.7's, so this compares magnitudes only.
+  - So §61.7's EXPORT reading stands (−36,211 t C transport against +8,471 t C kinetics over the six windows), and
+    so does its box-level TRANSPORT reading (a median over 36 box-years). The export figure itself is uncertain by
+    up to about 12 %.
+  - For budgets in boxes that flush faster than about once a day, print the mass balance hourly (`PRINT_INTERVAL`
+    10), restricted to the boxes needed: with two mass-balance boxes the 2012-2022 run writes 2.7 GB, 1.5 GB of it
+    the mass balance.
 
 **63.3 The held-volume water balance.** With the volume held, V dC/dt = Σ Q_in (C_in − C) + C · ΔQ, where ΔQ is the
 box's net inflow. The second term sits inside the advection column, so it cannot be box 7's residual.
 - **It is not box 7's residual.** Box 7's imbalance is 0.12 % of its inflow, and the held-volume term is 0.8 % of its
   advection. In the windows it agrees in sign with the residual once in six and is at most 5 % of its size.
 - **Sixteen of the 29 boxes drift** by at least one box volume over 2012-2022. Box 18 would empty first, on day 448
-  (2013-03-24). That is the free-volume crash documented at day ~449, which `ESTAS_HOLD_VOLUME` was introduced to
-  avoid.
+  (2013-03-24). That matches the free-volume crash documented at day ~449 (the record does not name the box), which
+  `ESTAS_HOLD_VOLUME` was introduced to avoid.
 - **For the Nostocales in the windows**, the held-volume term is:
   - 13-35 % of advection in four mid-lagoon boxes (9, 14, 19, 23), mostly as a sink;
   - 8 % in box 17, and under 1 % in box 7;
@@ -5354,9 +5363,9 @@ box's net inflow. The second term sits inside the advection column, so it cannot
   - If confirmed, this has three consequences:
     - the day-448 crash is the missing P − E, not wrong flows;
     - the held volume treats the P − E part exactly, because rain carries no mass;
-    - the artefact proper is only the storage part (water-level changes). Storage dominates the windows: at its
-      annual mean, the drain is 0.7 % of the lagoon volume per 35 days, against the windows' net water of −14.7 % to
-      +8.8 %.
+    - the artefact proper is only the storage part (water-level changes). Storage dominates the windows. At the
+      September-October climatological rate (−41.0 m³/s), the drain is 1.7 % of the lagoon volume per 35 days (0.7 %
+      at the annual mean), against the windows' net water of −14.7 % to +8.8 %.
 
     The registered held-volume term is therefore an upper bound on the artefact.
 
