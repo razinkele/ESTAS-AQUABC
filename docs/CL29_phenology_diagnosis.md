@@ -4898,3 +4898,32 @@ typical years, six-box means):
   - the CTMI T_min of 8 °C (raising it steepens the autumn fall in growth but delays the spring start; it needs
     literature values for the Curonian Nostocales);
   - autumn settling.
+
+**61.11 The September phosphorus relief is observed; the October phosphate excess is not.** Registered before any
+month-wise value was computed (note item 38, 2026-11-07 22:25). The Nostocales see dissolved inorganic P only
+(DP = PO4 × the Fe-P dissolved fraction; no available DOP), and 68 % of the August-October observations sit at
+the 0.0025 detection substitute. So the test uses a censoring-robust statistic: F5, the fraction of same-day
+pairs (nine lagoon boxes, 2012-2022) with PO4 ≥ 0.005 mg P/L. The relief counts as OBSERVED-LIKE if the observed
+F5 rises from August to September by at least half the model's rise, EXAGGERATED if by less, and NOT RESOLVABLE
+if the model's F5 stays below 0.2.
+
+| same-day pairs | Aug | Sep | Oct |
+|---|---|---|---|
+| F5, observed | 0.16 | 0.41 | 0.13 |
+| F5, switch at KG_NOST 2.6 | 0.06 | 0.44 | 0.98 |
+| F5, E4 | 0.03 | 0.08 | 0.96 |
+| median PO4 (mg P/L), observed / switch / E4 | 0.0025 / 0.0006 / 0.0005 | 0.0025 / 0.0038 / 0.0015 | 0.0025 / 0.0130 / 0.0139 |
+| mean TP, observed / switch / E4 | 0.082 / 0.070 / 0.088 | 0.061 / 0.071 / 0.081 | 0.064 / 0.084 / 0.107 |
+
+- **August to September: OBSERVED-LIKE.** Observed F5 rises +0.25, against the model's +0.38. The phosphate rise
+  that props up the switch run's Nostocales (§61.10) is in the observations too, and the observed fixers
+  collapse despite it. So the missing die-off is not a nutrient effect. That is an inference: real Nostocales
+  could also draw on stored phosphorus.
+- **August to October (secondary): EXAGGERATED.** The model's phosphate keeps rising (median 0.013; 98 % above
+  detection) while the observed falls back below detection. The model's TP rises while the observed stays at
+  0.064. This matches the missing autumn community: observed October diatoms 0.67 and OPA 0.38 mg C/L, both
+  near-absent in the model, which would draw that phosphorus down.
+- E4's September phosphate stays low (F5 0.08) because its large Nostocales stock holds it down; the switch
+  regime reproduces the observed September rise.
+- The remaining candidates for the missing autumn die-off, each needing its own registration: the CTMI T_min,
+  autumn settling, and akinete formation decoupled from the seed bank. Nothing adopted.
