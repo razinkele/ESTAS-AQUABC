@@ -5151,14 +5151,15 @@ are August 15-September 30 (re-establishment) and October-November (the autumn b
 | OPA, Oct-Nov | 0.009 (0.335) | 0.13 / 0.51 / 0.79 / 0.20 | temperature | 0.016 | 0.088 / 0.046 / 0.022 | −0.141 |
 
 - **The budget closes.** The mass balance's kinetics term for both groups equals growth minus respiration,
-  excretion, death and grazing (r 1.0000). Grazing is negligible, not absent: zooplankton is about 0.03 mg C/L, and
-  diatom grazing peaks at 0.006 mg C/L/d. So death (`KD` 0.12 and 0.11 per day at 20 °C) really is the dominant loss
-  for both groups in both windows.
+  excretion, death and grazing to within 2×10⁻⁶ mg C/L/d (the largest absolute residual over the six boxes and all
+  days). On the same basis as death, grazing is negligible: the biomass-weighted specific grazing rate is
+  0.0000-0.0001 per day in both windows for both groups, against death at 0.09-0.11. Zooplankton is about 0.03 mg
+  C/L. So death (`KD` 0.12 and 0.11 per day at 20 °C) really is the dominant loss for both groups in both windows.
 - **The autumn starts from a missing population.** Model diatoms on September 1 are 0.8 % of the observed
   August-September level. (Corrected in §62.1: the late summer does not erase them. Weighted by biomass, their
   late-summer kinetic net is −0.025 per day and their biomass rises about tenfold from August 15 to September 30.
-  The table's −0.118 is a median of specific rates that near-empty box-days dominate. The missing population is
-  missing by mid-August: the summer wipe-out at the cold guild's T_max of 21 °C.)
+  The table's −0.118 is a median of specific rates that near-empty box-days dominate. The population is missing by
+  mid-August, and §62.2 shows the cold guild's T_max of 21 °C is not the main cause.)
 - **"Light-bound" in October-November is the light-limited regime, not a weak light response.** The diatoms'
   saturating light is 216 W/m² against OPA's 83, because the model scales saturating light with each group's
   maximum growth rate (§42). In the light-limited regime the maximum rate cancels, so the two groups' light factors
@@ -5176,7 +5177,7 @@ are August 15-September 30 (re-establishment) and October-November (the autumn b
   so the guild is colder-adapted than I assumed.
 - Nothing adopted.
 
-**62.1 Raising the diatoms' phosphorus affinity barely restores them; the gap is the summer wipe-out.** Registered
+**62.1 Raising the diatoms' phosphorus affinity barely restores them; the gap is the missing summer population.** Registered
 before the runs (note item 53, 2026-11-08 03:00). The §62 setup with `KHS_DIP_DIA` 0.0056 (§60.3's value) and
 0.0030, against 0.0084.
 
@@ -5194,6 +5195,10 @@ The lines:
 | 0.0030 | 0.125 | 2.2 % | 1.05 | 35.4 / 26.0 | 6.812 / 7.157 / 6.690 | −0.161 | 0.98 |
 | observed | 0.364 | | | 50.2 / 46.4 | | −0.673 | 0.13 |
 
+The inoculum here is the median over the typical years of the six-box September-1 mean; §62's 0.8 % is the median
+over box-years of each box's September-1 value. Both are relative to the observed August-September typical median
+(0.337 mg C/L). The aggregations differ, not the setup.
+
 - **No effect at 0.0056 by the rule (below 0.10). At 0.0030, a weak effect the rule has no category for:** above
   0.10, but K2 fails.
   - K3 fails at both; the K4 guard holds; K5 fails on October by 0.4-0.5 µg/L.
@@ -5204,9 +5209,10 @@ The lines:
 - **Weighted by biomass, the picture changes.** The late-summer kinetic net is −0.025 per day, not §62's
   median-of-specific-rates −0.118, and the October-November net is +0.070 per day. The diatoms' biomass rises about
   tenfold from August 15 (median 0.0010 mg C/L) to September 30 (0.0101). Advection is slightly negative on
-  average, so this is not river import (the Nemunas boundary diatoms are a constant 0.02). The diatoms are missing
-  by mid-August, wiped out by the cold guild's summer ceiling (T_max 21 °C), and recover slowly from almost
-  nothing. Easing the late-summer phosphorus bind cannot fix a population that is absent.
+  average, which does not rule out river import into individual boxes (the Nemunas boundary diatoms are a constant
+  0.02). The diatoms are missing by mid-August and recover slowly from almost nothing. Their summer ceiling
+  (T_max 21 °C) is not the main cause (§62.2). Easing the late-summer phosphorus bind cannot fix a population that is
+  absent.
 - **Side gains (context only):** Φ reaches 6.812 at 0.0030, with both halves under the gate's thresholds. D1
   strengthens to −0.161, and the rank correlation of the yearly shares to +0.62.
 - **What this points at:** a diatom population that survives the summer, i.e. the warm-tolerant summer-autumn
