@@ -4789,9 +4789,11 @@ before the Nostocales peak, and DEC, from the peak to the akinete latch.
 - As registered: GROWTH-SIDE in 36 of 36 box-years, temperature turns growth down (−56 %), and phosphorus binds
   the July run-up (0.17).
 - Zooplankton grazing on the Nostocales is zero throughout, and akinete formation is zero before the latch.
-- **The rule's premise fails.** Its categories assumed a kinetic decline, and the model does not have one. The
-  losses fall with temperature in step with growth, so the kinetic net stays near zero. Integrated from the peak
-  to the latch, kinetics explain a median 11 % of the fall (−1.8 of −56.1 mg C/L summed over the box-years).
+- **The rule's premise fails.** Its categories assumed a kinetic decline, and the model does not have one: the
+  kinetic net stays near zero. (Why: §61.10. The losses do not share growth's temperature factor; the
+  Nostocales' phosphorus limitation eases as the season turns and offsets the cooling.) Integrated from the
+  peak to the latch, kinetics explain a median 11 % of the fall (−1.8 of −56.1 mg C/L summed over the
+  box-years).
 
 *Step 2, the mass balance* (`MASS_BALANCE_OUT` in all 29 boxes). Its kinetics term for the Nostocales equals the
 process-rate reconstruction (r 1.0000).
@@ -4864,3 +4866,35 @@ typical years, six-box means):
   not route biomass into akinetes.
 - Nothing adopted. Even with its Φ gain, 120 is not a candidate: r and TN fail, and it worsens the summer
   composition.
+
+**61.10 Why the kinetic net stays near zero: phosphorus relief, not a shared temperature factor.** A code read of
+`aquabc_II_pelagic_lib_NOSTACALES.f90` and `GROWTH_AT_TEMP`; no run.
+- **Growth** = `KG_NOST` × the temperature factor × the light, nutrient and fixation factors. The temperature
+  factor is CTMI with T_min 8, T_opt 26 and T_max 33 °C; the logged factor matches CTMI to four decimals.
+- **Metabolic respiration and excretion** are 5 % of growth (`EFF_NOST_VEG_HET_GROWTH` 0.95), so they share
+  growth's factor exactly.
+- **Dark respiration** is 0.06 × 1.04^(T−20) per day, and **death** 0.040 × 1.05^(T−20), linear (closure off).
+  There is no zooplankton grazing on the Nostocales.
+
+| T (°C) | growth temperature factor (relative to 21 °C) | death (/d) | dark respiration (/d) |
+|---|---|---|---|
+| 21 | 0.772 (1.00) | 0.042 | 0.062 |
+| 18 | 0.527 (0.68) | 0.036 | 0.056 |
+| 15.5 | 0.326 (0.42) | 0.032 | 0.050 |
+| 12 | 0.103 (0.13) | 0.027 | 0.044 |
+
+- **Death does not share growth's temperature factor.** From 21 to 15.5 °C growth's factor falls 58 %, death
+  24 % and dark respiration 19 %. Removing death's temperature dependence entirely (θ = 1.0) would add only
+  0.008 per day at 15.5 °C, a quarter of the roughly 0.032 per day an observed-style collapse needs (−62 % in
+  about 30 days). There is no one-setting test of that kind.
+- **Phosphorus relief holds the net at zero.** A per-row decomposition from the 30 days before the peak to the
+  decline (36 box-years): specific growth ×0.65 = temperature ×0.44 × everything else ×1.90. Within the rest,
+  light is ×0.77, and the nutrient and fixation part ×2.64 (P limitation ×2.88, N ×0.85). The Nostocales'
+  phosphorus limitation eases about threefold as the season turns, which props growth up against the cooling.
+  Losses fall ×0.77, so the net stays near zero.
+- Candidates this points at, each needing its own registration:
+  - the September phosphorus relief itself (does the model's PO4 rise from August to October more than the
+    observed?);
+  - the CTMI T_min of 8 °C (raising it steepens the autumn fall in growth but delays the spring start; it needs
+    literature values for the Curonian Nostocales);
+  - autumn settling.
