@@ -4698,8 +4698,9 @@ that. E4 is the model reference; model TP comes from the validator's own loader.
   and the most negative whichever comparison years are used.
 - **P1 holds, but it is not evidence.** 2018 is the second-warmest summer, and 2015 has the third-lowest
   inflow, level with the non-bloom 2020 (175.3 against 174.8 m³/s). Every condition the bloom years show is
-  shared by non-bloom years: 2019 and 2020 were dry, 2021 and 2022 hot. The forcing in `INPUTS_CL29` does not separate the bloom
-  years from the others.
+  shared by non-bloom years: 2019 and 2020 were dry, 2021 and 2022 hot. The quantities tested here (Jul-Aug
+  temperature, Jun-Sep inflow, river loads, wind) do not separate the bloom years from the others.
+  Late-summer radiation was not tested here; see §61.6.
 - **P2 holds:** the bloom years' river TP loads (237 and 300 t) are below the others' median (330 t).
 - **P4 does not hold:** 2015 has the highest river DIN:TP, and neither bloom summer was calmer.
 - Limits: there are no EPA TP observations in Jul-Sep 2021-2022, so P3 compares four years (2016, 2017, 2019,
@@ -4731,3 +4732,42 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   the September values, so S1 stands as registered.
 - A connection, not yet scored: the adopted E4 keeps its fixers through September-October in every year
   (§61.2), so its composition resembles a permanent 2015.
+
+**61.6 Where in the season the model goes wrong.** Registered before any model month was computed (note item 30,
+2026-11-07 19:55). The model is matched to the observations' boxes month by month (Jul-Oct); typical years are
+2016, 2017 and 2019-2022. The rule:
+- the autumn exit, judged by the typical-year median October/August fixer ratio: HAS it at ≤ 0.25, LACKS it above
+  0.5, PARTIAL in between (observed 0.061);
+- with it, whether the non-fixers take over by October (October share > 0.5);
+- and whether the fixer peak month is July or August.
+
+| typical-year median | Jul | Aug | Sep | Oct | median Oct/Aug ratio | median Oct share |
+|---|---|---|---|---|---|---|
+| observed fixers (mg C/L) | 0.28 | 0.84 | 0.32 | 0.06 | 0.061 | 0.949 |
+| E4 fixers | 2.50 | 3.21 | 3.22 | 1.19 | 0.388 | 0.369 |
+| switch, KG_NOST 2.6, fixers | 1.03 | 1.70 | 1.41 | 0.37 | 0.205 | 0.812 |
+| observed non-fixers | 0.77 | 2.36 | 1.59 | 0.84 | | |
+| E4 non-fixers | 0.56 | 0.44 | 0.65 | 0.71 | | |
+| switch non-fixers | 1.53 | 1.62 | 1.91 | 1.60 | | |
+
+- **E4 is PARTIAL, and the non-fixers never take over** (October share 0.369). By the rule its peak month is
+  September, but August and September tie (3.213 against 3.215): E4's fixers plateau through August-September.
+- **The switch run has the exit**, the non-fixers take over, and its peak month is right. Its September
+  shortfall is timing. The observed fixers fall 62 % from August to September; the model's fall 17 %, then 74 %
+  from September to October.
+- 99 % of the model's fixer carbon is Nostocales (NOST_VEG_HET_C).
+- **What sets the timing is not the akinete latch** (checked in the model's own `NOST_STAGING.out`). The latch
+  fires when the 7-day radiation average drops below `I_FORM_AKI`, which is 85 W/m² since §30 moved it from 120
+  to cure an October Chl-a deficit. It fires on October 6-22. But in boxes 9 and 17 (2017, 2019) the
+  Nostocales peak on August 24-September 4 and have already fallen 71-86 % by the latch date, with zero formation
+  flux before it; the latch only removes the residual. The shortfall is a late peak and a slow pre-latch
+  decline, and their driver (temperature, light, mortality or grazing) is not yet identified.
+- **`I_FORM_AKI` 85 looks like a compensation.** It keeps that residual into October, standing in for October
+  biomass that the observations put in non-fixers, diatoms (0.67 mg C/L) and OPA (0.38), all three short in the
+  model.
+- **An unregistered observation.** The bloom years had sunnier late summers: they are among the latest
+  radiation crossings at every threshold (85 W/m²: 1st and 2nd; 120: 1st and 3rd; 150: 1st and tied 2nd). The
+  model's own latch dates put 2018 and 2015 as the two latest (October 22 and 17), and its October fixers are
+  higher in those years. So the model responds in the right years, but a month late and weakly. A registered
+  August-September radiation check would be the honest test.
+- Nothing adopted.
