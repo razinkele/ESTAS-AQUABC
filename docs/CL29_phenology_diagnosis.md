@@ -5243,3 +5243,22 @@ of the maximum at 20 / 22 / 24 °C (base 0.17 / 0 / 0), at some cost to cold-wat
 References: Vidaković, D., Krizmanić, J. Ž., Subakov Simić, G., et al. (2016). *Studia Botanica Hungarica*, 47(2).
 https://doi.org/10.17110/studbot.2016.47.2.201 · Schernewski, G., Neumann, T., von Weber, M., et al. (2025).
 *Environments*, 12(10), 370. https://doi.org/10.3390/environments12100370
+
+**62.3 The autumn OPA is green algae, and the literature does not settle its lower temperature limit.** The
+composition comes from the Curonian database (phytoplankton biomass in the lagoon boxes, October-November 2012-2022,
+with the class-level aggregate rows for diatoms and cyanobacteria excluded). Chlorococcales make up about 54 %
+(*Pediastrum boryanum*, *Desmodesmus communis* and *D. maximus*), the Chlorophyceae aggregate about 26 %, Zygnematales
+(*Mougeotia*) about 8 %, and cryptophytes only about 6 %.
+
+The decision rule was registered before the search (note item 58): lower OPA's CTMI T_min (10 °C) only if these
+greens are reported to grow at or below 8 °C.
+- *Pediastrum* had "high affinity to low temperatures in lab scale experiments" and was "dominant, especially during
+  winter months" in outdoor ponds (Cho et al., 2017).
+- In Dianchi Lake, the *Scenedesmus*-*Pediastrum*-*Coelastrum* group "was dominant at low temperature in winter and
+  early spring" (Dong et al., 2015).
+- Neither reports growth at or below 8 °C. The verdict is **inconclusive**, so there is no T_min probe. The larger
+  OPA gap is in late summer (§62), when temperature is favourable.
+
+References: Cho, D.-H., Choi, J.-W., Kang, Z., et al. (2017). *Scientific Reports*, 7.
+https://doi.org/10.1038/s41598-017-02139-8 · Dong, J., Zhou, W., Song, L., et al. (2015). *Annales de Limnologie*.
+https://doi.org/10.1051/limn/2015014
