@@ -442,3 +442,64 @@ relieved (0.64 / 0.35), light becomes the main summer limit (0.16).
    fixer-dominance / summer-N diagnosis, and it also bears on the partition (§2.2, gate [d]).
 3. **Either route is re-screened by §8.5 before any build**, and the light cap (summer LIGHT
    0.16) bounds what any summer diatom can reach.
+
+**8.8 Literature check (2026-11-07): the ×4 affinity of route 1 is not supported.** Searched with
+scite (abstracts, open full text, citation statements); scite reports no editorial notices on any
+source used. Scope: this tests the warm guild *relative to the model's cold-guild constants*;
+whether those constants (KHS_DIN_DIA 0.71 µM, KHS_DIP_DIA 0.27 µM) match the literature was not
+checked (Tilman & Kilham's values were not retrievable).
+- **No constants were found for the two species.** A query for the two names (plus *S. potamos*)
+  AND kinetic terms returns 12 records, all read: none reports an N or P half-saturation constant.
+  The top-ranked results of the broader species searches (8 + 8 + 6) carry none either.
+- **Size points the other way for the dominant species.** Half-saturation constants for nutrient
+  uptake rise with cell volume, and between-taxon differences are "nearly always due to
+  between-taxon variation in volume" (Edwards et al. 2012, doi:10.4319/lo.2012.57.2.0554; also
+  Hillebrand et al. 2021, doi:10.1111/1365-2435.13986). The lagoon's own monitoring measures the
+  sizes (EPA phytoplankton records, LST EN 16695 unit volumes, Curonian stations, 44,600 records):
+
+| taxon | guild | median µm³ | biomass-weighted µm³ |
+|---|---|---|---|
+| *Actinocyclus normanii* | warm | **19,782** | **30,214** |
+| *Skeletonema subsalsum* | warm | **95** | 268 |
+| *Stephanodiscus hantzschii* | cold | 886 | 1,170 |
+| *Aulacoseira islandica* | cold | 1,689 | 2,640 |
+| *Asterionella formosa* | cold | 858 | 787 |
+
+  *A. normanii* is 12-23× the cold-guild cells, so by allometry its constants would be higher, not
+  4× lower, and it carries 44.5 % of the observed autumn diatom biomass (§1). Its Curonian cells
+  sit mostly in the 22-37 µm classes, below the 40 µm that separates its small and large morphs
+  (large cells do not form below 8 PSU; Vidal et al. 2018, doi:10.18257/raccefyn.713), yet they
+  are still ~20× the cold diatoms. Only the small *S. subsalsum* (~9× smaller than
+  *S. hantzschii*) could plausibly sit below the cold guild.
+- **The ecology does not separate the guilds.** *A. normanii* is "indicator of eutrophied,
+  polluted waters" (Vidaković et al. 2016, doi:10.17110/studbot.2016.47.2.201) and of "high
+  trophic conditions" (Pérez et al. 2017, doi:10.1080/00288330.2017.1417318). *S. subsalsum* is
+  listed as "tolerant to nutrient pollution" (Bilous et al. 2021, doi:10.3897/phytokeys.178.64426),
+  but in the same list as the cold guild's *Stephanodiscus hantzschii*.
+- **The only congener number is 1.8×, not 4×.** *S. costatum*'s ammonium uptake Ks is 0.4 µM
+  (Conway et al. 1976, doi:10.1007/BF00390940), against the model's 0.71 µM. *S. subsalsum* is a
+  separate lineage from the *S. costatum* complex, whose literature "calls for reinterpretation"
+  (Sarno et al. 2005, doi:10.1111/j.1529-8817.2005.04067.x).
+- **Uptake and growth constants are not interchangeable for P.** For nitrate, Ks for uptake and
+  growth are "similar if not identical" (Eppley & Thomas 1969,
+  doi:10.1111/j.1529-8817.1969.tb02628.x). For phosphate, *Asterionella* and *Cyclotella*
+  differed in growth K but not in uptake K (Tilman & Kilham 1976,
+  doi:10.1111/j.1529-8817.1976.tb02860.x). The model's Monod `KHS_DIP_DIA` therefore cannot be
+  checked against uptake compilations.
+- **The temperature niche is supported.** *S. subsalsum* is a "heat-preferring species" with an
+  optimum of 16-22 °C in the Volga reservoirs (Kulizin et al. 2024, doi:10.3390/life14010061,
+  citing earlier Volga work). *A. normanii* "frequently occurs in summer and autumn" and formed
+  blooms in the Szczecin Lagoon; it made up over 95 % of August heatwave biovolume there, though
+  the authors flag that as possibly an artefact of few samples (Schernewski et al. 2025,
+  doi:10.3390/environments12100370). The cardinals (4, 17, 26) are consistent with both.
+- **So route 1 of §8.7 is closed as a literature-backed route.** A ×4 affinity would be a fitted
+  constant, against the allometry for the guild's main species (it is not refuted for
+  *S. subsalsum* alone). Route 2 (the summer-N deficit, §8.4) remains the defensible way to open
+  the summer niche.
+
+**8.9 Route 2 tested (2026-11-07): restoring summer nitrogen does not open the niche.** See
+diagnosis §59. The summer DIN pool is a Nostocales loop (84 % of NH4 uptake, turnover 3 h). The
+DIN-gated fixation switch (`NOST_FIX_SWITCH 1`) restores summer NH4 to the observed level, yet the
+§8.5 swap screen still fails gate [a]: October with the cold guild is 0.157 at KG_NOST 7.6 and
+0.123 at 2.6. Once nitrogen is relieved, phosphorus (0.12-0.20) and light (0.15-0.16) bind. Both
+routes of §8.7 are now closed; the guild's open question is phosphorus and light.
