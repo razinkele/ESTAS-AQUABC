@@ -4761,7 +4761,8 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   to cure an October Chl-a deficit. It fires on October 6-22. But in boxes 9 and 17 (2017, 2019) the
   Nostocales peak on August 24-September 4 and have already fallen 71-86 % by the latch date, with zero formation
   flux before it; the latch only removes the residual. The shortfall is a late peak and a slow pre-latch
-  decline, and their driver (temperature, light, mortality or grazing) is not yet identified.
+  decline, and their driver (temperature, light, mortality or grazing) is not yet identified. §61.7 identifies
+  it: the decline is export, and the latch is the model's only kinetic exit.
 - **`I_FORM_AKI` 85 looks like a compensation.** It keeps that residual into October, standing in for October
   biomass that the observations put in non-fixers, diatoms (0.67 mg C/L) and OPA (0.38), all three short in the
   model.
@@ -4770,4 +4771,50 @@ month, SINGLE DATE if neither does, MIXED otherwise.
   model's own latch dates put 2018 and 2015 as the two latest (October 22 and 17), and its October fixers are
   higher in those years. So the model responds in the right years, but a month late and weakly. A registered
   August-September radiation check would be the honest test.
+- Nothing adopted.
+
+**61.7 The model's Nostocales are flushed out, not killed off.** Two steps, each registered before its run (note
+items 32 and 33, 2026-11-07 20:35 and 20:50). Both use the switch@2.6 inputs; every run's state output is
+byte-identical to §61.2's.
+
+*Step 1, the kinetic budget.* Process rates in boxes 7, 9, 14, 17, 19 and 23. The windows are PRE, the 30 days
+before the Nostocales peak, and DEC, from the peak to the akinete latch.
+
+| median over 36 box-years (1/d) | PRE | DEC |
+|---|---|---|
+| specific growth | 0.124 | 0.084 |
+| specific loss (respiration, excretion, death, density mortality) | 0.111 | 0.085 |
+| limitation, temperature / light / P / N | 0.78 / 0.57 / 0.12 / 0.73 | 0.32 / 0.44 / 0.42 / 0.60 |
+
+- As registered: GROWTH-SIDE in 36 of 36 box-years, temperature turns growth down (−56 %), and phosphorus binds
+  the July run-up (0.17).
+- Zooplankton grazing on the Nostocales is zero throughout, and akinete formation is zero before the latch.
+- **The rule's premise fails.** Its categories assumed a kinetic decline, and the model does not have one. The
+  losses fall with temperature in step with growth, so the kinetic net stays near zero. Integrated from the peak
+  to the latch, kinetics explain a median 11 % of the fall (−1.8 of −56.1 mg C/L summed over the box-years).
+
+*Step 2, the mass balance* (`MASS_BALANCE_OUT` in all 29 boxes). Its kinetics term for the Nostocales equals the
+process-rate reconstruction (r 1.0000).
+- **Box level: TRANSPORT.** Advection accounts for a median 103 % of the non-kinetic residual; dispersion,
+  settling, loads and sediment terms are zero. The exception is box 7 (the strait, 0.04 km³), with an
+  unaccounted −0.6 to −1.15 mg C/L in five of six years.
+- **Lagoon-wide: EXPORT.** From September 1 to October 5 of the typical years, the 28 lagoon boxes (without sea
+  box 12) lose −36,211 t C by transport and gain +8,471 t C kinetically. The registered 29-box version gives
+  −76,882 and +44,395, because sea box 12 grows Nostocales itself and exports them to the Baltic.
+- **Measured against the stock:** the lagoon holds 9,498 t C of Nostocales on September 1 (mean of the six
+  years). Export removes 64 % of it per window, kinetics add 15 %, and the stock falls 29-63 %.
+- **The water balance is not closed under `ESTAS_HOLD_VOLUME`.** The lagoon's net inflow over the window is +6,
+  −8, +9, −8, −14 and −1 % of its volume in the six years, the same order as the river inflow (about 10 %). Its
+  largest possible effect, the imbalance times the mean concentration, is 2-21 % of a single year's export, and
+  3 % over the six windows. So the export is mostly real exchange with the sea box. The imbalance itself is a
+  model-integrity item.
+
+**61.8 Reading.**
+- The model's late-summer Nostocales decline is export to the sea while the population still grows net-positive.
+- The observed August-September collapse has no kinetic counterpart in the model. The akinete latch is the only
+  kinetic exit (§61.6: not what removes them now), and it fires a month after the observed collapse.
+- The observations cannot settle whether the real collapse is kinetic or hydrodynamic.
+- Untested candidates for the missing kinetic exit, each needing its own registration: an earlier latch
+  (`I_FORM_AKI` 120 or 150 W/m², firing around September 20 or September 7); a death rate that falls more
+  slowly with temperature than growth does; an autumn settling velocity for the Nostocales (none now).
 - Nothing adopted.
