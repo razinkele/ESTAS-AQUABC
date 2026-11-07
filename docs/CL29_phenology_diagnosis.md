@@ -5155,22 +5155,60 @@ are August 15-September 30 (re-establishment) and October-November (the autumn b
   diatom grazing peaks at 0.006 mg C/L/d. So death (`KD` 0.12 and 0.11 per day at 20 °C) really is the dominant loss
   for both groups in both windows.
 - **The autumn starts from a missing population.** Model diatoms on September 1 are 0.8 % of the observed
-  August-September level. That is a consequence of the late-summer dynamics, not only of the summer wipe-out by the
-  cold guild's T_max of 21 °C. A net of −0.118 per day over the 46-day window is a ×0.005 factor, so any mid-August
-  population is gone by October. A summer refuge alone would be erased in September unless the late-summer net
-  also reaches zero.
+  August-September level. (Corrected in §62.1: the late summer does not erase them. Weighted by biomass, their
+  late-summer kinetic net is −0.025 per day and their biomass rises about tenfold from August 15 to September 30.
+  The table's −0.118 is a median of specific rates that near-empty box-days dominate. The missing population is
+  missing by mid-August: the summer wipe-out at the cold guild's T_max of 21 °C.)
 - **"Light-bound" in October-November is the light-limited regime, not a weak light response.** The diatoms'
   saturating light is 216 W/m² against OPA's 83, because the model scales saturating light with each group's
   maximum growth rate (§42). In the light-limited regime the maximum rate cancels, so the two groups' light factors
   cannot be compared. Realized growth is the comparable number: 0.189 per day for diatoms against 0.016 for OPA. The
-  diatoms grow, but death, respiration and settling take nearly all of it, leaving a net of only +0.021 per day.
+  diatoms grow, but death, respiration and settling take most of it: the median specific net is +0.021 per day, and
+  +0.070 weighted by biomass (§62.1).
 - **OPA cannot grow in autumn.** Its CTMI T_min of 10 °C gives a temperature factor of 0.13 in October-November. OPA
   is a composite group, so the literature on the Curonian autumn OPA taxa comes before any T_min change.
 - **Existence proof.** §60.3's calibrated point reached October diatoms of 0.45 (E4 0.09), with `KHS_DIP_DIA`
-  0.0056 and faster N recycling, i.e. with the late-summer phosphorus bind eased. That is the lever this diagnosis
-  points at. Lowering the diatom death rate instead would trade winter diatoms for autumn ones, because `KD_DIA_20`
+  0.0056 and faster N recycling. §62.1 tests the phosphorus-affinity part alone and finds it is not enough on its
+  own. Lowering the diatom death rate instead would trade winter diatoms for autumn ones, because `KD_DIA_20`
   0.12 was set in §30's `formb_closure` as "the February lever".
 - **Predictions:** three held (diatoms light-bound in October-November; the inoculum below 10 %; OPA
   temperature-bound in autumn). One was refuted: the diatoms' late-summer temperature factor is 0.48, not 0.6-0.9,
   so the guild is colder-adapted than I assumed.
 - Nothing adopted.
+
+**62.1 Raising the diatoms' phosphorus affinity barely restores them; the gap is the summer wipe-out.** Registered
+before the runs (note item 53, 2026-11-08 03:00). The §62 setup with `KHS_DIP_DIA` 0.0056 (§60.3's value) and
+0.0030, against 0.0084.
+
+The lines:
+- K1: the late-summer net closes half its gap to zero;
+- K2: October-November diatoms ≥ 0.20 mg C/L;
+- K3: the September-1 inoculum ≥ 5 % of the observed;
+- K4, a guard: February-May diatoms at most 1.20× the base;
+- K5: the autumn Chl-a floors.
+
+| `KHS_DIP_DIA` | Oct-Nov diatoms | Sep-1 inoculum (% obs) | Feb-May (× base) | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 | D1 | October PO4 F5 |
+|---|---|---|---|---|---|---|---|
+| 0.0084 (base) | 0.069 | 1.7 % | 1.00 | 35.9 / 26.3 | 6.905 / 7.288 / 6.776 | −0.111 | 0.98 |
+| 0.0056 | 0.092 | 1.9 % | 1.03 | 35.6 / 26.1 | 6.855 / 7.209 / 6.731 | −0.140 | 0.98 |
+| 0.0030 | 0.125 | 2.2 % | 1.05 | 35.4 / 26.0 | 6.812 / 7.157 / 6.690 | −0.161 | 0.98 |
+| observed | 0.364 | | | 50.2 / 46.4 | | −0.673 | 0.13 |
+
+- **No effect at 0.0056 by the rule (below 0.10). At 0.0030, a weak effect the rule has no category for:** above
+  0.10, but K2 fails.
+  - K3 fails at both; the K4 guard holds; K5 fails on October by 0.4-0.5 µg/L.
+  - The October phosphate excess does not fall.
+  - Most predictions were refuted; the guard held.
+- **K1 was not evaluable as registered.** The base's apparent late-summer net, from the state output, is positive
+  (+0.049 per day), so "half the gap to zero" is undefined.
+- **Weighted by biomass, the picture changes.** The late-summer kinetic net is −0.025 per day, not §62's
+  median-of-specific-rates −0.118, and the October-November net is +0.070 per day. The diatoms' biomass rises about
+  tenfold from August 15 (median 0.0010 mg C/L) to September 30 (0.0101). Advection is slightly negative on
+  average, so this is not river import (the Nemunas boundary diatoms are a constant 0.02). The diatoms are missing
+  by mid-August, wiped out by the cold guild's summer ceiling (T_max 21 °C), and recover slowly from almost
+  nothing. Easing the late-summer phosphorus bind cannot fix a population that is absent.
+- **Side gains (context only):** Φ reaches 6.812 at 0.0030, with both halves under the gate's thresholds. D1
+  strengthens to −0.161, and the rank correlation of the yearly shares to +0.62.
+- **What this points at:** a diatom population that survives the summer, i.e. the warm-tolerant summer-autumn
+  diatoms the observations hold (July 0.41, August 0.56 mg C/L). Spec §8's warm guild failed as a *summer grower*;
+  as an autumn inoculum the question is different. Nothing adopted.
