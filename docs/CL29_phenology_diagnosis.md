@@ -5053,5 +5053,35 @@ temperature cue meets L6 and the radiation cue does not.
 | autumn settling, calendar onset (0.1, 0.3 m/d) | §61.13, two runs | PARTIAL: at 0.1, S1 passes, timing fixed, bank settles; 0.3 overshoots | L3 (by 0.8); L4 (Φ, r, Chl-a bias) |
 | autumn settling, temperature-cued onset (0.1 m/d) | §61.14, two runs incl. a radiation contrast | PARTIAL; the bloom years respond (D1 −0.111; −0.003 per day of onset) | L3 (October by 0.2); L4; FLAT |
 
-Open: the bloom years' summer biomass (no exit timing reaches it), and the missing autumn community (L3, the Chl-a
-bias, the October phosphate excess).
+Open: the bloom years' summer biomass (no exit timing reaches it; §61.16 shows the forcing does not carry the bloom
+signal into the model's growth), and the missing autumn community (L3, the Chl-a bias, the October phosphate
+excess).
+
+**61.16 The model's Nostocales growth does not carry the bloom-year signal.** Registered before computing (note
+item 46, 2026-11-08 00:45), with no run (process rates of §61.7). Each bloom year is judged in its own build-up
+window, set from the observations: 2015, a whole-season bloom, in June-August; 2018, a late bloom, from August 15 to
+September 15. Each is compared with the six other years in the same window. A quantity SEPARATES if both bloom years
+lie above the others' range, and counts as PARTIAL if both lie above their median.
+
+| quantity | 2015, Jun-Aug | others' range (median) | 2018, Aug 15-Sep 15 | others' range (median) | verdict |
+|---|---|---|---|---|---|
+| temperature factor | 0.651 | 0.637-0.796 (0.729) | 0.700 | 0.515-0.707 (0.624) | no |
+| light factor | 0.480 | 0.480-0.612 (0.559) | **0.572, above the range** | 0.442-0.534 (0.485) | no |
+| P factor | **0.236, above the range** | 0.186-0.228 (0.209) | 0.145, below the range | 0.181-0.251 (0.215) | no |
+| N factor | 0.694 | 0.628-0.740 (0.681) | 0.728 | 0.653-0.773 (0.697) | partial |
+| specific growth (/d) | 0.141 | 0.133-0.175 (0.159) | 0.121 | 0.106-0.125 (0.119) | no |
+| specific net kinetics (/d) | 0.038 | 0.031-0.059 (0.050) | 0.017 | 0.009-0.026 (0.015) | no |
+| Nostocales biomass (mg C/L) | 1.024 | 0.842-1.423 (0.982) | 1.780 | 1.531-2.121 (1.684) | partial |
+
+- **No factor separates both bloom years.** By the registered reading, the forcing does not carry the bloom signal
+  into the model's growth. The model's Nostocales are only 4-6 % above the median in the bloom years, against
+  observed bloom-year biomass three to six times typical.
+- **Each bloom year's distinctive condition does reach the model, and is cancelled by another limitation.** 2015
+  has the most phosphorus but is cooler and darker. 2018 has the most light (the sunny late summer of §61.6) and the
+  strongest phosphorus limitation of any year.
+- **A post-hoc hypothesis, not registered.** In 2018 the model's Nostocales are phosphorus-starved just when light
+  favours them, and in the model they cannot use dissolved organic phosphorus: `frac_avail_DOP` = 0, a constant used
+  only in the Nostocales call. The literature conflicts. Munkes et al. (2021) report one study in which
+  *Aphanizomenon* drew about 85 % of its phosphorus from DOP, and another (Vahtera et al., 2007b) in which it could
+  not use DOP. A registered `frac_avail_DOP` probe would test whether DOP access lifts the bloom years, 2018 most.
+- Nothing adopted.
