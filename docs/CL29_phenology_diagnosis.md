@@ -4478,3 +4478,105 @@ the legacy-fixation control at KG_NOST 2.6 shows that neither factor does it alo
   no benthic PO4 return (59.1).
 - Nothing adopted; `INPUTS_CL29` is unchanged. Probe inputs were built by
   `diag_warm_guild_20261107/mkdiag.py` plus the stated one-file edits.
+
+## 60. 2026-11-07: the recalibration with the fixation switch on is not adopted; the `--inputs` bug behind §15 and §21
+
+**The run** (§59.4's recommendation). `calibrate_cl29.py --paramset light_nost`: the `light` set with
+KG_FIX_CYN replaced by KG_NOST_VEG_HET_OPT_TEMP, bounds [1, 8]. Options: `--group-carbon --days 1461
+--popsize 8 --seed 11`. Inputs: `INPUTS_CL29` with `NOST_FIX_SWITCH 1` and `K_FIX_NOST 0.008`. The gate
+below was registered before the launch.
+
+The DE stopped at generation 7 of 25 (convergence 1.05, 512 evaluations); the best point did not change
+after generation 4. The 1461-day Φ (EPA plus group-carbon terms) went from 14.30 to 13.89 (−2.9 %). These
+values cannot be compared with the 730-day Φ of §57.7 and §58.6. The calibrator's full-record base run
+reproduces §59's probe with the switch at KG_NOST 7.6 exactly (Φ 6.7364 / 7.2687 / 6.5635; box output
+byte-identical), so the search ran on the probed model.
+
+Full record 2012-2022, scored with each run's own C:Chl (`--wconst`):
+
+| | E4 (adopted) | switch, KG_NOST 7.6 (DE start) | switch, KG_NOST 2.6 (hand-tuned, §59) | calibrated |
+|---|---|---|---|---|
+| KG_DIA / KG_CYN / KG_NOST / KG_OPA | 8.1 / 2 / 7.6 / 2.58 | as E4 | 8.1 / 2 / 2.6 / 2.58 | 7.52 / 1.39 / 1.89 / 4.49 |
+| K_MIN_DOC_NO3N / K_NITR / KDISS_PON / KHS_DIP_DIA | 2.98 / 1.94 / 0.174 / 0.0084 | as E4 | as E4 | 2.52 / 1.65 / 0.887 / 0.0056 |
+| Φ full / 2012-16 / 2017-21 | 6.898 / 7.361 / 6.742 | 6.736 / 7.269 / 6.564 | 6.906 / 7.320 / 6.768 | **6.815 / 7.175 / 6.694** |
+| seasonal r / autumn:spring (obs 2.06) | +0.78 / 2.53 | +0.78 / 2.64 | +0.81 / 2.18 | +0.81 / 2.16 |
+| Sep CYN share (obs 0.486) / Sep total | 0.175 / 1.04 | 0.162 / 1.07 | 0.545 / 0.88 | 0.307 / 0.85 |
+| TN RMSE / bias | 0.819 / +0.45 | 0.841 / +0.49 | 0.781 / +0.31 | 0.827 / +0.31 |
+| TP RMSE | 0.0423 | 0.0454 | 0.0312 | 0.0314 |
+| Chl-a RMSE / bias | 24.01 / −3.71 | 24.08 / −3.02 | 24.00 / −6.33 | 24.46 / −6.89 |
+
+**60.1 Verdict: 6 of 10 gate lines pass; not adopted.** The gate (registered 15:45, before the launch):
+- full Φ ≤ 6.898, and the halves ≤ 7.320 / 6.742;
+- r ≥ +0.78, autumn:spring in [1.8, 2.4];
+- September CYN share in [0.35, 0.65], September total ≥ 0.85;
+- TN no worse than E4;
+- Chl-a bias no worse than the hand-tuned point;
+- no new parameter within 2 % of a bound.
+
+The calibrated point passes the three Φ lines, r, autumn:spring and the bound line. It fails four:
+- the September share (0.307);
+- the September total (0.8475, a marginal miss, applied as written);
+- TN RMSE (0.827 against E4's 0.819), although the TN bias improves from +0.45 to +0.31;
+- the Chl-a bias (−6.89).
+
+One amendment was made before the candidate was scored. The Chl-a line was registered as −6.3, the
+hand-tuned point's bias rounded; that point itself fails it (−6.335), so the line was set to the exact
+value. The candidate fails both versions.
+
+The registered consequence was: if the DE cannot beat the hand-tuned point on this gate, the hand-tuned
+point is the simpler answer. That is not an adoption. The hand-tuned point fails the gate's three Φ lines,
+because it leaves Φ flat. Neither switch-on point passes the whole gate, and their failures are
+complementary:
+- the calibrated point gains Φ (−1.2 % vs E4) and gives up composition;
+- the hand-tuned point gains composition and gives up Φ;
+- the DE's starting point, with the switch at 7.6, fails autumn:spring, the share and TN.
+
+**60.2 Two predictions refuted.**
+- KG_NOST settled at 1.89, below the hand-tuned 2.6, not within the 2.5-4 registered.
+- KHS_DIP_DIA settled mid-range (0.0056, 0.38 of its log range), not at its floor.
+
+K_MIN_DOC_NO3N and K_NITR came off the ceilings E4 holds; each now sits at 0.92 of its range.
+KDISS_DET_PART_ORG_N_20 rose fivefold to 0.95 of its range: outside the 2 % margin, but the parameter
+nearest a bound.
+
+**60.3 Outside the gate.**
+- **Autumn diatoms partly return.** October DIA_C is 0.45 mg C/L (obs 0.67; E4 0.09), but November
+  overshoots (0.60 vs 0.31). Summer diatoms are still absent (Jul-Sep ≤ 0.05 vs 0.41-0.56). §59 predicted
+  this: phosphorus and light limit them, not nitrogen.
+- **Summer DIN is restored.** The Jul-Sep same-day NH4 median is 0.037 (obs 0.028; the means are equal),
+  and NO3 is no longer stripped (mean 0.020 vs 0.015). Spring NH4 gets worse: the Apr-May median is
+  0.059 (obs 0.018; E4 0.044). The fivefold faster PON dissolution recycles nitrogen in every season.
+- **Silica.** The Aug-Oct silica excess falls by about a quarter (bias +0.80 → +0.61).
+- **EPA Φ.** On the EPA variables alone, the calibrated point is worse than the DE's own starting point
+  (6.815 vs 6.736). The group-carbon terms bought the composition gain at the EPA variables' cost.
+- **Early stop.** The DE stopped at generation 7 on its energy-spread criterion, which measures how
+  close the trial scores are, not where the trial points are. The objective may be flat along some
+  parameter combinations. A seeded restart with a larger population would show whether the search stopped
+  early.
+
+**60.4 The `--inputs` bug, and §15 and §21.** The first launch scored every trial as a penalty. The
+worker processes built each trial from the default `INPUTS_CL29`, and a git worktree does not have that
+folder.
+
+The cause: scipy ≥ 1.17 starts differential evolution's pool with forkserver on Python < 3.14. This
+environment has had scipy 1.17.1 since 2026-06-13 and 1.18.1 since 10-31. Each worker re-imports the
+calibrator and sees only what the per-call configuration installs (`_apply_cfg`, e424c1a). `--inputs`
+(c9ca94c, 2026-08-12) was never part of that configuration. It is fixed in #137, with a regression test.
+
+In the main tree the default folder exists, so an `--inputs` run did not fail. Its trials were scored on
+the default inputs without any warning. Its baseline, best-point re-run and full validation run in the
+main process, and those used the requested folder. The default `--workers` (up to 24) runs a pool, and
+nothing records the August runs overriding it, so two documented runs are affected:
+- §15's coupled DE (`--inputs /tmp/inputs_light`): its trials were scored without the changes in
+  `/tmp/inputs_light`, the light-climate inputs it was launched to calibrate.
+- §21's honest-base calibration (2026-08-15, `--inputs /tmp/inputs_honest`, converged in 2 generations).
+
+Both runs optimised their parameters on the inputs that were the default at the time. The full-record
+results reported for them are real runs of those values on the requested inputs. But the values are not
+calibrations of those inputs.
+
+Runs without `--inputs` are unaffected. That covers every later re-fit of the adopted constants and both
+of 2026-11-07's earlier calibrations (§57.7 and §58.6). §15 and §21 have not been re-run.
+
+- Nothing adopted; `INPUTS_CL29` is unchanged. Record: `cal_work_20261107_nost/` (`result.json`,
+  `calibrate.log`, `gen_history.csv`).

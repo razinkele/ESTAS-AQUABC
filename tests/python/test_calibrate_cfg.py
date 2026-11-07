@@ -1,6 +1,6 @@
 """--inputs must reach the differential-evolution workers.
 
-scipy runs differential_evolution's pool under forkserver (scipy 1.18 MapWrapper), so each worker
+scipy runs differential_evolution's pool under forkserver (scipy >= 1.17 MapWrapper on Python < 3.14), so each worker
 re-imports calibrate_cl29 and sees none of the globals main() set. The run configuration therefore
 travels with every call and is installed by _apply_cfg. The input folder was missing from it:
 every --inputs calibration silently built its trials from the default INPUTS_CL29, and in a git
