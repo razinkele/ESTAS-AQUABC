@@ -691,6 +691,11 @@ akinete life-cycle (§9); the second diatom guild / June succession (§11); CYN_
 
 ## 15. The coupled light-climate DE: honest optics cannot buy back the bloom
 
+**Correction (2026-11-07, §60.4):** this DE's trials were scored on the then-default `INPUTS_CL29`, not on
+`/tmp/inputs_light`, because `--inputs` never reached the worker processes. Its baseline, best-point re-run and
+full-record results did use `/tmp/inputs_light`. The best values reported here are therefore not a
+calibration of those inputs.
+
 (2026-08-12.) The standing hypothesis from the calibration arc was that the two measured but
 calibration-invisible parameters — `K_B_E` (0.70 modelled vs 2.18 from the measured kd,
 n=199) and C:Chl (30/40 modelled vs 53/78 measured, n=312) — could be corrected if the
@@ -944,6 +949,11 @@ the operational one.**
 ---
 
 ## 21. The first honest-base calibration: project bests, and the seesaw's last stand
+
+**Correction (2026-11-07, §60.4):** this DE's trials were scored on the then-default `INPUTS_CL29`, not on
+`/tmp/inputs_honest`, because `--inputs` never reached the worker processes. Its baseline, best-point re-run and
+full-record results did use `/tmp/inputs_honest`. The best values reported here are therefore not a
+calibration of those inputs.
 
 (2026-08-15; `--paramset light --inputs /tmp/inputs_honest`; converged in 2 generations /
 120 evaluations, window Φ +9.6 %.)
@@ -4524,8 +4534,9 @@ hand-tuned point's bias rounded; that point itself fails it (−6.335), so the l
 value. The candidate fails both versions.
 
 The registered consequence was: if the DE cannot beat the hand-tuned point on this gate, the hand-tuned
-point is the simpler answer. That is not an adoption. The hand-tuned point fails the gate's three Φ lines,
-because it leaves Φ flat. Neither switch-on point passes the whole gate, and their failures are
+point is the simpler answer. That is not an adoption. The hand-tuned point leaves Φ flat: it fails the full
+and 2017-21 Φ lines (6.906, 6.768) and only ties the 2012-16 line, whose threshold is its own score
+rounded (7.3201 against 7.320). Neither switch-on point passes the whole gate, and their failures are
 complementary:
 - the calibrated point gains Φ (−1.2 % vs E4) and gives up composition;
 - the hand-tuned point gains composition and gives up Φ;
