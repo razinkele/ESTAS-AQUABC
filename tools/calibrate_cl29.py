@@ -103,6 +103,22 @@ PARAM_SETS = {
         ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
         ("KHS_DIP_DIA",             "log", 0.002,  0.03),
     ],
+    # "light" with the fixer growth knob moved to the guild that carries the fixer biomass.
+    # Since the §31 role swap, Nostocales (NOST_VEG_HET_C) hold the modelled N-fixer carbon;
+    # FIX_CYN is a minor group and its rate was not identifiable (diagnosis §58.6: two runs
+    # of one protocol disagreed twofold). Diagnosis §59: the summer DIN pool is a Nostocales
+    # loop, set by KG_NOST under the fixation switch. Run with NOST_FIX_SWITCH 1 in the
+    # --inputs copy and --group-carbon over >= 1461 days, so the split can be scored.
+    "light_nost": [
+        ("KG_DIA_OPT_TEMP",          "lin", 2.0,   10.0),
+        ("KG_CYN_OPT_TEMP",          "lin", 1.0,    8.0),
+        ("KG_NOST_VEG_HET_OPT_TEMP", "lin", 1.0,    8.0),    # adopted 7.6; §59 probe 2.6
+        ("KG_OPA_OPT_TEMP",          "lin", 1.0,    8.0),
+        ("K_MIN_DOC_NO3N_20",        "log", 0.3,    3.0),
+        ("K_NITR_20",                "log", 0.2,    2.0),
+        ("KDISS_DET_PART_ORG_N_20",  "log", 0.08,   1.0),
+        ("KHS_DIP_DIA",              "log", 0.002,  0.03),
+    ],
     # Path (c) closure set (doc par. 21): the 'light' engine + C:Chl calibrated
     # WITHIN the measured bounds (312 paired determinations: median 53, IQR
     # 36-78; diatom-dominated ~31). Under the honest base with concentrated
