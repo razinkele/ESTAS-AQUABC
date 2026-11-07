@@ -4927,3 +4927,29 @@ if the model's F5 stays below 0.2.
   regime reproduces the observed September rise.
 - The remaining candidates for the missing autumn die-off, each needing its own registration: the CTMI T_min,
   autumn settling, and akinete formation decoupled from the seed bank. Nothing adopted.
+
+**61.12 The literature does not support a steeper Nostocales temperature decline.** Registered before the search
+(note item 40, 2026-11-07 22:45): a T_min probe would be justified only if published data for the dominant
+Curonian Nostocales showed T_min ≥ 12 °C, or growth at about 15 °C at most 0.3 of the rate at 20-21 °C. Searched with
+scite; no editorial notices on any source used.
+- **The dominant taxa.** *Aphanizomenon flos-aquae* is "a dominant species in the Curonian Lagoon" (Overlingė et
+  al., 2021), with *Dolichospermum* spp. In 2018, "Between August and November, N2-fixing cyanobacteria dominated
+  the community (86 % of total biomass)" (Žilius et al., 2021). That is the 2018 bloom year of §61.4-61.5.
+- **The temperature response.** A Lake Biwa strain of *A. flos-aquae* "could grow at above 8°C with an optimum
+  temperature ranging from 23 to 29°C" (Ishikawa & Tsukada, 2001), which matches the model's T_min 8 °C and T_opt 26
+  °C. The Baltic review by Munkes et al. (2021) compiles an optimal range "from 16 to 31 °C" for *A. flos-aquae*,
+  with growth "down to 10 °C", and for *Dolichospermum* an optimum "between 18 and 25 °C. Growth starts at 10 °C".
+- **Verdict: not justified.** The literature puts T_min at 8-10 °C and *A. flos-aquae* near its optimum at 16 °C,
+  where the model has 0.47 of its 21 °C rate. If anything, the model's growth already declines more steeply
+  between 21 and 15.5 °C than the Baltic compilation implies. A higher T_min would move it further from the
+  literature, so temperature is not the missing exit. The caveat: these are compiled ranges, and no
+  Curonian-strain growth curve was found.
+- **For the sinking candidate:** "Cyanobacteria might, however, lose their buoyancy due to decreasing temperatures
+  in autumn (Carey et al., 2012)", and "inshore populations have generally weaker gas vesicles" (Munkes et al.,
+  2021).
+
+References: Ishikawa, K., & Tsukada, H. (2001). *Phycological Research*, 49(4), 275-280.
+https://doi.org/10.1046/j.1440-1835.2001.00255.x · Munkes, B., Löptien, U., & Dietze, H. (2021). *Biogeosciences*,
+18(7), 2347-2378. https://doi.org/10.5194/bg-18-2347-2021 · Overlingė, D., Toruńska-Sitarz, A., Kataržytė, M., et
+al. (2021). *Toxins*, 13(12), 838. https://doi.org/10.3390/toxins13120838 · Žilius, M., Vybernaite-Lubiene, I.,
+Vaičiūtė, D., et al. (2021). *Biogeosciences*, 18, 1857. https://doi.org/10.5194/bg-18-1857-2021
