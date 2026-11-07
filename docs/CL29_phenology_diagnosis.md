@@ -4364,3 +4364,117 @@ variables is a follow-up, if wanted.
   phosphorus limitation to its floor. Diatoms stay near zero in August-October. The remaining
   misfit is structural (the summer-autumn guild, spec §7), not a tuning gap. Result:
   `cal_work_20261107_allelo_off/result.json`.
+
+---
+
+## 59. 2026-11-07: the summer DIN pool is a Nostocales loop; the missing benthic return raises the pool but not the community
+
+**The question** (spec §8.4/§8.7 route 2). Against same-day EPA pairs in the nine lagoon boxes
+(Jul-Sep 2012-2022, n = 1034), the model's NH4 is about a quarter of the observed (median 0.007
+vs 0.028 mg N/L) and its NO3 is stripped to zero (0.000 vs 0.011), while its April-May NO3
+median is too high (0.49 vs 0.20). Both calibrations hold K_NITR and K_MIN_DOC_NO3N at their
+ceilings. Three explanations fit: a drain (nitrification feeding the benthic sink), a missing
+supply (no benthic regeneration), or uptake.
+
+**59.1 The sediment boundary is a one-way sink.** CL29 runs `MODEL_SEDIMENTS 1`: prescribed
+fluxes only. `SED_FLUX_NO3_SINK.txt` maps one variable, NO3, to a summer-peaked sink
+(−0.005 g N/m²/d in winter, −0.040 in August); every other flux, NH4 and PO4 included, is zero,
+and deposited material "is simply removed from the water column" (Reference Manual). The
+lagoon's sediments do return nitrogen: dark NH4 efflux "increased from March to October" in
+central Curonian cores (Žilius et al. 2012, doi:10.4081/jlimol.2012.e33), and benthic NO3
+uptake is spring-dominant, with summer cycling pelagic (egusphere-2023-3054, 2024).
+
+**59.2 The budget** (E4 with process rates, boxes 7/14/17/23, box-day means, mg N/L/d):
+
+| mg N/L/d (standing stocks in mg N/L) | Apr-May | Jul-Sep |
+|---|---|---|
+| standing NH4 / NO3 | 0.048 / 0.552 | 0.008 / 0.002 |
+| NH4 uptake by NOST | 0.0006 | **0.0704** (84 % of NH4 sinks) |
+| NH4 uptake by DIA | 0.0242 (46 %) | 0.0001 |
+| NH4 uptake by CYN | 0.0069 | 0.0097 (12 %) |
+| nitrification | 0.0160 (30 %) | 0.0021 (2.5 %) |
+| NH4 from NOST respiration | 0.0002 | 0.0411 (48 % of sources) |
+| DON mineralisation | 0.0423 (77 %) | 0.0296 (35 %) |
+| water-column denitrification | 0.0303 (80 % of NO3 sinks) | 0.0003 |
+| benthic NO3 sink, potential (flux / depth) | 0.0020 | 0.0091 |
+| fixers' share of all DIN uptake | 2 % | **88 %** |
+| DIN turnover (stock / gross uptake) | 15.3 d | **0.12 d** |
+
+- **The summer DIN pool is a Nostocales loop.** NOST takes 84 % of NH4 uptake and returns
+  48 % of the NH4 source through respiration; with FIX_CYN the fixers take 88 % of all DIN
+  uptake. The pool turns over in 0.12 d (3 h), so the standing stock is a symptom of the
+  uptake balance, as §39 found for October.
+- **The drain is refuted.** Summer nitrification is 2.5 % of NH4 sinks (0.002 mg N/L/d), so the
+  benthic sink (potential 0.009) can remove only what nitrification feeds it. Water-column
+  denitrification matters in spring instead (80 % of NO3 sinks, 0.030 mg N/L/d).
+- **Correction to §39.2.** That section called water-column denitrification "off" (~6e-5 of the
+  rate), from the no-advanced-redox limiter. CL29 runs with advanced redox on, and the pathway is
+  live: `R_DENITRIFICATION = 0.93 · R_ABIOTIC_DOC_MIN_NO3N`, driven by `K_MIN_DOC_NO3N_20`. So the
+  ceiling that rate sits on in both calibrations is the calibrator removing the spring NO3 excess
+  (median 0.49 vs 0.20).
+- **Why NOST draws DIN.** `FRAC_NOST_GROWTH` = 0.10 under the legacy setting ("Nostocales
+  fixation: OFF"): 90 % of the guild's growth is DIN-fuelled, at KG_NOST 7.6/d against
+  KG_CYN 2.0/d. The calibrator's `light` set tunes KG_FIX_CYN, not KG_NOST, though §31 moved
+  the fixer biomass to NOST — which is why §58.6's KG_FIX ×6 barely moved the fixers.
+
+**59.3 Probes.** Copies of E4 with process rates; the change each makes is stated below. Guards,
+fixed before the runs: summer DIN must move toward the same-day pairs; TN must not get worse; spring
+NO3 must not rise; the fixers must fall and CYN / DIA / OPA rise. A probe that fails any guard is
+not a lead.
+
+| | E4 | sink off | NH4 efflux (sensitivity) | switch, KG_NOST 7.6 | **switch, KG_NOST 2.6** | obs |
+|---|---|---|---|---|---|---|
+| Jul-Sep NH4, median | 0.0073 | 0.0109 | 0.0260 | 0.0300 | 0.0231 | 0.028 |
+| Apr-May NO3, median | 0.488 | 0.518 | 0.501 | 0.489 | **0.482** | 0.20 |
+| Φ full (2012-16 / 2017-21) | 6.898 | 6.800 | 6.783 | 6.736 | 6.906 (−0.6 % / +0.4 %) | |
+| TN / TP RMSE vs E4 | | +1.6 % / +0.2 % | +2.3 % / +2.6 % | +2.6 % / +7.2 % | **−4.7 % / −26 %** | |
+| Sep CYN share; total | 0.175; 1.04 | 0.176; 1.04 | 0.170; 1.05 | 0.162; 1.07 | **0.545**; 0.88 | 0.486; 1.00 |
+| Chl-a autumn/spring; bias | 2.53; −3.7 | 2.55; −3.7 | 2.59; −3.5 | 2.64; −3.0 | **2.18**; −6.3 | 2.06 |
+| DIA Aug-Oct | 0.033 | 0.038 | 0.039 | 0.036 | 0.030 | 0.597 |
+
+Sink off: the `FORC_NO3_SINK` var-2 scale factor set to 0. NH4 efflux: a third forcing variable
+equal to minus the NO3 sink, mapped to NH4 in every box (peak ≈120 µmol m⁻² h⁻¹ in August) — a
+sensitivity probe, not a value: the measured Curonian fluxes are not retrievable as numbers. Switch:
+the `NOST_FIX_SWITCH 1` / `K_FIX_NOST 0.008` options lines after `V_SETTLE_AKI` (log: "DIN-GATED").
+
+- **Sink off:** summer NH4 0.0073 → 0.0109, spring NO3 worse, TN +1.6 %, composition unchanged.
+  The sink is not the lever; its rationale had already expired (BACKLOG §4b).
+- **NH4 efflux:** summer NH4 0.026, close to observed. That **refutes the prediction registered
+  before the run**: that the Nostocales would absorb added NH4 within hours (turnover 3 h). The pool
+  rose. But TN +2.3 % and composition unchanged: the added nitrogen stays in the fixer loop. The
+  benthic return the model lacks is real (59.1), but adding it alone does not change the community.
+- **Switch at KG_NOST 7.6:** summer NH4 0.030, and Φ −2.3 % in both halves, but TN +2.6 %, TP +7.2 %
+  and a larger fixer share of the bloom (CYN share 0.162). Fixation replaces DIN uptake and adds
+  nitrogen: §52's P1 again.
+- **Switch at KG_NOST 2.6:** the only probe that passes the composition guard. August-September
+  cyanobacteria come closer to observed (CYN Sep 1.85 vs 1.88 but Aug 1.44 vs 2.30; FIX Aug
+  1.74 vs 1.61 but Sep 1.54 vs 1.98), TN −4.7 %,
+  TP −26 %, and autumn/spring 2.18 is inside the spec's gate [d] band. The costs: September total
+  0.88×, Chl-a bias −3.7 → −6.3, October-November CYN over (1.99 / 1.08 vs 1.06 / 0.34), OPA
+  still absent, Φ flat. This is §52's trade relocated again, at share 0.545 / total 0.88 instead
+  of 0.622 / 0.74.
+- **Control: KG_NOST 2.6 with legacy fixation.** This separates the two factors of the probe
+  above. Lowering KG_NOST alone hands the summer DIN pool to CYN (CYN Aug 1.93, Sep 2.15): summer
+  NH4 falls to a median 0.0023, below E4's 0.0073. The split overshoots (share 0.735, total 0.76;
+  fixers Aug 0.96 vs 1.61), the Chl-a bias reaches −8.5, PO4 worsens 12.8 %, and Φ worsens 4.2 %
+  in both halves. The switch is what restores summer NH4 (0.023) and holds the split (0.545) and
+  total (0.88): both factors are needed.
+- **The warm-guild screen (spec §8.5) with summer N restored still fails gate [a].** October is
+  0.059 (switch, KG_NOST 7.6) and 0.051 (switch, 2.6); with the cold guild added, 0.157 (just above
+  the 0.15 NULL) and 0.123 (under it), far from the 0.40 success line. Jul-Sep nitrogen no longer
+  limits (0.66-0.75), but phosphorus (0.12-0.20) and light (0.15-0.16) still do.
+
+**59.4 Reading.** Uptake controls the summer DIN pool: it is the Nostocales' draw under the legacy
+fixed fixation share, at a growth rate 3.8× the non-fixers'. Both routes to a higher pool work: less
+uptake (the switch) or more supply (the benthic return, as a sensitivity test). What separates them
+is TN and composition, not NH4. Only the switch together with a lower KG_NOST shifts the community;
+the legacy-fixation control at KG_NOST 2.6 shows that neither factor does it alone.
+- **Route 2 of spec §8.7 is answered:** restoring summer nitrogen does not open the diatom niche.
+  Phosphorus, whose summer level cannot be checked against the censored observations, and light
+  still close it.
+- **KG_NOST, not KG_FIX_CYN, is the fixer growth rate a calibration should tune**, with the switch
+  on. The `light` set predates §31's role swap.
+- **The open diatom question is now about phosphorus and light**, not nitrogen. The model also has
+  no benthic PO4 return (59.1).
+- Nothing adopted; `INPUTS_CL29` is unchanged. Probe inputs were built by
+  `diag_warm_guild_20261107/mkdiag.py` plus the stated one-file edits.
