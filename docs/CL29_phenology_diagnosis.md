@@ -4707,3 +4707,25 @@ that. E4 is the model reference; model TP comes from the validator's own loader.
 - **Outcome:** H is not supported. By the registered rule, the sediment-PO4 sensitivity run does not follow.
   Untested alternatives: a sampling coincidence (one September date per station against short, patchy blooms),
   seeding from the previous season, and spring conditions. Nothing adopted.
+
+**61.5 A bloom year is a season, not one sampling date.** Registered before any August or October value was
+computed by year (note item 28, 2026-11-07 19:40), using observations only. An adjacent month (August, October)
+of a bloom year corroborates the bloom if its fixer biomass is above the other six years' median for that month
+AND its share is below their median share. The verdict is SEASON if both bloom years have a corroborating
+month, SINGLE DATE if neither does, MIXED otherwise.
+
+| obs fixer biomass, mg C/L (share) | Jul | Aug | Sep | Oct |
+|---|---|---|---|---|
+| 2015 | 2.21 (0.435) | 3.72 (0.406) | 4.37 (0.276) | 2.78 (0.323) |
+| 2018 | 0.16 (0.689) | 0.77 (0.402) | 9.59 (0.089) | 0.47 (0.357) |
+| median of the other six years | 0.28 (0.722) | 0.84 (0.759) | 0.39 (0.856) | 0.06 (0.949) |
+
+- **SEASON, 2 of 2.** 2015 was a whole-season fixer bloom: August and October both corroborate it, and July
+  was already eight times the usual biomass. 2018 bloomed late: August is ordinary, the bloom peaked in
+  September, and October corroborates it (0.47 against 0.06; share 0.357 against 0.949).
+- **The typical succession.** Fixers peak in July-August, and non-fixers take over in September-October
+  (October shares 0.90-0.98). A bloom year is one in which the fixers persist into autumn.
+- Sampling is one date per station per month in almost every month. The adjacent months still corroborate
+  the September values, so S1 stands as registered.
+- A connection, not yet scored: the adopted E4 keeps its fixers through September-October in every year
+  (§61.2), so its composition resembles a permanent 2015.
