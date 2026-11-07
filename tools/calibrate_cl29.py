@@ -307,6 +307,12 @@ def _x0_from_seed(seed_path):
             for name, tr, lo, hi in CAL_PARAMS]
 
 
+def _run_cfg(paramset):
+    """The run configuration every DE evaluation carries into its worker (see _apply_cfg)."""
+    return {"days": DAYS, "workdir": WORKDIR, "group_carbon": USE_GROUP_CARBON,
+            "phi_vars": list(CAL_PHI_VARS), "paramset": paramset, "src_inputs": M.SRC_INPUTS}
+
+
 def _apply_cfg(cfg):
     """Install the run configuration into module globals (needed in pool workers).
 
@@ -315,9 +321,11 @@ def _apply_cfg(cfg):
     all-PENALTY 'converged' DE: workers saw the default 8-param set with a shorter x →
     instant IndexError). The objective therefore carries its configuration explicitly
     (functools.partial) and installs it per call — correct under fork, forkserver and
-    spawn alike.
+    spawn alike. That includes the --inputs folder (M.SRC_INPUTS): without it every
+    worker silently built its trials from the default INPUTS_CL29 (2026-11-07).
     """
     global DAYS, WORKDIR, USE_GROUP_CARBON, CAL_PHI_VARS, CAL_PARAMS
+    M.SRC_INPUTS = cfg["src_inputs"]
     DAYS, WORKDIR = cfg["days"], cfg["workdir"]
     USE_GROUP_CARBON = cfg["group_carbon"]
     CAL_PHI_VARS = cfg["phi_vars"]
@@ -417,8 +425,7 @@ def main():
         print(f"  gen {gen['n']:>2}: best {', '.join(f'{k}={v:.4g}' for k, v in vals.items())}",
               flush=True)
 
-    cfg = {"days": DAYS, "workdir": WORKDIR, "group_carbon": USE_GROUP_CARBON,
-           "phi_vars": list(CAL_PHI_VARS), "paramset": a.paramset}
+    cfg = _run_cfg(a.paramset)
     x0 = _x0_from_seed(a.seed_result) if a.seed_result else None
     if x0 is not None:
         print("seeding x0 from", a.seed_result, "->",
