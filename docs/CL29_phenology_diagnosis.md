@@ -5128,3 +5128,49 @@ The lines:
   Untested: the inoculum (observed July 2015 fixers were already eight times typical, while the model's spring 2018
   seed bank was the lowest of any year), surface accumulation in calm spells, and observational patchiness.
 - Nothing adopted.
+
+---
+
+## 62. 2026-11-08: why the autumn diatoms and OPA are missing
+
+**The target.** In October the model has diatoms at about 0.1 mg C/L and OPA at about 0.02, against an observed
+0.67 and 0.38. Its non-fixers are *over* (about 1.5 against 0.84). The October phosphate is abundant in the model
+(median 0.013 mg P/L, §61.11) and silica is in excess, so neither should bind. This shortfall is what the Chl-a
+floors of §61.13-61.14 kept measuring.
+
+**The run and the registration.** Registered before the run (note item 51, 2026-11-08 02:15). The run rebuilds the
+best composition setup (switch@2.6 plus the temperature-cued Nostocales settling of §61.14) with process rates and
+the mass balance in boxes 7, 9, 14, 17, 19 and 23. It reproduces §61.14 exactly (S1 0.696, D1 −0.111). The windows
+are August 15-September 30 (re-establishment) and October-November (the autumn bloom), in the typical years.
+
+| typical-year medians | biomass (observed) | temperature / N / P / light factors | binding factor | growth (/d) | death / respiration / settling (/d) | net (/d) |
+|---|---|---|---|---|---|---|
+| diatoms, Aug 15-Sep 30 | 0.006 (0.337) | 0.48 / 0.51 / 0.21 / 0.24 | P | 0.092 | 0.116 / 0.047 / 0.046 | −0.118 |
+| diatoms, Oct-Nov | 0.064 (0.364) | 0.90 / 0.58 / 0.74 / 0.077 | light (see below) | 0.189 | 0.096 / 0.038 / 0.032 | +0.021 |
+| OPA, Aug 15-Sep 30 | 0.008 (0.587) | 0.78 / 0.42 / 0.26 / 0.33 | P | 0.070 | 0.106 / 0.057 / 0.022 | −0.115 |
+| OPA, Oct-Nov | 0.009 (0.335) | 0.13 / 0.51 / 0.79 / 0.20 | temperature | 0.016 | 0.088 / 0.046 / 0.022 | −0.141 |
+
+- **The budget closes.** The mass balance's kinetics term for both groups equals growth minus respiration,
+  excretion, death and grazing (r 1.0000). Grazing is negligible, not absent: zooplankton is about 0.03 mg C/L, and
+  diatom grazing peaks at 0.006 mg C/L/d. So death (`KD` 0.12 and 0.11 per day at 20 °C) really is the dominant loss
+  for both groups in both windows.
+- **The autumn starts from a missing population.** Model diatoms on September 1 are 0.8 % of the observed
+  August-September level. That is a consequence of the late-summer dynamics, not only of the summer wipe-out by the
+  cold guild's T_max of 21 °C. A net of −0.118 per day over the 46-day window is a ×0.005 factor, so any mid-August
+  population is gone by October. A summer refuge alone would be erased in September unless the late-summer net
+  also reaches zero.
+- **"Light-bound" in October-November is the light-limited regime, not a weak light response.** The diatoms'
+  saturating light is 216 W/m² against OPA's 83, because the model scales saturating light with each group's
+  maximum growth rate (§42). In the light-limited regime the maximum rate cancels, so the two groups' light factors
+  cannot be compared. Realized growth is the comparable number: 0.189 per day for diatoms against 0.016 for OPA. The
+  diatoms grow, but death, respiration and settling take nearly all of it, leaving a net of only +0.021 per day.
+- **OPA cannot grow in autumn.** Its CTMI T_min of 10 °C gives a temperature factor of 0.13 in October-November. OPA
+  is a composite group, so the literature on the Curonian autumn OPA taxa comes before any T_min change.
+- **Existence proof.** §60.3's calibrated point reached October diatoms of 0.45 (E4 0.09), with `KHS_DIP_DIA`
+  0.0056 and faster N recycling, i.e. with the late-summer phosphorus bind eased. That is the lever this diagnosis
+  points at. Lowering the diatom death rate instead would trade winter diatoms for autumn ones, because `KD_DIA_20`
+  0.12 was set in §30's `formb_closure` as "the February lever".
+- **Predictions:** three held (diatoms light-bound in October-November; the inoculum below 10 %; OPA
+  temperature-bound in autumn). One was refuted: the diatoms' late-summer temperature factor is 0.48, not 0.6-0.9,
+  so the guild is colder-adapted than I assumed.
+- Nothing adopted.
