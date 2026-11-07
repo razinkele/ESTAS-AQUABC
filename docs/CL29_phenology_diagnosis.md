@@ -4331,3 +4331,36 @@ variables is a follow-up, if wanted.
   §56.4 Q1).
   `calibrate_cl29.py` cannot perturb `EXTRA_WCONST` yet. The previous values are in the local
   `INPUTS_CL29/EXTRA_WCONST.txt.pre_allelo_off_20261107` and in the DATA history.
+
+**58.6 Recalibration with allelopathy off — not adopted.** This is §57.7's protocol exactly
+(`light` set, popsize 8 / maxiter 25 / seed 11, 730 d, 22 workers), run on the E4 configuration.
+- Calibration window Φ: 7.322 → 7.101 (−3.0 %, 832 evaluations). The same window scored 7.480
+  with allelopathy on. The search halted at generation 12 on population spread while the best
+  was still moving (KG_FIX 2.8 → 7.9 → 7.7 over generations 10-12).
+- Values, adopted → calibrated [§57.7]: KG_DIA 8.10 → 8.98 [7.09]; KG_CYN 2.00 → 2.98 [2.33];
+  KG_FIX_CYN 1.29 → **7.73** [4.11], 96 % of its range; KG_OPA 2.58 → 1.77 [3.05];
+  KHS_DIP_DIA 0.0084 → **0.0023** [0.0039], 5 % above its floor in log space; KDISS_PON
+  0.17 → 0.23 [0.29]; K_NITR and K_MIN_DOC_NO3N stay at their ceilings, as before. The two runs
+  of one protocol disagree twofold on KG_FIX and KG_OPA: 2012-13 does not identify them.
+
+| | adopted (E4) | recalibrated | obs |
+|---|---|---|---|
+| Φ full 2012-22 | 6.898 | 6.737 (−2.3 %) | |
+| Φ 2012-16 / 2017-21 | 7.361 / 6.742 | 7.177 / 6.596 | |
+| Chl-a seasonal r; autumn/spring | +0.78; 2.53 | +0.81; 1.91 | 2.06 |
+| Chl-a bias 2012-16 / 2017-21 (µg/L) | −1.16 / −5.21 | −5.84 / −8.16 | |
+| Sep CYN / FIX (mg C/L) | 0.70 / 3.30 | 0.77 / 2.28 | 1.88 / 1.98 |
+| Sep share; total (model/obs) | 0.175; 1.04 | 0.252; 0.79 | 0.486; 1.00 |
+| DIA / OPA Aug-Oct (mg C/L) | 0.033 / 0.013 | 0.042 / 0.011 | 0.597 / 0.591 |
+
+- Pooled RMSE, full record: TP −28.8 %, NH4 −5.1 %, PO4 −4.9 %, Si −5.0 %, TN −3.0 %; worse:
+  Chl-a +4.2 %, DO +3.3 %, NO3 +2.4 %.
+- **Not adopted.** Both halves and the phase improve, but phytoplankton quantity does not:
+  summer biomass falls 21 % and the Chl-a bias doubles in both halves. The TP gain and the Chl-a
+  loss are the same change, less phytoplankton phosphorus. The share rises only because fixers
+  fall. KG_FIX up sixfold while fixer biomass falls 31 % is compensation through the phosphorus
+  side (KHS_DIP_DIA at its floor), not an optimum.
+- **Reading.** With allelopathy gone, the optimizer still pushes diatom growth up and diatom
+  phosphorus limitation to its floor. Diatoms stay near zero in August-October. The remaining
+  misfit is structural (the summer-autumn guild, spec §7), not a tuning gap. Result:
+  `cal_work_20261107_allelo_off/result.json`.
