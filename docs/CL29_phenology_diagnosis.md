@@ -4186,3 +4186,72 @@ any mean spanning that boundary is a mean over a bimodal quantity and describes 
 Two of those three claims were wrong in the *optimistic* direction and one in the pessimistic,
 so there is no safe bias to assume. **Check the daily distribution before interpreting any mean
 that spans a threshold**, and report the fraction of zeros alongside the mean.
+
+---
+
+## 57. 2026-11-06/07: the boundary bug, the silica record corrected, and §3.14 re-tested
+
+(Working notes `CL29_SETTLING_AB_2026-11-06_silica_boundary.md`, items 1-13. PRs: ESTAS-AQUABC
+#127-#130, ESTAS-AQUABC-DATA #1-#3.)
+
+**57.1 The §26 boundary file was corrupted** (§26 correction block; #127). Since 2026-08-17
+the adopted Baltic boundary applied OPA_C ×0.0014, DISS_Si ×0.0005, ZOO_C ×0.0021 and
+INORG_C ×0.00008. Fixed in the tool (#127). The adopted and published `FORC_TS_1` now has
+factor rows of 1.0 and the **measured** Baltic Si. Resetting the rows alone would restore the
+3.0 placeholder, at +18.8 % of the objective.
+
+**57.2 What §26's "14.6 %" was.** Calibrator Φ on today's configuration and adopted parameters:
+
+| boundary | Φ |
+|---|---|
+| pre-§26 | 8.748 |
+| + phytoplankton climatology, correctly applied, Baltic Si 3.0 | 8.664 (−1.0 %) |
+| + the bug | 7.408 (−15.3 %) |
+| corrected with measured Baltic Si | 7.526 (−14.0 %) |
+
+The gain was the Baltic silica placeholder being wrong, not the diatom supply. The Si term
+shows it: pre-§26 2.546, reset-only 2.539, corrected 1.397. Paper I §3.14's mechanism
+("their uptake draws down the silica") does not hold. The gain itself is real with the
+measured Baltic Si.
+
+**57.3 §27's flat objective is not reproduced on today's configuration.** The §27 literature
+variant (KG_DIA 5.77 …) scores +7.9 % (pre-§26), +7.1 % (corrupted) and +9.5 % (corrected)
+worse than the adopted parameters. It is not flat on any boundary, and least flat on the
+corrected one. This is a fixed-vector test; a fresh DE per boundary would be definitive.
+
+**57.4 Silica, now adopted** (DATA #3). The rivers keep the right annual load: Vybernaite-
+Lubiene et al. 2018 give a flow-weighted ≈3.0 mg Si/L, as the placeholder had. They now carry
+its Table 2 seasonal index (December printed 0.32, taken as 1.32), plus DIA_Si_TO_C 0.30
+(Brzezinski 1985). Calibrator Φ: −3.2 % full record against the corrected boundary. Remaining
+misfit: an Aug-Oct Si excess of +0.6 to +0.9 mg/L, the missing summer-autumn diatoms (KM obs
+0.4-0.6 mg C/L, model ~0). See the warm-guild spec §7.
+
+**57.5 The §23 trap struck again.** On 11-05/06 Chl-a was scored without `--wconst` (template
+30/40 against CL29's 53/78). That invented a summer "Chl-a excess" and reversed the 11-05
+settling A/B: correctly scored, the settling fix lowers Chl-a (2017-21 bias −5.6 → −9.5) and
+improves TN and TP. #129 makes the validator read the run's own ratios, or refuse to score
+Chl-a.
+
+**57.6 pH confirms the boundary fix.** pH is the only independent check on the restored DIC
+boundary. AQUABC writes it as PROCESS_RATES(TOT_ALK, 7); the EPA set has no DIC or alkalinity.
+609 same-day matches in the nine EPA boxes:
+
+| configuration | model pH | bias | RMSE | r |
+|---|---|---|---|---|
+| old adopted (Baltic DIC ≈ 0) | 9.63 | +1.07 | 1.41 | −0.22 |
+| **new adopted (corrected + silica)** | **8.97** | **+0.42** | **0.57** | **+0.39** |
+
+Under the bug the strait boxes sat at pH 10.0-10.3. Every box is now biased +0.24 to +0.50,
+with positive r in 8 of 9.
+
+**57.7 Recalibration on the corrected boundary** (`light` set, popsize 8 / maxiter 25 / seed 11,
+730 d, 768 evaluations: §27's protocol on the adopted 2026-11-07 configuration).
+- Φ 7.480 → 7.337 (−1.9 %).
+- KG_DIA 8.10 → 7.09 (−12.5 %, not §27's −37 %); KG_FIX_CYN 1.29 → 4.11; KG_CYN 2.00 → 2.33;
+  KG_OPA 2.58 → 3.05; KDISS_PON 0.174 → 0.293; KHS_DIP_DIA 0.0084 → 0.0039.
+- Full record: NH4 bias −0.0085 → −0.0011 (RMSE −4.8 %), PO4 −2.4 %, Si −1.1 %, TP −2.6 %;
+  NO3, DO, TN and Chl-a flat.
+- Group carbon is essentially unchanged, so the partition is still the problem: Aug-Sep fixers
+  ~2.2× over, DIA and OPA ~1 %.
+- **Not adopted.** A small, composition-neutral gain; the result is in
+  `cal_work_20261107_light/result.json`.
