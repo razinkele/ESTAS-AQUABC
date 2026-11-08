@@ -5731,3 +5731,71 @@ missing (§62), and nothing is adopted.
 | P2: arm A is PARTIAL with Feb-May 1.15-1.22 | REFUTED: 1.244 |
 | P3: arm B overshoots the spring (Feb-May < 0.90) | REFUTED: 1.248 |
 | P4: neither arm brings silica within 1.05× the base | HELD |
+
+## 69. 2026-11-08: the river diatom supply is a floor, and raising it restores autumn diatoms better than any lever so far
+
+**The question.** §62-§68 found that the autumn diatoms grow from a population missing since mid-summer, and that
+no loss-side or spring-side lever restores them without a cost. Is the missing seed a missing supply?
+
+Registered before the runs (note item 88, 2026-11-08 13:12); the result is item 89. The scorer is
+`diag_dkd_20261108/river_seed.py`.
+
+**69.1 The input.** All four river boundaries (the Nemunas and Minija into box 24, the Matrosovka and Deima into box
+3) carry diatoms at a constant 0.020 mg C/L. That is the EUTROPY converter's minimum floor
+(`CL29_PHYTO_REFUGE`), not data. The sea boundary varies (mean 0.071). No river or river-mouth phytoplankton
+observations are on disk.
+
+**69.2 Where the population is lost.** Against the KM records in the typical years, the model's diatoms are 1.29×
+the observed in May and 0.52× in June, then 0.012× in July. The observed diatoms dip in June (0.14 mg C/L) and
+recover in July (0.34). The model's do not recover. At the floor, the rivers import 0.7 % of the lagoon's
+July-September diatom stock per day.
+
+**69.3 Raising the river supply.** The four river series were set to a constant 0.10 or 0.30 mg C/L, as a bracket,
+not a calibration.
+
+| river diatoms | Oct-Nov diatoms | Sep-1 inoculum | Feb-May / obs | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 | a/s | gate | DSi RMSE |
+|---|---|---|---|---|---|---|---|---|
+| 0.02 (base) | 0.101 | 1.3 % | 1.127 | 51.2 / 32.6 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.786 |
+| 0.10 | 0.228 | 2.1 % | 1.188 | 51.7 / 33.3 | 6.828 / 7.283 / 6.675 | 2.44 | 5/9 | 0.773 |
+| 0.30 | 0.329 | 4.7 % | 1.296 | 53.0 / 34.5 | 6.775 / 7.230 / 6.623 | 2.31 | 6/9 | 0.758 |
+| observed | 0.364 | | | 50.2 / 46.4 | | 2.06 | | |
+
+- **By the registered rule both are PARTIAL.** The autumn line passes at both, but the inoculum stays below 5 %
+  (4.7 % at 0.30).
+- **Unlike the death rate, the river supply improves the fit.** Φ falls to 6.775 (the session's best), both halves
+  improve, the autumn/spring ratio moves toward the observed, and silica improves. Compare §67, where silica
+  worsened 13 %.
+- **The cost is the spring.** A constant supply adds river diatoms in spring too, so the February-May excess grows.
+  A seasonal river series would not carry this by construction.
+- **Three predictions were refuted.** The loss month is July, not June; the floor's import is smaller than I
+  assumed; and 0.30 is PARTIAL rather than a seed source.
+
+**69.4 What the river actually carries.** Literature, searched after the runs: at the Nemunas closing section in
+2012-2016, "the BSi loads averaged ~9000 t•yr⁻¹", with discharge "16 ± 4 km3·yr−1", and biogenic silica "increased
+above the average during spring-summer months, likely due to algal growth" (Vybernaite-Lubiene et al., 2018).
+- That is a mean of 0.56 mg Si/L of biogenic silica. If it were all diatoms, it would be 1.9 mg C/L at the model's
+  Si:C of 0.30.
+- The authors note their extraction "may lead to an overestimation of the BSi pool due to solubilisation of
+  lithogenic Si", so that is an upper bound.
+- Even so, the 0.30 bracket is only 16 % of the measured biogenic silica, and the converter's floor is 1 %.
+- I found no published monthly Nemunas phytoplankton biomass in an accessible text. Gasiūnaitė et al. (2012)
+  sampled river phytoplankton as a reference, but their full text was not available to the search.
+
+**Reading.** The model's river diatom supply is a floor about two orders of magnitude below what the river's
+biogenic silica implies. Raising it restores the autumn diatoms and improves the fit, unlike any loss-side lever
+since §62. The cost appears only because the bracket is constant through the year. The natural next step is a
+seasonal river diatom series from measured data: monthly biogenic silica, or river phytoplankton counts. That is a
+new boundary input, so it is the owner's decision. Nothing is adopted.
+
+| prediction | result |
+|---|---|
+| P1: the month of loss is June | REFUTED: July |
+| P2: the floor imports < 5 %/d of the stock, and 0.30 > 20 %/d | REFUTED: 0.7 %/d and 10.5 %/d |
+| P3: 0.30 is a seed source and 0.10 partial through the inoculum | REFUTED: both partial through the autumn line |
+| P4: 0.30 carries a spring cost | HELD |
+
+References: Vybernaite-Lubiene, I., Žilius, M., Šaltytė-Vaisiauskė, L., et al. (2018). Recent trends
+(2012–2016) of N, Si, and P export from the Nemunas River watershed: loads, unbalanced stoichiometry, and threats for
+downstream aquatic ecosystems. *Water*, 10(9), 1178. https://doi.org/10.3390/w10091178 · Gasiūnaitė, Z. R.,
+Razinkovas-Baziukas, A., Grinienė, E., et al. (2012). Pelagic patterns along the Nemunas River–Curonian Lagoon
+transition, south-eastern Baltic Sea. *Baltica*, 25(1), 77–86. https://doi.org/10.5200/baltica.2012.25.07
