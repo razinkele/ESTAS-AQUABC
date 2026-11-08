@@ -5533,7 +5533,9 @@ add up to the prediction.
 sections to point at column *b* for box *b*. That is a change to how the SHYHYDRO input sets are built. It changes
 every SHYHYDRO result, so it is the owner's decision. The adopted `INPUTS_CL29` is unaffected.
 
-**65.4 Correction to §64.6: box 18 reaches the floor of ESTAS's bathymetry.** §64.6 said no box empties. By volume
+**65.4 Correction to §64.6: box 18 reaches the floor of ESTAS's bathymetry.** *Revised after this section was
+written (note item 73): the zero depth is a sign bug in ESTAS's level-from-volume function, not the geometry. It
+is documented in §66, which supersedes the cause given below. The volumes and dates below stand.* §64.6 said no box empties. By volume
 that holds. But in 301 hourly prints, from day 448 (2013-03-24) to day 766, box 18's bathymetric depth is zero and
 its level sits at −1.311 m. It still holds 8.8 Mm³ of water.
 - Both models lose about the same water by day 448: 27.9 Mm³ in ESTAS, 26.8 in SHYFEM. This is a real low-water
@@ -5541,8 +5543,8 @@ its level sits at −1.311 m. It still holds 8.8 Mm³ of water.
 - But ESTAS's box 18 starts with 36.6 Mm³ against SHYFEM's 53.1 (31 % less; both are day-0 daily means, whereas
   §64.6's ratios are to the first print). Its bathymetry, built from the EUTROPY
   depths, runs out of depth with a quarter of its start volume left.
-- The documented day-~449 free-volume crash of the CL29 setup falls on the same days. It is most likely the same
-  low-water spell meeting the same geometry, rather than a missing water term. That run was not re-examined here.
+- The documented day-~449 free-volume crash of the CL29 setup falls on the same days. That run was not re-examined
+  here.
 
 **65.5 Reading.** The free-volume drift of §64.6 is an input-mapping bug, not a fault in ESTAS's water balance.
 A free volume on SHYFEM's hydrology would also need box 18's geometry to hold a real low-water spell. Nothing is
