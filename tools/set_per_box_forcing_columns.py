@@ -40,19 +40,23 @@ def forcing_files(lines):
 
 def n_columns(path):
     lines = open(path).read().split("\n")
-    i = next(k for k, ln in enumerate(lines) if ln.startswith("# NUMBER_OF_VARIABLES"))
+    i = next((k for k, ln in enumerate(lines) if ln.startswith("# NUMBER_OF_VARIABLES")), None)
+    if i is None or i + 1 >= len(lines) or not lines[i + 1].split():
+        raise SystemExit(f"{path}: no '# NUMBER_OF_VARIABLES' header followed by a value")
     return int(lines[i + 1].split()[0])
 
 
 def remap(input_dir):
     """Return (new_lines, changes): changes = [(section, box, old_var, new_var)]."""
     p = os.path.join(input_dir, "PELAGIC_INPUTS.txt")
-    lines = open(p).read().split("\n")
-    files = forcing_files(lines)
+    with open(p, newline="") as fh:                     # keep the file's own line endings on --write
+        lines = fh.read().split("\n")
+    files = forcing_files([ln.rstrip("\r") for ln in lines])
     width = {}
     rows = {s: [] for s in SECTIONS}
     cur = None
-    for i, ln in enumerate(lines):
+    for i, raw in enumerate(lines):
+        ln = raw.rstrip("\r")
         name = _section_name(ln)
         if name is not None:
             cur = name if name in SECTIONS else None
@@ -77,7 +81,7 @@ def remap(input_dir):
                 raise SystemExit(f"{s}: {files[ts]} has {w} columns for {nbox} boxes")
             if want != var:
                 changes.append((s, box, var, want))
-                lines[i] = f"{box:20d}{ts:20d}{want:20d}"
+                lines[i] = f"{box:20d}{ts:20d}{want:20d}" + ("\r" if lines[i].endswith("\r") else "")
     return lines, changes
 
 
@@ -93,7 +97,8 @@ def main(argv=None):
     for s in SECTIONS:
         print(f"  {s:16s} {by.get(s, 0):3d} box rows to change")
     if a.write and changes:
-        open(os.path.join(a.input_dir, "PELAGIC_INPUTS.txt"), "w").write("\n".join(lines))
+        with open(os.path.join(a.input_dir, "PELAGIC_INPUTS.txt"), "w", newline="") as fh:
+            fh.write("\n".join(lines))
         print(f"  wrote {len(changes)} rows")
         return 0
     return 1 if changes else 0

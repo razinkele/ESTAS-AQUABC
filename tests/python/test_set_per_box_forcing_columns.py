@@ -66,3 +66,24 @@ def test_wrong_width_is_an_error(tmp_path):
         assert "2 columns for 3 boxes" in str(e)
     else:
         raise AssertionError("expected SystemExit")
+
+
+def test_crlf_input_keeps_crlf(tmp_path):
+    d = _fixture(tmp_path, {})
+    p = d / "PELAGIC_INPUTS.txt"
+    p.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
+    assert spb.main([str(d), "--write"]) == 0
+    raw = p.read_bytes()
+    assert raw.count(b"\r\n") == raw.count(b"\n")          # every line still CRLF
+    assert spb.main([str(d)]) == 0
+
+
+def test_missing_header_names_the_file(tmp_path):
+    d = _fixture(tmp_path, {})
+    (d / "RAINFALL_TS.txt").write_text("# X\n# DATA_SIZE\n2\n")
+    try:
+        spb.main([str(d)])
+    except SystemExit as e:
+        assert "RAINFALL_TS.txt" in str(e) and "NUMBER_OF_VARIABLES" in str(e)
+    else:
+        raise AssertionError("expected SystemExit")
