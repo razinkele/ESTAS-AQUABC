@@ -5608,7 +5608,10 @@ box rather than in the slot numbered by the basin, which is identical while each
   prints where the unfixed binary read zero, box 18 holds 0.236-0.310 m, exactly its volume over its area. Its
   minimum is 0.236 m on 2014-01-31.
 - **The biology does not depend on it.** Diatoms and cyanobacteria are identical in boxes 1, 9, 24 and 29, and
-  differ by at most 10⁻⁶ relative in box 18. The bug corrupted the reported depth, not the kinetics.
+  differ by at most 10⁻⁶ relative in box 18. The bug corrupted the reported depth, not the kinetics, because the
+  ecology computes its depth as volume over the box's surface area at the start, not from the level.
+  - That start-time area is never refreshed in a free-volume run. It is exact for constant-area layers, as in
+    CL29, but would go stale where the area varies with level. That is a separate follow-up (noted in #144).
 
 **66.4 The adopted setup's free-volume crash is drift.** With the fixed binary and a free volume, the adopted setup
 still stops on day 448.9, with box 18's volume at −29,384 m³. The level now follows the volume down (0.066 m on day
