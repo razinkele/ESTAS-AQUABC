@@ -55,7 +55,15 @@ program test_basin_level
     z = CALCULATE_SURFACE_ELEVATION(B, -2.0D0, v)
     call check(z + 2.0D0, h, 1.0D-9, "tapering bottom layer: quadratic root")
 
-    ! 5. round trip over a range of volumes from a mid-layer bottom
+    ! 5. a zero-area bottom (a cone-like first layer): h = sqrt(2 V / a)
+    B % LOWER_AREA(1) = 0.0D0
+    a_slope = A / 0.5D0
+    v = 1.0D6
+    z = CALCULATE_SURFACE_ELEVATION(B, -2.0D0, v)
+    call check(z + 2.0D0, sqrt(2.0D0 * v / a_slope), 1.0D-9, "zero-area bottom: h = sqrt(2 V / a) (was 0/0)")
+    B % LOWER_AREA(1) = 0.3D0 * A
+
+    ! 6. round trip over a range of volumes from a mid-layer bottom
     do i = 1, 9
         v = A * 0.15D0 * i
         z = CALCULATE_SURFACE_ELEVATION(B, ZB, v)
