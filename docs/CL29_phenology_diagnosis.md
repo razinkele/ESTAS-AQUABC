@@ -5654,7 +5654,11 @@ rerun fresh, because the cueT setup of §62.1 had been deleted. The lines are §
 - **The September composition does not move.** S1, T1 and the bloom response are the same in all three runs.
 
 **Supplementary, not registered: the trade against the observations.**
-- **The full gate improves**, from 5 of 9 lines to 8 of 9 at both rates. Only S1 fails, as in every run.
+- **The full gate improves**, from 6 of 9 lines to 8 of 9 at both rates. The lines that flip are the 2012-16 Φ half
+  (7.361 to 7.264 and 7.195, against a threshold of 7.320 that is tighter than the adopted run's own) and the
+  autumn/spring Chl-a ratio (2.53 to 2.35 and 2.19, against 1.8-2.4). Only S1 still fails, as in every run.
+  - The script counts the base's TN line as failed too, but only by rounding: its TN RMSE is 0.819344, the
+    adopted value, against a constant written as 0.8193. Both probes improve TN slightly (0.8136, 0.8115).
 - **The spring diatoms move away from the observations.** Against the 102 February-May KM records, the model's mean
   rises from +13 % over the observed to +27 %, and the median ratio from 1.35 to 1.75. The registered guard is a
   ratio to the model's own base, so it could not see this.
