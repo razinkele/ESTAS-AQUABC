@@ -19,7 +19,7 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength test_estas_alerts
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength test_estas_alerts test_basin_level
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
@@ -344,6 +344,12 @@ test_co2sys: test_co2sys.f90 $(CO2SYS_SRCS)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90 -o VECTOR_MATRIX_UTILS.o
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/CO2SYS/aquabc_II_co2sys.f90 -o aquabc_II_co2sys.o
 	$(FC) $(FFLAGS) -o $@ test_co2sys.f90 aquabc_II_co2sys.o VECTOR_MATRIX_UTILS.o aquabc_physical_constants.o mod_AQUABC_II_GLOBAL.o precision_kinds.o
+
+# Compile test_basin_level (ESTAS level-from-volume inversion, mod_BASIN)
+BASIN_LEVEL_SRCS = $(PRECISION_KINDS_SRC) $(ESTAS_SRC)/mod_INTERPOLATE.f90 $(ESTAS_SRC)/mod_TIME_SERIES.f90 \
+    $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_svindex.f90 $(ESTAS_SRC)/mod_GLOBAL.f90 $(ESTAS_SRC)/mod_BASIN.f90
+test_basin_level: test_basin_level.f90 $(BASIN_LEVEL_SRCS)
+	$(FC) $(FFLAGS) -o $@ $(BASIN_LEVEL_SRCS) test_basin_level.f90
 
 # Run all tests
 .PHONY: test

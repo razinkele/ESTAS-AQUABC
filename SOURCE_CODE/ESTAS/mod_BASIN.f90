@@ -425,9 +425,14 @@ contains
             DEPTH      = BATHYMETRY_DATA % UPPER_ELEVATION(ELEVATION_LAYER) - ELEVATION
             QUAD_A     = (UPPER_AREA - LOWER_AREA) / DEPTH
             QUAD_B     = 2.0D0 * LOWER_AREA
-            QUAD_C     = 2.0D0 * VOLUME
+            ! C must be -2 V, as in the later-layer branch below: the level h above ELEVATION solves
+            ! (a/2) h^2 + A_lo h - V = 0. With +2 V a constant-area layer (a = 0) has no positive root, so the
+            ! level stayed at the bottom and DEPTH read 0 with water in the box (CL29 note item 73, docs §66).
+            QUAD_C     = (-1.0D0) * (2.0D0 * VOLUME)
+            ! sign(1, B) instead of B / |B|: equal for B /= 0, and +1 (not 0/0) for a zero-area bottom, where the
+            ! root C / T = sqrt(2 V / a) is then the right one.
             QUAD_D     = ((QUAD_B ** 2.0D0) - (4.0D0 * QUAD_A * QUAD_C)) ** 5.0D-1
-            QUAD_T     = (-1.0D0) * 5.0D-1 * (QUAD_B + (QUAD_B / dabs(QUAD_B)) * (QUAD_D))
+            QUAD_T     = (-1.0D0) * 5.0D-1 * (QUAD_B + sign(1.0D0, QUAD_B) * (QUAD_D))
 
             if ((QUAD_A < 0.0D0).or.(QUAD_A > 0.0D0)) then
                 QUAD_R1 = QUAD_T / QUAD_A
@@ -465,7 +470,7 @@ contains
                     QUAD_B = 2.0D0 * LOWER_AREA
                     QUAD_C = (-1.0D0) * (2.0D0 * (VOLUME - CALCULATED_VOLUME))
                     QUAD_D = ((QUAD_B ** 2.0D0) - (4.0D0 * QUAD_A * QUAD_C)) ** 5.0D-1
-                    QUAD_T = (-1.0D0) * 5.0D-1 * (QUAD_B + (QUAD_B / dabs(QUAD_B)) * (QUAD_D))
+                    QUAD_T = (-1.0D0) * 5.0D-1 * (QUAD_B + sign(1.0D0, QUAD_B) * (QUAD_D))
 
                     if ((QUAD_A < 0.0D0).or.(QUAD_A > 0.0D0)) then
                         QUAD_R1 = QUAD_T / QUAD_A
