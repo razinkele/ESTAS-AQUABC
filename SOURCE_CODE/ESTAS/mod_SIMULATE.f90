@@ -584,7 +584,7 @@ contains
                             do j = 1, nstate
                                 if (PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT == 0) then
 
-                                    write(unit = 1001, fmt = '(F10.4, 2i10, 7F30.6)') WTIME, i, j, &
+                                    write(unit = 1001, fmt = '(F10.4, 2i10, 8F30.6)') WTIME, i, j, &
                                           (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                ECOL_ADVECTION_DERIVS      (i, j, 1) / &
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
@@ -605,9 +605,12 @@ contains
                                                ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1) / &
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
-                                          (pcore%DERIVATIVES(i, j) - &
-                                               wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
-                                               wsc%FLUXES_TO_WATER_COLUMN(i, j)
+                                          pcore%DERIVATIVES(i, j), &
+                                          wsc%FLUXES_TO_WATER_COLUMN(i, j), &
+                                          (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
+                                               ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1) / &
+                                           AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
+                                               PELAGIC_BOXES(i) % VOLUME)
                                 else
                                     write(unit = 1001) WTIME, dble(i), dble(j), &
                                           (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
@@ -630,9 +633,12 @@ contains
                                                ECOL_MASS_WITHDRAWAL_DERIVS(i, j, 1) / &
                                            AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
                                                PELAGIC_BOXES(i) % VOLUME), &
-                                          (pcore%DERIVATIVES(i, j) - &
-                                               wsc%FLUXES_TO_WATER_COLUMN(i,j)), &
-                                               wsc%FLUXES_TO_WATER_COLUMN(i, j)
+                                          pcore%DERIVATIVES(i, j), &
+                                          wsc%FLUXES_TO_WATER_COLUMN(i, j), &
+                                          (AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
+                                               ECOL_PRESCRIBED_SEDIMENT_FLUX_DERIVS(i, j, 1) / &
+                                           AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % &
+                                               PELAGIC_BOXES(i) % VOLUME)
                                 end if
                             end do
                         end if
