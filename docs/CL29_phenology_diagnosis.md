@@ -5449,8 +5449,8 @@ volume threshold there soonest. The next shallowest, boxes 19 and 17, have the n
 **64.6 Supplementary, not registered: the existing free-volume run.** `OUTPUTS_SHYHYDRO_2022` (2026-11-05,
 `INPUT_2022_README.md`) ran `INPUTS_SHYHYDRO_2022` without `ESTAS_HOLD_VOLUME`. That is `run9324`'s hydrology with its
 real rain and evaporation. Its log has no "held constant" line. The script is `diag_pe_20261108/free_volume_sup.py`.
-- **It completes all 4,016 days, and no box empties.** The lowest point is box 18 at 0.155 of its start volume on
-  2014-01-31. SHYFEM's own box 18 dips to 0.402 that day. The lagoon's volume stays within 0.769-1.199 of its start.
+- **It completes all 4,016 days, and no box runs out of water.** The lowest point is box 18 at 0.155 of its start
+  volume on 2014-01-31. (Corrected in §65.4: box 18 does reach the floor of ESTAS's bathymetry, from day 448.) SHYFEM's own box 18 dips to 0.402 that day. The lagoon's volume stays within 0.769-1.199 of its start.
 - **But its water does not track SHYFEM's.** The error in volume change since day 0 (ESTAS minus SHYFEM, in mm of
   water over the box) is:
 
@@ -5475,3 +5475,84 @@ so it is the owner's decision. Nothing is adopted.
 | P3: by-year drain correlates with P − E (r ≥ 0.6) | REFUTED: +0.569 |
 | P4: adopted and `run9324` flows are not the same hydrology | HELD |
 | P5: box 18's SHYFEM warnings are a rain artefact | HELD |
+
+## 65. 2026-11-08: the free-volume drift is a forcing-column bug
+
+**The question.** §64.6 found that the existing free-volume run drifts from SHYFEM by decimetres to metres of water,
+although the same inputs close in SHYFEM's own geometry. Where inside ESTAS does the error arise?
+
+Registered before any value was computed (note item 70, 2026-11-08 10:10); the result is item 71. The scorer is
+`diag_freevol_20261108/drift.py`, in the local working folder like the §61-§64 scorers.
+
+**65.1 What the inputs say.** ESTAS adds rain and subtracts evaporation per box, as the forcing times the box's
+surface area from its own bathymetry. Each box reads the forcing column named in `PELAGIC_INPUTS.txt`.
+- In `INPUTS_SHYHYDRO_2022`, the rain, evaporation, air temperature, wind and ice sections point at column 1 for all
+  29 boxes. The file was copied from `INPUTS_CL29`, whose meteorology files have a single column, so there it is
+  harmless.
+- The SHYHYDRO meteorology files have 29 columns, one per box. **So every box in a SHYHYDRO run gets box 1's rain,
+  evaporation, air temperature, wind and ice.**
+- The same holds for every SHYFEM-coupled input set on disk: `INPUTS_SHYHYDRO`, `_852`, `_2016`, `_2022`,
+  `_2022_chemclim`, `INPUTS_1993` and `INPUTS_1993_852`. The results quoted from those runs carry it. They are in
+  `INPUT_SHYHYDRO_README.md`, `INPUT_852_README.md` and `INPUT_2022_README.md`, and in the curonian repository's
+  `docs/curonian_aquabc_coupling.md`. Water temperature, salinity, solar radiation and the flows are mapped per
+  box, so they are unaffected.
+
+**65.2 The rain/evaporation mapping explains the drift.** The registered prediction is the volume error that box 1's
+P − E (instead of the box's own), applied over ESTAS's area (instead of SHYFEM's), would accumulate. It is compared
+with the observed error of §64.6, in mm of water over the box:
+
+| | observed at the end | predicted | from the column mapping | from the areas | cross term | remainder |
+|---|---|---|---|---|---|---|
+| lagoon (28 boxes) | +509 | +471 | +471 | −7 | +7 | +38 |
+| box 29 | +1,756 | +1,728 | +1,531 | +92 | +105 | +28 |
+| box 16 | −1,100 | −1,106 | −1,106 | 0 | 0 | +6 |
+| box 4 | −719 | −725 | −725 | 0 | 0 | +6 |
+| box 24 | +85 | +25 | +600 | −455 | −120 | +60 |
+
+The components are as registered. The column-mapping term uses SHYFEM's area, and the area term uses the box's own
+P − E. Their product term, the difference in P − E times the difference in area, is the cross term, and the three
+add up to the prediction.
+
+- **25 of 28 lagoon boxes and the lagoon total pass the registered rule.** That rule is an end error within
+  max(100 mm, 20 %) and a daily r ≥ 0.9. The lagoon's r is +0.985.
+- The three that fail have almost nothing to explain. Boxes 1 and 13 end within 11 mm (box 1 is the column itself).
+  Box 10 ends at −25 mm against a predicted −175.
+- The column mapping dominates. The area term matters only where ESTAS's area differs from SHYFEM's: box 24 (0.80 of
+  SHYFEM's) and box 22 (0.95).
+- **One prediction was wrong.** It said box 1's P − E is close to the lagoon mean, so the mapping would cancel
+  lagoon-wide. In fact box 1's P − E is +261.6 mm/yr against an area-weighted +218.8, so the mapping adds about
+  43 mm/yr everywhere.
+- The remainders are +5 to +60 mm at the end (box 10 +150). Checked after review against SHYFEM's own non-closure
+  (§64 Tier A), which ESTAS cannot reproduce because it integrates the flows exactly:
+  - In the two boxes where SHYFEM itself does not close, the remainder is SHYFEM's residual: box 10 +150 against
+    +140 mm, and the sea box +1,290 against +1,277.
+  - Elsewhere SHYFEM's residual is −7 to +28 mm, and about +30 mm (roughly 3 mm/yr) of the remainder is left
+    over. Their daily r is only 0.40-0.69. This small common part was not resolved.
+
+**65.3 The fix, not applied.** A SHYHYDRO input set needs its rain, evaporation, air temperature, wind and ice
+sections to point at column *b* for box *b*. That is a change to how the SHYHYDRO input sets are built. It changes
+every SHYHYDRO result, so it is the owner's decision. The adopted `INPUTS_CL29` is unaffected.
+
+**65.4 Correction to §64.6: box 18 reaches the floor of ESTAS's bathymetry.** *Revised after this section was
+written (note item 73): the zero depth is a sign bug in ESTAS's level-from-volume function, not the geometry. It
+is documented in §66, which supersedes the cause given below. The volumes and dates below stand.* §64.6 said no box empties. By volume
+that holds. But in 301 hourly prints, from day 448 (2013-03-24) to day 766, box 18's bathymetric depth is zero and
+its level sits at −1.311 m. It still holds 8.8 Mm³ of water.
+- Both models lose about the same water by day 448: 27.9 Mm³ in ESTAS, 26.8 in SHYFEM. This is a real low-water
+  spell, and ESTAS's water error at that point is only −36 mm.
+- But ESTAS's box 18 starts with 36.6 Mm³ against SHYFEM's 53.1 (31 % less; both are day-0 daily means, whereas
+  §64.6's ratios are to the first print). Its bathymetry, built from the EUTROPY
+  depths, runs out of depth with a quarter of its start volume left.
+- The documented day-~449 free-volume crash of the CL29 setup falls on the same days. That run was not re-examined
+  here.
+
+**65.5 Reading.** The free-volume drift of §64.6 is an input-mapping bug, not a fault in ESTAS's water balance.
+Box 18's zero depth is a separate defect, in the level function (§66). Nothing is
+adopted.
+
+| prediction | result |
+|---|---|
+| P1: the mapping plus the areas explain the drift (≥ 24 of 28 boxes and the lagoon) | HELD: 25 of 28 and the lagoon |
+| P2: the mapping dominates the area term in boxes 16 and 29 | HELD |
+| P3: the lagoon remainder is under 100 mm | HELD: +38 |
+| P4: the area term dominates lagoon-wide | REFUTED: mapping +471, area −7 |
