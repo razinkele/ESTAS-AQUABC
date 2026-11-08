@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **`tools/set_per_box_forcing_columns.py`** points each box's PRECIPITATION, EVAPORATION, AIR TEMPERATURE,
+  WIND SPEED and ICE FRACTION rows at its own column when the forcing file has one column per box (report mode
+  exits 1 when a set needs it; `--write` fixes it). Every SHYFEM-coupled set on disk (`INPUTS_SHYHYDRO*`,
+  `INPUTS_1993*`) had copied `INPUTS_CL29`'s single-column mapping onto 29-column files, so every box read box 1's
+  meteorology; fixed, the free-volume water tracks SHYFEM's to +30 mm lagoon-wide over 11 years (was +509). The
+  adopted `INPUTS_CL29` is single-column and unaffected. Tests: `tests/python/test_set_per_box_forcing_columns.py`.
 - **`LIGHT_DAYLENGTH_OPTION` — day-length weighting of the light limitation** (opt-in, default
   `0` = current behaviour, byte-identical at full record and on the 0D golden). `FDAY` (day
   length) was read from `DRIVING_FUNCTIONS(:,4)`, allocated and bundled into the per-thread
@@ -58,6 +64,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Free-volume level inversion: false zero depth when the water sits in the bottom's own layer.**
+  `CALCULATE_SURFACE_ELEVATION` (`mod_BASIN.f90`) solved the first-branch quadratic with `C = +2 V`; the
+  later-layer branch has the correct `C = −2 V`. A constant-area layer then had no positive root, so the level
+  stayed at `BOTTOM_ELEVATION` and `DEPTH` read 0 with water in the box; a tapering layer also returned 0. Only
+  free-volume runs recompute the level, so held-volume runs (all adopted CL29 work) are byte-identical (61 output
+  files, 30 days). In the CL29 SHYFEM-hydrology run box 18 read zero depth in 301 hourly prints with 0.20-0.31 m
+  of water; the fix restores it, and the biology is unchanged to 1e-6. It is not the cause of the CL29 day-~449
+  free-volume crash, which remains the EUTROPY flows' drift (box 18's volume goes negative on day 448.9 with the
+  fix too). New test `tests/fortran/test_basin_level.f90` (13 checks; the old code fails 5).
+- **The basin level was stored in the box indexed by the basin number** (`PELAGIC_BOXES(i)` with `i` the basin
+  loop index, `mod_SOLVER.f90`); now `PELAGIC_BOXES(BOX_NO)`. Identical while each basin holds one box, as in
+  CL29 and the 0D golden; it matters for multi-box basins, where `SURFACE_AREAS` reads the stored level.
 - **Day-length handling in the `smith == 0` phytoplankton branch** (7 sites across 5 library
   routines: DIATOMS, OTHER_PLANKTONIC_ALGAE, NOSTACALES, CYANOBACTERIA ×2,
   FIX_CYANOBACTERIA ×2). `I_A` is a **daily integral**, so the depth-averaged Steele form must
