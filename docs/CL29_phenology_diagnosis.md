@@ -5376,3 +5376,102 @@ box's net inflow. The second term sits inside the advection column, so it cannot
     `EVAPORATION_TS` makes a free-volume run viable. The candidates are ERA5, or the hydrodynamic model's own rain
     and evaporation.
   - Changing the volume treatment changes every result, so that is the owner's decision.
+
+## 64. 2026-11-08: the held-volume drain is P − E, but the adopted flows drain 35 % more
+
+**The question.** §63 found that every box loses water under the held volume, at a nearly uniform −200 to −470 mm/yr.
+It looked like net precipitation minus evaporation, which ESTAS never receives. Would supplying `RAINFALL_TS` and
+`EVAPORATION_TS` make a free-volume run viable?
+
+Registered before any value was computed (note item 67, 2026-11-08 09:40); the result is item 68. The scorer is
+`diag_pe_20261108/pe_check.py`. Like the §61-§63 scorers, it lives in the local working folder and is not tracked in
+this repository. Its inputs are the SHYFEM run `run9324` in the curonian repository and the CL29 input sets.
+
+**64.1 Sources.**
+- ERA5 on disk holds total precipitation and radiation, but not evaporation. SHYFEM's rain forcing is ERA5's
+  precipitation, and SHYFEM computes evaporation itself.
+- The SHYFEM box run `run9324` (1993-2024) has its own per-box daily rain and evaporation from the coupling
+  converter. Its 2012-2022 cut is `INPUTS_SHYHYDRO_2022/`.
+- The adopted `INPUTS_CL29` flows are not from that run. `tools/eutropy_poc/eutropy_to_estas.py` writes them from the
+  EUTROPY network's flux table. The same script sets rain and evaporation to a constant zero. So an exact water
+  closure is only possible on `run9324`.
+
+**64.2 Tier A: the water closes in `run9324` once P − E is in.** Per box and day, the residual is the volume change
+minus the link flux minus (P − E) × area. Over 2012-2022, lagoon-wide (28 boxes, sea box out), in mm/yr:
+
+| volume change | link flux | P − E | residual |
+|---|---|---|---|
+| −28.0 | −246.2 | +219.2 | −1.0 |
+
+The volume change is a window-endpoint effect: water levels on 2012-01-01 and 2022-12-30 differ, and the sea box
+shows the same −23.6 mm/yr. It is not an eleven-year trend. The sea box itself is outside the rule. Its residual is
+−117 mm/yr, so a box-12 water budget should not be built on the converter's boundary links.
+
+- Without the P − E term, all 28 boxes accumulate more than 0.1 box volumes of error. With it, the mean residual is
+  within ±3.2 mm/yr in every lagoon box except box 10 (−13.2).
+- **By the registered rule, 24 of 28 boxes close.** Boxes 15, 17, 18 and 19 fail the cumulative bound (0.1 box
+  volumes), at 0.107-0.174.
+- Supplementary, not registered: all four fail on single days of a storm surge (2018-10-22 to 10-24). Box 18's
+  cumulative residual goes +0.092, −0.174, −0.007 box volumes on those days, while its daily-mean volume swings by up
+  to 26 %. Its 60-day running median stays within 0.028 box volumes. The failures read as daily sampling in surges,
+  not drift. This was not re-scored.
+
+**64.3 SHYFEM's box-18 warnings are rain.** SHYFEM's log has 10,086 box mass-balance warnings in 21 boxes, 2,769 in box
+18, the box that empties first under §63's held-volume drift. SHYFEM's check compares the flux-based and the
+water-level-based volume change, and leaves rain out.
+- Every box-18 warning falls in a wet hour. The median rain is 43.6 mm/day there, against 0.64 in wet hours generally.
+- The unexplained water-level gain is 1.73 mm/h against 1.82 mm/h of rain in the same hour (r +0.992).
+- In all 10,086 warnings, the water-level gain exceeds the flux gain.
+
+So box 18 has no section defect. It is the shallowest box (1.54 m mean depth), so an hour's rain crosses the 0.1 %
+volume threshold there soonest. The next shallowest, boxes 19 and 17, have the next most warnings.
+
+**64.4 Tier B: the adopted flows are a different hydrology.**
+- The adopted flows drain the lagoon at −17.27 m³/s (−296 mm/yr). The `run9324` P − E over the same area is a gain
+  of +12.76 m³/s (+219 mm/yr). The drain is 1.354 times P − E, outside the registered 0.75-1.25.
+- By year (11 years), the drain and P − E correlate at r +0.569, below the registered 0.6.
+- Against `run9324`'s own converter flows, the lagoon's daily net flow correlates at r +0.919. But only 21 of 28 box
+  means are within 30 %. Every lagoon box except box 24 drains more in the adopted set, and the link flows differ by
+  a median 56 m³/s.
+- `run9324`'s storage term (−28 mm/yr over the window) explains about a third of the extra 77 mm/yr.
+
+**64.5 Reading.** The verdict by the registered rule is **not shown**, for both hydro sets.
+- §63's reading holds for `run9324`. Its link drain equals P − E plus the storage change to within about 1 mm/yr
+  lagoon-wide. The four boxes that fail the rule do so on surge days, not by drift.
+- It does not hold for the adopted flows. They drain 35 % more than P − E. With real rain and evaporation, box 18
+  would still lose about 80 mm/yr on average (−342 + 261). §63's day-448 emptying came mostly from storage swings,
+  not the mean, so only a run can show whether it would still empty.
+- The only rain and evaporation on hand are `run9324`'s, and they balance `run9324`'s own flows. A free-volume CL29
+  run would therefore need the `INPUTS_SHYHYDRO_2022` hydrology with its own rain and evaporation. The adopted flows
+  would need a P − E series consistent with EUTROPY's hydrodynamics, which is not on disk.
+  §64.6 shows such a run already exists, and what it does.
+
+**64.6 Supplementary, not registered: the existing free-volume run.** `OUTPUTS_SHYHYDRO_2022` (2026-11-05,
+`INPUT_2022_README.md`) ran `INPUTS_SHYHYDRO_2022` without `ESTAS_HOLD_VOLUME`. That is `run9324`'s hydrology with its
+real rain and evaporation. Its log has no "held constant" line. The script is `diag_pe_20261108/free_volume_sup.py`.
+- **It completes all 4,016 days, and no box empties.** The lowest point is box 18 at 0.155 of its start volume on
+  2014-01-31. SHYFEM's own box 18 dips to 0.402 that day. The lagoon's volume stays within 0.769-1.199 of its start.
+- **But its water does not track SHYFEM's.** The error in volume change since day 0 (ESTAS minus SHYFEM, in mm of
+  water over the box) is:
+
+| | lagoon | box 29 | box 16 | box 8 | boxes 15, 17, 18, 19 |
+|---|---|---|---|---|---|
+| at the end (mm) | +509 | +1,756 | −1,100 | +756 | +23, +28, +98, −48 |
+| largest (mm) | 678 | 1,945 | 1,154 | 951 | 484-605 |
+
+- The two models start from different box volumes, because ESTAS uses its own bathymetry. So only volume changes are
+  compared, not ratios.
+- Tier A shows that the same inputs close in SHYFEM's own geometry. The error therefore arises inside ESTAS, in its
+  areas, its bathymetry or the way it applies the flows. It was not diagnosed here.
+
+**Reading.** A free volume on the `SHYHYDRO_2022` hydrology runs to the end, but its water levels drift from the
+hydrodynamics by decimetres to metres. Switching the CL29 setup to it changes the flows behind every result since §55,
+so it is the owner's decision. Nothing is adopted.
+
+| prediction | result |
+|---|---|
+| P1: all 28 lagoon boxes close in `run9324` | REFUTED: 24 of 28 |
+| P2: adopted drain consistent with P − E (ratio 0.75-1.25) | REFUTED: 1.354 |
+| P3: by-year drain correlates with P − E (r ≥ 0.6) | REFUTED: +0.569 |
+| P4: adopted and `run9324` flows are not the same hydrology | HELD |
+| P5: box 18's SHYFEM warnings are a rain artefact | HELD |
