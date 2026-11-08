@@ -5556,3 +5556,126 @@ adopted.
 | P2: the mapping dominates the area term in boxes 16 and 29 | HELD |
 | P3: the lagoon remainder is under 100 mm | HELD: +38 |
 | P4: the area term dominates lagoon-wide | REFUTED: mapping +471, area −7 |
+
+## 66. 2026-11-08: the per-box meteorology fix works; the zero depth is a level-function bug
+
+Three registered checks (note items 72-79): the fix §65.3 left to the owner, box 18's zero depth, and whether the
+adopted setup still crashes under a free volume. The scorers are `diag_freevol_20261108/permet.py` and
+`levelbug.py`, in the local working folder like the earlier scorers.
+
+**66.1 Per-box meteorology closes the free-volume drift.** A copy of `INPUTS_SHYHYDRO_2022` had its five meteorology
+sections pointed at column *b* for box *b*, and nothing else changed. Both it and an unchanged control were run with
+a free volume on the current binary.
+- **The control reproduces §65 exactly**: +509 mm lagoon-wide and +1,756 in box 29.
+- **The fix lands where §65's decomposition predicted, in all 28 lagoon boxes.** The prediction was §65's area term
+  plus its remainder, and every box ends within 2 mm of it. The lagoon's end error falls from +509 to +30 mm. What is
+  left is ESTAS's smaller area in box 24 (−395 mm) and box 22 (−103), and SHYFEM's own non-closure in box 10 (+150)
+  and the sea box (+1,290).
+- **The biology moves.** Lagoon-wide run means change by −2 % (diatoms) to +9 % (nitrate). In box 29 zooplankton
+  rises 33 %, nitrate 20 % and the non-fixing cyanobacteria 14 %.
+- The fix is now a tool, `tools/set_per_box_forcing_columns.py` (ESTAS-AQUABC PR #144). It reproduces the probe set
+  byte for byte. The existing sets were not rewritten, so their documented results stay reproducible. Their READMEs
+  now carry a caveat.
+- One prediction was refuted: box 18's zero-depth prints did not stay put. They moved from day 448 to day 759,
+  because the level bug of §66.2 fires whenever box 18's volume falls below a fixed threshold.
+
+**66.2 Box 18's zero depth is a sign bug in the level function.** This corrects §65.4. ESTAS turns each box's
+volume into a level with `CALCULATE_SURFACE_ELEVATION`.
+- When the water sits inside the layer that holds the box bottom, the function solves its quadratic with the volume
+  term's sign reversed. The branch for higher layers has the correct sign.
+- For a constant-area layer, the reversed sign leaves no positive root, so the level stays at the bottom and the
+  depth reads zero with water in the box. A tapering layer also returns zero.
+- So box 18 should read zero exactly when its volume is below 8.83 Mm³: its area (28.43 km²) times the 0.311 m
+  between its bottom and the top of that layer.
+
+The registered test checked every print of every box in the earlier free-volume run:
+- **The zero-depth prediction is exact.** It classifies 100 % of prints in all 29 boxes correctly. Box 18 had 301
+  zero-depth prints and 301 predicted. Its true depth at those prints was 0.20-0.31 m.
+- **The other half of the rule failed, narrowly.** Elsewhere the printed depth matched the exact inversion within
+  1 mm in 99.46-99.96 % of prints, below the registered 99.9 % in 22 boxes. By the rule the bug is therefore not
+  confirmed.
+- **Supplementary, not registered: the mismatch is a one-step lag.** The depth is set at the start of a step and
+  the volume is printed after it. The mismatch tracks the step's volume change over the area with slope 1.00 and r
+  0.990-0.995, leaving at most 0.15 mm, against a print precision of 0.1 mm. The function is exact there. This lag is
+  a third reporting gap, beside the two in §63.1.
+
+**66.3 The fix.** ESTAS-AQUABC PR #144 corrects the sign. In a separate commit it also stores the level in the
+box rather than in the slot numbered by the basin, which is identical while each basin holds one box, as in CL29.
+- A new unit test checks the inversion: 13 checks, of which the unfixed function fails 5.
+- **The adopted setup is byte-identical.** Held-volume runs never recompute the level. All 61 outputs of a 30-day
+  adopted run are identical between the unfixed and fixed builds of the same tree.
+- **The zero depth is gone.** The fixed free-volume run with per-box meteorology has no zero-depth print. At the 133
+  prints where the unfixed binary read zero, box 18 holds 0.236-0.310 m, exactly its volume over its area. Its
+  minimum is 0.236 m on 2014-01-31.
+- **The biology does not depend on it.** Diatoms and cyanobacteria are identical in boxes 1, 9, 24 and 29, and
+  differ by at most 10⁻⁶ relative in box 18. The bug corrupted the reported depth, not the kinetics, because the
+  ecology computes its depth as volume over the box's surface area at the start, not from the level.
+  - That start-time area is never refreshed in a free-volume run. It is exact for constant-area layers, as in
+    CL29, but would go stale where the area varies with level. That is a separate follow-up (noted in #144).
+
+**66.4 The adopted setup's free-volume crash is drift.** With the fixed binary and a free volume, the adopted setup
+still stops on day 448.9, with box 18's volume at −29,384 m³. The level now follows the volume down (0.066 m on day
+434.5), so this is the EUTROPY flows' drift of §63 emptying the box, as the CHANGELOG has always said. §65.4's
+"most likely the same geometry" is withdrawn.
+
+**66.5 Reading.** Nothing in the adopted setup changes. For the SHYFEM hydrology, per-box meteorology plus the level
+fix gives a free volume that tracks SHYFEM's water to about 3 mm/yr lagoon-wide. Using that hydrology for CL29 would
+change the flows behind every result since §55, so it remains the owner's decision.
+
+| prediction | result |
+|---|---|
+| item 72 P1: the control reproduces §65 | HELD |
+| item 72 P2: the fix lands on §65's area term plus remainder (≥ 25 of 28 boxes, lagoon under 100 mm) | HELD: 28 of 28, +30 mm |
+| item 72 P3: box 18's zero depth stays at day 448 | REFUTED: it moved to day 759 |
+| item 72 P4: the biology moves by more than 5 % somewhere lagoon-wide | HELD: nitrate +9 % |
+| item 73 P1: the bug confirmed by both halves of the rule | REFUTED on the 1 mm half (a lag); the zero-depth half exact |
+| item 73 P2: the zero depth is gone with the fix | HELD |
+| item 73 P3: the adopted setup is byte-identical | HELD |
+| item 73 P4: box 18's minimum depth is about 0.2 m | HELD: 0.236 m |
+| item 78: the adopted setup still crashes, by drift | HELD |
+
+## 67. 2026-11-08: a lower diatom death rate restores autumn diatoms at the cost of the spring and silica
+
+**The question.** §62 left one lever untested: the diatom death rate at 20 °C (`KD_DIA_20` 0.12 per day), which
+§30 set as "the February lever". Does lowering it restore the missing autumn diatoms?
+
+Registered before the runs (note item 74, 2026-11-08 10:32); the result is item 77. The base is the adopted setup,
+rerun fresh, because the cueT setup of §62.1 had been deleted. The lines are §62.1's. The scorers are
+`diag_dkd_20261108/dkd_probe.py` and `dkd_supp.py`.
+
+| `KD_DIA_20` | Oct-Nov diatoms (mg C/L) | Sep-1 inoculum (% obs) | Feb-May (× base) | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 |
+|---|---|---|---|---|---|
+| 0.12 (base) | 0.101 | 1.3 % | 1.00 | 51.2 / 32.6 | 6.898 / 7.361 / 6.742 |
+| 0.09 | 0.166 | 1.5 % | 1.08 | 50.5 / 32.5 | 6.864 / 7.264 / 6.727 |
+| 0.06 | 0.270 | 1.8 % | 1.16 | 49.8 / 32.6 | 6.859 / 7.195 / 6.742 |
+| observed | 0.364 | | | 50.2 / 46.4 | |
+
+- **By the registered rule, 0.06 is a CANDIDATE and 0.09 is WEAK.** At 0.06 the autumn diatoms pass 0.20, the
+  spring guard holds (×1.16 against 1.20), and the Chl-a floors hold. The inoculum stays below 5 % at both.
+- **Two predictions were refuted.** I expected the spring guard to fail at 0.06; it held, but close. So 0.06 is a
+  CANDIDATE, not the predicted PARTIAL.
+- **The September composition does not move.** S1, T1 and the bloom response are the same in all three runs.
+
+**Supplementary, not registered: the trade against the observations.**
+- **The full gate improves**, from 6 of 9 lines to 8 of 9 at both rates. The lines that flip are the 2012-16 Φ half
+  (7.361 to 7.264 and 7.195, against a threshold of 7.320 that is tighter than the adopted run's own) and the
+  autumn/spring Chl-a ratio (2.53 to 2.35 and 2.19, against 1.8-2.4). Only S1 still fails, as in every run.
+  - The script counts the base's TN line as failed too, but only by rounding: its TN RMSE is 0.819344, the
+    adopted value, against a constant written as 0.8193. Both probes improve TN slightly (0.8136, 0.8115).
+- **The spring diatoms move away from the observations.** Against the 102 February-May KM records, the model's mean
+  rises from +13 % over the observed to +27 %, and the median ratio from 1.35 to 1.75. The registered guard is a
+  ratio to the model's own base, so it could not see this.
+- **Dissolved silica worsens.** Its RMSE rises 13 % (0.786 to 0.885 mg/L), and its positive bias from 0.25 to 0.43.
+- So the lever is a trade, as §62 expected, not a free gain. Lowering the death rate grows the autumn population
+  from a seed that is still missing (1.8 % of the observed), and pays for it in spring and in silica.
+
+**Reading.** Nothing is adopted. A lower diatom death rate is the only §62 lever that reaches the autumn diatom line.
+It does so by over-predicting the spring diatoms further, which is the reason §30 set it at 0.12. Adopting it is the
+owner's decision.
+
+| prediction | result |
+|---|---|
+| P1: the spring guard fails at 0.06 | REFUTED: ×1.16, inside 1.20 |
+| P2: 0.09 is WEAK | HELD |
+| P3: 0.06 is PARTIAL, through the spring guard | REFUTED: CANDIDATE |
+| P4: the inoculum stays below 5 % at both | HELD |
