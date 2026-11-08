@@ -627,7 +627,7 @@ contains
                          BOTTOM_ELEVATION, VOLUME)
 
                 PELAGIC_BOX_MODEL_DATA % &
-                    PELAGIC_BOXES(i) % SURFACE_ELEVATION = SURFACE_ELEVATION
+                    PELAGIC_BOXES(BOX_NO) % SURFACE_ELEVATION = SURFACE_ELEVATION   ! was (i), the basin index
 
                 PELAGIC_BOX_MODEL_DATA % &
                     PELAGIC_BOXES(BOX_NO) % DEPTH = SURFACE_ELEVATION - BOTTOM_ELEVATION
