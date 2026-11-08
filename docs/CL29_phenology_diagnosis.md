@@ -5491,18 +5491,27 @@ surface area from its own bathymetry. Each box reads the forcing column named in
   harmless.
 - The SHYHYDRO meteorology files have 29 columns, one per box. **So every box in a SHYHYDRO run gets box 1's rain,
   evaporation, air temperature, wind and ice.**
+- The same holds for every SHYFEM-coupled input set on disk: `INPUTS_SHYHYDRO`, `_852`, `_2016`, `_2022`,
+  `_2022_chemclim`, `INPUTS_1993` and `INPUTS_1993_852`. The results quoted from those runs carry it. They are in
+  `INPUT_SHYHYDRO_README.md`, `INPUT_852_README.md` and `INPUT_2022_README.md`, and in the curonian repository's
+  `docs/curonian_aquabc_coupling.md`. Water temperature, salinity, solar radiation and the flows are mapped per
+  box, so they are unaffected.
 
 **65.2 The rain/evaporation mapping explains the drift.** The registered prediction is the volume error that box 1's
 P − E (instead of the box's own), applied over ESTAS's area (instead of SHYFEM's), would accumulate. It is compared
 with the observed error of §64.6, in mm of water over the box:
 
-| | observed at the end | predicted | from the column mapping | from the areas | remainder |
-|---|---|---|---|---|---|
-| lagoon (28 boxes) | +509 | +471 | +471 | −7 | +38 |
-| box 29 | +1,756 | +1,728 | +1,531 | +92 | +28 |
-| box 16 | −1,100 | −1,106 | −1,106 | 0 | +6 |
-| box 4 | −719 | −725 | −725 | 0 | +6 |
-| box 24 | +85 | +25 | +600 | −455 | +60 |
+| | observed at the end | predicted | from the column mapping | from the areas | cross term | remainder |
+|---|---|---|---|---|---|---|
+| lagoon (28 boxes) | +509 | +471 | +471 | −7 | +7 | +38 |
+| box 29 | +1,756 | +1,728 | +1,531 | +92 | +105 | +28 |
+| box 16 | −1,100 | −1,106 | −1,106 | 0 | 0 | +6 |
+| box 4 | −719 | −725 | −725 | 0 | 0 | +6 |
+| box 24 | +85 | +25 | +600 | −455 | −120 | +60 |
+
+The components are as registered. The column-mapping term uses SHYFEM's area, and the area term uses the box's own
+P − E. Their product term, the difference in P − E times the difference in area, is the cross term, and the three
+add up to the prediction.
 
 - **25 of 28 lagoon boxes and the lagoon total pass the registered rule.** That rule is an end error within
   max(100 mm, 20 %) and a daily r ≥ 0.9. The lagoon's r is +0.985.
@@ -5513,8 +5522,12 @@ with the observed error of §64.6, in mm of water over the box:
 - **One prediction was wrong.** It said box 1's P − E is close to the lagoon mean, so the mapping would cancel
   lagoon-wide. In fact box 1's P − E is +261.6 mm/yr against an area-weighted +218.8, so the mapping adds about
   43 mm/yr everywhere.
-- The remainders, +5 to +60 mm at the end (box 10 +150), are the transient part: flow timing and SHYFEM's own
-  residual. They were not split further.
+- The remainders are +5 to +60 mm at the end (box 10 +150). Checked after review against SHYFEM's own non-closure
+  (§64 Tier A), which ESTAS cannot reproduce because it integrates the flows exactly:
+  - In the two boxes where SHYFEM itself does not close, the remainder is SHYFEM's residual: box 10 +150 against
+    +140 mm, and the sea box +1,290 against +1,277.
+  - Elsewhere SHYFEM's residual is −7 to +28 mm, and about +30 mm (roughly 3 mm/yr) of the remainder is left
+    over. Their daily r is only 0.40-0.69. This small common part was not resolved.
 
 **65.3 The fix, not applied.** A SHYHYDRO input set needs its rain, evaporation, air temperature, wind and ice
 sections to point at column *b* for box *b*. That is a change to how the SHYHYDRO input sets are built. It changes
@@ -5525,7 +5538,8 @@ that holds. But in 301 hourly prints, from day 448 (2013-03-24) to day 766, box 
 its level sits at −1.311 m. It still holds 8.8 Mm³ of water.
 - Both models lose about the same water by day 448: 27.9 Mm³ in ESTAS, 26.8 in SHYFEM. This is a real low-water
   spell, and ESTAS's water error at that point is only −36 mm.
-- But ESTAS's box 18 starts with 36.6 Mm³ against SHYFEM's 53.1 (31 % less). Its bathymetry, built from the EUTROPY
+- But ESTAS's box 18 starts with 36.6 Mm³ against SHYFEM's 53.1 (31 % less; both are day-0 daily means, whereas
+  §64.6's ratios are to the first print). Its bathymetry, built from the EUTROPY
   depths, runs out of depth with a quarter of its start volume left.
 - The documented day-~449 free-volume crash of the CL29 setup falls on the same days. It is most likely the same
   low-water spell meeting the same geometry, rather than a missing water term. That run was not re-examined here.
