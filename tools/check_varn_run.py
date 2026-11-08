@@ -339,8 +339,9 @@ def run_smoke(a):
 def parse_mass_balances(path, var_filter):
     """MASS_BALANCES.out -> {(box,time): {var_no: (advection,diffusion,settling,
     mass_loads,mass_withdrawals,kinetics,sediment_fluxes)}} for var_no in
-    var_filter. mod_AQUATIC_MODEL.f90:263-268 header;
-    sub_WRITE_PELAGIC_OUTPUT.f90 write order."""
+    var_filter. mod_AQUATIC_MODEL.f90 header; mod_SIMULATE.f90 write order.
+    Since 2026-11 the file carries an 8th term column (the prescribed sediment
+    flux) after these seven; it is ignored here, since the identity is kinetics-only."""
     out = {}
     with open(path) as fh:
         header = fh.readline()

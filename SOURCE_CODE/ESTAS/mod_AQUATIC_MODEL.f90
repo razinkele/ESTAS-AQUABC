@@ -251,21 +251,29 @@ contains
                   file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // 'WATER_LEVELS.out', &
                   status = 'UNKNOWN')
 
-            write(unit = 1000, fmt = '(2A10, 3A30)') &
+            ! ELEVATION and DEPTH come from the geometry computed at the start of the printed step, VOLUME from
+            ! its end: under a free volume they lag by one step's volume change (CL29 docs §66.2).
+            write(unit = 1000, fmt = '(2A10, 5A30)') &
                   '      TIME', '    BOX NO',  &
-                  '         SURFACE ELEVATION (m)', '                  VOLUME (m^3)', &
-                  '                     DEPTH (m)'
+                  '      SURFACE ELEVATION (m) *', '                  VOLUME (m^3)', &
+                  '                   DEPTH (m) *', '           VOLUME / AREA (m) *', &
+                  '  * at the start of the step'
 
             open (unit   = 1001, &
                   file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // 'MASS_BALANCES.out', &
                   status = 'UNKNOWN')
 
-            write(unit = 1001, fmt = '(3A10, 7A30)') &
+            ! Eight term columns that sum to the derivative the solver integrates (mod_SOLVER tot_deriv / V).
+            ! KINETICS is the pelagic kinetics alone; SEDIMENT FLUXES is the diagenetic model's flux, which the
+            ! solver adds to the kinetics; PRESCRIBED SED. FLUX is the prescribed benthic flux (e.g. the CL29 NO3
+            ! sink), applied as its own term. Until 2026-11 KINETICS was written as kinetics - flux and the
+            ! prescribed column was missing (CL29 docs §63.1). Each row is one step's instantaneous rate.
+            write(unit = 1001, fmt = '(3A10, 8A30)') &
                   '      TIME', '    BOX NO',  '    VAR_NO', &
                   '        ADVECTION (g/m^3/days)', '        DIFFUSION (g/m^3/days)', &
                   '         SETTLING (g/m^3/days)', '       MASS LOADS (g/m^3/days)', &
                   ' MASS WITHDRAWALS (g/m^3/days)', '         KINETICS (g/m^3/days)', &
-                  '  SEDIMENT FLUXES (g/m^3/days)'
+                  '  SEDIMENT FLUXES (g/m^3/days)', ' PRESCR. SED. FLUX (g/m^3/day)'
         else
             open(unit   = 1001, &
                  file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // &

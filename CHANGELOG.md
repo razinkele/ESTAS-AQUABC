@@ -64,6 +64,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **`MASS_BALANCES.out` terms now sum to what the solver integrates.** The KINETICS column was written as
+  kinetics minus the diagenetic sediment flux, while the solver adds the two; it is now the kinetics alone, next to
+  the SEDIMENT FLUXES column as before. A new 8th term column, PRESCR. SED. FLUX, carries the prescribed benthic
+  flux (e.g. the CL29 NO3 sink), which the solver applies as its own term and the file used to omit. The column is
+  appended, so positional readers of the first seven terms (`tools/check_varn_run.py`) are unaffected. With
+  `MODEL_SEDIMENTS 1` (CL29) the diagenetic flux is zero, so the first ten columns are byte-identical; the new
+  column is non-zero only for NO3 there. `WATER_LEVELS.out`'s header now labels its fourth column (volume / area)
+  and states that elevation, depth and that column come from the start of the printed step (a one-step lag
+  behind VOLUME under a free volume, CL29 docs §66.2); its rows are unchanged.
 - **The box's own `SURFACE_AREA` is now refreshed with the level.** It was set once at read time, but the
   ecology's depth is `VOLUME / SURFACE_AREA`, so under a free volume it went stale wherever the area varies with
   level (real hypsometry). The solver's `SURFACE_AREAS` array was already refreshed. An exact no-op for
