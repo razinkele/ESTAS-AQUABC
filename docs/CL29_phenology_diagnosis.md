@@ -5679,3 +5679,55 @@ owner's decision.
 | P2: 0.09 is WEAK | HELD |
 | P3: 0.06 is PARTIAL, through the spring guard | REFUTED: CANDIDATE |
 | P4: the inoculum stays below 5 % at both | HELD |
+
+## 68. 2026-11-08: no spring-side lever undoes the lower death rate's spring excess
+
+**The question.** §67 found that `KD_DIA_20` 0.06 restores the autumn diatoms but pushes the February-May diatoms
+from +13 % to +27 % over the KM observations. Can a spring-side lever take the spring back while keeping the
+autumn?
+
+Registered before the runs (note item 85, 2026-11-08 11:56); the result is item 86. The scorer is
+`diag_dkd_20261108/pair_probe.py`. Two candidates were on record:
+- **Arm A, temperature-independent death** (`THETA_KD_DIA` 1.02 to 1.00). It raises cold-season death more than
+  autumn death. §48's lesson is that February sits near its balance point, where small rate changes move biomass.
+- **Arm B, Form B day-length weighting** (`LIGHT_DAYLENGTH_OPTION` 2). On its own it cut February diatoms to 0.22×
+  (§48.3), and §49 measured low death as its February compensation.
+
+| run | Oct-Nov diatoms | Feb-May / obs | Chl-a Sep / Oct | Φ / 2012-16 / 2017-21 | a/s | gate | S1 | DSi RMSE |
+|---|---|---|---|---|---|---|---|---|
+| base (0.12) | 0.101 | 1.127 | 51.2 / 32.6 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.166 | 0.786 |
+| `KD_DIA_20` 0.06 | 0.270 | 1.275 | 49.8 / 32.6 | 6.859 / 7.195 / 6.742 | 2.19 | 8/9 | 0.169 | 0.885 |
+| A: 0.06 + θ 1.00 | 0.213 | 1.244 | 50.0 / 32.5 | 6.866 / 7.247 / 6.735 | 2.29 | 8/9 | 0.169 | 0.843 |
+| B: 0.06 + Form B | 0.503 | 1.248 | 46.8 / 27.2 | 7.161 / 7.437 / 7.053 | 2.16 | 4/9 | 0.102 | 0.868 |
+| observed | 0.364 | 1 | 50.2 / 46.4 | | | | 0.826 | |
+
+- **Neither pair works.** By the registered rule both arms are PARTIAL. Each trims the spring excess only slightly,
+  from 1.275 to about 1.25, against the base's 1.127.
+- **Arm A** keeps the gate at 8/9 and recovers a third of the silica loss, but gives up a fifth of the autumn gain.
+- **Arm B does not overshoot the spring.** Low death compensates Form B's February loss, as §49 said. Instead Form B
+  doubles the autumn diatoms past the observations and damages everything else: 4 of 9 gate lines, October Chl-a
+  27.2, and S1 0.102.
+- **Three predictions were refuted.** I expected arm A to reach 1.15-1.22 and arm B to overshoot the spring. The
+  third refutation was my own error: the reproduction check used a value I had computed by hand from rounded means.
+  The run itself reproduces §67.
+
+**Reading.** The spring excess that a lower death rate creates is not undone by either principled spring-side
+lever. The recommendation is not to adopt `KD_DIA_20` 0.06. The autumn diatom gap stays open, with its seed still
+missing (§62), and nothing is adopted.
+
+**Infrastructure in the same session (no model result changes).**
+- The box's own surface area is now refreshed with the level (ESTAS-AQUABC #146). It is exactly a no-op for CL29,
+  whose synthetic areas are constant above every box bottom (note items 82-83).
+- `MASS_BALANCES.out` now writes the kinetics as the solver applies them and adds the prescribed-flux column
+  (PR #147). Its eight terms sum to the derivative the solver integrates, which closes §63.1's two reporting gaps.
+  `WATER_LEVELS.out`'s header states §66.2's one-step lag.
+- The live binary is the release build of main c436578. It is byte-identical to the earlier one over the full
+  adopted run.
+- The curonian input checker now flags non-per-box meteorology (curonian #2).
+
+| prediction | result |
+|---|---|
+| P1: the KD 0.06 run reproduces §67 | REFUTED on a hand-computed tolerance; K2 reproduces exactly |
+| P2: arm A is PARTIAL with Feb-May 1.15-1.22 | REFUTED: 1.244 |
+| P3: arm B overshoots the spring (Feb-May < 0.90) | REFUTED: 1.248 |
+| P4: neither arm brings silica within 1.05× the base | HELD |
