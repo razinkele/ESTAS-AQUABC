@@ -5762,11 +5762,12 @@ not a calibration.
 
 - **By the registered rule both are PARTIAL.** The autumn line passes at both, but the inoculum stays below 5 %
   (4.7 % at 0.30).
-- **Unlike the death rate, the river supply improves the fit.** Φ falls to 6.775 (the session's best), both halves
-  improve, the autumn/spring ratio moves toward the observed, and silica improves. Compare §67, where silica
-  worsened 13 %.
+- **The river supply improves the fit, including silica.** Φ falls to 6.775 (the session's best), both halves
+  improve, and the autumn/spring ratio moves toward the observed. The death rate of §67 also improved Φ and the
+  gate, but it worsened silica by 13 %; the river supply improves silica.
 - **The cost is the spring.** A constant supply adds river diatoms in spring too, so the February-May excess grows.
-  A seasonal river series would not carry this by construction.
+  A seasonal river series might reduce this cost, but its spring effect must be tested. The river's biogenic
+  silica itself rises in spring-summer (§69.4).
 - **Three predictions were refuted.** The loss month is July, not June; the floor's import is smaller than I
   assumed; and 0.30 is PARTIAL rather than a seed source.
 
@@ -5778,12 +5779,16 @@ above the average during spring-summer months, likely due to algal growth" (Vybe
 - The authors note their extraction "may lead to an overestimation of the BSi pool due to solubilisation of
   lithogenic Si", so that is an upper bound.
 - Even so, the 0.30 bracket is only 16 % of the measured biogenic silica, and the converter's floor is 1 %.
+- This is an upper bound on live diatoms, not a measurement of them. Biogenic silica also includes dead frustules,
+  and the extraction can include lithogenic silica. It shows the floor is low, but by how much needs live river
+  biomass data before it can set the boundary input.
 - I found no published monthly Nemunas phytoplankton biomass in an accessible text. Gasiūnaitė et al. (2012)
   sampled river phytoplankton as a reference, but their full text was not available to the search.
 
-**Reading.** The model's river diatom supply is a floor about two orders of magnitude below what the river's
-biogenic silica implies. Raising it restores the autumn diatoms and improves the fit, unlike any loss-side lever
-since §62. The cost appears only because the bracket is constant through the year. The natural next step is a
+**Reading.** The model's river diatom supply is a floor well below what the river's biogenic silica allows: up to
+two orders of magnitude, if most of that silica were live diatoms. Raising it restores the autumn diatoms and
+improves the fit, silica included, which no loss-side lever since §62 did. A constant bracket carries a spring
+cost; whether a seasonal series avoids it has to be tested. The natural next step is a
 seasonal river diatom series from measured data: monthly biogenic silica, or river phytoplankton counts. That is a
 new boundary input, so it is the owner's decision. Nothing is adopted.
 
