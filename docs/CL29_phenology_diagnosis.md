@@ -5384,7 +5384,8 @@ It looked like net precipitation minus evaporation, which ESTAS never receives. 
 `EVAPORATION_TS` make a free-volume run viable?
 
 Registered before any value was computed (note item 67, 2026-11-08 09:40); the result is item 68. The scorer is
-`diag_pe_20261108/pe_check.py`.
+`diag_pe_20261108/pe_check.py`. Like the §61-§63 scorers, it lives in the local working folder and is not tracked in
+this repository. Its inputs are the SHYFEM run `run9324` in the curonian repository and the CL29 input sets.
 
 **64.1 Sources.**
 - ERA5 on disk holds total precipitation and radiation, but not evaporation. SHYFEM's rain forcing is ERA5's
@@ -5426,8 +5427,8 @@ So box 18 has no section defect. It is the shallowest box (1.54 m mean depth), s
 volume threshold there soonest. The next shallowest, boxes 19 and 17, have the next most warnings.
 
 **64.4 Tier B: the adopted flows are a different hydrology.**
-- The adopted flows drain the lagoon at −17.27 m³/s (−296 mm/yr). The `run9324` P − E over the same area is
-  −12.76 m³/s (−219 mm/yr). The ratio is 1.354, outside the registered 0.75-1.25.
+- The adopted flows drain the lagoon at −17.27 m³/s (−296 mm/yr). The `run9324` P − E over the same area is a gain
+  of +12.76 m³/s (+219 mm/yr). The drain is 1.354 times P − E, outside the registered 0.75-1.25.
 - By year (11 years), the drain and P − E correlate at r +0.569, below the registered 0.6.
 - Against `run9324`'s own converter flows, the lagoon's daily net flow correlates at r +0.919. But only 21 of 28 box
   means are within 30 %. Every lagoon box except box 24 drains more in the adopted set, and the link flows differ by
@@ -5435,12 +5436,14 @@ volume threshold there soonest. The next shallowest, boxes 19 and 17, have the n
 - `run9324`'s storage term (−28 mm/yr over the window) explains about a third of the extra 77 mm/yr.
 
 **64.5 Reading.** The verdict by the registered rule is **not shown**, for both hydro sets.
-- §63's reading holds for `run9324`: its drain is P − E to within about 1 mm/yr lagoon-wide. The four boxes that
-  fail the rule do so on surge days, not by drift.
+- §63's reading holds for `run9324`. Its link drain equals P − E plus the storage change to within about 1 mm/yr
+  lagoon-wide. The four boxes that fail the rule do so on surge days, not by drift.
 - It does not hold for the adopted flows. They drain 35 % more than P − E. With real rain and evaporation, box 18
   would still lose about 80 mm/yr on average (−342 + 261). §63's day-448 emptying came mostly from storage swings,
   not the mean, so only a run can show whether it would still empty.
-- A free-volume CL29 run would therefore need the `INPUTS_SHYHYDRO_2022` hydrology with its own rain and evaporation.
+- The only rain and evaporation on hand are `run9324`'s, and they balance `run9324`'s own flows. A free-volume CL29
+  run would therefore need the `INPUTS_SHYHYDRO_2022` hydrology with its own rain and evaporation. The adopted flows
+  would need a P − E series consistent with EUTROPY's hydrodynamics, which is not on disk.
   §64.6 shows such a run already exists, and what it does.
 
 **64.6 Supplementary, not registered: the existing free-volume run.** `OUTPUTS_SHYHYDRO_2022` (2026-11-05,
