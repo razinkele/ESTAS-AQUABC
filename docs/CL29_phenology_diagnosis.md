@@ -5268,3 +5268,111 @@ greens are reported to grow at or below 8 °C.
 References: Cho, D.-H., Choi, J.-W., Kang, Z., et al. (2017). *Scientific Reports*, 7.
 https://doi.org/10.1038/s41598-017-02139-8 · Dong, J., Zhou, W., Song, L., et al. (2015). *Annales de Limnologie*.
 https://doi.org/10.1051/limn/2015014
+
+## 63. 2026-11-08: the model-integrity items — box 7's residual and the held-volume water balance
+
+**The questions.** §61.7 left two items open:
+- Box 7, the strait, had an unaccounted −0.6 to −1.15 mg C/L of Nostocales in five of six windows.
+- Under `ESTAS_HOLD_VOLUME`, the lagoon's net inflow over a window was ±1-14 % of its volume.
+
+Registered before any value was computed or the run was launched (note item 61, 2026-11-08 00:03); the results are
+items 62-63. The base is the §62 run (the best composition setup, with the mass balance in boxes 7, 9, 14, 17, 19
+and 23). The windows are those of §61.7: Nostocales peak to akinete latch, per box and typical year.
+
+**63.1 What the code guarantees.**
+- **The budget closes at every step.** The CL29 path is Euler with a 6-minute step and a fixed volume, and each step
+  adds the derivative times the step to the mass. The only change outside the derivatives is the 10⁻¹⁰
+  concentration floor, which can only add mass. The box-7 Nostocales never reach it in the windows, and their
+  prescribed sediment flux is identically zero.
+- **`MASS_BALANCES.out` is a sample, not a budget.** Each printed row holds the derivatives of one 6-minute step, once
+  a day. A daily budget built from it is a sum of instantaneous rates. Box 7 takes in a median 1,243 m³/s (1,383 in the
+  windows) through its 0.043 km³, so it turns over about three times between two prints.
+- **Two latent reporting gaps.** Neither is active for the Nostocales:
+  - The solver adds the sediment model's flux to the kinetics. The writer reports kinetics *minus* that flux, plus
+    the flux separately, so the written columns would miss it. This is inactive in CL29, which runs only prescribed
+    sediment fluxes (`MODEL_SEDIMENTS` 1); the diagenetic model is off.
+  - The prescribed sediment flux (the NO3 benthic sink) has no column at all, so a written NO3 budget is short by
+    that sink. The kinetics use the prescribed flux only for alkalinity and DIC, so it is not double-counted.
+
+**63.2 Box 7's residual is an output-sampling artefact.** First, the daily rows of the base run:
+
+| box | flushing (/d) | residual, daily rows (median, mg C/L) | median \|residual\|, trapezoid rule |
+|---|---|---|---|
+| 7 | 2.78 | −0.470 | 0.444 |
+| 17 | 1.64 | +0.185 | 0.138 |
+| 19 | 0.97 | +0.094 | 0.078 |
+| 14 | 0.76 | +0.052 | 0.041 |
+| 23 | 0.65 | +0.000 | 0.024 |
+| 9 | 0.57 | +0.015 | 0.041 |
+
+- **The residual ranks with flushing** (Spearman +0.94 over the six boxes). It is systematic in sign by box: box 7 is
+  negative in all six windows, box 17 positive in all six.
+- **A daily trapezoid rule removes only 5 % of box 7's residual.** So, if the residual is sampling, it comes from
+  structure within the day.
+- **The decisive test.** The same run was repeated with hourly printing (mass balance in boxes 7 and 9 only). Its
+  whole-day rows equal the base run's exactly (largest difference 0.0), so the print interval does not touch the
+  computation. Subsampling the hourly rows:
+
+| print spacing | 24 h | 12 h | 6 h | 3 h | 2 h | 1 h |
+|---|---|---|---|---|---|---|
+| box 7, median \|residual\| (mg C/L) | 0.470 | 0.112 | 0.029 | 0.0088 | 0.0048 | 0.0019 |
+| box 9 (control) | 0.024 | 0.012 | 0.0057 | 0.0027 | 0.0022 | 0.0010 |
+
+- **By the registered rule, a sampling artefact.** Box 7's residual shrinks 246-fold from daily to hourly printing
+  (the rule needs tenfold). Hourly, box 7's budget closes to within 0.003 mg C/L per window, against a change of
+  −0.8 to −1.8. The residual falls roughly with the square of the spacing, faster than the proportional fall I
+  predicted.
+- **Why the sign is systematic.** The daily rows sit on the flow series' daily knots (00:00), where the linearly
+  interpolated flows change slope. Taken at other hours of the day, the daily estimate varies by 0.82 mg C/L (median
+  over the windows), and midnight is its most negative hour in five of six windows. (In the sixth, 01:00 is lower, by
+  0.005 mg C/L.) So a fast box is sampled at a phase-locked extreme of its response within the day.
+- **What changes.** §61.7's "unaccounted" line is withdrawn.
+  - §61.7's lagoon-wide figures were built from the same daily rows, so they carry this bias too, but it is small
+    where the mass is. As mass, the residual is −20 t C per window in box 7 and 0 to +8 t C in the other measured
+    boxes (medians over the windows).
+  - Even if all 28 lagoon boxes carried 0.1 mg C/L (box 19's level, at a flushing of about once a day), the bias
+    would be 731 t C per window. That is 12 % of §61.7's mean transport per window (−6,035 t C). The residuals
+    come from this section's run and the export from §61.7's, so this compares magnitudes only.
+  - So §61.7's EXPORT reading stands (−36,211 t C transport against +8,471 t C kinetics over the six windows), and
+    so does its box-level TRANSPORT reading (a median over 36 box-years). The export figure itself is uncertain by
+    up to about 12 %.
+  - For budgets in boxes that flush faster than about once a day, print the mass balance hourly (`PRINT_INTERVAL`
+    10), restricted to the boxes needed: with two mass-balance boxes the 2012-2022 run writes 2.7 GB, 1.5 GB of it
+    the mass balance.
+
+**63.3 The held-volume water balance.** With the volume held, V dC/dt = Σ Q_in (C_in − C) + C · ΔQ, where ΔQ is the
+box's net inflow. The second term sits inside the advection column, so it cannot be box 7's residual.
+- **It is not box 7's residual.** Box 7's imbalance is 0.12 % of its inflow, and the held-volume term is 0.8 % of its
+  advection. In the windows it agrees in sign with the residual once in six and is at most 5 % of its size.
+- **Sixteen of the 29 boxes drift** by at least one box volume over 2012-2022. Box 18 would empty first, on day 448
+  (2013-03-24). That matches the free-volume crash documented at day ~449 (the record does not name the box), which
+  `ESTAS_HOLD_VOLUME` was introduced to avoid.
+- **For the Nostocales in the windows**, the held-volume term is:
+  - 13-35 % of advection in four mid-lagoon boxes (9, 14, 19, 23), mostly as a sink;
+  - 8 % in box 17, and under 1 % in box 7;
+  - lagoon-wide, 6.4 % of the September-1 stock in the median year (−13 % to +9 %; net water −14.7 % to +8.8 % of
+    the lagoon volume per window).
+- **Supplementary, not registered: the imbalance looks like net precipitation.**
+  - Every box loses water on average, at a nearly uniform rate per unit area: −200 to −470 mm/yr, the lagoon −297
+    mm/yr (−17.3 m³/s over 1,842 km²), the sea box −282 mm/yr.
+  - The links import water in May-August (+2 to +56 m³/s, lagoon-wide climatology) and drain it from September to
+    April (−6 to −63 m³/s). That is the signature of a surface source, net precipitation minus evaporation, which
+    the hydrodynamic flows drain but ESTAS never receives.
+  - ESTAS's water balance does add precipitation and subtract evaporation, but the CL29 converter sets both series to
+    zero ("constant meteorology EUTROPY lacks").
+  - If confirmed, this has three consequences:
+    - the day-448 crash is the missing P − E, not wrong flows;
+    - the held volume treats the P − E part exactly, because rain carries no mass;
+    - the artefact proper is only the storage part (water-level changes). Storage dominates the windows. At the
+      September-October climatological rate (−41.0 m³/s), the drain is 1.7 % of the lagoon volume per 35 days (0.7 %
+      at the annual mean), against the windows' net water of −14.7 % to +8.8 %.
+
+    The registered held-volume term is therefore an upper bound on the artefact.
+
+**63.4 Reading.**
+- **Box 7:** no model defect. Its residual was an output artefact, and nothing changes.
+- **The held volume:** nothing is adopted.
+  - A registered check against a real P − E series would decide whether supplying `RAINFALL_TS` and
+    `EVAPORATION_TS` makes a free-volume run viable. The candidates are ERA5, or the hydrodynamic model's own rain
+    and evaporation.
+  - Changing the volume treatment changes every result, so that is the owner's decision.
