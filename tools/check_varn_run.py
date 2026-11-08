@@ -366,7 +366,7 @@ def run_conserve(a):
                           f"(NH4_N/NO3_N/DET_PART_ORG_N/DISS_ORG_N/CYN_N) found in {a.mass_balances}")
 
     print("Identity: at every (box, time) sample, the sum of the KINETICS term "
-          "(index 6 of the 7 MASS_BALANCES.out columns) across the five nitrogen "
+          "(index 6 of the MASS_BALANCES.out term columns) across the five nitrogen "
           f"pools {sorted(N_POOL_VARS.values())} is (near) zero -- internal "
           "biogeochemistry moves N between these pools but neither creates nor "
           "destroys it. ADVECTION/DIFFUSION/SETTLING/MASS_LOADS/MASS_WITHDRAWALS are "
@@ -440,9 +440,9 @@ def run_conserve(a):
     else:
         print("\n(every sample had all five KINETICS terms exactly 0.0 -- no per-sample "
               "relative ratio to report)")
-    print(f"\nspec target is 1e-9 relative; MASS_BALANCES.out's 7 mass-balance term columns "
-          f"are printed with Fortran format 'F30.6' (mod_SIMULATE.f90:587's "
-          f"'(F10.4, 2i10, 7F30.6)', six decimal places), which floors the achievable "
+    print(f"\nspec target is 1e-9 relative; MASS_BALANCES.out's term columns (7 before 2026-11, 8 since) "
+          f"are printed with Fortran format 'F30.6' (mod_SIMULATE.f90's "
+          f"'(F10.4, 2i10, 8F30.6)', 7F30.6 in older files; six decimal places), which floors the achievable "
           f"per-term precision at ~5e-7 absolute regardless of model correctness -- 1e-9 "
           f"relative is not reachable through this ASCII output path (see task-6-report.md "
           f"for the measured floor and the before/after-fix evidence that the residual IS "
@@ -579,7 +579,7 @@ def main(argv=None):
     ap.add_argument("--rel-tol", type=float, default=1e-4,
                      help="[conserve] loose relative-residual outer bound (default 1e-4; the "
                           "spec's 1e-9 target is not reachable given MASS_BALANCES.out's "
-                          "7-term-column F30.6 print precision -- see task-6-report.md). "
+                          "F30.6 print precision (7 or 8 term columns) -- see task-6-report.md). "
                           "Checked ALONGSIDE a non-configurable, scale-free absolute bound "
                           "(len(N_POOL_VARS)*0.5e-6) derived from that same print precision -- "
                           "both must pass for CONSERVE: PASS")

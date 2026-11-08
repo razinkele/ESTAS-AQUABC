@@ -71,8 +71,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   appended, so positional readers of the first seven terms (`tools/check_varn_run.py`) are unaffected. With
   `MODEL_SEDIMENTS 1` (CL29) the diagenetic flux is zero, so the first ten columns are byte-identical; the new
   column is non-zero only for NO3 there. `WATER_LEVELS.out`'s header now labels its fourth column (volume / area)
-  and states that elevation, depth and that column come from the start of the printed step (a one-step lag
-  behind VOLUME under a free volume, CL29 docs §66.2); its rows are unchanged.
+  and states that elevation and depth come from the start of the printed step and volume from its end (a one-step
+  lag under a free volume, CL29 docs §66.2); the fourth column mixes the two, end-of-step volume over
+  start-of-step area. Its rows are unchanged.
 - **The box's own `SURFACE_AREA` is now refreshed with the level.** It was set once at read time, but the
   ecology's depth is `VOLUME / SURFACE_AREA`, so under a free volume it went stale wherever the area varies with
   level (real hypsometry). The solver's `SURFACE_AREAS` array was already refreshed. An exact no-op for

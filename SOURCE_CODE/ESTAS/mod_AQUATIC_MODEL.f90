@@ -252,12 +252,13 @@ contains
                   status = 'UNKNOWN')
 
             ! ELEVATION and DEPTH come from the geometry computed at the start of the printed step, VOLUME from
-            ! its end: under a free volume they lag by one step's volume change (CL29 docs §66.2).
+            ! its end: under a free volume they lag by one step's volume change (CL29 docs §66.2). The last
+            ! column mixes the two: end-of-step VOLUME over start-of-step SURFACE_AREA.
             write(unit = 1000, fmt = '(2A10, 5A30)') &
                   '      TIME', '    BOX NO',  &
                   '      SURFACE ELEVATION (m) *', '                  VOLUME (m^3)', &
-                  '                   DEPTH (m) *', '           VOLUME / AREA (m) *', &
-                  '  * at the start of the step'
+                  '                   DEPTH (m) *', '         VOLUME / AREA (m) **', &
+                  ' *start of step **V end/A st.'
 
             open (unit   = 1001, &
                   file   = trim(adjustl(PELAGIC_OUTPUT_FOLDER)) // 'MASS_BALANCES.out', &
