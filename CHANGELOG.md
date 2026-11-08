@@ -64,6 +64,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **The box's own `SURFACE_AREA` is now refreshed with the level.** It was set once at read time, but the
+  ecology's depth is `VOLUME / SURFACE_AREA`, so under a free volume it went stale wherever the area varies with
+  level (real hypsometry). The solver's `SURFACE_AREAS` array was already refreshed. An exact no-op for
+  constant-area layers: CL29 is byte-identical under held volume (61 outputs, 30 d) and free volume (60 outputs,
+  365 d of the SHYFEM-hydrology set). CL29's synthetic areas are constant above every box bottom, and no level
+  leaves that band (CL29 note item 82).
 - **Free-volume level inversion: false zero depth when the water sits in the bottom's own layer.**
   `CALCULATE_SURFACE_ELEVATION` (`mod_BASIN.f90`) solved the first-branch quadratic with `C = +2 V`; the
   later-layer branch has the correct `C = −2 V`. A constant-area layer then had no positive root, so the level

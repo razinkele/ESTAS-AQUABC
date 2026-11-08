@@ -655,6 +655,11 @@ contains
             SURFACE_AREAS(i)  = CALCULATE_SURFACE_AREA &
                  (PELAGIC_BOX_MODEL_DATA % BATHYMETRIES(BATHYMETRY_NO), SURFACE_ELEVATION)
 
+            ! Keep the box's own area in step with the level. It was set once at read time, but the ecology's
+            ! depth is VOLUME / SURFACE_AREA (mod_PELAGIC_ECOLOGY), which went stale under a free volume wherever
+            ! the area varies with level. Exact no-op for constant-area layers (CL29 note item 82).
+            PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % SURFACE_AREA = SURFACE_AREAS(i)
+
             BOTTOM_AREAS(i)   = CALCULATE_SURFACE_AREA &
                  (PELAGIC_BOX_MODEL_DATA % BATHYMETRIES(BATHYMETRY_NO), BOTTOM_ELEVATION)
         end do
