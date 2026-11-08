@@ -5402,6 +5402,10 @@ minus the link flux minus (P − E) × area. Over 2012-2022, lagoon-wide (28 box
 |---|---|---|---|
 | −28.0 | −246.2 | +219.2 | −1.0 |
 
+The volume change is a window-endpoint effect: water levels on 2012-01-01 and 2022-12-30 differ, and the sea box
+shows the same −23.6 mm/yr. It is not an eleven-year trend. The sea box itself is outside the rule. Its residual is
+−117 mm/yr, so a box-12 water budget should not be built on the converter's boundary links.
+
 - Without the P − E term, all 28 boxes accumulate more than 0.1 box volumes of error. With it, the mean residual is
   within ±3.2 mm/yr in every lagoon box except box 10 (−13.2).
 - **By the registered rule, 24 of 28 boxes close.** Boxes 15, 17, 18 and 19 fail the cumulative bound (0.1 box
@@ -5437,7 +5441,29 @@ volume threshold there soonest. The next shallowest, boxes 19 and 17, have the n
   would still lose about 80 mm/yr on average (−342 + 261). §63's day-448 emptying came mostly from storage swings,
   not the mean, so only a run can show whether it would still empty.
 - A free-volume CL29 run would therefore need the `INPUTS_SHYHYDRO_2022` hydrology with its own rain and evaporation.
-  That changes the flows behind every result since §55, so it is the owner's decision. Nothing is adopted.
+  §64.6 shows such a run already exists, and what it does.
+
+**64.6 Supplementary, not registered: the existing free-volume run.** `OUTPUTS_SHYHYDRO_2022` (2026-11-05,
+`INPUT_2022_README.md`) ran `INPUTS_SHYHYDRO_2022` without `ESTAS_HOLD_VOLUME`. That is `run9324`'s hydrology with its
+real rain and evaporation. Its log has no "held constant" line. The script is `diag_pe_20261108/free_volume_sup.py`.
+- **It completes all 4,016 days, and no box empties.** The lowest point is box 18 at 0.155 of its start volume on
+  2014-01-31. SHYFEM's own box 18 dips to 0.402 that day. The lagoon's volume stays within 0.769-1.199 of its start.
+- **But its water does not track SHYFEM's.** The error in volume change since day 0 (ESTAS minus SHYFEM, in mm of
+  water over the box) is:
+
+| | lagoon | box 29 | box 16 | box 8 | boxes 15, 17, 18, 19 |
+|---|---|---|---|---|---|
+| at the end (mm) | +509 | +1,756 | −1,100 | +756 | +23, +28, +98, −48 |
+| largest (mm) | 678 | 1,945 | 1,154 | 951 | 484-605 |
+
+- The two models start from different box volumes, because ESTAS uses its own bathymetry. So only volume changes are
+  compared, not ratios.
+- Tier A shows that the same inputs close in SHYFEM's own geometry. The error therefore arises inside ESTAS, in its
+  areas, its bathymetry or the way it applies the flows. It was not diagnosed here.
+
+**Reading.** A free volume on the `SHYHYDRO_2022` hydrology runs to the end, but its water levels drift from the
+hydrodynamics by decimetres to metres. Switching the CL29 setup to it changes the flows behind every result since §55,
+so it is the owner's decision. Nothing is adopted.
 
 | prediction | result |
 |---|---|
