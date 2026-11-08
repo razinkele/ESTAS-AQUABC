@@ -5476,7 +5476,7 @@ so it is the owner's decision. Nothing is adopted.
 | P4: adopted and `run9324` flows are not the same hydrology | HELD |
 | P5: box 18's SHYFEM warnings are a rain artefact | HELD |
 
-## 65. 2026-11-08: the free-volume drift is a forcing-column bug; box 18's floor is a geometry mismatch
+## 65. 2026-11-08: the free-volume drift is a forcing-column bug
 
 **The question.** §64.6 found that the existing free-volume run drifts from SHYFEM by decimetres to metres of water,
 although the same inputs close in SHYFEM's own geometry. Where inside ESTAS does the error arise?
@@ -5547,7 +5547,7 @@ its level sits at −1.311 m. It still holds 8.8 Mm³ of water.
   here.
 
 **65.5 Reading.** The free-volume drift of §64.6 is an input-mapping bug, not a fault in ESTAS's water balance.
-A free volume on SHYFEM's hydrology would also need box 18's geometry to hold a real low-water spell. Nothing is
+Box 18's zero depth is a separate defect, in the level function (§66). Nothing is
 adopted.
 
 | prediction | result |
