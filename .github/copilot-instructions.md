@@ -1,8 +1,8 @@
-# Copilot Instructions for AQUABC v0.3
+# Copilot Instructions for AQUABC
 
 ## Project Overview
 
-AQUABC v0.3 is a water quality modelling system. The scientific core is written in Fortran 90: the **ESTAS** simulation framework drives the **AQUABC** pelagic/sediment kinetic model. A **Python Shiny** web front end provides a UI for editing inputs, running the model, and visualising `OUTPUT.csv`. Python is used only for the UI and test tooling — all numerical computation is Fortran.
+AQUABC is a water quality modelling system. The scientific core is written in Fortran 90: the **ESTAS** simulation framework drives the **AQUABC** pelagic/sediment kinetic model. A **Python Shiny** web front end provides a UI for editing inputs, running the model, and visualising `OUTPUT.csv`. Python is used only for the UI and test tooling — all numerical computation is Fortran.
 
 ---
 
@@ -111,13 +111,13 @@ SOURCE_CODE/
       aquabc_II_pelagic_auxillary.f90   # Shared helpers: GROWTH_AT_TEMP, LIM_LIGHT, DO_SATURATION
       aquabc_II_pelagic_svindex.f90     # State-variable index parameters (NH4=1 … FIX_CYN_AK=32)
       aquabc_II_pelagic_types.f90       # Derived types per organism group (t_diatom_params, …)
-      aquabc_II_pelagic_model_constants.f90  # Module-level parameter variables (all 318)
+      aquabc_II_pelagic_model_constants.f90  # Module-level parameter variables (all 324)
     SEDIMENTS/         # Sediment diagenesis: dissolution, mineralisation, bioturbation
     CO2SYS/            # CO2 / carbonate chemistry (inorganic carbon, alkalinity, pH)
     AQUABC_EXAMPLES/   # Standalone 0D example used by CI regression test
   ESTAS/               # Simulation framework
     ESTAS_II.f90       # Program entry; reads INPUT.txt, dispatches to RUN_SIMULATION
-    mod_GLOBAL.f90     # Global dimensions (nstate=32, nconst=318, NUM_SED_VARS=24, …)
+    mod_GLOBAL.f90     # Global dimensions (nstate=32, nconst=324, NUM_SED_VARS=24, …)
     mod_SIMULATE.f90   # Time-loop driver (RUN_SIMULATION)
     mod_SOLVER.f90     # Euler/RK time integrator (SOLVE); calls PELAGIC_KINETICS each step
     mod_PELAGIC_BOX_MODEL.f90   # Grid data structure for multi-box setups
@@ -134,7 +134,7 @@ SOURCE_CODE/
     libaquabc.a        # Compiled static library (generated; not in VCS)
 shiny_app/
   app.py               # Main Shiny application (~8100 lines); all UI + server logic
-  parameter_parser.py  # Parses WCONST_04.txt / EXTRA_WCONST.txt (318 params, 14 categories)
+  parameter_parser.py  # Parses WCONST_04.txt / EXTRA_WCONST.txt (324 params, 20 categories)
   ic_parser.py         # Parses INIT_CONC_*.txt (initial concentrations for all state vars)
   options_parser.py    # Parses PELAGIC_MODEL_OPTIONS.txt
   simulation_config.py # Parses INPUT.txt (dates, time steps, folder paths)
@@ -147,7 +147,7 @@ tests/
   python/              # pytest suite: parser unit tests + Playwright integration tests
 INPUTS/                # Model input files (edit via Shiny UI; first save creates .bak backup)
 INPUT.txt              # Default run configuration (points at INPUTS/ and OUTPUTS/)
-PARAMETER_REFERENCE.md # Human-readable parameter quick reference (14 categories, typical ranges)
+PARAMETER_REFERENCE.md # Human-readable parameter quick reference (20 categories, typical ranges)
 docs/                  # Reference manuals (Markdown; generate PDFs with make build-docs)
 ```
 
@@ -303,11 +303,11 @@ The FPE trap (`-ffpe-trap`) causes an immediate abort with a backtrace on any Na
 
 ### `INPUTS/PELAGIC_INPUTS.txt` — spatial/hydrodynamic setup
 
-Declares grid dimensions: `NUM_PELAGIC_STATE_VARS` (36), `NUM_MODEL_CONSTANTS` (318), `NUM_PELAGIC_BASINS`, `NUM_PELAGIC_BOXES`, `NUM_PELAGIC_ADVECTIVE_LINKS`, `NUM_SETTLING_VELOCITIES`, `NUM_OPEN_BOUNDARIES`, `NUM_MASS_LOADS`, etc. Then provides time-series pointers, geometry, and boundary conditions.
+Declares grid dimensions: `NUM_PELAGIC_STATE_VARS` (36), `NUM_MODEL_CONSTANTS` (324), `NUM_PELAGIC_BASINS`, `NUM_PELAGIC_BOXES`, `NUM_PELAGIC_ADVECTIVE_LINKS`, `NUM_SETTLING_VELOCITIES`, `NUM_OPEN_BOUNDARIES`, `NUM_MASS_LOADS`, etc. Then provides time-series pointers, geometry, and boundary conditions.
 
 ### `INPUTS/WCONST_04.txt` — kinetic parameters
 
-Format: `ID  NAME  VALUE  ! comment` — one parameter per line, 318 lines total. The 14 categories (with line ranges) are documented in `PARAMETER_REFERENCE.md`. The Python `parameter_parser.py` uses the line-range mapping to parse by category.
+Format: `ID  NAME  VALUE  ! comment` — one parameter per line, 324 lines total. The 20 categories (with line ranges) are documented in `PARAMETER_REFERENCE.md`. The Python `parameter_parser.py` uses the line-range mapping to parse by category.
 
 ### `INPUTS/INIT_CONC_*.txt` — initial concentrations
 
