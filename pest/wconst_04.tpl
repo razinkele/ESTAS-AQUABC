@@ -3,7 +3,7 @@ ptf @
      2                          THETA_K_A              1.04  !  2   Temperature correction factor for aeration
      3                                XKC              0.08  !  3   fixme. Light extinction per chlorophyl unit,( mcg Chla/l/m) for calculation of saturation for Smith. Should be different for different phyto?
      4                              PHIMX            720.00  !  4   Quantum yield const. mg C/mole photon
-     5                    KG_DIA_OPT_TEMP               @KG_DIA_OPT_TEMP @ !  5 3.3 3.1  Diatoms Growth rate
+     5                    KG_DIA_OPT_TEMP   @KG_DIA_OPT_TEMP @ !  5 3.3 3.1  Diatoms Growth rate
      6                    DIA_OPT_TEMP_LR               -2.0  !  6   Diatoms CTMI T_min (minimum cardinal temperature)
      7                    DIA_OPT_TEMP_UR              10.0  !  7   Diatoms CTMI T_opt (optimal temperature)
      8                     EFF_DIA_GROWTH              0.95  !  8   Diatoms Effective growth. (1-EG)*growth - losses for respiration and excretion
@@ -14,7 +14,7 @@ ptf @
     13                          KD_DIA_20              @KD_DIA_20       @ ! 13   Diatoms Mortality rate
     14                       THETA_KD_DIA              1.02  ! 14   Diatoms Temperature correction for Mortality rate
     15                        KHS_DIN_DIA              0.010  ! 15 0.03  Diatoms Half saturation growth for DIN
-    16                        KHS_DIP_DIA             0.005  ! 16   Diatoms Half saturation growth for DIP
+    16                        KHS_DIP_DIA   0.00843719  ! 16   Diatoms Half saturation growth for DIP
     17                        KHS_DSi_DIA             @KHS_DSi_DIA     @ ! 17 0.15  Diatoms Half saturation growth for DSi
     18                         KHS_O2_DIA              0.60  ! 18   Diatoms Half saturation growth for O2
     19                      FRAC_DIA_EXCR              0.30  ! 19   Diatoms Fraction of excretion in metabolism rate
@@ -24,21 +24,21 @@ ptf @
     23                  EXPON_HYPOX_DIA_D              1.04  ! 23   Diatoms Exponent constant for Dissolved oxygen stress
     24                         DIA_N_TO_C              0.22  ! 24   Diatoms Nitrogen to Carbon ratio
     25                         DIA_P_TO_C             0.024  ! 25   Diatoms Phosphorus to Carbon ratio
-    26                        DIA_Si_TO_C              0.25  ! 26   Diatoms Silica to Carbon ratio
+    26                        DIA_Si_TO_C              0.30  ! 26   Diatoms Silica to Carbon ratio
     27                        DIA_O2_TO_C              2.66  ! 27   Diatoms Oxygen to Carbon ratio for respiration
-    28                      DIA_C_TO_CHLA             30.00  ! 28   Diatoms Carbon to Chlorophil a ratio
-    29                    KG_CYN_OPT_TEMP               2.4  ! 29   2.1 Non-fixing cyanobacteria Growth rate
-    30                    CYN_OPT_TEMP_LR              15.0  ! 30   Non-fixing cyanobacteria CTMI T_min
+    28                      DIA_C_TO_CHLA             53  ! 28   Diatoms Carbon to Chlorophil a ratio
+    29                    KG_CYN_OPT_TEMP   2.00000  ! 29   2.1 Non-fixing cyanobacteria Growth rate
+    30                    CYN_OPT_TEMP_LR            2.0  ! 30   Non-fixing cyanobacteria CTMI T_min
     31                    CYN_OPT_TEMP_UR              26.0  ! 31   Non-fixing cyanobacteria CTMI T_opt
     32                     EFF_CYN_GROWTH              0.95  ! 32   Non-fixing cyanobacteria Effective growth. (1-EG)*growth - losses for respiration and excretion
     33           KAPPA_CYN_UNDER_OPT_TEMP               0.0  ! 33   (unused)
     34            KAPPA_CYN_OVER_OPT_TEMP              34.0  ! 34   Non-fixing cyanobacteria CTMI T_max
     35                          KR_CYN_20              0.06  ! 35   Non-fixing cyanobacteria Respiration rate
     36                       THETA_KR_CYN              1.04  ! 36   Non-fixing cyanobacteria Temperature correction for respiration rate
-    37                          KD_CYN_20              0.125 ! 37   Non-fixing cyanobacteria Mortality rate
+    37                          KD_CYN_20              0.040 ! 37   Non-fixing cyanobacteria Mortality rate
     38                       THETA_KD_CYN              1.05  ! 38   Non-fixing cyanobacteria Temperature correction for Mortality rate
-    39                        KHS_DIN_CYN              0.009 ! 39   Non-fixing cyanobacteria Half saturation growth for DIN
-    40                        KHS_DIP_CYN              0.008 ! 40 0.007  Non-fixing cyanobacteria Half saturation growth for DIP
+    39                        KHS_DIN_CYN              0.003 ! 39   Non-fixing cyanobacteria Half saturation growth for DIN
+    40                        KHS_DIP_CYN              0.004 ! 40 0.007  Non-fixing cyanobacteria Half saturation growth for DIP
     41                         KHS_O2_CYN              0.60  ! 41   Non-fixing cyanobacteria Half saturation growth for O2
     42                      FRAC_CYN_EXCR              0.30  ! 42   Non-fixing cyanobacteria Fraction of excretion in metabolism rate
     43                            I_S_CYN            100.00  ! 43   Non-fixing cyanobacteria Light saturation (langleys).Not used, is calculated!
@@ -48,9 +48,9 @@ ptf @
     47                         CYN_N_TO_C             0.220  ! 47   Non-fixing cyanobacteria Nitrogen to Carbon ratio ,was 0.1
     48                         CYN_P_TO_C             0.024  ! 48   Non-fixing cyanobacteria Phosphorus to Carbon ratio
     49                        CYN_O2_TO_C              2.66  ! 49   Non-fixing cyanobacteria Oxygen to Carbon ratio for respiration
-    50                      CYN_C_TO_CHLA             40.00  ! 50   Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
-    51                KG_FIX_CYN_OPT_TEMP               3.5  ! 51    Fixing cyanobacteria Growth rate constant
-    52                FIX_CYN_OPT_TEMP_LR              18.0  ! 52   Fixing Cyanobacteria CTMI T_min
+    50                      CYN_C_TO_CHLA             78  ! 50   Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
+    51                KG_FIX_CYN_OPT_TEMP   1.29000  ! 51    Fixing cyanobacteria Growth rate constant
+    52                FIX_CYN_OPT_TEMP_LR              8.0  ! 52   Fixing Cyanobacteria CTMI T_min
     53                FIX_CYN_OPT_TEMP_UR              26.0  ! 53   Fixing Cyanobacteria CTMI T_opt
     54                 EFF_FIX_CYN_GROWTH              0.95  ! 54   Fixing cyanobacteria Effective growth. (1-EG)*growth - losses for RESP and excretion
     55       KAPPA_FIX_CYN_UNDER_OPT_TEMP               0.0  ! 55   (unused)
@@ -70,10 +70,10 @@ ptf @
     69                     FIX_CYN_N_TO_C             0.220  ! 69   Fixing cyanobacteria Nitrogen to Carbon ratio
     70                     FIX_CYN_P_TO_C             0.024  ! 70   Fixing cyanobacteria Phosphorus to Carbon ratio
     71                    FIX_CYN_O2_TO_C              2.66  ! 71   Fixing cyanobacteria Oxygen to Carbon ratio for respiration
-    72                  FIX_CYN_C_TO_CHLA             40.00  ! 72   Fixing cyanobacteria Carbon to Chlorophyl a ratio
+    72                  FIX_CYN_C_TO_CHLA             78  ! 72   Fixing cyanobacteria Carbon to Chlorophyl a ratio
     73                              R_FIX               1.0  ! 73   Fixing cyanobacteria Ratio between non-fixing and fixing fractions growth rate
     74                              K_FIX             0.008  ! 74   Fixing cyanobacteria Effectivity parameter of switching to nitrogen fixation
-    75                    KG_OPA_OPT_TEMP               2.9  ! 75  2.7  OtherPhyto Growth rate constant
+    75                    KG_OPA_OPT_TEMP   2.57879  ! 75  2.7  OtherPhyto Growth rate constant
     76                    OPA_OPT_TEMP_LR               10.0  ! 76   OtherPhyto CTMI T_min
     77                    OPA_OPT_TEMP_UR              17.0  ! 77   OtherPhyto CTMI T_opt
     78                     EFF_OPA_GROWTH              0.95  ! 78   OtherPhyto Effective growth. (1-EG)*growth - losses for respiration and excretion
@@ -94,8 +94,8 @@ ptf @
     93                         OPA_N_TO_C             0.220  ! 93   OtherPhyto Nitrogen to Carbon ratio
     94                         OPA_P_TO_C             0.024  ! 94   OtherPhyto Phosphorus to Carbon ratio
     95                        OPA_O2_TO_C              2.66  ! 95   OtherPhyto Oxygen to Carbon ratio for respiration
-    96                      OPA_C_TO_CHLA             30.00  ! 96   OtherPhyto Carbon to Chlorophyl a ratio
-    97                    KG_ZOO_OPT_TEMP               0.45 ! 97    Zooplankton Growth rate
+    96                      OPA_C_TO_CHLA             53  ! 96   OtherPhyto Carbon to Chlorophyl a ratio
+    97                    KG_ZOO_OPT_TEMP               0.6 ! 97    Zooplankton Growth rate
     98                    ZOO_OPT_TEMP_LR              10.0  ! 98   Zooplankton CTMI T_min
     99                    ZOO_OPT_TEMP_UR              25.0  ! 99   Zooplankton CTMI T_opt
    100                     EFF_ZOO_GROWTH              0.80  !100   Zooplankton Effective growth. (1-EG)*growth - losses for respiration and excretion
@@ -108,7 +108,7 @@ ptf @
    107              GRAT_ZOO_NOST_VEG_HET              1.00  !107   Zooplankton Grazing rate (growhth rate multiplier) on Nostocles (veg + het)
    108            GRAT_ZOO_DET_PART_ORG_C              0.50  !108   Zooplankton Grazing rate (growhth rate multiplier) on part. ORG_C
    109                       PREF_ZOO_DIA              0.26  !109   Zooplankton Preference for Diatoms
-   110                       PREF_ZOO_CYN              0.10  !110   Zooplankton Preference for Cyanobacteria
+   110                       PREF_ZOO_CYN              0.03  !110   Zooplankton Preference for Cyanobacteria
    111                   PREF_ZOO_FIX_CYN              0.07  !111   Zooplankton Preference for fixing Cyanobacteria
    112              PREF_ZOO_NOST_VEG_HET              0.00  !112   Zooplankton Preference for nostocales (veg + het)
    113                       PREF_ZOO_OPA              0.37  !113   Zooplankton Preference for OtherPhyto
@@ -124,7 +124,7 @@ ptf @
    123                    FRAC_ZOO_EX_ORG              0.30  !123   not used Zooplankton Excretion rate organic fraction
    124                          KR_ZOO_20              0.03  !124   Zooplankton Respiration rate
    125                       THETA_KR_ZOO              1.04  !125   Zooplankton Respiration rate Temperature correction
-   126                          KD_ZOO_20              0.15  !126   Zooplankton Mortality rate
+   126                          KD_ZOO_20              0.08  !126   Zooplankton Mortality rate
    127                       THETA_KD_ZOO              1.04  !127   Zooplankton Mortality rate Temperature correction
    128                 DO_STR_HYPOX_ZOO_D              2.00  !128   Zooplankton Dissolved oxygen stress in oxygen units (mortality increase below this value exponentialy
    129                  THETA_HYPOX_ZOO_D              1.20  !129   Zooplankton Multiplier of the exponent for Dissolved oxygen stress
@@ -135,7 +135,7 @@ ptf @
    134            KDISS_DET_PART_ORG_C_20              0.25   !134    POC Dissolution rate not dependent on phytoplankton
    135         THETA_KDISS_DET_PART_ORG_C              1.06  !135   POC Carbon Dissolution rate Temperature correction
    136            FAC_PHYT_DET_PART_ORG_C                0.  !136   !0.001  POC Carbon Phytoplankton linear factor for dissolution rate
-   137            KDISS_DET_PART_ORG_N_20              0.25  !137 0.12   PON Dissolution rate not dependent on phytoplankton
+   137            KDISS_DET_PART_ORG_N_20   0.173731  !137 0.12   PON Dissolution rate not dependent on phytoplankton
    138         THETA_KDISS_DET_PART_ORG_N              1.06  !138   PON Dissolution rate Temperature correction
    139                         KHS_DISS_N              0.025  !139 0.025  PON dissolution reverse half saturation for DIN
    140            FAC_PHYT_DET_PART_ORG_N                0.  !140   !0.007 PON Phytoplankton linear factor for dissolution rate
@@ -150,7 +150,7 @@ ptf @
    149                  FAC_PHYT_AMIN_DON             0.008  !149 0.01  DON Phytoplankton linear factor for mineralisation rate
    150                         KHS_AMIN_P              0.025  !150 0.025   DOP reverse half saturation for DIP
    151                  FAC_PHYT_AMIN_DOP              0.90  !151   DOP Phytoplankton linear factor for mineralisation rate
-   152                          K_NITR_20             0.600  !152    Amonia nitrification rate
+   152                          K_NITR_20   1.94054  !152    Amonia nitrification rate
    153                       THETA_K_NITR             1.045  !153   Amonia nitrification rate Temperature constant
    154                       KHS_NITR_OXY             2.000  !154   Amonia nitrification half saturation for Oxygen
    155                     KHS_NITR_NH4_N             0.030  !155   Amonia nitrification half saturation for Amonia
@@ -163,7 +163,7 @@ ptf @
    162                KHS_DOXY_FE_III_RED              0.20  !162   reversed Monod half saturation of DOXY for iron 3+ reduction
    163                 KHS_DOXY_MN_IV_RED              0.20  !163   reversed Monod half saturation of DOXY for manganese 4+ reduction
    164                  K_MIN_DOC_DOXY_20             0.010  !164  0.025  Mineralization rate constant of DOC at 20 C for dissolved oxygen as final electron acceptor
-   165                  K_MIN_DOC_NO3N_20             @K_MIN_DOC_NO3N_20@ !165   Mineralization rate constant of DOC at 20 C for nitrate as final electron acceptor
+   165                  K_MIN_DOC_NO3N_20   @K_MIN_DOC_NO3N_20@ !165   Mineralization rate constant of DOC at 20 C for nitrate as final electron acceptor
    166                 K_MIN_DOC_MN_IV_20             0.025  !166   Mineralization rate constant of DOC at 20 C for Mn IV as final electron acceptor
    167                K_MIN_DOC_FE_III_20             0.025  !167   Mineralization rate constant of DOC at 20 C for Fe III as final electron acceptor
    168              K_MIN_DOC_S_PLUS_6_20             0.025  !168   Mineralization rate constant of DOC at 20 C for sulphate as final electron acceptor
@@ -274,8 +274,8 @@ ptf @
    273                   k_DISS_FE_III_20              0.10  !273   Dissolution rate constant for Fe III at 20 C
    274                THETA_k_DISS_FE_III              1.04  !274   Dissolution rate constant for Fe III
    275              INIT_MULT_FE_III_DISS              0.50  !275   Initial fraction of dissolved Fe III
-   276           KG_NOST_VEG_HET_OPT_TEMP              1.29  !276  1.3   Nostocales (veg + het) Growth rate constant
-   277           NOST_VEG_HET_OPT_TEMP_LR              16.0  !277   Nostocales (veg + het) CTMI T_min
+   276           KG_NOST_VEG_HET_OPT_TEMP               7.6  !276  1.3   Nostocales (veg + het) Growth rate constant
+   277           NOST_VEG_HET_OPT_TEMP_LR               8.0  !277   Nostocales (veg + het) CTMI T_min
    278           NOST_VEG_HET_OPT_TEMP_UR              26.0  !278   Nostocales (veg + het) CTMI T_opt
    279            EFF_NOST_VEG_HET_GROWTH              0.95  !279   Nostocales (veg + het) Effective growth. (1-EG)*growth - losses for RESP and excretion
    280  KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP               0.0  !280   (unused)
@@ -295,7 +295,7 @@ ptf @
    294                        NOST_N_TO_C             0.220  !294   Nostocales (veg + het) Nitrogen to Carbon ratio
    295                        NOST_P_TO_C             0.024  !295   Nostocales (veg + het) Phosphorus to Carbon ratio
    296                       NOST_O2_TO_C              2.66  !296   Nostocales (veg + het) Oxygen to Carbon ratio for respiration
-   297                     NOST_C_TO_CHLA             40.00  !297   Nostocales (veg + het) Carbon to Chlorophyl a ratio
+   297                     NOST_C_TO_CHLA             78  !297   Nostocales (veg + het) Carbon to Chlorophyl a ratio
    298                         P_GERM_AKI               0.3  !298   Germination rate constant for akinets, 1/day
    299                         N_GERM_AKI               0.1  !299   DIN concentration to trigger germination (below that germination starts)
    300                         P_FORM_AKI               0.1  !300 0.3  Formation rate constant for akinets
@@ -318,7 +318,8 @@ ptf @
    317                K_MIN_PHYT_AMIN_DON              4.00  !
    318                K_MIN_PHYT_AMIN_DOP              4.00  !
    319                       BETA_DIA               0.0  !319   Diatoms photoinhibition (0=Steele default, >0=stronger)
-   320                       BETA_CYN               0.0  !320   Non-fixing cyanobacteria photoinhibition
+   320                       BETA_CYN               2  !320   Non-fixing cyanobacteria photoinhibition
    321                   BETA_FIX_CYN               0.0  !321   Fixing cyanobacteria photoinhibition
    322                       BETA_OPA               0.0  !322   OtherPhyto photoinhibition
    323              BETA_NOST_VEG_HET               0.0  !323   Nostocales photoinhibition
+   324                ICE_LIGHT_TRANS              0.05  !324   Under-ice PAR transmittance (snow-covered ice; doc s.45, adopted 2026-09-03)

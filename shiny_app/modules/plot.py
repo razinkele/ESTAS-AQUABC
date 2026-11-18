@@ -38,13 +38,27 @@ try:
     from shiny_app import output_data
     from shiny_app.ic_parser import get_grouped_variable_choices, get_variable_info
     from shiny_app.input_analysis import analyze_input_file
-    from shiny_app.simulation_config import SimulationConfigFile
+    from shiny_app.setups import SETUPS
+    from shiny_app.simulation_config import (
+        DEFAULT_BASE_YEAR,
+        SimulationConfigFile,
+        base_year_for_input_dir,
+        base_year_for_output_dir,
+        read_base_year,
+    )
     from shiny_app.utils import read_pelagic_binary, read_pelagic_text
 except ImportError:  # running as a script from inside shiny_app/
     import output_data
     from ic_parser import get_grouped_variable_choices, get_variable_info
     from input_analysis import analyze_input_file
-    from simulation_config import SimulationConfigFile
+    from setups import SETUPS
+    from simulation_config import (
+        DEFAULT_BASE_YEAR,
+        SimulationConfigFile,
+        base_year_for_input_dir,
+        base_year_for_output_dir,
+        read_base_year,
+    )
     from utils import read_pelagic_binary, read_pelagic_text
 
 logger = logging.getLogger("AQUABC")
@@ -242,6 +256,20 @@ def plot_server(input, output, session, state):
     # `sim_output_dir` lives in the run_control module's Output Config tab;
     # reach it through session.root_scope().make_scope("run_control") + bare id.
     rc = session.root_scope().make_scope("run_control")
+
+    def _time_origin(dir_name=None):
+        """1 January of the BASE_YEAR that the plotted times are counted from.
+
+        Output times are days since 1 Jan of the producing run's BASE_YEAR
+        (1998 for Standard, 2012 for CL29), so the origin follows the selected
+        output folder; it falls back to the active setup's control file.
+        """
+        setup = run.current_setup()
+        preferred = (setup.input_file, *(s.input_file for s in SETUPS))
+        year = base_year_for_output_dir(ROOT, dir_name, preferred)
+        if year is None:
+            year = read_base_year(os.path.join(ROOT, setup.input_file))
+        return datetime(year if year is not None else DEFAULT_BASE_YEAR, 1, 1)
 
     # CSV caching - reactive values to cache CSV data
     csv_cache = reactive.Value(None)
@@ -534,9 +562,7 @@ def plot_server(input, output, session, state):
                     if len(data) >= num_cols:
                         first_time = data[0]
                         last_time = data[-num_cols]
-                        from datetime import datetime as dt
-                        from datetime import timedelta
-                        ref_date = dt(1997, 1, 1)
+                        ref_date = _time_origin(dir_name)
                         start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
                         end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
                         time_range = f"{start_date} to {end_date}"
@@ -561,9 +587,7 @@ def plot_server(input, output, session, state):
                     df_full = pd.read_csv(file_path, sep=r'\s+', usecols=[0])
                     first_time = df_full.iloc[0, 0]
                     last_time = df_full.iloc[-1, 0]
-                    from datetime import datetime as dt
-                    from datetime import timedelta
-                    ref_date = dt(1997, 1, 1)
+                    ref_date = _time_origin(dir_name)
                     start_date = (ref_date + timedelta(days=float(first_time))).strftime('%Y-%m-%d')
                     end_date = (ref_date + timedelta(days=float(last_time))).strftime('%Y-%m-%d')
                     time_range = f"{start_date} to {end_date}"
@@ -871,7 +895,9 @@ def plot_server(input, output, session, state):
             time_col = df.iloc[:, 0]
 
             # Convert Julian days to dates
-            reference_date = date(1997, 1, 1)
+            # Same origin as analyze_input_file() uses for the subset defaults
+            reference_date = date(
+                base_year_for_input_dir(ROOT, os.path.basename(INPUTS_DIR)) or DEFAULT_BASE_YEAR, 1, 1)
             dates = [reference_date + timedelta(days=float(t)) for t in time_col]
 
             # Apply time subsetting if enabled
@@ -951,9 +977,8 @@ def plot_server(input, output, session, state):
         logger.debug(f"X-axis: {xcol}, Smoothing: {apply_smooth} (window={win})")
 
         # Convert Julian days to actual dates for the x-axis
-        # Reference date: 1997-01-01 (used in AQUABC model)
-        from datetime import datetime, timedelta
-        reference_date = datetime(1997, 1, 1)
+        # Times are days since 1 Jan of the producing run's BASE_YEAR
+        reference_date = _time_origin(input.output_dir_select())
         try:
             # Create date column from Julian days
             x_dates = [reference_date + timedelta(days=float(jd)) for jd in df[xcol]]

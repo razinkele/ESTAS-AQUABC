@@ -63,8 +63,8 @@ def load_c_to_chla(wconst_path):
         for ln in fh:
             parts = ln.split()
             if len(parts) >= 3 and parts[1] in WCONST_CHLA_KEYS:
-                try:
-                    out[WCONST_CHLA_KEYS[parts[1]]] = float(parts[2])
+                try:    # Fortran also accepts a D exponent (5.3D1)
+                    out[WCONST_CHLA_KEYS[parts[1]]] = float(parts[2].replace("D", "E").replace("d", "e"))
                 except ValueError:
                     pass
     return out
@@ -125,6 +125,18 @@ _ACTIVE_C_TO_CHLA = None      # set by main() from --wconst; None = module defau
 
 def _c_to_chla():
     return _ACTIVE_C_TO_CHLA or C_TO_CHLA
+
+
+def use_c_to_chla_from(wconst):
+    """Score Chl-a with the C:Chl ratios of this constants file, as main() does.
+
+    For callers that use load_box_output() without going through main() (the PEST
+    forward run): without this the derived CHLA column falls back to the template
+    ratios (30/40), which overstate CL29 Chl-a (53/78) by 1.8-1.95x.
+    """
+    global _ACTIVE_C_TO_CHLA
+    _ACTIVE_C_TO_CHLA = load_c_to_chla(wconst)
+    return dict(_ACTIVE_C_TO_CHLA)
 
 
 def _col(df, name):
@@ -452,6 +464,7 @@ def main(argv=None):
         print(f"C:Chl from {wconst}{how}: "
               + ", ".join(f"{k}={v:g}" for k, v in _ACTIVE_C_TO_CHLA.items()))
     elif a.template_c_to_chla:
+        _ACTIVE_C_TO_CHLA = None      # drop ratios an earlier caller selected in this process
         print("C:Chl: template ratios (" + ", ".join(f"{k}={v:g}" for k, v in C_TO_CHLA.items()) + ")")
     obs = load_obs(a.obs, since=a.since, until=a.until)
     if chla_unknown:

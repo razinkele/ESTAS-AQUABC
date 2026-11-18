@@ -460,7 +460,7 @@ def create_builtin_presets(scenarios_dir: str) -> None:
             is_builtin=True,
             parameters={},
             initial_conditions={
-                "6": 2.0,    # DISS_OXYGEN - low oxygen (hypoxic)
+                "4": 2.0,    # DISS_OXYGEN - low oxygen (hypoxic)
                 "9": 5.0,    # DET_PART_ORG_C - elevated organic matter
             },
             model_options={

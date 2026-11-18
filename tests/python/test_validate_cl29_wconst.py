@@ -133,3 +133,24 @@ def test_explicit_wconst_still_wins(tmp_path):
               "--wconst", str(tmp_path / "elsewhere" / "WCONST_04.txt")])
     m = _metrics(tmp_path / "v" / "validation_metrics.csv")
     assert float(m["CHLA"]["model_mean"]) == pytest.approx(1000.0 / 78.0)
+
+
+def test_use_c_to_chla_from_sets_the_ratios_for_direct_callers(tmp_path, monkeypatch):
+    """pest/forward_run.py calls load_box_output() without main(); it must be able to
+    select the run's ratios, or CHLA falls back to the template 30/40."""
+    monkeypatch.setattr(val, "_ACTIVE_C_TO_CHLA", None)
+    w = tmp_path / "WCONST_04.txt"
+    w.write_text("    28   DIA_C_TO_CHLA   53  ! 28\n    50   CYN_C_TO_CHLA   78  ! 50\n")
+    assert val._c_to_chla() == val.C_TO_CHLA
+    got = val.use_c_to_chla_from(str(w))
+    assert val._c_to_chla() == got
+    expected = dict(val.C_TO_CHLA)
+    expected[val.WCONST_CHLA_KEYS["DIA_C_TO_CHLA"]] = 53.0
+    expected[val.WCONST_CHLA_KEYS["CYN_C_TO_CHLA"]] = 78.0
+    assert got == expected                      # pool by pool; absent pools keep defaults
+
+
+def test_load_c_to_chla_reads_a_fortran_d_exponent(tmp_path):
+    w = tmp_path / "WCONST_04.txt"
+    w.write_text("    28   DIA_C_TO_CHLA   5.3D1  ! 28\n")
+    assert val.load_c_to_chla(str(w))[val.WCONST_CHLA_KEYS["DIA_C_TO_CHLA"]] == 53.0
