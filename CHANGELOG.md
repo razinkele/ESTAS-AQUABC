@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Output-box selector on the Mass Balance and Observations tabs.** They used the run's first output box only;
+  each now lists the run's `PELAGIC_BOX` files (refreshed when the setup changes) and computes from the chosen one.
+
 ### Documentation
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;

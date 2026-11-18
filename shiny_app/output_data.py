@@ -200,14 +200,31 @@ def first_box_output(root=ROOT, input_file=None):
     return os.path.join(folder, names[0]) if names else None
 
 
-def analysis_csv(root=ROOT, input_file=None, cache_dir=None):
+def box_outputs(root=ROOT, input_file=None):
+    """{file name: "Box N"} for every PELAGIC_BOX_NNNNN.out of the run a control file describes."""
+    control = os.path.join(root, input_file or "INPUT.txt")
+    folder = os.path.join(root, get_output_folder_from_config(input_txt_path=control))
+    try:
+        names = sorted(f for f in os.listdir(folder)
+                       if f.startswith("PELAGIC_BOX_") and f.endswith(".out") and "PROCESS_RATES" not in f)
+    except OSError:
+        return {}
+    out = {}
+    for f in names:
+        digits = f[len("PELAGIC_BOX_"):-len(".out")]
+        out[f] = f"Box {int(digits)}" if digits.isdigit() else f
+    return out
+
+
+def analysis_csv(root=ROOT, input_file=None, cache_dir=None, box_file=None):
     """A model-output CSV in the 0D ``OUTPUT.csv`` layout, for the features written against it.
 
     Mass Balance, Observations and Data Preview read ``TIME, NH4N, NO3N, ...`` from a root
     OUTPUT.csv, which only the 0D example writes; ESTAS writes PELAGIC_BOX_NNNNN.out per box
     with other column names. This returns ``(csv_path, source)``:
 
-    * the run's first box output, converted to the OUTPUT.csv column names (state variables are
+    * the run's box output -- ``box_file`` (a name from box_outputs()) or, by default, the
+      lowest-numbered box -- converted to the OUTPUT.csv column names (state variables are
       in the same order in both) and cached until the box file changes;
     * else the root OUTPUT.csv if there is one;
     * else ``(None, reason)``.
@@ -224,6 +241,8 @@ def analysis_csv(root=ROOT, input_file=None, cache_dir=None):
         from ic_parser import STATE_VARIABLES
 
     box = first_box_output(root, input_file)
+    if box is not None and box_file and box_file in box_outputs(root, input_file):
+        box = os.path.join(os.path.dirname(box), box_file)       # the box the user picked
     legacy = os.path.join(root, "OUTPUT.csv")
     if box is None:
         if os.path.exists(legacy):

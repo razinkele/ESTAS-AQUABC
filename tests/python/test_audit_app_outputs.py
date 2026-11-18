@@ -91,3 +91,22 @@ def test_parameter_categories_match_the_constants_they_hold():
         lo, hi = PARAMETER_CATEGORIES[cat]
         for i in range(lo, hi + 1):
             assert re.search(pattern, names[i]), (cat, i, names[i])
+
+
+def test_analysis_tabs_can_use_any_output_box(tmp_path):
+    """The analysis tabs used the first output box only."""
+    root = _setup(tmp_path)
+    assert output_data.box_outputs(root, "INPUT_x.txt") == {
+        "PELAGIC_BOX_00005.out": "Box 5", "PELAGIC_BOX_00009.out": "Box 9"}
+    assert output_data.box_outputs(root, "INPUT_missing.txt") == {}
+    cache = str(tmp_path / "cache")
+    first = output_data.analysis_csv(root, "INPUT_x.txt", cache_dir=cache)
+    nine = output_data.analysis_csv(root, "INPUT_x.txt", cache_dir=cache, box_file="PELAGIC_BOX_00009.out")
+    assert first[1].endswith("PELAGIC_BOX_00005.out") and nine[1].endswith("PELAGIC_BOX_00009.out")
+    assert first[0] != nine[0]
+    # a name that is not one of the run's box files falls back to the first box (no path tricks)
+    odd = output_data.analysis_csv(root, "INPUT_x.txt", cache_dir=cache, box_file="../INPUT_x.txt")
+    assert odd[1].endswith("PELAGIC_BOX_00005.out")
+    mods = os.path.join(ROOT, "shiny_app", "modules")
+    assert 'box_file=input.mb_box()' in open(os.path.join(mods, "mass_balance.py")).read()
+    assert open(os.path.join(mods, "observations.py")).read().count('box_file=input.obs_box()') == 2
