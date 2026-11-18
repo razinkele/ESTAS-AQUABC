@@ -631,3 +631,14 @@ def test_fortran_source_base_names_are_unique():
                 assert name not in seen, (name, seen[name], folder)
                 seen[name] = folder
     assert "uniq -d" in open(os.path.join(ROOT, "SOURCE_CODE", "build", "make_lib.sh")).read()
+
+
+def test_no_tracked_file_reaches_githubs_size_limit():
+    """GitHub rejects files of 100 MB and more; INPUTS/FLOW_TS.txt sits just under it.
+    If this fails, the file has to shrink or move before the next push can succeed."""
+    import subprocess
+    out = subprocess.run(["git", "-C", ROOT, "ls-files", "-z"], capture_output=True, text=True).stdout
+    sizes = {f: os.path.getsize(os.path.join(ROOT, f)) for f in out.split("\0")
+             if f and os.path.isfile(os.path.join(ROOT, f))}
+    too_big = {f: s for f, s in sizes.items() if s >= 100 * 1000 * 1000}
+    assert not too_big, too_big
