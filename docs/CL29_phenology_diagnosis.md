@@ -114,6 +114,13 @@ verdict the bloom months do not support.
 | NONFIX_N | 0.499 | 0.585 | weakly limiting |
 | LIGHT | 0.475 | 0.457 | weakly limiting |
 
+> **Note added 2026-11-18 (v0.12.0), not a re-analysis.** The TEMP row was read from FIX_CYN
+> process-rate slot 9 (`tools/diagnose_group_limitation.py`). Until the fix in #154 the model added
+> the Nostocales N-fixation rate into that slot whenever Nostocales was on, as it is in CL29. The
+> TEMP values in this table (0.414, 0.287) and wherever they are quoted below therefore include that
+> addition and are **upper bounds** on the true temperature factor. They have not been recomputed
+> with the fixed build, so the "weakly limiting" verdict for temperature is unconfirmed.
+
 **In the bloom months temperature (0.414) and light (0.475) are comparable**, and neither is
 strongly limiting. There is no single dominant summer constraint: growth is held at roughly
 40–50 % on several axes at once. Temperature does have the lower value, and unlike light it is

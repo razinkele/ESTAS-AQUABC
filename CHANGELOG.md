@@ -13,6 +13,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
 
+### Fixed
+- **The in-code default temperature constants were CTMI-style while the default model is plateau**
+  (`DEFAULT_PELAGIC_MODEL_CONSTANTS`: `KAPPA_*_UNDER_OPT_TEMP = 0`, `KAPPA_*_OVER_OPT_TEMP = T_max`). A constants
+  file that omitted one of them on the name-based path (0D example, interface) got no cold limitation and a collapse
+  just above the plateau -- the same mismatch the Standard file had. The defaults are now the plateau decay rates of
+  `INPUTS/WCONST_04.txt`. No shipped run changes: the 0D example's file and every ESTAS setup give these constants
+  explicitly (0D golden unchanged; Standard 30 d and CL29 90 d byte-identical).
+
+### Notes
+- **`docs/CL29_phenology_diagnosis.md` §3.1**: a dated note says the FIX_CYN temperature factor (0.414 / 0.287) was
+  read from the process-rate slot that carried the Nostocales fixation rate until #154, so it is an upper bound and
+  has not been recomputed.
+
 ## [0.12.0] - 2026-11-18
 
 > 🎉 **Released — [AQUABC v0.12.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.12.0)**

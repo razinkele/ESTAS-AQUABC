@@ -21,6 +21,7 @@ program test_validate_constants
     print *, "=========================================="
     print *, ""
 
+    call test_defaults_match_the_default_model()
     call test_plateau_keeps_decay_rates()
     call test_ctmi_repairs_kappa_style_tmax()
     call test_ctmi_keeps_valid_cardinals()
@@ -68,6 +69,24 @@ contains
         KAPPA_ZOO_OVER_OPT_TEMP          = 0.01D0
         KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = 0.05D0
     end subroutine set_plateau_rates
+
+    ! The in-code defaults are what a constants file that omits an entry falls back to.
+    ! They must suit the default temperature model (plateau): decay rates per degC,
+    ! not CTMI cardinal temperatures (KAPPA_UNDER = 0 means no cold limitation).
+    subroutine test_defaults_match_the_default_model()
+        call DEFAULT_PELAGIC_MODEL_CONSTANTS()
+        call check(.not. USE_CTMI_TEMP, "the default temperature model is plateau")
+        call check(min(KAPPA_DIA_UNDER_OPT_TEMP, KAPPA_CYN_UNDER_OPT_TEMP, KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
+                       KAPPA_OPA_UNDER_OPT_TEMP, KAPPA_ZOO_UNDER_OPT_TEMP, &
+                       KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP) > 0.0D0, &
+                   "defaults: every KAPPA_*_UNDER_OPT_TEMP is a positive decay rate")
+        call check(max(KAPPA_DIA_UNDER_OPT_TEMP, KAPPA_CYN_UNDER_OPT_TEMP, KAPPA_FIX_CYN_UNDER_OPT_TEMP, &
+                       KAPPA_OPA_UNDER_OPT_TEMP, KAPPA_ZOO_UNDER_OPT_TEMP, KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP, &
+                       KAPPA_DIA_OVER_OPT_TEMP, KAPPA_CYN_OVER_OPT_TEMP, KAPPA_FIX_CYN_OVER_OPT_TEMP, &
+                       KAPPA_OPA_OVER_OPT_TEMP, KAPPA_ZOO_OVER_OPT_TEMP, &
+                       KAPPA_NOST_VEG_HET_OVER_OPT_TEMP) < 1.0D0, &
+                   "defaults: no KAPPA_* is a CTMI T_max")
+    end subroutine test_defaults_match_the_default_model
 
     subroutine test_plateau_keeps_decay_rates()
         call setup(ctmi=.false., report_only=.false.)
