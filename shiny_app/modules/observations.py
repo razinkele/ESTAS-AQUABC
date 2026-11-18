@@ -107,6 +107,12 @@ def observations_ui():
                 ),
                 ui.hr(),
                 ui.tooltip(
+                    ui.input_select("obs_box", "Model output box:",
+                                    choices={"": "(first output box)"}, selected=""),
+                    "Which box's model output the observations are compared with. Pick it before "
+                    "loading a file; the list refreshes when the setup changes."
+                ),
+                ui.tooltip(
                     ui.input_action_button("generate_sample_obs", "Generate Sample Data",
                                           class_="btn-outline-secondary btn-sm w-100"),
                     "Generate synthetic observation data for testing"
@@ -148,14 +154,24 @@ def observations_ui():
 
 @module.server
 def observations_server(input, output, session, state):
-    # `state` is accepted for the uniform x_server(id, state) convention; the
-    # observations tab is self-contained and uses nothing from it.
+    # `state` gives the active setup and the Run tab's control file, which decide
+    # which model output the observations are compared with.
     obs_data_obj = reactive.Value(None)
     obs_comparison_obj = reactive.Value(None)
     obs_metrics_results = reactive.Value(None)
     obs_files_list = reactive.Value([])  # List of ObservationFile objects
     obs_loaded_file = reactive.Value(None)  # Currently loaded observation file
     obs_file_preview = reactive.Value(None)  # Preview data for selected file
+
+    @reactive.effect
+    def _boxes_follow_the_setup():
+        """Offer the run's output boxes, keeping the current choice when it still exists."""
+        state.run.current_setup()            # re-list when the setup changes
+        boxes = output_data.box_outputs(ROOT, _control_file(state))
+        with reactive.isolate():
+            current = input.obs_box() or ""
+        ui.update_select("obs_box", choices={"": "(first output box)", **boxes},
+                         selected=current if current in boxes else "")
 
     # --- Background tasks for the heavy OUTPUT.csv comparison (TODO 2.4) ---
     @reactive.extended_task
@@ -412,7 +428,7 @@ def observations_server(input, output, session, state):
         ui.notification_show(f"Loaded {len(obs.variables)} observation variables", type="message")
 
         # Offload the heavy model comparison (full model-output read + metrics).
-        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state), box_file=input.obs_box() or None)
         if csv_path is None:
             ui.notification_show(f"Observations loaded; no comparison: {source}", type="warning")
             return
@@ -423,7 +439,7 @@ def observations_server(input, output, session, state):
     @reactive.event(input.generate_sample_obs)
     def generate_sample_observations():
         """Launch background sample-data generation + comparison."""
-        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state), box_file=input.obs_box() or None)
         if csv_path is None:
             ui.notification_show(source, type="warning")
             return

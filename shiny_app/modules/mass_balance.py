@@ -63,6 +63,11 @@ def mass_balance_ui():
     return ui.card(
         ui.card_header("Mass Balance"),
         ui.tooltip(
+            ui.input_select("mb_box", "Output box:", choices={"": "(first output box)"}, selected=""),
+            "Which box's output the mass balance is computed from. The list is the run's "
+            "PELAGIC_BOX output files; it refreshes when the setup changes or you calculate."
+        ),
+        ui.tooltip(
             ui.input_action_button("calc_mass_balance", "Calculate Mass Balance", class_="btn-primary mb-3"),
             "Calculate element mass balance from model output"
         ),
@@ -105,12 +110,26 @@ def mass_balance_server(input, output, session, state):
         """Run the blocking read+compute off the event loop (TODO 2.4)."""
         return await asyncio.to_thread(_compute_mass_balance_blocking, output_csv, param_file)
 
+    def _refresh_boxes():
+        """Offer the run's output boxes, keeping the current choice when it still exists."""
+        boxes = output_data.box_outputs(ROOT, _control_file(state))
+        with reactive.isolate():
+            current = input.mb_box() or ""
+        ui.update_select("mb_box", choices={"": "(first output box)", **boxes},
+                         selected=current if current in boxes else "")
+
+    @reactive.effect
+    def _boxes_follow_the_setup():
+        state.run.current_setup()            # re-list when the setup changes
+        _refresh_boxes()
+
     @reactive.effect
     @reactive.event(input.calc_mass_balance)
     def launch_mass_balance():
         """Launch the backgrounded mass-balance calculation on button click."""
         setup = state.run.current_setup()
-        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state), box_file=input.mb_box() or None)
+        _refresh_boxes()
         if csv_path is None:
             logger.warning("No model output for mass balance calculation")
             ui.notification_show(source, type="warning", duration=3)
