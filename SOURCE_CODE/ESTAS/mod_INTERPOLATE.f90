@@ -21,7 +21,7 @@ contains
         real(kind = DBL_PRECISION) :: DELTA_X, DELTA_Y, SLOPE
 
         if(dabs(X1 - X2) < 1.0D-50) then
-            Y_VALUE = (Y1 + Y2) / 2.0
+            Y_VALUE = (Y1 + Y2) / 2.0D0
         else
             if (X1 < X2) then
                 SMALL_X = X1
@@ -36,7 +36,7 @@ contains
             end if
 
             if ((X_VALUE < SMALL_X).or.(X_VALUE > LARGE_X)) then
-                Y_VALUE = 0.0
+                Y_VALUE = 0.0D0
             else
                 DELTA_X = LARGE_X - SMALL_X
                 DELTA_Y = Y_OF_LARGE_X - Y_OF_SMALL_X

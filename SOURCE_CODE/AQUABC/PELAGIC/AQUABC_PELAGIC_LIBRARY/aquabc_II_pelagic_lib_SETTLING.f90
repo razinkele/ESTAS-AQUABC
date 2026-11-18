@@ -36,7 +36,7 @@ subroutine settling_suppres_factor_vec(chla, nkn, factor)
     call settl_vel_vec(chlamax, nkn, factor_chlamax)
 
     where (chla .lt. chlamin)
-        factor = 1.0
+        factor = 1.0D0
     elsewhere((chla .ge. chlamin) .and. (chla .le. chlamax))
         factor = factor_chla    / settl_max
     elsewhere
@@ -53,5 +53,5 @@ subroutine settl_vel_vec(chla, nkn, VELS)
 
     double precision, dimension(nkn), intent(inout) :: VELS
 
-    VELS = -(0.0061D0 * chla) + 1.0383
+    VELS = -(0.0061D0 * chla) + 1.0383D0
 end subroutine settl_vel_vec

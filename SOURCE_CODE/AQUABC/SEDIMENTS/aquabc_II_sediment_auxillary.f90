@@ -74,7 +74,7 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
         stop
     end if
 
-    TK = T + 273.16
+    TK = T + 273.16D0
 
     ! Initialize reference conditions for Stokes-Einstein scaling
     TS = 25.0D0
@@ -203,7 +203,7 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
 
     !S_PLUS_6
     if (SVARNO.eq.22) then
-        MOL_DIFF = 4.72D-9 * TK/(35.2D0**0.6) * (V25/VTK)
+        MOL_DIFF = 4.72D-9 * TK/(35.2D0**0.6D0) * (V25/VTK)
     end if
 
     !S_MINUS_2
@@ -213,7 +213,7 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
 
     !CH4_C
     if (SVARNO.eq.24) then
-        MOL_DIFF = 5.7524D-3 * exp(-(3300D0 + 8.94104D-4*(TK-228)**1.5)/(1.9858775*TK))
+        MOL_DIFF = 5.7524D-3 * exp(-(3300D0 + 8.94104D-4*(TK-228)**1.5D0)/(1.9858775D0*TK))
     end if
 
     ! Converting to m^2/sec
@@ -239,7 +239,7 @@ subroutine SED_MOD_1_CVISC(V,S,T,P)
     double precision T
     double precision P
 
-    V = 1.7910 - T * (6.144D-02 - T*(1.4510D-03 - T*1.6826D-05)) - &
+    V = 1.7910D0 - T * (6.144D-02 - T*(1.4510D-03 - T*1.6826D-05)) - &
         1.5290D-04 * P + 8.3885D-08 * P * P + 2.4727D-03 * S + &
         (6.0574D-06*P - 2.6760D-09*P*P)*T + &
         (T * (4.8429D-05 - T * (4.7172D-06 - T * 7.5986D-08))) * S
@@ -473,18 +473,18 @@ subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VA
         stop
     end if
 
-    TK = T + 273.16
+    TK = T + 273.16D0
     TS = 25.0D0
     SS = 36.1D0
     P  =  1.0D0
 
     ! Shear viscosities
-    V25 = 1.7910 - TS * (6.144D-02 - TS*(1.4510D-03 - TS*1.6826D-05)) - &
+    V25 = 1.7910D0 - TS * (6.144D-02 - TS*(1.4510D-03 - TS*1.6826D-05)) - &
           1.5290D-04 * P + 8.3885D-08 * P * P + 2.4727D-03 * SS + &
           (6.0574D-06*P - 2.6760D-09*P*P)*TS + (TS * (4.8429D-05 - &
           TS * (4.7172D-06 - TS * 7.5986D-08))) * SS
 
-    VTK = 1.7910 - T * (6.144D-02 - T*(1.4510D-03 - T*1.6826D-05)) - &
+    VTK = 1.7910D0 - T * (6.144D-02 - T*(1.4510D-03 - T*1.6826D-05)) - &
           1.5290D-04 * P + 8.3885D-08 * P * P + 2.4727D-03 * SAL + &
           (6.0574D-06*P - 2.6760D-09*P*P)*T + (T * (4.8429D-05 - &
           T * (4.7172D-06 - T * 7.5986D-08))) * SAL
@@ -523,7 +523,7 @@ subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VA
 
     MOL_DIFF(:,:,20) = (3.60D0 + 0.179D0 * T(:,:)) * 1.0D-5    !Ca
     MOL_DIFF(:,:,21) = (3.43D0 + 0.144D0 * T(:,:)) * 1.0D-5    !Mg
-    MOL_DIFF(:,:,22) = 4.72D-9 * TK(:,:)/(35.2D0**0.6) * (V25(:,:)/VTK(:,:))    !S_PLUS_6
+    MOL_DIFF(:,:,22) = 4.72D-9 * TK(:,:)/(35.2D0**0.6D0) * (V25(:,:)/VTK(:,:))    !S_PLUS_6
     MOL_DIFF(:,:,23) = (4.88D0 + 0.232D0 * T(:,:)) * 1.0D-5    !S_MINUS_2
 
     !CH4_C

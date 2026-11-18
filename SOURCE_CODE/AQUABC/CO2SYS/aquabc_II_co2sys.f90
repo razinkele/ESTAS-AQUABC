@@ -1797,12 +1797,12 @@ contains
             K1 = exp(lnK1) * ((1.0D0 - (0.001005D0 * Sal)) / SWStoTOT)
 
             ! This is eq. 30 on p. 254 and what they use in their abstract:
-            lnK2 = -9.226508D0 - (3351.6106 / TempK) - (0.2005743 * logTempK) + &
-                ((-0.106901773 - (23.9722 / TempK)) * sqrSal) + (0.1130822 * Sal) - &
-                (0.00846934 * sqrSal * Sal)
+            lnK2 = -9.226508D0 - (3351.6106D0 / TempK) - (0.2005743D0 * logTempK) + &
+                ((-0.106901773D0 - (23.9722D0 / TempK)) * sqrSal) + (0.1130822D0 * Sal) - &
+                (0.00846934D0 * sqrSal * Sal)
 
             ! this is on the total pH scale in mol/kg-H2O, convert to mol/kg-SW, convert to SWS pH scale
-            K2 = exp(lnK2) *((1 - (0.001005 * Sal)) / SWStoTOT)
+            K2 = exp(lnK2) *((1 - (0.001005D0 * Sal)) / SWStoTOT)
         end where
 
         where(WhichKs==2)
@@ -1867,14 +1867,14 @@ contains
                 ! Valid for salinity 20-40.
 
             ! This is in Table 4 on p. 1739.
-            pK1 = (3670.7 / TempK) - 62.008 + (9.7944 * logTempK) - &
-                (0.0118 * Sal) + (0.000116 * Sal * Sal)
+            pK1 = (3670.7D0 / TempK) - 62.008D0 + (9.7944D0 * logTempK) - &
+                (0.0118D0 * Sal) + (0.000116D0 * Sal * Sal)
 
             ! this is on the SWS pH scale in mol/kg-SW
             K1 = 10.0D0 ** (-pK1)
 
             ! This is in Table 4 on p. 1739.
-            pK2 = (1394.7 / TempK) + 4.777 - (0.0184 * Sal) + (0.000118 * Sal * Sal)
+            pK2 = (1394.7D0 / TempK) + 4.777D0 - (0.0184D0 * Sal) + (0.000118D0 * Sal * Sal)
 
             ! this is on the SWS pH scale in mol/kg-SW
             K2 = 10.0D0 ** (-pK2)
@@ -1957,7 +1957,7 @@ contains
             ! Limnol. Oceanogr. 43(4) (1998) 657-668
                 ! On the NBS scale
                 ! Their check values for F1 don't work out, not sure if this was correctly published...
-                F1 = (200.1D0 / TempK) + 0.3220
+                F1 = (200.1D0 / TempK) + 0.3220D0
 
                 pK1 = (3404.71D0 /TempK) + (0.032786D0 * TempK) - 14.8435D0 - &
                   (0.071692D0 * F1 * (Sal**0.5D0)) + (0.0021487D0 * Sal)
@@ -2067,7 +2067,7 @@ contains
             ! This is from page 141
             pK10 = -126.34048D0 + (6320.813D0 / TempK) + (19.568224D0 * log(TempK))
             ! This is from their table 2, page 140.
-            A1 = (13.4038 * (Sal ** 0.5D0)) + (0.03206D0 * Sal) - (5.242D-5 * Sal *Sal)
+            A1 = (13.4038D0 * (Sal ** 0.5D0)) + (0.03206D0 * Sal) - (5.242D-5 * Sal *Sal)
             B1 = (-530.659D0 * (Sal ** 0.5D0)) - (5.8210D0 * Sal)
             C1 = (-2.0664D0 * (Sal ** 0.5D0))
             pK1 = pK10 + A1 + (B1 / TempK) + (C1 * log(TempK))  !bug
@@ -2077,7 +2077,7 @@ contains
             pK20 =  -90.18333D0 + (5143.692D0/TempK) + (14.613358D0 * log(TempK))
             ! This is from their table 3, page 140.
             A2 = (21.3728D0 * (Sal ** 0.5D0)) + (0.1218D0 * Sal) - (3.688D-4 * Sal * Sal)
-            B2 = (-788.289D0 * (Sal ** 0.5D0)) - (19.189 * Sal)
+            B2 = (-788.289D0 * (Sal ** 0.5D0)) - (19.189D0 * Sal)
             C2 = (-3.374D0 * (Sal ** 0.5D0))
             pK2 = pK20 + A2 + (B2 / TempK) + (C2 * log(TempK))
             K2 = 10.0D0 ** (-pK2)
@@ -3603,7 +3603,7 @@ contains
 
         vl          = ntps    ! VectorLength
         pHGuess     = 8.0D0   ! this is the first guess
-        pHTol       = 0.0001  ! tolerance for iterations end
+        pHTol       = 0.0001D0  ! tolerance for iterations end
         ln10        = log(10.0D0)
 
 
@@ -4187,7 +4187,7 @@ contains
         allocate(dTC(ntps), pHc(ntps), fCO2c(ntps))
 
         ! ' 1 umol/kg-SW
-        dTC = 0.000001
+        dTC = 0.000001D0
 
         ! ' Find fCO2 at TA, TC + dTC
         TCi_INTERN = TC0 + dTC
@@ -4559,7 +4559,7 @@ contains
             ! *** CalculateCaforGEOSECS:
             ! Culkin, F, in Chemical Oceanography, ed. Riley and Skirrow, 1965:
             ! (quoted in Takahashi et al, GEOSECS Pacific Expedition v. 3, 1982)
-            Ca = 0.01026 * Salt/35
+            Ca = 0.01026D0 * Salt/35
             ! Culkin gives Ca = (.0213./40.078).*(Sal./1.80655) in mol/kg-SW
             ! which corresponds to Ca = .01030.*Sal./35.
 
@@ -4567,14 +4567,14 @@ contains
             ! Ingle et al, Marine Chemistry 1:295-307, 1973 is referenced in
             ! (quoted in Takahashi et al, GEOSECS Pacific Expedition v. 3, 1982
             ! but the fit is actually from Ingle, Marine Chemistry 3:301-319, 1975)
-            KCa = 0.0000001D0 * (-34.452D0 - 39.866 * Salt ** (1.0D0/3.0D0) + &
+            KCa = 0.0000001D0 * (-34.452D0 - 39.866D0 * Salt ** (1.0D0/3.0D0) + &
                  110.21D0 * log(Salt) / log(10.0D0) - 0.0000075752D0 * TempK * Tempk)
             ! this is in (mol/kg-SW)^2
 
             ! *** CalculateKArforGEOSECS:
             ! Berner, R. A., American Journal of Science 276:713-730, 1976:
             ! (quoted in Takahashi et al, GEOSECS Pacific Expedition v. 3, 1982)
-            KAr = 1.45 * KCa ! this is in (mol/kg-SW)^2
+            KAr = 1.45D0 * KCa ! this is in (mol/kg-SW)^2
             ! Berner (p. 722) states that he uses 1.48.
             ! It appears that 1.45 was used in the GEOSECS calculations
 

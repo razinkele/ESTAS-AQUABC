@@ -53,23 +53,23 @@ subroutine DO_SATURATION_MAT(T, S, H, nkn, NUM_SED_LAYERS, CS)
 
     !Calculate the effect of salinity on dissolved oxygen saturation
     LN_CSS = LN_CSF - S * &
-        (0.017674D0 - (10.754 / T_KELVIN) + (2140.7D0 / (T_KELVIN ** 2.0D0)))
+        (0.017674D0 - (10.754D0 / T_KELVIN) + (2140.7D0 / (T_KELVIN ** 2.0D0)))
 
     CSS = exp(LN_CSS)
 
     !Calculate the effect of altitude on dissolved oxygen saturation
 
     !Calculate THETA
-    THETA = 0.000975 - (0.00001426 * T) + (0.00000006436 * (T ** 2.0D0))
+    THETA = 0.000975D0 - (0.00001426D0 * T) + (0.00000006436D0 * (T ** 2.0D0))
 
     !Set standard pressure to mean sea level
-    P0 = 760.0
+    P0 = 760.0D0
 
     !Calculate atmospheric pressure at altitude H
-    P = (P0 - (0.02667 * H_FEET)) / 760.0
+    P = (P0 - (0.02667D0 * H_FEET)) / 760.0D0
 
     !Calculate vapour pressure of water(DIKKAT)
-    LN_PWV = 11.8571 - (3840.7 / T_KELVIN) - (216961.0 / (T_KELVIN ** 2.0D0))
+    LN_PWV = 11.8571D0 - (3840.7D0 / T_KELVIN) - (216961.0D0 / (T_KELVIN ** 2.0D0))
 
     PWV = exp(LN_PWV)
 

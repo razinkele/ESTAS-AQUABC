@@ -81,7 +81,7 @@ module aquabc_II_pelagic_interface
     logical, save :: binitialized = .false.
     logical, save :: bfirstcall = .true.
     integer, save :: CALLED_BEFORE = 0
-    double precision, save :: TIME_FIRST = -1.  ! first time of call
+    double precision, save :: TIME_FIRST = -1.D0  ! first time of call
 
     integer, save :: FLAGS(12)
 
@@ -153,7 +153,7 @@ subroutine aquabc_init                        ( &
     CYANO_BOUYANT_STATE_SIMULATION = 0  !Allow for cyanobacteria bouyant state
     CONSIDER_NON_OBLIGATORY_FIXERS = 1  !Consider the non fixing cyanobacteria
     CONSIDER_NOSTOCALES            = 0  !Consider nostocales
-    USER_ENTERED_frac_avail_DON    = 0.15 !(probably not important)
+    USER_ENTERED_frac_avail_DON    = 0.15D0 !(probably not important)
 
     FLAGS(1)  = 1       ! safe mode - not used
     FLAGS(2)  = 1       ! not used
@@ -233,7 +233,7 @@ subroutine aquabc_init_flags                ( &
     CYANO_BOUYANT_STATE_SIMULATION = flags_g(9)
     CONSIDER_NON_OBLIGATORY_FIXERS = flags_g(10)
     CONSIDER_NOSTOCALES            = flags_g(11)
-    USER_ENTERED_frac_avail_DON    = flags_g(12) / 100.
+    USER_ENTERED_frac_avail_DON    = flags_g(12) / 100.D0
 
     FLAGS(3) = 1
 

@@ -137,5 +137,5 @@ subroutine CALC_DISS_ME_CONC &
     where (.not. ieee_is_finite(DISS_ME_CONC_TS_END))
         DISS_ME_CONC_TS_END = ME_DISS_INIT
     end where
-    DISS_ME_CONC_TS_AVG = 0.5 * (ME_DISS_INIT + DISS_ME_CONC_TS_END)
+    DISS_ME_CONC_TS_AVG = 0.5D0 * (ME_DISS_INIT + DISS_ME_CONC_TS_END)
 end subroutine CALC_DISS_ME_CONC

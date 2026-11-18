@@ -165,7 +165,7 @@ subroutine FIX_CYANOBACTERIA  &
         ALPHA_1 = ALPHA_0 * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_FIX_CYN_LIGHT = &
-            (((2.718 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
+            (((2.718D0 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
              (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
         ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
         LIM_KG_FIX_CYN_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_FIX_CYN_LIGHT))
@@ -177,7 +177,7 @@ subroutine FIX_CYANOBACTERIA  &
              !1.2 is assumed that all fixers are in the layer of this depth
                  ! (Introduced 2013 working with Ali)
                  ! Changed to 1 by Petras 2014 10 13
-         FIX_CYN_DEPTH = 1.0
+         FIX_CYN_DEPTH = 1.0D0
 
          call LIM_LIGHT &
                       (I_A, CHLA, KG_FIX_CYN, DEPTH, K_E, LIM_KG_FIX_CYN_LIGHT, &
@@ -468,7 +468,7 @@ subroutine FIX_CYANOBACTERIA_BOUYANT  &
         ALPHA_1 = ALPHA_0 * safe_exp(-1.0D0 * K_E * DEPTH)
 
         LIM_KG_FIX_CYN_LIGHT = &
-            (((2.718 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
+            (((2.718D0 * max(1.0D-6, min(1.0D0, FDAY))) / (K_E * DEPTH)) * &
              (safe_exp(-1.0D0 * ALPHA_1) - safe_exp(-1.0D0 * ALPHA_0)))
         ! Clamp to [0,1]: Steele formula can produce tiny negatives at dusk
         LIM_KG_FIX_CYN_LIGHT = max(0.0D0, min(1.0D0, LIM_KG_FIX_CYN_LIGHT))
