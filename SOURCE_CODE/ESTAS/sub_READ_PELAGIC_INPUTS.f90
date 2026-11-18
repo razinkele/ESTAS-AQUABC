@@ -15,7 +15,7 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     integer :: j
     integer :: k
     integer :: n_boxes_differing
-    character(len = 16) :: lenient_env
+    logical, allocatable :: constants_row_seen(:)
 
     character(len = 2048) :: FILE_NAME
     character(len = 2048) :: constants_file
@@ -259,8 +259,25 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
     read(IN_FILE, *)
     read(IN_FILE, *)
 
+    allocate(constants_row_seen(NUM_PELAGIC_BOXES))
+    constants_row_seen = .false.
+
     do i = 1, NUM_PELAGIC_BOXES
         read(IN_FILE, *) AUX_INT, FILE_NAME
+
+        ! Each row names its box: store the constants under that number, not under the
+        ! row position, so rows in any order reach the box they declare.
+        if (AUX_INT < 1 .or. AUX_INT > NUM_PELAGIC_BOXES) then
+            write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: constants row', i, &
+                ' names box', AUX_INT, ', outside 1..', NUM_PELAGIC_BOXES
+            error stop 'READ_PELAGIC_BOX_MODEL_INPUTS: invalid box number in the model constants table'
+        end if
+        if (constants_row_seen(AUX_INT)) then
+            write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: constants row', i, &
+                ' names box', AUX_INT, ', which an earlier row already named'
+            error stop 'READ_PELAGIC_BOX_MODEL_INPUTS: duplicate box number in the model constants table'
+        end if
+        constants_row_seen(AUX_INT) = .true.
 
         ! Determine which constants file to use and fallback to WCONST_04.txt
 
@@ -286,10 +303,12 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
         call OPEN_INPUT_FILE(IN_FILE + 1, trim(constants_path), 'pelagic model input')
 
         call READ_MODEL_CONSTANTS &
-             (PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(:, i), IN_FILE + 1)
+             (PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(:, AUX_INT), IN_FILE + 1)
 
         close(IN_FILE + 1)
     end do
+
+    deallocate(constants_row_seen)
 
     ! The kinetics run with ONE set of constants: INITIALIZE_AQUATIC_MODEL copies box 1's
     ! column into the model and the other columns are never used. A constants file that
@@ -309,8 +328,7 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
         end do
     end do
     if (n_boxes_differing > 0) then
-        call get_environment_variable('AQUABC_LENIENT_CONSTANTS', lenient_env)
-        if (trim(adjustl(lenient_env)) == '1') then
+        if (LENIENT_CONSTANTS()) then
             write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: WARNING per-box constants ignored for', &
                 n_boxes_differing, ' box(es); continuing with box 1 constants (AQUABC_LENIENT_CONSTANTS=1)'
         else

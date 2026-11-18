@@ -469,7 +469,7 @@ SLOT_MAP = {
             6:  'R_NON_FIX_CYN_GROWTH  (AUX: non-fixing pathway growth rate)',
             7:  'R_FIX_FIX_CYN_GROWTH  (AUX: N-fixing pathway growth rate)',
             8:  'R_FIX_FIX_CYN_GROWTH * FIX_CYN_N_TO_C  (AUX: N fixation rate by FIX_CYN)',
-            9:  'LIM_KG_FIX_CYN_TEMP  (AUX: temp limitation; outputs written before 2026-11-18 also carry '
+            9:  'LIM_KG_FIX_CYN_TEMP  (AUX: temp limitation; output of builds older than #154 (8dba2a0) also carries '
                 '+ NOST N fixation here when DO_NOSTOCALES)',
             10: 'LIM_KG_FIX_CYN_DOXY  (AUX: O2 limitation)',
             11: 'LIM_KG_FIX_FIX_CYN_N  (AUX: N limitation for fixing path)',
