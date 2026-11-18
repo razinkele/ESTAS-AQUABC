@@ -739,7 +739,10 @@ def run_control_server(input, output, session, state):
             new_flags = output_config.apply_selection(
                 flags, boxes, types, run.current_setup().box_count, loaded_types)
             backup = output_config.save(path, output_config.rewrite(text, new_flags))
-            output_config_loaded.set((path, new_flags, tuple(output_config.summarize(new_flags)[1])))
+            # Re-fill the form from what was written, so the types shown and the types
+            # remembered stay the same thing: a stale pair would make the next save
+            # look like a change of types and overwrite the boxes' own flags.
+            _load_output_config(announce=False)
 
             # Increment version to trigger dashboard refresh
             state.output_config_version.set(state.output_config_version.get() + 1)

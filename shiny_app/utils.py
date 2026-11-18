@@ -151,32 +151,33 @@ def pelagic_binary_layout(bin_file, n_state=None):
     The file has no header and the record length depends on the build and the
     options (33, 34, 37 or 38 doubles), so a fixed width silently shifts every
     column of the other layouts. The count is taken, in order, from ``n_state``,
-    from the setup that writes into the file's folder, and otherwise inferred:
-    the only layout whose record length divides the file and whose first column
-    (time) increases. Raises ValueError when none of these settles it.
+    from the setup that writes into the file's folder -- if the file agrees, since
+    the folder may hold a run made before the setup was changed -- and otherwise
+    inferred: the only layout whose record length divides the file and whose first
+    column (time) increases. Raises ValueError when none of these settles it.
     """
     import numpy as np
 
-    n_values = os.path.getsize(bin_file) // 8
-    if n_state is None:
-        n_state = state_count_for_output_file(bin_file)
     if n_state is not None:
         return pelagic_box_columns(n_state)
+    n_values = os.path.getsize(bin_file) // 8
+    setup_count = state_count_for_output_file(bin_file)
     if n_values == 0:
-        return list(PELAGIC_BOX_COLUMNS)
+        return pelagic_box_columns(setup_count) if setup_count else list(PELAGIC_BOX_COLUMNS)
     data = np.memmap(bin_file, dtype=np.float64, mode="r", shape=(n_values,))
-    fits = []
-    for k in VALID_STATE_COUNTS:
-        if n_values % (k + 1) == 0:
-            t = np.asarray(data[::k + 1])
-            if np.all(np.isfinite(t)) and np.all(np.diff(t) > 0):
-                fits.append(k)
-    del data
+
+    def time_increases(k):
+        t = np.asarray(data[:(n_values // (k + 1)) * (k + 1):k + 1])
+        return len(t) > 0 and bool(np.all(np.isfinite(t)) and np.all(np.diff(t) > 0))
+
+    if setup_count is not None and time_increases(setup_count):
+        return pelagic_box_columns(setup_count)     # a remainder is a record being written
+    fits = [k for k in VALID_STATE_COUNTS if n_values % (k + 1) == 0 and time_increases(k)]
     if len(fits) != 1:
         raise ValueError(
             f"cannot tell the record layout of {os.path.basename(bin_file)} "
-            f"({n_values} values; candidate state counts: {fits or 'none'}). "
-            "No control file names its folder as an output folder.")
+            f"({n_values} values; candidate state counts: {fits or 'none'}; "
+            f"the setup writing into its folder says {setup_count}).")
     return pelagic_box_columns(fits[0])
 
 

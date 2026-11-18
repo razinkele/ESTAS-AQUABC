@@ -326,6 +326,28 @@ def test_binary_reader_takes_the_layout_from_the_setup(tmp_path):
     assert list(df["TIME_DAYS"]) == list(data[:, 0])
 
 
+def test_binary_reader_does_not_trust_a_setup_the_file_contradicts(tmp_path):
+    """The folder can hold a run made before the setup changed its state count."""
+    from shiny_app.utils import read_pelagic_binary, state_count_for_output_file
+    (tmp_path / "INPUT.txt").write_text(
+        "# PELAGIC MODEL INPUT FOLDER\nINPUTS/\n# PELAGIC MODEL INPUT FILE\nPELAGIC_INPUTS.txt\n"
+        "# PELAGIC MODEL OUTPUT FOLDER write ...\nOUTPUTS/\n")
+    (tmp_path / "INPUTS").mkdir()
+    (tmp_path / "INPUTS" / "PELAGIC_INPUTS.txt").write_text("# NUM_PELAGIC_STATE_VARS\n   36\n")
+    (tmp_path / "OUTPUTS").mkdir()
+    f = tmp_path / "OUTPUTS" / "P.bin_PELAGIC_BOX_00001.bin"
+    data = _write_records(f, 37, nrows=37)             # 37 x 38 values: also divisible by 37
+    assert state_count_for_output_file(str(f)) == 36
+    df = read_pelagic_binary(str(f))
+    assert df.shape == (37, 38) and list(df["TIME_DAYS"]) == list(data[:, 0])
+    # ... and with the matching layout a record still being written is dropped, not an error
+    g = tmp_path / "OUTPUTS" / "P.bin_PELAGIC_BOX_00002.bin"
+    _write_records(g, 36, nrows=5)
+    with open(g, "ab") as fh:
+        fh.write(b"\0" * 8 * 3)
+    assert read_pelagic_binary(str(g)).shape == (5, 37)
+
+
 def test_binary_reader_infers_the_layout_without_a_setup(tmp_path):
     """Only one record length both divides the file and gives an increasing time column."""
     from shiny_app.utils import pelagic_binary_layout, read_pelagic_binary
@@ -399,6 +421,24 @@ def test_output_config_keeps_other_layouts_and_per_box_flags():
     # a setup with more boxes than the file has rows gets the missing rows appended
     grown = oc.rewrite(text, oc.apply_selection(flags, ["4"], ["state_vars"], 4, types))
     assert oc.parse(grown)[1] == {1: (0, 0, 0), 2: (0, 0, 0), 3: (0, 0, 0), 4: (1, 0, 0)}
+
+
+def test_output_config_second_save_leaves_per_box_flags_alone():
+    """After a save the form is re-filled from the file; a second, unchanged save
+    must not read the narrower type set as a change and overwrite a box's flags."""
+    oc = _oc()
+    text = ("# header\n   1   1   0   0\n   2   1   1   1\n   3   0   1   0\n")
+    _h, flags = oc.parse(text)
+    _boxes, types, _m = oc.summarize(flags)                       # form after load
+    saved = oc.rewrite(text, oc.apply_selection(flags, ["1", "3"], types, 3, types))   # drop box 2
+    _h, flags2 = oc.parse(saved)
+    assert flags2 == {1: (1, 0, 0), 2: (0, 0, 0), 3: (0, 1, 0)}
+    boxes2, types2, _m = oc.summarize(flags2)                     # form re-filled after the save
+    again = oc.rewrite(saved, oc.apply_selection(flags2, boxes2, types2, 3, types2))
+    assert again == saved
+    src = open(os.path.join(ROOT, "shiny_app", "modules", "run_control.py")).read()
+    save = src[src.index("def save_output_config():"):]
+    assert "_load_output_config(announce=False)" in save[:save.index("def output_config_status")]
 
 
 def test_output_config_save_backs_up_and_never_creates_the_file(tmp_path):
