@@ -369,7 +369,7 @@ Before running a simulation, you need a compiled executable.
    | **End Date** | Corresponds to day 6239 | ~31 Jan (30-day run) |
    | **Time Step** | `6 minutes` (240 steps/day) | Recommended default |
    | **Output Frequency** | `Hourly` (print interval = 10) | 10 × 6 min = 1 hour |
-   | **Enable Sediment Model** | `Off` | Faster run without sediment diagenesis |
+   | **Bottom Sediments** | `Off` | Faster run without sediment diagenesis |
    | **Resuspension Option** | `0 (Disabled)` | Simplest configuration for tutorial |
 
    Alternatively — and **recommended for this tutorial** — you can simply

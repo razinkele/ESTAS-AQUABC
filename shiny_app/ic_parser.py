@@ -12,6 +12,11 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime
 
+try:
+    from shiny_app.utils import format_full_precision
+except ImportError:
+    from utils import format_full_precision
+
 logger = logging.getLogger("AQUABC.ic")
 
 # State variable definitions with names, descriptions, units, and CSV column names
@@ -189,9 +194,9 @@ class InitialCondition:
         """Format IC back to file line format"""
         # Format: "                         ID          VALUE             ! COMMENT"
         if self.comment:
-            return f"{self.var_id:27d}{self.value:15.6g}             ! {self.comment}"
+            return f"{self.var_id:27d}{format_full_precision(self.value):>15s}             ! {self.comment}"
         else:
-            return f"{self.var_id:27d}{self.value:15.6g}"
+            return f"{self.var_id:27d}{format_full_precision(self.value):>15s}"
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""

@@ -64,6 +64,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Simulation Config edited `INPUT.txt` whatever the run used.** It now loads and saves the control file the run will
+  use (Run Control's "Input Configuration File", which follows the setup) and says which one. Saving is refused until
+  that file has been loaded, so values loaded from one setup are never written into another's control file. "Enable
+  Sediment Model" wrote `MODEL_SEDIMENTS = 1`, which the model reads as *prescribed fluxes*; it is now a three-way
+  choice (off / prescribed fluxes / diagenesis). The print-interval tooltip said 24 steps is hourly at 240 steps/day
+  (it is 10).
+- **Plots silently showed only the first 10,000 rows** (about the first 417 days of a CL29 run). The whole record is
+  read (and cached, which the capped read never was) and thinned evenly for drawing; the title says so when thinned.
+- **Edited parameters and initial conditions were written with 6 significant digits** (`12.825253` saved as
+  `12.8253`). Edited values are now written at full precision (`utils.format_full_precision`).
+- **The app's constants contract was stale**: it required 318 constants (the model needs 324), `run_control` and
+  `dashboard` each defaulted to an untracked `WCONST_01.txt`, and the constants list and validation always looked in
+  `INPUTS/`. The count is 324 (pinned to `nconst` by a test), both modules use `config.DEFAULT_CONSTANTS_FILE`, the
+  list and validation use the active setup's input folder, and validation now rejects a missing, duplicated or
+  out-of-range index, as the Fortran reader does.
 - **The model-constants table is read by box number, not row position** (`READ_PELAGIC_BOX_MODEL_INPUTS`): each row's
   constants are stored under the box it names, and a box number out of range or named twice stops the run. Before,
   rows listed out of order were attached to the wrong boxes without a word. `AQUABC_LENIENT_CONSTANTS` is now read in

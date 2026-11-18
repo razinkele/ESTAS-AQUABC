@@ -46,7 +46,7 @@ try:
         base_year_for_output_dir,
         read_base_year,
     )
-    from shiny_app.utils import read_pelagic_binary, read_pelagic_text
+    from shiny_app.utils import read_pelagic_binary, read_pelagic_text, thin_rows
 except ImportError:  # running as a script from inside shiny_app/
     import output_data
     from ic_parser import get_grouped_variable_choices, get_variable_info
@@ -59,14 +59,14 @@ except ImportError:  # running as a script from inside shiny_app/
         base_year_for_output_dir,
         read_base_year,
     )
-    from utils import read_pelagic_binary, read_pelagic_text
+    from utils import read_pelagic_binary, read_pelagic_text, thin_rows
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
 INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")
-DEFAULT_PLOT_ROWS = 10000  # Max rows to read for plotting to avoid OOM
+DEFAULT_PLOT_ROWS = 10000  # Max points drawn per series; longer records are thinned evenly, never cut short
 
 
 @module.ui
@@ -965,11 +965,16 @@ def plot_server(input, output, session, state):
         logger.info(f"Plotting from: {selected_file} (format: {file_format})")
 
         # Use format-aware data loading
-        logger.debug(f"Fetching data (max {DEFAULT_PLOT_ROWS} rows, format={file_format})")
-        df = _get_cached_data(max_rows=DEFAULT_PLOT_ROWS, file_path=selected_file, file_format=file_format)
+        # Read the WHOLE record (cached while the file is unchanged), then thin it for
+        # drawing. Reading only the first DEFAULT_PLOT_ROWS rows showed just the start of
+        # a long run (the first ~417 days of CL29's 4016) with nothing to say so.
+        df = _get_cached_data(max_rows=None, file_path=selected_file, file_format=file_format)
         if df is None or df.empty:
             logger.warning("No data available for plotting")
             return None
+        total_rows = len(df)
+        df, thin_step = thin_rows(df, DEFAULT_PLOT_ROWS)
+        logger.debug(f"Plotting {len(df)} of {total_rows} rows (every {thin_step}); format={file_format}")
 
         xcol = df.columns[0]
         apply_smooth = input.smooth()
@@ -1035,6 +1040,8 @@ def plot_server(input, output, session, state):
         # Plot title with variable descriptions
         all_vars = [get_var_description(v) for v in (left + right)]
         plot_title = f"{', '.join(all_vars)} vs {x_label}"
+        if thin_step > 1:
+            plot_title += f"<br><sup>every {thin_step}th of {total_rows:,} rows shown (whole record)</sup>"
 
         # Configure xaxis based on whether we have date data
         if x_is_date:

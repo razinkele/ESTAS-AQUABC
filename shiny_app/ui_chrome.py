@@ -160,7 +160,7 @@ def settings_offcanvas():
                     ui.tags.p("Aquatic Biogeochemical Model"),
                     ui.tags.p("A sophisticated water quality simulation tool with:"),
                     ui.tags.ul(
-                        ui.tags.li("318 calibratable parameters"),
+                        ui.tags.li("324 model constants"),
                         ui.tags.li("36 state variables"),
                         ui.tags.li("Complex biogeochemical processes"),
                     ),
