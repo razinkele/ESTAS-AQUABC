@@ -64,23 +64,28 @@ def apply_selection(flags: dict, boxes, types, n_boxes: int, loaded_types=None) 
             out[box] = old
         else:
             out[box] = new
+    # rows for boxes beyond the setup's count are not the form's to edit: keep them
+    for box, old in flags.items():
+        out.setdefault(box, tuple(old))
     return out
 
 
-def _row(box: int, f) -> str:
+def _row(box: int, f, eol: str = "\n") -> str:
     """One row in the layout of the tracked Standard file (20/37/37/37-wide columns)."""
-    return f"{box:20d}{f[0]:>37d}{f[1]:>37d}{f[2]:>37d}\n"
+    return f"{box:20d}{f[0]:>37d}{f[1]:>37d}{f[2]:>37d}{eol}"
 
 
 def rewrite(text: str, flags: dict) -> str:
     """File text with the rows of ``flags`` applied.
 
+    ``text`` must be read with ``newline=""`` for CRLF files to keep their endings.
     Rows whose flags are unchanged are kept exactly as they are (the model reads the
     file free-format, so setups differ in column widths and comments); changed rows
     are re-written, rows for boxes the file lacks are appended, and rows for boxes
     not in ``flags`` are dropped. An unchanged selection reproduces the file.
     """
     header, old = parse(text)
+    eol = "\r\n" if "\r\n" in text else "\n"
     out, seen = [], set()
     for line in text.splitlines(keepends=True):
         parts = line.split()
@@ -89,12 +94,12 @@ def rewrite(text: str, flags: dict) -> str:
             out.append(line)
         elif box in flags and box not in seen:
             seen.add(box)
-            out.append(line if old[box] == tuple(flags[box]) else _row(box, flags[box]))
+            out.append(line if old[box] == tuple(flags[box]) else _row(box, flags[box], eol))
     if not out:
         out.append(header)
     if not out[-1].endswith("\n"):
-        out[-1] += "\n"
-    out.extend(_row(box, flags[box]) for box in sorted(flags) if box not in seen)
+        out[-1] += eol
+    out.extend(_row(box, flags[box], eol) for box in sorted(flags) if box not in seen)
     return "".join(out)
 
 
@@ -108,6 +113,6 @@ def save(path: str, text: str) -> str:
         raise FileNotFoundError(f"{os.path.basename(path)} not found in {os.path.dirname(path)}")
     backup = path + ".bak"
     shutil.copy2(path, backup)
-    with open(path, "w") as f:
+    with open(path, "w", newline="") as f:      # keep the text's own line endings
         f.write(text)
     return backup

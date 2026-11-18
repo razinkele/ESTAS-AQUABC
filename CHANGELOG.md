@@ -84,6 +84,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   37 or 38 doubles), so 32-state and VARN runs were shifted column by column. The layout now comes from the setup
   that writes into the folder, or, failing that, from the one record length that divides the file and has an
   increasing time column; an undecidable file is an error instead of a guess. `CYN_N` is placed at state 33.
+  Review follow-ups: a layout that accounts for the whole file wins over a stale setup count; Output Config keeps
+  rows beyond the setup's box count and a file's CRLF endings; the run claim resolves symlinked output folders; and
+  Simulation Config will not change the output folder of a control file whose run is in progress.
 - **Simulation Config edited `INPUT.txt` whatever the run used.** It now loads and saves the control file the run will
   use (Run Control's "Input Configuration File", which follows the setup) and says which one. Saving is refused until
   that file has been loaded, so values loaded from one setup are never written into another's control file. "Enable

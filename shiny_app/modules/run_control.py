@@ -731,7 +731,7 @@ def run_control_server(input, output, session, state):
             return
         try:
             _path, _flags_at_load, loaded_types = loaded
-            with open(path) as f:
+            with open(path, newline="") as f:       # keep CRLF files CRLF
                 text = f.read()
             _header, flags = output_config.parse(text)
             boxes = list(input.output_boxes() or [])

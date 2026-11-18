@@ -37,8 +37,20 @@ logger = logging.getLogger("AQUABC")
 # Output folders that have a model run writing into them, across all sessions of
 # this process. A second run into the same folder would interleave its files with
 # the first one's, and the first would be out of reach of that session's Stop.
-_ACTIVE_OUTPUTS: dict = {}
+_ACTIVE_OUTPUTS: dict = {}          # output folder -> (RunController, control file)
 _ACTIVE_LOCK = threading.Lock()
+
+
+def control_file_in_use(path: str) -> bool:
+    """True while a run that was started from this control file holds its claim.
+
+    The claim is on the output folder the control file named when Run was clicked,
+    and the model reads the file only after launch; changing that folder in between
+    would send the run into a folder nobody reserved.
+    """
+    want = os.path.realpath(path)
+    with _ACTIVE_LOCK:
+        return any(control == want for _holder, control in _ACTIVE_OUTPUTS.values())
 
 
 class RunController:
@@ -70,7 +82,8 @@ class RunController:
     def output_key(self, input_file=None) -> str:
         """Absolute output folder of the run a control file describes."""
         path = os.path.join(self.root, input_file or "INPUT.txt")
-        return os.path.abspath(os.path.join(
+        # realpath: two names for one folder (a symlink) must be one claim
+        return os.path.realpath(os.path.join(
             self.root, output_data.get_output_folder_from_config(input_txt_path=path)))
 
     def claim_run(self, input_file=None) -> tuple[bool, str]:
@@ -85,17 +98,19 @@ class RunController:
         with _ACTIVE_LOCK:
             if self._claim is not None or self.running or self.is_running():
                 return False, "A model run is already in progress in this session."
-            holder = _ACTIVE_OUTPUTS.get(key)
-            if holder is not None and holder is not self:
+            entry = _ACTIVE_OUTPUTS.get(key)
+            if entry is not None and entry[0] is not self:
                 return False, ("Another session is running a model into "
                                f"{os.path.basename(key)}/.")
-            _ACTIVE_OUTPUTS[key] = self
+            control = os.path.realpath(os.path.join(self.root, input_file or "INPUT.txt"))
+            _ACTIVE_OUTPUTS[key] = (self, control)
             self._claim = key
         return True, ""
 
     def release_run(self) -> None:
         with _ACTIVE_LOCK:
-            if self._claim is not None and _ACTIVE_OUTPUTS.get(self._claim) is self:
+            entry = _ACTIVE_OUTPUTS.get(self._claim) if self._claim is not None else None
+            if entry is not None and entry[0] is self:
                 del _ACTIVE_OUTPUTS[self._claim]
             self._claim = None
 
