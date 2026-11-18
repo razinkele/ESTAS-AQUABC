@@ -2699,10 +2699,9 @@ contains
         PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 9) = &
             R_NOST_VEG_HET_FIX_GROWTH(ns:ne) * NOST_N_TO_C * (1.D0/FRAC_FIX_N_FOR_GR_VEG_HET)
 
-        ! Update the total nitrogen fixation
-        PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9) = &
-            PROCESS_RATES(ns:ne,FIX_CYN_C_INDEX, 9) + &
-            PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 9)
+        ! Nostocales fixation is reported in its own slot only. It used to be added
+        ! into FIX_CYN_C slot 9 as a "total", but that slot is FIX_CYN's temperature
+        ! limiter (its fixation rate is slot 8), so the sum corrupted the limiter.
 
         ! Auxilaries
         PROCESS_RATES(ns:ne,NOST_VEG_HET_C_INDEX, 10) = NOST_LIGHT_SAT(ns:ne)
