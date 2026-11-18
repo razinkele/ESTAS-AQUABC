@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-18
+
+> 🎉 **Released — [AQUABC v0.12.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.12.0)**
+> (Linux binary attached). **Codebase audit fixes + ESTAS mass-balance and level corrections.** The Standard
+> constants match the temperature model again, the constants readers refuse inconsistent input, the app edits and
+> reads the files the run actually uses, and the Fortran tests link the production routines. New opt-in mechanisms
+> (day-length light weighting, a density-dependent closure, Nostocales fixation switches) ship disabled.
+> **Results differ from v0.11.0 in the last digits** (every real literal is now double precision: dissolved oxygen by
+> up to 5e-5 relative), and Standard runs change materially because the plateau temperature constants are restored.
+
 ### Added
 - **`tools/set_per_box_forcing_columns.py`** points each box's PRECIPITATION, EVAPORATION, AIR TEMPERATURE,
   WIND SPEED and ICE FRACTION rows at its own column when the forcing file has one column per box (report mode
