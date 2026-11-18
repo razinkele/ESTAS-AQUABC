@@ -158,7 +158,7 @@ contains
 
                         if (STRANGERSD(PELAGIC_BOX_MODEL_DATA % &
                                        PELAGIC_BOXES(BOX_NO) % SAVED_OUTPUTS(1)).eq.1) then
-                            LIGHT_EXTINCTION = 0.1
+                            LIGHT_EXTINCTION = 0.1D0
                         else
                             LIGHT_EXTINCTION = &
                                 PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(BOX_NO) % SAVED_OUTPUTS(1)

@@ -289,26 +289,26 @@ double precision function DO_SATURATION(T, S, H)
     H_FEET = H / METERS_TO_FEET
 
     !Calculate the effect of temperature on dissolved oxygen saturation
-    LN_CSF = -139.34411 + (157570.1 / T_KELVIN) - &
-             (66423080.0 / (T_KELVIN ** 2.0D0)) + (12438000000.0 / (T_KELVIN ** 3.0D0)) - &
-             (862194900000.0 / (T_KELVIN ** 4.0D0))
+    LN_CSF = -139.34411D0 + (157570.1D0 / T_KELVIN) - &
+             (66423080.0D0 / (T_KELVIN ** 2.0D0)) + (12438000000.0D0 / (T_KELVIN ** 3.0D0)) - &
+             (862194900000.0D0 / (T_KELVIN ** 4.0D0))
 
     !Calculate the effect of salinity on dissolved oxygen saturation
     LN_CSS = LN_CSF - S * &
-             (0.017674 - (10.754 / T_KELVIN) + (2140.7 / (T_KELVIN ** 2.0D0)))
+             (0.017674D0 - (10.754D0 / T_KELVIN) + (2140.7D0 / (T_KELVIN ** 2.0D0)))
 
     CSS = safe_exp(LN_CSS)
 
     !Calculate the effect of altitude on dissolved oxygen saturation
 
     !Calculate THETA
-    THETA = 0.000975 - (0.00001426 * T) + (0.00000006436 * (T ** 2.0D0))
+    THETA = 0.000975D0 - (0.00001426D0 * T) + (0.00000006436D0 * (T ** 2.0D0))
 
     !Calculate atmospheric pressure at altitude H
-    P = (STD_PRESSURE_MMHG - (0.02667 * H_FEET)) / STD_PRESSURE_MMHG
+    P = (STD_PRESSURE_MMHG - (0.02667D0 * H_FEET)) / STD_PRESSURE_MMHG
 
     !Calculate vapour pressure of water(DIKKAT)
-    LN_PWV = 11.8571 - (3840.7 / T_KELVIN) - (216961.0 / (T_KELVIN ** 2.0D0))
+    LN_PWV = 11.8571D0 - (3840.7D0 / T_KELVIN) - (216961.0D0 / (T_KELVIN ** 2.0D0))
 
     PWV = safe_exp(LN_PWV)
 
@@ -395,30 +395,30 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
     double precision :: RK3
     double precision :: GAMU
 
-    R0MIN = 1.e-15
+    R0MIN = 1.D-15
     IWTYPE = int(WTYPE)
     WS = WINDS
 
     if (IWTYPE.EQ.3) then
-        UT  = 10.0
-        UC  = 11.0
-        ZE  = 0.35
-        LAM = 3.0
-        GAM = 5.0
+        UT  = 10.0D0
+        UC  = 11.0D0
+        ZE  = 0.35D0
+        LAM = 3.0D0
+        GAM = 5.0D0
     else
         if (IWTYPE .EQ.1) then
-            UT  = 9.0
-            UC  = 22.0
-            ZE  = 0.25
-            LAM = 10.0
-            GAM = 10.0
+            UT  = 9.0D0
+            UC  = 22.0D0
+            ZE  = 0.25D0
+            LAM = 10.0D0
+            GAM = 10.0D0
         else
             if (IWTYPE.EQ.2) then
-                UT  = 10.0
-                UC  = 11.0
-                ZE  = 0.25
-                LAM = 3.0
-                GAM = 6.5
+                UT  = 10.0D0
+                UC  = 11.0D0
+                ZE  = 0.25D0
+                LAM = 3.0D0
+                GAM = 6.5D0
             else
                 WRITE(*,*) 'KAWIND : WRONG VALUE FOR WATERBODY TYPE'
                 STOP
@@ -428,25 +428,25 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
     end if
 
 
-    DifF = 4.58E-07 * TW + 1.2E-05
-    VW   = 0.0164 - 0.00024514*TW
-    VA   = 0.133 + 0.0009*TA
-    PA   = 0.00129 - 0.0000040*TA
-    PW   = 1.00
-    WS   = WS * 100.0
-    RK   = 1.0
+    DifF = 4.58D-07 * TW + 1.2D-05
+    VW   = 0.0164D0 - 0.00024514D0*TW
+    VA   = 0.133D0 + 0.0009D0*TA
+    PA   = 0.00129D0 - 0.0000040D0*TA
+    PW   = 1.00D0
+    WS   = WS * 100.0D0
+    RK   = 1.0D0
 
     !NEWTON RAPHSON METHOD TO CALCULATE THE SQUARE ROOT OF THE DRAG
     !COEFFICIENT
     N = 0
 
     KARMAN = VON_KARMAN
-    KA3    = KARMAN**0.3333
-    WH     = 1000.0
+    KA3    = KARMAN**0.3333D0
+    WH     = 1000.0D0
 
     !INITIAL GUESS FOR SQUARE ROOT OF THE DRAG COEFFICIENT
-    SRCD = 0.04
-    ERR  = 1.0
+    SRCD = 0.04D0
+    ERR  = 1.0D0
 
     do N = 1, 9
         !CALCULATE VALUE OF FUNCTION(F2) AND
@@ -454,10 +454,10 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
         EF  = safe_exp( - SRCD*WS/UT)
         F1  = LOG((WH/ZE) + (WH*LAM/VA)*SRCD*WS*EF)
         F2  = F1 - KARMAN / SRCD
-        FP1 = 1.0/((WH/ZE) + (LAM*WH/VA)*SRCD*WS*EF)
-        FP2 = ((WH*LAM)/(VA*UT))*SRCD*(WS**2.0)*EF
+        FP1 = 1.0D0/((WH/ZE) + (LAM*WH/VA)*SRCD*WS*EF)
+        FP2 = ((WH*LAM)/(VA*UT))*SRCD*(WS**2.0D0)*EF
         FP3 = (WH*(LAM / VA)) * WS * EF
-        FP4 = FP1*(FP2 + FP3) + (KARMAN/(SRCD**2.0))
+        FP4 = FP1*(FP2 + FP3) + (KARMAN/(SRCD**2.0D0))
 
        !A NEW GUESS FOR SQUARE ROOT OF DRAG AND COMPARE TO
        !PREVIOUS GUESS AND LOOP BACK THROUGH N-R WITH NEW GUESS
@@ -477,31 +477,31 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
         STOP
     end if
 
-    CDDRAG = SRCD**2.0
+    CDDRAG = SRCD**2.0D0
     US     = SRCD * WS
-    Z0     = 1.0 / ((1.0 / ZE) + LAM * US * safe_exp(-US / UT) / VA)
-    WS     = WS / 100.0
+    Z0     = 1.0D0 / ((1.0D0 / ZE) + LAM * US * safe_exp(-US / UT) / VA)
+    WS     = WS / 100.0D0
 
     if (WS.LT.6.0) then
-        RK1 = ((DifF / VW)**0.666667) * SRCD * ((PA / PW)**0.5)
+        RK1 = ((DifF / VW)**0.666667D0) * SRCD * ((PA / PW)**0.5D0)
         RK  = RK1 * KA3 * (WS/GAM)
         RK  = RK * SECONDS_PER_DAY
         RK  = RK / DEPTH
     end if
 
     if ((WS.GE.6.0).AND.(WS.LE.20.0)) then
-        GAMU = GAM * US * (safe_exp(-(US / UC) + 1.0) / UC)
-        RK1  = ((DifF/VW)**0.6667) * KA3 * ((PA/PW)**0.5) * (US / GAMU)
-        RK2  = ((DifF * US * PA * VA) / (KARMAN * Z0 * PW * VW))**0.5
-        RK3  = (1.0 / RK1) + (1.0 / RK2)
-        RK   = 1.0 / RK3
-        RK   = RK * SECONDS_PER_DAY / 100.0
+        GAMU = GAM * US * (safe_exp(-(US / UC) + 1.0D0) / UC)
+        RK1  = ((DifF/VW)**0.6667D0) * KA3 * ((PA/PW)**0.5D0) * (US / GAMU)
+        RK2  = ((DifF * US * PA * VA) / (KARMAN * Z0 * PW * VW))**0.5D0
+        RK3  = (1.0D0 / RK1) + (1.0D0 / RK2)
+        RK   = 1.0D0 / RK3
+        RK   = RK * SECONDS_PER_DAY / 100.0D0
         RK   = RK / DEPTH
     end if
 
     if (WS.GT.20.0) then
-        RK = ((DifF * PA * VA * US) / (KARMAN * ZE * PW * VW))**0.5
-        RK = RK * SECONDS_PER_DAY / 100.0
+        RK = ((DifF * PA * VA * US) / (KARMAN * ZE * PW * VW))**0.5D0
+        RK = RK * SECONDS_PER_DAY / 100.0D0
         RK = RK / DEPTH
     end if
 
@@ -803,8 +803,8 @@ subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
 
     ! Chloroph. extinction, ( mcg Chla/l/m)
     ! 0.04 is approximatelly the value that corresponds to the angle of curve given in Chapra
-    XKC   =  0.016
-    PHIMX = 720.0   !PHY   Quantum yield const. mg C/mole photon
+    XKC   =  0.016D0
+    PHIMX = 720.0D0   !PHY   Quantum yield const. mg C/mole photon
     FDAY  = 1.0D0
     ITOT  = Ia
     CCHL1 = CCHLXI
@@ -1537,7 +1537,7 @@ contains
     double precision function settl_vel(chla)
         implicit none
         double precision, intent(in) :: chla
-        settl_vel = -(0.0061D0 * chla) + 1.0383
+        settl_vel = -(0.0061D0 * chla) + 1.0383D0
     end function settl_vel
 
 end subroutine settling_suppres_factor

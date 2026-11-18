@@ -151,7 +151,7 @@ subroutine SED_REDOX_AND_SPECIATION &
 
     ! Nitrate is reduced
     where (REDUCED_AGENT_NO == 2)
-        PE = 21.05 - log10(1.0D0 / (max(NO3N/14000.0D0, 1.0D-20)*(H_PLUS**1.2D0)))
+        PE = 21.05D0 - log10(1.0D0 / (max(NO3N/14000.0D0, 1.0D-20)*(H_PLUS**1.2D0)))
     end where
 
     ! Mn IV is reduced

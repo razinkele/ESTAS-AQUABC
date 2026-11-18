@@ -517,3 +517,27 @@ def test_output_config_keeps_crlf_line_endings(tmp_path):
     src = open(os.path.join(ROOT, "shiny_app", "modules", "run_control.py")).read()
     save = src[src.index("def save_output_config():"):]
     assert 'open(path, newline="")' in save[:save.index("def output_config_status")]
+
+
+# --- Fortran real literals ---------------------------------------------------------------
+
+def test_fortran_sources_have_no_single_precision_real_literals():
+    """`0.1` is a default-real literal: in double-precision arithmetic it carries
+    single-precision rounding (about 1e-8 relative, more after cancellation -- the
+    DO-saturation polynomial moved by 5e-5). Every real literal needs a D exponent
+    or a kind suffix. Lines that are I/O statements are skipped (format widths)."""
+    lit = re.compile(r"(?<![\w.])(\d+\.\d*|\.\d+)([eE][+-]?\d+)?(?![\w.])")
+    io = re.compile(r"^\s*(\d+\s+)?(write|print|read|format)\b", re.I)
+    found = []
+    for folder, _dirs, files in os.walk(os.path.join(ROOT, "SOURCE_CODE")):
+        for name in sorted(files):
+            if not name.endswith(".f90"):
+                continue
+            in_io = False
+            for no, line in enumerate(open(os.path.join(folder, name), errors="replace"), 1):
+                code = re.sub(r"'[^']*'|\"[^\"]*\"", "", line).split("!")[0]
+                is_io = bool(io.search(code)) or in_io
+                in_io = is_io and code.rstrip().endswith("&")
+                if not is_io and lit.search(code):
+                    found.append(f"{name}:{no}: {code.strip()[:80]}")
+    assert not found, "single-precision literals:\n" + "\n".join(found[:20])

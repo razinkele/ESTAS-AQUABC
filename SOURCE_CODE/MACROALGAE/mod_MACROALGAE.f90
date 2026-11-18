@@ -215,13 +215,13 @@ module MacroAlgae
             Q_P_MAC_ALGAE = 0.0D0
         end where
 
-        MAC_ALGAE_GROWTH_N_LIM = 1.0 - (Q_ZERO_N_MAC_ALGAE / max(Q_N_MAC_ALGAE, 1.0D-20))
+        MAC_ALGAE_GROWTH_N_LIM = 1.0D0 - (Q_ZERO_N_MAC_ALGAE / max(Q_N_MAC_ALGAE, 1.0D-20))
 
         where (MAC_ALGAE_GROWTH_N_LIM < 0.0D0)
             MAC_ALGAE_GROWTH_N_LIM = 0.0D0
         end where
 
-        MAC_ALGAE_GROWTH_P_LIM = 1.0 - (Q_ZERO_P_MAC_ALGAE / max(Q_P_MAC_ALGAE, 1.0D-20))
+        MAC_ALGAE_GROWTH_P_LIM = 1.0D0 - (Q_ZERO_P_MAC_ALGAE / max(Q_P_MAC_ALGAE, 1.0D-20))
         
         where (MAC_ALGAE_GROWTH_P_LIM < 0.0D0)
             MAC_ALGAE_GROWTH_P_LIM = 0.0D0
@@ -245,7 +245,7 @@ module MacroAlgae
             ! Steele, (1962)
             case (3)
                 PHI_LB = (I_A * safe_exp(-K_E * H) / K_LB_MAC_ALGAE) * &
-                    safe_exp(1.0 + ((I_A*safe_exp(-K_E*H))/K_LB_MAC_ALGAE))
+                    safe_exp(1.0D0 + ((I_A*safe_exp(-K_E*H))/K_LB_MAC_ALGAE))
 
             case default
                 PHI_LB = 0.0D0
@@ -262,15 +262,15 @@ module MacroAlgae
         MAC_ALGAE_GROWTH = C_GB * PHI_NB * PHI_LB * PHI_SB * MAC_ALGAE_C
 
         ! Calculate the respiration rate
-        MAC_ALGAE_RESP_TEMP_LIM  = THETA_k_R_MAC_ALGAE ** (TEMP - 20.0)
+        MAC_ALGAE_RESP_TEMP_LIM  = THETA_k_R_MAC_ALGAE ** (TEMP - 20.0D0)
         MAC_ALGAE_RESP = k_R_20_MAC_ALGAE * MAC_ALGAE_RESP_TEMP_LIM * MAC_ALGAE_C
 
         ! Calculate the excretion rate
-        MAC_ALGAE_EXCR_TEMP_LIM  = THETA_k_E_MAC_ALGAE ** (TEMP - 20.0)
+        MAC_ALGAE_EXCR_TEMP_LIM  = THETA_k_E_MAC_ALGAE ** (TEMP - 20.0D0)
         MAC_ALGAE_EXCR = k_E_20_MAC_ALGAE * MAC_ALGAE_EXCR_TEMP_LIM * MAC_ALGAE_C
 
         ! Calculate the death rate
-        MAC_ALGAE_DEATH_TEMP_LIM  = THETA_k_D_MAC_ALGAE  ** (TEMP - 20.0)
+        MAC_ALGAE_DEATH_TEMP_LIM  = THETA_k_D_MAC_ALGAE  ** (TEMP - 20.0D0)
         MAC_ALGAE_DEATH = k_D_20_MAC_ALGAE * MAC_ALGAE_DEATH_TEMP_LIM * MAC_ALGAE_C
 
         d_MALG_C_over_dt = MAC_ALGAE_GROWTH - MAC_ALGAE_RESP - MAC_ALGAE_EXCR - MAC_ALGAE_DEATH
@@ -311,7 +311,7 @@ module MacroAlgae
         ! Effects of macro algae growth on water column nutrients and dissolved oxygen
         DIC_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_GROWTH / H_SAFE
         NH4N_UPTAKE_FROM_WC_MALG_GROWTH = (MAC_ALGAE_NH4N_PREF * MAC_ALGAE_N_UPTAKE) / H_SAFE
-        NO3N_UPTAKE_FROM_WC_MALG_GROWTH = ((1.0 - MAC_ALGAE_NH4N_PREF) * MAC_ALGAE_N_UPTAKE) / H_SAFE
+        NO3N_UPTAKE_FROM_WC_MALG_GROWTH = ((1.0D0 - MAC_ALGAE_NH4N_PREF) * MAC_ALGAE_N_UPTAKE) / H_SAFE
         SRP_UPTAKE_FROM_WC_MALG_GROWTH  = MAC_ALGAE_P_UPTAKE / H_SAFE
         DO2_TO_WC_MALG_GROWTH           = (A_O2_TO_C_MAC_ALGAE * MAC_ALGAE_GROWTH) / H_SAFE
 
@@ -335,14 +335,14 @@ module MacroAlgae
         ! -------------------------------------------------------------------------------
         MAC_ALGAE_ATT_DETPOC_DISS = &
             k_DISS_MALG_ATT_DETPOC * &
-            (THETA_k_DISS_MALG_ATT_DETPOC**(TEMP - 20.0)) * MAC_ALGAE_ATT_DETPOC
+            (THETA_k_DISS_MALG_ATT_DETPOC**(TEMP - 20.0D0)) * MAC_ALGAE_ATT_DETPOC
         
         MAC_ALGAE_ATT_DETPON_DISS = &
             k_DISS_MALG_ATT_DETPON * &
-            (THETA_k_DISS_MALG_ATT_DETPON**(TEMP - 20.0)) * MAC_ALGAE_ATT_DETPON
+            (THETA_k_DISS_MALG_ATT_DETPON**(TEMP - 20.0D0)) * MAC_ALGAE_ATT_DETPON
         
         MAC_ALGAE_ATT_DETPOP_DISS = &
-            k_DISS_MALG_ATT_DETPOP * (THETA_k_DISS_MALG_ATT_DETPOP **(TEMP - 20.0)) * &
+            k_DISS_MALG_ATT_DETPOP * (THETA_k_DISS_MALG_ATT_DETPOP **(TEMP - 20.0D0)) * &
             MAC_ALGAE_ATT_DETPOP
 
         d_MALG_ATT_DETPOC_over_dt = MAC_ALGAE_DEATH  - MAC_ALGAE_ATT_DETPOC_DISS

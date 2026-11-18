@@ -64,6 +64,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Single-precision real literals in double-precision arithmetic** (506 lines in 21 files: the kinetics library,
+  CO2SYS, both DO-saturation routines, the sediment diffusion coefficients, the default constants, the 0D example and
+  the macroalgae module). `0.1` is a default-real literal, so each carried single-precision rounding into a
+  double-precision expression; all now have a `D` exponent. Values are unchanged -- `273.16` in the sediment
+  molecular-diffusion routines stays (it pairs with `298.16` in the same Stokes-Einstein scaling) and `2.718`,
+  `0.3333`, `0.6667` stay as written. **Results change in the last digits**: dissolved oxygen by up to 5e-5 relative
+  (the saturation polynomial cancels large terms), other variables by up to 1e-4 of their peak over a Standard 30-day
+  and a CL29 90-day run; the 0D golden moved by 3.2e-5 and is regenerated. A test now fails on any new literal
+  without a `D` exponent or kind.
 - **The app's Shear Stress option aborted any run that read it, and silently blanked the rest.** Command argument 4
   is the *critical* shear-stress table (per-box thresholds), opened as `<resuspension input folder>/<name>`; the Run
   tab called it a time series, listed every `*SHEAR*` file of `INPUTS/` whatever the setup, and passed

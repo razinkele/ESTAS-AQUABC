@@ -390,7 +390,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     SALT     (1:nkn) = max(0.0D0, SALT(1:nkn))
 
     ! Conversion from W/m^2 to langleys
-    I_A      (1:nkn) =(DRIVING_FUNCTIONS(1:nkn, 3) * 5.0D-1 * 8.64D4 * 0.238846) / 1.0D4
+    I_A      (1:nkn) =(DRIVING_FUNCTIONS(1:nkn, 3) * 5.0D-1 * 8.64D4 * 0.238846D0) / 1.0D4
     FDAY     (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 4)
     AIRTEMP  (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 5)
     WINDS    (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 6)
@@ -603,8 +603,8 @@ contains
         ! by the serial, whole-nkn REDOX_AND_SPECIATION call below. Runs serially;
         ! all arrays reached by host association. (Distinct from the REDOX_STATE_CHUNK
         ! / REDOX_LIM_CHUNK bundles populated later inside the OpenMP parallel region.)
-        HCO3 = HCO3 / 1000000.0
-        CO3  = CO3  / 1000000.0
+        HCO3 = HCO3 / 1000000.0D0
+        CO3  = CO3  / 1000000.0D0
         ! -----------------------------------------------------------------
         ! Additions made 30th November 2015 related to dissolved and solid
         ! iron and mangese species, soon to be replaced by the
@@ -2814,7 +2814,7 @@ contains
     !ZOOPLANKTON CARBON
     PROCESS_RATES(ns:ne,ZOO_C_INDEX, 1) = R_ZOO_GROWTH(ns:ne)
 
-    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) = 0.0
+    PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) = 0.0D0
 
     if (ZOOP_OPTION_1 > 0) then
         PROCESS_RATES(ns:ne,ZOO_C_INDEX, 2) = R_ZOO_EX_DOC(ns:ne)
