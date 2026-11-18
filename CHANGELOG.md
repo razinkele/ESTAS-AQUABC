@@ -66,7 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - **Fortran unit tests exercised copies, not the model.** `tests/fortran/test_pelagic_aux_subset.f90` was a trimmed
   copy of the auxiliary routines whose `GROWTH_AT_TEMP` stayed CTMI-only after production gained the plateau model
-  (the default), and five tests carried their own copies of `GROWTH_AT_TEMP`, the nutrient preferences, the ammonia
+  (the default), and six tests carried their own copies of `GROWTH_AT_TEMP`, the nutrient preferences, the ammonia
   routines, `light_kd`/`CUR_SMITH`, `settling_suppres_factor` and `find_unit`. All now link the production sources
   (the copy is deleted). The shared test constants were CTMI-style (`KAPPA_UNDER = 0`, `KAPPA_OVER = T_max`) and are
   now the Standard plateau values; `test_growth_temp` gains the default-is-plateau, CTMI, CTMI-fallback and
