@@ -64,6 +64,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Fortran unit tests exercised copies, not the model.** `tests/fortran/test_pelagic_aux_subset.f90` was a trimmed
+  copy of the auxiliary routines whose `GROWTH_AT_TEMP` stayed CTMI-only after production gained the plateau model
+  (the default), and six tests carried their own copies of `GROWTH_AT_TEMP`, the nutrient preferences, the ammonia
+  routines, `light_kd`/`CUR_SMITH`, `settling_suppres_factor` and `find_unit`. All now link the production sources
+  (the copy is deleted). The shared test constants were CTMI-style (`KAPPA_UNDER = 0`, `KAPPA_OVER = T_max`) and are
+  now the Standard plateau values; `test_growth_temp` gains the default-is-plateau, CTMI, CTMI-fallback and
+  CTMI-constants-under-plateau cases; the two Nostocales germination-gate tests run under CTMI with CTMI-valid
+  cardinal temperatures (their old 16/26/38 set is one production rejects).
+- **`tools/` and `pest/` were linted nowhere.** They are now in ruff's `include`, in CI and in `make lint`. 28 files
+  cleaned (unused imports, import order, placeholder-less f-strings, one late-binding lambda); style-only rules
+  (`UP031`, `B007`, `E701`, `E702`) and `F841` are ignored for these script folders.
+- **The container could not run its documented validation command.** `tools/validate_cl29_vs_epa.py` imports pandas
+  and (for its default plots) matplotlib; the image had numpy only. Both are installed and the image build now
+  imports them.
 - **Single-precision real literals in double-precision arithmetic** (506 lines in 21 files: the kinetics library,
   CO2SYS, both DO-saturation routines, the sediment diffusion coefficients, the default constants, the 0D example and
   the macroalgae module). `0.1` is a default-real literal, so each carried single-precision rounding into a

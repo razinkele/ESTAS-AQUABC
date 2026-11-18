@@ -10,15 +10,16 @@ Usage:
     python tools/deep_process_rate_analysis.py [--output-dir OUTPUTS]
 """
 
-import sys
-import os
 import argparse
-import numpy as np
+import os
+import sys
 from pathlib import Path
+
+import numpy as np
 
 # Add tools dir to path for slot map import
 sys.path.insert(0, str(Path(__file__).parent))
-from process_rate_slot_map import SLOT_MAP, DERIVATIVE_SIGNS
+from process_rate_slot_map import DERIVATIVE_SIGNS, SLOT_MAP
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration

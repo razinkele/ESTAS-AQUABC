@@ -23,7 +23,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from eutropy_to_aquabc import (  # shared mapping/defaults  # noqa: E402
-    AQUABC_DEFAULTS, AQUABC_STATE_NAMES, PHYTO_TARGETS, STATE_MAP,
+    AQUABC_DEFAULTS,
+    AQUABC_STATE_NAMES,
+    PHYTO_TARGETS,
+    STATE_MAP,
 )
 
 EU = os.path.expanduser("~/eutropy/input")

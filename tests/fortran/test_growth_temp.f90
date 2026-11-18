@@ -6,6 +6,7 @@
 ! and decreases exponentially outside that range
 
 program test_growth_temp
+    use AQUABC_II_GLOBAL, only: USE_CTMI_TEMP
     implicit none
     
     integer, parameter :: DBL_PREC = selected_real_kind(15, 307)
@@ -30,6 +31,10 @@ program test_growth_temp
     call test_extreme_hot()
     call test_vector_operation()
     call test_kappa_sensitivity()
+    call test_plateau_is_the_default()
+    call test_ctmi_constants_under_plateau()
+    call test_ctmi_model()
+    call test_ctmi_falls_back_on_invalid_constants()
     
     ! Print summary
     print *, ""
@@ -49,32 +54,7 @@ program test_growth_temp
 
 contains
 
-    ! Local copy of GROWTH_AT_TEMP for testing (extracted from pelagic_auxillary)
-    subroutine GROWTH_AT_TEMP(TEMP, LIM_TEMP_GROWTH, Lower_TEMP, Upper_TEMP, K_AT_OPT_TEMP, &
-                              KAPPA_UNDER_OPT_TEMP, KAPPA_OVER_OPT_TEMP, nkn)
-        implicit none
-        integer :: nkn
-        double precision, intent(in) :: TEMP(nkn)
-        double precision :: LIM_TEMP_GROWTH(nkn)
-        double precision, intent(in) :: Lower_TEMP, Upper_TEMP
-        double precision, intent(in) :: K_AT_OPT_TEMP
-        double precision, intent(in) :: KAPPA_UNDER_OPT_TEMP
-        double precision, intent(in) :: KAPPA_OVER_OPT_TEMP
-
-        where (TEMP <= Lower_TEMP)
-            LIM_TEMP_GROWTH = 1.0D0 * &
-                exp((-1.0D0) * KAPPA_UNDER_OPT_TEMP * dabs(Lower_TEMP - TEMP))
-        end where
-
-        where ((TEMP > Lower_TEMP) .and. (TEMP < Upper_TEMP))
-            LIM_TEMP_GROWTH = 1.D0
-        end where
-
-        where (TEMP >= Upper_TEMP)
-            LIM_TEMP_GROWTH = 1.0D0 * &
-                exp((-1.0D0) * KAPPA_OVER_OPT_TEMP * dabs(Upper_TEMP - TEMP))
-        end where
-    end subroutine GROWTH_AT_TEMP
+    ! GROWTH_AT_TEMP: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     subroutine assert_approx_equal(value, expected, tol, test_name)
         real(kind=DBL_PREC), intent(in) :: value, expected, tol
@@ -373,5 +353,72 @@ contains
             "Higher kappa gives steeper decline (lower LIM)")
         
     end subroutine test_kappa_sensitivity
+
+    ! The production default is the plateau model
+    subroutine test_plateau_is_the_default()
+        double precision :: T(3), L(3)
+
+        print *, "Test: plateau model is the default (USE_CTMI_TEMP = .false.)"
+        if (USE_CTMI_TEMP) then
+            print '(A)', "  FAIL: USE_CTMI_TEMP defaults to .true."
+            failed = failed + 1
+        else
+            print '(A)', "  PASS: USE_CTMI_TEMP defaults to .false."
+            passed = passed + 1
+        end if
+        T = [5.0D0, 15.0D0, 30.0D0]
+        call GROWTH_AT_TEMP(T, L, 10.0D0, 20.0D0, 2.0D0, 0.08D0, 0.05D0, 3)
+        call assert_approx_equal(L(1), exp(-0.08D0 * 5.0D0), 1.0D-12, "cold side: exp(-kappa_under * dT)")
+        call assert_approx_equal(L(2), 1.0D0, 1.0D-12, "inside the plateau: 1")
+        call assert_approx_equal(L(3), exp(-0.05D0 * 10.0D0), 1.0D-12, "warm side: exp(-kappa_over * dT)")
+    end subroutine test_plateau_is_the_default
+
+    ! CTMI-style constants (KAPPA_UNDER = 0, KAPPA_OVER = T_max) read by the plateau
+    ! model: no cold limitation at all and a collapse just above the plateau. This is
+    ! the mismatch the Standard constants file carried until 2026-11; the routine
+    ! cannot detect it, so the test pins what it does (the constants validator and
+    ! tests/python/test_audit_contracts.py guard the files).
+    subroutine test_ctmi_constants_under_plateau()
+        double precision :: T(2), L(2)
+
+        print *, "Test: CTMI-style constants under the plateau model"
+        T = [0.0D0, 27.0D0]
+        call GROWTH_AT_TEMP(T, L, 15.0D0, 26.0D0, 2.4D0, 0.0D0, 38.0D0, 2)
+        call assert_approx_equal(L(1), 1.0D0, 1.0D-12, "kappa_under = 0: no cold limitation at 0 degC")
+        call assert_less_than(L(2), 1.0D-15, "kappa_over = 38: growth gone 1 degC above the plateau")
+    end subroutine test_ctmi_constants_under_plateau
+
+    ! CTMI (Rosso et al. 1993): 0 at T_min and T_max, 1 at T_opt
+    subroutine test_ctmi_model()
+        double precision :: T(5), L(5)
+
+        print *, "Test: CTMI model (USE_CTMI_TEMP = .true.)"
+        USE_CTMI_TEMP = .true.
+        T = [1.0D0, 12.0D0, 24.0D0, 30.0D0, 35.0D0]
+        ! Lower_TEMP = T_min = 1, Upper_TEMP = T_opt = 24, KAPPA_OVER = T_max = 35
+        call GROWTH_AT_TEMP(T, L, 1.0D0, 24.0D0, 3.7D0, 0.0D0, 35.0D0, 5)
+        USE_CTMI_TEMP = .false.
+        call assert_approx_equal(L(1), 0.0D0, 1.0D-12, "0 at T_min")
+        call assert_approx_equal(L(3), 1.0D0, 1.0D-12, "1 at T_opt")
+        call assert_approx_equal(L(5), 0.0D0, 1.0D-12, "0 at T_max")
+        call assert_in_range(L(2), 1.0D-3, 0.999D0, "between T_min and T_opt: in (0, 1)")
+        call assert_in_range(L(4), 1.0D-3, 0.999D0, "between T_opt and T_max: in (0, 1)")
+        call assert_less_than(L(2), L(3), "rises towards T_opt")
+        call assert_less_than(L(4), L(3), "falls after T_opt")
+    end subroutine test_ctmi_model
+
+    ! CTMI requested with constants CTMI cannot use (here plateau decay rates, so
+    ! "T_max" = 0.05 < T_opt): the routine falls back to the plateau model
+    subroutine test_ctmi_falls_back_on_invalid_constants()
+        double precision :: T(1), L(1), Lp(1)
+
+        print *, "Test: CTMI with invalid constants falls back to plateau"
+        T = [5.0D0]
+        call GROWTH_AT_TEMP(T, Lp, 10.0D0, 20.0D0, 2.0D0, 0.08D0, 0.05D0, 1)
+        USE_CTMI_TEMP = .true.
+        call GROWTH_AT_TEMP(T, L, 10.0D0, 20.0D0, 2.0D0, 0.08D0, 0.05D0, 1)
+        USE_CTMI_TEMP = .false.
+        call assert_approx_equal(L(1), Lp(1), 1.0D-15, "same value as the plateau model")
+    end subroutine test_ctmi_falls_back_on_invalid_constants
 
 end program test_growth_temp

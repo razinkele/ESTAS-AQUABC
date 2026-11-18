@@ -87,49 +87,9 @@ contains
         end if
     end subroutine assert_approx_equal
 
-    !------------------------------------------------------------------
-    ! Local copy of UNIONIZED_AMMONIA subroutine
-    !------------------------------------------------------------------
-    subroutine UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP, nkn)
-        implicit none
-        integer, intent(in) :: nkn
-        double precision, intent(out) :: NH3N(nkn)
-        double precision, intent(in) :: NH4N(nkn)
-        double precision, intent(in) :: pH(nkn)
-        double precision, intent(in) :: TEMP(nkn)
-        
-        double precision :: FRAC_NH3(nkn)
-        double precision :: pKH(nkn)
-        double precision :: T_KELVIN(nkn)
-        
-        T_KELVIN = TEMP + 2.7316D2
-        pKH      = 9.018D-2 + (2.72992D3 / T_KELVIN)
-        FRAC_NH3 = 1.0D0 / (1.0D0 + (1.0D1 ** (pKH - pH)))
-        NH3N     = FRAC_NH3 * NH4N
-    end subroutine UNIONIZED_AMMONIA
+    ! UNIONIZED_AMMONIA: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
     
-    !------------------------------------------------------------------
-    ! Local copy of AMMONIA_VOLATILIZATION subroutine
-    !------------------------------------------------------------------
-    subroutine AMMONIA_VOLATILIZATION(AMMONIA_VOLATIL_RATE, NH4N, pH, TEMP, KA, nkn)
-        implicit none
-        integer, intent(in) :: nkn
-        double precision, intent(out) :: AMMONIA_VOLATIL_RATE(nkn)
-        double precision, intent(in) :: NH4N(nkn)
-        double precision, intent(in) :: pH(nkn)
-        double precision, intent(in) :: TEMP(nkn)
-        double precision, intent(in) :: KA(nkn)
-        
-        double precision :: NH3N(nkn)
-        double precision :: NH3S
-        
-        NH3S = 0.0D0  ! Assuming zero partial pressure of NH3 in atmosphere
-        call UNIONIZED_AMMONIA(NH3N, NH4N, pH, TEMP, nkn)
-        
-        ! 1.4D1/1.70D1 : Ratio of NH3N:NH3
-        ! 3.2D1/1.7D1  : Ratio of molecular weight of oxygen to ammonia
-        AMMONIA_VOLATIL_RATE = KA * (NH3N - (NH3S * (1.4D1/1.70D1))) * ((3.2D1/1.7D1)**2.5D-1)
-    end subroutine AMMONIA_VOLATILIZATION
+    ! AMMONIA_VOLATILIZATION: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     !------------------------------------------------------------------
     ! Test: Basic unionized ammonia calculation

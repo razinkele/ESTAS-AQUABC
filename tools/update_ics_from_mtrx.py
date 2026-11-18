@@ -8,6 +8,7 @@ Critically fixes ZOO_N and ZOO_P to stoichiometric values since
 the R10 MTRX has ZOO_N=ZOO_P=0 (collapsed from boundary bug).
 """
 from pathlib import Path
+
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -63,9 +64,9 @@ def write_ic(filepath: Path, values: np.ndarray, set_name: str, aki_depth: float
     """Write an initial conditions file."""
     lines = []
     lines.append(f"# PELAGIC INITIAL CONCENTRATION DATA SET: {set_name}")
-    lines.append(f"# Updated from 3560-day (10-repeat) simulation R10 final state")
-    lines.append(f"# ZOO_N/P set stoichiometrically: ZOO_N=ZOO_C*0.22, ZOO_P=ZOO_C*0.024")
-    lines.append(f"#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION")
+    lines.append("# Updated from 3560-day (10-repeat) simulation R10 final state")
+    lines.append("# ZOO_N/P set stoichiometrically: ZOO_N=ZOO_C*0.22, ZOO_P=ZOO_C*0.024")
+    lines.append("#     PELAGIC STATE VAR. NO       PELAGIC CONCENTRATION")
 
     for i, (val, comment) in enumerate(zip(values, VAR_COMMENTS)):
         var_no = i + 1
@@ -103,7 +104,7 @@ def main():
         flag = " *FIXED*" if name in ("ZOO_N", "ZOO_P") else ""
         print(f"  {i+1:2d}. {name:25s} = {val:.6f}{flag}")
 
-    print(f"\nMud-box average ICs (from boxes 14, 17, 25):")
+    print("\nMud-box average ICs (from boxes 14, 17, 25):")
     for i, (name, val) in enumerate(zip(VAR_NAMES, mud_avg)):
         flag = " *FIXED*" if name in ("ZOO_N", "ZOO_P") else ""
         print(f"  {i+1:2d}. {name:25s} = {val:.6f}{flag}")
@@ -113,8 +114,8 @@ def main():
     write_ic(INPUTS / "INIT_CONC_1.txt", mud_avg, "Mud (from R10 MTRX, boxes 14,17,25)")
     write_ic(INPUTS / "INIT_CONC_2.txt", sand_avg, "Sand (from R10 MTRX, boxes 5,6,8,9)")
 
-    print(f"\nWritten: INPUTS/INIT_CONC_1.txt (Mud)")
-    print(f"Written: INPUTS/INIT_CONC_2.txt (Sand)")
+    print("\nWritten: INPUTS/INIT_CONC_1.txt (Mud)")
+    print("Written: INPUTS/INIT_CONC_2.txt (Sand)")
 
 
 if __name__ == "__main__":

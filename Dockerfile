@@ -16,10 +16,11 @@
 FROM ubuntu:24.04
 
 # Pinned toolchain: gfortran-13 (the Ubuntu 24.04 default) + make + binutils (ar) + coreutils (ln),
-# and python3 + numpy — numpy is the only non-stdlib dependency of tools/validate_cl29_vs_epa.py.
+# and python3 + numpy + pandas + matplotlib — the non-stdlib imports of tools/validate_cl29_vs_epa.py
+# (matplotlib for the comparison plots, which the command above writes unless --no-plots is given).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      gfortran-13 make binutils coreutils python3 python3-numpy ca-certificates \
+      gfortran-13 make binutils coreutils python3 python3-numpy python3-pandas python3-matplotlib ca-certificates \
  && ln -sf /usr/bin/gfortran-13 /usr/local/bin/gfortran \
  && rm -rf /var/lib/apt/lists/*
 
@@ -38,6 +39,8 @@ RUN gfortran --version | head -1 \
  && python3 tests/regression/compare_0D.py \
       SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/OUTPUT.csv \
       tests/regression/pelagic_0D_golden.csv --rtol 1e-6 --atol 1e-9 \
+ && python3 tools/validate_cl29_vs_epa.py --help > /dev/null \
+ && python3 -c "import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot" \
  && chmod +x docker/entrypoint.sh
 
 ENTRYPOINT ["/app/docker/entrypoint.sh"]

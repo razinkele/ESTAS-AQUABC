@@ -1,6 +1,12 @@
 ! Shared test defaults module
 ! Provides subroutines that populate derived types with realistic parameter
 ! values from DEFAULT_PELAGIC_MODEL_CONSTANTS for use in kinetics unit tests.
+!
+! The temperature constants are for the PLATEAU model, the default of the production
+! GROWTH_AT_TEMP (USE_CTMI_TEMP = .false.): *_OPT_TEMP_LR/UR are the plateau edges
+! and KAPPA_*_UNDER/OVER_OPT_TEMP are decay rates per degC (the Standard
+! INPUTS/WCONST_04.txt values). Until 2026-11 they were CTMI-style (KAPPA_UNDER = 0,
+! KAPPA_OVER = T_max in degC) and the tests linked a CTMI-only copy of the routine.
 
 module test_defaults
     use AQUABC_II_GLOBAL
@@ -15,8 +21,8 @@ contains
         p%DIA_OPT_TEMP_LR          = 1.0D0
         p%DIA_OPT_TEMP_UR          = 24.0D0
         p%EFF_DIA_GROWTH           = 0.95D0
-        p%KAPPA_DIA_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_DIA_OVER_OPT_TEMP  = 35.0D0
+        p%KAPPA_DIA_UNDER_OPT_TEMP = 0.04D0
+        p%KAPPA_DIA_OVER_OPT_TEMP  = 0.07D0
         p%KR_DIA_20                = 0.05D0
         p%THETA_KR_DIA             = 1.04D0
         p%KD_DIA_20                = 0.12D0
@@ -44,8 +50,8 @@ contains
         p%CYN_OPT_TEMP_LR          = 15.0D0
         p%CYN_OPT_TEMP_UR          = 26.0D0
         p%EFF_CYN_GROWTH           = 0.95D0
-        p%KAPPA_CYN_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_CYN_OVER_OPT_TEMP  = 38.0D0
+        p%KAPPA_CYN_UNDER_OPT_TEMP = 0.08D0
+        p%KAPPA_CYN_OVER_OPT_TEMP  = 0.05D0
         p%KR_CYN_20                = 0.06D0
         p%THETA_KR_CYN             = 1.04D0
         p%KD_CYN_20                = 0.125D0
@@ -72,8 +78,8 @@ contains
         p%ZOO_OPT_TEMP_LR          = 10.0D0
         p%ZOO_OPT_TEMP_UR          = 25.0D0
         p%EFF_ZOO_GROWTH           = 0.80D0
-        p%KAPPA_ZOO_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_ZOO_OVER_OPT_TEMP  = 35.0D0
+        p%KAPPA_ZOO_UNDER_OPT_TEMP = 0.04D0
+        p%KAPPA_ZOO_OVER_OPT_TEMP  = 0.01D0
         p%GRAT_ZOO_DIA             = 1.0D0
         p%GRAT_ZOO_CYN             = 1.0D0
         p%GRAT_ZOO_OPA             = 1.0D0
@@ -162,8 +168,8 @@ contains
         p%FIX_CYN_OPT_TEMP_LR          = 18.0D0
         p%FIX_CYN_OPT_TEMP_UR          = 26.0D0
         p%EFF_FIX_CYN_GROWTH           = 0.95D0
-        p%KAPPA_FIX_CYN_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_FIX_CYN_OVER_OPT_TEMP  = 38.0D0
+        p%KAPPA_FIX_CYN_UNDER_OPT_TEMP = 0.075D0
+        p%KAPPA_FIX_CYN_OVER_OPT_TEMP  = 0.05D0
         p%KR_FIX_CYN_20                = 0.06D0
         p%THETA_KR_FIX_CYN             = 1.04D0
         p%KD_FIX_CYN_20                = 0.10D0
@@ -192,8 +198,8 @@ contains
         p%OPA_OPT_TEMP_LR          = 9.0D0
         p%OPA_OPT_TEMP_UR          = 20.0D0
         p%EFF_OPA_GROWTH           = 0.95D0
-        p%KAPPA_OPA_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_OPA_OVER_OPT_TEMP  = 33.0D0
+        p%KAPPA_OPA_UNDER_OPT_TEMP = 0.05D0
+        p%KAPPA_OPA_OVER_OPT_TEMP  = 0.1D0
         p%KR_OPA_20                = 0.06D0
         p%THETA_KR_OPA             = 1.02D0
         p%KD_OPA_20                = 0.11D0
@@ -220,8 +226,8 @@ contains
         p%NOST_VEG_HET_OPT_TEMP_LR          = 16.0D0
         p%NOST_VEG_HET_OPT_TEMP_UR          = 26.0D0
         p%EFF_NOST_VEG_HET_GROWTH           = 0.95D0
-        p%KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP = 0.0D0
-        p%KAPPA_NOST_VEG_HET_OVER_OPT_TEMP  = 38.0D0
+        p%KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP = 0.08D0
+        p%KAPPA_NOST_VEG_HET_OVER_OPT_TEMP  = 0.05D0
         p%KR_NOST_VEG_HET_20                = 0.06D0
         p%THETA_KR_NOST_VEG_HET             = 1.04D0
         p%KD_NOST_VEG_HET_20                = 0.040D0

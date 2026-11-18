@@ -386,7 +386,7 @@ test-python:
 # Run Python linter
 lint:
 	@echo "Running ruff lint..."
-	$(PYTHON) -m ruff check tests/python/ shiny_app/
+	$(PYTHON) -m ruff check tests/python/ shiny_app/ tools/ pest/
 
 # OpenMP performance benchmark (TODO 4.1 — see docs/OPENMP_PERFORMANCE.md)
 benchmark-openmp:

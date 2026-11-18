@@ -779,10 +779,9 @@ contains
 
     ! Case (a): dead-water gate -- germination stays zero when the growth-viability
     ! limiter is at/under EPS_GERM_TEMP_LIM, even though DIN is low and TEMP is well
-    ! above T_GERM_AKI_STAGE. This test link's GROWTH_AT_TEMP stub (test_pelagic_
-    ! aux_subset.f90) is CTMI-only (T_min=16, T_opt=26, T_max=KAPPA_OVER=38); TEMP=
-    ! 37.9 sits just under the thermal ceiling T_max, driving LIM_KG_NOST_VEG_HET_TEMP
-    ! to ~0.017 (production's plateau model gives an even smaller value at this TEMP).
+    ! above T_GERM_AKI_STAGE. Run with the production CTMI model (T_min=16, T_opt=30,
+    ! T_max=38): TEMP=37.9 sits just under the thermal ceiling T_max, driving
+    ! LIM_KG_NOST_VEG_HET_TEMP to ~0.027.
     subroutine test_stage_dead_water_gate()
         integer, parameter :: nkn = 1
         type(t_nost_params) :: params
@@ -803,8 +802,14 @@ contains
         print *, "Test: stage (a) -- dead-water gate blocks germination"
 
         call set_default_nost_params(params)
+        ! The gate is exercised with the CTMI model (what CL29 runs): cardinal temperatures
+        ! T_min = 16, T_opt = 30, T_max = 38 (CTMI-valid: 2*T_opt > T_min + T_max).
+        params%NOST_VEG_HET_OPT_TEMP_LR         = 16.0D0
+        params%NOST_VEG_HET_OPT_TEMP_UR         = 30.0D0
+        params%KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = 38.0D0
+        USE_CTMI_TEMP = .true.
         call SET_NOST_STAGING_PARAMS(12.0D0, 120.0D0, 0.05D0, 1.0D-3, 0.5D0)
-        TEMP = 37.9D0; I_A = 300.0D0; K_E = 1.0D0    ! near CTMI T_max=38 -> LIM_TEMP ~ 0.017
+        TEMP = 37.9D0; I_A = 300.0D0; K_E = 1.0D0    ! near CTMI T_max=38 -> LIM_TEMP ~ 0.027
         DEPTH = 3.0D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
         WINDS = 3.0D0
         call setup_phyto_env(env, TEMP, I_A, K_E, DEPTH, CHLA, FDAY, DO_arr, WINDS)
@@ -823,6 +828,7 @@ contains
         call assert_true(.not. GERM_COND(1), "Dead-water gate: GERM_COND_CHUNK is false")
         call assert_approx_equal(GERM_FLUX(1), 0.0D0, 1.0D-12, "Dead-water gate: GERM_FLUX_CHUNK is zero")
         call assert_approx_equal(R_GERM_BED(1), 0.0D0, 1.0D-12, "Dead-water gate: R_GERM_BED_AKI is zero")
+        USE_CTMI_TEMP = .false.
     end subroutine test_stage_dead_water_gate
 
     ! Case (b): FORM_LATCH_CHUNK=.true. blocks germination even though the
@@ -1095,12 +1101,10 @@ contains
     end subroutine test_stage_aki_derivative_identity
 
     ! 2-node case with opposite germination-gate outcomes: node 1 (TEMP=25) passes
-    ! every gate; node 2 (TEMP=16.1, just above the test stub's CTMI T_min=16) is
-    ! blocked by the dead-water gate from the COLD side (case (a) in test_stage_
-    ! dead_water_gate already covers the hot/T_max side). At TEMP=16.1 the stub's
-    ! CTMI numerator is negative across the whole cold side, so LIM_KG_NOST_VEG_HET_
-    ! TEMP clamps to exactly 0.0 (not merely "small") -- well under EPS_GERM_TEMP_
-    ! LIM=0.05. This closes the nkn=1 degeneracy of every other flag=1 where-mask
+    ! every gate; node 2 (TEMP=16.1, just above the CTMI T_min=16) is blocked by the
+    ! dead-water gate from the COLD side (case (a) in test_stage_dead_water_gate
+    ! already covers the hot/T_max side). At TEMP=16.1 the production CTMI gives
+    ! LIM_KG_NOST_VEG_HET_TEMP ~ 2e-4, well under EPS_GERM_TEMP_LIM=0.05. This closes the nkn=1 degeneracy of every other flag=1 where-mask
     ! test: with nkn=1 a scalar-broadcast bug in the where-mask logic would be
     ! indistinguishable from correct per-node masking.
     subroutine test_stage_two_node_opposite_gates()
@@ -1124,9 +1128,15 @@ contains
         print *, "Test: stage -- 2-node opposite germination-gate outcomes"
 
         call set_default_nost_params(params)
+        ! The gate is exercised with the CTMI model (what CL29 runs): cardinal temperatures
+        ! T_min = 16, T_opt = 30, T_max = 38 (CTMI-valid: 2*T_opt > T_min + T_max).
+        params%NOST_VEG_HET_OPT_TEMP_LR         = 16.0D0
+        params%NOST_VEG_HET_OPT_TEMP_UR         = 30.0D0
+        params%KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = 38.0D0
+        USE_CTMI_TEMP = .true.
         call SET_NOST_STAGING_PARAMS(12.0D0, 120.0D0, KR_GERM_BED_TEST, 1.0D-3, 0.5D0)
-        TEMP(1) = 25.0D0    ! node 1: LIM_TEMP ~0.993, well above EPS_GERM_TEMP_LIM
-        TEMP(2) = 16.1D0    ! node 2: cold side, just above T_min=16 -> LIM_TEMP clamps to 0.0
+        TEMP(1) = 25.0D0    ! node 1: LIM_TEMP ~0.74, well above EPS_GERM_TEMP_LIM
+        TEMP(2) = 16.1D0    ! node 2: cold side, just above T_min=16 -> LIM_TEMP ~ 2e-4
         I_A = 300.0D0; K_E = 1.0D0
         DEPTH = 3.0D0; CHLA = 5.0D0; FDAY = 0.5D0; DO_arr = 8.0D0
         WINDS = 3.0D0
@@ -1155,6 +1165,7 @@ contains
                                   "node 1: R_GERM_BED_AKI = GERM_FLUX_CHUNK / DEPTH")
         call assert_approx_equal(R_GERM_BED(2), 0.0D0, 1.0D-12, &
                                   "node 2: R_GERM_BED_AKI stays zero")
+        USE_CTMI_TEMP = .false.
     end subroutine test_stage_two_node_opposite_gates
 
 end program test_nostocales

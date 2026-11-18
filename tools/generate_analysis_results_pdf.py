@@ -7,29 +7,34 @@ Usage:
     python tools/generate_analysis_results_pdf.py [--output-dir OUTPUTS]
 """
 
-import sys, os, argparse
-from pathlib import Path
+import argparse
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from deep_process_rate_analysis import run_analysis
 from aquabc_analysis_utils import (
-    BOX_IDS, BOX_TYPES, KEY_VARS, STATE_VAR_NAMES, NDIAGVAR,
-    SEV_ERROR, SEV_WARNING, SEV_INFO, SEV_OK,
-    DEFAULT_N_TO_C, DEFAULT_P_TO_C, DEFAULT_O2_TO_C, DEFAULT_Si_TO_C,
-    load_process_rates, load_state_vars, get_slot_col,
+    BOX_IDS,
+    SEV_ERROR,
+    SEV_INFO,
+    SEV_WARNING,
 )
+from deep_process_rate_analysis import run_analysis
 
 try:
+    from reportlab.lib.colors import HexColor, white
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.colors import HexColor, black, white
     from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-        PageBreak, KeepTogether,
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
     )
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER
 except ImportError:
     print("ERROR: reportlab required — pip install reportlab")
     sys.exit(1)

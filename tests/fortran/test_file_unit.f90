@@ -82,46 +82,7 @@ contains
         end if
     end subroutine assert_greater_than_int
 
-    !------------------------------------------------------------------
-    ! Local copy of find_unit subroutine
-    !------------------------------------------------------------------
-    subroutine find_unit(iunit)
-        implicit none
-        integer, intent(inout) :: iunit
-        logical :: opened
-        integer, save :: iumax = 1000
-        integer :: iu
-        
-        iu = iunit
-        
-        if (iu <= 0) then
-            iu = 20  ! Set standard unit
-        end if
-        
-        iunit = 0
-        
-        do
-            ! Safeguard units 5 and 6 (stdin/stdout)
-            if (iu == 5) then
-                iu = 7
-            end if
-            
-            if (iu > iumax) then
-                write(6,*) 'no unit available to open file: ', iu
-                return
-            end if
-            
-            inquire(iu, opened=opened)
-            
-            if (.not. opened) then
-                exit
-            end if
-            
-            iu = iu + 1
-        end do
-        
-        iunit = iu
-    end subroutine find_unit
+    ! find_unit: the production routine (CORE_UTILS/FIND_FILE_UNIT.f90) is linked.
 
     !------------------------------------------------------------------
     ! Test: Basic unit allocation

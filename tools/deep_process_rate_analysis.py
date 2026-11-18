@@ -30,24 +30,36 @@ Usage:
     python tools/deep_process_rate_analysis.py [--output-dir OUTPUTS]
 """
 
-import sys
-import os
 import argparse
-import numpy as np
+import sys
 from pathlib import Path
+
+import numpy as np
 
 # Shared utilities
 sys.path.insert(0, str(Path(__file__).parent))
-from process_rate_slot_map import SLOT_MAP, DERIVATIVE_SIGNS
 from aquabc_analysis_utils import (
-    NDIAGVAR, NSTATE, NUM_ALLELOPATHY, NSTATE_TOTAL, NUM_PROCESS_RATES,
-    BOX_IDS, BOX_TYPES, STATE_VAR_NAMES, KEY_VARS,
-    DEFAULT_N_TO_C, DEFAULT_P_TO_C, DEFAULT_O2_TO_C, DEFAULT_Si_TO_C,
-    NON_NEGATIVE_VARS, NONNEG_RATE_SLOTS,
-    SEV_ERROR, SEV_WARNING, SEV_INFO, SEV_OK,
-    get_slot_col, load_process_rates, load_state_vars,
-    compute_kinetic_deriv, compute_numerical_derivative, find_sv_column,
+    BOX_IDS,
+    BOX_TYPES,
+    DEFAULT_N_TO_C,
+    DEFAULT_O2_TO_C,
+    DEFAULT_P_TO_C,
+    KEY_VARS,
+    NDIAGVAR,
+    NON_NEGATIVE_VARS,
+    NONNEG_RATE_SLOTS,
+    SEV_ERROR,
+    SEV_INFO,
+    SEV_OK,
+    SEV_WARNING,
+    DEFAULT_Si_TO_C,
+    compute_kinetic_deriv,
+    find_sv_column,
+    get_slot_col,
+    load_process_rates,
+    load_state_vars,
 )
+from process_rate_slot_map import DERIVATIVE_SIGNS, SLOT_MAP
 
 
 # ═════════════════════════════════════════════════════════════════════════════

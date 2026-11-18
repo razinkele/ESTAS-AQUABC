@@ -757,7 +757,7 @@ def print_slot_map():
                 marker = ' AUX' if is_aux else sign_str
                 print(f"    slot {slot:2d}{marker}:  {desc}")
         else:
-            print(f"    (no process rate slots)")
+            print("    (no process rate slots)")
         print(f"  DERIVATIVE: {info['derivative_formula']}")
         if info['conditions'] and info['conditions'] != 'None':
             print(f"  CONDITIONS: {info['conditions']}")

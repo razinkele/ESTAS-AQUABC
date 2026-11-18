@@ -84,23 +84,7 @@ contains
         end if
     end subroutine assert_approx_equal
 
-    !------------------------------------------------------------------
-    ! Local copy of light_kd subroutine
-    ! Derived from measured kd in Curonian lagoon
-    !------------------------------------------------------------------
-    subroutine light_kd(kdb, kd, chla, nkn)
-        implicit none
-        integer, intent(in) :: nkn
-        double precision, intent(in) :: kdb(nkn)    ! free of chla extinction
-        double precision, intent(out) :: kd(nkn)    ! total extinction
-        double precision, intent(in) :: chla(nkn)
-        
-        where(chla <= 50.0D0)
-            kd = kdb + 0.4D0 + 0.02D0*chla
-        elsewhere(chla >= 50.0D0)
-            kd = kdb + 1.0D0 + 0.008D0*chla
-        end where
-    end subroutine light_kd
+    ! light_kd: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     !------------------------------------------------------------------
     ! Test: Basic light extinction calculation
@@ -267,59 +251,7 @@ contains
             "Reasonable attenuation at 1m depth")
     end subroutine test_light_attenuation
 
-    !------------------------------------------------------------------
-    ! Local copy of CUR_SMITH with shallow depth guard (stability fix)
-    !------------------------------------------------------------------
-    subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
-        implicit none
-        
-        double precision, intent(in) :: Ia       ! Light intensity
-        double precision, intent(in) :: TCHLA    ! Total chlorophyll
-        double precision, intent(in) :: CCHLXI   ! C:Chla ratio input
-        double precision, intent(in) :: GITMAX   ! Max growth rate
-        double precision, intent(in) :: H        ! Depth
-        double precision, intent(in) :: ke       ! Background extinction
-        double precision, intent(out) :: LLIGHT  ! Light limitation factor
-        double precision, intent(out) :: CCHLX   ! C:Chla ratio output
-        
-        double precision :: XKC, PHIMX, FDAY, ITOT, CCHL1, KESHD, SKE
-        double precision :: TEMP1, TEMP2, TEMP3, RLIGHT, IAV, IAVSG
-        
-        XKC   = 0.016D0
-        PHIMX = 720.0D0
-        FDAY  = 1.0D0
-        ITOT  = Ia
-        CCHL1 = CCHLXI
-        KESHD = XKC * TCHLA
-        SKE   = ke + KESHD
-        TEMP1 = SKE * H
-        
-        if (GITMAX .lt. 1D-20 .or. CCHL1 .lt. 1D-20) then
-            LLIGHT = 0.0D0
-            CCHLX = 15.0D0
-            return
-        end if
-        
-        ! Guard against division by zero when TEMP1 is very small
-        ! This can happen at very shallow depths or with zero extinction
-        if (TEMP1 .lt. 1.0D-10) then
-            LLIGHT = 1.0D0  ! Full light at surface
-            CCHLX = 15.0D0  ! Minimum C:Chla ratio
-            return
-        end if
-        
-        TEMP2 = 0.083D0 * PHIMX * XKC / (GITMAX * CCHL1 * 2.718D0)
-        TEMP3 = EXP(-TEMP1)
-        
-        RLIGHT = 2.7183D0 / TEMP1 * (EXP(-TEMP2 * ITOT * TEMP3) - EXP(-TEMP2 * ITOT))
-        LLIGHT = RLIGHT
-        
-        IAV = 0.9D0 * ITOT / FDAY
-        IAVSG = IAV * (1.0D0 - TEMP3) / TEMP1
-        CCHLX = 0.3D0 * 0.083D0 * PHIMX * XKC * IAVSG / (GITMAX * 2.718D0)
-        
-        if (CCHLX .lt. 15.0D0) CCHLX = 15.0D0
-    end subroutine CUR_SMITH
+    ! CUR_SMITH: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     !------------------------------------------------------------------
     ! Test: CUR_SMITH at very shallow depth (stability fix)

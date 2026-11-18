@@ -9,32 +9,31 @@ Usage:
     python tools/generate_deep_pr_pdf.py [--output-dir OUTPUTS]
 """
 
-import sys
-import os
 import argparse
-import numpy as np
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
+
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from process_rate_slot_map import SLOT_MAP, DERIVATIVE_SIGNS
-from deep_process_rate_analysis import run_analysis
 from aquabc_analysis_utils import (
-    BOX_IDS, BOX_TYPES, KEY_VARS, NDIAGVAR, STATE_VAR_NAMES,
-    SEV_ERROR, SEV_WARNING, SEV_INFO, SEV_OK,
-    load_process_rates, load_state_vars, get_slot_col,
+    BOX_IDS,
+    BOX_TYPES,
+    KEY_VARS,
+    SEV_INFO,
+    SEV_OK,
+    SEV_WARNING,
 )
+from deep_process_rate_analysis import run_analysis
 
 try:
+    from reportlab.lib.colors import HexColor, white
     from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm, cm
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.colors import HexColor, black, white
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-        PageBreak, KeepTogether
-    )
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 except ImportError:
     print("ERROR: reportlab is required. Install with: pip install reportlab")
     sys.exit(1)

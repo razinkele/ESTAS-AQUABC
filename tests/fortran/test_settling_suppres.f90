@@ -91,29 +91,7 @@ contains
         calc_settl_vel = -(0.0061D0 * chla_val) + 1.0383D0
     end function calc_settl_vel
 
-    !------------------------------------------------------------------
-    ! Local copy of settling_suppres_factor subroutine
-    !------------------------------------------------------------------
-    subroutine settling_suppres_factor(chla, factor)
-        implicit none
-        double precision, intent(in) :: chla
-        double precision, intent(out) :: factor
-        double precision :: chlamin, chlamax, settl_max
-        
-        ! Observed interval endpoints for chla impacting settling velocity
-        chlamin = 44.0D0
-        chlamax = 140.0D0
-        
-        settl_max = calc_settl_vel(chlamin)
-        
-        if (chla < chlamin) then
-            factor = 1.0D0
-        else if (chla >= chlamin .and. chla <= chlamax) then
-            factor = calc_settl_vel(chla) / settl_max
-        else
-            factor = calc_settl_vel(chlamax) / settl_max
-        end if
-    end subroutine settling_suppres_factor
+    ! settling_suppres_factor: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     !------------------------------------------------------------------
     ! Test: Low chlorophyll (< 44 µg/L) gives factor = 1.0

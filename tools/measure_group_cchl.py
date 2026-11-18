@@ -13,8 +13,9 @@ with the model's group carbon.
 """
 import json
 import sys
-import numpy as np
 from collections import defaultdict
+
+import numpy as np
 from scipy.optimize import nnls
 
 NDJSON = "/home/razinka/curonian/DATA/JTD/monitoringasjsonl"

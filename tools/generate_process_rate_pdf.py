@@ -10,7 +10,6 @@ Produces a comprehensive PDF documenting:
 
 import json
 import os
-import sys
 from pathlib import Path
 
 from fpdf import FPDF
