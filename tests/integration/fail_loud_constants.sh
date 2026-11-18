@@ -10,12 +10,15 @@
 set -uo pipefail
 cd "$(dirname "$0")/../.." || exit 1
 BIN="$PWD/ESTAS_II"
+# The strict cases must not inherit leniency from the caller's environment.
+unset AQUABC_LENIENT_CONSTANTS
 [ -x "$BIN" ] || { echo "fail_loud_constants: ESTAS_II not built"; exit 1; }
 fail=0
 
 # $1 desc  $2 awk-doctor-program  $3 extra-env  $4 mode(FAIL|LENIENT)  $5 stderr-token
 run_case() {
-    local d; d=$(mktemp -d)
+    local d; d=$(mktemp -d) || { echo "FAIL [$1]  (mktemp failed)"; fail=1; return; }
+    [ -n "$d" ] && [ -d "$d" ] || { echo "FAIL [$1]  (no temp dir)"; fail=1; return; }
     cp INPUT.txt "$d/"; cp -r INPUTS "$d/INPUTS"
     awk "$2" INPUTS/WCONST_04.txt > "$d/INPUTS/WCONST_04.txt"
     local rc
@@ -43,40 +46,58 @@ run_case "out-of-range index -> abort"  '{ if ($1==57) $1=9999; print }'      ""
 run_case "duplicate index -> abort"     'NR==1 { print "57 DUP_57 0.0" } { print }'  ""                     FAIL    'duplicate'
 run_case "lenient: warn, no abort"      '$1 != 57'                            "AQUABC_LENIENT_CONSTANTS=1"   LENIENT 'MISSING'
 
-# Per-box constants: the model applies box 1's constants to every box, so a box that names a
-# different constants file must be refused, not silently ignored.
-# $1 desc  $2 extra-env  $3 mode(FAIL|LENIENT)
+# Per-box constants: the model applies box 1's constants to every box, so a box whose constants
+# differ must be refused, not silently ignored. The fixture gives box 2 a file that differs from
+# box 1's in constant 1 (K_A); the awk program in $2 rewrites the constants table of
+# PELAGIC_INPUTS.txt (rows `box-number file-name`); it runs inside an awk action, so use `if`.
+# $1 desc  $2 awk-doctor for the table rows  $3 extra-env  $4 mode(FAIL|LENIENT)  $5 stderr regex
 run_box_case() {
-    local d; d=$(mktemp -d)
+    local d; d=$(mktemp -d) || { echo "FAIL [$1]  (mktemp failed)"; fail=1; return; }
+    [ -n "$d" ] && [ -d "$d" ] || { echo "FAIL [$1]  (no temp dir)"; fail=1; return; }
     cp INPUT.txt "$d/"; cp -r INPUTS "$d/INPUTS"
+    mkdir -p "$d/OUTPUTS"          # INPUT.txt writes there; the lenient case runs past the reader
     awk '$2 == "K_A" { $3 = "-2.0" } { print }' INPUTS/WCONST_04.txt > "$d/INPUTS/WCONST_BOX2.txt"
     awk '/PELAGIC MODEL CONSTANTS FILE NAME/ { sec = 1; print; next }
-         sec && $1 == 2 && $2 == "WCONST_04.txt" { print "                   2                         WCONST_BOX2.txt"; sec = 0; next }
+         /^#/ { sec = 0 }
+         sec { '"$2"' }
          { print }' INPUTS/PELAGIC_INPUTS.txt > "$d/INPUTS/PELAGIC_INPUTS.txt"
-    grep -q 'WCONST_BOX2.txt' "$d/INPUTS/PELAGIC_INPUTS.txt" || { echo "FAIL [$1]  (could not doctor PELAGIC_INPUTS.txt)"; fail=1; rm -rf "$d"; return; }
+    if [ ! -s "$d/INPUTS/PELAGIC_INPUTS.txt" ] || cmp -s INPUTS/PELAGIC_INPUTS.txt "$d/INPUTS/PELAGIC_INPUTS.txt"; then
+        echo "FAIL [$1]  (could not doctor PELAGIC_INPUTS.txt)"; fail=1; rm -rf "$d"; return
+    fi
     local rc
-    ( cd "$d" && env $2 ESTAS_HOLD_VOLUME=1 timeout 90 "$BIN" INPUT.txt ) >/dev/null 2>"$d/err.log"
+    ( cd "$d" && env $3 ESTAS_HOLD_VOLUME=1 timeout 90 "$BIN" INPUT.txt ) >"$d/out.log" 2>"$d/err.log"
     rc=$?
-    if [ "$3" = FAIL ]; then
-        if [ "$rc" -ne 0 ] && grep -q 'differ from box 1' "$d/err.log" \
-             && grep -q 'per-box model constants are not supported' "$d/err.log"; then
-            echo "PASS [$1]  (exit=$rc, stderr names the box)"
+    if [ "$4" = FAIL ]; then
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ] && grep -Eq "$5" "$d/err.log"; then
+            echo "PASS [$1]  (exit=$rc, stderr matches)"
         else
-            echo "FAIL [$1]  (exit=$rc, expected nonzero + per-box message)"; sed 's/^/    /' "$d/err.log"; fail=1
+            echo "FAIL [$1]  (exit=$rc, expected an abort + stderr /$5/)"; sed 's/^/    /' "$d/err.log"; fail=1
         fi
-    else
-        if grep -q 'differ from box 1' "$d/err.log" && grep -q 'WARNING per-box constants ignored' "$d/err.log" \
-             && ! grep -q 'per-box model constants are not supported' "$d/err.log"; then
-            echo "PASS [$1]  (warned, did not abort on the per-box check)"
+    else   # LENIENT: warn, then actually run (time stepping starts; 124 = still running at the timeout)
+        if { [ "$rc" -eq 0 ] || [ "$rc" -eq 124 ]; } && grep -Eq "$5" "$d/err.log" \
+             && grep -q 'WARNING per-box constants ignored' "$d/err.log" && grep -q 'TIME :' "$d/out.log"; then
+            echo "PASS [$1]  (exit=$rc, warned and the run started stepping)"
         else
-            echo "FAIL [$1]  (expected a warning + no per-box error stop)"; sed 's/^/    /' "$d/err.log"; fail=1
+            echo "FAIL [$1]  (exit=$rc, expected a warning + a running model)"; sed 's/^/    /' "$d/err.log"; fail=1
         fi
     fi
     rm -rf "$d"
 }
 
-run_box_case "per-box constants -> abort"          ""                            FAIL
-run_box_case "per-box constants, lenient -> warn"  "AQUABC_LENIENT_CONSTANTS=1"   LENIENT
+BOX2='if ($1 == 2) { print "                   2                         WCONST_BOX2.txt"; next }'
+# rows 1 and 2 swapped: the differing file still belongs to the box the row NAMES (2)
+SWAP='if ($1 == 1) { print "                   2                         WCONST_BOX2.txt"; next }
+      if ($1 == 2) { print "                   1                           WCONST_04.txt"; next }'
+DUP='if ($1 == 2) { print "                   3                           WCONST_04.txt"; next }'
+RANGE='if ($1 == 2) { print "                 999                           WCONST_04.txt"; next }'
+DIFFERS='box +2 +has model constants that differ from box 1 \(first at constant # +1 *\)'
+
+run_box_case "per-box constants -> abort"            "$BOX2"  ""                            FAIL    "$DIFFERS"
+run_box_case "rows out of order -> names the box"    "$SWAP"  ""                            FAIL    "$DIFFERS"
+run_box_case "duplicate box number -> abort"         "$DUP"   ""                            FAIL    'names box +3 *, which an earlier row already named'
+run_box_case "box number out of range -> abort"      "$RANGE" ""                            FAIL    'names box +999 *, outside'
+run_box_case "per-box constants, lenient -> warn"    "$BOX2"  "AQUABC_LENIENT_CONSTANTS=1"   LENIENT "$DIFFERS"
+run_box_case "lenient needs exactly 1 -> abort"      "$BOX2"  "AQUABC_LENIENT_CONSTANTS=10"  FAIL    "$DIFFERS"
 
 if [ "$fail" -eq 0 ]; then
     echo "fail_loud_constants: ALL checks passed"

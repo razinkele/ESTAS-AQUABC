@@ -64,7 +64,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
-- **A box with its own constants file is now refused, not silently ignored.** `READ_PELAGIC_BOX_MODEL_INPUTS` reads a
+- **The model-constants table is read by box number, not row position** (`READ_PELAGIC_BOX_MODEL_INPUTS`): each row's
+  constants are stored under the box it names, and a box number out of range or named twice stops the run. Before,
+  rows listed out of order were attached to the wrong boxes without a word. `AQUABC_LENIENT_CONSTANTS` is now read in
+  one place (`UTILS_1::LENIENT_CONSTANTS`) and only an exact `1` counts.
+- **A box whose constants differ from box 1's is now refused by default, not silently ignored.** `READ_PELAGIC_BOX_MODEL_INPUTS` reads a
   constants file for every box, but the kinetics use box 1's set for all of them (`mod_AQUATIC_MODEL.f90`). If any
   box's constants differ from box 1's the run now stops, naming the box and the first differing constant;
   `AQUABC_LENIENT_CONSTANTS=1` downgrades that to a warning. No shipped setup is affected (every box lists the same
@@ -73,8 +77,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the model added `PROCESS_RATES(NOST_VEG_HET_C, 9)` into `PROCESS_RATES(FIX_CYN_C, 9)` as a "total fixation", but
   that slot is `LIM_KG_FIX_CYN_TEMP` (FIX_CYN's own fixation is slot 8). The addition is removed; Nostocales fixation
   stays in its own slot. Diagnostics only: state output is byte-identical (Standard 30 d, CL29 90 d), and in
-  `*_PROCESS_RATES.out` exactly that one column changes. **Process-rate files written before this change carry the
-  contaminated value**, including any FIX_CYN temperature limitation read from them.
+  `*_PROCESS_RATES.out` exactly that one column changes. **Process-rate files written by a build older than #154
+  (`8dba2a0`) from a run with Nostocales on carry the added fixation** in the FIX_CYN temperature-limiter column, and
+  so does any FIX_CYN temperature limitation read from them. Runs with Nostocales off were never affected.
 - **Pelagic DOC mineralisation returned NaN at exactly zero DOC when a half-saturation is zero.** Both shipped
   constant sets carry `K_HS_DOC_MIN_DOXY = 0` (first-order kinetics), so `DOC/(DOC + K)` was 0/0 there, in the inline
   branch (`aquabc_II_pelagic_model.f90`) and in `ORGANIC_CARBON_MINERALIZATION`. The eight DOC terms now go through

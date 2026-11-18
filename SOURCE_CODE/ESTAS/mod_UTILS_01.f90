@@ -4,6 +4,17 @@ module UTILS_1
 
 contains
 
+    ! .true. only when AQUABC_LENIENT_CONSTANTS is set to exactly "1" (surrounding blanks
+    ! allowed). A value too long for the buffer is not "1", so it is never taken for one.
+    logical function LENIENT_CONSTANTS()
+        implicit none
+        character(len = 32) :: env
+        integer :: stat
+
+        call get_environment_variable('AQUABC_LENIENT_CONSTANTS', env, status = stat)
+        LENIENT_CONSTANTS = (stat == 0 .and. trim(adjustl(env)) == '1')
+    end function LENIENT_CONSTANTS
+
     subroutine READ_MODEL_CONSTANTS(MODEL_CONSTANTS, INPUT_NO)
 
         use iso_fortran_env, only: error_unit
@@ -23,7 +34,6 @@ contains
         integer :: n, ios, i, n_bad
         logical, allocatable :: seen(:)
         logical :: lenient
-        character(len = 32) :: env
 
         n = size(MODEL_CONSTANTS)
         allocate(seen(n))
@@ -62,8 +72,7 @@ contains
 
         deallocate(seen)
 
-        call get_environment_variable('AQUABC_LENIENT_CONSTANTS', env)
-        lenient = (trim(adjustl(env)) == '1')
+        lenient = LENIENT_CONSTANTS()
         if (n_bad > 0 .and. .not. lenient) then
             error stop 'READ_MODEL_CONSTANTS: incomplete/invalid constants file (see stderr above)'
         end if
