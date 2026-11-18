@@ -61,6 +61,7 @@ subroutine ORGANIC_CARBON_MINERALIZATION &
     ! This subroutine is almost completely rewritten to be compitable with the redox sequences
     ! ----------------------------------------------------------------------------------------
     use AQUABC_II_GLOBAL
+    use AQUABC_PHYSICAL_CONSTANTS, only: monod_substrate
     use AQUABC_PELAGIC_TYPES, only: t_docmin_params, t_redox_params, &
                                     t_redox_lim, t_redox_state, t_docmin_outputs
     implicit none
@@ -169,32 +170,32 @@ subroutine ORGANIC_CARBON_MINERALIZATION &
 
     R_ABIOTIC_DOC_MIN_DOXY = &
         (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC) * (THETA_K_MIN_DOC_DOXY ** (TEMP - 2.0D1)) * &
-        LIM_DOXY_RED * PH_CORR_DOC_MIN_DOXY * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_DOXY)) * &
+        LIM_DOXY_RED * PH_CORR_DOC_MIN_DOXY * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_DOXY) * &
         DISS_ORG_C
 
     R_ABIOTIC_DOC_MIN_NO3N = &
         K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP - 2.0D1)) * &
-        LIM_NO3N_RED * PH_CORR_DOC_MIN_NO3N * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_NO3N)) * &
+        LIM_NO3N_RED * PH_CORR_DOC_MIN_NO3N * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_NO3N) * &
         DISS_ORG_C
 
     R_ABIOTIC_DOC_MIN_MN_IV = &
         K_MIN_DOC_MN_IV_20  * (THETA_K_MIN_DOC_MN_IV ** (TEMP - 2.0D1)) * &
-        LIM_MN_IV_RED * PH_CORR_DOC_MIN_MN_IV * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_MN_IV)) * &
+        LIM_MN_IV_RED * PH_CORR_DOC_MIN_MN_IV * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_MN_IV) * &
         DISS_ORG_C
 
     R_ABIOTIC_DOC_MIN_FE_III = &
         K_MIN_DOC_FE_III_20  * (THETA_K_MIN_DOC_FE_III ** (TEMP - 2.0D1)) * &
-        LIM_FE_III_RED * PH_CORR_DOC_MIN_FE_III * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_FE_III)) * &
+        LIM_FE_III_RED * PH_CORR_DOC_MIN_FE_III * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_FE_III) * &
         DISS_ORG_C
 
     R_ABIOTIC_DOC_MIN_S_PLUS_6 = &
         K_MIN_DOC_S_PLUS_6_20  * (THETA_K_MIN_DOC_S_PLUS_6 ** (TEMP - 2.0D1)) * &
-        LIM_S_PLUS_6_RED * PH_CORR_DOC_MIN_S_PLUS_6 * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_S_PLUS_6)) * &
+        LIM_S_PLUS_6_RED * PH_CORR_DOC_MIN_S_PLUS_6 * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_S_PLUS_6) * &
         DISS_ORG_C
 
     R_ABIOTIC_DOC_MIN_DOC = &
         (K_MIN_DOC_DOC_20  * (THETA_K_MIN_DOC_DOC ** (TEMP - 2.0D1)) * &
-         LIM_DOC_RED * PH_CORR_DOC_MIN_DOC * (DISS_ORG_C / (DISS_ORG_C + K_HS_DOC_MIN_DOC)) * DISS_ORG_C)
+         LIM_DOC_RED * PH_CORR_DOC_MIN_DOC * monod_substrate(DISS_ORG_C, K_HS_DOC_MIN_DOC) * DISS_ORG_C)
 
     end associate ! docmin_outputs
     end associate ! redox_lim

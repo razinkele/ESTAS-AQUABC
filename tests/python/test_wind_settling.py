@@ -2,6 +2,8 @@
 import importlib.util
 import os
 
+import pytest
+
 _PATH = os.path.join(os.getcwd(), "tools", "eutropy_poc", "eutropy_to_estas.py")
 _SPEC = importlib.util.spec_from_file_location("eutropy_to_estas", _PATH)
 conv = importlib.util.module_from_spec(_SPEC)
@@ -31,7 +33,10 @@ class TestReadWindDaily:
     def test_committed_file_present_and_sized(self):
         wind = conv._read_wind_daily()
         assert wind is not None
-        assert len(wind) == 1827          # 2012-01-01 .. 2016-12-31
+        # 2012-01-01 .. 2022-12-30: the whole EUTROPY forcing record the converter
+        # runs over (tdays 0..4016); 2012-2016 from the hourly point CSV, later
+        # days appended from ERA5 fields at the same grid point.
+        assert len(wind) == 4017
         assert all(w > 0 for w in wind)
 
     def test_absent_file_returns_none(self, tmp_path):
@@ -67,7 +72,7 @@ class TestWriteSettlingVelocityFiles:
         monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", True)
         conv._write_settling_velocity_files(str(tmp_path))
         v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
-        assert len(v1) == 1828                      # 1827 daily + 1 sentinel
+        assert len(v1) == 4018                      # 4017 daily + 1 sentinel
         wind = conv._read_wind_daily()
         expected0 = conv.wind_modulated_settling(
             wind[:1], conv.CL29_SETTLING_W0, conv.CL29_WIND_UHALF)[0]
@@ -97,6 +102,30 @@ class TestWriteSettlingVelocityFiles:
         conv._write_settling_velocity_files(str(tmp_path))
         v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
         assert v1 == [conv.CL29_DIATOM_SETTLING, conv.CL29_DIATOM_SETTLING]
+
+
+class TestSettlingCoversTheRun:
+    """The wind record must cover the run. A shorter one used to be carried on by
+    the day-9999 sentinel, freezing DIA_C settling at the last wind day: the
+    2012-2016 record froze 2012-2022 CL29 runs at 0.039 m/day from 2017."""
+
+    def test_shorter_wind_record_raises(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", True)
+        monkeypatch.setattr(conv, "_read_wind_daily", lambda *a, **k: [5.0] * 1827)
+        with pytest.raises(ValueError, match="covers 1827 days but the run needs 4017"):
+            conv._write_settling_velocity_files(str(tmp_path), n_days=4017)
+
+    def test_series_is_cut_to_the_run(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(conv, "CL29_WIND_RESUSPENSION", True)
+        monkeypatch.setattr(conv, "_read_wind_daily", lambda *a, **k: [5.0] * 10 + [9.0] * 5)
+        conv._write_settling_velocity_files(str(tmp_path), n_days=10)
+        v1 = _read_ts_values(str(tmp_path / "SETTLING_VELOCITY_TS_1.txt"))
+        assert len(v1) == 11                         # 10 days + sentinel
+        assert len(set(v1)) == 1                     # no day from past the run
+
+    def test_committed_wind_covers_the_converter_run(self):
+        tdays, _ = conv.net_day_cols("forcing_temp.csv", conv.NBOX)
+        assert len(conv._read_wind_daily()) >= len(tdays)
 
 
 class TestFaciesStrawman:

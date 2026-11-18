@@ -64,7 +64,7 @@ change the set, bounds, or transform):
 | `K_MIN_DOC_NO3N_20` | NO3 under-prediction (denitrification) | log | 0.1 | 5 |
 | `KDISS_DET_PART_ORG_P_20` | PO4 over-prediction (POP dissolution) | log | 0.1 | 10 |
 | `KHS_DSi_DIA` | Si over-prediction (diatom Si half-saturation) | log | 0.005 | 0.15 |
-| `KG_DIA_OPT_TEMP` | Chl-a / Si (diatom growth) | none | 1 | 6 |
+| `KG_DIA_OPT_TEMP` | Chl-a / Si (diatom growth) | none | 1 | 10 |
 | `KD_DIA_20` | Chl-a over-prediction (diatom mortality) | log | 0.02 | 0.5 |
 
 Re-target by editing `PARAMS` (parameters) and `obs_weights` (per-group weighting) in

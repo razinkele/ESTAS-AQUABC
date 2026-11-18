@@ -19,7 +19,7 @@ ALLELOPATHY_SRC = ../../SOURCE_CODE/ALLELOPATHY
 ALLELOPATHY_LIB = $(ALLELOPATHY_SRC)/ALLELOPATHY_LIBRARY
 
 # Test executables
-TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength
+TEST_PROGS = test_do_saturation test_chla test_para_aqua test_settling test_ph_corr test_ip_soluble test_allelopathy test_iron_ii test_diss_me test_organic_carbon test_growth_temp test_nutrient_prefs test_vector_utils test_ammonia_chem test_light test_settling_suppres test_file_unit test_diatoms test_cyanobacteria test_zooplankton test_redox test_doc_mineralization test_fix_cyn test_opa test_nostocales test_bioturbation test_sed_typemap test_co2sys test_nost_staging test_cyn_droop test_lim_light_daylength test_estas_alerts test_basin_level test_validate_constants
 
 # Source directories for additional modules
 PELAGIC_AUX = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_auxillary.f90
@@ -128,6 +128,7 @@ test_diss_me: test_diss_me.f90 $(DISS_ME_SRCS)
 test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
@@ -184,6 +185,19 @@ test_lim_light_daylength: test_lim_light_daylength.f90 $(TEST_AUX_SUBSET)
 # Compile test_settling_suppres (standalone - includes subroutine copies)
 test_settling_suppres: test_settling_suppres.f90
 	$(FC) $(FFLAGS) -o $@ test_settling_suppres.f90
+
+# Compile test_estas_alerts (ESTAS per-timestep alert rate limiting)
+# Compile test_validate_constants (links the production validator)
+test_validate_constants: test_validate_constants.f90 $(PELAGIC_MODEL_CONSTANTS_SRC)
+	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
+	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
+	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
+	$(FC) $(FFLAGS) -o $@ test_validate_constants.f90 precision_kinds.o mod_AQUABC_II_GLOBAL.o STRING_UTILS.o aquabc_II_pelagic_model_constants.o
+
+ESTAS_ALERTS_SRC = ../../SOURCE_CODE/ESTAS/mod_ESTAS_ALERTS.f90
+test_estas_alerts: test_estas_alerts.f90 $(ESTAS_ALERTS_SRC)
+	$(FC) $(FFLAGS) -o $@ $(ESTAS_ALERTS_SRC) test_estas_alerts.f90
 
 # Compile test_file_unit (standalone - includes subroutine copies)
 test_file_unit: test_file_unit.f90
@@ -339,6 +353,12 @@ test_co2sys: test_co2sys.f90 $(CO2SYS_SRCS)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/VECTOR_MATRIX_UTILS.f90 -o VECTOR_MATRIX_UTILS.o
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/CO2SYS/aquabc_II_co2sys.f90 -o aquabc_II_co2sys.o
 	$(FC) $(FFLAGS) -o $@ test_co2sys.f90 aquabc_II_co2sys.o VECTOR_MATRIX_UTILS.o aquabc_physical_constants.o mod_AQUABC_II_GLOBAL.o precision_kinds.o
+
+# Compile test_basin_level (ESTAS level-from-volume inversion, mod_BASIN)
+BASIN_LEVEL_SRCS = $(PRECISION_KINDS_SRC) $(ESTAS_SRC)/mod_INTERPOLATE.f90 $(ESTAS_SRC)/mod_TIME_SERIES.f90 \
+    $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_svindex.f90 $(ESTAS_SRC)/mod_GLOBAL.f90 $(ESTAS_SRC)/mod_BASIN.f90
+test_basin_level: test_basin_level.f90 $(BASIN_LEVEL_SRCS)
+	$(FC) $(FFLAGS) -o $@ $(BASIN_LEVEL_SRCS) test_basin_level.f90
 
 # Run all tests
 .PHONY: test

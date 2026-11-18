@@ -103,6 +103,22 @@ PARAM_SETS = {
         ("KDISS_DET_PART_ORG_N_20", "log", 0.08,   1.0),
         ("KHS_DIP_DIA",             "log", 0.002,  0.03),
     ],
+    # "light" with the fixer growth knob moved to the guild that carries the fixer biomass.
+    # Since the §31 role swap, Nostocales (NOST_VEG_HET_C) hold the modelled N-fixer carbon;
+    # FIX_CYN is a minor group and its rate was not identifiable (diagnosis §58.6: two runs
+    # of one protocol disagreed twofold). Diagnosis §59: the summer DIN pool is a Nostocales
+    # loop, set by KG_NOST under the fixation switch. Run with NOST_FIX_SWITCH 1 in the
+    # --inputs copy and --group-carbon over >= 1461 days, so the split can be scored.
+    "light_nost": [
+        ("KG_DIA_OPT_TEMP",          "lin", 2.0,   10.0),
+        ("KG_CYN_OPT_TEMP",          "lin", 1.0,    8.0),
+        ("KG_NOST_VEG_HET_OPT_TEMP", "lin", 1.0,    8.0),    # adopted 7.6; §59 probe 2.6
+        ("KG_OPA_OPT_TEMP",          "lin", 1.0,    8.0),
+        ("K_MIN_DOC_NO3N_20",        "log", 0.3,    3.0),
+        ("K_NITR_20",                "log", 0.2,    2.0),
+        ("KDISS_DET_PART_ORG_N_20",  "log", 0.08,   1.0),
+        ("KHS_DIP_DIA",              "log", 0.002,  0.03),
+    ],
     # Path (c) closure set (doc par. 21): the 'light' engine + C:Chl calibrated
     # WITHIN the measured bounds (312 paired determinations: median 53, IQR
     # 36-78; diatom-dominated ~31). Under the honest base with concentrated
@@ -291,6 +307,12 @@ def _x0_from_seed(seed_path):
             for name, tr, lo, hi in CAL_PARAMS]
 
 
+def _run_cfg(paramset):
+    """The run configuration every DE evaluation carries into its worker (see _apply_cfg)."""
+    return {"days": DAYS, "workdir": WORKDIR, "group_carbon": USE_GROUP_CARBON,
+            "phi_vars": list(CAL_PHI_VARS), "paramset": paramset, "src_inputs": M.SRC_INPUTS}
+
+
 def _apply_cfg(cfg):
     """Install the run configuration into module globals (needed in pool workers).
 
@@ -299,9 +321,11 @@ def _apply_cfg(cfg):
     all-PENALTY 'converged' DE: workers saw the default 8-param set with a shorter x →
     instant IndexError). The objective therefore carries its configuration explicitly
     (functools.partial) and installs it per call — correct under fork, forkserver and
-    spawn alike.
+    spawn alike. That includes the --inputs folder (M.SRC_INPUTS): without it every
+    worker silently built its trials from the default INPUTS_CL29 (2026-11-07).
     """
     global DAYS, WORKDIR, USE_GROUP_CARBON, CAL_PHI_VARS, CAL_PARAMS
+    M.SRC_INPUTS = cfg["src_inputs"]
     DAYS, WORKDIR = cfg["days"], cfg["workdir"]
     USE_GROUP_CARBON = cfg["group_carbon"]
     CAL_PHI_VARS = cfg["phi_vars"]
@@ -401,8 +425,7 @@ def main():
         print(f"  gen {gen['n']:>2}: best {', '.join(f'{k}={v:.4g}' for k, v in vals.items())}",
               flush=True)
 
-    cfg = {"days": DAYS, "workdir": WORKDIR, "group_carbon": USE_GROUP_CARBON,
-           "phi_vars": list(CAL_PHI_VARS), "paramset": a.paramset}
+    cfg = _run_cfg(a.paramset)
     x0 = _x0_from_seed(a.seed_result) if a.seed_result else None
     if x0 is not None:
         print("seeding x0 from", a.seed_result, "->",

@@ -8,7 +8,7 @@
   "is_builtin": true,
   "parameters": {},
   "initial_conditions": {
-    "6": 2.0,
+    "4": 2.0,
     "9": 5.0
   },
   "model_options": {

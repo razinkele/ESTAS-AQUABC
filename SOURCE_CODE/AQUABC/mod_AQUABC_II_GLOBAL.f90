@@ -7,6 +7,12 @@ module AQUABC_II_GLOBAL
     ! GROWTH_AT_TEMP reads this; ESTAS sets it from PELAGIC_MODEL_OPTIONS.txt.
     logical :: USE_CTMI_TEMP = .false.
 
+    ! VALIDATE_PELAGIC_MODEL_CONSTANTS normally repairs the problems it finds
+    ! (.false., the 0D/interface path). With .true. it only reports them and
+    ! leaves every constant as read: the ESTAS driver sets this, so that a
+    ! calibrated constants file is never altered behind the user's back.
+    logical :: VALIDATE_CONSTANTS_REPORT_ONLY = .false.
+
     ! FePO4 solubility product (log10 Ksp) used by IP_SOLUBLE_FRACTION for the
     ! water-column iron-phosphate binding. Default -26.4 = crystalline FePO4
     ! (Stumm & Morgan 1996); a larger (less negative) value makes FePO4 more

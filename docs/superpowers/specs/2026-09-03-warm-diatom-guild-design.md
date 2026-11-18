@@ -272,3 +272,234 @@ held or improved, and the guild self-sustaining without taking the fixers' nitro
 missing-organism problem either, leaving §40.1's light wall as a genuine limit of pelagic-growth
 formulations in kd ≈ 3 water — the same shape of answer as §29's akinete negative and §38's
 Droop negative, and publishable as such.
+
+---
+
+## 7. Addendum 2026-11-07: what the corrected boundary and the silica work change
+
+Status unchanged: **design, not approved for build.** This section re-checks §1–§6 against the
+2026-11-06/07 findings (diagnosis §57; ESTAS-AQUABC #127–#130; ESTAS-AQUABC-DATA #1–#3).
+
+**7.1 The baseline the guild was sized on was corrupted.**
+- §2.2's qualifier and the §50 decomposition were measured on the configuration adopted in §26.
+  Its `FORC_TS_1` carried the `build_boundary_phyto.py` factor-row bug (#127): the Baltic
+  boundary applied OPA_C ×0.0014, DISS_Si ×0.0005, ZOO_C ×0.0021 and INORG_C ×0.00008.
+- The adopted configuration is now the corrected boundary with measured Baltic Si, Table-2
+  seasonal river DSi and DIA_Si_TO_C 0.30.
+- Re-measured on it (mg C/L, KM lagoon boxes, model FIX = FIX_CYN + NOST):
+
+| Aug / Sep / Oct / Nov | obs | adopted 2026-11-07 |
+|---|---|---|
+| DIA_C | 0.56 / 0.56 / 0.67 / 0.31 | 0.003 / 0.006 / 0.024 / 0.062 |
+| CYN_C | 2.30 / 1.88 / 1.06 / 0.34 | 0.26 / 0.34 / 0.31 / 0.14 |
+| FIX | 1.61 / 1.98 / 0.81 / 0.46 | 3.63 / 3.67 / 1.79 / 0.07 |
+| OPA_C | 0.88 / 0.52 / 0.38 / 0.24 | 0.008 / 0.012 / 0.015 / 0.010 |
+| total, model/obs | | 0.73 / 0.82 / 0.73 / 0.21 |
+
+- **§2.2's qualifier survives the correction.** August-September total cyanobacteria are right
+  (CYN+FIX 3.89 / 4.01 against observed 3.91 / 3.86) but in the wrong guild: fixers ~2× over,
+  CYN 11-18 %. "Settle the cyanobacterial partitioning before sizing the guild" still holds.
+- §56's allelopathic reading of the partition was also made on the corrupted boundary. Its
+  re-check belongs in that arc, not here.
+
+**7.2 Silica is now evidence for the guild, not a risk (revises §5).**
+- §5 called a second Si consumer a perturbation of "the budget §26 solved via the boundary".
+  §26's Si gain was the bug zeroing Baltic silica (diagnosis §57: −1.0 % of the objective from
+  the phytoplankton climatology, ~−14 % from Baltic Si).
+- On the corrected, silica-adopted configuration the interior Si cycle matches May (0.47 vs
+  0.33) and July (0.62 vs 0.51), but sits **+0.6 to +0.9 mg Si/L above observed in Aug-Oct**
+  (1.05 / 1.28 / 1.60 vs 0.47 / 0.56 / 0.67), the guild's window.
+- The observed summer diatom stock (~0.5 mg C/L) at Si:C 0.30 could remove that several times
+  over.
+- **New gate [f]:** Aug-Oct interior Si bias at least halved, May-July not worse than ±0.15
+  mg Si/L.
+
+**7.3 Constants and tooling.**
+- `DIA2_Si_TO_C`: start at the adopted cold-guild 0.30 (Brzezinski 1985 mean, 0.13 molar). No
+  guild-specific value was found.
+- **Setup generator (§3), the #127 lesson.** ESTAS SCALE / UNIT-CONVERSION rows have no time
+  column: in a data row, field *j* (0-based, time at 0) is variable *j*; in a factor row it is
+  field *j−1*. "Mirror field 5 into the inserted column" therefore means different indices in
+  the two kinds of row. Test it as #127 did: a byte-level check that the factor rows hold the
+  intended values and that nothing else moved.
+- **Validator (§3).** #129 makes the validator read C:Chl from the run's own WCONST (else Chl-a
+  is not scored). DIA2 still needs the `C_TO_CHLA` / `WCONST_CHLA_KEYS` / `PHYTO_C` entries of §3.
+- **Runs.** #130 limits ESTAS alert printing (an unfiltered CL29 run writes ~9 GB). Until it
+  merges, use curonian `shyfem_box/run_estas_filtered.sh`.
+- (4, 17, 26) still passes the CTMI validity gate (2·17 > 30).
+
+---
+
+## 8. Addendum 2026-11-07 (2): falsified as specified — the build/no-build review
+
+**Proposed status (owner to accept or edit):** not approved for build; **falsified as specified
+on 2026-11-07** (gate [a] October 0.053, below the 0.15 NULL). A re-specified guild (warm
+envelope + ~4× nutrient affinity) passes the §8.5 screen marginally: October 0.38 alone, 0.47 with
+the cold guild. Revisit only with a literature-backed nutrient affinity for the warm genera, or
+after the summer-N deficit (§8.4) is fixed, re-screened by §8.5 either way. Diagnosis references:
+§57, §58.
+
+**8.1 The test: the spec's own cardinals on a diatom.** One run of the adopted E4 configuration
+(allelopathy off, corrected boundary, silica adopted), with the diatom CTMI envelope swapped from
+the cold guild (−2, 10, 21) to the warm guild's (4, 17, 26). The inputs differ from E4 in those
+three constants only, plus process-rate output for boxes 7, 14, 17 and 23. The process-rate copy
+of E4 reproduces E4's 29 state outputs byte for byte. This is a **probe, not a candidate**.
+
+- **Proxy validity.** In E4 the cold guild is already absent in Jul-Sep (0.003-0.008 mg C/L), so
+  the swapped diatom met exactly the competitors a DIA2 would meet there: FIX 3.3-3.5 and CYN
+  0.45-0.70 mg C/L. Its winter and Jan-Mar collapse is expected and irrelevant to the question.
+- Diatom carbon, KM lagoon boxes (mg C/L):
+
+| | Jul | Aug | Sep | Oct |
+|---|---|---|---|---|
+| observed | 0.41 | 0.56 | 0.56 | 0.67 |
+| E4, cold envelope | 0.008 | 0.003 | 0.008 | 0.088 |
+| warm envelope (4, 17, 26) | 0.012 | 0.005 | 0.009 | 0.053 |
+| warm envelope + ~4× nutrient affinity (KHS_DIN_DIA 0.0025, KHS_DIP_DIA 0.0021) | 0.130 | 0.057 | 0.072 | **0.381** |
+
+**8.2 Gates.**
+- **[a] October ≥ 0.40 fails as specified, below the NULL line.** The gate is DIA_C + DIA2_C:
+  E4's cold guild (0.088) plus the warm envelope (0.053) is 0.14, under the 0.15 NULL.
+- **[f] Silica fails as specified.** The Aug-Oct interior Si bias is +0.80 in E4 and +0.85 with
+  the warm envelope; it was to be at least halved.
+- **[d] already fails on E4, before any guild.** Autumn/spring is 2.53 against the [1.8, 2.4]
+  band (seasonal r +0.78 passes). A guild adds autumn Chl-a, so it pushes the wrong way unless the
+  fixers fall. §2.2's "settle the partition first" is therefore a gate consequence, not only a
+  preference.
+- [b] and [c] pass on E4 (February 1.14× observed; June-July under 1.5×).
+
+**8.3 Why: once temperature is relieved, nutrients and light bind.** Growth is
+`KG · LIM_TEMP · LIM_LIGHT · min(LIM_DOXY, SU(N, P, Si))`. Jul-Sep factors in the four boxes:
+
+| | TEMP | N | P | LIGHT | growth : losses |
+|---|---|---|---|---|---|
+| E4, cold envelope | 0.32 | 0.38 | 0.16 | 0.21 | 0.73 |
+| warm envelope | **0.82** | 0.38 | 0.16 | 0.16 | 0.82 |
+| warm + ~4× affinity | 0.82 | 0.64 | 0.35 | **0.16** | **1.27** |
+
+- Two single-axis reliefs have now failed. §58.6 relieved the growth rate and the P affinity on the
+  cold envelope (KG_DIA 9.0, KHS_DIP_DIA at its floor): DIA Aug-Oct 0.042. The swap relieved
+  temperature: 0.005-0.012.
+- §39 precedent: autumn DIN was already 4-5× under and a ×10 KDISS_PON probe gave ×1.02, because
+  October light is 0.07. Summer light is 0.16-0.24, so nutrient relief has room to act in summer
+  that it never had in autumn.
+
+**8.4 The summer nutrients, model against measured** (same-day pairs, nine EPA lagoon boxes,
+Jul-Sep 2012-2022, n = 1034, mg/L):
+
+| | observed median / mean | model median / mean |
+|---|---|---|
+| NH4 | 0.028 / 0.038 | 0.007 / 0.009 |
+| NO3 | 0.011 / 0.015 | 0.000 / 0.001 |
+| PO4 | 0.0025 / 0.0048 | 0.0007 / 0.0017 |
+
+- **The DIN deficit is established.** NH4 runs at about a quarter of observed (floor 0.004, so
+  the values are mostly real). NO3 is stripped to zero against a real median of 0.011, though 22 %
+  of the observations sit at a 0.0015 substitute. In April-May the model's NO3 median is instead too
+  high (0.49 vs 0.20), though the means agree (0.55 vs 0.58).
+- **PO4 is untestable.** 63 % of summer observations are the 0.0025 below-detection substitute,
+  and the model's 0.0007 is consistent with "below detection". LIM_P is 0.08 at the model's PO4;
+  if every censored value were at the 0.005 limit it would still be at most 0.37.
+- **Hypothesis, not finding:** the over-predicted fixer bloom (2× observed in Aug-Sep) holds the
+  summer nutrients. The positive TP bias (phosphorus held as particles) fits it. So does the
+  K_NITR / K_MIN_DOC_NO3N double ceiling in both calibrations: the model fits the spring NO3
+  excess by removing nitrogen, then starves the summer. This is what a fixer-dominance /
+  summer-N diagnosis would test.
+
+**8.5 The swap screen.** Eight minutes on the adopted configuration, the spec's exact cardinals,
+gate [a] read straight off the output. Recipe: copy the adopted `INPUTS_CL29`; set
+`DIA_OPT_TEMP_LR` / `DIA_OPT_TEMP_UR` / `KAPPA_DIA_OVER_OPT_TEMP` to 4 / 17 / 26 in
+`WCONST_04.txt`; switch on process-rate output for boxes 7/14/17/23 in
+`PELAGIC_OUTPUT_INFORMATION_FILE.txt`; run E4's master with the folders renamed. Any proposed
+enabling fix should pass it before anyone commits the 32 → 33 state-variable build.
+
+**8.6 The second probe: the guild was mis-specified, not impossible.** The same swap with ~4×
+higher nutrient affinity (KHS_DIN_DIA 0.010 → 0.0025, KHS_DIP_DIA 0.0084 → 0.0021) establishes a
+summer-autumn population. Jul-Sep turns growth-dominated (growth : losses 1.27), and with N and P
+relieved (0.64 / 0.35), light becomes the main summer limit (0.16).
+- **Gate [a] passes as defined:** October 0.381 alone, and 0.47 with E4's cold guild (0.088)
+  added. A real two-guild model would have the guilds competing in October, so treat 0.47 as
+  an upper estimate.
+- **Jul-Sep:** up 10× (0.06-0.13), but still 4-8× under observed, capped by light.
+- **Composition:** fixers fall 12-22 % toward observed (Aug 3.38 → 2.97, Oct 1.57 → 1.22), and
+  OPA is unchanged. CYN falls in Oct-Nov (Oct 0.83 → 0.64, against 1.06 observed).
+- **Gate [f]:** the Aug-Oct Si bias falls 41 % (+0.80 → +0.47), not quite halved. May-Jul goes
+  to −0.17, just outside ±0.15.
+- **Gate [c]:** June is borderline (0.30 against 0.196 observed, 1.5×). The probe's January-March
+  collapse is the swap, not the guild.
+- So **neither trait alone opens the summer niche**: the warm envelope alone gives October 0.053;
+  high P affinity on the cold envelope (§58.6, KHS_DIP_DIA at its floor) gives Aug-Oct 0.042.
+  Only both together do. §2.1's "`KHS_*_DIA2` as DIA" row is the flaw.
+
+**8.7 What would have to be true to build.**
+1. **Literature for the warm genera's nutrient half-saturations.** *Skeletonema subsalsum* and
+   *Actinocyclus normanii* would need N and P affinities about 4× higher than the cold guild's.
+   The ×0.25 used here is a probe value, not a measurement. Without a source, the guild's one
+   decisive trait would be a fitted constant: the compensation pattern this study has documented
+   repeatedly.
+2. **Or fix the summer N deficit first** (§8.4). If the model's summer DIN came up toward the
+   observed values, a guild with the cold guild's affinities might pass. That is a
+   fixer-dominance / summer-N diagnosis, and it also bears on the partition (§2.2, gate [d]).
+3. **Either route is re-screened by §8.5 before any build**, and the light cap (summer LIGHT
+   0.16) bounds what any summer diatom can reach.
+
+**8.8 Literature check (2026-11-07): the ×4 affinity of route 1 is not supported.** Searched with
+scite (abstracts, open full text, citation statements); scite reports no editorial notices on any
+source used. Scope: this tests the warm guild *relative to the model's cold-guild constants*;
+whether those constants (KHS_DIN_DIA 0.71 µM, KHS_DIP_DIA 0.27 µM) match the literature was not
+checked (Tilman & Kilham's values were not retrievable).
+- **No constants were found for the two species.** A query for the two names (plus *S. potamos*)
+  AND kinetic terms returns 12 records, all read: none reports an N or P half-saturation constant.
+  The top-ranked results of the broader species searches (8 + 8 + 6) carry none either.
+- **Size points the other way for the dominant species.** Half-saturation constants for nutrient
+  uptake rise with cell volume, and between-taxon differences are "nearly always due to
+  between-taxon variation in volume" (Edwards et al. 2012, doi:10.4319/lo.2012.57.2.0554; also
+  Hillebrand et al. 2021, doi:10.1111/1365-2435.13986). The lagoon's own monitoring measures the
+  sizes (EPA phytoplankton records, LST EN 16695 unit volumes, Curonian stations, 44,600 records):
+
+| taxon | guild | median µm³ | biomass-weighted µm³ |
+|---|---|---|---|
+| *Actinocyclus normanii* | warm | **19,782** | **30,214** |
+| *Skeletonema subsalsum* | warm | **95** | 268 |
+| *Stephanodiscus hantzschii* | cold | 886 | 1,170 |
+| *Aulacoseira islandica* | cold | 1,689 | 2,640 |
+| *Asterionella formosa* | cold | 858 | 787 |
+
+  *A. normanii* is 12-23× the cold-guild cells, so by allometry its constants would be higher, not
+  4× lower, and it carries 44.5 % of the observed autumn diatom biomass (§1). Its Curonian cells
+  sit mostly in the 22-37 µm classes, below the 40 µm that separates its small and large morphs
+  (large cells do not form below 8 PSU; Vidal et al. 2018, doi:10.18257/raccefyn.713), yet they
+  are still ~20× the cold diatoms. Only the small *S. subsalsum* (~9× smaller than
+  *S. hantzschii*) could plausibly sit below the cold guild.
+- **The ecology does not separate the guilds.** *A. normanii* is "indicator of eutrophied,
+  polluted waters" (Vidaković et al. 2016, doi:10.17110/studbot.2016.47.2.201) and of "high
+  trophic conditions" (Pérez et al. 2017, doi:10.1080/00288330.2017.1417318). *S. subsalsum* is
+  listed as "tolerant to nutrient pollution" (Bilous et al. 2021, doi:10.3897/phytokeys.178.64426),
+  but in the same list as the cold guild's *Stephanodiscus hantzschii*.
+- **The only congener number is 1.8×, not 4×.** *S. costatum*'s ammonium uptake Ks is 0.4 µM
+  (Conway et al. 1976, doi:10.1007/BF00390940), against the model's 0.71 µM. *S. subsalsum* is a
+  separate lineage from the *S. costatum* complex, whose literature "calls for reinterpretation"
+  (Sarno et al. 2005, doi:10.1111/j.1529-8817.2005.04067.x).
+- **Uptake and growth constants are not interchangeable for P.** For nitrate, Ks for uptake and
+  growth are "similar if not identical" (Eppley & Thomas 1969,
+  doi:10.1111/j.1529-8817.1969.tb02628.x). For phosphate, *Asterionella* and *Cyclotella*
+  differed in growth K but not in uptake K (Tilman & Kilham 1976,
+  doi:10.1111/j.1529-8817.1976.tb02860.x). The model's Monod `KHS_DIP_DIA` therefore cannot be
+  checked against uptake compilations.
+- **The temperature niche is supported.** *S. subsalsum* is a "heat-preferring species" with an
+  optimum of 16-22 °C in the Volga reservoirs (Kulizin et al. 2024, doi:10.3390/life14010061,
+  citing earlier Volga work). *A. normanii* "frequently occurs in summer and autumn" and formed
+  blooms in the Szczecin Lagoon; it made up over 95 % of August heatwave biovolume there, though
+  the authors flag that as possibly an artefact of few samples (Schernewski et al. 2025,
+  doi:10.3390/environments12100370). The cardinals (4, 17, 26) are consistent with both.
+- **So route 1 of §8.7 is closed as a literature-backed route.** A ×4 affinity would be a fitted
+  constant, against the allometry for the guild's main species (it is not refuted for
+  *S. subsalsum* alone). Route 2 (the summer-N deficit, §8.4) remains the defensible way to open
+  the summer niche.
+
+**8.9 Route 2 tested (2026-11-07): restoring summer nitrogen does not open the niche.** See
+diagnosis §59. The summer DIN pool is a Nostocales loop (84 % of NH4 uptake, turnover 3 h). The
+DIN-gated fixation switch (`NOST_FIX_SWITCH 1`) restores summer NH4 to the observed level, yet the
+§8.5 swap screen still fails gate [a]: October with the cold guild is 0.157 at KG_NOST 7.6 and
+0.123 at 2.6. Once nitrogen is relieved, phosphorus (0.12-0.20) and light (0.15-0.16) bind. Both
+routes of §8.7 are now closed; the guild's open question is phosphorus and light.

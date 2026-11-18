@@ -706,7 +706,6 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     integer :: n_fixes
     real(kind = DBL_PREC), parameter :: KHS_MIN = 1.0D-6
     real(kind = DBL_PREC), parameter :: RATIO_MIN = 1.0D-6
-    real(kind = DBL_PREC) :: tmp
 
     n_fixes = 0
 
@@ -786,118 +785,26 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     call CHK_POS(KHS_POP_DISS_SAT,     'KHS_POP_DISS_SAT',     n_fixes)
 
     ! ------------------------------------------------------------------
-    ! Check CTMI cardinal temperatures: T_min < T_opt < T_max
-    ! OPT_TEMP_LR = T_min, OPT_TEMP_UR = T_opt, KAPPA_*_OVER = T_max
+    ! Check the temperature-response constants against the SELECTED model.
+    ! The same slots mean different things (see GROWTH_AT_TEMP):
+    !   CTMI    : OPT_TEMP_LR = T_min, OPT_TEMP_UR = T_opt, KAPPA_*_OVER = T_max (degC)
+    !   plateau : OPT_TEMP_LR / _UR = plateau edges, KAPPA_*_OVER = decay rate (1/degC)
+    ! so the T_max rules apply under CTMI only. Under the plateau model a decay
+    ! rate (e.g. 0.07) is valid and must not be turned into a T_max; a T_max-like
+    ! value there is reported but not changed, since the intended rate is unknown.
     ! ------------------------------------------------------------------
-    ! Detect old-format kappa values (< 1.0) in T_max slots
-    if (KAPPA_DIA_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_DIA_OVER_OPT_TEMP looks like old kappa value, setting T_max=35'
-        KAPPA_DIA_OVER_OPT_TEMP = 35.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (KAPPA_CYN_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_CYN_OVER_OPT_TEMP looks like old kappa value, setting T_max=38'
-        KAPPA_CYN_OVER_OPT_TEMP = 38.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (KAPPA_FIX_CYN_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_FIX_CYN_OVER_OPT_TEMP looks like old kappa, setting T_max=38'
-        KAPPA_FIX_CYN_OVER_OPT_TEMP = 38.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (KAPPA_OPA_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_OPA_OVER_OPT_TEMP looks like old kappa value, setting T_max=33'
-        KAPPA_OPA_OVER_OPT_TEMP = 33.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (KAPPA_ZOO_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_ZOO_OVER_OPT_TEMP looks like old kappa value, setting T_max=35'
-        KAPPA_ZOO_OVER_OPT_TEMP = 35.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (KAPPA_NOST_VEG_HET_OVER_OPT_TEMP < 1.0D0) then
-        write(*,*) 'WARNING: KAPPA_NOST_VEG_HET_OVER_OPT_TEMP old kappa, setting T_max=38'
-        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = 38.0D0
-        n_fixes = n_fixes + 1
-    end if
-
-    ! Check T_min < T_opt for all groups
-    if (DIA_OPT_TEMP_LR >= DIA_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: DIA T_min >= T_opt, swapping'
-        tmp = DIA_OPT_TEMP_LR
-        DIA_OPT_TEMP_LR = DIA_OPT_TEMP_UR
-        DIA_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-    if (CYN_OPT_TEMP_LR >= CYN_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: CYN T_min >= T_opt, swapping'
-        tmp = CYN_OPT_TEMP_LR
-        CYN_OPT_TEMP_LR = CYN_OPT_TEMP_UR
-        CYN_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-    if (FIX_CYN_OPT_TEMP_LR >= FIX_CYN_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: FIX_CYN T_min >= T_opt, swapping'
-        tmp = FIX_CYN_OPT_TEMP_LR
-        FIX_CYN_OPT_TEMP_LR = FIX_CYN_OPT_TEMP_UR
-        FIX_CYN_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-    if (OPA_OPT_TEMP_LR >= OPA_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: OPA T_min >= T_opt, swapping'
-        tmp = OPA_OPT_TEMP_LR
-        OPA_OPT_TEMP_LR = OPA_OPT_TEMP_UR
-        OPA_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-    if (ZOO_OPT_TEMP_LR >= ZOO_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: ZOO T_min >= T_opt, swapping'
-        tmp = ZOO_OPT_TEMP_LR
-        ZOO_OPT_TEMP_LR = ZOO_OPT_TEMP_UR
-        ZOO_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-    if (NOST_VEG_HET_OPT_TEMP_LR >= &
-        NOST_VEG_HET_OPT_TEMP_UR) then
-        write(*,*) 'WARNING: NOST T_min >= T_opt, swapping'
-        tmp = NOST_VEG_HET_OPT_TEMP_LR
-        NOST_VEG_HET_OPT_TEMP_LR = NOST_VEG_HET_OPT_TEMP_UR
-        NOST_VEG_HET_OPT_TEMP_UR = tmp
-        n_fixes = n_fixes + 1
-    end if
-
-    ! Check T_opt < T_max for all groups
-    if (DIA_OPT_TEMP_UR >= KAPPA_DIA_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: DIA T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_DIA_OVER_OPT_TEMP = DIA_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (CYN_OPT_TEMP_UR >= KAPPA_CYN_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: CYN T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_CYN_OVER_OPT_TEMP = CYN_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (FIX_CYN_OPT_TEMP_UR >= KAPPA_FIX_CYN_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: FIX_CYN T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_FIX_CYN_OVER_OPT_TEMP = FIX_CYN_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (OPA_OPT_TEMP_UR >= KAPPA_OPA_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: OPA T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_OPA_OVER_OPT_TEMP = OPA_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (ZOO_OPT_TEMP_UR >= KAPPA_ZOO_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: ZOO T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_ZOO_OVER_OPT_TEMP = ZOO_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (NOST_VEG_HET_OPT_TEMP_UR >= &
-        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP) then
-        write(*,*) 'WARNING: NOST T_opt >= T_max, setting T_max = T_opt + 10'
-        KAPPA_NOST_VEG_HET_OVER_OPT_TEMP = NOST_VEG_HET_OPT_TEMP_UR + 10.0D0
-        n_fixes = n_fixes + 1
-    end if
+    call CHK_TEMP(DIA_OPT_TEMP_LR, DIA_OPT_TEMP_UR, KAPPA_DIA_OVER_OPT_TEMP, &
+                  'DIA', 35.0D0, n_fixes)
+    call CHK_TEMP(CYN_OPT_TEMP_LR, CYN_OPT_TEMP_UR, KAPPA_CYN_OVER_OPT_TEMP, &
+                  'CYN', 38.0D0, n_fixes)
+    call CHK_TEMP(FIX_CYN_OPT_TEMP_LR, FIX_CYN_OPT_TEMP_UR, KAPPA_FIX_CYN_OVER_OPT_TEMP, &
+                  'FIX_CYN', 38.0D0, n_fixes)
+    call CHK_TEMP(OPA_OPT_TEMP_LR, OPA_OPT_TEMP_UR, KAPPA_OPA_OVER_OPT_TEMP, &
+                  'OPA', 33.0D0, n_fixes)
+    call CHK_TEMP(ZOO_OPT_TEMP_LR, ZOO_OPT_TEMP_UR, KAPPA_ZOO_OVER_OPT_TEMP, &
+                  'ZOO', 35.0D0, n_fixes)
+    call CHK_TEMP(NOST_VEG_HET_OPT_TEMP_LR, NOST_VEG_HET_OPT_TEMP_UR, &
+                  KAPPA_NOST_VEG_HET_OVER_OPT_TEMP, 'NOST_VEG_HET', 38.0D0, n_fixes)
 
     ! ------------------------------------------------------------------
     ! Check stoichiometric ratios > 0
@@ -925,34 +832,16 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     ! ------------------------------------------------------------------
     ! Check photoinhibition beta >= 0
     ! ------------------------------------------------------------------
-    if (BETA_DIA < 0.0D0) then
-        write(*,*) 'WARNING: BETA_DIA < 0, setting to 0'
-        BETA_DIA = 0.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (BETA_CYN < 0.0D0) then
-        write(*,*) 'WARNING: BETA_CYN < 0, setting to 0'
-        BETA_CYN = 0.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (BETA_FIX_CYN < 0.0D0) then
-        write(*,*) 'WARNING: BETA_FIX_CYN < 0, setting to 0'
-        BETA_FIX_CYN = 0.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (BETA_OPA < 0.0D0) then
-        write(*,*) 'WARNING: BETA_OPA < 0, setting to 0'
-        BETA_OPA = 0.0D0
-        n_fixes = n_fixes + 1
-    end if
-    if (BETA_NOST_VEG_HET < 0.0D0) then
-        write(*,*) 'WARNING: BETA_NOST_VEG_HET < 0, setting to 0'
-        BETA_NOST_VEG_HET = 0.0D0
-    end if
+    call CHK_NONNEG(BETA_DIA,          'BETA_DIA',          n_fixes)
+    call CHK_NONNEG(BETA_CYN,          'BETA_CYN',          n_fixes)
+    call CHK_NONNEG(BETA_FIX_CYN,      'BETA_FIX_CYN',      n_fixes)
+    call CHK_NONNEG(BETA_OPA,          'BETA_OPA',          n_fixes)
+    call CHK_NONNEG(BETA_NOST_VEG_HET, 'BETA_NOST_VEG_HET', n_fixes)
 
     if (ICE_LIGHT_TRANS < 0.0D0 .or. ICE_LIGHT_TRANS > 1.0D0) then
-        write(*,*) 'WARNING: ICE_LIGHT_TRANS outside [0,1], clamping: ', ICE_LIGHT_TRANS
-        ICE_LIGHT_TRANS = min(1.0D0, max(0.0D0, ICE_LIGHT_TRANS))
+        write(*,*) 'WARNING: ICE_LIGHT_TRANS outside [0,1]: ', ICE_LIGHT_TRANS, trim(ACTION('clamping'))
+        if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) &
+            ICE_LIGHT_TRANS = min(1.0D0, max(0.0D0, ICE_LIGHT_TRANS))
         n_fixes = n_fixes + 1
     end if
 
@@ -961,12 +850,86 @@ subroutine VALIDATE_PELAGIC_MODEL_CONSTANTS
     ! ------------------------------------------------------------------
     if (n_fixes > 0) then
         write(*,*) '======================================='
-        write(*,*) 'VALIDATE_PELAGIC_MODEL_CONSTANTS:', &
-                   ' corrected', n_fixes, 'parameter(s)'
+        if (VALIDATE_CONSTANTS_REPORT_ONLY) then
+            write(*,*) 'VALIDATE_PELAGIC_MODEL_CONSTANTS:', &
+                       ' found', n_fixes, 'problem(s); values left as read'
+        else
+            write(*,*) 'VALIDATE_PELAGIC_MODEL_CONSTANTS:', &
+                       ' corrected', n_fixes, 'parameter(s)'
+        end if
         write(*,*) '======================================='
     end if
 
 contains
+
+    ! Text appended to a warning: what happens to the value.
+    function ACTION(what) result(txt)
+        implicit none
+        character(len=*), intent(in) :: what
+        character(len=64) :: txt
+        if (VALIDATE_CONSTANTS_REPORT_ONLY) then
+            txt = ' (report only, left unchanged)'
+        else
+            txt = ', ' // what
+        end if
+    end function ACTION
+
+    subroutine CHK_TEMP(t_lr, t_ur, kappa_over, group, tmax_default, nfix)
+        implicit none
+        real(kind = DBL_PREC), intent(inout) :: t_lr, t_ur, kappa_over
+        character(len=*), intent(in) :: group
+        real(kind = DBL_PREC), intent(in) :: tmax_default
+        integer, intent(inout) :: nfix
+        real(kind = DBL_PREC) :: swap
+
+        if (USE_CTMI_TEMP .and. kappa_over < 1.0D0) then
+            write(*,*) 'WARNING: KAPPA_', group, '_OVER_OPT_TEMP =', kappa_over, &
+                       ' looks like a plateau decay rate, but CTMI reads it as T_max', &
+                       trim(ACTION('setting T_max to')), tmax_default
+            if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) kappa_over = tmax_default
+            nfix = nfix + 1
+        end if
+
+        ! Lower edge / T_min must lie below upper edge / T_opt in both models
+        if (t_lr >= t_ur) then
+            write(*,*) 'WARNING: ', group, '_OPT_TEMP_LR >= ', group, '_OPT_TEMP_UR', &
+                       trim(ACTION('swapping'))
+            if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) then
+                swap = t_lr
+                t_lr = t_ur
+                t_ur = swap
+            end if
+            nfix = nfix + 1
+        end if
+
+        if (USE_CTMI_TEMP) then
+            if (t_ur >= kappa_over) then
+                write(*,*) 'WARNING: ', group, ' T_opt >= T_max', &
+                           trim(ACTION('setting T_max = T_opt + 10'))
+                if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) kappa_over = t_ur + 10.0D0
+                nfix = nfix + 1
+            end if
+        else if (kappa_over >= 1.0D0) then
+            ! Never repaired: the plateau decay rate the user meant is unknown.
+            write(*,*) 'WARNING: KAPPA_', group, '_OVER_OPT_TEMP =', kappa_over, &
+                       ' looks like a CTMI T_max, but the plateau model reads it as a', &
+                       ' decay rate per degC (growth ~0 just above the plateau).', &
+                       ' Set TEMPERATURE_MODEL = 1 or give a decay rate. Left unchanged.'
+            nfix = nfix + 1
+        end if
+    end subroutine CHK_TEMP
+
+    subroutine CHK_NONNEG(val, name, nfix)
+        implicit none
+        real(kind = DBL_PREC), intent(inout) :: val
+        character(len=*), intent(in) :: name
+        integer, intent(inout) :: nfix
+        if (val < 0.0D0) then
+            write(*,*) 'WARNING: ', trim(name), ' < 0', trim(ACTION('setting to 0'))
+            if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) val = 0.0D0
+            nfix = nfix + 1
+        end if
+    end subroutine CHK_NONNEG
 
     subroutine CHK_POS(val, name, nfix)
         implicit none
@@ -974,9 +937,12 @@ contains
         character(len=*), intent(in) :: name
         integer, intent(inout) :: nfix
         if (val <= 0.0D0) then
-            write(*,*) 'WARNING: ', trim(name), &
-                       ' <= 0, setting to', KHS_MIN
-            val = KHS_MIN
+            if (VALIDATE_CONSTANTS_REPORT_ONLY) then
+                write(*,*) 'WARNING: ', trim(name), ' <= 0', trim(ACTION(''))
+            else
+                write(*,*) 'WARNING: ', trim(name), ' <= 0, setting to', KHS_MIN
+            end if
+            if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) val = KHS_MIN
             nfix = nfix + 1
         end if
     end subroutine CHK_POS
@@ -987,9 +953,12 @@ contains
         character(len=*), intent(in) :: name
         integer, intent(inout) :: nfix
         if (val <= 0.0D0) then
-            write(*,*) 'WARNING: ', trim(name), &
-                       ' <= 0, setting to', RATIO_MIN
-            val = RATIO_MIN
+            if (VALIDATE_CONSTANTS_REPORT_ONLY) then
+                write(*,*) 'WARNING: ', trim(name), ' <= 0', trim(ACTION(''))
+            else
+                write(*,*) 'WARNING: ', trim(name), ' <= 0, setting to', RATIO_MIN
+            end if
+            if (.not. VALIDATE_CONSTANTS_REPORT_ONLY) val = RATIO_MIN
             nfix = nfix + 1
         end if
     end subroutine CHK_RATIO

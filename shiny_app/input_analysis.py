@@ -3,6 +3,11 @@ import logging
 import os
 from datetime import date, timedelta
 
+try:
+    from shiny_app.simulation_config import DEFAULT_BASE_YEAR, base_year_for_input_dir
+except ImportError:  # running as a script from inside shiny_app/
+    from simulation_config import DEFAULT_BASE_YEAR, base_year_for_input_dir
+
 logger = logging.getLogger("AQUABC")
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -412,8 +417,11 @@ def analyze_input_file(filepath):
             info["time_start"] = first_data_line[0]
             info["time_end"] = last_data_line[0]
 
-            # Convert Julian days to dates (reference: 1997-01-01)
-            reference_date = date(1997, 1, 1)
+            # Times are days since 1 Jan of the BASE_YEAR of the control file that
+            # reads this input folder (1998 for INPUTS/, 2012 for INPUTS_CL29/)
+            folder = os.path.dirname(os.path.abspath(filepath))
+            base_year = base_year_for_input_dir(os.path.dirname(folder), os.path.basename(folder))
+            reference_date = date(base_year or DEFAULT_BASE_YEAR, 1, 1)
             try:
                 info["date_start"] = (reference_date + timedelta(days=first_data_line[0])).strftime("%Y-%m-%d")
                 info["date_end"] = (reference_date + timedelta(days=last_data_line[0])).strftime("%Y-%m-%d")

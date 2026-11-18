@@ -529,16 +529,29 @@ def _read_wind_daily(path=None):
     return wind
 
 
-def _write_settling_velocity_files(out):
+def _write_settling_velocity_files(out, n_days=None):
     """Write SETTLING_VELOCITY_TS_1..6.txt. Slot 1 (DIA_C) is a wind-modulated daily
     series when CL29_WIND_RESUSPENSION and wind data are present; otherwise the 2-point
-    constant CL29_DIATOM_SETTLING (byte-identical to legacy). Slots 2-6 are constants."""
+    constant CL29_DIATOM_SETTLING (byte-identical to legacy). Slots 2-6 are constants.
+
+    ``n_days`` is the run length in days (len(tdays)). The wind record must cover it:
+    a shorter record raises instead of being carried on by the day-9999 sentinel, which
+    used to freeze DIA_C settling at the last wind day for the rest of the run (the
+    2012-2016 record froze CL29 2012-2022 runs at 0.039 m/day from 2017; mean ~0.10).
+    Extend net/wind_daily.csv with make_wind_daily.py --extend-era5."""
     # slot3 (OPA_C)=0.05: reduced from 0.2 so motile OPA is not sunk out of its clear-water window
     vels = [CL29_DIATOM_SETTLING, 0.1, 0.05, 1.0, 0.5, 0.3]  # slot1=DIA_C
     wind = _read_wind_daily() if CL29_WIND_RESUSPENSION else None
     for i, v in enumerate(vels, start=1):
         # `wind` truthy = enabled AND file present AND non-empty; None or [] -> constant fallback
         if i == 1 and wind:
+            if n_days is not None and len(wind) < n_days:
+                raise ValueError(
+                    f"net/wind_daily.csv covers {len(wind)} days but the run needs {n_days}: "
+                    "DIA_C settling would be frozen at the last wind day. Extend it with "
+                    "tools/eutropy_poc/make_wind_daily.py --extend-era5 <era5 dir> --until <date>.")
+            if n_days is not None:
+                wind = wind[:n_days]
             w = wind_modulated_settling(wind, CL29_SETTLING_W0, CL29_WIND_UHALF)
             days = list(range(len(w))) + [9999]      # sentinel holds last value past sim end
             cols = [[x] for x in w] + [[w[-1]]]
@@ -691,7 +704,7 @@ def main():
     _apply_wconst_overrides(os.path.join(OUT, "WCONST_04.txt"), CL29_WCONST_OVERRIDE)
 
     # ---- master PELAGIC_INPUTS.txt ----
-    _write_master(OUT, state_block, links, depth, area)
+    _write_master(OUT, state_block, links, depth, area, n_days=len(tdays))
     # benthic-denit NO3 sink: the summer-peaked forcing TS + its all-boxes prescribed
     # flux set (wired into PELAGIC_INPUTS by _write_master, MODEL_SEDIMENTS=1 by
     # _write_input_txt). The flux set references forcing TS _BASE_NUM_FORCING_TS + 1.
@@ -747,7 +760,7 @@ def _hdr(name, val):
     return f"# {name}\n{val:>19}\n"
 
 
-def _write_master(out, state_block, links, depth, area):
+def _write_master(out, state_block, links, depth, area, n_days=None):
     L = []
     L.append("# DESCRIPTION Curonian Lagoon 29-box (EUTROPY-derived)\n")
     L += ["# DESRIPTION LINE %d\n" % i for i in range(2, 6)]
@@ -917,7 +930,7 @@ def _write_master(out, state_block, links, depth, area):
 
     # settling velocity TS files (m/day); slot 1 (DIA_C) is wind-modulated (#3),
     # slots 2-6 constant. See _write_settling_velocity_files / CL29_WIND_RESUSPENSION.
-    _write_settling_velocity_files(out)
+    _write_settling_velocity_files(out, n_days)
 
 
 def _replace_leading_number(line, new_val):

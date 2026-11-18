@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- **`tools/set_per_box_forcing_columns.py`** points each box's PRECIPITATION, EVAPORATION, AIR TEMPERATURE,
+  WIND SPEED and ICE FRACTION rows at its own column when the forcing file has one column per box (report mode
+  exits 1 when a set needs it; `--write` fixes it). Every SHYFEM-coupled set on disk (`INPUTS_SHYHYDRO*`,
+  `INPUTS_1993*`) had copied `INPUTS_CL29`'s single-column mapping onto 29-column files, so every box read box 1's
+  meteorology; fixed, the free-volume water tracks SHYFEM's to +30 mm lagoon-wide over 11 years (was +509). The
+  adopted `INPUTS_CL29` is single-column and unaffected. Tests: `tests/python/test_set_per_box_forcing_columns.py`.
 - **`LIGHT_DAYLENGTH_OPTION` — day-length weighting of the light limitation** (opt-in, default
   `0` = current behaviour, byte-identical at full record and on the 0D golden). `FDAY` (day
   length) was read from `DRIVING_FUNCTIONS(:,4)`, allocated and bundled into the per-thread
@@ -58,6 +64,62 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Pelagic DOC mineralisation returned NaN at exactly zero DOC when a half-saturation is zero.** Both shipped
+  constant sets carry `K_HS_DOC_MIN_DOXY = 0` (first-order kinetics), so `DOC/(DOC + K)` was 0/0 there, in the inline
+  branch (`aquabc_II_pelagic_model.f90`) and in `ORGANIC_CARBON_MINERALIZATION`. The eight DOC terms now go through
+  `monod_substrate(s, k)` (`AQUABC_PHYSICAL_CONSTANTS`), which is `s/(s+k)` and 0 where `s + k` is exactly 0; every
+  other input is bit-for-bit unchanged (Standard 30 d and CL29 90 d outputs byte-identical, 0D golden passes). The
+  DON and DOP twins already had their own guards; the sediment twins ship with K = 1.
+- **The Standard set (`INPUTS/`) ran the plateau temperature model on CTMI constants.** The CTMI commit
+  (`cc7c76e`, February) put T_max values (35/38/33 °C) into the `KAPPA_*_OVER_OPT_TEMP` slots and zeroed
+  `KAPPA_*_UNDER_OPT_TEMP`, but the Standard options select plateau (`TEMPERATURE_MODEL = 0`) and nothing restored
+  them. The plateau branch reads those slots as decay rates per °C, so there was no cold limitation at all and
+  growth fell to zero just above the plateau (24 °C for diatoms). `INPUTS/WCONST_04.txt` has its pre-CTMI plateau
+  values and comments back for all six groups. **Standard-set results change**; CL29 (CTMI, its own constants)
+  is untouched. The Fortran defaults and `VALIDATE_PELAGIC_MODEL_CONSTANTS` still assume CTMI and are not changed;
+  ESTAS does not call that validator (a 30-day Standard run on the restored file reports the plateau model and no
+  correction), but the 0D/interface path does and would rewrite the restored rates to 35/38/33.
+- **The built-in Hypoxic scenario set zooplankton carbon, not oxygen**: its initial condition used state
+  variable 6 (`ZOO_C`) where dissolved oxygen is 4 (`shiny_app/scenarios.py`, `scenarios/hypoxic.json`).
+- **Plot dates were counted from a fixed 1 January 1997** (`shiny_app/modules/plot.py`, four places), one year
+  early for Standard (BASE_YEAR 1998) and fifteen for CL29 (2012); `input_analysis.py` did the same for input
+  time series. The origin is now the BASE_YEAR of a control file that names the plotted folder
+  (`simulation_config.base_year_for_output_dir` / `base_year_for_input_dir`): a lookup in the control files as
+  they are now, since the folder does not record which run wrote it.
+- **The tracked PEST files were stale in three ways** (`pest/`, regenerated with `build_pest.py`): the template had
+  323 of the 324 constants (the model aborts) and pre-adoption values for 23 others (a run would have reverted the
+  adopted `INPUTS_CL29/WCONST_04.txt`); `cl29.pst`/`model_obs.ins` still scored station LTK14 against box 25, not 9
+  (#57); and two initial values predated adoption. `KG_DIA_OPT_TEMP`'s upper bound is now 10 (was 6; the adopted
+  value is 8.10). `build_pest.py` refuses an initial value outside its bounds, and `forward_run.py` now scores
+  Chl-a with the run's own C:Chl ratios (`validate_cl29_vs_epa.use_c_to_chla_from`), not the template 30/40.
+- **`MASS_BALANCES.out` terms now sum to what the solver integrates.** The KINETICS column was written as
+  kinetics minus the diagenetic sediment flux, while the solver adds the two; it is now the kinetics alone, next to
+  the SEDIMENT FLUXES column as before. A new 8th term column, PRESCR. SED. FLUX, carries the prescribed benthic
+  flux (e.g. the CL29 NO3 sink), which the solver applies as its own term and the file used to omit. The column is
+  appended, so positional readers of the first seven terms (`tools/check_varn_run.py`) are unaffected. With
+  `MODEL_SEDIMENTS 1` (CL29) the diagenetic flux is zero, so the first ten columns are byte-identical; the new
+  column is non-zero only for NO3 there. `WATER_LEVELS.out`'s header now labels its fourth column (volume / area)
+  and states that elevation and depth come from the start of the printed step and volume from its end (a one-step
+  lag under a free volume, CL29 docs §66.2); the fourth column mixes the two, end-of-step volume over
+  start-of-step area. Its rows are unchanged.
+- **The box's own `SURFACE_AREA` is now refreshed with the level.** It was set once at read time, but the
+  ecology's depth is `VOLUME / SURFACE_AREA`, so under a free volume it went stale wherever the area varies with
+  level (real hypsometry). The solver's `SURFACE_AREAS` array was already refreshed. An exact no-op for
+  constant-area layers: CL29 is byte-identical under held volume (61 outputs, 30 d) and free volume (60 outputs,
+  365 d of the SHYFEM-hydrology set). CL29's synthetic areas are constant above every box bottom, and no level
+  leaves that band (CL29 note item 82).
+- **Free-volume level inversion: false zero depth when the water sits in the bottom's own layer.**
+  `CALCULATE_SURFACE_ELEVATION` (`mod_BASIN.f90`) solved the first-branch quadratic with `C = +2 V`; the
+  later-layer branch has the correct `C = −2 V`. A constant-area layer then had no positive root, so the level
+  stayed at `BOTTOM_ELEVATION` and `DEPTH` read 0 with water in the box; a tapering layer also returned 0. Only
+  free-volume runs recompute the level, so held-volume runs (all adopted CL29 work) are byte-identical (61 output
+  files, 30 days). In the CL29 SHYFEM-hydrology run box 18 read zero depth in 301 hourly prints with 0.20-0.31 m
+  of water; the fix restores it, and the biology is unchanged to 1e-6. It is not the cause of the CL29 day-~449
+  free-volume crash, which remains the EUTROPY flows' drift (box 18's volume goes negative on day 448.9 with the
+  fix too). New test `tests/fortran/test_basin_level.f90` (13 checks; the old code fails 5).
+- **The basin level was stored in the box indexed by the basin number** (`PELAGIC_BOXES(i)` with `i` the basin
+  loop index, `mod_SOLVER.f90`); now `PELAGIC_BOXES(BOX_NO)`. Identical while each basin holds one box, as in
+  CL29 and the 0D golden; it matters for multi-box basins, where `SURFACE_AREAS` reads the stored level.
 - **Day-length handling in the `smith == 0` phytoplankton branch** (7 sites across 5 library
   routines: DIATOMS, OTHER_PLANKTONIC_ALGAE, NOSTACALES, CYANOBACTERIA ×2,
   FIX_CYANOBACTERIA ×2). `I_A` is a **daily integral**, so the depth-averaged Steele form must
@@ -112,6 +174,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Measured (`docs/CL29_phenology_diagnosis.md` §55): a powerful dominance lever (CYN ×5,
     FIX ÷8 in the CYN-only config) that produces the same winner-take-all as every other
     direction, with the worst frontier lift of the arc (−0.161). **Not adopted.**
+- **`VALIDATE_PELAGIC_MODEL_CONSTANTS` now follows the selected temperature model, and ESTAS runs it.**
+  The validator applied the CTMI T_max rules unconditionally: under the plateau model it rewrote every valid decay
+  rate (`KAPPA_*_OVER_OPT_TEMP < 1`) to 35/38/33 on the 0D/interface path. Those rules now apply only when
+  `USE_CTMI_TEMP` is set; under the plateau model a T_max-like value (≥ 1) is reported and left alone. ESTAS never
+  called the validator (its own positional `INIT_PELAGIC_MODEL_CONSTANTS` has no such call); it now does, in a new
+  **report-only** mode (`VALIDATE_CONSTANTS_REPORT_ONLY`): problems are printed at start-up and no constant is
+  changed, so results are unaffected (byte-identical: Standard 30 d, 23 files; CL29 90 d, 61 files; 0D golden).
+  Both `INPUTS/` and the adopted CL29 set now log three zero half-saturations (`K_HS_DOC/DON/DOP_MIN_DOXY`).
+  `BETA_NOST_VEG_HET < 0` is now counted like the other corrections. Test: `tests/fortran/test_validate_constants.f90`
+  (links the production routine).
 
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
