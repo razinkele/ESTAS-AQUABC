@@ -53,6 +53,18 @@ def control_file_in_use(path: str) -> bool:
         return any(control == want for _holder, control in _ACTIVE_OUTPUTS.values())
 
 
+def output_folder_change_blocked(control_path: str, new_folder: str) -> bool:
+    """True when saving ``new_folder`` into a control file would move a running run.
+
+    A run started from the file has reserved the output folder the file named at
+    that moment, and the model reads the file only after launch. Any other edit of
+    the file, and any edit once the run has ended, is allowed.
+    """
+    on_disk = output_data.get_output_folder_from_config(input_txt_path=control_path)
+    return (os.path.normpath(new_folder) != os.path.normpath(on_disk)
+            and control_file_in_use(control_path))
+
+
 class RunController:
     """Per-session run/build engine: subprocess handle, thread-appended log
     buffers, and the build/run/stop methods. The reactive-context fields
