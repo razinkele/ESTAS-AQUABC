@@ -356,7 +356,7 @@ def main():
                 n_issues += 1
             all_pass = False
         else:
-            print(f"  [PASS] Non-negativity check")
+            print("  [PASS] Non-negativity check")
 
         ok = check_zoo_stoichiometry(data, box, results)
         zs = results[box_key]["zoo_stoich"]
@@ -387,7 +387,7 @@ def main():
                 n_issues += 1
             all_pass = False
         else:
-            print(f"  [PASS] Stability check")
+            print("  [PASS] Stability check")
 
         check_redox_balance(data, box, results)
         rb = results[box_key]["redox_balance"]

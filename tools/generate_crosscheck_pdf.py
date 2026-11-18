@@ -7,26 +7,23 @@ Usage:
     python tools/generate_crosscheck_pdf.py [--output-dir OUTPUTS]
 """
 
-import sys
-import os
 import argparse
-import numpy as np
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
+
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from deep_state_vs_process_crosscheck import run_all_checks, BOX_IDS, BOX_TYPES
+from deep_state_vs_process_crosscheck import BOX_IDS, BOX_TYPES, run_all_checks
 
 try:
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.lib.units import mm, cm
     from reportlab.lib import colors
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-        PageBreak, KeepTogether
-    )
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import mm
+    from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 except ImportError:
     print("reportlab not installed; run: pip install reportlab")
     sys.exit(1)

@@ -52,7 +52,6 @@ Example:
 from __future__ import annotations
 
 import argparse
-import glob
 import os
 import platform
 import re
@@ -287,7 +286,7 @@ def step2_build_model(args: argparse.Namespace) -> bool:
             warn("Make succeeded but executable not found — checking default name")
             default = ROOT / "ESTAS_II"
             if default.exists():
-                info(f"Found ESTAS_II (default name)")
+                info("Found ESTAS_II (default name)")
                 return True
             error("Executable not created")
             return False

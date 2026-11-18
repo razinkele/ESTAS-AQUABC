@@ -440,13 +440,13 @@ def run_conserve(a):
     else:
         print("\n(every sample had all five KINETICS terms exactly 0.0 -- no per-sample "
               "relative ratio to report)")
-    print(f"\nspec target is 1e-9 relative; MASS_BALANCES.out's term columns (7 before 2026-11, 8 since) "
-          f"are printed with Fortran format 'F30.6' (mod_SIMULATE.f90's "
-          f"'(F10.4, 2i10, 8F30.6)', 7F30.6 in older files; six decimal places), which floors the achievable "
-          f"per-term precision at ~5e-7 absolute regardless of model correctness -- 1e-9 "
-          f"relative is not reachable through this ASCII output path (see task-6-report.md "
-          f"for the measured floor and the before/after-fix evidence that the residual IS "
-          f"that floor, not a real leak).")
+    print("\nspec target is 1e-9 relative; MASS_BALANCES.out's term columns (7 before 2026-11, 8 since) "
+          "are printed with Fortran format 'F30.6' (mod_SIMULATE.f90's "
+          "'(F10.4, 2i10, 8F30.6)', 7F30.6 in older files; six decimal places), which floors the achievable "
+          "per-term precision at ~5e-7 absolute regardless of model correctness -- 1e-9 "
+          "relative is not reachable through this ASCII output path (see task-6-report.md "
+          "for the measured floor and the before/after-fix evidence that the residual IS "
+          "that floor, not a real leak).")
 
     # Earned absolute bound: with the residual's support set proven to be exactly
     # {0, +-1e-6, +-2e-6} (five F30.6-rounded terms, each off by at most half an ulp

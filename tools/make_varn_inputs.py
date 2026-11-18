@@ -642,8 +642,8 @@ def main(argv=None):
                           "scenario used by 'check_varn_run.py --mode conserve'")
     args = ap.parse_args(argv)
     result = generate(args.src_dir, args.dst_dir, degenerate_cyn=args.degenerate_cyn)
-    print(f"PELAGIC_INPUTS.txt: declared total, variable table, settling velocities, "
-          f"open boundaries transformed")
+    print("PELAGIC_INPUTS.txt: declared total, variable table, settling velocities, "
+          "open boundaries transformed")
     print(f"INIT_CONC files transformed: {result['init_conc']}")
     print(f"FORC_TS files transformed: {result['forc_ts']}")
     print(f"box-state forcing-assignment files transformed (discovered): {result['boxstate']}")

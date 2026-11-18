@@ -16,7 +16,6 @@ Produces a professional PDF with:
 from __future__ import annotations
 
 import re
-import sys
 from pathlib import Path
 
 from fpdf import FPDF

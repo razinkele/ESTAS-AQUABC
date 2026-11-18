@@ -8,8 +8,8 @@ the ESTAS forcing format. All 29 boxes read the same series (TS 14, var 1).
 
 Usage: fetch_ice_cover.py [out.txt] [start_year] [end_year]
 """
-import sys
 import datetime as dt
+import sys
 
 import numpy as np
 

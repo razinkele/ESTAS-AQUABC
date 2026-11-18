@@ -8,19 +8,23 @@ Usage:
     python tools/generate_analysis_script_doc_pdf.py
 """
 
-import sys, os
+import os
+import sys
 from datetime import datetime
 
 try:
+    from reportlab.lib.colors import HexColor, white
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.colors import HexColor, black, white
     from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-        PageBreak, KeepTogether, Preformatted,
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
     )
-    from reportlab.lib.enums import TA_LEFT, TA_CENTER
 except ImportError:
     print("ERROR: reportlab required — pip install reportlab")
     sys.exit(1)

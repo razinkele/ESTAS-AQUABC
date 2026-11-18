@@ -7,6 +7,7 @@ manuals against the Ertürk et al. (2023) paper and the actual Fortran code.
 from __future__ import annotations
 
 from pathlib import Path
+
 from fpdf import FPDF
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "docs"

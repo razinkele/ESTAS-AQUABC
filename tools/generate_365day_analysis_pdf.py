@@ -17,9 +17,6 @@ Analyses all 36 state variables across 7 output boxes, covering:
 
 from __future__ import annotations
 
-import csv
-import io
-import os
 from datetime import date
 from pathlib import Path
 

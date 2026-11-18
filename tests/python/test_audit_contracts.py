@@ -541,3 +541,53 @@ def test_fortran_sources_have_no_single_precision_real_literals():
                 if not is_io and lit.search(code):
                     found.append(f"{name}:{no}: {code.strip()[:80]}")
     assert not found, "single-precision literals:\n" + "\n".join(found[:20])
+
+
+# --- Container and lint coverage ---------------------------------------------------------
+
+def test_container_installs_what_the_documented_validation_command_imports():
+    """The Dockerfile documents `python3 tools/validate_cl29_vs_epa.py ...`; the image
+    must carry every third-party module that script imports (it had numpy only)."""
+    import ast
+    import sys
+    tree = ast.parse(open(os.path.join(ROOT, "tools", "validate_cl29_vs_epa.py")).read())
+    mods = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            mods.update(a.name.split(".")[0] for a in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            mods.add(node.module.split(".")[0])
+    local = {os.path.splitext(f)[0] for f in os.listdir(os.path.join(ROOT, "tools"))}
+    third_party = {m for m in mods if m not in sys.stdlib_module_names and m not in local}
+    assert third_party == {"numpy", "pandas", "matplotlib"}, third_party
+    docker = open(os.path.join(ROOT, "Dockerfile")).read()
+    for mod in third_party:
+        assert f"python3-{mod}" in docker, mod
+
+
+def test_ruff_covers_tools_and_pest_everywhere():
+    pyproject = open(os.path.join(ROOT, "pyproject.toml")).read()
+    include = re.search(r"^include = \[(.*)\]", pyproject, re.M).group(1)
+    ci = open(os.path.join(ROOT, ".github", "workflows", "ci.yml")).read()
+    make = open(os.path.join(ROOT, "Makefile")).read()
+    for folder in ("shiny_app", "tests/python", "tools", "pest"):
+        assert f'"{folder}/**/*.py"' in include, folder
+        assert re.search(rf"ruff check[^\n]*\b{folder}/", ci), folder
+        assert re.search(rf"ruff check[^\n]*\b{folder}/", make), folder
+
+
+def test_fortran_tests_link_production_routines_not_copies():
+    """A trimmed copy of the auxiliary routines kept a CTMI-only GROWTH_AT_TEMP after
+    production gained the plateau model, so the default path went untested."""
+    tests = os.path.join(ROOT, "tests", "fortran")
+    assert not os.path.exists(os.path.join(tests, "test_pelagic_aux_subset.f90"))
+    makefile = open(os.path.join(tests, "Makefile")).read()
+    assert "standalone" not in makefile and "aux_subset" not in makefile
+    production = open(os.path.join(ROOT, "SOURCE_CODE", "AQUABC", "PELAGIC",
+                                   "aquabc_II_pelagic_auxillary.f90")).read().lower()
+    names = set(re.findall(r"^\s*subroutine\s+(\w+)", production, re.M))
+    for name in sorted(os.listdir(tests)):
+        if name.endswith(".f90"):
+            src = open(os.path.join(tests, name)).read().lower()
+            copied = names & set(re.findall(r"^\s*subroutine\s+(\w+)", src, re.M))
+            assert not copied, (name, copied)

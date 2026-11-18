@@ -367,7 +367,7 @@ def _apply_wconst_overrides(path, overrides):
         text = fh.read()
     for name, val in overrides.items():
         text, n = re.subn(r"(\b" + re.escape(name) + r"\s+)-?\d+(?:\.\d+)?",
-                          lambda m: m.group(1) + str(val), text)
+                          lambda m, val=val: m.group(1) + str(val), text)
         if n != 1:
             raise SystemExit(f"WCONST override: '{name}' matched {n} times (expected 1)")
     with open(path, "w") as fh:

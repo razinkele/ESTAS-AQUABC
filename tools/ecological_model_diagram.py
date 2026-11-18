@@ -10,8 +10,10 @@ Usage (from micromamba shiny environment):
 Output: docs/aquabc_ecological_model.html
 """
 
-from pyvis.network import Network
 import os
+
+from pyvis.network import Network
+
 
 def create_ecological_model_diagram():
     # ──────────────────────────────────────────────────────────

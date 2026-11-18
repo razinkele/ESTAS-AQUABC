@@ -61,8 +61,30 @@ CO2SYS_SRCS = $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 \
     $(PHYS_CONST_SRC) \
     $(AQUABC_SRC)/CO2SYS/aquabc_II_co2sys.f90
 TEST_DEFAULTS_SRC = test_defaults.f90
-# Trimmed auxiliary file for tests (avoids GLOBAL module dependency)
-TEST_AUX_SUBSET = test_pelagic_aux_subset.f90
+# The production auxiliary routines (GROWTH_AT_TEMP, LIM_LIGHT, the nutrient
+# preferences, light_kd, CUR_SMITH, settling_suppres_factor, ...). The tests link
+# this file itself, not a copy: a trimmed copy used here until 2026-11 kept a
+# CTMI-only GROWTH_AT_TEMP after production gained the plateau model, so the
+# default temperature path was never tested. Its sediment-coupling routines use
+# the ESTAS GLOBAL module, hence the extra modules compiled before it. The rules
+# that use it have already compiled precision_kinds, AQUABC_II_GLOBAL, the
+# physical constants, STRING_UTILS (para_aqua) and the model constants.
+ESTAS_SRC = ../../SOURCE_CODE/ESTAS
+AUX_GLOBAL_DEPS = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_svindex.f90 \
+    $(ESTAS_SRC)/mod_INTERPOLATE.f90 $(ESTAS_SRC)/mod_TIME_SERIES.f90 $(ESTAS_SRC)/mod_GLOBAL.f90
+AUX_OBJS = precision_kinds.o mod_AQUABC_II_GLOBAL.o aquabc_physical_constants.o \
+    STRING_UTILS.o aquabc_II_pelagic_model_constants.o aquabc_II_pelagic_svindex.o \
+    mod_INTERPOLATE.o mod_TIME_SERIES.o mod_GLOBAL.o aquabc_II_pelagic_auxillary.o
+# Compile the production auxiliary file and everything it needs, in order.
+define BUILD_AUX
+$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
+$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
+$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
+$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
+$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
+endef
 
 # Default target
 .PHONY: all
@@ -136,13 +158,15 @@ test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_ORGANIC_CARBON.f90
 	$(FC) $(FFLAGS) -o $@ test_organic_carbon.f90 *.o
 
-# Compile test_growth_temp (standalone - includes subroutine copy)
-test_growth_temp: test_growth_temp.f90
-	$(FC) $(FFLAGS) -o $@ test_growth_temp.f90
+# Compile test_growth_temp (links the production GROWTH_AT_TEMP)
+test_growth_temp: test_growth_temp.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+	$(BUILD_AUX)
+	$(FC) $(FFLAGS) -o $@ test_growth_temp.f90 $(AUX_OBJS)
 
-# Compile test_nutrient_prefs (standalone - includes subroutine copies)
-test_nutrient_prefs: test_nutrient_prefs.f90
-	$(FC) $(FFLAGS) -o $@ test_nutrient_prefs.f90
+# Compile test_nutrient_prefs (links the production the nutrient-preference routines)
+test_nutrient_prefs: test_nutrient_prefs.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+	$(BUILD_AUX)
+	$(FC) $(FFLAGS) -o $@ test_nutrient_prefs.f90 $(AUX_OBJS)
 
 # Compile test_vector_utils
 test_vector_utils: test_vector_utils.f90 $(VECTOR_UTILS_SRCS)
@@ -154,37 +178,38 @@ test_vector_utils: test_vector_utils.f90 $(VECTOR_UTILS_SRCS)
 # Compile test_sed_typemap (Phase-2a two-type sediment profile assignment)
 # Hermetic link (explicit objects, not *.o) so stale objects in this shared
 # dir cannot leak in — the pure module only needs precision_kinds.
-ESTAS_SRC = ../../SOURCE_CODE/ESTAS
 test_sed_typemap: test_sed_typemap.f90 $(ESTAS_SRC)/mod_SED_TYPEMAP.f90
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC) -o precision_kinds.o
 	$(FC) $(FFLAGS) -c $(ESTAS_SRC)/mod_SED_TYPEMAP.f90 -o mod_SED_TYPEMAP.o
 	$(FC) $(FFLAGS) -o $@ test_sed_typemap.f90 mod_SED_TYPEMAP.o precision_kinds.o
 
-# Compile test_ammonia_chem (standalone - includes subroutine copies)
-test_ammonia_chem: test_ammonia_chem.f90
-	$(FC) $(FFLAGS) -o $@ test_ammonia_chem.f90
+# Compile test_ammonia_chem (links the production the ammonia routines)
+test_ammonia_chem: test_ammonia_chem.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+	$(BUILD_AUX)
+	$(FC) $(FFLAGS) -o $@ test_ammonia_chem.f90 $(AUX_OBJS)
 
-# Compile test_light (standalone - includes subroutine copies)
-test_light: test_light.f90
-	$(FC) $(FFLAGS) -o $@ test_light.f90
+# Compile test_light (links the production light_kd and CUR_SMITH)
+test_light: test_light.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+	$(BUILD_AUX)
+	$(FC) $(FFLAGS) -o $@ test_light.f90 $(AUX_OBJS)
 
 # Compile test_lim_light_daylength (LIGHT_DAYLENGTH_OPTION in LIM_LIGHT).
-# Links the real LIM_LIGHT from the aux subset, so it exercises the same
-# code path the kinetics tests do.
-test_lim_light_daylength: test_lim_light_daylength.f90 $(TEST_AUX_SUBSET)
+# Links the production LIM_LIGHT.
+test_lim_light_daylength: test_lim_light_daylength.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -o $@ test_lim_light_daylength.f90 \
-	    precision_kinds.o mod_AQUABC_II_GLOBAL.o aquabc_physical_constants.o \
-	    STRING_UTILS.o aquabc_II_pelagic_model_constants.o test_pelagic_aux_subset.o
+	    $(AUX_OBJS)
 
-# Compile test_settling_suppres (standalone - includes subroutine copies)
-test_settling_suppres: test_settling_suppres.f90
-	$(FC) $(FFLAGS) -o $@ test_settling_suppres.f90
+# Compile test_settling_suppres (links the production settling_suppres_factor)
+test_settling_suppres: test_settling_suppres.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+	$(BUILD_AUX)
+	$(FC) $(FFLAGS) -o $@ test_settling_suppres.f90 $(AUX_OBJS)
 
 # Compile test_estas_alerts (ESTAS per-timestep alert rate limiting)
 # Compile test_validate_constants (links the production validator)
@@ -199,32 +224,34 @@ ESTAS_ALERTS_SRC = ../../SOURCE_CODE/ESTAS/mod_ESTAS_ALERTS.f90
 test_estas_alerts: test_estas_alerts.f90 $(ESTAS_ALERTS_SRC)
 	$(FC) $(FFLAGS) -o $@ $(ESTAS_ALERTS_SRC) test_estas_alerts.f90
 
-# Compile test_file_unit (standalone - includes subroutine copies)
-test_file_unit: test_file_unit.f90
-	$(FC) $(FFLAGS) -o $@ test_file_unit.f90
+# Compile test_file_unit (links the production find_unit)
+test_file_unit: test_file_unit.f90 $(CORE_UTILS)/FIND_FILE_UNIT.f90
+	$(FC) $(FFLAGS) -o $@ test_file_unit.f90 $(CORE_UTILS)/FIND_FILE_UNIT.f90
 
 # Compile test_diatoms (kinetics test)
-test_diatoms: test_diatoms.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_diatoms: test_diatoms.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_DIATOMS.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_diatoms.f90 *.o
 
 # Compile test_cyanobacteria (kinetics test)
-test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(CYN_DROOP_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CYANOBACTERIA.f90
@@ -234,14 +261,15 @@ test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSE
 # Compile test_cyn_droop (nitrogen-quota helpers + the flag-gated branch in
 # both CYANOBACTERIA variants). Same source set as test_cyanobacteria plus
 # the AQUABC_CYN_DROOP module, which the library routines now use.
-test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET) $(CYN_DROOP_SRC)
+test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS) $(CYN_DROOP_SRC)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(CYN_DROOP_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_CYANOBACTERIA.f90
@@ -249,14 +277,15 @@ test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET) $(CYN
 	$(FC) $(FFLAGS) -o $@ test_cyn_droop.f90 *.o
 
 # Compile test_zooplankton (kinetics test)
-test_zooplankton: test_zooplankton.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_zooplankton: test_zooplankton.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_ZOOPLANKTON.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_zooplankton.f90 *.o
@@ -288,41 +317,44 @@ test_doc_mineralization: test_doc_mineralization.f90 $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_doc_mineralization.f90 *.o
 
 # Compile test_fix_cyn (kinetics test)
-test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_fix_cyn.f90 *.o
 
 # Compile test_opa (kinetics test)
-test_opa: test_opa.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_opa: test_opa.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_OTHER_PLANKTONIC_ALGAE.f90
 	$(FC) $(FFLAGS) -c $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_opa.f90 *.o
 
 # Compile test_nostocales (kinetics test)
-test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(TEST_AUX_SUBSET)
+test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)
-	$(FC) $(FFLAGS) -c $(TEST_AUX_SUBSET)
+	$(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
+	$(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 	$(FC) $(FFLAGS) -c $(POSITIONING_SRC)
 	$(FC) $(FFLAGS) -c $(NOST_STAGING_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_LIB)/aquabc_II_pelagic_lib_NOSTACALES.f90

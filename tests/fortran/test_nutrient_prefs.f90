@@ -51,74 +51,11 @@ program test_nutrient_prefs
 
 contains
 
-    ! Local copy of AMMONIA_PREFS (from pelagic_auxillary)
-    ! Updated: guard condition checks sum of NH3+NOx to prevent division by near-zero
-    subroutine AMMONIA_PREFS(AMMONIA_PREF, NH3, NOx, kn, nkn)
-        implicit none
-        integer :: nkn
-        double precision :: AMMONIA_PREF(nkn)
-        double precision, intent(in) :: NH3(nkn)
-        double precision, intent(in) :: NOx(nkn)
-        double precision, intent(in) :: kn
-        double precision :: PN(nkn)
+    ! AMMONIA_PREFS: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
-        ! Guard condition: check sum of NH3+NOx to prevent division by near-zero
-        where ((NH3 + NOx) .lt. 1.0D-6)
-            PN = 0.0D0
-        elsewhere
-            PN = (NH3 * NOx) / ((kn + NH3) * (kn + NOx)) + (kn * NH3) / ((NH3 + NOx) * (kn + NOx))
-        end where
-        AMMONIA_PREF = PN
-    end subroutine AMMONIA_PREFS
+    ! DIN_DON_PREFS: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
-    ! Local copy of DIN_DON_PREFS (from pelagic_auxillary)
-    ! Updated: guard condition checks sum of DIN+AVAIL_DON to prevent division by near-zero
-    subroutine DIN_DON_PREFS(DIN_DON_PREF, NH3, DON, frac_avail_DON, NOx, kn, nkn)
-        implicit none
-        integer :: nkn
-        double precision :: DIN_DON_PREF(nkn)
-        double precision, intent(in) :: NH3(nkn)
-        double precision, intent(in) :: DON(nkn)
-        double precision, intent(in) :: frac_avail_DON
-        double precision, intent(in) :: NOx(nkn)
-        double precision, intent(in) :: kn
-        double precision :: PN(nkn)
-        double precision :: DIN(nkn)
-        double precision :: AVAIL_DON(nkn)
-
-        DIN = NH3 + NOx
-        AVAIL_DON = (frac_avail_DON * DON)
-
-        ! Guard condition: check sum of DIN+AVAIL_DON to prevent division by near-zero
-        where ((DIN + AVAIL_DON) .lt. 1.0D-6)
-            PN = 0.0D0
-        elsewhere
-            PN = (DIN * AVAIL_DON) / ((kn + DIN) * (kn + AVAIL_DON)) + &
-                 (kn * DIN) / ((DIN + AVAIL_DON) * (kn + AVAIL_DON))
-        end where
-        DIN_DON_PREF = PN
-    end subroutine DIN_DON_PREFS
-
-    ! Local copy of DIP_DOP_PREFS (from pelagic_auxillary)
-    ! Updated: guard condition checks sum of DIP+DOP to prevent division by near-zero
-    subroutine DIP_DOP_PREFS(DIP_DOP_PREF, AVAIL_DIP, AVAIL_DOP, KP, nkn)
-        implicit none
-        integer :: nkn
-        double precision :: DIP_DOP_PREF(nkn)
-        double precision, intent(in) :: AVAIL_DIP(nkn)
-        double precision, intent(in) :: AVAIL_DOP(nkn)
-        double precision, intent(in) :: KP
-        double precision :: PP(nkn)
-
-        ! Guard condition: check sum of AVAIL_DIP+AVAIL_DOP to prevent division by near-zero
-        where ((AVAIL_DIP + AVAIL_DOP) .lt. 1.0D-6)
-            PP = 0.0D0
-        elsewhere
-            PP = (AVAIL_DIP * AVAIL_DOP) / ((KP + AVAIL_DIP) * (KP + AVAIL_DOP)) + &
-                 (KP * AVAIL_DIP) / ((AVAIL_DIP + AVAIL_DOP) * (KP + AVAIL_DOP))
-        end where
-        DIP_DOP_PREF = PP
-    end subroutine DIP_DOP_PREFS
+    ! DIP_DOP_PREFS: the production routine (aquabc_II_pelagic_auxillary.f90) is linked.
 
     subroutine assert_approx_equal(value, expected, tol, test_name)
         real(kind=DBL_PREC), intent(in) :: value, expected, tol

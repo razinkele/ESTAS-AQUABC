@@ -19,22 +19,28 @@ Usage:
     python tools/deep_state_vs_process_crosscheck.py [--output-dir OUTPUTS]
 """
 
-import sys
-import os
 import argparse
-import numpy as np
+import sys
 from pathlib import Path
 
+import numpy as np
+
 sys.path.insert(0, str(Path(__file__).parent))
-from process_rate_slot_map import SLOT_MAP, DERIVATIVE_SIGNS
 from aquabc_analysis_utils import (
-    NDIAGVAR, NSTATE, NUM_ALLELOPATHY, NSTATE_TOTAL, NUM_PROCESS_RATES,
-    BOX_IDS, BOX_TYPES, STATE_VAR_NAMES,
-    DEFAULT_N_TO_C, DEFAULT_P_TO_C, DEFAULT_O2_TO_C, DEFAULT_Si_TO_C,
-    NON_NEGATIVE_VARS, NONNEG_RATE_SLOTS,
-    SEV_ERROR, SEV_WARNING, SEV_INFO, SEV_OK,
-    get_slot_col, load_process_rates, load_state_vars,
+    BOX_IDS,
+    BOX_TYPES,
+    DEFAULT_N_TO_C,
+    DEFAULT_O2_TO_C,
+    DEFAULT_P_TO_C,
+    NDIAGVAR,
+    NON_NEGATIVE_VARS,
+    NONNEG_RATE_SLOTS,
+    DEFAULT_Si_TO_C,
+    get_slot_col,
+    load_process_rates,
+    load_state_vars,
 )
+from process_rate_slot_map import DERIVATIVE_SIGNS, SLOT_MAP
 
 
 def compute_kinetic_deriv(rates, var_name):
