@@ -128,6 +128,7 @@ test_diss_me: test_diss_me.f90 $(DISS_ME_SRCS)
 test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
+	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
 	$(FC) $(FFLAGS) -c $(CORE_UTILS)/STRING_UTILS.f90
 	$(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 	$(FC) $(FFLAGS) -c $(PELAGIC_TYPES_SRC)

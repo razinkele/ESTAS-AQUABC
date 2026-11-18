@@ -104,7 +104,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
                       NDRIV_CHECK => n_driving_functions, NFLAGS_CHECK => nflags
     use AQUABC_PELAGIC_TYPES
     use AQUABC_PHYSICAL_CONSTANTS, only: CELSIUS_TO_KELVIN, &
-         FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION
+         FE_MOLAR_MASS_MG, S_MOLAR_MASS_MG, MIN_CONCENTRATION, monod_substrate
     !use basin, only: ipv ! array of external node numbers for debugging, should be commented when used in ESTAS
     !$ use omp_lib
 
@@ -1670,12 +1670,12 @@ contains
             (K_MIN_DOC_DOXY_20 + LIM_PHYT_AMIN_DOC(ns:ne)) * &
             (THETA_K_MIN_DOC_DOXY ** (TEMP(ns:ne) - 2.0D1)) * LIM_DOXY_RED(ns:ne) * &
             PH_CORR_DOC_MIN_DOXY(ns:ne) * &
-            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_DOXY)) * DISS_ORG_C(ns:ne)
+            monod_substrate(DISS_ORG_C(ns:ne), K_HS_DOC_MIN_DOXY) * DISS_ORG_C(ns:ne)
 
         R_ABIOTIC_DOC_MIN_NO3N(ns:ne) = &
             K_MIN_DOC_NO3N_20  * (THETA_K_MIN_DOC_NO3N ** (TEMP(ns:ne) - 2.0D1)) * &
             LIM_NO3N_RED(ns:ne) * PH_CORR_DOC_MIN_NO3N(ns:ne) * &
-            (DISS_ORG_C(ns:ne) / (DISS_ORG_C(ns:ne) + K_HS_DOC_MIN_NO3N)) * DISS_ORG_C(ns:ne)
+            monod_substrate(DISS_ORG_C(ns:ne), K_HS_DOC_MIN_NO3N) * DISS_ORG_C(ns:ne)
 
         R_ABIOTIC_DOC_MIN_MN_IV(ns:ne)    = 0.0D0
         R_ABIOTIC_DOC_MIN_FE_III(ns:ne)   = 0.0D0

@@ -64,6 +64,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Pelagic DOC mineralisation returned NaN at exactly zero DOC when a half-saturation is zero.** Both shipped
+  constant sets carry `K_HS_DOC_MIN_DOXY = 0` (first-order kinetics), so `DOC/(DOC + K)` was 0/0 there, in the inline
+  branch (`aquabc_II_pelagic_model.f90`) and in `ORGANIC_CARBON_MINERALIZATION`. The eight DOC terms now go through
+  `monod_substrate(s, k)` (`AQUABC_PHYSICAL_CONSTANTS`), which is `s/(s+k)` and 0 where `s + k` is exactly 0; every
+  other input is bit-for-bit unchanged (Standard 30 d and CL29 90 d outputs byte-identical, 0D golden passes). The
+  DON and DOP twins already had their own guards; the sediment twins ship with K = 1.
 - **The Standard set (`INPUTS/`) ran the plateau temperature model on CTMI constants.** The CTMI commit
   (`cc7c76e`, February) put T_max values (35/38/33 °C) into the `KAPPA_*_OVER_OPT_TEMP` slots and zeroed
   `KAPPA_*_UNDER_OPT_TEMP`, but the Standard options select plateau (`TEMPERATURE_MODEL = 0`) and nothing restored
