@@ -5804,3 +5804,23 @@ References: Vybernaite-Lubiene, I., Žilius, M., Šaltytė-Vaisiauskė, L., et a
 downstream aquatic ecosystems. *Water*, 10(9), 1178. https://doi.org/10.3390/w10091178 · Gasiūnaitė, Z. R.,
 Razinkovas-Baziukas, A., Grinienė, E., et al. (2012). Pelagic patterns along the Nemunas River–Curonian Lagoon
 transition, south-eastern Baltic Sea. *Baltica*, 25(1), 77–86. https://doi.org/10.5200/baltica.2012.25.07
+
+**69.5 Addendum: the spring cost is the spring supply, but not only a cost.** This answers the review question on
+§69.3. Registered as note item 91 (2026-11-08 13:32); the result is item 92. The scorer is
+`diag_dkd_20261108/river_seed_S.py`. The river supply was set to 0.30 mg C/L in June-October only, with the floor
+otherwise.
+
+| river diatoms | Oct-Nov diatoms | Sep-1 inoculum | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | DSi RMSE |
+|---|---|---|---|---|---|---|
+| 0.02 all year (base) | 0.101 | 1.3 % | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 0.786 |
+| 0.30 all year | 0.329 | 4.7 % | 1.296 | 6.775 / 7.230 / 6.623 | 2.31 | 0.758 |
+| 0.30 June-October only | 0.294 | 4.7 % | 1.135 | 6.846 / 7.312 / 6.691 | 2.61 | 0.776 |
+
+- **The spring cost goes away with the spring supply.** Feb-May returns to the base.
+- **But the spring supply was not pure cost.** It also carried part of the gain in Φ and in the autumn/spring
+  ratio, and a tenth of the autumn diatoms. By the registered rule the result is MIXED: the autumn half missed its
+  10 % bar narrowly, at 10.6 %.
+- **The shape therefore has to come from data.** The river's biogenic silica rises in spring-summer (§69.4), which
+  lies between these two cases. Its monthly values are in Table 2 of Vybernaite-Lubiene et al. (2018), but the table
+  was not reachable here: the indexed text drops it and the publisher blocked the download. With that row, the
+  series can be built the same way as the river silica, keeping the annual load. Nothing is adopted.
