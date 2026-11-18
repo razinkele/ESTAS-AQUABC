@@ -114,12 +114,16 @@ verdict the bloom months do not support.
 | NONFIX_N | 0.499 | 0.585 | weakly limiting |
 | LIGHT | 0.475 | 0.457 | weakly limiting |
 
-> **Note added 2026-11-18 (v0.12.0), not a re-analysis.** The TEMP row was read from FIX_CYN
-> process-rate slot 9 (`tools/diagnose_group_limitation.py`). Until the fix in #154 the model added
-> the Nostocales N-fixation rate into that slot whenever Nostocales was on, as it is in CL29. The
-> TEMP values in this table (0.414, 0.287) and wherever they are quoted below therefore include that
-> addition and are **upper bounds** on the true temperature factor. They have not been recomputed
-> with the fixed build, so the "weakly limiting" verdict for temperature is unconfirmed.
+> **Check added 2026-11-18 (v0.12.0; running note item 95, `diag_v0120_check_20261118/`).** The TEMP
+> row was read from FIX_CYN process-rate slot 9 (`tools/diagnose_group_limitation.py`), and until the
+> fix in #154 the model added the Nostocales N-fixation rate into that slot whenever Nostocales was on.
+> Recomputed independently as CTMI(T; 18, 26, 32) on the water temperature of a full adopted run
+> (same four boxes, 2012–2022; July and August mean temperatures 20.97 and 20.78 °C, matching §1):
+> **0.4136 for July–August and 0.2871 for July–September**, with the same percentiles as §3.5 to three
+> decimals. **The printed values stand**; the addition was negligible in the 2026-08-10 run.
+> Under today's adopted inputs the addition was not negligible: the pre-#154 slot read 0.017 too high
+> on average over July–August (up to 0.099 on single days), so FIX_CYN temperature factors read from
+> process rates between the Nostocales changes and #154 carry that excess.
 
 **In the bloom months temperature (0.414) and light (0.475) are comparable**, and neither is
 strongly limiting. There is no single dominant summer constraint: growth is held at roughly

@@ -22,9 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   explicitly (0D golden unchanged; Standard 30 d and CL29 90 d byte-identical).
 
 ### Notes
-- **`docs/CL29_phenology_diagnosis.md` §3.1**: a dated note says the FIX_CYN temperature factor (0.414 / 0.287) was
-  read from the process-rate slot that carried the Nostocales fixation rate until #154, so it is an upper bound and
-  has not been recomputed.
+- **`docs/CL29_phenology_diagnosis.md` §3.1**: the FIX_CYN temperature factor (0.414 / 0.287) was read from the
+  process-rate slot that carried the Nostocales fixation rate until #154. Recomputed from the run's water
+  temperature it is 0.4136 / 0.2871, so the printed values stand; a dated note records the check, and that under
+  today's inputs the same slot read 0.017 too high over July-August before #154.
 
 ## [0.12.0] - 2026-11-18
 
