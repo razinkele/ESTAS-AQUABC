@@ -23,14 +23,24 @@ import pandas as pd
 from shiny import module, reactive, render, ui
 
 try:
+    from shiny_app import output_data
     from shiny_app.mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
 except ImportError:  # running as a script from inside shiny_app/
+    import output_data
     from mass_balance import MassBalanceCalculator, load_stoichiometry_from_params
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
+
+
+def _control_file(state):
+    """Control file of the run the Run tab is set to (the setup's default as a fallback)."""
+    try:
+        return state.run.command_config()[1]
+    except Exception:
+        return state.run.current_setup().input_file
 
 
 def _compute_mass_balance_blocking(output_csv, param_file):
@@ -99,18 +109,19 @@ def mass_balance_server(input, output, session, state):
     @reactive.event(input.calc_mass_balance)
     def launch_mass_balance():
         """Launch the backgrounded mass-balance calculation on button click."""
-        if not os.path.exists(OUTPUT_CSV):
-            logger.warning("OUTPUT.csv not found for mass balance calculation")
-            ui.notification_show(
-                "OUTPUT.csv not found. Run the model first.",
-                type="warning",
-                duration=3
-            )
+        setup = state.run.current_setup()
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        if csv_path is None:
+            logger.warning("No model output for mass balance calculation")
+            ui.notification_show(source, type="warning", duration=3)
             return
 
-        logger.info("Calculating mass balance...")
-        param_file = os.path.join(INPUTS_DIR, "WCONST_04.txt")
-        compute_task(OUTPUT_CSV, param_file)
+        logger.info(f"Calculating mass balance from {source}...")
+        ui.notification_show(
+            f"Mass balance of {source}: one box's pools, so transport in and out is not included.",
+            type="message", duration=6)
+        param_file = os.path.join(ROOT, setup.inputs_dir, "WCONST_04.txt")
+        compute_task(csv_path, param_file)
 
     @reactive.effect
     def collect_mass_balance():

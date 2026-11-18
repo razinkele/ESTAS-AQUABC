@@ -14,8 +14,10 @@ import pandas as pd
 from shiny import module, reactive, render, ui
 
 try:
+    from shiny_app import output_data
     from shiny_app.observation_compare import ModelObservationComparison, ObservationData, create_sample_observations
 except ImportError:  # running as a script from inside shiny_app/
+    import output_data
     from observation_compare import ModelObservationComparison, ObservationData, create_sample_observations
 
 try:
@@ -28,6 +30,14 @@ except ImportError:  # running as a script from inside shiny_app/
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
+
+
+def _control_file(state):
+    """Control file of the run the Run tab is set to (the setup's default as a fallback)."""
+    try:
+        return state.run.command_config()[1]
+    except Exception:
+        return state.run.current_setup().input_file
 
 
 def _compare_blocking(output_csv, obs):
@@ -401,21 +411,27 @@ def observations_server(input, output, session, state):
                        selected=obs.variables[0] if obs.variables else None)
         ui.notification_show(f"Loaded {len(obs.variables)} observation variables", type="message")
 
-        # Offload the heavy model comparison (full OUTPUT.csv read + metrics).
-        compare_task(OUTPUT_CSV, obs)
+        # Offload the heavy model comparison (full model-output read + metrics).
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        if csv_path is None:
+            ui.notification_show(f"Observations loaded; no comparison: {source}", type="warning")
+            return
+        ui.notification_show(f"Comparing with {source}", type="message", duration=4)
+        compare_task(csv_path, obs)
 
     @reactive.effect
     @reactive.event(input.generate_sample_obs)
     def generate_sample_observations():
         """Launch background sample-data generation + comparison."""
-        if not os.path.exists(OUTPUT_CSV):
-            ui.notification_show("OUTPUT.csv not found. Run the model first.", type="warning")
+        csv_path, source = output_data.analysis_csv(ROOT, _control_file(state))
+        if csv_path is None:
+            ui.notification_show(source, type="warning")
             return
 
-        logger.info("Generating sample observations...")
-        # Sampling reads OUTPUT.csv and the comparison reads it again; both plus
+        logger.info(f"Generating sample observations from {source}...")
+        # Sampling reads the model output and the comparison reads it again; both plus
         # metric computation run off the event loop (TODO 2.4).
-        sample_task(OUTPUT_CSV)
+        sample_task(csv_path)
 
     @render.table
     def obs_comparison_summary():

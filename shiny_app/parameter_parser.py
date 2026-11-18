@@ -21,7 +21,10 @@ from datetime import datetime
 
 logger = logging.getLogger("AQUABC.params")
 
-# Parameter categories with their line ranges (1-indexed, inclusive)
+# Parameter categories with their id ranges (1-indexed, inclusive). They follow the order of
+# the constants file and must cover every id exactly once (tests/python checks this against
+# INPUTS/WCONST_04.txt): until 2026-11 the table still described an older, shorter file, so
+# everything from id 158 on sat under the wrong heading and ids 319-324 under none.
 PARAMETER_CATEGORIES = {
     "General": (1, 4),
     "Diatoms": (5, 28),
@@ -32,11 +35,17 @@ PARAMETER_CATEGORIES = {
     "Detritus": (134, 146),
     "Dissolved Organics": (147, 151),
     "Nitrification": (152, 157),
-    "Redox Chemistry": (158, 209),
-    "Methane": (210, 234),
-    "Settling": (235, 250),
-    "pH Effects": (251, 266),
-    "Nostocales": (267, 318),
+    "Iron and Manganese Redox": (158, 163),
+    "DOC Mineralisation": (164, 203),
+    "DON Mineralisation": (204, 233),
+    "DOP Mineralisation": (234, 263),
+    "Methane and Sulphide Oxidation": (264, 269),
+    "Iron Dissolution": (270, 275),
+    "Nostocales": (276, 306),
+    "Organic Matter Availability": (307, 312),
+    "Nostocales Nitrogen": (313, 315),
+    "Mineralisation Thresholds": (316, 318),
+    "Light Curve and Ice": (319, 324),
 }
 
 # Parameter validation rules (parameter_name_pattern -> (min, max, description))

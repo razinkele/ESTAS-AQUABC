@@ -382,13 +382,24 @@ def plot_server(input, output, session, state):
             n = input.nrows()
             if n is None:
                 n = 10
-            df = pd.read_csv(OUTPUT_CSV, comment='#', nrows=n)
+            # The run's first box output; the 0D example's root OUTPUT.csv as a fallback.
+            try:
+                control = run.command_config()[1]
+            except Exception:
+                control = run.current_setup().input_file
+            box = output_data.first_box_output(ROOT, control)
+            if box is not None:
+                df = pd.read_csv(box, sep=r"\s+", nrows=n)
+            elif os.path.exists(OUTPUT_CSV):
+                df = pd.read_csv(OUTPUT_CSV, comment='#', nrows=n)
+            else:
+                return pd.DataFrame([["No model output found. Run the model first."]], columns=["Preview"])
             # Strip whitespace from column names
             df.columns = [c.strip() for c in df.columns]
             return df
         except Exception as e:
-            logger.error(f"Error reading OUTPUT.csv preview: {e}")
-            return pd.DataFrame([["error reading OUTPUT.csv", str(e)]])
+            logger.error(f"Error reading output preview: {e}")
+            return pd.DataFrame([["error reading model output", str(e)]])
 
     # ========== OUTPUT DIRECTORY MANAGEMENT ==========
     def analyze_output_directory(dir_name):

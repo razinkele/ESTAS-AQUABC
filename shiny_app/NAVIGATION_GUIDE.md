@@ -69,24 +69,30 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 ---
 
 ### 4. **Parameters** (Coming Soon)
-**Purpose:** Structured editing of 318 model parameters
+**Purpose:** Structured editing of the 324 model parameters
 
 **Planned Features:**
 - Category-based organization:
-  - General (5 params)
-  - Diatoms (27 params)
+  - General (4 params)
+  - Diatoms (24 params)
   - Non-fixing Cyanobacteria (22 params)
   - Fixing Cyanobacteria (24 params)
   - Other Phytoplankton (22 params)
   - Zooplankton (37 params)
-  - Detritus (12 params)
-  - Dissolved Organics (7 params)
+  - Detritus (13 params)
+  - Dissolved Organics (5 params)
   - Nitrification (6 params)
-  - Redox Chemistry (52 params)
-  - Methane (25 params)
-  - Settling (16 params)
-  - pH Effects (16 params)
-  - Nostocales (23 params)
+  - Iron and Manganese Redox (6 params)
+  - DOC Mineralisation (40 params)
+  - DON Mineralisation (30 params)
+  - DOP Mineralisation (30 params)
+  - Methane and Sulphide Oxidation (6 params)
+  - Iron Dissolution (6 params)
+  - Nostocales (31 params)
+  - Organic Matter Availability (6 params)
+  - Nostocales Nitrogen (3 params)
+  - Mineralisation Thresholds (3 params)
+  - Light Curve and Ice (6 params)
 
 - File selection (WCONST_04.txt, EXTRA_WCONST.txt)
 - **Edit Parameters** button (launches modal editor)

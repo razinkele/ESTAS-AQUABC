@@ -64,6 +64,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Four app features needed a root `OUTPUT.csv` that ESTAS never writes** (only the 0D example does): Mass Balance,
+  Observations, Data Preview and the dashboard's "Last Run". They now use the run's own first box output
+  (`PELAGIC_BOX_NNNNN.out` of the control file selected on the Run tab), converted to the `OUTPUT.csv` column names
+  for the two analysis tabs; the root `OUTPUT.csv` remains a fallback. Mass Balance says which file it used and that
+  one box's pools exclude transport, and reads the active setup's constants instead of `INPUTS/`. Rows with the wrong
+  field count (folders written by two runs at once) are skipped.
+- **The Parameters tab's categories described an older constants file**: everything from id 158 was under the wrong
+  heading (ids 210-234, labelled "Methane", are DON mineralisation; "Settling" and "pH Effects" held DOP
+  mineralisation) and ids 319-324 were in no category. The table now has 20 categories covering 1-324 exactly once,
+  checked against `INPUTS/WCONST_04.txt`; the Reference Manual and navigation guide lists are regenerated from it.
 - **Fortran unit tests exercised copies, not the model.** `tests/fortran/test_pelagic_aux_subset.f90` was a trimmed
   copy of the auxiliary routines whose `GROWTH_AT_TEMP` stayed CTMI-only after production gained the plateau model
   (the default), and six tests carried their own copies of `GROWTH_AT_TEMP`, the nutrient preferences, the ammonia
