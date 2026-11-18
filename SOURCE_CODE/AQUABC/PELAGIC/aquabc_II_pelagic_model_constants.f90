@@ -22,6 +22,12 @@ module AQUABC_PELAGIC_MODEL_CONSTANTS
 
     implicit none
 
+    ! The temperature constants below are for the PLATEAU model, the default
+    ! (USE_CTMI_TEMP = .false.): *_OPT_TEMP_LR/UR are the plateau edges and KAPPA_* are decay
+    ! rates per degC, the values of INPUTS/WCONST_04.txt. They were CTMI-style (KAPPA_UNDER = 0,
+    ! KAPPA_OVER = T_max) until 2026-11, which under the default model meant no cold
+    ! limitation for any constant a file did not override.
+
     !Model constants
     real(kind = DBL_PREC) ::                               K_A !Model constant no   1 : Aeration coefficient (if negative calculates internally)
     real(kind = DBL_PREC) ::                         THETA_K_A !Model constant no   2 : Temperature correction factor for aeration
@@ -1313,11 +1319,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                                   XKC =   0.08D0  !fixme. Light extinction per chlorophyl unit,( mcg Chla/l/m) for calculation of saturation for Smith. Should be di
                                 PHIMX = 720.00D0  !Quantum yield const. mg C/mole photon
                       KG_DIA_OPT_TEMP =    3.7D0  !3.3 3.1  Diatoms Growth rate
-                      DIA_OPT_TEMP_LR =    1.0D0  !Diatoms CTMI T_min (minimum cardinal temperature)
-                      DIA_OPT_TEMP_UR =   24.0D0  !Diatoms CTMI T_opt (optimal temperature)
+                      DIA_OPT_TEMP_LR =    1.0D0  !Diatoms plateau lower edge (CTMI: T_min)
+                      DIA_OPT_TEMP_UR =   24.0D0  !Diatoms plateau upper edge (CTMI: T_opt)
                        EFF_DIA_GROWTH =   0.95D0  !Diatoms Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_DIA_UNDER_OPT_TEMP =   0.0D0   !(unused, kept for backward compat)
-             KAPPA_DIA_OVER_OPT_TEMP  =  35.0D0   !Diatoms CTMI T_max (maximum cardinal temperature)
+             KAPPA_DIA_UNDER_OPT_TEMP =   0.04D0  !Diatoms plateau model: decay rate per degC below DIA_OPT_TEMP_LR
+             KAPPA_DIA_OVER_OPT_TEMP  =  0.07D0  !Diatoms plateau model: decay rate per degC above DIA_OPT_TEMP_UR (CTMI reads this slot as T_max)
                             KR_DIA_20 =   0.05D0  !Diatoms Respiration rate
                          THETA_KR_DIA =   1.04D0  !Diatoms Temperature correction for basal respiration rate
                             KD_DIA_20 =   0.12D0  !Diatoms Mortality rate
@@ -1337,11 +1343,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           DIA_O2_TO_C =   2.66D0  !Diatoms Oxygen to Carbon ratio for respiration
                         DIA_C_TO_CHLA =  30.00D0  !Diatoms Carbon to Chlorophil a ratio
                       KG_CYN_OPT_TEMP =    2.4D0  !Non-fixing cyanobacteria Growth rate
-                      CYN_OPT_TEMP_LR =   15.0D0  !Non-fixing cyanobacteria CTMI T_min
-                      CYN_OPT_TEMP_UR =   26.0D0  !Non-fixing cyanobacteria CTMI T_opt
+                      CYN_OPT_TEMP_LR =   15.0D0  !Non-fixing cyanobacteria plateau lower edge (CTMI: T_min)
+                      CYN_OPT_TEMP_UR =   26.0D0  !Non-fixing cyanobacteria plateau upper edge (CTMI: T_opt)
                        EFF_CYN_GROWTH =   0.95D0  !Non-fixing cyanobacteria Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_CYN_UNDER_OPT_TEMP =   0.0D0   !(unused)
-              KAPPA_CYN_OVER_OPT_TEMP =  38.0D0   !Non-fixing cyanobacteria CTMI T_max
+             KAPPA_CYN_UNDER_OPT_TEMP =   0.08D0  !Non-fixing cyanobacteria plateau model: decay rate per degC below CYN_OPT_TEMP_LR
+              KAPPA_CYN_OVER_OPT_TEMP =  0.05D0  !Non-fixing cyanobacteria plateau model: decay rate per degC above CYN_OPT_TEMP_UR (CTMI reads this slot as T_max)
                             KR_CYN_20 =   0.06D0  !Non-fixing cyanobacteria Respiration rate
                          THETA_KR_CYN =   1.04D0  !Non-fixing cyanobacteria Temperature correction for respiration rate
                             KD_CYN_20 =  0.125D0  !Non-fixing cyanobacteria Mortality rate
@@ -1359,11 +1365,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           CYN_O2_TO_C =   2.66D0  !Non-fixing cyanobacteria Oxygen to Carbon ratio for respiration
                         CYN_C_TO_CHLA =  40.00D0  !Non-fixing cyanobacteria Carbon to Chlorophyl a ratio
                   KG_FIX_CYN_OPT_TEMP =    3.5D0  !Fixing cyanobacteria Growth rate constant
-                  FIX_CYN_OPT_TEMP_LR =   18.0D0  !Fixing Cyanobacteria CTMI T_min
-                  FIX_CYN_OPT_TEMP_UR =   26.0D0  !Fixing Cyanobacteria CTMI T_opt
+                  FIX_CYN_OPT_TEMP_LR =   18.0D0  !Fixing cyanobacteria plateau lower edge (CTMI: T_min)
+                  FIX_CYN_OPT_TEMP_UR =   26.0D0  !Fixing cyanobacteria plateau upper edge (CTMI: T_opt)
                    EFF_FIX_CYN_GROWTH =   0.95D0  !Fixing cyanobacteria Effective growth. (1-EG)*growth - losses for RESP and excretion
-         KAPPA_FIX_CYN_UNDER_OPT_TEMP =   0.0D0   !(unused)
-          KAPPA_FIX_CYN_OVER_OPT_TEMP =  38.0D0   !Fixing cyanobacteria CTMI T_max
+         KAPPA_FIX_CYN_UNDER_OPT_TEMP =   0.075D0  !Fixing cyanobacteria plateau model: decay rate per degC below FIX_CYN_OPT_TEMP_LR
+          KAPPA_FIX_CYN_OVER_OPT_TEMP =  0.05D0  !Fixing cyanobacteria plateau model: decay rate per degC above FIX_CYN_OPT_TEMP_UR (CTMI reads this slot as T_max)
                         KR_FIX_CYN_20 =   0.06D0  !Fixing cyanobacteria RESP rate constant
                      THETA_KR_FIX_CYN =   1.04D0  !Fixing cyanobacteria Temperature correction for RESP rate
                         KD_FIX_CYN_20 =   0.10D0  !Fixing cyanobacteria Mortality rate constant
@@ -1383,11 +1389,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                                 R_FIX =    1.0D0  !Fixing cyanobacteria Ratio between non-fixing and fixing fractions growth rate
                                 K_FIX =  0.008D0  !Fixing cyanobacteria Effectivity parameter of switching to nitrogen fixation
                       KG_OPA_OPT_TEMP =    2.9D0  !OtherPhyto Growth rate constant
-                      OPA_OPT_TEMP_LR =    9.0D0  !OtherPhyto CTMI T_min
-                      OPA_OPT_TEMP_UR =   20.0D0  !OtherPhyto CTMI T_opt
+                      OPA_OPT_TEMP_LR =    9.0D0  !OtherPhyto plateau lower edge (CTMI: T_min)
+                      OPA_OPT_TEMP_UR =   20.0D0  !OtherPhyto plateau upper edge (CTMI: T_opt)
                        EFF_OPA_GROWTH =   0.95D0  !OtherPhyto Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_OPA_UNDER_OPT_TEMP =   0.0D0   !(unused)
-              KAPPA_OPA_OVER_OPT_TEMP =  33.0D0   !OtherPhyto CTMI T_max
+             KAPPA_OPA_UNDER_OPT_TEMP =   0.05D0  !OtherPhyto plateau model: decay rate per degC below OPA_OPT_TEMP_LR
+              KAPPA_OPA_OVER_OPT_TEMP =  0.10D0  !OtherPhyto plateau model: decay rate per degC above OPA_OPT_TEMP_UR (CTMI reads this slot as T_max)
                             KR_OPA_20 =   0.06D0  !OtherPhyto Respiration rate constant
                          THETA_KR_OPA =   1.02D0  !OtherPhyto Temperature correction for respiration rate
                             KD_OPA_20 =   0.11D0  !OtherPhyto Mortality rate constant
@@ -1405,11 +1411,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                           OPA_O2_TO_C =   2.66D0  !OtherPhyto Oxygen to Carbon ratio for respiration
                         OPA_C_TO_CHLA =  30.00D0  !OtherPhyto Carbon to Chlorophyl a ratio
                       KG_ZOO_OPT_TEMP =   0.45D0  !Zooplankton Growth rate
-                      ZOO_OPT_TEMP_LR =   10.0D0  !Zooplankton CTMI T_min
-                      ZOO_OPT_TEMP_UR =   25.0D0  !Zooplankton CTMI T_opt
+                      ZOO_OPT_TEMP_LR =   10.0D0  !Zooplankton plateau lower edge (CTMI: T_min)
+                      ZOO_OPT_TEMP_UR =   25.0D0  !Zooplankton plateau upper edge (CTMI: T_opt)
                        EFF_ZOO_GROWTH =   0.80D0  !Zooplankton Effective growth. (1-EG)*growth - losses for respiration and excretion
-             KAPPA_ZOO_UNDER_OPT_TEMP =   0.0D0   !(unused)
-              KAPPA_ZOO_OVER_OPT_TEMP =  35.0D0   !Zooplankton CTMI T_max
+             KAPPA_ZOO_UNDER_OPT_TEMP =   0.04D0  !Zooplankton plateau model: decay rate per degC below ZOO_OPT_TEMP_LR
+              KAPPA_ZOO_OVER_OPT_TEMP =  0.01D0  !Zooplankton plateau model: decay rate per degC above ZOO_OPT_TEMP_UR (CTMI reads this slot as T_max)
                          GRAT_ZOO_DIA =   1.00D0  !Zooplankton Grazing rate (growhth rate multiplier) on diatoms
                          GRAT_ZOO_CYN =   1.00D0  !Zooplankton Grazing rate (growhth rate multiplier) on Cyanobacteria
                          GRAT_ZOO_OPA =   1.00D0  !Zooplankton Grazing rate (growhth rate multiplier) on OtherPhyto
@@ -1584,11 +1590,11 @@ subroutine DEFAULT_PELAGIC_MODEL_CONSTANTS
                   THETA_k_DISS_FE_III =   1.04D0  !Dissolution rate constant for Fe III
                 INIT_MULT_FE_III_DISS =   0.50D0  !Initial fraction of dissolved Fe III
              KG_NOST_VEG_HET_OPT_TEMP =   1.29D0  !Nostocales (veg + het) Growth rate constant
-             NOST_VEG_HET_OPT_TEMP_LR =   16.0D0  !Nostocales (veg + het) CTMI T_min
-             NOST_VEG_HET_OPT_TEMP_UR =   26.0D0  !Nostocales (veg + het) CTMI T_opt
+             NOST_VEG_HET_OPT_TEMP_LR =   16.0D0  !Nostocales (veg + het) plateau lower edge (CTMI: T_min)
+             NOST_VEG_HET_OPT_TEMP_UR =   26.0D0  !Nostocales (veg + het) plateau upper edge (CTMI: T_opt)
               EFF_NOST_VEG_HET_GROWTH =   0.95D0  !Nostocales (veg + het) Effective growth. (1-EG)*growth - losses for RESP and excretion
-    KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP =   0.0D0   !(unused)
-     KAPPA_NOST_VEG_HET_OVER_OPT_TEMP =  38.0D0   !Nostocales (veg + het) CTMI T_max
+    KAPPA_NOST_VEG_HET_UNDER_OPT_TEMP =   0.080D0  !Nostocales (veg + het) plateau model: decay rate per degC below NOST_VEG_HET_OPT_TEMP_LR
+     KAPPA_NOST_VEG_HET_OVER_OPT_TEMP =  0.05D0  !Nostocales (veg + het) plateau model: decay rate per degC above NOST_VEG_HET_OPT_TEMP_UR (CTMI reads this slot as T_max)
                    KR_NOST_VEG_HET_20 =   0.06D0  !Nostocales (veg + het) RESP rate constant
                 THETA_KR_NOST_VEG_HET =   1.04D0  !Nostocales (veg + het) Temperature correction for RESP rate
                    KD_NOST_VEG_HET_20 =  0.040D0  !Nostocales (veg + het) Mortality rate constant
