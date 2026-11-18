@@ -335,9 +335,55 @@ def test_control_file_is_in_use_only_while_its_run_holds_the_claim(tmp_path, mon
     assert not control_file_in_use(ctl)
 
 
-def test_sim_config_refuses_to_move_the_output_folder_of_a_running_file():
+def _folder_guard():
+    try:
+        from shiny_app.app_state import output_folder_change_blocked
+    except ImportError:
+        from app_state import output_folder_change_blocked
+    return output_folder_change_blocked
+
+
+_CONTROL = "# PELAGIC MODEL OUTPUT FOLDER write ...\nOUT/\n"
+
+
+def test_output_folder_of_a_running_control_file_cannot_be_changed(tmp_path):
+    """Real control files and the real claim: nothing about the folder is stubbed."""
+    blocked = _folder_guard()
+    (tmp_path / "INPUT_a.txt").write_text(_CONTROL)
+    (tmp_path / "INPUT_b.txt").write_text(_CONTROL.replace("OUT/", "OUT_B/"))
+    a, b = str(tmp_path / "INPUT_a.txt"), str(tmp_path / "INPUT_b.txt")
+    rc = RunController(root=str(tmp_path))
+
+    assert not blocked(a, "ELSEWHERE/")                  # no run: any edit is allowed
+    assert rc.claim_run("INPUT_a.txt")[0]
+    try:
+        assert blocked(a, "ELSEWHERE/") and blocked(a, "ELSEWHERE")
+        assert not blocked(a, "OUT/") and not blocked(a, "OUT")     # the folder it already names
+        assert not blocked(b, "ELSEWHERE/")              # another control file is not this run's
+    finally:
+        rc.release_run()
+    assert not blocked(a, "ELSEWHERE/")                  # the run has ended
+
+
+def test_folder_guard_sees_the_claim_through_a_symlinked_root(tmp_path):
+    """Simulation Config builds its path from its own ROOT; the claim stores a realpath."""
+    import os
+    blocked = _folder_guard()
+    (tmp_path / "real").mkdir()
+    os.symlink(tmp_path / "real", tmp_path / "alias")
+    (tmp_path / "real" / "INPUT.txt").write_text(_CONTROL)
+    rc = RunController(root=str(tmp_path / "real"))
+    assert rc.claim_run("INPUT.txt")[0]
+    try:
+        assert blocked(str(tmp_path / "alias" / "INPUT.txt"), "ELSEWHERE/")
+    finally:
+        rc.release_run()
+
+
+def test_sim_config_asks_the_folder_guard_before_saving():
     import os
     src = open(os.path.join(os.path.dirname(__file__), "..", "..", "shiny_app", "modules",
                             "sim_config.py")).read()
-    guard, save = src.index("control_file_in_use(control_path)"), src.index("scf.save(backup=True)")
+    guard = src.index("if output_folder_change_blocked(control_path, cfg.output_folder):")
+    save = src.index("scf.save(backup=True)")
     assert guard < save and "return" in src[guard:save]
