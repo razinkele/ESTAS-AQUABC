@@ -391,7 +391,8 @@ Before running a simulation, you need a compiled executable.
      dropdown — this is the pre-configured 30-day tutorial run
    - **Pelagic Constants File:** Select **`WCONST_04.txt`** (recommended) or
      leave as "(not used - use defaults)" to use built-in constants
-   - **Enable Binary Output:** Leave `Off` for this tutorial
+   - **Binary-only output:** Leave `Off` for this tutorial (when on, the
+     model writes `.bin` files instead of the text `.out` files)
 
 8. Check the **Command Preview** box at the bottom of the left panel. It
    should show something like:

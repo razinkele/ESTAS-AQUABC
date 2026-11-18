@@ -42,8 +42,9 @@ def test_assemble_binary_enabled_named():
 
 def test_assemble_shear_without_binary_uses_placeholder_and_default_const():
     # falsy exe -> ESTAS_II; shear set, no const -> default const; shear no binary -> placeholder
+    # the model prepends the resuspension input folder, so only the bare name is passed
     assert assemble_estas_command("", "INPUT.txt", "", False, None, "INPUTS/SHEAR.txt", DC) == \
-        ["./ESTAS_II", "INPUT.txt", "WCONST_01.txt", "PELAGIC_OUTPUT.bin", "INPUTS/SHEAR.txt"]
+        ["./ESTAS_II", "INPUT.txt", "WCONST_01.txt", "PELAGIC_OUTPUT.bin", "SHEAR.txt"]
 
 
 def test_assemble_binary_disabled_ignores_filename():
@@ -65,8 +66,8 @@ def test_target_exe_name(compiler, bt, expected):
 def test_assemble_binary_named_and_shear():
     # binary_enabled with an explicit name AND shear -> 5-element cmd, shear appended last
     assert assemble_estas_command("ESTAS_II", "INPUT.txt", "C.txt", True, "OUT.bin",
-                                  "INPUTS/SHEAR.txt", DC) == \
-        ["./ESTAS_II", "INPUT.txt", "C.txt", "OUT.bin", "INPUTS/SHEAR.txt"]
+                                  "SHEAR.txt", DC) == \
+        ["./ESTAS_II", "INPUT.txt", "C.txt", "OUT.bin", "SHEAR.txt"]
 
 
 def test_get_available_executables(tmp_path):
@@ -97,3 +98,27 @@ def test_get_executable_info_existing(tmp_path):
     assert info["size"] == 1
     assert "file_type" in info          # value comes from file(1) / "Unknown" — env-dependent, don't pin
     assert "modified" in info
+
+
+def test_three_or_more_arguments_mean_binary_only_output():
+    """ESTAS_II.f90 sets PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT for 3+ arguments."""
+    from shiny_app.build_commands import is_binary_only
+    assert not is_binary_only(["./ESTAS_II", "INPUT.txt"])
+    assert not is_binary_only(["./ESTAS_II", "INPUT.txt", "C.txt"])
+    assert is_binary_only(["./ESTAS_II", "INPUT.txt", "C.txt", "OUT.bin"])
+    # a shear file alone forces the placeholder binary prefix, hence binary-only too
+    assert is_binary_only(assemble_estas_command("", "INPUT.txt", "", False, None, "S.txt", DC))
+
+
+def test_critical_shear_choices_list_threshold_tables_by_bare_name(tmp_path):
+    """Argument 4 is the per-box critical-stress table; the time series aborts the run."""
+    from shiny_app.build_commands import critical_shear_choices
+    for name in ("CRITICAL_SHEAR_STRESSES.txt", "SHEAR_STRESSES_TS.txt", "SHEAR_STRESS.txt",
+                 "critical_shear_muddy.txt", "CRITICAL_SHEAR.bak"):
+        (tmp_path / name).write_text("x\n")
+    assert critical_shear_choices(str(tmp_path)) == {
+        "": "(not used)",
+        "CRITICAL_SHEAR_STRESSES.txt": "CRITICAL_SHEAR_STRESSES.txt",
+        "critical_shear_muddy.txt": "critical_shear_muddy.txt",
+    }
+    assert critical_shear_choices(str(tmp_path / "missing")) == {"": "(not used)"}

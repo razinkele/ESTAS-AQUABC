@@ -237,6 +237,26 @@ def dashboard_server(input, output, session, state):
     def handle_quick_run():
         """Quick run action from dashboard"""
         logger.info("User clicked Quick Run from dashboard")
+        try:
+            claim_file = run.command_config()[1]
+        except Exception:
+            claim_file = run.current_setup().input_file
+        ok, why = run.claim_run(claim_file)
+        if not ok:
+            # before the log is cleared: a refused click must not wipe the running log
+            ui.notification_show(f"{why} Stop it first or wait for it to finish.",
+                                 type="warning", duration=6)
+            logger.info(f"Quick Run refused: {why}")
+            return
+        started = False
+        try:
+            started = _prepare_and_start_quick_run() is True
+        finally:
+            if not started:
+                run.release_run()
+
+    def _prepare_and_start_quick_run():
+        """Validate, log and launch the Quick Run thread; True once it is started."""
         run.run_log_lines.clear()
         run.run_log_lines.append("Starting quick run...\n")
 
@@ -313,6 +333,10 @@ def dashboard_server(input, output, session, state):
             # Show command before starting
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
             run.run_log_lines.append(f"\nCommand: {cmd_display}\n")
+            if len([c for c in estas_cmd if c]) >= 4:      # build_commands.is_binary_only
+                run.run_log_lines.append(
+                    "⚠ Binary-only output: this command writes .bin files and NO text (.out) "
+                    "files.\n   Plot the run with File Format = Binary.\n")
             run.run_log_lines.append("-" * 40 + "\n")
 
         except Exception as e:
@@ -462,8 +486,10 @@ def dashboard_server(input, output, session, state):
             finally:
                 run.process = None
                 run.running = False
+                run.release_run()
 
         threading.Thread(target=_work, daemon=True, name="QuickRunThread").start()
+        return True
 
     @render.ui
     def dash_setup_availability():

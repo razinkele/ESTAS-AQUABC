@@ -16,6 +16,12 @@ def assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
 
     Owns all value-defaulting so it is fully unit-testable. Arg-count rules:
     0 args uses INPUT.txt; 1: INPUT_FILE; 2: +CONSTANTS; 3: +BINARY; 4: +SHEAR.
+
+    Argument 3 is the PREFIX of the binary output files and switches the model to
+    binary-only output (ESTAS_II.f90: PRODUCE_ONLY_BINARY_PELAGIC_OUTPUT), so any
+    command with three or more arguments writes no text (.out) files -- see
+    is_binary_only(). Argument 4 is the critical-shear-stress file NAME; the model
+    opens it as <resuspension input folder>/<name>, so only the bare name is passed.
     """
     exe_name = exe_name or "ESTAS_II"
     cmd = [f"./{exe_name}"]
@@ -32,7 +38,7 @@ def assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
         if not binary_file:
             binary_file = "PELAGIC_OUTPUT.bin"  # default if switch on but name empty
 
-    shear_file = shear_file or ""
+    shear_file = os.path.basename((shear_file or "").replace("\\", "/"))
 
     # If binary or shear file is set, we need a constants file
     if (binary_file or shear_file) and not const_file:
@@ -57,6 +63,31 @@ def assemble_estas_command(exe_name, input_file, const_file, binary_enabled,
         cmd.append(shear_file)
 
     return cmd
+
+
+def is_binary_only(cmd) -> bool:
+    """True when the command makes the model write binary output only (>= 3 args)."""
+    return len([c for c in cmd if c]) >= 4          # executable + three arguments
+
+
+def critical_shear_choices(inputs_dir) -> dict:
+    """Select choices for argument 4: the critical-shear-stress files of a setup.
+
+    These are the per-box threshold tables (``box  tau_crit``), not the shear-stress
+    time series: the model reads argument 4 in place of the CRITICAL_SHEAR_STRESS_FNAME
+    entry of the resuspension input (option 2), and a time-series file aborts the run.
+    Values are bare file names (the model prepends the resuspension input folder).
+    """
+    choices = {"": "(not used)"}
+    try:
+        names = sorted(os.listdir(inputs_dir))
+    except OSError:
+        names = []
+    for f in names:
+        up = f.upper()
+        if "CRITICAL" in up and "SHEAR" in up and f.endswith(".txt"):
+            choices[f] = f
+    return choices
 
 
 def assemble_run_env(setup_env: dict, solver_value: str) -> dict:

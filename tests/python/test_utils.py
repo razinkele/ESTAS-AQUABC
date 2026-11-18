@@ -102,14 +102,21 @@ class TestReadPelagicBinary:
         assert len(df) == 0
 
     def test_incomplete_record(self, tmp_path):
-        """Extra bytes that don't form a complete row should be truncated."""
+        """With a known state count, a partial trailing record is dropped."""
         f = tmp_path / "partial.bin"
         ncols = len(PELAGIC_BOX_COLUMNS)
         # 2 complete rows + 5 extra doubles
         data = np.arange(2 * ncols + 5, dtype=np.float64)
         data.tofile(str(f))
-        df = read_pelagic_binary(str(f))
+        df = read_pelagic_binary(str(f), n_state=36)
         assert len(df) == 2
+
+    def test_unknown_layout_is_an_error_not_a_guess(self, tmp_path):
+        """No setup names the folder and no record length fits: refuse to reshape."""
+        f = tmp_path / "partial.bin"
+        np.arange(2 * 37 + 5, dtype=np.float64).tofile(str(f))
+        with pytest.raises(ValueError, match="record layout"):
+            read_pelagic_binary(str(f))
 
     def test_column_count(self, tmp_path):
         f = tmp_path / "test.bin"

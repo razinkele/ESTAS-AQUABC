@@ -6,10 +6,10 @@ import pandas as pd
 
 try:
     from shiny_app.simulation_config import SimulationConfigFile
-    from shiny_app.utils import PELAGIC_BOX_COLUMNS
+    from shiny_app.utils import PELAGIC_BOX_COLUMNS, pelagic_binary_layout
 except ImportError:
     from simulation_config import SimulationConfigFile
-    from utils import PELAGIC_BOX_COLUMNS
+    from utils import PELAGIC_BOX_COLUMNS, pelagic_binary_layout
 
 logger = logging.getLogger("AQUABC")
 
@@ -107,8 +107,8 @@ def get_output_columns(file_path=None, file_format=None, output_csv=OUTPUT_CSV):
 
     try:
         if file_format == 'binary':
-            # Binary files use fixed column names
-            return PELAGIC_BOX_COLUMNS
+            # No header: the layout follows the producing setup's state count
+            return pelagic_binary_layout(target_path)
         elif file_format == 'text':
             # Read header from .out file
             df = pd.read_csv(target_path, sep=r'\s+', nrows=0)

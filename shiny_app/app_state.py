@@ -8,6 +8,7 @@ import logging
 import os
 import select
 import subprocess
+import threading
 import time
 import traceback
 
@@ -33,6 +34,13 @@ except ImportError:
 logger = logging.getLogger("AQUABC")
 
 
+# Output folders that have a model run writing into them, across all sessions of
+# this process. A second run into the same folder would interleave its files with
+# the first one's, and the first would be out of reach of that session's Stop.
+_ACTIVE_OUTPUTS: dict = {}
+_ACTIVE_LOCK = threading.Lock()
+
+
 class RunController:
     """Per-session run/build engine: subprocess handle, thread-appended log
     buffers, and the build/run/stop methods. The reactive-context fields
@@ -44,6 +52,7 @@ class RunController:
         self.root = root
         self.process = None
         self.running = False
+        self._claim = None              # output-folder key held by this session's run
         self.last_run_time = None
         self.progress = {"elapsed": "", "rows": 0, "size_kb": 0, "status": "idle"}
         self.build_log_lines: list = []
@@ -57,6 +66,38 @@ class RunController:
 
     def is_running(self) -> bool:
         return self.process is not None and self.process.poll() is None
+
+    def output_key(self, input_file=None) -> str:
+        """Absolute output folder of the run a control file describes."""
+        path = os.path.join(self.root, input_file or "INPUT.txt")
+        return os.path.abspath(os.path.join(
+            self.root, output_data.get_output_folder_from_config(input_txt_path=path)))
+
+    def claim_run(self, input_file=None) -> tuple[bool, str]:
+        """Reserve the right to start a model run; returns (ok, reason).
+
+        Must be called from the click handler, before the worker thread starts:
+        ``process`` is only set inside the worker after Popen, so ``is_running()``
+        alone leaves a window in which a second click starts a second model.
+        The claim is released by ``release_run()`` (the workers' ``finally``).
+        """
+        key = self.output_key(input_file)
+        with _ACTIVE_LOCK:
+            if self._claim is not None or self.running or self.is_running():
+                return False, "A model run is already in progress in this session."
+            holder = _ACTIVE_OUTPUTS.get(key)
+            if holder is not None and holder is not self:
+                return False, ("Another session is running a model into "
+                               f"{os.path.basename(key)}/.")
+            _ACTIVE_OUTPUTS[key] = self
+            self._claim = key
+        return True, ""
+
+    def release_run(self) -> None:
+        with _ACTIVE_LOCK:
+            if self._claim is not None and _ACTIVE_OUTPUTS.get(self._claim) is self:
+                del _ACTIVE_OUTPUTS[self._claim]
+            self._claim = None
 
     def execute_build(self, compiler_path, build_type, exe_name,
                       clean_first, action_name):
@@ -220,6 +261,7 @@ class RunController:
         finally:
             self.process = None
             self.running = False
+            self.release_run()
 
 
 @dataclass

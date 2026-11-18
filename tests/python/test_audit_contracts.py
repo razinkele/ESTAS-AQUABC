@@ -278,3 +278,149 @@ def test_sim_config_does_not_hard_wire_input_txt_for_load_and_save():
     src = open(os.path.join(ROOT, "shiny_app", "modules", "sim_config.py")).read()
     assert "SimulationConfigFile(INPUT_TXT_PATH)" not in src
     assert "SimulationConfigFile(control_path)" in src
+
+
+# --- Binary output layout ----------------------------------------------------------------
+
+def _write_records(path, n_state, nrows=6):
+    import numpy as np
+    data = np.zeros((nrows, n_state + 1))
+    data[:, 0] = 6209.0 + np.arange(nrows) / 24.0            # time, increasing
+    data[:, 1:] = 100.0 * np.arange(1, n_state + 1) + np.arange(nrows)[:, None] * 0.001
+    data.tofile(str(path))
+    return data
+
+
+def test_binary_columns_follow_the_state_count():
+    """32 base states; CYN_N is state 33 (VARN), before the four metabolites."""
+    from shiny_app.utils import PELAGIC_BOX_COLUMNS, pelagic_box_columns
+    assert pelagic_box_columns(36) == PELAGIC_BOX_COLUMNS
+    assert pelagic_box_columns(32) == PELAGIC_BOX_COLUMNS[:33]
+    varn = pelagic_box_columns(37)
+    assert len(varn) == 38 and varn[33] == "CYN_N" and varn[34:] == PELAGIC_BOX_COLUMNS[33:]
+    assert pelagic_box_columns(33)[-1] == "CYN_N"
+    try:
+        pelagic_box_columns(35)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("35 states is not a layout the model writes")
+
+
+def test_binary_reader_takes_the_layout_from_the_setup(tmp_path):
+    """A VARN run writes 38 doubles per record; read as 37 every column shifts."""
+    from shiny_app.utils import read_pelagic_binary, state_count_for_output_file
+    (tmp_path / "INPUT_V.txt").write_text(
+        "# PELAGIC MODEL INPUT FOLDER\nINPUTS_V/\n# PELAGIC MODEL INPUT FILE\n  PELAGIC_INPUTS.txt\n"
+        "# PELAGIC MODEL OUTPUT FOLDER write ...\nOUTPUTS_V/\n")
+    (tmp_path / "INPUTS_V").mkdir()
+    (tmp_path / "INPUTS_V" / "PELAGIC_INPUTS.txt").write_text("# NUM_PELAGIC_STATE_VARS\n   37\n")
+    out = tmp_path / "OUTPUTS_V"
+    out.mkdir()
+    f = out / "P.bin_PELAGIC_BOX_00005.bin"
+    data = _write_records(f, 37)
+    assert state_count_for_output_file(str(f)) == 37
+    df = read_pelagic_binary(str(f))
+    assert df.shape == (6, 38)
+    assert df["CYN_N"].iloc[0] == data[0, 33] and df["SEC_METAB_NOST"].iloc[0] == data[0, 37]
+    assert list(df["TIME_DAYS"]) == list(data[:, 0])
+
+
+def test_binary_reader_infers_the_layout_without_a_setup(tmp_path):
+    """Only one record length both divides the file and gives an increasing time column."""
+    from shiny_app.utils import pelagic_binary_layout, read_pelagic_binary
+    for n_state in (32, 33, 36, 37):
+        f = tmp_path / f"box_{n_state}.bin"
+        data = _write_records(f, n_state, nrows=7 * 11 * 17)   # divisible by none of the others by chance
+        assert len(pelagic_binary_layout(str(f))) == n_state + 1, n_state
+        assert read_pelagic_binary(str(f)).shape == data.shape
+    # the tracked Standard setup is the 36-state layout
+    assert int(open(os.path.join(INPUTS, "PELAGIC_INPUTS.txt")).read().splitlines()[6].split()[0]) == 36
+
+
+def test_binary_reader_refuses_an_ambiguous_file(tmp_path):
+    import numpy as np
+
+    from shiny_app.utils import pelagic_binary_layout
+    f = tmp_path / "one_record.bin"                    # 33*34*37*38 values: every layout divides it
+    n = 33 * 34 * 37 * 38
+    np.arange(n, dtype=np.float64).tofile(str(f))      # ... and every "time" column increases
+    try:
+        pelagic_binary_layout(str(f))
+    except ValueError as e:
+        assert "record layout" in str(e)
+    else:
+        raise AssertionError("ambiguous layout must not be guessed")
+
+
+def test_no_module_hard_codes_the_binary_record_length():
+    app = os.path.join(ROOT, "shiny_app")
+    for folder in (app, os.path.join(app, "modules")):
+        for name in sorted(os.listdir(folder)):
+            if name.endswith(".py"):
+                src = open(os.path.join(folder, name)).read()
+                assert not re.search(r"num_cols\s*=\s*37\b|ncols\s*=\s*37\b", src), name
+
+
+# --- Output Config ---------------------------------------------------------------------
+
+def _oc():
+    from shiny_app import output_config
+    return output_config
+
+
+def test_output_config_round_trip_reproduces_the_tracked_files():
+    oc = _oc()
+    for name in ("PELAGIC_OUTPUT_INFORMATION_FILE.txt", "PELAGIC_OUTPUT_INFORMATION_FILE_verify.txt"):
+        text = open(os.path.join(INPUTS, name)).read()
+        _header, flags = oc.parse(text)
+        boxes, types, _mixed = oc.summarize(flags)
+        assert oc.rewrite(text, oc.apply_selection(flags, boxes, types, len(flags), types)) == text, name
+
+
+def test_output_config_keeps_other_layouts_and_per_box_flags():
+    oc = _oc()
+    text = ("#  BOX_NO   STATE_VAR_OUT   PROCESS_RATE_OUT   MASS_BALANCE_OUT\n"
+            "           1           1           0           0\n"
+            "           2           1           1           1\n"
+            "           3           0           0           0\n")
+    _header, flags = oc.parse(text)
+    boxes, types, mixed = oc.summarize(flags)
+    assert (boxes, types, mixed) == (["1", "2"], ["state_vars", "process_rates", "mass_balance"], True)
+    # unchanged selection: byte-identical, per-box differences intact
+    assert oc.rewrite(text, oc.apply_selection(flags, boxes, types, 3, types)) == text
+    # adding box 3 with the types untouched: 1 and 2 keep their own flags, 3 gets the shown set
+    new = oc.apply_selection(flags, ["1", "2", "3"], types, 3, types)
+    assert new == {1: (1, 0, 0), 2: (1, 1, 1), 3: (1, 1, 1)}
+    assert oc.rewrite(text, new).splitlines()[1:3] == text.splitlines()[1:3]
+    # changing the types is an explicit choice for every selected box
+    assert oc.apply_selection(flags, ["1", "2"], ["state_vars"], 3, types) == {
+        1: (1, 0, 0), 2: (1, 0, 0), 3: (0, 0, 0)}
+    # a setup with more boxes than the file has rows gets the missing rows appended
+    grown = oc.rewrite(text, oc.apply_selection(flags, ["4"], ["state_vars"], 4, types))
+    assert oc.parse(grown)[1] == {1: (0, 0, 0), 2: (0, 0, 0), 3: (0, 0, 0), 4: (1, 0, 0)}
+
+
+def test_output_config_save_backs_up_and_never_creates_the_file(tmp_path):
+    oc = _oc()
+    path = tmp_path / "PELAGIC_OUTPUT_INFORMATION_FILE.txt"
+    try:
+        oc.save(str(path), "x\n")
+    except FileNotFoundError:
+        pass
+    else:
+        raise AssertionError("must not create a file the model does not read")
+    assert not path.exists()
+    path.write_text("old\n")
+    backup = oc.save(str(path), "new\n")
+    assert path.read_text() == "new\n" and open(backup).read() == "old\n"
+
+
+def test_output_config_tab_cannot_write_widget_defaults():
+    """Save is refused until the form was filled from the active setup's file."""
+    src = open(os.path.join(ROOT, "shiny_app", "modules", "run_control.py")).read()
+    save = src[src.index("def save_output_config():"):]
+    save = save[:save.index("def output_config_status")]
+    assert "output_config_loaded.get()" in save and "Load Current first" in save
+    assert "output_config.save(" in save and "open(OUTPUT_INFO_FILE, 'w')" not in src
+    assert 'selected=["5", "6", "8", "9", "14", "17", "25"]' not in src

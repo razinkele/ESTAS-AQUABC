@@ -56,12 +56,13 @@ import traceback
 from shiny import module, reactive, render, ui
 
 try:
-    from shiny_app import build_commands, output_data, setups
+    from shiny_app import build_commands, output_config, output_data, setups
     from shiny_app.compiler_env import check_intel_libs_available, is_intel_executable
     from shiny_app.config import DEFAULT_CONSTANTS_FILE
     from shiny_app.utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
     import build_commands
+    import output_config
     import output_data
     import setups
     from compiler_env import check_intel_libs_available, is_intel_executable
@@ -138,33 +139,35 @@ def run_control_ui():
                 ui.tooltip(
                     ui.input_switch(
                         "cmd_binary_enabled",
-                        "Enable Binary Output",
+                        "Binary-only output",
                         value=False
                     ),
-                    "Write binary output file for faster I/O."
+                    "Write binary (.bin) files INSTEAD of the text (.out) files: the model "
+                    "produces one or the other. Plot such a run with File Format = Binary."
                 ),
                 ui.panel_conditional(
                     "input.cmd_binary_enabled",
                     ui.input_text(
                         "cmd_binary_filename",
-                        "Binary Filename:",
+                        "Binary file prefix:",
                         value="PELAGIC_OUTPUT.bin"
                     ),
                 ),
 
-                # Shear stress file (Arg 4 - optional). Choices are replaced at
-                # session start by the update_select in the server (scans
-                # INPUTS/ for *SHEAR*.txt); keep "" first so "not used" is the
+                # Critical shear stress file (Arg 4 - optional). Choices are replaced
+                # by the update_select in the server (the active setup's
+                # *CRITICAL*SHEAR*.txt files); keep "" first so "not used" is the
                 # default and the model is invoked without argument 4.
                 ui.tooltip(
                     ui.input_select(
                         "cmd_shear_stress_file",
-                        "Shear Stress File:",
+                        "Critical Shear Stress File:",
                         choices={"": "(not used)"},
                         selected=""
                     ),
-                    "Bed shear-stress time series passed as command argument 4, "
-                    "used by the resuspension model. Populated from INPUTS/*SHEAR*.txt."
+                    "Per-box critical shear stresses (command argument 4), replacing the file "
+                    "named in the resuspension input; read only with resuspension option 2. "
+                    "Selecting one also switches the run to binary-only output."
                 ),
 
                 # Pelagic solver selection
@@ -230,7 +233,7 @@ def run_control_ui():
                         "output_boxes",
                         None,
                         choices={str(i): f"Box {i}" for i in range(1, 26)},
-                        selected=["5", "6", "8", "9", "14", "17", "25"]
+                        selected=[]      # filled from the setup's file by the server
                     ),
                     style="column-count: 2; column-gap: 1rem;"
                 ),
@@ -264,7 +267,7 @@ def run_control_ui():
                             "process_rates": "Process Rates",
                             "mass_balance": "Mass Balance"
                         },
-                        selected=["state_vars"]
+                        selected=[]
                     ),
                     "State Variables: concentrations. Process Rates: fluxes. Mass Balance: conservation checks."
                 ),
@@ -319,13 +322,10 @@ def run_control_server(input, output, session, state):
                     const_files[f] = f  # Just filename, not path
         ui.update_select("cmd_constants_file", choices=const_files)
 
-        # Get available shear stress files (Arg 4)
-        # Note: Fortran code uses this path directly
-        shear_files = {"": "(not used)"}
-        for f in sorted(os.listdir(INPUTS_DIR)):
-            if "SHEAR" in f.upper() and f.endswith(".txt"):
-                shear_files[os.path.join("INPUTS", f)] = f
-        ui.update_select("cmd_shear_stress_file", choices=shear_files)
+        # Critical shear stress files (Arg 4): bare names from the active setup --
+        # the model prepends the resuspension input folder itself.
+        ui.update_select("cmd_shear_stress_file",
+                         choices=build_commands.critical_shear_choices(inputs_dir))
 
     def build_estas_command():
         """Build the model command from current widget values (thin wrapper).
@@ -394,11 +394,12 @@ def run_control_server(input, output, session, state):
     @reactive.effect
     def _sync_output_boxes_to_setup():
         n = run.current_setup().box_count
-        with reactive.isolate():
-            keep = [b for b in (input.output_boxes() or []) if b.isdigit() and int(b) <= n]
         ui.update_checkbox_group("output_boxes",
                                  choices={str(i): f"Box {i}" for i in range(1, n + 1)},
-                                 selected=keep)
+                                 selected=[])
+        # show the setup's own file, not the widgets' defaults or the previous setup's
+        with reactive.isolate():
+            _load_output_config(announce=False)
 
     @render.text
     def cmd_preview():
@@ -548,15 +549,35 @@ def run_control_server(input, output, session, state):
     @reactive.event(input.run)
     def on_run():
         logger.info("User clicked 'Run' button")
+        st = run.current_setup()
+        try:
+            claim_file = input.cmd_input_file() or st.input_file
+        except Exception:
+            claim_file = st.input_file
+        ok, why = run.claim_run(claim_file)
+        if not ok:
+            # before the log is cleared: a refused click must not wipe the running log
+            ui.notification_show(f"{why} Stop it first or wait for it to finish.",
+                                 type="warning", duration=6)
+            logger.info(f"Run refused: {why}")
+            return
+        started = False
+        try:
+            started = _prepare_and_start_run(st)
+        finally:
+            if not started:
+                run.release_run()
+
+    def _prepare_and_start_run(st) -> bool:
+        """Validate, log and launch the run thread; True once the thread is started."""
         run.run_log_lines.clear()
         run.run_log_lines.append("=" * 50 + "\n")
         run.run_log_lines.append("Starting model run...\n")
         run.run_log_lines.append("=" * 50 + "\n")
 
-        st = run.current_setup()
         if not setups.is_available(st, ROOT):
             run.run_log_lines.append(f"⚠ Inputs for “{st.name}” not found. {st.unavailable_hint}\n")
-            return
+            return False
 
         try:
             # Capture current widget values (must be done in reactive context)
@@ -572,7 +593,7 @@ def run_control_server(input, output, session, state):
             if not os.path.exists(exe_path):
                 run.run_log_lines.append(f"❌ ERROR: Executable '{exe_name}' not found.\n")
                 run.run_log_lines.append("Please go to Model Build to compile the model first.\n")
-                return
+                return False
 
             # Check if it's a release build (stripped = no debug output)
             exe_info = get_executable_info(exe_name)
@@ -599,13 +620,17 @@ def run_control_server(input, output, session, state):
                     run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
                     run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
                     logger.error(f"Constants file validation failed: {error_msg}")
-                    return
+                    return False
                 else:
                     run.run_log_lines.append(f"✓ Constants file validated: {const_file} ({actual_count} constants)\n")
 
             # Show command
             cmd_display = " ".join([c if c else '""' for c in estas_cmd])
             run.run_log_lines.append(f"\nCommand: {cmd_display}\n")
+            if build_commands.is_binary_only(estas_cmd):
+                run.run_log_lines.append(
+                    "⚠ Binary-only output: this command writes .bin files and NO text (.out) "
+                    "files.\n   Plot the run with File Format = Binary.\n")
             run.run_log_lines.append("-" * 50 + "\n")
 
             if is_release:
@@ -617,13 +642,14 @@ def run_control_server(input, output, session, state):
             run.run_log_lines.append(f"\n❌ Error preparing model run: {e}\n")
             run.run_log_lines.append(f"Traceback:\n{traceback.format_exc()}\n")
             logger.error(f"Error in on_run setup: {e}\n{traceback.format_exc()}")
-            return
+            return False
 
         threading.Thread(
             target=run.start_run,
             args=(estas_cmd, exe_name, build_commands.assemble_run_env(st.env, input.solver_select()), st.input_file),
             daemon=True, name="RunThread",
         ).start()
+        return True
 
     @render.ui
     def run_status_indicator():
@@ -652,97 +678,82 @@ def run_control_server(input, output, session, state):
 
     # ========== OUTPUT CONFIGURATION ==========
     output_config_msg = reactive.Value("")
+    # What the widgets were last filled from: (file path, its flags, the types shown).
+    # Saving is refused until this matches the active setup's file, so the widgets'
+    # built-in defaults can never be written over a file that was not looked at.
+    output_config_loaded = reactive.Value(None)
+
+    def _output_info_file():
+        return os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+
+    def _load_output_config(announce=True):
+        """Fill the Output Config widgets from the active setup's file."""
+        path = _output_info_file()
+        try:
+            if not os.path.exists(path):
+                output_config_loaded.set(None)
+                output_config_msg.set(f"Not found: {os.path.relpath(path, ROOT)}")
+                return
+            with open(path) as f:
+                _header, flags = output_config.parse(f.read())
+            boxes, types, mixed = output_config.summarize(flags)
+            ui.update_checkbox_group("output_boxes", selected=boxes)
+            ui.update_checkbox_group("output_types", selected=types)
+            output_config_loaded.set((path, flags, tuple(types)))
+            msg = f"Loaded {os.path.relpath(path, ROOT)}: {len(boxes)} boxes"
+            if mixed:
+                msg += (" -- the boxes differ in their output types; each keeps its own "
+                        "unless you change Output Types")
+            output_config_msg.set(msg)
+            if announce:
+                logger.info(f"Loaded output config: {len(boxes)} boxes selected")
+        except Exception as e:
+            logger.error(f"Error loading output config: {e}")
+            output_config_loaded.set(None)
+            output_config_msg.set(f"Error: {e}")
 
     @reactive.effect
     @reactive.event(input.load_output_config)
     def load_output_config():
         """Load current output configuration from file"""
-        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
-        try:
-            if not os.path.exists(OUTPUT_INFO_FILE):
-                output_config_msg.set("Output config file not found")
-                return
-
-            with open(OUTPUT_INFO_FILE) as f:
-                lines = f.readlines()
-
-            selected_boxes = []
-            has_state_vars = False
-            has_process_rates = False
-            has_mass_balance = False
-
-            for line in lines[1:]:  # Skip header
-                parts = line.split()
-                if len(parts) >= 4:
-                    box_num = parts[0]
-                    state_var = parts[1] == "1"
-                    process_rate = parts[2] == "1"
-                    mass_bal = parts[3] == "1"
-
-                    if state_var or process_rate or mass_bal:
-                        selected_boxes.append(box_num)
-                        if state_var:
-                            has_state_vars = True
-                        if process_rate:
-                            has_process_rates = True
-                        if mass_bal:
-                            has_mass_balance = True
-
-            # Update UI
-            ui.update_checkbox_group("output_boxes", selected=selected_boxes)
-            output_types = []
-            if has_state_vars:
-                output_types.append("state_vars")
-            if has_process_rates:
-                output_types.append("process_rates")
-            if has_mass_balance:
-                output_types.append("mass_balance")
-            ui.update_checkbox_group("output_types", selected=output_types)
-
-            output_config_msg.set(f"Loaded: {len(selected_boxes)} boxes")
-            logger.info(f"Loaded output config: {len(selected_boxes)} boxes selected")
-
-        except Exception as e:
-            logger.error(f"Error loading output config: {e}")
-            output_config_msg.set(f"Error: {e}")
+        _load_output_config()
 
     @reactive.effect
     @reactive.event(input.save_output_config)
     def save_output_config():
         """Save output configuration to file"""
-        OUTPUT_INFO_FILE = os.path.join(ROOT, run.current_setup().inputs_dir, "PELAGIC_OUTPUT_INFORMATION_FILE.txt")
+        path = _output_info_file()
+        loaded = output_config_loaded.get()
+        if loaded is None or loaded[0] != path:
+            msg = "Nothing saved: click Load Current first, so the form shows this setup's file."
+            output_config_msg.set(msg)
+            ui.notification_show(msg, type="warning", duration=6)
+            return
         try:
-            selected_boxes = set(input.output_boxes() or [])
-            output_types = set(input.output_types() or [])
-
-            state_vars_enabled = "state_vars" in output_types
-            process_rates_enabled = "process_rates" in output_types
-            mass_balance_enabled = "mass_balance" in output_types
-
-            # Build new file content
-            lines = ["#     PELAGIC BOX NO      PRODUCE_PEL_STATE_VAR_OUTPUTS     PRODUCE_PEL_PROCESS_RATE_OUTPUTS     PRODUCE_PEL_MASS_BALANCE_OUTPUTS\n"]
-
-            for box in range(1, run.current_setup().box_count + 1):
-                box_str = str(box)
-                if box_str in selected_boxes:
-                    sv = "1" if state_vars_enabled else "0"
-                    pr = "1" if process_rates_enabled else "0"
-                    mb = "1" if mass_balance_enabled else "0"
-                else:
-                    sv = pr = mb = "0"
-
-                lines.append(f"{box:20d}{sv:>37s}{pr:>37s}{mb:>37s}\n")
-
-            # Write file
-            with open(OUTPUT_INFO_FILE, 'w') as f:
-                f.writelines(lines)
+            _path, _flags_at_load, loaded_types = loaded
+            with open(path) as f:
+                text = f.read()
+            _header, flags = output_config.parse(text)
+            boxes = list(input.output_boxes() or [])
+            types = list(input.output_types() or [])
+            new_flags = output_config.apply_selection(
+                flags, boxes, types, run.current_setup().box_count, loaded_types)
+            backup = output_config.save(path, output_config.rewrite(text, new_flags))
+            output_config_loaded.set((path, new_flags, tuple(output_config.summarize(new_flags)[1])))
 
             # Increment version to trigger dashboard refresh
             state.output_config_version.set(state.output_config_version.get() + 1)
 
-            output_config_msg.set(f"Saved: {len(selected_boxes)} boxes")
-            ui.notification_show(f"Output config saved ({len(selected_boxes)} boxes)", type="message")
-            logger.info(f"Saved output config: {len(selected_boxes)} boxes")
+            n_on = sum(1 for f in new_flags.values() if any(f))
+            output_config_msg.set(f"Saved: {n_on} boxes (previous file kept as {os.path.basename(backup)})")
+            ui.notification_show(f"Output config saved ({n_on} boxes)", type="message")
+            had_rates = any(f[1] for f in flags.values())
+            if had_rates and not any(f[1] for f in new_flags.values()):
+                ui.notification_show(
+                    "Process-rate output is now off for every box: new runs will write no "
+                    "*_PROCESS_RATES files, which the rate plots and limitation diagnostics read.",
+                    type="warning", duration=10)
+            logger.info(f"Saved output config: {n_on} boxes")
 
         except Exception as e:
             logger.error(f"Error saving output config: {e}")
