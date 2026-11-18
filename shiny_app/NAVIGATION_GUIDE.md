@@ -68,10 +68,10 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 4. **Parameters** (Coming Soon)
+### 4. **Parameters**
 **Purpose:** Structured editing of the 324 model parameters
 
-**Planned Features:**
+**Features:**
 - Category-based organization:
   - General (4 params)
   - Diatoms (24 params)
@@ -95,7 +95,7 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
   - Light Curve and Ice (6 params)
 
 - File selection (WCONST_04.txt, EXTRA_WCONST.txt)
-- **Edit Parameters** button (launches modal editor)
+- Numeric inputs for the selected category, shown inline after loading it (no separate editor window)
 - Value validation
 - Unit display
 - Parameter search
@@ -104,14 +104,14 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 5. **Initial Conditions** (Coming Soon)
+### 5. **Initial Conditions**
 **Purpose:** Edit initial concentrations for 36 state variables
 
-**Planned Features:**
+**Features:**
 - IC set selection (1 or 2)
 - Table-based editor
 - Per-box spatial editing
-- Validation (non-negative, reasonable ranges)
+- Validation (non-negative, reasonable ranges) — planned; values are currently saved without a range check
 - Scenario presets
 
 **State Variable Groups:**
@@ -126,10 +126,10 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 6. **Model Options** (Coming Soon)
+### 6. **Model Options**
 **Purpose:** Toggle model features and switches
 
-**Planned Features:**
+**Features:**
 - Zooplankton CNP partitioning (realistic vs. simple)
 - Advanced redox simulation (Fe, Mn, S, CH4)
 - Light extinction method (empirical vs. calculated)
@@ -276,6 +276,10 @@ The main content area (right side) displays:
 ---
 
 ## Future Enhancements
+
+> Written as a plan and kept as written. Several of these exist now: mass balance checking,
+> observation upload and model-data comparison, and scenario presets each have a tab. The others
+> were not checked against the app.
 
 Planned additions to navigation:
 

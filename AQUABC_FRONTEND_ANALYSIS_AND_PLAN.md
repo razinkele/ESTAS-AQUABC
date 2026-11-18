@@ -1,6 +1,13 @@
 # AQUABC v0.3 - Codebase Analysis and Frontend Implementation Plan
 
 **Date:** 2026-01-16
+
+> **Historical.** This is the January 2026 analysis that the Shiny front end was then built from.
+> The areas listed as missing in §2.2 and planned in §3–§4 (parameter, initial-condition,
+> model-option and simulation-configuration editors, scenarios, mass balance, observation
+> comparison) now each have a module in `shiny_app/modules/`. Not every planned feature within
+> them was built (the initial-conditions editor, for one, has no per-box selector). For the
+> current state see `CHANGELOG.md`.
 **Analysis by:** Claude Sonnet 4.5
 
 ---

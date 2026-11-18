@@ -192,6 +192,12 @@ re-captured because 1.8 shifted default output ~1e-6.)
 
 **Status:** ✅ COMPLETE 2026-07-18 — surfaced (and fixed) a latent precision bug.
 
+> **Update 2026-11-18 (v0.12.0).** This pass looked only at universal constants. A later audit
+> found 506 lines with single-precision real literals in double-precision arithmetic (including
+> `273.16` in the sediment diffusion routines, which is kept because it pairs with `298.16` there);
+> all now carry a `D` exponent, and `tests/python` fails on any new one outside I/O statements.
+> See `CHANGELOG.md`.
+
 **Reality vs the original triage:** the backlog's example literals `1013.25` and `8.314`
 do **not** exist in the code; the only universal-physics magic number is `273.15`
 (Kelvin offset), and a named constant `CELSIUS_TO_KELVIN = 273.15D0` already exists in
@@ -258,6 +264,10 @@ top-level INPUT and missing pelagic input both produce the clean message and exi
 `SOURCE_CODE/AQUABC/PELAGIC/aquabc_II_pelagic_interface.f90:75` (`nconst = 318`),
 `INPUTS/PELAGIC_INPUTS.txt:9` + `INPUTS_CL29/PELAGIC_INPUTS.txt:9` (`NUM_MODEL_CONSTANTS = 318`),
 data files `INPUTS/WCONST_04.txt` (323 constants).
+
+> **Update 2026-11-18 (v0.12.0).** The counts below are as of July. `nconst` is now 324; the
+> Fortran reader stops on a missing constant, and the app requires 324 and rejects missing,
+> duplicate or out-of-range indices.
 
 **Status:** ✅ COMPLETE 2026-07-17 (found 2026-07-16 during TODO 1.6). A **pure
 memory-safety fix** — production output is byte-identical.
