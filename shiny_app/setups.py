@@ -32,7 +32,9 @@ SETUPS = [
           "EUTROPY-derived 29-box Curonian Lagoon; requires ESTAS_HOLD_VOLUME=1.",
           "INPUT_CL29.txt", "INPUTS_CL29", "OUTPUTS_CL29", 29,
           env={"ESTAS_HOLD_VOLUME": "1"},
-          unavailable_hint="Generate inputs: python tools/eutropy_poc/eutropy_to_estas.py"),
+          unavailable_hint="Get the adopted inputs from the ESTAS-AQUABC-DATA repository "
+                           "(tools/eutropy_poc/eutropy_to_estas.py regenerates only the "
+                           "pre-calibration set)."),
     Setup("cl29_2023clim", "CL29 — Curonian Lagoon (29-box, 2023 climatology)",
           "CL29 extended to 2023 with day-of-year climatology forcing "
           "(typical-year, not a hindcast); requires ESTAS_HOLD_VOLUME=1.",

@@ -284,6 +284,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   penalised for being slow rather than wrong.
 
 ### Documentation
+- **`PARAMETER_REFERENCE.md` lists all 324 constants** (it named 53, under category ranges of an older file). Its
+  tables are generated from `INPUTS/WCONST_04.txt` and the app's categories by `tools/build_parameter_reference.py`
+  (`--check` in the test suite keeps it current).
+- **README**: the CL29 status no longer stops at v0.5.0 -- it links `docs/CL29_phenology_diagnosis.md` (§1-§69.5)
+  and says the adopted `INPUTS_CL29/` set is in the ESTAS-AQUABC-DATA repository; the app's "inputs not found" hint
+  says the same instead of pointing at the generator, which gives the pre-calibration set.
+- **Stale headers**: `.github/copilot-instructions.md` (was "v0.3", 318 constants, 14 categories),
+  `FIXES_AND_IMPROVEMENTS.md` and `FORTRAN_IMPLEMENTATION_PLAN.md` (now marked historical).
 - **Both reference manuals brought up to date with the code.** Every one of the **14 runtime
   options and constants** added during the CL29 work was undocumented, and both carried stale
   dimension counts (`nconst` 318 and "323 parameters" against an actual **324**).
