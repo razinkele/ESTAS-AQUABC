@@ -433,6 +433,56 @@ def load_simulation_config(filepath: str) -> SimulationConfigFile | None:
 
 
 # Date conversion utilities
+def _read_keyed_value(filepath: str, key: str) -> str | None:
+    """Return the stripped line that follows the first ``# <key>`` comment line."""
+    try:
+        with open(filepath) as f:
+            lines = f.readlines()
+    except OSError:
+        return None
+    for i, line in enumerate(lines[:-1]):
+        if line.startswith("#") and key in line:
+            return lines[i + 1].strip()
+    return None
+
+
+def read_base_year(filepath: str) -> int | None:
+    """BASE_YEAR of an ESTAS control file (INPUT*.txt), or None if unreadable."""
+    val = _read_keyed_value(filepath, "BASE_YEAR")
+    try:
+        return int(val) if val is not None else None
+    except ValueError:
+        return None
+
+
+def base_year_for_output_dir(root: str, dir_name: str | None,
+                             preferred: tuple[str, ...] = ()) -> int | None:
+    """BASE_YEAR of the control file that writes into ``dir_name``.
+
+    Model output times are days since 1 January of BASE_YEAR, so a plot of an
+    output folder needs the BASE_YEAR of the run that produced it, not a fixed
+    origin. ``preferred`` control files (e.g. the registered setups' defaults) are
+    tried first, then every ``INPUT*.txt`` in ``root`` in name order. Returns None
+    when no control file names that folder.
+    """
+    if not dir_name:
+        return None
+    want = dir_name.strip("/\\")
+    try:
+        others = sorted(f for f in os.listdir(root)
+                        if f.startswith("INPUT") and f.endswith(".txt"))
+    except OSError:
+        others = []
+    for name in (*preferred, *others):
+        path = os.path.join(root, name)
+        folder = _read_keyed_value(path, "PELAGIC MODEL OUTPUT FOLDER")
+        if folder is not None and folder.strip("/\\") == want:
+            year = read_base_year(path)
+            if year is not None:
+                return year
+    return None
+
+
 def days_to_date(days: float, base_year: int) -> date:
     """Convert days from Jan 1 of base_year to date"""
     base = date(base_year, 1, 1)
