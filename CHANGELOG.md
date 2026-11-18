@@ -303,6 +303,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `figures/` on demand and derive paths from `__file__` rather than an absolute author path.
 
 ### Notes
+- **Dead code removed** (audit item 35), outputs byte-identical (Standard 30 d, CL29 90 d): the uncalled
+  `READ_MODEL_CONSTANTS_PRICE`; three empty Fortran modules (`aquabc_II_wc_ini`, `aquabc_II_sediment_debug_stranger`,
+  `aquabc_II_sediment_internal`); `shiny_app/file_locators.py` (imported by nothing; its `INPUT.txt` line-number
+  parsing was also stale) with its test; `tools/deep_process_rate_analysis_v1.py`. Kept on purpose:
+  `GENERATE_PELAGIC_DERIVED_VARS` (uncalled, but named in the CL29 phenology record and two tools as the Fortran-side
+  derived-TN routine), the root `app.R` (a Shiny Server deployment wrapper), and constants 159, 161-163
+  (`k_RED_FE_III`, `k_RED_MN_IV`, `KHS_DOXY_FE_III_RED`, `KHS_DOXY_MN_IV_RED`), which no rate uses but whose removal
+  would renumber the constants file.
 - **Form B is correct physics and is NOT adopted** — recorded as a measured negative
   (`docs/CL29_phenology_diagnosis.md` §47–49, BACKLOG §4). Landing it costs ≈20 % of production
   in every month and undoes the adopted ice correction (February `DIA_C` 0.99× → 0.22× against

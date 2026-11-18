@@ -79,25 +79,6 @@ contains
 
     end subroutine READ_MODEL_CONSTANTS
 
-
-    subroutine READ_MODEL_CONSTANTS_PRICE(MODEL_CONSTANTS, INPUT_NO)
-
-        implicit none
-        real(kind = DBL), dimension(:), intent(out) :: MODEL_CONSTANTS
-
-        integer :: INPUT_NO
-        integer :: NUM_CONSTANTS
-        integer :: i
-
-        read(unit = INPUT_NO, fmt = *) NUM_CONSTANTS
-
-        do i = 1, NUM_CONSTANTS
-            read(unit = INPUT_NO, fmt = *) MODEL_CONSTANTS(i)
-        end do
-
-    end subroutine READ_MODEL_CONSTANTS_PRICE
-
-
     integer function STRANGER(SUSPECTED_VALUE)
         use, intrinsic :: IEEE_ARITHMETIC
         implicit none
