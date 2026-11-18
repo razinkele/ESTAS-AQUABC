@@ -530,31 +530,30 @@ largely cancels in Form B — it departs from the default only through curvature
 
 ## Pelagic Model Constants (324 parameters)
 
-The pelagic model uses 324 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)` array, 5 additional photoinhibition parameters (`BETA_*`) accessed via the named-parameter dictionary (`para_get_value`), and the under-ice PAR transmittance. Organised in 21 categories:
+The pelagic model uses 324 parameters: 318 stored in the `MODEL_CONSTANTS(1:318)` array, 5 additional photoinhibition parameters (`BETA_*`) accessed via the named-parameter dictionary (`para_get_value`), and the under-ice PAR transmittance. Organised in 20 categories (the app's Parameters tab uses the same ones):
 
-1. **General** (1--4): Temperature ranges, O$_2$ tolerances
-2. **Diatoms** (5--31): Growth, respiration, mortality, nutrient kinetics, Si:C ratio
-3. **Non-fixing cyanobacteria** (29--50): Buoyancy regulation, light adaptation
-4. **N-fixing cyanobacteria** (51--74): Nitrogen fixation rates, heterocyst parameters
-5. **Other planktonic algae** (75--96): Growth and loss parameters
-6. **Zooplankton** (97--133): Feeding preferences, active switching parameters
-7. **POM dissolution** (134--146): Rate constants per organic matter type
-8. **DOM mineralisation** (147--152): Aerobic pathway parameters
-9. **Nitrification** (152--157): Rate and half-saturation constants
-10. **Redox chemistry** (158--209): All six electron acceptor pathways
-11. **Methane** (210--234): CH$_4$ oxidation and production
-12. **Settling** (235--250): Settling velocities per state variable
-13. **pH correction** (251--266): Optimal pH ranges per process
-14. **Dissolved metals** (267--276): Fe/Mn oxidation and dissolution rates
-15. **Nostocales** (276--298): Heterocyst-forming cyanobacteria parameters
-16. **Nostocales extended** (299--306): Akinete temperature/nitrogen thresholds
-17. **POM dissolution saturation** (307--309): POM dissolution saturation kinetics
-18. **DOM availability fractions** (310--315): DON/DOP availability fractions per process
-19. **Phytoplankton mineralisation caps** (316--318): Max phytoplankton-mediated mineralisation rates
-20. **Photoinhibition BETA** (319--323): Five $\beta$ photoinhibition constants for each phytoplankton group, accessed via `para_get_value` using names `BETA_*`
-21. **Under-ice light** (324): `ICE_LIGHT_TRANS` — PAR transmittance through ice cover (0--1). Default **1.00** (no attenuation, byte-identical to a build without the mechanism). Both readers guard on its presence, so constants files that predate it load unchanged; values outside $[0, 1]$ are clamped with a warning
+1. **General** (1--4): Reaeration and the light-model constants
+2. **Diatoms** (5--28): Growth, respiration, mortality, nutrient kinetics, stoichiometry incl. Si:C
+3. **Non-fixing Cyanobacteria** (29--50): Growth, losses, nutrient kinetics, stoichiometry
+4. **Fixing Cyanobacteria** (51--74): As above, plus the nitrogen-fixation constants
+5. **Other Phytoplankton** (75--96): Growth, losses, nutrient kinetics, stoichiometry
+6. **Zooplankton** (97--133): Grazing rates, preferences, half-saturations, losses, stoichiometry
+7. **Detritus** (134--146): Dissolution of particulate organic C, N, P and of particulate silica
+8. **Dissolved Organics** (147--151): Phytoplankton effect on DOM mineralisation
+9. **Nitrification** (152--157): Rate, half-saturations and pH window
+10. **Iron and Manganese Redox** (158--163): Fe/Mn oxidation and reduction
+11. **DOC Mineralisation** (164--203): Six electron-acceptor pathways: rates, temperature factors, half-saturations, pH windows
+12. **DON Mineralisation** (204--233): The same set for dissolved organic nitrogen
+13. **DOP Mineralisation** (234--263): The same set for dissolved organic phosphorus
+14. **Methane and Sulphide Oxidation** (264--269): CH$_4$ and H$_2$S oxidation
+15. **Iron Dissolution** (270--275): Fe(II)/Fe(III) dissolution kinetics
+16. **Nostocales** (276--306): Vegetative cells and heterocysts, akinete formation and germination
+17. **Organic Matter Availability** (307--312): Dissolution saturation and DON/DOP availability fractions
+18. **Nostocales Nitrogen** (313--315): DON half-saturation and the fixation split
+19. **Mineralisation Thresholds** (316--318): Minimum phytoplankton for the DOM mineralisation enhancement
+20. **Light Curve and Ice** (319--324): Five $\beta$ photoinhibition constants (`BETA_*`, 319--323), one per phytoplankton group, and `ICE_LIGHT_TRANS` (324) — PAR transmittance through ice cover (0--1). Default **1.00** (no attenuation). Values outside $[0, 1]$ are clamped with a warning
 
-> **Warning — Constants reach the model through two parallel readers** — the AQUABC name-based `para_get_value` path and the ESTAS index-based `INIT_PELAGIC_MODEL_CONSTANTS` path. A constant registered in only one of them is present in the file, readable by name, and **silently inert in the executing path**. Both the BETA block (categories 20) and `ICE_LIGHT_TRANS` (21) must appear in both. The diagnostic for this failure is a deliberate perturbation returning bit-identical output: a parameter whose variation changes nothing is not insensitive, it is disconnected.
+> **Warning — Constants reach the model through two parallel readers** — the AQUABC name-based `para_get_value` path and the ESTAS index-based `INIT_PELAGIC_MODEL_CONSTANTS` path. A constant registered in only one of them is present in the file, readable by name, and **silently inert in the executing path**. Both the BETA block and `ICE_LIGHT_TRANS` (category 20) must appear in both. The diagnostic for this failure is a deliberate perturbation returning bit-identical output: a parameter whose variation changes nothing is not insensitive, it is disconnected.
 
 > **Note on paper vs. code:** Ert\u00fcrk et al. (2023) report 183 calibrated constants — this refers to the subset actively calibrated for the Curonian Lagoon case study, not the full model constant set.
 
