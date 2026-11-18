@@ -58,4 +58,10 @@ def test_get_output_columns_csv_and_binary(tmp_path):
     csv = tmp_path / "out.csv"
     csv.write_text("TIME_DAYS,DIA_C,CYN_C\n1,2,3\n")
     assert get_output_columns(file_path=str(csv), file_format="csv") == ["TIME_DAYS", "DIA_C", "CYN_C"]
-    assert get_output_columns(file_path="x.bin", file_format="binary") == PELAGIC_BOX_COLUMNS
+    # binary files carry no header: the layout comes from the file's record length
+    import numpy as np
+    b = tmp_path / "box.bin"
+    rec = np.zeros((5, len(PELAGIC_BOX_COLUMNS)))
+    rec[:, 0] = np.arange(5)
+    rec.tofile(str(b))
+    assert get_output_columns(file_path=str(b), file_format="binary") == PELAGIC_BOX_COLUMNS

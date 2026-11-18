@@ -64,6 +64,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **The app's Shear Stress option aborted any run that read it, and silently blanked the rest.** Command argument 4
+  is the *critical* shear-stress table (per-box thresholds), opened as `<resuspension input folder>/<name>`; the Run
+  tab called it a time series, listed every `*SHEAR*` file of `INPUTS/` whatever the setup, and passed
+  `INPUTS/<name>`. With resuspension option 2 the doubled path fails to open and `SHEAR_STRESSES_TS.txt` is a read
+  error (both reproduced on a 2-day run). The selector now lists the active setup's `*CRITICAL*SHEAR*` files by bare
+  name. Three or more arguments also put the model in binary-only mode (no `.out` files), which neither that option
+  nor "Enable Binary Output" said: the switch is now "Binary-only output", and the run log warns when a command is
+  binary-only.
+- **Output Config could overwrite a setup's output file with the form's defaults.** Saving without loading wrote
+  boxes 5/6/8/9/14/17/25 with state variables only (so process rates off), with no backup, and any save flattened
+  per-box differences. The tab now fills itself from the active setup's file, refuses to save until it has, keeps
+  each box's own flags unless the output types are changed, leaves unchanged rows byte-for-byte, writes a `.bak`,
+  never creates the file, and warns when a save turns process-rate output off everywhere.
+- **A second Run click started a second model on the same output folder**, out of reach of Stop. Runs are now claimed
+  before the worker thread starts (per session, and per output folder across sessions); a refused click leaves the
+  running log intact. Covers both the Run tab and the dashboard's Quick Run.
+- **Binary outputs were read as 37 columns whatever the build.** A record is TIME + `NUM_PELAGIC_STATE_VARS` (33, 34,
+  37 or 38 doubles), so 32-state and VARN runs were shifted column by column. The layout now comes from the setup
+  that writes into the folder, or, failing that, from the one record length that divides the file and has an
+  increasing time column; an undecidable file is an error instead of a guess. `CYN_N` is placed at state 33.
 - **Simulation Config edited `INPUT.txt` whatever the run used.** It now loads and saves the control file the run will
   use (Run Control's "Input Configuration File", which follows the setup) and says which one. Saving is refused until
   that file has been loaded, so values loaded from one setup are never written into another's control file. "Enable

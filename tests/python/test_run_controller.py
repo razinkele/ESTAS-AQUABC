@@ -237,3 +237,71 @@ def test_cross_module_bridges_assignable_and_readable():
         # from run_executable_name — must not collapse to the same value).
         assert rc.active_executable() == "ESTAS_II_gf_release"
         assert rc.active_executable() != rc.run_executable_name()
+
+
+# --- one run per output folder ---------------------------------------------------
+
+def _root_with_control(tmp_path, name="INPUT.txt", folder="OUTPUTS/"):
+    (tmp_path / name).write_text(
+        f"# PELAGIC MODEL OUTPUT FOLDER write the folder ...\n{folder}\n")
+    return str(tmp_path)
+
+
+def test_second_click_is_refused_until_the_run_releases(tmp_path, monkeypatch):
+    root = _root_with_control(tmp_path)
+    rc = RunController(root=root)
+    monkeypatch.setattr(rc, "output_key", lambda input_file=None: root + "/OUTPUTS")
+    assert rc.claim_run("INPUT.txt") == (True, "")
+    ok, why = rc.claim_run("INPUT.txt")        # process is not even started yet
+    assert not ok and "already in progress" in why
+    rc.release_run()
+    assert rc.claim_run("INPUT.txt")[0]
+    rc.release_run()
+
+
+def test_running_process_blocks_a_new_claim(tmp_path, monkeypatch):
+    rc = RunController(root=str(tmp_path))
+    monkeypatch.setattr(rc, "output_key", lambda input_file=None: str(tmp_path / "OUTPUTS"))
+    rc.process = _FakeProc(poll_value=None)
+    assert rc.claim_run()[0] is False
+    rc.process = None
+    assert rc.claim_run()[0] is True
+    rc.release_run()
+
+
+def test_other_session_cannot_run_into_the_same_output_folder(tmp_path, monkeypatch):
+    a, b = RunController(root=str(tmp_path)), RunController(root=str(tmp_path))
+    for rc in (a, b):
+        monkeypatch.setattr(
+            rc, "output_key",
+            lambda input_file=None: str(tmp_path / ("OUT_B" if input_file == "B.txt" else "OUT_A")))
+    assert a.claim_run("A.txt")[0]
+    ok, why = b.claim_run("A.txt")
+    assert not ok and "Another session" in why and "OUT_A" in why
+    assert b.claim_run("B.txt")[0]             # a different output folder is free
+    b.release_run()
+    a.release_run()
+    assert b.claim_run("A.txt")[0]             # ... and A's folder once A is done
+    b.release_run()
+
+
+def test_start_run_releases_the_claim_even_when_the_launch_fails(tmp_path, monkeypatch):
+    rc = RunController(root=str(tmp_path))
+    monkeypatch.setattr(rc, "output_key", lambda input_file=None: str(tmp_path / "OUTPUTS"))
+    assert rc.claim_run()[0]
+    rc.start_run(["./no_such_executable"], "no_such_executable")
+    assert rc.running is False and rc.claim_run()[0]
+    rc.release_run()
+
+
+def test_run_handlers_claim_before_clearing_the_log():
+    """A refused click must not wipe the log of the run in progress."""
+    import os
+    mods = os.path.join(os.path.dirname(__file__), "..", "..", "shiny_app", "modules")
+    for name, func in (("run_control.py", "def on_run():"),
+                       ("dashboard.py", "def handle_quick_run():")):
+        src = open(os.path.join(mods, name)).read()
+        body = src[src.index(func):]
+        body = body[:body.index("\n    def ", 10)]
+        assert "run.claim_run(" in body and "run.release_run()" in body, name
+        assert "run_log_lines.clear()" not in body, name

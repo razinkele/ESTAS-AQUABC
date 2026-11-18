@@ -82,24 +82,125 @@ def count_file_lines_fast(filepath, sample_size=8192):
         return 0
 
 
-def read_pelagic_binary(bin_file, max_rows=None):
+# State-variable counts the model can be built/configured with: 32 base states,
+# +1 CYN_N in the variable-N (VARN) build, +4 allelopathy metabolites.
+VALID_STATE_COUNTS = (32, 33, 36, 37)
+_BASE_STATE_COLUMNS = PELAGIC_BOX_COLUMNS[1:33]
+_METABOLITE_COLUMNS = PELAGIC_BOX_COLUMNS[33:]
+
+
+def pelagic_box_columns(n_state):
+    """Column names of a PELAGIC_BOX record with ``n_state`` state variables.
+
+    CYN_N is state 33 (aquabc_II_pelagic_svindex.f90), so in the VARN build it
+    sits BEFORE the four metabolites, which move to 34-37.
+    """
+    if n_state not in VALID_STATE_COUNTS:
+        raise ValueError(f"unsupported pelagic state-variable count {n_state}; "
+                         f"expected one of {VALID_STATE_COUNTS}")
+    cols = ["TIME_DAYS", *_BASE_STATE_COLUMNS]
+    if n_state in (33, 37):
+        cols.append("CYN_N")
+    if n_state in (36, 37):
+        cols.extend(_METABOLITE_COLUMNS)
+    return cols
+
+
+def state_count_for_output_file(bin_file):
+    """NUM_PELAGIC_STATE_VARS of the setup that writes into this file's folder.
+
+    Looks for control files (INPUT*.txt) beside the output folder that name it as
+    their output folder, and reads the count from the pelagic input file each one
+    points at. Returns None when no control file names the folder, the count is
+    unreadable, or the control files disagree.
+    """
+    try:
+        from shiny_app.simulation_config import _read_keyed_value
+    except ImportError:
+        from simulation_config import _read_keyed_value
+    out_dir = os.path.dirname(os.path.abspath(bin_file))
+    root = os.path.dirname(out_dir)
+    try:
+        controls = sorted(f for f in os.listdir(root)
+                          if f.startswith("INPUT") and f.endswith(".txt"))
+    except OSError:
+        return None
+    counts = set()
+    for name in controls:
+        path = os.path.join(root, name)
+        folder = _read_keyed_value(path, "PELAGIC MODEL OUTPUT FOLDER")
+        if not folder or os.path.normpath(os.path.join(root, folder.replace("\\", "/"))) != out_dir:
+            continue
+        in_folder = _read_keyed_value(path, "PELAGIC MODEL INPUT FOLDER")
+        in_file = _read_keyed_value(path, "PELAGIC MODEL INPUT FILE")
+        if not in_folder or not in_file:
+            continue
+        val = _read_keyed_value(os.path.join(root, in_folder.replace("\\", "/"), in_file),
+                                "NUM_PELAGIC_STATE_VARS")
+        try:
+            counts.add(int(val.split()[0]))
+        except (AttributeError, ValueError, IndexError):
+            continue
+    counts &= set(VALID_STATE_COUNTS)
+    return counts.pop() if len(counts) == 1 else None
+
+
+def pelagic_binary_layout(bin_file, n_state=None):
+    """Column names of a binary PELAGIC_BOX file (one record = TIME + the states).
+
+    The file has no header and the record length depends on the build and the
+    options (33, 34, 37 or 38 doubles), so a fixed width silently shifts every
+    column of the other layouts. The count is taken, in order, from ``n_state``,
+    from the setup that writes into the file's folder -- if the file agrees, since
+    the folder may hold a run made before the setup was changed -- and otherwise
+    inferred: the only layout whose record length divides the file and whose first
+    column (time) increases. Raises ValueError when none of these settles it.
+    """
+    import numpy as np
+
+    if n_state is not None:
+        return pelagic_box_columns(n_state)
+    n_values = os.path.getsize(bin_file) // 8
+    setup_count = state_count_for_output_file(bin_file)
+    if n_values == 0:
+        return pelagic_box_columns(setup_count) if setup_count else list(PELAGIC_BOX_COLUMNS)
+    data = np.memmap(bin_file, dtype=np.float64, mode="r", shape=(n_values,))
+
+    def time_increases(k):
+        t = np.asarray(data[:(n_values // (k + 1)) * (k + 1):k + 1])
+        return len(t) > 0 and bool(np.all(np.isfinite(t)) and np.all(np.diff(t) > 0))
+
+    if setup_count is not None and time_increases(setup_count):
+        return pelagic_box_columns(setup_count)     # a remainder is a record being written
+    fits = [k for k in VALID_STATE_COUNTS if n_values % (k + 1) == 0 and time_increases(k)]
+    if len(fits) != 1:
+        raise ValueError(
+            f"cannot tell the record layout of {os.path.basename(bin_file)} "
+            f"({n_values} values; candidate state counts: {fits or 'none'}; "
+            f"the setup writing into its folder says {setup_count}).")
+    return pelagic_box_columns(fits[0])
+
+
+def read_pelagic_binary(bin_file, max_rows=None, n_state=None):
     """Read Fortran binary PELAGIC_BOX output file.
 
     Binary format (from Fortran stream I/O):
-    - Each row: TIME (float64) + 36 state variables (float64)
-    - Total 37 columns, all double precision (8 bytes)
+    - Each row: TIME (float64) + NUM_PELAGIC_STATE_VARS state variables (float64)
+    - 33, 34, 37 or 38 columns -- see pelagic_binary_layout()
     - No record markers (Fortran ACCESS='STREAM')
 
     Args:
         bin_file: Path to .bin file
         max_rows: Maximum rows to read (None for all)
+        n_state: state-variable count, when the caller knows it
 
     Returns:
         DataFrame with TIME_DAYS and state variable columns
     """
     import numpy as np
 
-    ncols = len(PELAGIC_BOX_COLUMNS)  # 37
+    columns = pelagic_binary_layout(bin_file, n_state)
+    ncols = len(columns)
 
     with open(bin_file, 'rb') as f:
         data = np.fromfile(f, dtype=np.float64)
@@ -108,7 +209,8 @@ def read_pelagic_binary(bin_file, max_rows=None):
     remainder = len(data) % ncols
 
     if remainder != 0:
-        logger.warning(f"Binary file has {remainder} extra bytes, truncating")
+        # only reachable when the count is known: a record still being written
+        logger.warning(f"Binary file ends with a partial record ({remainder} values), dropped")
         data = data[:nrows * ncols]
 
     data = data.reshape(nrows, ncols)
@@ -116,7 +218,7 @@ def read_pelagic_binary(bin_file, max_rows=None):
     if max_rows is not None and nrows > max_rows:
         data = data[:max_rows]
 
-    df = pd.DataFrame(data, columns=PELAGIC_BOX_COLUMNS)
+    df = pd.DataFrame(data, columns=columns)
     logger.info(f"Read binary file: {len(df)} rows x {ncols} cols")
     return df
 

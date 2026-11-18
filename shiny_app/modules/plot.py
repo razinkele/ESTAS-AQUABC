@@ -46,7 +46,7 @@ try:
         base_year_for_output_dir,
         read_base_year,
     )
-    from shiny_app.utils import read_pelagic_binary, read_pelagic_text, thin_rows
+    from shiny_app.utils import pelagic_binary_layout, read_pelagic_binary, read_pelagic_text, thin_rows
 except ImportError:  # running as a script from inside shiny_app/
     import output_data
     from ic_parser import get_grouped_variable_choices, get_variable_info
@@ -59,7 +59,7 @@ except ImportError:  # running as a script from inside shiny_app/
         base_year_for_output_dir,
         read_base_year,
     )
-    from utils import read_pelagic_binary, read_pelagic_text, thin_rows
+    from utils import pelagic_binary_layout, read_pelagic_binary, read_pelagic_text, thin_rows
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
@@ -551,7 +551,7 @@ def plot_server(input, output, session, state):
 
             if file_ext == '.bin':
                 # Binary file - calculate from file size
-                num_cols = 37  # PELAGIC_BOX binary format
+                num_cols = len(pelagic_binary_layout(file_path))  # TIME + the states
                 bytes_per_row = num_cols * 8  # float64
                 num_rows = size // bytes_per_row
                 num_vars = num_cols - 1  # Exclude TIME column
