@@ -55,4 +55,20 @@ contains
         safe_exp = exp(x_clamped)
     end function safe_exp
 
+    elemental double precision function monod_substrate(s, k)
+        ! Monod substrate term s/(s+k), defined as 0 where s+k is exactly 0.
+        ! With k = 0 (first-order kinetics, as both shipped constant sets use for
+        ! K_HS_DOC/DON/DOP_MIN_DOXY) the bare expression is 0/0 = NaN at s = 0;
+        ! the term always multiplies s, so 0 is the value that keeps the rate at 0.
+        ! Every other input gives exactly the bare s/(s+k).
+        implicit none
+        double precision, intent(in) :: s, k
+
+        if (s + k /= 0.0D0) then
+            monod_substrate = s / (s + k)
+        else
+            monod_substrate = 0.0D0
+        end if
+    end function monod_substrate
+
 end module AQUABC_PHYSICAL_CONSTANTS

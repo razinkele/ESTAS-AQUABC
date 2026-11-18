@@ -6,6 +6,8 @@ program test_doc_mineralization
     implicit none
 
     integer :: passed, failed
+    ! >= 0: overrides K_HS_DOC_MIN_DOXY in run_docmin (both shipped constant sets use 0.0)
+    real(kind=DBL_PREC) :: khs_doc_doxy_override = -1.0D0
 
     passed = 0
     failed = 0
@@ -24,6 +26,7 @@ program test_doc_mineralization
     call test_redox_pathway_switching()
     call test_total_rate_sum()
     call test_no_nan()
+    call test_zero_half_saturation()
 
     print *, ""
     print *, "=========================================="
@@ -121,6 +124,7 @@ contains
 
         call set_default_docmin_params(docmin_params)
         call set_default_redox_params(redox_params)
+        if (khs_doc_doxy_override >= 0.0D0) docmin_params%K_HS_DOC_MIN_DOXY = khs_doc_doxy_override
 
         TEMP_arr = TEMP_val; PH_arr = PH_val; PHYT_C_arr = PHYT_C_val
 
@@ -355,5 +359,40 @@ contains
         call assert_not_nan(R_S6(1), "R_ABIOTIC_DOC_MIN_S_PLUS_6 not NaN")
         call assert_not_nan(R_DOC(1), "R_ABIOTIC_DOC_MIN_DOC not NaN")
     end subroutine test_no_nan
+
+    ! K_HS_DOC_MIN_DOXY = 0 is what INPUTS/ and the adopted CL29 set ship: the Monod
+    ! term is then 1 (first-order kinetics) -- and 0/0 at exactly zero DOC.
+    subroutine test_zero_half_saturation()
+        integer, parameter :: nkn = 1
+        real(kind=DBL_PREC) :: LIM(nkn), R0(nkn), R1(nkn), R2(nkn), RK(nkn)
+        real(kind=DBL_PREC) :: R_NO3N(nkn), R_MN(nkn), R_FE(nkn), R_S6(nkn), R_DOC(nkn)
+
+        print *, "Test: zero half-saturation (first-order) incl. exactly zero DOC"
+
+        khs_doc_doxy_override = 0.0D0
+        call run_docmin(nkn, 20.0D0, 7.5D0, 2.0D0, &
+                        8.0D0, 1.0D0, 0.5D0, 0.5D0, 1.0D0, 0.0D0, &     ! DOC = 0 exactly
+                        0.9D0, 0.1D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0, &
+                        LIM, R0, R_NO3N, R_MN, R_FE, R_S6, R_DOC)
+        call run_docmin(nkn, 20.0D0, 7.5D0, 2.0D0, &
+                        8.0D0, 1.0D0, 0.5D0, 0.5D0, 1.0D0, 5.0D0, &
+                        0.9D0, 0.1D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0, &
+                        LIM, R1, R_NO3N, R_MN, R_FE, R_S6, R_DOC)
+        call run_docmin(nkn, 20.0D0, 7.5D0, 2.0D0, &
+                        8.0D0, 1.0D0, 0.5D0, 0.5D0, 1.0D0, 10.0D0, &
+                        0.9D0, 0.1D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0, &
+                        LIM, R2, R_NO3N, R_MN, R_FE, R_S6, R_DOC)
+        khs_doc_doxy_override = -1.0D0
+        call run_docmin(nkn, 20.0D0, 7.5D0, 2.0D0, &
+                        8.0D0, 1.0D0, 0.5D0, 0.5D0, 1.0D0, 5.0D0, &
+                        0.9D0, 0.1D0, 0.0D0, 0.0D0, 0.0D0, 0.0D0, &
+                        LIM, RK, R_NO3N, R_MN, R_FE, R_S6, R_DOC)
+
+        call assert_not_nan(R0(1), "K=0, DOC=0: rate is not NaN")
+        call assert_true(R0(1) == 0.0D0, "K=0, DOC=0: rate is exactly zero")
+        call assert_true(abs(R2(1) - 2.0D0 * R1(1)) <= 1.0D-12 * R2(1), &
+                         "K=0: rate is first-order in DOC")
+        call assert_true(RK(1) < R1(1), "K>0 saturates below the first-order rate")
+    end subroutine test_zero_half_saturation
 
 end program test_doc_mineralization
