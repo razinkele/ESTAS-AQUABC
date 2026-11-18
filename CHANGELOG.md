@@ -168,6 +168,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - Measured (`docs/CL29_phenology_diagnosis.md` §55): a powerful dominance lever (CYN ×5,
     FIX ÷8 in the CYN-only config) that produces the same winner-take-all as every other
     direction, with the worst frontier lift of the arc (−0.161). **Not adopted.**
+- **`VALIDATE_PELAGIC_MODEL_CONSTANTS` now follows the selected temperature model, and ESTAS runs it.**
+  The validator applied the CTMI T_max rules unconditionally: under the plateau model it rewrote every valid decay
+  rate (`KAPPA_*_OVER_OPT_TEMP < 1`) to 35/38/33 on the 0D/interface path. Those rules now apply only when
+  `USE_CTMI_TEMP` is set; under the plateau model a T_max-like value (≥ 1) is reported and left alone. ESTAS never
+  called the validator (its own positional `INIT_PELAGIC_MODEL_CONSTANTS` has no such call); it now does, in a new
+  **report-only** mode (`VALIDATE_CONSTANTS_REPORT_ONLY`): problems are printed at start-up and no constant is
+  changed, so results are unaffected (byte-identical: Standard 30 d, 23 files; CL29 90 d, 61 files; 0D golden).
+  Both `INPUTS/` and the adopted CL29 set now log three zero half-saturations (`K_HS_DOC/DON/DOP_MIN_DOXY`).
+  `BETA_NOST_VEG_HET < 0` is now counted like the other corrections. Test: `tests/fortran/test_validate_constants.f90`
+  (links the production routine).
 
 ### Changed
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling

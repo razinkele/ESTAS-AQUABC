@@ -387,8 +387,10 @@ contains
     subroutine INIT_PELAGIC_MODEL_CONSTANTS
         use GLOBAL
         use AQUABC_PELAGIC_MODEL_CONSTANTS
+        use AQUABC_II_GLOBAL, only: VALIDATE_CONSTANTS_REPORT_ONLY
 
         implicit none
+        external :: VALIDATE_PELAGIC_MODEL_CONSTANTS
                                       K_A = MODEL_CONSTANTS(  1)
                                 THETA_K_A = MODEL_CONSTANTS(  2)
                                       XKC = MODEL_CONSTANTS(  3)
@@ -725,6 +727,13 @@ contains
         else
             ICE_LIGHT_TRANS = 1.0D0
         end if
+
+        ! Check the constants against the selected options (USE_CTMI_TEMP is already
+        ! set: READ_PELAGIC_MODEL_OPTIONS runs while the inputs are read). Report
+        ! only -- a run uses the constants file exactly as given, so results do not
+        ! depend on this call; it only makes the mismatches visible in the log.
+        VALIDATE_CONSTANTS_REPORT_ONLY = .true.
+        call VALIDATE_PELAGIC_MODEL_CONSTANTS()
 
     end subroutine INIT_PELAGIC_MODEL_CONSTANTS
 

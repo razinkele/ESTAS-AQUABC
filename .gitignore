@@ -72,6 +72,7 @@ tests/fortran/test_co2sys
 tests/fortran/test_cyn_droop
 tests/fortran/test_lim_light_daylength
 tests/fortran/test_estas_alerts
+tests/fortran/test_validate_constants
 tests/fortran/*.o
 tests/fortran/*.mod
 
