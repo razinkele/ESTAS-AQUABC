@@ -12,10 +12,18 @@ import re
 
 try:
     from shiny_app.scenarios import create_builtin_presets
-    from shiny_app.simulation_config import base_year_for_output_dir, read_base_year
+    from shiny_app.simulation_config import (
+        base_year_for_input_dir,
+        base_year_for_output_dir,
+        read_base_year,
+    )
 except ImportError:
     from scenarios import create_builtin_presets
-    from simulation_config import base_year_for_output_dir, read_base_year
+    from simulation_config import (
+        base_year_for_input_dir,
+        base_year_for_output_dir,
+        read_base_year,
+    )
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 INPUTS = os.path.join(ROOT, "INPUTS")
@@ -59,6 +67,10 @@ def test_standard_temperature_constants_match_the_selected_model():
     over = {k: v for k, v in consts.items() if re.fullmatch(r"KAPPA_\w+_OVER_OPT_TEMP", k)}
     under = {k: v for k, v in consts.items() if re.fullmatch(r"KAPPA_\w+_UNDER_OPT_TEMP", k)}
     assert len(over) == 6 and len(under) == 6
+    assert model in (0, 1), f"unsupported TEMPERATURE_MODEL {model}"
+    for name in over:
+        group = name[len("KAPPA_"):-len("_OVER_OPT_TEMP")]
+        assert consts[f"{group}_OPT_TEMP_LR"] < consts[f"{group}_OPT_TEMP_UR"], group
     if model == 0:
         assert all(0.0 < v < 1.0 for v in over.values()), over
         assert all(0.0 < v < 1.0 for v in under.values()), under
@@ -116,6 +128,39 @@ def test_base_year_follows_the_output_folder(tmp_path):
     assert base_year_for_output_dir(root, None) is None
 
 
-def test_plot_module_has_no_fixed_time_origin():
-    src = open(os.path.join(ROOT, "shiny_app", "modules", "plot.py")).read()
-    assert not re.search(r"\b(?:date|datetime|dt)\(\s*1997\s*,", src)
+def test_base_year_lookup_tolerates_odd_control_files(tmp_path):
+    (tmp_path / "INPUT_a.txt").write_bytes(b"# BASE_YEAR\n 2001\n\xff\xfe# junk\n")       # undecodable
+    (tmp_path / "INPUT_b.txt").write_text(
+        "  # BASE_YEAR\n 2012\n  # PELAGIC MODEL OUTPUT FOLDER\n./OUTPUTS_CL29/\n"
+        "# PELAGIC MODEL INPUT FOLDER\nINPUTS_CL29/\n")                               # indented, ./
+    (tmp_path / "INPUT_c.txt").write_text(
+        "# BASE_YEAR\n 10000\n# PELAGIC MODEL OUTPUT FOLDER\nOUTPUTS_far/\n")          # not a date
+    root = str(tmp_path)
+    assert base_year_for_output_dir(root, "OUTPUTS_CL29") == 2012
+    assert base_year_for_input_dir(root, "INPUTS_CL29") == 2012
+    assert base_year_for_output_dir(root, "OUTPUTS_far") is None
+    assert read_base_year(str(tmp_path / "INPUT_c.txt")) is None
+
+
+def test_input_file_dates_use_the_folders_base_year(tmp_path):
+    try:
+        from shiny_app.input_analysis import analyze_input_file
+    except ImportError:
+        from input_analysis import analyze_input_file
+    (tmp_path / "INPUT_CL29.txt").write_text(
+        "# BASE_YEAR\n 2012\n# PELAGIC MODEL INPUT FOLDER\nINPUTS_CL29/\n")
+    d = tmp_path / "INPUTS_CL29"
+    d.mkdir()
+    (d / "TEMP_TS.txt").write_text("# header\n1.0 1.0\n366.0 2.0\n")
+    info = analyze_input_file(str(d / "TEMP_TS.txt"))
+    assert (info["date_start"], info["date_end"]) == ("2012-01-02", "2013-01-01")
+
+
+def test_app_has_no_fixed_time_origin():
+    """No module may count dates from a literal year (plots once used 1 Jan 1997)."""
+    app = os.path.join(ROOT, "shiny_app")
+    for folder in (app, os.path.join(app, "modules")):
+        for name in sorted(os.listdir(folder)):
+            if name.endswith(".py") and name != "test_plotting.py":
+                src = open(os.path.join(folder, name)).read()
+                assert not re.search(r"\b(?:date|datetime|dt)\(\s*1997\s*,", src), name

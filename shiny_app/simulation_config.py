@@ -433,41 +433,40 @@ def load_simulation_config(filepath: str) -> SimulationConfigFile | None:
 
 
 # Date conversion utilities
+DEFAULT_BASE_YEAR = 1998  # SimulationConfig.base_year default; last resort when no control file is readable
+
+
 def _read_keyed_value(filepath: str, key: str) -> str | None:
     """Return the stripped line that follows the first ``# <key>`` comment line."""
     try:
-        with open(filepath) as f:
+        with open(filepath, errors="replace") as f:
             lines = f.readlines()
     except OSError:
         return None
     for i, line in enumerate(lines[:-1]):
-        if line.startswith("#") and key in line:
+        if line.lstrip().startswith("#") and key in line:
             return lines[i + 1].strip()
     return None
 
 
 def read_base_year(filepath: str) -> int | None:
-    """BASE_YEAR of an ESTAS control file (INPUT*.txt), or None if unreadable."""
+    """BASE_YEAR of an ESTAS control file (INPUT*.txt), or None if unreadable.
+
+    Years that ``datetime.date`` cannot represent are treated as unreadable.
+    """
     val = _read_keyed_value(filepath, "BASE_YEAR")
     try:
-        return int(val) if val is not None else None
+        year = int(val) if val is not None else None
     except ValueError:
         return None
+    return year if year is not None and 1 <= year <= 9999 else None
 
 
-def base_year_for_output_dir(root: str, dir_name: str | None,
-                             preferred: tuple[str, ...] = ()) -> int | None:
-    """BASE_YEAR of the control file that writes into ``dir_name``.
-
-    Model output times are days since 1 January of BASE_YEAR, so a plot of an
-    output folder needs the BASE_YEAR of the run that produced it, not a fixed
-    origin. ``preferred`` control files (e.g. the registered setups' defaults) are
-    tried first, then every ``INPUT*.txt`` in ``root`` in name order. Returns None
-    when no control file names that folder.
-    """
+def _base_year_for_folder(root: str, dir_name: str | None, key: str,
+                          preferred: tuple[str, ...] = ()) -> int | None:
     if not dir_name:
         return None
-    want = dir_name.strip("/\\")
+    want = os.path.normpath(dir_name.replace("\\", "/"))
     try:
         others = sorted(f for f in os.listdir(root)
                         if f.startswith("INPUT") and f.endswith(".txt"))
@@ -475,12 +474,36 @@ def base_year_for_output_dir(root: str, dir_name: str | None,
         others = []
     for name in (*preferred, *others):
         path = os.path.join(root, name)
-        folder = _read_keyed_value(path, "PELAGIC MODEL OUTPUT FOLDER")
-        if folder is not None and folder.strip("/\\") == want:
+        folder = _read_keyed_value(path, key)
+        if folder and os.path.normpath(folder.replace("\\", "/")) == want:
             year = read_base_year(path)
             if year is not None:
                 return year
     return None
+
+
+def base_year_for_output_dir(root: str, dir_name: str | None,
+                             preferred: tuple[str, ...] = ()) -> int | None:
+    """BASE_YEAR of a control file in ``root`` that writes into ``dir_name``.
+
+    Model output times are days since 1 January of BASE_YEAR, so a plot of an
+    output folder needs the BASE_YEAR of the run that produced it, not a fixed
+    origin. The run itself is not recorded in the folder, so this is a lookup in
+    the control files as they are now: ``preferred`` ones (e.g. the registered
+    setups' defaults) first, then every ``INPUT*.txt`` in ``root`` in name order;
+    the first that names the folder wins. Returns None when none does.
+    """
+    return _base_year_for_folder(root, dir_name, "PELAGIC MODEL OUTPUT FOLDER", preferred)
+
+
+def base_year_for_input_dir(root: str, dir_name: str | None,
+                            preferred: tuple[str, ...] = ()) -> int | None:
+    """BASE_YEAR of a control file in ``root`` that reads from ``dir_name``.
+
+    Forcing time series are on the same clock as the outputs (days since
+    1 January of BASE_YEAR). Same lookup order as base_year_for_output_dir().
+    """
+    return _base_year_for_folder(root, dir_name, "PELAGIC MODEL INPUT FOLDER", preferred)
 
 
 def days_to_date(days: float, base_year: int) -> date:

@@ -70,12 +70,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   them. The plateau branch reads those slots as decay rates per °C, so there was no cold limitation at all and
   growth fell to zero just above the plateau (24 °C for diatoms). `INPUTS/WCONST_04.txt` has its pre-CTMI plateau
   values and comments back for all six groups. **Standard-set results change**; CL29 (CTMI, its own constants)
-  is untouched. The Fortran defaults and `VALIDATE_PELAGIC_MODEL_CONSTANTS` still assume CTMI and are not changed.
+  is untouched. The Fortran defaults and `VALIDATE_PELAGIC_MODEL_CONSTANTS` still assume CTMI and are not changed;
+  ESTAS does not call that validator (a 30-day Standard run on the restored file reports the plateau model and no
+  correction), but the 0D/interface path does and would rewrite the restored rates to 35/38/33.
 - **The built-in Hypoxic scenario set zooplankton carbon, not oxygen**: its initial condition used state
   variable 6 (`ZOO_C`) where dissolved oxygen is 4 (`shiny_app/scenarios.py`, `scenarios/hypoxic.json`).
 - **Plot dates were counted from a fixed 1 January 1997** (`shiny_app/modules/plot.py`, four places), one year
-  early for Standard (BASE_YEAR 1998) and fifteen for CL29 (2012). The origin is now the BASE_YEAR of the
-  control file that writes the plotted output folder (`simulation_config.base_year_for_output_dir`).
+  early for Standard (BASE_YEAR 1998) and fifteen for CL29 (2012); `input_analysis.py` did the same for input
+  time series. The origin is now the BASE_YEAR of a control file that names the plotted folder
+  (`simulation_config.base_year_for_output_dir` / `base_year_for_input_dir`): a lookup in the control files as
+  they are now, since the folder does not record which run wrote it.
 - **The tracked PEST files were stale in three ways** (`pest/`, regenerated with `build_pest.py`): the template had
   323 of the 324 constants (the model aborts) and pre-adoption values for 23 others (a run would have reverted the
   adopted `INPUTS_CL29/WCONST_04.txt`); `cl29.pst`/`model_obs.ins` still scored station LTK14 against box 25, not 9

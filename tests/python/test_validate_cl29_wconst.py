@@ -144,4 +144,13 @@ def test_use_c_to_chla_from_sets_the_ratios_for_direct_callers(tmp_path, monkeyp
     assert val._c_to_chla() == val.C_TO_CHLA
     got = val.use_c_to_chla_from(str(w))
     assert val._c_to_chla() == got
-    assert sorted(set(got.values()) - set(val.C_TO_CHLA.values())) == [53.0, 78.0]
+    expected = dict(val.C_TO_CHLA)
+    expected[val.WCONST_CHLA_KEYS["DIA_C_TO_CHLA"]] = 53.0
+    expected[val.WCONST_CHLA_KEYS["CYN_C_TO_CHLA"]] = 78.0
+    assert got == expected                      # pool by pool; absent pools keep defaults
+
+
+def test_load_c_to_chla_reads_a_fortran_d_exponent(tmp_path):
+    w = tmp_path / "WCONST_04.txt"
+    w.write_text("    28   DIA_C_TO_CHLA   5.3D1  ! 28\n")
+    assert val.load_c_to_chla(str(w))[val.WCONST_CHLA_KEYS["DIA_C_TO_CHLA"]] == 53.0

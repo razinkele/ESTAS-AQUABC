@@ -40,7 +40,9 @@ try:
     from shiny_app.input_analysis import analyze_input_file
     from shiny_app.setups import SETUPS
     from shiny_app.simulation_config import (
+        DEFAULT_BASE_YEAR,
         SimulationConfigFile,
+        base_year_for_input_dir,
         base_year_for_output_dir,
         read_base_year,
     )
@@ -51,7 +53,9 @@ except ImportError:  # running as a script from inside shiny_app/
     from input_analysis import analyze_input_file
     from setups import SETUPS
     from simulation_config import (
+        DEFAULT_BASE_YEAR,
         SimulationConfigFile,
+        base_year_for_input_dir,
         base_year_for_output_dir,
         read_base_year,
     )
@@ -62,7 +66,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
 INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")
-DEFAULT_BASE_YEAR = 1998  # SimulationConfig default; used only if no control file is readable
 DEFAULT_PLOT_ROWS = 10000  # Max rows to read for plotting to avoid OOM
 
 
@@ -892,8 +895,9 @@ def plot_server(input, output, session, state):
             time_col = df.iloc[:, 0]
 
             # Convert Julian days to dates
-            # INPUTS_DIR is the Standard folder, whose control file is INPUT.txt
-            reference_date = date(read_base_year(INPUT_TXT_PATH) or DEFAULT_BASE_YEAR, 1, 1)
+            # Same origin as analyze_input_file() uses for the subset defaults
+            reference_date = date(
+                base_year_for_input_dir(ROOT, os.path.basename(INPUTS_DIR)) or DEFAULT_BASE_YEAR, 1, 1)
             dates = [reference_date + timedelta(days=float(t)) for t in time_col]
 
             # Apply time subsetting if enabled

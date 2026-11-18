@@ -28,6 +28,9 @@ Re-run `build_pest.py` whenever `INPUTS_CL29/WCONST_04.txt` or `km_observations_
 changes. The template is a full copy of the constants file, and PEST overwrites
 `INPUTS_CL29/WCONST_04.txt` from it on every forward run, so a stale template reverts
 adopted values and aborts the model if a constant has been added since.
+The script copies whatever `INPUTS_CL29/WCONST_04.txt` holds, so after a PEST run restore
+the adopted file first (it is versioned in the `ESTAS-AQUABC-DATA` repository); otherwise the
+rebuild freezes PEST's last trial values into the template.
 `tests/python/test_build_pest.py` checks the tracked files against the model's constant
 count and the tracked observations.
 
