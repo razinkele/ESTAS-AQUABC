@@ -57,8 +57,7 @@ make -C tests/fortran test_growth_temp
 
 # Python unit tests only (46+ tests; excludes slow browser tests)
 /opt/micromamba/envs/shiny/bin/python -m pytest tests/python/ -v \
-  --ignore=tests/python/test_app_playwright.py \
-  --ignore=tests/python/test_app_selenium.py
+  --ignore=tests/python/test_app_playwright.py
 
 # Single Python test file
 /opt/micromamba/envs/shiny/bin/python -m pytest tests/python/test_parameter_parser.py -v

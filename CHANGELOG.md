@@ -263,6 +263,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   (links the production routine).
 
 ### Changed
+- **Build and repository housekeeping** (audit items 23-25, 32, 34):
+  - one ruff version (0.15.21) in CI, `requirements-dev.txt` and pre-commit (were 0.15.21, >=0.16.4 and v0.9.7); the
+    pre-commit `ruff-format` hook is gone, since CI never checked formatting;
+  - `make` no longer defaults `PYTHON` to a micromamba path of one machine: it uses `.venv/bin/python` when present,
+    else `python3`;
+  - `make_lib.sh` refuses two Fortran sources with the same base name (the second was silently skipped), and the
+    Makefile note now says what the script does: it compiles every `.f90` under `SOURCE_CODE/`, with no file list;
+  - the dead selenium suite (`tests/python/test_app_selenium.py`, paths of another checkout) is removed -- the
+    Playwright suites cover the app;
+  - `.coverage` is no longer tracked; `.gitignore` covers the local setup variants (`INPUTS_CL29_*/`,
+    `INPUT_CL29_*.txt`, `INPUTS_SHYHYDRO*/`, ...), dated `ESTAS_II.2*` backups and run by-products, and no longer
+    calls `INPUTS_CL29/` "regenerable" (the adopted set lives in ESTAS-AQUABC-DATA);
+  - `tests/fortran/Makefile`: `.NOTPARALLEL` (targets share one object directory) and complete prerequisites for the
+    tests that link the production auxiliary file.
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap
   with pigment rather than biomass).

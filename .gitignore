@@ -126,9 +126,34 @@ missing_implicit_none.txt
 # Observation data (local)
 OBSERVATIONS/
 
-# EUTROPY-derived 29-box ESTAS application (regenerable via tools/eutropy_poc/eutropy_to_estas.py)
+# 29-box Curonian Lagoon application. The ADOPTED (calibrated) inputs are kept in the
+# ESTAS-AQUABC-DATA repository; tools/eutropy_poc/eutropy_to_estas.py regenerates only the
+# pre-calibration set.
 INPUTS_CL29/
 OUTPUTS_CL29/
+
+# Local experiment variants of the setups, their control files, and run by-products.
+# (Tracked control files such as INPUT_CL29_VARN.txt are unaffected; add a new one with
+# `git add -f`.)
+INPUTS_CL29_*/
+INPUT_CL29_*.txt
+INPUTS_SHYHYDRO*/
+INPUT_SHYHYDRO_*.txt
+INPUTS_1993*/
+INPUT_1993*.txt
+INPUTS_couptest*/
+INPUT_couptest_*.txt
+cl29_epa_validation_*/
+cal_work_*/
+*.log.zst
+*.log.summary
+
+# Dated backups of the live executable (ESTAS_II.20261118, ESTAS_II.20261118-6fba565, ...)
+ESTAS_II.2*
+
+# Coverage data
+.coverage
+.coverage.*
 
 # VARN (CYN nitrogen-quota, 37 state vars) setup -- regenerable via tools/make_varn_inputs.py
 INPUTS_CL29_VARN/

@@ -271,11 +271,12 @@ build-example: build-lib
 # =============================================================================
 # Rebuild Targets (clean + build in one step)
 # =============================================================================
-# NOTE: The build system uses a single-pass compilation script (make_lib.sh)
-# that compiles all .f90 files in a fixed order. Module dependencies are
-# handled by compiling modules before their dependents. If you add a new
-# module that is used by existing files, you may need to update the
-# compilation order in SOURCE_CODE/build/make_lib.sh.
+# NOTE: SOURCE_CODE/build/make_lib.sh has no file list and no fixed order. It
+# compiles EVERY .f90 under SOURCE_CODE/ (except AQUABC_EXAMPLES/ and build/):
+# first the files that define a module, then the rest, retrying deferred files
+# until all compile, so module dependencies resolve by themselves. A new source
+# file is picked up automatically -- and so is any stray .f90 left in the tree
+# (a backup, an experiment). Two files with the same base name are an error.
 # =============================================================================
 
 # Full rebuild with default executable name
@@ -364,7 +365,9 @@ list-executables:
 # Developer Convenience Targets
 # =============================================================================
 
-PYTHON ?= /opt/micromamba/envs/shiny/bin/python
+# The repo's own virtualenv when there is one, otherwise whatever python3 is on PATH.
+# Override on the command line: make lint PYTHON=/path/to/python
+PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
 # Run all tests (Fortran + Python + lint)
 test-all: test-fortran test-python lint
@@ -381,7 +384,7 @@ test-fortran:
 # Run Python unit tests (excludes slow integration tests)
 test-python:
 	@echo "Running Python unit tests..."
-	$(PYTHON) -m pytest tests/python/ -v --ignore=tests/python/test_app_playwright.py --ignore=tests/python/test_app_selenium.py
+	$(PYTHON) -m pytest tests/python/ -v --ignore=tests/python/test_app_playwright.py
 
 # Run Python linter
 lint:

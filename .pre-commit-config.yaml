@@ -8,9 +8,10 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=500']
 
+  # Same ruff version as CI (.github/workflows/ci.yml) and requirements-dev.txt.
+  # No ruff-format hook: CI does not check formatting and the code is not formatted with it.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.7
+    rev: v0.15.21
     hooks:
       - id: ruff
         args: [--fix]
-      - id: ruff-format

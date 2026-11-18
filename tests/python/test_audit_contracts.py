@@ -591,3 +591,43 @@ def test_fortran_tests_link_production_routines_not_copies():
             src = open(os.path.join(tests, name)).read().lower()
             copied = names & set(re.findall(r"^\s*subroutine\s+(\w+)", src, re.M))
             assert not copied, (name, copied)
+
+
+# --- Build and housekeeping --------------------------------------------------------------
+
+def test_one_ruff_version_everywhere():
+    """CI, pre-commit and requirements-dev once asked for three different versions."""
+    ci = open(os.path.join(ROOT, ".github", "workflows", "ci.yml")).read()
+    version = re.search(r"ruff==([\d.]+)", ci).group(1)
+    assert f"ruff=={version}" in open(os.path.join(ROOT, "requirements-dev.txt")).read()
+    pre = open(os.path.join(ROOT, ".pre-commit-config.yaml")).read()
+    assert f"rev: v{version}" in pre
+    assert "ruff-format" not in re.sub(r"#.*", "", pre)       # CI does not check formatting
+
+
+def test_makefile_python_is_not_machine_specific():
+    make = open(os.path.join(ROOT, "Makefile")).read()
+    line = re.search(r"^PYTHON \?= .*$", make, re.M).group(0)
+    assert "/opt/" not in line and "/home/" not in line, line
+
+
+def test_no_tracked_coverage_data_or_dead_selenium_suite():
+    import subprocess
+    tracked = subprocess.run(["git", "-C", ROOT, "ls-files"], capture_output=True, text=True).stdout.split("\n")
+    if tracked == [""]:                    # not a git checkout (e.g. a source tarball)
+        return
+    assert ".coverage" not in tracked
+    assert "tests/python/test_app_selenium.py" not in tracked
+
+
+def test_fortran_source_base_names_are_unique():
+    """make_lib.sh names objects after the base name; a duplicate was silently skipped."""
+    seen = {}
+    for folder, _dirs, files in os.walk(os.path.join(ROOT, "SOURCE_CODE")):
+        if "AQUABC_EXAMPLES" in folder or folder.endswith(os.sep + "build"):
+            continue
+        for name in files:
+            if name.endswith(".f90"):
+                assert name not in seen, (name, seen[name], folder)
+                seen[name] = folder
+    assert "uniq -d" in open(os.path.join(ROOT, "SOURCE_CODE", "build", "make_lib.sh")).read()
