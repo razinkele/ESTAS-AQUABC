@@ -186,3 +186,65 @@ def get_output_files_from_dir(dir_name, file_format="text", root=ROOT):
                 files[f] = f
 
     return files
+
+
+def first_box_output(root=ROOT, input_file=None):
+    """Lowest-numbered PELAGIC_BOX_NNNNN.out of the run a control file describes, or None."""
+    control = os.path.join(root, input_file or "INPUT.txt")
+    folder = os.path.join(root, get_output_folder_from_config(input_txt_path=control))
+    try:
+        names = sorted(f for f in os.listdir(folder)
+                       if f.startswith("PELAGIC_BOX_") and f.endswith(".out") and "PROCESS_RATES" not in f)
+    except OSError:
+        return None
+    return os.path.join(folder, names[0]) if names else None
+
+
+def analysis_csv(root=ROOT, input_file=None, cache_dir=None):
+    """A model-output CSV in the 0D ``OUTPUT.csv`` layout, for the features written against it.
+
+    Mass Balance, Observations and Data Preview read ``TIME, NH4N, NO3N, ...`` from a root
+    OUTPUT.csv, which only the 0D example writes; ESTAS writes PELAGIC_BOX_NNNNN.out per box
+    with other column names. This returns ``(csv_path, source)``:
+
+    * the run's first box output, converted to the OUTPUT.csv column names (state variables are
+      in the same order in both) and cached until the box file changes;
+    * else the root OUTPUT.csv if there is one;
+    * else ``(None, reason)``.
+
+    ``source`` says which file the numbers come from, for the user. One box's concentrations
+    are not a closed budget (transport crosses the box), which the callers' messages state.
+    """
+    import hashlib
+    import tempfile
+
+    try:
+        from shiny_app.ic_parser import STATE_VARIABLES
+    except ImportError:
+        from ic_parser import STATE_VARIABLES
+
+    box = first_box_output(root, input_file)
+    legacy = os.path.join(root, "OUTPUT.csv")
+    if box is None:
+        if os.path.exists(legacy):
+            return legacy, "OUTPUT.csv"
+        return None, "No model output found. Run the model first."
+    cache_dir = cache_dir or os.path.join(tempfile.gettempdir(), "aquabc_analysis")
+    os.makedirs(cache_dir, exist_ok=True)
+    key = hashlib.sha1(os.path.abspath(box).encode()).hexdigest()[:16]      # noqa: S324 (not security)
+    out = os.path.join(cache_dir, f"{key}_{os.path.splitext(os.path.basename(box))[0]}.csv")
+    source = os.path.relpath(box, root)
+    if os.path.exists(out) and os.path.getmtime(out) >= os.path.getmtime(box):
+        return out, source
+    # Rows with the wrong number of fields are dropped: output folders written by two runs at
+    # once (possible before the run guard) hold interleaved lines.
+    df = pd.read_csv(box, sep=r"\s+", on_bad_lines="skip")
+    df = df[pd.to_numeric(df.iloc[:, 0], errors="coerce").notna()]
+    names = ["TIME"]
+    for i, col in enumerate(df.columns[1:], start=1):
+        names.append(STATE_VARIABLES[i]["csv_name"] if i in STATE_VARIABLES else col.strip())
+    df.columns = names
+    tmp = out + ".tmp"
+    df.to_csv(tmp, index=False, float_format="%.10g")
+    os.replace(tmp, out)
+    return out, source

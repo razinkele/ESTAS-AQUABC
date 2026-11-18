@@ -82,8 +82,18 @@ COMPILE_ERR="./compile_err.txt"
 echo "Module flag: $MOD_FLAG"
 echo "=============================================="
 
-# Collect Fortran sources (exclude examples and the build dir itself)
+# Collect Fortran sources: EVERY .f90 under SOURCE_CODE/ except the examples and the build
+# dir itself. There is no file list -- a stray .f90 in the tree is compiled into the library.
 SRCS=$(find .. -type f -name '*.f90' -not -path '../AQUABC/AQUABC_EXAMPLES/*' -not -path './*' -not -path '../build/*' 2>/dev/null)
+
+# Objects are named after the source's base name, so two sources with the same base name
+# would silently become one object (the second is skipped as "already compiled").
+DUP=$(for src in $SRCS; do basename "$src" .f90; done | sort | uniq -d)
+if [ -n "$DUP" ]; then
+  echo "ERROR: Fortran sources with the same base name under SOURCE_CODE/:" >&2
+  for d in $DUP; do find .. -type f -name "$d.f90" -not -path '../AQUABC/AQUABC_EXAMPLES/*' -not -path '../build/*' >&2; done
+  exit 1
+fi
 
 # Clean old objects
 rm -f *.o *.mod libaquabc.a

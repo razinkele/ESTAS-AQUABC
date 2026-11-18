@@ -1,5 +1,9 @@
 # AQUABC/ESTAS_II Fortran Implementation Plan
 
+> **Historical.** Written on 2026-01-18 against the `AQUABCv0.2` checkout and not maintained
+> since: paths, counts and statuses are as of that date. For the current state see
+> [`CHANGELOG.md`](CHANGELOG.md) and [`BACKLOG.md`](BACKLOG.md).
+
 **Document Version:** 1.0
 **Date:** 2026-01-18
 **Author:** Claude Code Review

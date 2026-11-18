@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-18
+
+> 🎉 **Released — [AQUABC v0.12.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.12.0)**
+> (Linux binary attached). **Codebase audit fixes + ESTAS mass-balance and level corrections.** The Standard
+> constants match the temperature model again, the constants readers refuse inconsistent input, the app edits and
+> reads the files the run actually uses, and the Fortran tests link the production routines. New opt-in mechanisms
+> (day-length light weighting, a density-dependent closure, Nostocales fixation switches) ship disabled.
+> **Results differ from v0.11.0 in the last digits** (every real literal is now double precision: dissolved oxygen by
+> up to 5e-5 relative), and Standard runs change materially because the plateau temperature constants are restored.
+
 ### Added
 - **`tools/set_per_box_forcing_columns.py`** points each box's PRECIPITATION, EVAPORATION, AIR TEMPERATURE,
   WIND SPEED and ICE FRACTION rows at its own column when the forcing file has one column per box (report mode
@@ -64,6 +74,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **Four app features needed a root `OUTPUT.csv` that ESTAS never writes** (only the 0D example does): Mass Balance,
+  Observations, Data Preview and the dashboard's "Last Run". They now use the run's own first box output
+  (`PELAGIC_BOX_NNNNN.out` of the control file selected on the Run tab), converted to the `OUTPUT.csv` column names
+  for the two analysis tabs; the root `OUTPUT.csv` remains a fallback. Mass Balance says which file it used and that
+  one box's pools exclude transport, and reads the active setup's constants instead of `INPUTS/`. Rows with the wrong
+  field count (folders written by two runs at once) are skipped.
+- **The Parameters tab's categories described an older constants file**: everything from id 158 was under the wrong
+  heading (ids 210-234, labelled "Methane", are DON mineralisation; "Settling" and "pH Effects" held DOP
+  mineralisation) and ids 319-324 were in no category. The table now has 20 categories covering 1-324 exactly once,
+  checked against `INPUTS/WCONST_04.txt`; the Reference Manual and navigation guide lists are regenerated from it.
 - **Fortran unit tests exercised copies, not the model.** `tests/fortran/test_pelagic_aux_subset.f90` was a trimmed
   copy of the auxiliary routines whose `GROWTH_AT_TEMP` stayed CTMI-only after production gained the plateau model
   (the default), and six tests carried their own copies of `GROWTH_AT_TEMP`, the nutrient preferences, the ammonia
@@ -263,6 +283,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   (links the production routine).
 
 ### Changed
+- **Build and repository housekeeping** (audit items 23-25, 32, 34):
+  - one ruff version (0.15.21) in CI, `requirements-dev.txt` and pre-commit (were 0.15.21, >=0.16.4 and v0.9.7); the
+    pre-commit `ruff-format` hook is gone, since CI never checked formatting;
+  - `make` no longer defaults `PYTHON` to a micromamba path of one machine: it uses `.venv/bin/python` when present,
+    else `python3`;
+  - `make_lib.sh` refuses two Fortran sources with the same base name (the second was silently skipped), and the
+    Makefile note now says what the script does: it compiles every `.f90` under `SOURCE_CODE/`, with no file list;
+  - the dead selenium suite (`tests/python/test_app_selenium.py`, paths of another checkout) is removed -- the
+    Playwright suites cover the app;
+  - `.coverage` is no longer tracked; `.gitignore` covers the local setup variants (`INPUTS_CL29_*/`,
+    `INPUT_CL29_*.txt`, `INPUTS_SHYHYDRO*/`, ...), dated `ESTAS_II.2*` backups and run by-products, and no longer
+    calls `INPUTS_CL29/` "regenerable" (the adopted set lives in ESTAS-AQUABC-DATA);
+  - `tests/fortran/Makefile`: `.NOTPARALLEL` (targets share one object directory) and complete prerequisites for the
+    tests that link the production auxiliary file.
 - **Calibration harness**: new `formb_closure` paramset (2 loss + 3 growth + 3 cycling
   constants; C:Chl deliberately excluded — handed to the objective it fills the chlorophyll gap
   with pigment rather than biomass).
@@ -274,6 +308,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   penalised for being slow rather than wrong.
 
 ### Documentation
+- **`PARAMETER_REFERENCE.md` lists all 324 constants** (it named 53, under category ranges of an older file). Its
+  tables are generated from `INPUTS/WCONST_04.txt` and the app's categories by `tools/build_parameter_reference.py`
+  (`--check` in the test suite keeps it current).
+- **README**: the CL29 status no longer stops at v0.5.0 -- it links `docs/CL29_phenology_diagnosis.md` (§1-§69.5)
+  and says the adopted `INPUTS_CL29/` set is in the ESTAS-AQUABC-DATA repository; the app's "inputs not found" hint
+  says the same instead of pointing at the generator, which gives the pre-calibration set.
+- **Stale headers**: `.github/copilot-instructions.md` (was "v0.3", 318 constants, 14 categories),
+  `FIXES_AND_IMPROVEMENTS.md` and `FORTRAN_IMPLEMENTATION_PLAN.md` (now marked historical).
 - **Both reference manuals brought up to date with the code.** Every one of the **14 runtime
   options and constants** added during the CL29 work was undocumented, and both carried stale
   dimension counts (`nconst` 318 and "323 parameters" against an actual **324**).
@@ -303,6 +345,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `figures/` on demand and derive paths from `__file__` rather than an absolute author path.
 
 ### Notes
+- **Dead code removed** (audit item 35), outputs byte-identical (Standard 30 d, CL29 90 d): the uncalled
+  `READ_MODEL_CONSTANTS_PRICE`; three empty Fortran modules (`aquabc_II_wc_ini`, `aquabc_II_sediment_debug_stranger`,
+  `aquabc_II_sediment_internal`); `shiny_app/file_locators.py` (imported by nothing; its `INPUT.txt` line-number
+  parsing was also stale) with its test; `tools/deep_process_rate_analysis_v1.py`. Kept on purpose:
+  `GENERATE_PELAGIC_DERIVED_VARS` (uncalled, but named in the CL29 phenology record and two tools as the Fortran-side
+  derived-TN routine), the root `app.R` (a Shiny Server deployment wrapper), and constants 159, 161-163
+  (`k_RED_FE_III`, `k_RED_MN_IV`, `KHS_DOXY_FE_III_RED`, `KHS_DOXY_MN_IV_RED`), which no rate uses but whose removal
+  would renumber the constants file.
 - **Form B is correct physics and is NOT adopted** — recorded as a measured negative
   (`docs/CL29_phenology_diagnosis.md` §47–49, BACKLOG §4). Landing it costs ≈20 % of production
   in every month and undoes the adopted ice correction (February `DIA_C` 0.99× → 0.22× against

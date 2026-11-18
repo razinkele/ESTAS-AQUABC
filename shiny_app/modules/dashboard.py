@@ -40,7 +40,7 @@ from datetime import date, datetime, timedelta
 from shiny import module, reactive, render, ui
 
 try:
-    from shiny_app import setups
+    from shiny_app import output_data, setups
     from shiny_app.compiler_env import (
         build_intel_wrapped_command,
         check_intel_libs_available,
@@ -50,8 +50,9 @@ try:
     )
     from shiny_app.config import DEFAULT_CONSTANTS_FILE
     from shiny_app.input_analysis import validate_required_inputs
-    from shiny_app.utils import validate_constants_file
+    from shiny_app.utils import count_file_lines_fast, validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
+    import output_data
     import setups
     from compiler_env import (
         build_intel_wrapped_command,
@@ -62,7 +63,7 @@ except ImportError:  # running as a script from inside shiny_app/
     )
     from config import DEFAULT_CONSTANTS_FILE
     from input_analysis import validate_required_inputs
-    from utils import validate_constants_file
+    from utils import count_file_lines_fast, validate_constants_file
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
@@ -570,9 +571,10 @@ def dashboard_server(input, output, session, state):
             class_="mb-1"
         ))
 
-        # Last run info
-        if os.path.exists(OUTPUT_CSV):
-            mtime = datetime.fromtimestamp(os.path.getmtime(OUTPUT_CSV))
+        # Last run info: the active setup's box output (the 0D example's OUTPUT.csv as a fallback)
+        last_output = output_data.first_box_output(ROOT, run.current_setup().input_file) or OUTPUT_CSV
+        if os.path.exists(last_output):
+            mtime = datetime.fromtimestamp(os.path.getmtime(last_output))
             items.append(ui.div(
                 ui.tags.strong("Last Run: "),
                 ui.tags.span(mtime.strftime('%m-%d %H:%M'), class_="text-muted"),
@@ -580,9 +582,8 @@ def dashboard_server(input, output, session, state):
             ))
             try:
                 # Efficient line count using file size estimate
-                file_size = os.path.getsize(OUTPUT_CSV)
-                # Estimate lines (avg ~100 bytes per line in CSV)
-                estimated_lines = file_size // 100
+                file_size = os.path.getsize(last_output)
+                estimated_lines = count_file_lines_fast(last_output)
                 items.append(ui.div(
                     ui.tags.strong("Output: "),
                     ui.tags.span(f"~{estimated_lines:,} rows ({file_size // 1024:,} KB)", class_="text-success"),

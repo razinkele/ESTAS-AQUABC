@@ -75,6 +75,10 @@ AUX_GLOBAL_DEPS = $(AQUABC_SRC)/PELAGIC/aquabc_II_pelagic_svindex.f90 \
 AUX_OBJS = precision_kinds.o mod_AQUABC_II_GLOBAL.o aquabc_physical_constants.o \
     STRING_UTILS.o aquabc_II_pelagic_model_constants.o aquabc_II_pelagic_svindex.o \
     mod_INTERPOLATE.o mod_TIME_SERIES.o mod_GLOBAL.o aquabc_II_pelagic_auxillary.o
+# Every production source BUILD_AUX compiles: the prerequisites of the tests that link it,
+# so a change to any of them rebuilds those tests.
+AUX_ALL_SRCS = $(PRECISION_KINDS_SRC) $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90 $(PHYS_CONST_SRC) \
+    $(CORE_UTILS)/STRING_UTILS.f90 $(PELAGIC_MODEL_CONSTANTS_SRC) $(AUX_GLOBAL_DEPS) $(PELAGIC_AUX)
 # Compile the production auxiliary file and everything it needs, in order.
 define BUILD_AUX
 $(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
@@ -85,6 +89,10 @@ $(FC) $(FFLAGS) -c $(PELAGIC_MODEL_CONSTANTS_SRC)
 $(FC) $(FFLAGS) -c $(AUX_GLOBAL_DEPS)
 $(FC) $(FFLAGS) -c $(PELAGIC_AUX)
 endef
+
+# The targets compile shared objects and .mod files into this one directory, so two recipes
+# running at once would overwrite each other's files: build serially even under `make -j`.
+.NOTPARALLEL:
 
 # Default target
 .PHONY: all
@@ -159,12 +167,12 @@ test_organic_carbon: test_organic_carbon.f90 $(ORGANIC_CARBON_SRCS)
 	$(FC) $(FFLAGS) -o $@ test_organic_carbon.f90 *.o
 
 # Compile test_growth_temp (links the production GROWTH_AT_TEMP)
-test_growth_temp: test_growth_temp.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_growth_temp: test_growth_temp.f90 $(AUX_ALL_SRCS)
 	$(BUILD_AUX)
 	$(FC) $(FFLAGS) -o $@ test_growth_temp.f90 $(AUX_OBJS)
 
 # Compile test_nutrient_prefs (links the production the nutrient-preference routines)
-test_nutrient_prefs: test_nutrient_prefs.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_nutrient_prefs: test_nutrient_prefs.f90 $(AUX_ALL_SRCS)
 	$(BUILD_AUX)
 	$(FC) $(FFLAGS) -o $@ test_nutrient_prefs.f90 $(AUX_OBJS)
 
@@ -184,18 +192,18 @@ test_sed_typemap: test_sed_typemap.f90 $(ESTAS_SRC)/mod_SED_TYPEMAP.f90
 	$(FC) $(FFLAGS) -o $@ test_sed_typemap.f90 mod_SED_TYPEMAP.o precision_kinds.o
 
 # Compile test_ammonia_chem (links the production the ammonia routines)
-test_ammonia_chem: test_ammonia_chem.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_ammonia_chem: test_ammonia_chem.f90 $(AUX_ALL_SRCS)
 	$(BUILD_AUX)
 	$(FC) $(FFLAGS) -o $@ test_ammonia_chem.f90 $(AUX_OBJS)
 
 # Compile test_light (links the production light_kd and CUR_SMITH)
-test_light: test_light.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_light: test_light.f90 $(AUX_ALL_SRCS)
 	$(BUILD_AUX)
 	$(FC) $(FFLAGS) -o $@ test_light.f90 $(AUX_OBJS)
 
 # Compile test_lim_light_daylength (LIGHT_DAYLENGTH_OPTION in LIM_LIGHT).
 # Links the production LIM_LIGHT.
-test_lim_light_daylength: test_lim_light_daylength.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_lim_light_daylength: test_lim_light_daylength.f90 $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -207,7 +215,7 @@ test_lim_light_daylength: test_lim_light_daylength.f90 $(PELAGIC_AUX) $(AUX_GLOB
 	    $(AUX_OBJS)
 
 # Compile test_settling_suppres (links the production settling_suppres_factor)
-test_settling_suppres: test_settling_suppres.f90 $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_settling_suppres: test_settling_suppres.f90 $(AUX_ALL_SRCS)
 	$(BUILD_AUX)
 	$(FC) $(FFLAGS) -o $@ test_settling_suppres.f90 $(AUX_OBJS)
 
@@ -229,7 +237,7 @@ test_file_unit: test_file_unit.f90 $(CORE_UTILS)/FIND_FILE_UNIT.f90
 	$(FC) $(FFLAGS) -o $@ test_file_unit.f90 $(CORE_UTILS)/FIND_FILE_UNIT.f90
 
 # Compile test_diatoms (kinetics test)
-test_diatoms: test_diatoms.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_diatoms: test_diatoms.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -243,7 +251,7 @@ test_diatoms: test_diatoms.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_
 	$(FC) $(FFLAGS) -o $@ test_diatoms.f90 *.o
 
 # Compile test_cyanobacteria (kinetics test)
-test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -261,7 +269,7 @@ test_cyanobacteria: test_cyanobacteria.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $
 # Compile test_cyn_droop (nitrogen-quota helpers + the flag-gated branch in
 # both CYANOBACTERIA variants). Same source set as test_cyanobacteria plus
 # the AQUABC_CYN_DROOP module, which the library routines now use.
-test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS) $(CYN_DROOP_SRC)
+test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS) $(CYN_DROOP_SRC)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -277,7 +285,7 @@ test_cyn_droop: test_cyn_droop.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLO
 	$(FC) $(FFLAGS) -o $@ test_cyn_droop.f90 *.o
 
 # Compile test_zooplankton (kinetics test)
-test_zooplankton: test_zooplankton.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_zooplankton: test_zooplankton.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -317,7 +325,7 @@ test_doc_mineralization: test_doc_mineralization.f90 $(TEST_DEFAULTS_SRC)
 	$(FC) $(FFLAGS) -o $@ test_doc_mineralization.f90 *.o
 
 # Compile test_fix_cyn (kinetics test)
-test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -332,7 +340,7 @@ test_fix_cyn: test_fix_cyn.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_
 	$(FC) $(FFLAGS) -o $@ test_fix_cyn.f90 *.o
 
 # Compile test_opa (kinetics test)
-test_opa: test_opa.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_opa: test_opa.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)
@@ -346,7 +354,7 @@ test_opa: test_opa.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
 	$(FC) $(FFLAGS) -o $@ test_opa.f90 *.o
 
 # Compile test_nostocales (kinetics test)
-test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(PELAGIC_AUX) $(AUX_GLOBAL_DEPS)
+test_nostocales: test_nostocales.f90 $(TEST_DEFAULTS_SRC) $(AUX_ALL_SRCS)
 	$(FC) $(FFLAGS) -c $(PRECISION_KINDS_SRC)
 	$(FC) $(FFLAGS) -c $(AQUABC_SRC)/mod_AQUABC_II_GLOBAL.f90
 	$(FC) $(FFLAGS) -c $(PHYS_CONST_SRC)

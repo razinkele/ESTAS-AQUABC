@@ -3,7 +3,7 @@
 `map_ui(id)` returns the panel *content* (the app-level panel_conditional
 stays in create_ui); `map_server(id, state)` registers `pydeck_map` and
 `map_info`, ported verbatim from app.py. Despite the `pydeck_map` name, the
-handler renders an ipyleaflet map (no box_network/file_locators dependency
+handler renders an ipyleaflet map (no box_network dependency
 was found when grepping the ported bodies — confirmed self-contained).
 """
 import logging

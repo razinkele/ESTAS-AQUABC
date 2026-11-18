@@ -4,7 +4,7 @@
 [![Release](https://img.shields.io/github/v/release/razinkele/ESTAS-AQUABC?sort=semver)](https://github.com/razinkele/ESTAS-AQUABC/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-<!-- LATEST_RELEASE -->**Latest release:** [v0.11.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.11.0)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
+<!-- LATEST_RELEASE -->**Latest release:** [v0.12.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.12.0)<!-- /LATEST_RELEASE --> · full history in [CHANGELOG.md](CHANGELOG.md)
 
 AQUABC is a process-based **aquatic biogeochemical model** — pelagic and sediment
 cycling of nitrogen, phosphorus, silica, carbon, oxygen, and the Mn/Fe/S redox system,
@@ -42,7 +42,7 @@ validated against long-term monitoring data.
 
 ## Development status
 
-**Current release:** v0.11.0. AQUABC is under active research development; maturity varies
+**Current release:** v0.12.0. AQUABC is under active research development; maturity varies
 by component:
 
 | Component | Status |
@@ -61,6 +61,13 @@ and 2015 experimental process-rate data. The remaining PO4/Si residuals are docu
 bounded structural limits (growing-season phytoplankton uptake and organic-matter
 turnover), not open defects. The full arc — tooling, calibrations, and what was ruled out
 with evidence — is in [`docs/CL29_EPA_Calibration_Summary.md`](docs/CL29_EPA_Calibration_Summary.md).
+
+**Since v0.5.0.** Later work on the seasonal phenology of the phytoplankton groups, the silica
+boundary and the river inputs — including what was tried and rejected — is recorded in
+[`docs/CL29_phenology_diagnosis.md`](docs/CL29_phenology_diagnosis.md) (§1–§69.5). The adopted
+`INPUTS_CL29/` set is kept in the separate
+[ESTAS-AQUABC-DATA](https://github.com/razinkele/ESTAS-AQUABC-DATA) repository;
+`tools/eutropy_poc/eutropy_to_estas.py` regenerates only the pre-calibration set.
 
 **Known limitations / future work:** spatially variable sediment P/Si burial (needs a
 Curonian grain-size/facies map); realistic N₂-fixation (coupled to organic-N turnover).
@@ -114,7 +121,8 @@ docker run --rm aquabc            # banner + re-run the 0D self-test
 ```
 
 The 0D example is self-contained. The **CL29** application inputs (`INPUTS_CL29/`) and the EPA
-observations are external (gitignored / not committed), so reproduce CL29 + validation by **mounting**
+observations are external (gitignored / not committed; the adopted inputs are in the
+ESTAS-AQUABC-DATA repository), so reproduce CL29 + validation by **mounting**
 them:
 
 ```sh
@@ -166,6 +174,7 @@ into CI). Browser (Playwright/Selenium) integration tests run in CI's dedicated
 | [`docs/ESTAS_Reference_Manual.md`](docs/ESTAS_Reference_Manual.md) | ESTAS transport driver reference |
 | [`docs/ESTAS_AQUABC_Integration_Guide.md`](docs/ESTAS_AQUABC_Integration_Guide.md) | How the two couple |
 | [`docs/CL29_EPA_Calibration_Summary.md`](docs/CL29_EPA_Calibration_Summary.md) | Curonian Lagoon calibration & validation |
+| [`docs/CL29_phenology_diagnosis.md`](docs/CL29_phenology_diagnosis.md) | CL29 seasonal phenology: the running diagnosis (§1–§69.5), with every lever tested and its verdict |
 | [`docs/CL29_KM_2022-2023_Validation.md`](docs/CL29_KM_2022-2023_Validation.md) | CL29 vs the 2022–2023 KM monitoring (nutrients + Chl-a) |
 | [`docs/CL29_Calibration_PEST_Workflow.md`](docs/CL29_Calibration_PEST_Workflow.md) | Calibration workflow (external PEST++) |
 | [`docs/CL29_Sensitivity_Analysis.md`](docs/CL29_Sensitivity_Analysis.md) | Global sensitivity / identifiability screen (Method of Morris) |

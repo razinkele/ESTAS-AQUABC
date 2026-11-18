@@ -6,8 +6,7 @@ paper (`~/curonian/docs/EUTROPY_AQUABC_comparison*` §10.3 / §11.2), and the sc
 campaigns tracked in project notes. **Detailed task specs live in the referenced sources — this
 file is the prioritized index, not a duplicate**, so it can't drift from the plan.
 
-**Last updated:** 2026-09-15 · **Latest release:** v0.11.0 (`main` is ahead of it — the doc §20–27
-honest-configuration + boundary arc is merged unreleased) · Fortran-plan Phases 1–4 and every item
+**Last updated:** 2026-11-18 · **Latest release:** v0.12.0 · Fortran-plan Phases 1–4 and every item
 in `FIXES_AND_IMPROVEMENTS.md` are complete; the only open GitHub issue is the v0.11.0
 release-announcement pointer (#112). (#76 FIX_CYN phenology was investigated and closed as
 *not planned* — see §4.)

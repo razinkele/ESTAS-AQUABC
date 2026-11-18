@@ -210,9 +210,6 @@ OUTPUT_CSV = os.path.join(ROOT, 'OUTPUT.csv')
 
 # PELAGIC_BOX_COLUMNS imported from shiny_app.utils
 
-# get_output_folder() and find_pelagic_box_file() moved to
-# shiny_app/file_locators.py (imported above) so they can be unit-tested
-# without importing this whole module.
 
 # read_pelagic_binary and read_pelagic_text imported from shiny_app.utils
 
@@ -390,9 +387,6 @@ for i in range(1, 5):
 # shared dict object, so the FORC_TS/SETTLING_VELOCITY_TS/BATHYMETRY/WCONST_0
 # loops above still mutate it in place after the import runs.
 
-# get_available_boxes() and get_timeseries_variables() moved to
-# shiny_app/file_locators.py (imported above) so they can be unit-tested
-# without importing this whole module.
 
 
 def create_ui():

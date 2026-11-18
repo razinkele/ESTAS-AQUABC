@@ -1,5 +1,8 @@
 # Fixes and Improvements — AQUABC v0.3
 
+> **Historical.** Written for v0.3 (early 2026); the statuses below were last reviewed then.
+> For what has changed since, see [`CHANGELOG.md`](CHANGELOG.md) and [`BACKLOG.md`](BACKLOG.md).
+
 ## Executive summary
 
 This document summarizes fixes and improvements identified by scanning the repository. Items are grouped by priority with current status.
