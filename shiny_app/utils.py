@@ -15,8 +15,36 @@ logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 INPUTS_DIR = os.path.join(ROOT, 'INPUTS')
 
-# Constants
-REQUIRED_MODEL_CONSTANTS = 318  # Model requires exactly 318 constants
+# Number of pelagic model constants the model requires: `nconst` in
+# SOURCE_CODE/ESTAS/mod_GLOBAL.f90 (tests/python/test_audit_contracts.py pins the two).
+REQUIRED_MODEL_CONSTANTS = 324
+
+
+def format_full_precision(value) -> str:
+    """Shortest text that reads back as exactly the same float (12.825253, 1e-06, 0.0).
+
+    For writing edited values into model input files: a fixed number of significant
+    digits (the old `%.6g`) silently rounds the value the user typed.
+    """
+    return repr(float(value))
+
+
+def thin_rows(df, max_rows):
+    """Evenly thin a time series to at most about `max_rows` rows for plotting.
+
+    Returns (frame, step): every `step`-th row over the WHOLE record, with the last
+    row kept so the plotted period ends where the data ends. step == 1 means the
+    frame is returned unchanged. Reading only the first `max_rows` rows instead would
+    silently cut a long record short.
+    """
+    n = len(df)
+    if not max_rows or n <= max_rows:
+        return df, 1
+    step = -(-n // max_rows)                      # ceil(n / max_rows)
+    idx = list(range(0, n, step))
+    if idx[-1] != n - 1:
+        idx.append(n - 1)
+    return df.iloc[idx], step
 
 # Standard column names for PELAGIC_BOX output files (binary and text)
 PELAGIC_BOX_COLUMNS = [
@@ -132,14 +160,20 @@ def read_pelagic_text(text_file, max_rows=None):
     return df
 
 
-def validate_constants_file(constants_filename):
-    """Validate that a WCONST file has the required number of constants.
+def validate_constants_file(constants_filename, inputs_dir=None):
+    """Validate that a WCONST file has exactly the constants the model reads.
+
+    The Fortran reader stores constants by index and aborts on a missing index, a
+    duplicate or an index above the required count, so all three are errors here.
 
     Args:
-        constants_filename: The filename (e.g., 'WCONST_01.txt') or full path
+        constants_filename: The filename (e.g., 'WCONST_04.txt') or full path
+        inputs_dir: folder a bare filename is looked up in -- the active setup's
+            input folder (the model prepends PELAGIC_INPUT_FOLDER). Defaults to
+            the Standard INPUTS/.
 
     Returns:
-        tuple: (is_valid: bool, actual_count: int, error_message: str or None)
+        tuple: (is_valid: bool, highest_index: int, error_message: str or None)
     """
     if not constants_filename:
         return True, 0, None  # No constants file specified, model uses defaults
@@ -148,36 +182,51 @@ def validate_constants_file(constants_filename):
     if os.path.isabs(constants_filename):
         filepath = constants_filename
     else:
-        filepath = os.path.join(INPUTS_DIR, constants_filename)
+        filepath = os.path.join(inputs_dir or INPUTS_DIR, constants_filename)
 
     if not os.path.exists(filepath):
         return False, 0, f"Constants file not found: {filepath}"
 
     try:
-        # Count numbered constant lines (format: "   123   CONSTANT_NAME   value  !comment")
-        # Lines start with whitespace followed by a number
-        const_count = 0
-        max_const_num = 0
-
+        # Numbered constant lines: "   123   CONSTANT_NAME   value  !comment"
+        indices = []
         with open(filepath, encoding='utf-8', errors='ignore') as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                # Match lines starting with a number (the constant index)
                 match = re.match(r'^(\d+)\s+\w+', line)
                 if match:
-                    const_num = int(match.group(1))
-                    max_const_num = max(max_const_num, const_num)
-                    const_count += 1
+                    indices.append(int(match.group(1)))
+
+        name = os.path.basename(filepath)
+        max_const_num = max(indices, default=0)
+        seen = set(indices)
+        missing = [i for i in range(1, REQUIRED_MODEL_CONSTANTS + 1) if i not in seen]
+        extra = sorted(i for i in seen if i > REQUIRED_MODEL_CONSTANTS)
+        duplicates = sorted({i for i in indices if indices.count(i) > 1})
+
+        def some(nums):
+            return ", ".join(map(str, nums[:8])) + (" ..." if len(nums) > 8 else "")
 
         if max_const_num < REQUIRED_MODEL_CONSTANTS:
             return False, max_const_num, (
-                f"Constants file '{os.path.basename(filepath)}' has only {max_const_num} constants, "
+                f"Constants file '{name}' has only {max_const_num} constants, "
                 f"but the model requires {REQUIRED_MODEL_CONSTANTS}.\n"
                 f"Missing constants: {max_const_num + 1} to {REQUIRED_MODEL_CONSTANTS}\n"
                 f"Try using WCONST_04.txt which has all required constants."
             )
+        if missing:
+            return False, max_const_num, (
+                f"Constants file '{name}' is missing constant(s) {some(missing)}; "
+                f"the model requires every index 1 to {REQUIRED_MODEL_CONSTANTS}.")
+        if extra:
+            return False, max_const_num, (
+                f"Constants file '{name}' has constant(s) {some(extra)} above the "
+                f"{REQUIRED_MODEL_CONSTANTS} the model reads; it stops on an index out of range.")
+        if duplicates:
+            return False, max_const_num, (
+                f"Constants file '{name}' lists constant(s) {some(duplicates)} more than once.")
 
         return True, max_const_num, None
 

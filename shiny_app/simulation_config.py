@@ -531,6 +531,31 @@ TIME_STEP_PRESETS = {
 }
 
 # Output interval presets (in hours)
+# MODEL_SEDIMENTS in the control file (mod_AQUATIC_MODEL.f90): 0 = no bottom sediments,
+# 1 = prescribed sediment fluxes, > 1 = the sediment diagenesis model.
+SEDIMENT_MODE_CHOICES = {
+    "0": "Off",
+    "1": "Prescribed sediment fluxes",
+    "2": "Sediment diagenesis model",
+}
+
+
+def sediment_mode_choice(model_sediments: int) -> str:
+    """Selector value for a MODEL_SEDIMENTS number (every value > 1 is diagenesis)."""
+    return "0" if model_sediments <= 0 else ("1" if model_sediments == 1 else "2")
+
+
+def sediment_mode_value(choice: str, current: int) -> int:
+    """MODEL_SEDIMENTS to write for a selector value.
+
+    Keeps the file's own number when the mode is unchanged, so a diagenesis
+    setting other than 2 survives a save.
+    """
+    if sediment_mode_choice(current) == str(choice):
+        return current
+    return int(choice)
+
+
 OUTPUT_INTERVAL_PRESETS = {
     "Hourly": 1.0,
     "3-hourly": 3.0,

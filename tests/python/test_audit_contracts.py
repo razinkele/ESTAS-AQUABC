@@ -164,3 +164,117 @@ def test_app_has_no_fixed_time_origin():
             if name.endswith(".py") and name != "test_plotting.py":
                 src = open(os.path.join(folder, name)).read()
                 assert not re.search(r"\b(?:date|datetime|dt)\(\s*1997\s*,", src), name
+
+
+# --- App constants contract (audit item 9) ---------------------------------------------
+
+def test_app_constant_count_matches_the_model():
+    try:
+        from shiny_app.utils import REQUIRED_MODEL_CONSTANTS
+    except ImportError:
+        from utils import REQUIRED_MODEL_CONSTANTS
+    src = open(os.path.join(ROOT, "SOURCE_CODE", "ESTAS", "mod_GLOBAL.f90")).read()
+    assert REQUIRED_MODEL_CONSTANTS == int(re.search(r"nconst\s*=\s*(\d+)", src).group(1))
+
+
+def test_default_constants_file_is_tracked_and_valid():
+    try:
+        from shiny_app.config import DEFAULT_CONSTANTS_FILE
+        from shiny_app.utils import validate_constants_file
+    except ImportError:
+        from config import DEFAULT_CONSTANTS_FILE
+        from utils import validate_constants_file
+    assert os.path.isfile(os.path.join(INPUTS, DEFAULT_CONSTANTS_FILE))
+    assert validate_constants_file(DEFAULT_CONSTANTS_FILE, INPUTS) == (True, 324, None)
+
+
+def test_modules_do_not_define_their_own_default_constants_file():
+    """run_control and dashboard each carried a stale copy naming an untracked file."""
+    mods = os.path.join(ROOT, "shiny_app", "modules")
+    for name in sorted(os.listdir(mods)):
+        if name.endswith(".py"):
+            src = open(os.path.join(mods, name)).read()
+            assert not re.search(r"^DEFAULT_CONSTANTS_FILE\s*=", src, re.M), name
+
+
+# --- Plot thinning (audit item 7) ---------------------------------------------------------
+
+def test_thin_rows_covers_the_whole_record():
+    import pandas as pd
+    try:
+        from shiny_app.utils import thin_rows
+    except ImportError:
+        from utils import thin_rows
+    df = pd.DataFrame({"t": range(96385), "y": range(96385)})      # CL29: 4016 d x 24/d + 1
+    out, step = thin_rows(df, 10000)
+    assert step == 10 and len(out) <= 10001
+    assert out["t"].iloc[0] == 0 and out["t"].iloc[-1] == 96384     # first AND last row kept
+    assert out["t"].is_monotonic_increasing and out["t"].is_unique
+    small, step1 = thin_rows(df.head(500), 10000)
+    assert step1 == 1 and small is not None and len(small) == 500
+    assert thin_rows(df, None)[1] == 1
+
+
+def test_main_plot_reads_the_full_record():
+    src = open(os.path.join(ROOT, "shiny_app", "modules", "plot.py")).read()
+    assert "max_rows=DEFAULT_PLOT_ROWS" not in src
+    assert "thin_rows(df, DEFAULT_PLOT_ROWS)" in src
+
+
+# --- Full-precision writes (audit item 8) ---------------------------------------------------
+
+def test_format_full_precision_round_trips():
+    try:
+        from shiny_app.utils import format_full_precision
+    except ImportError:
+        from utils import format_full_precision
+    for v in (12.825253, 0.059870, 2.97874, 8.10035, 1e-6, 0.0, -1.0, 720.0, 0.1 + 0.2, 123456789.123):
+        assert float(format_full_precision(v)) == v
+    assert format_full_precision(12.825253) == "12.825253"
+
+
+def test_edited_values_are_written_at_full_precision(tmp_path):
+    try:
+        from shiny_app.ic_parser import ICFile
+        from shiny_app.parameter_parser import ParameterFile
+    except ImportError:
+        from ic_parser import ICFile
+        from parameter_parser import ParameterFile
+    import shutil
+    w = tmp_path / "WCONST_04.txt"
+    shutil.copy(os.path.join(INPUTS, "WCONST_04.txt"), w)
+    pf = ParameterFile(str(w))
+    assert pf.parse()
+    ok, _msg = pf.update_parameter(5, 8.1003512)
+    assert ok and pf.save(backup=False)[0]
+    line = next(ln for ln in open(w) if ln.split()[:2] == ["5", "KG_DIA_OPT_TEMP"])
+    assert line.split()[2] == "8.1003512"
+
+    ic = tmp_path / "INIT_CONC_1.txt"
+    shutil.copy(os.path.join(INPUTS, "INIT_CONC_1.txt"), ic)
+    icf = ICFile(str(ic))
+    assert icf.parse()
+    ok, _msg = icf.update_condition(4, 12.825253)
+    assert ok and icf.save(backup=False)[0]
+    line = next(ln for ln in open(ic) if ln.split()[:1] == ["4"])
+    assert line.split()[1] == "12.825253"
+
+
+# --- Simulation Config (audit item 6) ---------------------------------------------------------
+
+def test_sediment_mode_maps_to_the_models_meaning():
+    try:
+        from shiny_app.simulation_config import sediment_mode_choice, sediment_mode_value
+    except ImportError:
+        from simulation_config import sediment_mode_choice, sediment_mode_value
+    assert [sediment_mode_choice(v) for v in (0, 1, 2, 3)] == ["0", "1", "2", "2"]
+    assert sediment_mode_value("2", 0) == 2            # switching diagenesis on writes 2, not 1
+    assert sediment_mode_value("1", 0) == 1
+    assert sediment_mode_value("2", 3) == 3            # unchanged mode keeps the file's number
+    assert sediment_mode_value("0", 2) == 0
+
+
+def test_sim_config_does_not_hard_wire_input_txt_for_load_and_save():
+    src = open(os.path.join(ROOT, "shiny_app", "modules", "sim_config.py")).read()
+    assert "SimulationConfigFile(INPUT_TXT_PATH)" not in src
+    assert "SimulationConfigFile(control_path)" in src

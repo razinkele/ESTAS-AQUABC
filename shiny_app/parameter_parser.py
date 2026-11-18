@@ -2,7 +2,7 @@
 AQUABC Parameter Parser Module
 
 Parses and manages AQUABC model parameter files (WCONST_04.txt, EXTRA_WCONST.txt).
-Provides structured access to 318+ model parameters organized by category.
+Provides structured access to the 324 model parameters organized by category.
 """
 
 import logging
@@ -10,8 +10,10 @@ import os
 
 try:
     from shiny_app.config import DEFAULT_CONSTANTS_FILE
+    from shiny_app.utils import format_full_precision
 except ImportError:
     from config import DEFAULT_CONSTANTS_FILE
+    from utils import format_full_precision
 import re
 import shutil
 from dataclasses import dataclass
@@ -117,7 +119,9 @@ class Parameter:
         """Format parameter back to file line format"""
         # Format: "    ID    NAME    VALUE  ! ID   Comment"
         # Maintain original spacing as much as possible
-        return f"{self.id:6d}{self.name:>35s}{self.value:18.6g}  ! {self.id:3d}   {self.comment}"
+        # Full precision: the value is written exactly as entered, never rounded
+        return (f"{self.id:6d}{self.name:>35s}{format_full_precision(self.value):>18s}"
+                f"  ! {self.id:3d}   {self.comment}")
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization"""

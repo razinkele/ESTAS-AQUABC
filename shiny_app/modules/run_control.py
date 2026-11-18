@@ -58,12 +58,14 @@ from shiny import module, reactive, render, ui
 try:
     from shiny_app import build_commands, output_data, setups
     from shiny_app.compiler_env import check_intel_libs_available, is_intel_executable
+    from shiny_app.config import DEFAULT_CONSTANTS_FILE
     from shiny_app.utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
     import build_commands
     import output_data
     import setups
     from compiler_env import check_intel_libs_available, is_intel_executable
+    from config import DEFAULT_CONSTANTS_FILE
     from utils import REQUIRED_MODEL_CONSTANTS, validate_constants_file
 
 logger = logging.getLogger("AQUABC")
@@ -71,7 +73,6 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 INPUTS_DIR = os.path.join(ROOT, "INPUTS")
 
 # Default constants file to use when Arg 3 is set but Arg 2 is not.
-DEFAULT_CONSTANTS_FILE = "WCONST_01.txt"
 
 
 @module.ui
@@ -294,6 +295,13 @@ def run_control_server(input, output, session, state):
     # ESTAS_II Command Line Parameter Controls
     # =========================================================================
 
+    def _setup_inputs_dir():
+        """Input folder of the active setup (falls back to Standard before it is known)."""
+        try:
+            return os.path.join(ROOT, run.current_setup().inputs_dir)
+        except Exception:
+            return INPUTS_DIR
+
     @reactive.effect
     def init_cmd_dropdowns():
         """Initialize command line parameter dropdown choices"""
@@ -301,11 +309,14 @@ def run_control_server(input, output, session, state):
         # (driven by the setup selector), not here.
 
         # Get available WCONST*.txt files for constants override (Arg 2)
-        # Note: Fortran code prepends PELAGIC_INPUT_FOLDER, so just use filename
+        # Note: Fortran code prepends PELAGIC_INPUT_FOLDER, so just use filename --
+        # and list the ACTIVE setup's folder, which is the one the model will read.
         const_files = {"": "(not used - use defaults)"}
-        for f in sorted(os.listdir(INPUTS_DIR)):
-            if f.startswith("WCONST") and f.endswith(".txt"):
-                const_files[f] = f  # Just filename, not path
+        inputs_dir = _setup_inputs_dir()
+        if os.path.isdir(inputs_dir):
+            for f in sorted(os.listdir(inputs_dir)):
+                if f.startswith("WCONST") and f.endswith(".txt"):
+                    const_files[f] = f  # Just filename, not path
         ui.update_select("cmd_constants_file", choices=const_files)
 
         # Get available shear stress files (Arg 4)
@@ -498,7 +509,7 @@ def run_control_server(input, output, session, state):
                              class_="text-muted")
             )
 
-        is_valid, actual_count, error_msg = validate_constants_file(const_file)
+        is_valid, actual_count, error_msg = validate_constants_file(const_file, _setup_inputs_dir())
 
         if is_valid:
             return ui.div(
@@ -583,7 +594,7 @@ def run_control_server(input, output, session, state):
                     pass
 
             if const_file:
-                is_valid, actual_count, error_msg = validate_constants_file(const_file)
+                is_valid, actual_count, error_msg = validate_constants_file(const_file, _setup_inputs_dir())
                 if not is_valid:
                     run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
                     run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")

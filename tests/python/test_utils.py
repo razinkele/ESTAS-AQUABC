@@ -173,21 +173,53 @@ class TestValidateConstantsFile:
             lines.append(f"  {i}  CONST_{i:04d}  1.0  ! constant {i}")
         path.write_text("\n".join(lines) + "\n")
 
-    def test_valid_318(self, tmp_path):
+    def test_valid_required_count(self, tmp_path):
         f = tmp_path / "WCONST.txt"
-        self._make_constants(f, 318)
+        self._make_constants(f, REQUIRED_MODEL_CONSTANTS)
         valid, count, msg = validate_constants_file(str(f))
         assert valid is True
-        assert count == 318
+        assert count == REQUIRED_MODEL_CONSTANTS
         assert msg is None
 
     def test_more_than_required(self, tmp_path):
-        """Having more constants than required should still be valid."""
+        """An index above the required count stops the Fortran reader ('out of range')."""
         f = tmp_path / "WCONST.txt"
-        self._make_constants(f, 400)
+        self._make_constants(f, REQUIRED_MODEL_CONSTANTS + 1)
         valid, count, msg = validate_constants_file(str(f))
-        assert valid is True
-        assert count == 400
+        assert valid is False
+        assert count == REQUIRED_MODEL_CONSTANTS + 1
+        assert "out of range" in msg
+
+    def test_old_318_constant_file_is_rejected(self, tmp_path):
+        """The model grew from 318 to 324 constants; a 318-constant file aborts the run."""
+        f = tmp_path / "WCONST.txt"
+        self._make_constants(f, 318)
+        valid, count, msg = validate_constants_file(str(f))
+        assert valid is False and count == 318
+        assert "319 to 324" in msg
+
+    def test_missing_index(self, tmp_path):
+        f = tmp_path / "WCONST.txt"
+        self._make_constants(f, REQUIRED_MODEL_CONSTANTS)
+        f.write_text("\n".join(ln for ln in f.read_text().splitlines() if not ln.startswith("  57 ")) + "\n")
+        valid, _count, msg = validate_constants_file(str(f))
+        assert valid is False and "missing constant(s) 57" in msg
+
+    def test_duplicate_index(self, tmp_path):
+        f = tmp_path / "WCONST.txt"
+        self._make_constants(f, REQUIRED_MODEL_CONSTANTS)
+        f.write_text(f.read_text() + "  57  DUP_0057  2.0  ! again\n")
+        valid, _count, msg = validate_constants_file(str(f))
+        assert valid is False and "57 more than once" in msg
+
+    def test_bare_name_is_looked_up_in_the_given_inputs_dir(self, tmp_path):
+        """The model reads the constants from the ACTIVE setup's folder, not always INPUTS/."""
+        d = tmp_path / "INPUTS_CL29"
+        d.mkdir()
+        self._make_constants(d / "WCONST_X.txt", REQUIRED_MODEL_CONSTANTS)
+        assert validate_constants_file("WCONST_X.txt", str(d))[0] is True
+        valid, _count, msg = validate_constants_file("WCONST_X.txt", str(tmp_path))
+        assert valid is False and "not found" in msg
 
     def test_too_few(self, tmp_path):
         f = tmp_path / "WCONST.txt"
@@ -226,27 +258,28 @@ class TestValidateConstantsFile:
         """Lines starting with # or blank lines should be skipped."""
         f = tmp_path / "WCONST.txt"
         lines = ["# Header comment", ""]
-        for i in range(1, 319):
+        for i in range(1, REQUIRED_MODEL_CONSTANTS + 1):
             lines.append(f"  {i}  CONST_{i:04d}  1.0  ! constant {i}")
         lines.append("# footer")
         f.write_text("\n".join(lines) + "\n")
         valid, count, msg = validate_constants_file(str(f))
         assert valid is True
-        assert count == 318
+        assert count == REQUIRED_MODEL_CONSTANTS
 
     def test_gap_in_numbering(self, tmp_path):
-        """File with gaps — max_const_num determines validity, not count of lines."""
+        """A gap is invalid even when the highest index is right: the Fortran reader
+        aborts on every missing index (it used to pass on the highest index alone)."""
         f = tmp_path / "WCONST.txt"
-        # Write only constants 1, 2, and 318 (big gap but max == 318)
         lines = [
             "  1  CONST_0001  1.0  ! c1",
             "  2  CONST_0002  1.0  ! c2",
-            "  318  CONST_0318  1.0  ! c318",
+            f"  {REQUIRED_MODEL_CONSTANTS}  CONST_LAST  1.0  ! last",
         ]
         f.write_text("\n".join(lines) + "\n")
         valid, count, msg = validate_constants_file(str(f))
-        assert valid is True
-        assert count == 318
+        assert valid is False
+        assert count == REQUIRED_MODEL_CONSTANTS
+        assert "missing constant(s) 3, 4" in msg
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +290,7 @@ class TestConstants:
         assert len(PELAGIC_BOX_COLUMNS) == 37
 
     def test_required_model_constants(self):
-        assert REQUIRED_MODEL_CONSTANTS == 318
+        assert REQUIRED_MODEL_CONSTANTS == 324      # = nconst in mod_GLOBAL.f90 (test_audit_contracts)
 
     def test_first_column_is_time(self):
         assert PELAGIC_BOX_COLUMNS[0] == "TIME_DAYS"

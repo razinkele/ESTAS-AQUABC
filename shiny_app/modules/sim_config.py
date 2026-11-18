@@ -32,19 +32,26 @@ from shiny import module, reactive, render, ui
 try:
     from shiny_app.simulation_config import (
         OUTPUT_INTERVAL_PRESETS,
+        SEDIMENT_MODE_CHOICES,
         TIME_STEP_PRESETS,
         SimulationConfigFile,
+        sediment_mode_choice,
+        sediment_mode_value,
     )
 except ImportError:  # running as a script from inside shiny_app/
     from simulation_config import (
         OUTPUT_INTERVAL_PRESETS,
+        SEDIMENT_MODE_CHOICES,
         TIME_STEP_PRESETS,
         SimulationConfigFile,
+        sediment_mode_choice,
+        sediment_mode_value,
     )
 
 logger = logging.getLogger("AQUABC")
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", ".."))
-# Path to INPUT.txt (in ROOT, not INPUTS)
+# Fallback control file (in ROOT, not INPUTS). The tab edits the control file the run
+# will actually use -- see _control_file() in the server.
 INPUT_TXT_PATH = os.path.join(ROOT, "INPUT.txt")
 
 
@@ -54,8 +61,9 @@ def sim_config_ui():
         "Simulation Config",
         ui.tooltip(
             ui.input_action_button("load_sim_config", "Load Configuration", class_="btn-secondary mb-3"),
-            "Load settings from INPUT.txt file"
+            "Load settings from the control file the run will use (Run Control: Input Configuration File)"
         ),
+        ui.output_ui("sim_control_file_note"),
         ui.layout_columns(
             ui.card(
                 ui.card_header("Time Period"),
@@ -105,7 +113,7 @@ def sim_config_ui():
                 ),
                 ui.tooltip(
                     ui.input_numeric("sim_print_interval", "Print Interval (steps):", value=24, min=1),
-                    "Number of time steps between output writes. 24 steps = hourly at 240 steps/day."
+                    "Number of time steps between output writes. 10 steps = hourly at 240 steps/day."
                 ),
                 ui.output_text("sim_output_info"),
                 fill=False
@@ -117,8 +125,10 @@ def sim_config_ui():
             ui.card(
                 ui.card_header("Model Options"),
                 ui.tooltip(
-                    ui.input_switch("sim_model_sediments", "Enable Sediment Model", value=False),
-                    "Enable bottom sediment diagenesis model. Increases computation time significantly."
+                    ui.input_select("sim_model_sediments", "Bottom Sediments:",
+                                    choices=SEDIMENT_MODE_CHOICES, selected="0"),
+                    "MODEL_SEDIMENTS: off, prescribed sediment fluxes, or the sediment diagenesis "
+                    "model (the last increases computation time significantly)."
                 ),
                 ui.tooltip(
                     ui.input_select(
@@ -136,7 +146,7 @@ def sim_config_ui():
         ui.layout_columns(
             ui.tooltip(
                 ui.input_action_button("save_sim_config", "Save Configuration", class_="btn-success"),
-                "Save current settings to INPUT.txt file"
+                "Save current settings to the control file the run will use"
             ),
             ui.output_text("sim_config_save_status"),
             col_widths=[3, 9]
@@ -154,17 +164,52 @@ def sim_config_server(input, output, session, state):
     # reach it through session.root_scope().make_scope("run_control") + bare id.
     rc = session.root_scope().make_scope("run_control")
 
+    def _control_file():
+        """(name, path) of the control file the run will use.
+
+        That is the Run Control tab's "Input Configuration File" (it follows the
+        active setup), else the active setup's default, else INPUT.txt. Editing
+        any other file would report success and leave the run unchanged.
+        """
+        name = None
+        try:
+            name = rc.input.cmd_input_file()
+        except Exception:
+            name = None
+        if not name:
+            try:
+                name = state.run.current_setup().input_file
+            except Exception:
+                name = None
+        name = os.path.basename(name) if name else os.path.basename(INPUT_TXT_PATH)
+        return name, os.path.join(ROOT, name)
+
+    @render.ui
+    def sim_control_file_note():
+        name, _path = _control_file()
+        scf = sim_config_obj.get()
+        loaded = os.path.basename(scf.filepath) if scf is not None else None
+        if loaded == name:
+            text, cls = f"Editing {name} (the control file the run will use).", "text-muted"
+        elif loaded:
+            text, cls = (f"The values shown were loaded from {loaded}, but the run will use {name}. "
+                         "Press Load Configuration before saving."), "text-warning"
+        else:
+            text, cls = f"The run will use {name}. Press Load Configuration to edit it.", "text-muted"
+        return ui.div(ui.tags.small(text), class_=f"{cls} mb-2")
+
     @reactive.effect
     @reactive.event(input.load_sim_config)
     def load_simulation_config_file():
-        """Load INPUT.txt simulation configuration"""
-        if not os.path.exists(INPUT_TXT_PATH):
-            logger.error(f"INPUT.txt not found: {INPUT_TXT_PATH}")
-            ui.notification_show("INPUT.txt not found", type="error")
+        """Load the simulation configuration of the run's control file"""
+        control_name, control_path = _control_file()
+        if not os.path.exists(control_path):
+            logger.error(f"Control file not found: {control_path}")
+            ui.notification_show(f"{control_name} not found", type="error")
             return
 
-        logger.info(f"Loading simulation config: {INPUT_TXT_PATH}")
-        scf = SimulationConfigFile(INPUT_TXT_PATH)
+        logger.info(f"Loading simulation config: {control_path}")
+        scf = SimulationConfigFile(control_path)
         if scf.parse():
             sim_config_obj.set(scf)
             sim_config_save_msg.set("")
@@ -204,7 +249,7 @@ def sim_config_server(input, output, session, state):
                     break
 
             # Model options
-            ui.update_switch("sim_model_sediments", value=bool(cfg.model_sediments))
+            ui.update_select("sim_model_sediments", selected=sediment_mode_choice(cfg.model_sediments))
             ui.update_select("sim_resuspension", selected=str(cfg.resuspension_option))
 
             # Output directory (widget lives in the run_control module's tab)
@@ -215,10 +260,10 @@ def sim_config_server(input, output, session, state):
 
             logger.info(f"Loaded simulation config: {cfg.base_year}, "
                        f"days {cfg.simulation_start}-{cfg.simulation_end}")
-            ui.notification_show("Configuration loaded", type="message", duration=2)
+            ui.notification_show(f"Configuration loaded from {control_name}", type="message", duration=2)
         else:
-            logger.error("Failed to parse INPUT.txt")
-            ui.notification_show("Failed to parse INPUT.txt", type="error")
+            logger.error(f"Failed to parse {control_name}")
+            ui.notification_show(f"Failed to parse {control_name}", type="error")
 
     @reactive.effect
     @reactive.event(input.sim_timestep_preset)
@@ -299,19 +344,20 @@ def sim_config_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.save_sim_config)
     def save_simulation_config():
-        """Save simulation configuration to INPUT.txt"""
+        """Save the simulation configuration to the run's control file"""
         scf = sim_config_obj.get()
+        control_name, control_path = _control_file()
 
-        # If not loaded yet, create new from file
-        if scf is None:
-            if os.path.exists(INPUT_TXT_PATH):
-                scf = SimulationConfigFile(INPUT_TXT_PATH)
-                if not scf.parse():
-                    sim_config_save_msg.set("Error: Could not parse INPUT.txt")
-                    return
-            else:
-                sim_config_save_msg.set("Error: INPUT.txt not found")
-                return
+        # The widgets hold the values of the file that was loaded. Writing them into a
+        # different control file (after a setup switch), or writing never-loaded widget
+        # defaults, would overwrite that file's dates and options with foreign values.
+        if scf is None or os.path.abspath(scf.filepath) != os.path.abspath(control_path):
+            loaded = os.path.basename(scf.filepath) if scf is not None else "nothing"
+            msg = (f"Not saved: the run will use {control_name}, but {loaded} is loaded. "
+                   "Press Load Configuration first.")
+            sim_config_save_msg.set(msg)
+            ui.notification_show(msg, type="warning")
+            return
 
         try:
             cfg = scf.config
@@ -346,7 +392,7 @@ def sim_config_server(input, output, session, state):
                 cfg.print_interval = int(interval)
 
             # Model options
-            cfg.model_sediments = 1 if input.sim_model_sediments() else 0
+            cfg.model_sediments = sediment_mode_value(input.sim_model_sediments() or "0", cfg.model_sediments)
             resuspension = input.sim_resuspension()
             if resuspension:
                 cfg.resuspension_option = int(resuspension)
@@ -368,9 +414,9 @@ def sim_config_server(input, output, session, state):
             save_ok, save_msg = scf.save(backup=True)
 
             if save_ok:
-                sim_config_save_msg.set(f"Saved at {datetime.now().strftime('%H:%M:%S')}")
+                sim_config_save_msg.set(f"Saved {control_name} at {datetime.now().strftime('%H:%M:%S')}")
                 state.sim_config_version.set(state.sim_config_version.get() + 1)
-                ui.notification_show("Configuration saved successfully", type="message", duration=3)
+                ui.notification_show(f"Configuration saved to {control_name}", type="message", duration=3)
                 logger.info(f"Saved simulation config: base={cfg.base_year}, "
                            f"start={cfg.simulation_start}, end={cfg.simulation_end}")
             else:

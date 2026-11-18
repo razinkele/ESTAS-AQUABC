@@ -18,8 +18,7 @@ all cross-tab reads were already routed through `run.command_config()` /
 `input.X` values -- only its own namespaced inputs (`quick_run`,
 `dashboard_stop`, `goto_model_config`, `btn_copy_dashboard_log`).
 
-Keeps a module-local `DEFAULT_CONSTANTS_FILE` for the Quick Run fallback
-(run_control.py keeps its own separate copy for its own handlers).
+Uses `config.DEFAULT_CONSTANTS_FILE` for the Quick Run fallback (as run_control.py does).
 `input_txt_variables` reads `state.output_config_version` /
 `state.sim_config_version` -- namespace-agnostic reactive counters, so no
 bridge is needed there either.
@@ -49,6 +48,7 @@ try:
         get_run_environment,
         is_intel_executable,
     )
+    from shiny_app.config import DEFAULT_CONSTANTS_FILE
     from shiny_app.input_analysis import validate_required_inputs
     from shiny_app.utils import validate_constants_file
 except ImportError:  # running as a script from inside shiny_app/
@@ -60,6 +60,7 @@ except ImportError:  # running as a script from inside shiny_app/
         get_run_environment,
         is_intel_executable,
     )
+    from config import DEFAULT_CONSTANTS_FILE
     from input_analysis import validate_required_inputs
     from utils import validate_constants_file
 
@@ -69,7 +70,6 @@ OUTPUT_CSV = os.path.join(ROOT, "OUTPUT.csv")
 
 # Local copy for the Quick Run (dashboard) fallback -- run_control.py owns its
 # own copy for its own handlers.
-DEFAULT_CONSTANTS_FILE = "WCONST_01.txt"
 
 
 @module.ui
@@ -300,7 +300,8 @@ def dashboard_server(input, output, session, state):
                 const_file = DEFAULT_CONSTANTS_FILE
 
             if const_file:
-                is_valid, actual_count, error_msg = validate_constants_file(const_file)
+                is_valid, actual_count, error_msg = validate_constants_file(
+                    const_file, os.path.join(ROOT, run.current_setup().inputs_dir))
                 if not is_valid:
                     run.run_log_lines.append(f"❌ VALIDATION ERROR:\n{error_msg}\n")
                     run.run_log_lines.append("Model run aborted. Please select a constants file with all required parameters.\n")
