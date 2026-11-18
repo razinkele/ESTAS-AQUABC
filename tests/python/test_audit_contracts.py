@@ -464,3 +464,56 @@ def test_output_config_tab_cannot_write_widget_defaults():
     assert "output_config_loaded.get()" in save and "Load Current first" in save
     assert "output_config.save(" in save and "open(OUTPUT_INFO_FILE, 'w')" not in src
     assert 'selected=["5", "6", "8", "9", "14", "17", "25"]' not in src
+
+
+# --- Review follow-ups to the four fixes above -----------------------------------------
+
+def test_stale_setup_count_does_not_win_over_a_layout_that_fits_the_file(tmp_path):
+    """Two 37-double records under a setup that now says 32 states: at 33 columns the
+    'time' samples are [t0, a small state value] and can rise by chance."""
+    import numpy as np
+
+    from shiny_app.utils import read_pelagic_binary, state_count_for_output_file
+    (tmp_path / "INPUT.txt").write_text(
+        "# PELAGIC MODEL INPUT FOLDER\nINPUTS/\n# PELAGIC MODEL INPUT FILE\nPELAGIC_INPUTS.txt\n"
+        "# PELAGIC MODEL OUTPUT FOLDER write ...\nOUTPUTS/\n")
+    (tmp_path / "INPUTS").mkdir()
+    (tmp_path / "INPUTS" / "PELAGIC_INPUTS.txt").write_text("# NUM_PELAGIC_STATE_VARS\n   32\n")
+    (tmp_path / "OUTPUTS").mkdir()
+    f = tmp_path / "OUTPUTS" / "P.bin_PELAGIC_BOX_00001.bin"
+    rec = np.zeros((2, 37))
+    rec[:, 0] = [0.0, 1.0]
+    rec[0, 33] = 0.1                                   # SEC_METAB_DIA: the 34th value
+    rec.tofile(str(f))
+    assert state_count_for_output_file(str(f)) == 32
+    df = read_pelagic_binary(str(f))
+    assert df.shape == (2, 37) and list(df["TIME_DAYS"]) == [0.0, 1.0]
+
+
+def test_output_config_keeps_rows_beyond_the_setups_box_count():
+    oc = _oc()
+    text = "# header\n 1 1 0 0\n 2 0 0 0\n 3 1 1 0\n"
+    _h, flags = oc.parse(text)
+    new = oc.apply_selection(flags, ["1"], ["state_vars", "process_rates"], 2,
+                             ["state_vars", "process_rates"])
+    assert new == {1: (1, 0, 0), 2: (0, 0, 0), 3: (1, 1, 0)}
+    assert oc.rewrite(text, new) == text
+    assert oc.apply_selection(flags, [], [], 2, None)[3] == (1, 1, 0)
+
+
+def test_output_config_keeps_crlf_line_endings(tmp_path):
+    oc = _oc()
+    path = tmp_path / "PELAGIC_OUTPUT_INFORMATION_FILE.txt"
+    original = b"# header\r\n 1 1 0 0\r\n 2 0 0 0\r\n"
+    path.write_bytes(original)
+    with open(path, newline="") as fh:
+        text = fh.read()
+    _h, flags = oc.parse(text)
+    oc.save(str(path), oc.rewrite(text, oc.apply_selection(flags, ["1"], ["state_vars"], 2, ["state_vars"])))
+    assert path.read_bytes() == original
+    oc.save(str(path), oc.rewrite(text, oc.apply_selection(flags, ["1", "2"], ["state_vars"], 3, ["state_vars"])))
+    data = path.read_bytes()
+    assert data.count(b"\r\n") == 4 and data.count(b"\n") == 4      # changed + appended rows are CRLF too
+    src = open(os.path.join(ROOT, "shiny_app", "modules", "run_control.py")).read()
+    save = src[src.index("def save_output_config():"):]
+    assert 'open(path, newline="")' in save[:save.index("def output_config_status")]

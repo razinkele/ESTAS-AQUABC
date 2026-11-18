@@ -170,9 +170,13 @@ def pelagic_binary_layout(bin_file, n_state=None):
         t = np.asarray(data[:(n_values // (k + 1)) * (k + 1):k + 1])
         return len(t) > 0 and bool(np.all(np.isfinite(t)) and np.all(np.diff(t) > 0))
 
-    if setup_count is not None and time_increases(setup_count):
-        return pelagic_box_columns(setup_count)     # a remainder is a record being written
+    # Layouts that account for the whole file come first: a stale setup count can
+    # pass the time test by chance over a few records and leave a remainder.
     fits = [k for k in VALID_STATE_COUNTS if n_values % (k + 1) == 0 and time_increases(k)]
+    if setup_count in fits:
+        return pelagic_box_columns(setup_count)
+    if not fits and setup_count is not None and time_increases(setup_count):
+        return pelagic_box_columns(setup_count)     # the remainder is a record being written
     if len(fits) != 1:
         raise ValueError(
             f"cannot tell the record layout of {os.path.basename(bin_file)} "

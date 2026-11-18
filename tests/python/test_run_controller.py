@@ -305,3 +305,39 @@ def test_run_handlers_claim_before_clearing_the_log():
         body = body[:body.index("\n    def ", 10)]
         assert "run.claim_run(" in body and "run.release_run()" in body, name
         assert "run_log_lines.clear()" not in body, name
+
+
+def test_symlinked_output_folder_is_the_same_claim(tmp_path):
+    import os
+    (tmp_path / "OUT").mkdir()
+    os.symlink(tmp_path / "OUT", tmp_path / "OUT_ALIAS")
+    (tmp_path / "A.txt").write_text("# PELAGIC MODEL OUTPUT FOLDER write ...\nOUT/\n")
+    (tmp_path / "B.txt").write_text("# PELAGIC MODEL OUTPUT FOLDER write ...\nOUT_ALIAS/\n")
+    a, b = RunController(root=str(tmp_path)), RunController(root=str(tmp_path))
+    assert a.output_key("A.txt") == str(tmp_path / "OUT")
+    assert a.output_key("A.txt") == b.output_key("B.txt")
+    assert a.claim_run("A.txt")[0] and not b.claim_run("B.txt")[0]
+    a.release_run()
+
+
+def test_control_file_is_in_use_only_while_its_run_holds_the_claim(tmp_path, monkeypatch):
+    try:
+        from shiny_app.app_state import control_file_in_use
+    except ImportError:
+        from app_state import control_file_in_use
+    rc = RunController(root=str(tmp_path))
+    monkeypatch.setattr(rc, "output_key", lambda input_file=None: str(tmp_path / "OUTPUTS"))
+    ctl = str(tmp_path / "INPUT_x.txt")
+    assert not control_file_in_use(ctl)
+    assert rc.claim_run("INPUT_x.txt")[0]
+    assert control_file_in_use(ctl) and not control_file_in_use(str(tmp_path / "INPUT.txt"))
+    rc.release_run()
+    assert not control_file_in_use(ctl)
+
+
+def test_sim_config_refuses_to_move_the_output_folder_of_a_running_file():
+    import os
+    src = open(os.path.join(os.path.dirname(__file__), "..", "..", "shiny_app", "modules",
+                            "sim_config.py")).read()
+    guard, save = src.index("control_file_in_use(control_path)"), src.index("scf.save(backup=True)")
+    assert guard < save and "return" in src[guard:save]

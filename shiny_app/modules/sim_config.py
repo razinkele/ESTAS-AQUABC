@@ -30,6 +30,8 @@ from datetime import date, datetime
 from shiny import module, reactive, render, ui
 
 try:
+    from shiny_app import output_data
+    from shiny_app.app_state import control_file_in_use
     from shiny_app.simulation_config import (
         OUTPUT_INTERVAL_PRESETS,
         SEDIMENT_MODE_CHOICES,
@@ -39,6 +41,8 @@ try:
         sediment_mode_value,
     )
 except ImportError:  # running as a script from inside shiny_app/
+    import output_data
+    from app_state import control_file_in_use
     from simulation_config import (
         OUTPUT_INTERVAL_PRESETS,
         SEDIMENT_MODE_CHOICES,
@@ -408,6 +412,17 @@ def sim_config_server(input, output, session, state):
             if not is_valid:
                 sim_config_save_msg.set(f"Validation errors: {'; '.join(errors)}")
                 ui.notification_show(f"Validation errors: {'; '.join(errors)}", type="error")
+                return
+
+            # A run started from this file has reserved the output folder the file
+            # named at that moment, and the model reads the file after launch.
+            on_disk = output_data.get_output_folder_from_config(input_txt_path=control_path)
+            if (os.path.normpath(cfg.output_folder) != os.path.normpath(on_disk)
+                    and control_file_in_use(control_path)):
+                msg = ("Not saved: a model run started from this file is in progress, so its "
+                       "output folder cannot be changed until the run ends.")
+                sim_config_save_msg.set(msg)
+                ui.notification_show(msg, type="warning", duration=8)
                 return
 
             # Save
