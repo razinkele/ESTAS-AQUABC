@@ -95,7 +95,7 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
   - Light Curve and Ice (6 params)
 
 - File selection (WCONST_04.txt, EXTRA_WCONST.txt)
-- **Edit Parameters** button (launches modal editor)
+- Numeric inputs for the selected category, shown inline after loading it (no separate editor window)
 - Value validation
 - Unit display
 - Parameter search
@@ -111,7 +111,7 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 - IC set selection (1 or 2)
 - Table-based editor
 - Per-box spatial editing
-- Validation (non-negative, reasonable ranges)
+- Validation (non-negative, reasonable ranges) — planned; values are currently saved without a range check
 - Scenario presets
 
 **State Variable Groups:**
@@ -277,8 +277,9 @@ The main content area (right side) displays:
 
 ## Future Enhancements
 
-> Written as a plan. Mass balance checking and observation comparison (items 1 and 2 below) now
-> exist as the Mass Balance and Observations tabs; the rest is not implemented.
+> Written as a plan and kept as written. Several of these exist now: mass balance checking,
+> observation upload and model-data comparison, and scenario presets each have a tab. The others
+> were not checked against the app.
 
 Planned additions to navigation:
 

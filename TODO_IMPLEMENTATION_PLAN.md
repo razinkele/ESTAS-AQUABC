@@ -195,7 +195,8 @@ re-captured because 1.8 shifted default output ~1e-6.)
 > **Update 2026-11-18 (v0.12.0).** This pass looked only at universal constants. A later audit
 > found 506 lines with single-precision real literals in double-precision arithmetic (including
 > `273.16` in the sediment diffusion routines, which is kept because it pairs with `298.16` there);
-> all now carry a `D` exponent, and `tests/python` fails on any new one. See `CHANGELOG.md`.
+> all now carry a `D` exponent, and `tests/python` fails on any new one outside I/O statements.
+> See `CHANGELOG.md`.
 
 **Reality vs the original triage:** the backlog's example literals `1013.25` and `8.314`
 do **not** exist in the code; the only universal-physics magic number is `273.15`

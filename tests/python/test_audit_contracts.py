@@ -526,7 +526,8 @@ def test_fortran_sources_have_no_single_precision_real_literals():
     single-precision rounding (about 1e-8 relative, more after cancellation -- the
     DO-saturation polynomial moved by 5e-5). Every real literal needs a D exponent
     or a kind suffix. Lines that are I/O statements are skipped (format widths)."""
-    lit = re.compile(r"(?<![\w.])(\d+\.\d*|\.\d+)([eE][+-]?\d+)?(?![\w.])")
+    # with a decimal point (0.1, 1.e-3) or with an E exponent only (1e-3)
+    lit = re.compile(r"(?<![\w.])((\d+\.\d*|\.\d+)([eE][+-]?\d+)?|\d+[eE][+-]?\d+)(?![\w.])")
     io = re.compile(r"^\s*(\d+\s+)?(write|print|read|format)\b", re.I)
     found = []
     for folder, _dirs, files in os.walk(os.path.join(ROOT, "SOURCE_CODE")):
