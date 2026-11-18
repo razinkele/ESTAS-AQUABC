@@ -68,10 +68,10 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 4. **Parameters** (Coming Soon)
+### 4. **Parameters**
 **Purpose:** Structured editing of the 324 model parameters
 
-**Planned Features:**
+**Features:**
 - Category-based organization:
   - General (4 params)
   - Diatoms (24 params)
@@ -104,10 +104,10 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 5. **Initial Conditions** (Coming Soon)
+### 5. **Initial Conditions**
 **Purpose:** Edit initial concentrations for 36 state variables
 
-**Planned Features:**
+**Features:**
 - IC set selection (1 or 2)
 - Table-based editor
 - Per-box spatial editing
@@ -126,10 +126,10 @@ The AQUABC Shiny frontend has been refactored with a clean, organized left-pane 
 
 ---
 
-### 6. **Model Options** (Coming Soon)
+### 6. **Model Options**
 **Purpose:** Toggle model features and switches
 
-**Planned Features:**
+**Features:**
 - Zooplankton CNP partitioning (realistic vs. simple)
 - Advanced redox simulation (Fe, Mn, S, CH4)
 - Light extinction method (empirical vs. calculated)
@@ -276,6 +276,9 @@ The main content area (right side) displays:
 ---
 
 ## Future Enhancements
+
+> Written as a plan. Mass balance checking and observation comparison (items 1 and 2 below) now
+> exist as the Mass Balance and Observations tabs; the rest is not implemented.
 
 Planned additions to navigation:
 
