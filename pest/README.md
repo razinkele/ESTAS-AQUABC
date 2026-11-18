@@ -24,6 +24,13 @@ python tools/ingest_km_observations.py --out-dir /tmp/km && cp /tmp/km/km_observ
 python pest/build_pest.py            # -> wconst_04.tpl, model_obs.ins, cl29.pst
 ```
 
+Re-run `build_pest.py` whenever `INPUTS_CL29/WCONST_04.txt` or `km_observations_tidy.csv`
+changes. The template is a full copy of the constants file, and PEST overwrites
+`INPUTS_CL29/WCONST_04.txt` from it on every forward run, so a stale template reverts
+adopted values and aborts the model if a constant has been added since.
+`tests/python/test_build_pest.py` checks the tracked files against the model's constant
+count and the tracked observations.
+
 Re-target the calibration by editing `PARAMS` (parameter set / bounds / transform) in
 `build_pest.py`; obs weighting is `1 / mean(|value|)` per variable group (edit `obs_weights`).
 

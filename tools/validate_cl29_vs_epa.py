@@ -127,6 +127,18 @@ def _c_to_chla():
     return _ACTIVE_C_TO_CHLA or C_TO_CHLA
 
 
+def use_c_to_chla_from(wconst):
+    """Score Chl-a with the C:Chl ratios of this constants file, as main() does.
+
+    For callers that use load_box_output() without going through main() (the PEST
+    forward run): without this the derived CHLA column falls back to the template
+    ratios (30/40), which overstate CL29 Chl-a (53/78) by 1.8-1.95x.
+    """
+    global _ACTIVE_C_TO_CHLA
+    _ACTIVE_C_TO_CHLA = load_c_to_chla(wconst)
+    return dict(_ACTIVE_C_TO_CHLA)
+
+
 def _col(df, name):
     """Column as a float Series, or zeros if the model output lacks it."""
     return (df[name].astype(float) if name in df.columns

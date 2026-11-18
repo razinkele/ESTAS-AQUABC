@@ -27,7 +27,11 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 
 import build_pest  # noqa: E402  (pest/build_pest.py — identical obs ordering)
-from validate_cl29_vs_epa import MODEL_COL, load_box_output  # noqa: E402  (tools/)
+from validate_cl29_vs_epa import (  # noqa: E402  (tools/)
+    MODEL_COL,
+    load_box_output,
+    use_c_to_chla_from,
+)
 
 BASE_YEAR = 2012
 
@@ -44,6 +48,10 @@ def main():
     recs = build_pest.load_obs(tidy, BASE_YEAR, end_day)   # same order as the .pst/.ins
 
     run_model(ROOT)
+
+    # Chl-a is derived from carbon with the run's own C:Chl ratios. PEST has just written
+    # this file from the template, so it is the one the model ran with.
+    use_c_to_chla_from(os.path.join(ROOT, "INPUTS_CL29", "WCONST_04.txt"))
 
     base = dt.date(BASE_YEAR, 1, 1)
     out_dir = os.path.join(ROOT, "OUTPUTS_CL29")

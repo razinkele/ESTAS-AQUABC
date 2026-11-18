@@ -11,6 +11,11 @@ restricted to the model window (day <= SIMULATION_END). One PEST observation per
 (box, variable, date); obs group = variable; weight = 1/group-mean-|value| so the seven
 variables contribute comparably to the objective function.
 
+The template is a full copy of the constants file with the calibrated values replaced by
+markers, so every other constant in it is frozen at build time. Re-run this script whenever
+INPUTS_CL29/WCONST_04.txt changes (a new constant, a newly adopted value): PEST overwrites
+that file from the template on every forward run, and a stale template silently reverts it.
+
 WCONST_04.txt lines are `index NAME VALUE ! comment`; READ_MODEL_CONSTANTS reads
 `index name value` free-format and stores by index, so replacing the VALUE token with a
 `@NAME@` field keeps the line parse-compatible.
@@ -34,7 +39,9 @@ PARAMS = [
     ("K_MIN_DOC_NO3N_20",       "denit",   "log",  0.1,   5.0),
     ("KDISS_DET_PART_ORG_P_20", "pmin",    "log",  0.1,   10.0),
     ("KHS_DSi_DIA",             "diatom",  "log",  0.005, 0.15),
-    ("KG_DIA_OPT_TEMP",         "diatom",  "none", 1.0,   6.0),
+    # upper bound 10 as in tools/calibrate_cl29.py's later sets: the adopted value (8.10)
+    # lies above the original 6, and PEST rejects an initial value outside its bounds
+    ("KG_DIA_OPT_TEMP",         "diatom",  "none", 1.0,   10.0),
     ("KD_DIA_20",               "diatom",  "log",  0.02,  0.5),
 ]
 
@@ -75,6 +82,10 @@ def write_tpl(wconst_path, out_tpl):
     missing = [p for p, *_ in PARAMS if p not in index]
     if missing:
         raise SystemExit(f"parameters not found in {wconst_path}: {missing}")
+    outside = [f"{p}={index[p][2]:g} not in [{lo:g}, {hi:g}]"
+               for p, _g, _tr, lo, hi in PARAMS if not lo <= index[p][2] <= hi]
+    if outside:
+        raise SystemExit(f"initial values outside their PEST bounds in {wconst_path}: {outside}")
     for name, *_ in PARAMS:
         i = index[name][0]
         lines[i] = template_line(lines[i], name)

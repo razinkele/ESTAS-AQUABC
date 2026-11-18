@@ -64,6 +64,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     graceful reads; **no shipped options file carries the lines.**
 
 ### Fixed
+- **The Standard set (`INPUTS/`) ran the plateau temperature model on CTMI constants.** The CTMI commit
+  (`cc7c76e`, February) put T_max values (35/38/33 °C) into the `KAPPA_*_OVER_OPT_TEMP` slots and zeroed
+  `KAPPA_*_UNDER_OPT_TEMP`, but the Standard options select plateau (`TEMPERATURE_MODEL = 0`) and nothing restored
+  them. The plateau branch reads those slots as decay rates per °C, so there was no cold limitation at all and
+  growth fell to zero just above the plateau (24 °C for diatoms). `INPUTS/WCONST_04.txt` has its pre-CTMI plateau
+  values and comments back for all six groups. **Standard-set results change**; CL29 (CTMI, its own constants)
+  is untouched. The Fortran defaults and `VALIDATE_PELAGIC_MODEL_CONSTANTS` still assume CTMI and are not changed.
+- **The built-in Hypoxic scenario set zooplankton carbon, not oxygen**: its initial condition used state
+  variable 6 (`ZOO_C`) where dissolved oxygen is 4 (`shiny_app/scenarios.py`, `scenarios/hypoxic.json`).
+- **Plot dates were counted from a fixed 1 January 1997** (`shiny_app/modules/plot.py`, four places), one year
+  early for Standard (BASE_YEAR 1998) and fifteen for CL29 (2012). The origin is now the BASE_YEAR of the
+  control file that writes the plotted output folder (`simulation_config.base_year_for_output_dir`).
+- **The tracked PEST files were stale in three ways** (`pest/`, regenerated with `build_pest.py`): the template had
+  323 of the 324 constants (the model aborts) and pre-adoption values for 23 others (a run would have reverted the
+  adopted `INPUTS_CL29/WCONST_04.txt`); `cl29.pst`/`model_obs.ins` still scored station LTK14 against box 25, not 9
+  (#57); and two initial values predated adoption. `KG_DIA_OPT_TEMP`'s upper bound is now 10 (was 6; the adopted
+  value is 8.10). `build_pest.py` refuses an initial value outside its bounds, and `forward_run.py` now scores
+  Chl-a with the run's own C:Chl ratios (`validate_cl29_vs_epa.use_c_to_chla_from`), not the template 30/40.
 - **`MASS_BALANCES.out` terms now sum to what the solver integrates.** The KINETICS column was written as
   kinetics minus the diagenetic sediment flux, while the solver adds the two; it is now the kinetics alone, next to
   the SEDIMENT FLUXES column as before. A new 8th term column, PRESCR. SED. FLUX, carries the prescribed benthic
