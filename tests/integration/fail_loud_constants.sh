@@ -43,6 +43,41 @@ run_case "out-of-range index -> abort"  '{ if ($1==57) $1=9999; print }'      ""
 run_case "duplicate index -> abort"     'NR==1 { print "57 DUP_57 0.0" } { print }'  ""                     FAIL    'duplicate'
 run_case "lenient: warn, no abort"      '$1 != 57'                            "AQUABC_LENIENT_CONSTANTS=1"   LENIENT 'MISSING'
 
+# Per-box constants: the model applies box 1's constants to every box, so a box that names a
+# different constants file must be refused, not silently ignored.
+# $1 desc  $2 extra-env  $3 mode(FAIL|LENIENT)
+run_box_case() {
+    local d; d=$(mktemp -d)
+    cp INPUT.txt "$d/"; cp -r INPUTS "$d/INPUTS"
+    awk '$2 == "K_A" { $3 = "-2.0" } { print }' INPUTS/WCONST_04.txt > "$d/INPUTS/WCONST_BOX2.txt"
+    awk '/PELAGIC MODEL CONSTANTS FILE NAME/ { sec = 1; print; next }
+         sec && $1 == 2 && $2 == "WCONST_04.txt" { print "                   2                         WCONST_BOX2.txt"; sec = 0; next }
+         { print }' INPUTS/PELAGIC_INPUTS.txt > "$d/INPUTS/PELAGIC_INPUTS.txt"
+    grep -q 'WCONST_BOX2.txt' "$d/INPUTS/PELAGIC_INPUTS.txt" || { echo "FAIL [$1]  (could not doctor PELAGIC_INPUTS.txt)"; fail=1; rm -rf "$d"; return; }
+    local rc
+    ( cd "$d" && env $2 ESTAS_HOLD_VOLUME=1 timeout 90 "$BIN" INPUT.txt ) >/dev/null 2>"$d/err.log"
+    rc=$?
+    if [ "$3" = FAIL ]; then
+        if [ "$rc" -ne 0 ] && grep -q 'differ from box 1' "$d/err.log" \
+             && grep -q 'per-box model constants are not supported' "$d/err.log"; then
+            echo "PASS [$1]  (exit=$rc, stderr names the box)"
+        else
+            echo "FAIL [$1]  (exit=$rc, expected nonzero + per-box message)"; sed 's/^/    /' "$d/err.log"; fail=1
+        fi
+    else
+        if grep -q 'differ from box 1' "$d/err.log" && grep -q 'WARNING per-box constants ignored' "$d/err.log" \
+             && ! grep -q 'per-box model constants are not supported' "$d/err.log"; then
+            echo "PASS [$1]  (warned, did not abort on the per-box check)"
+        else
+            echo "FAIL [$1]  (expected a warning + no per-box error stop)"; sed 's/^/    /' "$d/err.log"; fail=1
+        fi
+    fi
+    rm -rf "$d"
+}
+
+run_box_case "per-box constants -> abort"          ""                            FAIL
+run_box_case "per-box constants, lenient -> warn"  "AQUABC_LENIENT_CONSTANTS=1"   LENIENT
+
 if [ "$fail" -eq 0 ]; then
     echo "fail_loud_constants: ALL checks passed"
 else

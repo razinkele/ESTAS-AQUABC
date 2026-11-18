@@ -1,6 +1,7 @@
 subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FILE)
 
     use PELAGIC_BOX_MODEL
+    use, intrinsic :: iso_fortran_env, only: error_unit
     implicit none
     ! Modules GLOBAL, TIME_SERIES, PELAGIC_BOX, PELAGIC_LINK, EXTERNAL_FORCING
     ! INITIAL_CONDITIONS, BASIN, UTILS_1, COST_FUNCTION are accessed though
@@ -12,6 +13,9 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
 
     integer :: i
     integer :: j
+    integer :: k
+    integer :: n_boxes_differing
+    character(len = 16) :: lenient_env
 
     character(len = 2048) :: FILE_NAME
     character(len = 2048) :: constants_file
@@ -286,6 +290,33 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
 
         close(IN_FILE + 1)
     end do
+
+    ! The kinetics run with ONE set of constants: INITIALIZE_AQUATIC_MODEL copies box 1's
+    ! column into the model and the other columns are never used. A constants file that
+    ! differs for another box would therefore be silently ignored, so refuse it.
+    ! AQUABC_LENIENT_CONSTANTS=1 downgrades the refusal to a warning (box 1's set is used).
+    n_boxes_differing = 0
+    do i = 2, NUM_PELAGIC_BOXES
+        do k = 1, size(PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS, 1)
+            if (PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(k, i) /= &
+                PELAGIC_BOX_MODEL_DATA % MODEL_CONSTANTS(k, 1)) then
+                write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: box', i, &
+                    ' has model constants that differ from box 1 (first at constant #', k, &
+                    '); the model applies box 1 constants to every box'
+                n_boxes_differing = n_boxes_differing + 1
+                exit
+            end if
+        end do
+    end do
+    if (n_boxes_differing > 0) then
+        call get_environment_variable('AQUABC_LENIENT_CONSTANTS', lenient_env)
+        if (trim(adjustl(lenient_env)) == '1') then
+            write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: WARNING per-box constants ignored for', &
+                n_boxes_differing, ' box(es); continuing with box 1 constants (AQUABC_LENIENT_CONSTANTS=1)'
+        else
+            error stop 'READ_PELAGIC_BOX_MODEL_INPUTS: per-box model constants are not supported (see stderr above)'
+        end if
+    end if
 
 
     ! -------------------------------------------------------------------------------
