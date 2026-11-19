@@ -5835,3 +5835,62 @@ otherwise.
   lies between these two cases. Its monthly values are in Table 2 of Vybernaite-Lubiene et al. (2018), but the table
   was not reachable here: the indexed text drops it and the publisher blocked the download. With that row, the
   series can be built the same way as the river silica, keeping the annual load. Nothing is adopted.
+
+> **Correction, 2026-11-19.** The table was reachable: the paper's PDF had been in `docs/water-10-01178-v2.pdf`
+> since 2026-11-07. It was not looked for there. §69.6 uses it.
+
+**69.6 2026-11-19: the measured BSi seasonal shape does not do better than a flat supply.** Registered as note
+item 98 before the runs; the result is item 99, with a dated correction. Scripts: `diag_river_bsi_20261119/`
+(`build_series.py`, `river_bsi.py`, `river_bsi_supp.py`). Build: main 20b5ec7 (v0.12.0 plus two changes that leave
+CL29 byte-identical).
+
+*Data.* Table 2 of Vybernaite-Lubiene et al. (2018), the BSi seasonal index at the Nemunas closing section,
+January to November: 0.82, 0.38, 0.37, 0.71, 2.31, 2.02, 1.50, 0.97, 1.45, 0.38, 0.49. **December is blank as
+printed**: that row has seven values for eight columns. Two readings were run: 0.53 (a cell dropped earlier in the
+row) and 0.655 (BSi missing, filled with the November–January mean).
+
+*Series.* On the four river boundaries, diatom carbon on each day = level × index of that day's month ÷ the
+run mean of the index, stepped by month. The run-mean **concentration** therefore equals the level (0.10 or
+0.30 mg C/L). This is not the load-preserving form §69.5 announced: discharge is seasonal, so the loads differ
+(table below). Nothing else was changed, checked field by field against `INPUTS_CL29`.
+
+| river diatoms | Oct-Nov diatoms (K2) | Sep-1 inoculum (K3) | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | gate | DSi RMSE | load, t C/yr | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.02 all year (base) | 0.101 | 1.3 % | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.786 | 372 | – |
+| 0.10 all year | 0.228 | 2.1 % | 1.188 | 6.828 / 7.283 / 6.675 | 2.44 | 5/9 | 0.773 | 1861 | PARTIAL, spring cost |
+| 0.30 all year | 0.329 | 4.7 % | 1.296 | 6.775 / 7.230 / 6.623 | 2.31 | 6/9 | 0.758 | 5583 | PARTIAL, spring cost |
+| 0.30 June-October only | 0.294 | 4.7 % | 1.135 | 6.846 / 7.312 / 6.691 | 2.61 | 6/9 | 0.776 | 1784 | PARTIAL |
+| BSi shape, mean 0.10 | 0.170 | 2.1 % | 1.170 | 6.855 / 7.313 / 6.701 | 2.50 | 5/9 | 0.778 | 1645 | NO SEED |
+| BSi shape, mean 0.30 | 0.288 | 4.6 % | 1.254 | 6.808 / 7.271 / 6.654 | 2.44 | 5/9 | 0.764 | 4936 | PARTIAL, spring cost |
+
+The rule is §69.3's: a seed source needs K2 ≥ 0.20 and K3 ≥ 5 %; a Feb-May / obs above the base + 0.05 is a spring
+cost. The first four rows are re-runs on the current build and reproduce §69.3 and §69.5 at the printed digits.
+
+- **The shaped supply at 0.30 is partial, like the constant, and still carries a spring cost** (1.254 against
+  1.296 for the constant and 1.135 for June–October only).
+- **Against the constant at the same mean concentration it is worse on most lines**: K2 0.288 / 0.329, Φ
+  6.808 / 6.775, DSi RMSE 0.764 / 0.758, autumn/spring 2.44 / 2.31 (outside the 1.8–2.4 gate line, which is the one
+  it loses), TN RMSE 0.833 / 0.828. It is better on the spring cost and on Chl-a bias (−1.77 / −2.00). Part of this
+  is load, not shape: it delivers 12 % less diatom carbon per year, 31 % less in September–November and 55 % more in
+  June–August.
+- **At 0.10 the shape loses the autumn line** the constant holds (K2 0.170 / 0.228).
+- **The December gap does not matter here.** Reading 0.655 against 0.53 changes K2 by −0.001 / −0.002, K3 by 0.0 /
+  −0.1 points, Feb-May by less than 0.001 and Φ by −0.0001; the verdicts are the same.
+
+| prediction | result |
+|---|---|
+| P1: the four re-runs reproduce §69.3 and §69.5 | HELD |
+| P2: the shape at 0.30 is a seed source, with K3 5–7 % from the larger June–July supply | REFUTED: K3 4.6 %, partial |
+| P3: it carries a spring cost, Feb-May 1.18–1.30 | HELD (1.254) |
+| P4: its Feb-May and Φ lie between the June–October and the constant case; K2 below both | HELD |
+| P5: the shape at 0.10 is no seed, without a spring cost | HELD (K2 0.170, Feb-May 1.170 against the 1.177 bar) |
+| P6: the December reading does not matter | HELD |
+
+**Reading.** The BSi seasonal shape puts the river supply in May–July and withdraws it in October–November. That
+does not help: the September-1 inoculum did not respond to twice the June supply, and the autumn diatoms fell with
+the September–November supply. A pattern seen after the runs, not registered: across all eight runs K3 follows the
+**August** concentration (0.30 → 4.7 %, 0.29 → 4.5–4.6 %, 0.10 → 2.1 %, 0.02 → 1.3 %). The BSi index for August is
+0.97, so no equal-mean shaped series could have moved it. An August-only variation would test that; it has not been
+run. Two cautions on the data: BSi includes dead frustules and possibly lithogenic silica (§69.4), so its seasonal
+shape need not be the shape of live river diatoms; and a load-preserving series would carry 13 % more than this one.
+Nothing is adopted.

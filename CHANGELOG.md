@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   each now lists the run's `PELAGIC_BOX` files (refreshed when the setup changes) and computes from the chosen one.
 
 ### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §69.6**: a river diatom supply shaped by the measured BSi seasonal index
+  (Vybernaite-Lubiene et al. 2018, Table 2) does not do better than a flat supply: partial seed with a spring cost at
+  0.30 mg C/L, no seed at 0.10. Probe only; nothing adopted. §69.5 gets a dated correction (the table was in `docs/`).
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
