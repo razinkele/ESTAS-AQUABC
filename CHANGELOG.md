@@ -41,6 +41,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `docs/report_scripts/make_figures_phase.py`: the hard-coded monthly values of the phase and composition figures are
   those of the adopted configuration as it now stands (seasonal r +0.78; September non-fixing share 0.17), with how
   they were obtained.
+- `docs/report_scripts/make_figures_mechanisms.py`: the ice-transmittance sensitivity values are re-measured on the
+  adopted configuration as it now stands (February diatoms 0.372 / 0.383 / 0.418 mg C/L at T = 0.02 / 0.05 / 0.15).
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
