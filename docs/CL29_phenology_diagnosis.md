@@ -6189,3 +6189,57 @@ adds whatever source is prescribed and for which there is no measured bed stock 
 diatoms with erosion would be new code, on the pattern of the akinete bank, with no local data on benthic diatom
 stocks to set it. Of the candidates tested since §62, none reopens July–August (§69.7–§70.2); the light climate of
 §40–§46 remains the measured constraint there. Nothing is adopted.
+
+---
+
+## 71. 2026-11-19: where the summer and autumn diatoms stand — a summary of §62–§70.2
+
+No new measurement. This lists what has been tested on the missing summer and autumn diatoms, with each verdict
+and its section, so it is not repeated. Diatoms are in mg C/L; K2 is the October–November line (observed 0.364; the
+rule asks for 0.20), and July–August is observed at about 0.48. The base is the adopted setup: K2 0.101,
+July–August 0.004, Feb-May / obs 1.127.
+
+**The problem, as measured**
+- The model's diatoms follow the observations through May, fall in **June** (−0.12 per day), and are at 1 % of the
+  observed in July and August (§70). The observations dip in June too and then recover.
+- June is a drop in growth, mostly the temperature curve, against losses that do not change (§70).
+- In October–November the model's diatoms do grow; they start from almost nothing (§62).
+- Death is the largest loss in every window; grazing is negligible (§62, §70).
+
+**What was tested**
+
+| lever | result | verdict | section |
+|---|---|---|---|
+| higher phosphorus affinity (`KHS_DIP_DIA` 0.0030) | K2 0.125 on its setup | weak; autumn line fails | §62.1 |
+| summer-capable temperature curve (CTMI −2 / 13 / 26) | July–August 0.007; K2 0.098 | no effect alone | §62.2, §70.1 |
+| lower carbon-to-chlorophyll ratio (53 → 34), the light lever | November 1.02× observed, February 2.85×, October 0.05× | restores November, breaks February; shelved | §43.3, §46 |
+| lower death rate (`KD_DIA_20` 0.06) | K2 0.270; Feb-May ×1.16 the base; silica fit worse | a trade; not adopted | §67 |
+| lower death rate with a spring-side lever | neither pairing returns the spring to the base | partial; do not adopt | §68 |
+| river diatom supply, constant 0.30 | K2 0.329; Feb-May / obs 1.296 | restores autumn at a spring cost | §69.3 |
+| river supply shaped by the measured BSi index | K2 0.288 at the same mean concentration | no better than constant | §69.6 |
+| river supply in August only | inoculum ×3.5; K2 unchanged (0.101) | the September inoculum does not make the autumn | §69.7 |
+| river supply in September–November only | K2 0.326; no spring cost; gate 7/9 | carries the autumn in the model | §69.8 |
+| is that river supply real? | live river diatoms are lowest in September (5 % of May) | not supported by the counts on hand | §69.9 |
+| sea boundary at 0.30 in September–November | K2 0.160, at 3–9 times the monitoring climatology | partly; not defensible | §69.10 |
+| temperature curve with a lower death rate | June 0.19–0.23 (observed 0.20); July–August 0.009–0.013 | fixes June, not the summer | §70.1 |
+| diatom settling switched off | July–August 0.005; all year: Feb-May / obs 1.80 | no effect on the summer | §70.2 |
+
+**What this adds up to**
+- **June and July–August are different problems** (§70.1). June responds to temperature and death; July–August
+  responds to nothing tested here.
+- **No external supply the data support explains the autumn** (§69.9, §69.10). The supply that works in the model
+  is one the river counts do not show.
+- **For July–August the measured constraint is light**, with phosphorus next (§70): the light climate of §40–§46,
+  where the one working lever is shelved because it re-breaks February.
+- **Every lever that restores the autumn costs the spring**, except the autumn river supply, which is not
+  supported by data.
+
+**What has not been tested**
+- The resuspension options as such: option 2 with every particle kept in suspension together, and option 1 with a
+  prescribed source (§70.2). The adopted setup cannot enable either, and there is no bed stock of diatoms to
+  prescribe from.
+- A second, summer–autumn diatom guild built on the observed taxa (§41.2), beyond the one specification that was
+  screened and failed (the warm-guild design spec, its §8; §46.3).
+- October–November river and sea diatom measurements: the river series on hand ends in early October (§69.9).
+
+Nothing is adopted in any of these sections.
