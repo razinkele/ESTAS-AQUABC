@@ -6044,3 +6044,60 @@ live diatoms are lowest in September, and the sea series, already an upper bound
 its measured value to make a partial difference. What remains is inside the lagoon: the July loss (§69.2) and
 resuspension, which the adopted setup runs without. The diatoms' light response is not on that list: it was
 already probed as C:Chl (§43.3, §46), where it restores November and breaks February. Nothing is adopted.
+
+---
+
+## 70. 2026-11-19: the diatoms are lost in June, to a growth drop against constant losses
+
+**The question.** §69.2 named July as the month of loss, and §62's budget starts on 15 August. Which term removes
+the diatoms between June and July? A diagnostic on the adopted setup; nothing was changed. Registered before the
+run (note item 112); the result is item 113. Scorer: `diag_junjul_20261119/junjul_budget.py`. The run has process
+rates and the mass balance in boxes 7, 9, 14, 17, 19 and 23.
+
+Every rate is biomass-weighted: the sum of the rate over the box-days of a month in the typical years, divided by
+the sum of the biomass. Per day:
+
+| month | biomass (observed) | growth | respiration | death | grazing | kinetic net | settling | transport | sum | actual change | T / N / P / light factors |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| May | 0.661 (0.682) | 0.203 | 0.045 | 0.106 | 0.002 | +0.048 | −0.045 | −0.023 | −0.021 | −0.020 | 0.82 / 0.94 / 0.16 / 0.27 |
+| June | 0.098 (0.204) | 0.112 | 0.047 | 0.115 | 0.004 | −0.056 | −0.047 | −0.022 | −0.125 | −0.122 | 0.50 / 0.57 / 0.15 / 0.30 |
+| July | 0.008 (0.408) | 0.120 | 0.049 | 0.117 | 0.000 | −0.047 | −0.028 | +0.069 | −0.006 | +0.001 | 0.41 / 0.38 / 0.31 / 0.25 |
+| August | 0.003 (0.499) | 0.043 | 0.048 | 0.119 | 0.000 | −0.125 | −0.030 | +0.138 | −0.016 | −0.014 | 0.27 / 0.40 / 0.25 / 0.20 |
+
+Excretion (0.001–0.003) is in the kinetic net and not shown. The budget closes: the sum of the terms is within
+0.007 per day of the actual change in every month, and the mass balance's kinetics column equals the process-rate
+net to four decimals.
+
+**The registered reading, for July.** The loss is kinetic (kinetic net −0.047 against settling plus transport
++0.041, which is an import). Within kinetic it is neither a pure growth collapse nor a pure loss increase by the
+rule (growth 0.59 of May's, losses +9 %), and the smallest July factor is light (0.25).
+
+| prediction | result |
+|---|---|
+| P1: the July loss is kinetic | HELD |
+| P2: a growth collapse, with temperature binding under 0.25 | REFUTED: light is the smallest factor; temperature is 0.41 |
+| P3: death is the largest July loss, grazing under 0.005 | HELD (0.117; 0.0005) |
+| P4: June's growth lies between May's and July's | REFUTED: June 0.112 is below July 0.120 |
+| P5: the budget closes within 0.03 per day without box 7 | HELD |
+
+**What the budget shows beyond the registered reading** (supplementary):
+- **The population is lost in June, not July.** Biomass falls from 0.66 to 0.10 and then to 0.008; the actual
+  change is −0.12 per day in June and about zero in July and August. §69.2's "July" is the month the model/observed
+  ratio drops under its line, one month after the loss.
+- **June is a growth drop against constant losses.** Growth falls from 0.203 to 0.112 per day while death,
+  respiration, settling and export stay where they were, adding to 0.22–0.23 per day in both months.
+- **Even May does not balance** (−0.02 per day): the best month's growth does not cover the losses.
+- **In July and August the remnant is imported**, not grown: transport is +0.07 and +0.14 per day against a kinetic
+  net of −0.05 and −0.12.
+- **The June drop is mostly the temperature curve.** From the source, growth is the temperature-adjusted rate times
+  light times the nutrient term, where nitrogen and phosphorus combine as N·P/(N+P−N·P). Applied to the monthly mean
+  factors (an approximation), June against May is ×0.61 from temperature, ×0.86 from nutrients and ×1.10 from light,
+  together ×0.58; the measured ratio is 0.55. Phosphorus holds the nutrient term near 0.15 in both months.
+- **The observations dip in June too** (0.68 → 0.20) and then recover (0.41, 0.50). The model does not recover.
+
+**Reading.** The summer diatoms are not missing a seed or a supply (§69.7–§69.10). They are missing about 0.1 per
+day of net growth in June and July: growth near 0.11–0.12 against losses of 0.22–0.23, of which death and
+respiration are 0.16. This agrees with §62.2, where a warmer temperature curve alone did not reopen the summer:
+restoring the temperature factor to May's value would lift June's growth to about 0.18, still under the losses.
+Closing the gap takes growth and losses together, which is the trade §67 and §68 measured on the death rate.
+Nothing is adopted.

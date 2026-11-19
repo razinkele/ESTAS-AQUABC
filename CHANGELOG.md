@@ -26,6 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **§69.10**: raising the sea boundary's diatoms to 0.30 mg C/L in September-November (three to nine times the
   monitoring climatology) lifts the autumn diatoms only partly (K2 0.101 -> 0.160). No external supply the data
   support explains the missing autumn diatoms. Nothing adopted.
+- **§70**: a June-August process budget of the diatoms on the adopted setup. The population is lost in June (-0.12 per
+  day), to a growth drop (0.20 -> 0.11 per day, mostly the temperature curve) against constant losses of 0.22-0.23
+  per day; in July-August the remnant is imported, not grown. A diagnostic; nothing changed.
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
