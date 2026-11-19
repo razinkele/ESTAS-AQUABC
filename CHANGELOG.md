@@ -23,6 +23,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   for the all-year constant) with a quarter of the load, no spring cost, and 7 of 9 gate lines. Nothing adopted.
 - **§69.9**: live Nemunas diatom counts (Gasiūnaitė et al., one station, April-September 2002, read from the figure's
   vector data) peak in April-July and are lowest in September, so they do not support the autumn river supply of §69.8.
+- **§69.10**: raising the sea boundary's diatoms to 0.30 mg C/L in September-November (three to nine times the
+  monitoring climatology) lifts the autumn diatoms only partly (K2 0.101 -> 0.160). No external supply the data
+  support explains the missing autumn diatoms. Nothing adopted.
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.

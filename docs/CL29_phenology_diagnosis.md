@@ -6008,3 +6008,39 @@ April–July, which is the opposite of what the autumn fit asks for. Nothing is 
 Reference: Gasiūnaitė, Z. R., Razinkovas, A., Bliudžiūtė, L., Gulbinskas, S., Pilkaitytė, R., Žaromskis, R.
 Pelagic patterns along the river–lagoon transition: Curonian lagoon (SE Baltic Sea) case. Manuscript draft; published
 as Gasiūnaitė et al. (2012), *Baltica* 25(1), 77–86 (§69.4).
+
+**69.10 2026-11-19: the sea boundary helps the autumn diatoms a little and cannot carry them.** Registered as note
+item 109 before the runs; the result is item 110. Scorer: `diag_river_bsi_20261119/sea_autumn.py`.
+
+The sea boundary's diatom series is a monthly climatology from Baltic monitoring in the lagoon's plume zone,
+2018–2023 (`tools/build_boundary_phyto.py`): 0.033, 0.092 and 0.085 mg C/L in September, October and November. It is
+an upper bound on pure Baltic water. The two runs replace it in September–November only.
+
+| sea diatoms, Sep-Nov | Oct-Nov diatoms (K2) | Sep-1 inoculum (K3) | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | gate | DSi RMSE |
+|---|---|---|---|---|---|---|---|
+| the climatology (base) | 0.101 | 1.3 % | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.786 |
+| 0.30 mg C/L | 0.160 | 1.4 % | 1.130 | 6.879 / 7.358 / 6.719 | 2.56 | 5/9 | 0.781 |
+| 0.02 mg C/L | 0.081 | 1.3 % | 1.126 | 6.905 / 7.362 / 6.750 | 2.53 | 4/9 | 0.787 |
+
+The registered rule: the sea supply carries the autumn if K2 reaches 0.20 at 0.30 mg C/L; partly if it rises by at
+least 0.03; the base's autumn diatoms are sea-fed if K2 at 0.02 is at most half the base's.
+
+- **Partly.** At 0.30 mg C/L, three to nine times the measured climatology, K2 rises from 0.101 to 0.160.
+- **The base's autumn diatoms are not sea-fed**: with the sea at the floor, 80 % of them remain.
+- **No spring cost**, and Φ moves by 0.02.
+- The sea signal reaches all six scored boxes. Per unit of boundary concentration it moves K2 about a third as
+  much as the rivers do (§69.8).
+
+| prediction | result |
+|---|---|
+| P1: the base reproduces §69.8 | HELD |
+| P2: partly, K2 0.13–0.19 at 0.30 | HELD (0.160) |
+| P3: K2 0.085–0.100 at 0.02, not sea-fed | REFUTED on the range (0.081); not sea-fed holds |
+| P4: no spring cost in either run | HELD |
+| P5: Φ within 0.03 of the base at 0.30 | HELD |
+
+**Reading.** With §69.9, no external supply that the data support explains the missing autumn diatoms: the river's
+live diatoms are lowest in September, and the sea series, already an upper bound, would have to be several times
+its measured value to make a partial difference. What remains is inside the lagoon: the July loss (§69.2) and
+resuspension, which the adopted setup runs without. The diatoms' light response is not on that list: it was
+already probed as C:Chl (§43.3, §46), where it restores November and breaks February. Nothing is adopted.
