@@ -4231,9 +4231,13 @@ factor rows of 1.0 and the **measured** Baltic Si. Resetting the rows alone woul
 | corrected with measured Baltic Si | 7.526 (−14.0 %) |
 
 The gain was the Baltic silica placeholder being wrong, not the diatom supply. The Si term
-shows it: pre-§26 2.546, reset-only 2.539, corrected 1.397. Paper I §3.14's mechanism
+shows it: pre-§26 2.546, reset-only 2.539, corrected 1.397. Paper II §3.14's mechanism
 ("their uptake draws down the silica") does not hold. The gain itself is real with the
 measured Baltic Si.
+
+*Correction (2026-11-19):* this paragraph said "Paper I §3.14". The section is in Paper II, the
+calibration paper; Paper I, the model-enhancements paper, has no §3.14. The heading's "§3.14" and
+57.3's flat-objective test (Paper II §3.14 and §4.4) refer to the same paper.
 
 **57.3 §27's flat objective is not reproduced on today's configuration.** The §27 literature
 variant (KG_DIA 5.77 …) scores +7.9 % (pre-§26), +7.1 % (corrupted) and +9.5 % (corrected)

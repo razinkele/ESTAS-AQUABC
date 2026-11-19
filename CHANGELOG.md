@@ -37,6 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   not a bound on the resuspension options, which also keep the other particles in suspension. Nothing adopted.
 - **§71**: a summary table of every lever tested on the missing summer and autumn diatoms (§62-§70.2) with its
   verdict, and what has not been tested. No new measurement.
+- **§57.2**: a label corrected. The boundary section it re-tests is Paper II §3.14, not Paper I's.
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
