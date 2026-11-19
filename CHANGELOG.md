@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   The load-matched BSi series passes the seed rule only through its August concentration. Nothing adopted.
 - **§69.8**: a river diatom supply in September-November only restores the autumn diatoms (K2 0.326 against 0.329
   for the all-year constant) with a quarter of the load, no spring cost, and 7 of 9 gate lines. Nothing adopted.
+- **§69.9**: live Nemunas diatom counts (Gasiūnaitė et al., one station, April-September 2002, read from the figure's
+  vector data) peak in April-July and are lowest in September, so they do not support the autumn river supply of §69.8.
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
