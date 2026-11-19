@@ -6085,19 +6085,24 @@ rule (growth 0.59 of May's, losses +9 %), and the smallest July factor is light 
   change is −0.12 per day in June and about zero in July and August. §69.2's "July" is the month the model/observed
   ratio drops under its line, one month after the loss.
 - **June is a growth drop against constant losses.** Growth falls from 0.203 to 0.112 per day while death,
-  respiration, settling and export stay where they were, adding to 0.22–0.23 per day in both months.
+  respiration, settling and export stay where they were, adding to 0.22 per day in May and 0.24 in June.
 - **Even May does not balance** (−0.02 per day): the best month's growth does not cover the losses.
-- **In July and August the remnant is imported**, not grown: transport is +0.07 and +0.14 per day against a kinetic
-  net of −0.05 and −0.12.
+- **In July and August the remnant is sustained by import against a negative local balance**: transport is +0.07
+  and +0.14 per day against a kinetic net of −0.05 and −0.12. Growth is not zero (0.12 and 0.04 per day), so this
+  does not say where each remaining cell came from, only that without the import the remnant would shrink.
 - **The June drop is mostly the temperature curve.** From the source, growth is the temperature-adjusted rate times
-  light times the nutrient term, where nitrogen and phosphorus combine as N·P/(N+P−N·P). Applied to the monthly mean
-  factors (an approximation), June against May is ×0.61 from temperature, ×0.86 from nutrients and ×1.10 from light,
-  together ×0.58; the measured ratio is 0.55. Phosphorus holds the nutrient term near 0.15 in both months.
+  light times the smaller of the oxygen factor and the nutrient term; nitrogen and phosphorus combine as
+  N·P/(N+P−N·P), and silica joins the result in the same form. The oxygen factor is 0.94–0.95 in every month, so the
+  nutrient term (0.15 and 0.13) is the one that applies. Applied to the monthly mean factors (an approximation;
+  silica is 0.93 in May and 0.78 in June), June against May is ×0.61 from temperature, ×0.84 from nutrients and
+  ×1.10 from light, together ×0.56; the measured ratio is 0.55. Phosphorus holds the nutrient term low in both
+  months.
 - **The observations dip in June too** (0.68 → 0.20) and then recover (0.41, 0.50). The model does not recover.
 
-**Reading.** The summer diatoms are not missing a seed or a supply (§69.7–§69.10). They are missing about 0.1 per
-day of net growth in June and July: growth near 0.11–0.12 against losses of 0.22–0.23, of which death and
-respiration are 0.16. This agrees with §62.2, where a warmer temperature curve alone did not reopen the summer:
+**Reading.** The summer diatoms are not missing a seed or a supply (§69.7–§69.10). They are missing net growth:
+in June growth is 0.11 per day against local losses and export of 0.24 (a gap of 0.12), and in July 0.12 against
+local losses of 0.20 (a gap of 0.08, covered by import). Death and respiration are 0.16 of those losses in both
+months. This agrees with §62.2, where a warmer temperature curve alone did not reopen the summer:
 restoring the temperature factor to May's value would lift June's growth to about 0.18, still under the losses.
 Closing the gap takes growth and losses together, which is the trade §67 and §68 measured on the death rate.
 Nothing is adopted.
