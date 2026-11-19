@@ -38,6 +38,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **§71**: a summary table of every lever tested on the missing summer and autumn diatoms (§62-§70.2) with its
   verdict, and what has not been tested. No new measurement.
 - **§57.2**: a label corrected. The boundary section it re-tests is Paper II §3.14, not Paper I's.
+- `docs/report_scripts/make_figures_phase.py`: the hard-coded monthly values of the phase and composition figures are
+  those of the adopted configuration as it now stands (seasonal r +0.78; September non-fixing share 0.17), with how
+  they were obtained.
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.

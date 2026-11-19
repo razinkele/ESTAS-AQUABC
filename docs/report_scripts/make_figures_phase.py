@@ -36,15 +36,17 @@ C_MODEL, C_OBS = "#2a78d6", "#eb6834"
 C_TEXT, C_TEXT2, C_GRID = "#0b0b0b", "#52514e", "#d9d8d4"
 MON = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
-# doc s.1 / s.50, obs-matched monthly climatologies (EPA chlorophyll; KM group carbon)
+# Obs-matched monthly climatologies of the adopted configuration as run on 2026-11-19 (corrected
+# boundary, allelopathy off). Chlorophyll: the validator's --phase table. Group carbon: the model
+# read at 00:00 of each KM sampling date in the six KM boxes, monthly means of the pairs.
 CHLA_OBS = {1: 17.6, 2: 10.2, 3: 25.1, 4: 30.8, 5: 29.5, 6: 20.9,
             7: 26.2, 8: 50.8, 9: 50.2, 10: 46.4, 11: 24.0}
-CHLA_MOD = {1: 1.7, 2: 5.9, 3: 21.7, 4: 21.7, 5: 24.8, 6: 32.0,
-            7: 42.3, 8: 49.4, 9: 49.7, 10: 25.7, 11: 3.8}
+CHLA_MOD = {1: 2.6, 2: 6.9, 3: 20.0, 4: 19.9, 5: 23.1, 6: 33.5,
+            7: 43.5, 8: 49.0, 9: 51.2, 10: 32.6, 11: 12.3}
 CYN_OBS = {8: 2.304, 9: 1.875, 10: 1.056, 11: 0.343}
 FIX_OBS = {8: 1.606, 9: 1.980, 10: 0.812, 11: 0.457}
-CYN_MOD = {8: 0.210, 9: 0.298, 10: 0.312, 11: 0.148}
-FIX_MOD = {8: 3.729, 9: 3.563, 10: 1.577, 11: 0.034}
+CYN_MOD = {8: 0.391, 9: 0.625, 10: 0.721, 11: 0.514}
+FIX_MOD = {8: 3.306, 9: 3.077, 10: 1.607, 11: 0.042}
 
 
 def style(ax):
@@ -67,12 +69,12 @@ def fig_phase():
     ax.set_ylabel("chlorophyll-a (µg L$^{-1}$)", color=C_TEXT2, fontsize=9)
     style(ax)
     ax.legend(frameon=False, fontsize=9, loc="upper left")
-    ax.annotate("model peak\nSep", xy=(9, 49.7), xytext=(9.5, 60), fontsize=8, color=C_MODEL,
+    ax.annotate("model peak\nSep", xy=(9, 51.2), xytext=(9.5, 61), fontsize=8, color=C_MODEL,
                 arrowprops=dict(arrowstyle="->", color=C_MODEL, lw=1))
     ax.annotate("observed peak\nAug", xy=(8, 50.8), xytext=(5.6, 61), fontsize=8, color=C_OBS,
                 arrowprops=dict(arrowstyle="->", color=C_OBS, lw=1))
     ax.set_ylim(0, 72)
-    fig.suptitle("Chlorophyll-a seasonal cycle — adopted configuration (seasonal r = +0.74)",
+    fig.suptitle("Chlorophyll-a seasonal cycle — adopted configuration (seasonal r = +0.78)",
                  x=0.02, ha="left", fontsize=11, fontweight="bold", color=C_TEXT)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
     p = os.path.join(FIG_DIR, "seasonal_phase.png")
@@ -91,7 +93,7 @@ def fig_composition():
            color=C_MODEL, label="model")
     a1.set_xticks(list(x)); a1.set_xticklabels([MON[k - 1] for k in m])
     a1.set_ylabel("mg C L$^{-1}$", color=C_TEXT2, fontsize=9)
-    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Oct within 1–5 %)",
+    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Sep within 5 %, Oct 25 % over)",
                  fontsize=9.5, color=C_TEXT, loc="left")
     style(a1); a1.legend(frameon=False, fontsize=9)
     # right: the split -- entirely wrong
@@ -103,10 +105,10 @@ def fig_composition():
     a2.set_xticks(list(x)); a2.set_xticklabels([MON[k - 1] for k in m])
     a2.set_ylabel("CYN share of cyanobacterial carbon", color=C_TEXT2, fontsize=9)
     a2.set_ylim(0, 1)
-    a2.set_title("The SPLIT between the two guilds\n(model 0.07–0.42 vs observed 0.49–0.59)",
+    a2.set_title("The SPLIT between the two guilds\n(Aug–Oct: model 0.11–0.31 vs observed 0.49–0.59)",
                  fontsize=9.5, color=C_TEXT, loc="left")
     style(a2)
-    fig.suptitle("Right total, wrong guild — the autumn partitioning error (doc §50)",
+    fig.suptitle("Right total, wrong guild — the autumn partitioning error",
                  x=0.02, ha="left", fontsize=11, fontweight="bold", color=C_TEXT)
     fig.tight_layout(rect=(0, 0, 1, 0.92))
     p = os.path.join(FIG_DIR, "autumn_composition.png")
