@@ -93,7 +93,7 @@ def fig_composition():
            color=C_MODEL, label="model")
     a1.set_xticks(list(x)); a1.set_xticklabels([MON[k - 1] for k in m])
     a1.set_ylabel("mg C L$^{-1}$", color=C_TEXT2, fontsize=9)
-    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Sep within 5 %, Oct 25 % over)",
+    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Sep within 6 %, Oct 25 % over)",
                  fontsize=9.5, color=C_TEXT, loc="left")
     style(a1); a1.legend(frameon=False, fontsize=9)
     # right: the split -- entirely wrong
