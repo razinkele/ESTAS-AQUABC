@@ -5972,3 +5972,39 @@ Whether the rivers carry 0.10–0.30 mg C/L of live diatoms in September–Novem
 index is 1.45, 0.38 and 0.49 in those months (§69.6): high in September only, and BSi is an upper bound that
 includes dead frustules. This is a statement about the model's sensitivity, not a boundary input. Nothing is
 adopted.
+
+**69.9 2026-11-19: what live river diatoms were measured — high in April–July, lowest in September.** A data
+reading, not a registered probe (note item 107). Source: the manuscript of Gasiūnaitė et al. (published 2012),
+Fig. 4A: phytoplankton at a station in the Nemunas River, sampled every two weeks from April to September 2002, as
+stacked cell densities by class. The figure is vector drawing, so the 13 values were read from the polygon
+vertices (`diag_river_bsi_20261119/gasiunaite_fig4a.py`).
+
+| axis label (month) | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|
+| diatoms, thousand cells/L (mean of the samples at that label) | 9061 | 12764 | 9454 | 8102 | 2724 | 651 | 1907 (one sample) |
+| relative to the mean of the 13 samples | 1.35 | 1.90 | 1.41 | 1.20 | 0.41 | 0.10 | 0.28 |
+| BSi seasonal index 2012–16 (§69.6) | 0.71 | 2.31 | 2.02 | 1.50 | 0.97 | 1.45 | 0.38 |
+
+- **The live diatoms peak in April–July and are at their minimum in September**, at 5 % of May.
+- **The BSi index and the live cells agree in May–July and part afterwards.** BSi stays near 1 in August and is
+  1.45 in September, when the cells are at 0.4 and 0.1 of their mean. So the autumn BSi was probably not live
+  diatoms; the years also differ (2002 against 2012–16).
+- **The autumn supply of §69.8 is not supported by these counts.** What restores the model's autumn diatoms is
+  0.10–0.30 mg C/L in September–November. The one September on record is the river's seasonal minimum, and there
+  are no October or November samples.
+- Cells are not carbon. Only as an order of magnitude, and with an assumed 10–100 pg C per cell that is not from
+  the paper: September's 0.65 million cells/L is 0.007–0.065 mg C/L, around the converter's 0.02 floor; May's 12.8
+  million is 0.13–1.3 mg C/L.
+- Checks against the text: the largest cyanobacteria share read from the figure is 0.47, the text's "approx. 47 %"
+  for August; diatoms are 35–82 % of the total through July (one sample 28 %), the text's "40–80 %". One mismatch:
+  the text gives a Cyanophyceae/Bacillariophyceae ratio of 0.1–0.8 for the whole period, and the figure gives
+  1.8–7.4 in August–September. The copy read is a draft.
+
+**Reading.** One station and one year, in cell counts. As far as it goes, it points away from the river as the
+source of the missing autumn diatoms: the model wants an autumn river supply (§69.8) at a time when the measured
+river diatoms were lowest. The floor of 0.02 mg C/L may be about right for September and far too low for
+April–July, which is the opposite of what the autumn fit asks for. Nothing is adopted.
+
+Reference: Gasiūnaitė, Z. R., Razinkovas, A., Bliudžiūtė, L., Gulbinskas, S., Pilkaitytė, R., Žaromskis, R.
+Pelagic patterns along the river–lagoon transition: Curonian lagoon (SE Baltic Sea) case. Manuscript draft; published
+as Gasiūnaitė et al. (2012), *Baltica* 25(1), 77–86 (§69.4).
