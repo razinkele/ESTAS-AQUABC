@@ -6041,5 +6041,6 @@ least 0.03; the base's autumn diatoms are sea-fed if K2 at 0.02 is at most half 
 
 **Reading.** With §69.9, no external supply that the data support explains the missing autumn diatoms: the river's
 live diatoms are lowest in September, and the sea series, already an upper bound, would have to be several times
-its measured value to make a partial difference. What remains is inside the lagoon: the July loss (§69.2), the
-diatoms' light response, and resuspension, which the adopted setup runs without. Nothing is adopted.
+its measured value to make a partial difference. What remains is inside the lagoon: the July loss (§69.2) and
+resuspension, which the adopted setup runs without. The diatoms' light response is not on that list: it was
+already probed as C:Chl (§43.3, §46), where it restores November and breaks February. Nothing is adopted.
