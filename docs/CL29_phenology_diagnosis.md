@@ -6143,3 +6143,49 @@ base's + 0.05.
 **Reading.** Temperature and death, at these doses, do not open July and August. In §70's budget the smallest
 July factor is light (0.25, and 0.20 in August), with phosphorus next: this is §40.1's light wall and §62.2's
 "light, phosphorus and death still bind", now with June separated from it. Nothing is adopted.
+
+**70.2 2026-11-19: resuspension scoped, and a sensitivity test — switching diatom settling off does not reopen the
+summer.**
+Scoping is note item 118; the probe was registered as item 119 and its result is item 120. Scorer:
+`diag_junjul_20261119/settling_off.py`.
+
+*What the model's resuspension is.* Option 1 adds a prescribed source (a velocity series times a prescribed bed
+concentration). Option 2 returns nothing to the water: it switches settling off in a box while shear stress exceeds
+a critical value. Option 3 needs the full sediment model, which halts the program when resuspension is on
+(`docs/resuspension_diagenesis_coupling.md`). There is no bed store of diatoms in any of them. The adopted CL29
+cannot switch any option on: with the akinete staging active it is a deliberate error stop, and the setup has no
+shear-stress inputs. It already carries option 2's idea as a wind-modulated diatom settling velocity (0.015–0.28
+m/d).
+
+*The test.* What option 2 would do for the diatoms themselves is stop their settling, and a run can measure that
+by setting the diatom settling velocity to zero. Only diatom carbon uses the series. This is a sensitivity test of
+diatom settling, **not an upper bound on option 2**: the real option suppresses the settling of every settling
+variable in the box at once (detritus, particulate silica and the rest), which these runs leave untouched, and the
+table shows the response is not monotonic (less June biomass with settling off all year than in summer only).
+
+| run | June | July-August | Oct-Nov (K2) | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | gate | verdict |
+|---|---|---|---|---|---|---|---|---|
+| base | 0.094 | 0.0041 | 0.101 | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | – |
+| no diatom settling, all year | 0.047 | 0.0046 | 0.164 | 1.797 | 6.959 / 7.526 / 6.764 | 1.95 | 3/9 | no effect; spring guard fails |
+| no diatom settling, June-September | 0.121 | 0.0055 | 0.102 | 1.128 | 6.900 / 7.369 / 6.743 | 2.57 | 2/9 | no effect |
+| observed | 0.204 | about 0.48 | 0.364 | | | 2.06 | | |
+
+- **Neither run reopens the summer** (rule of §70.1): July–August diatoms stay at 1 % of the observed.
+- **Without settling all year the spring is far too large** (1.80 times the observed) and June falls to half the
+  base. Without it in June–September only, almost nothing changes outside June.
+- Both runs lose gate lines (3/9 and 2/9 against 6/9).
+
+| prediction | result |
+|---|---|
+| P1: the base reproduces §70.1 | HELD |
+| P2: no settling all year is partial, July–August 0.012–0.060, June above 0.15 | REFUTED: 0.0046, June 0.047 |
+| P3: its K2 is at least 0.20 | REFUTED: 0.164 |
+| P4: no settling in June–September is partial, the spring guard holding | REFUTED: no effect (0.0055); the guard holds |
+| P5: its K2 is below the all-year run's | HELD |
+
+**Reading.** Keeping the diatoms themselves in suspension does not reopen July–August. That is what was tested;
+it does not exclude option 2 as a whole (untested: all variables kept in suspension together) or option 1, which
+adds whatever source is prescribed and for which there is no measured bed stock to prescribe. A bed store of
+diatoms with erosion would be new code, on the pattern of the akinete bank, with no local data on benthic diatom
+stocks to set it. Of the candidates tested since §62, none reopens July–August (§69.7–§70.2); the light climate of
+§40–§46 remains the measured constraint there. Nothing is adopted.
