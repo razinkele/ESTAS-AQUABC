@@ -6106,3 +6106,40 @@ months. This agrees with §62.2, where a warmer temperature curve alone did not 
 restoring the temperature factor to May's value would lift June's growth to about 0.18, still under the losses.
 Closing the gap takes growth and losses together, which is the trade §67 and §68 measured on the death rate.
 Nothing is adopted.
+
+**70.1 2026-11-19: the temperature curve and a lower death rate together fix June and nothing after it.**
+Registered before the runs (note item 115); the result is item 116. Scorer:
+`diag_junjul_20261119/summer_combined.py`. The curve is §62.2's (CTMI −2 / 13 / 26 °C); the death rates are §67's.
+
+| run | June | July-August | Oct-Nov (K2) | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | gate | DSi RMSE | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| base | 0.094 | 0.004 | 0.101 | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.786 | – |
+| the curve | 0.113 | 0.007 | 0.098 | 1.094 | 6.915 / 7.405 / 6.753 | 2.58 | 4/9 | 0.785 | no effect |
+| `KD_DIA_20` 0.09 | 0.147 | 0.006 | 0.166 | 1.216 | 6.864 / 7.264 / 6.727 | 2.35 | 8/9 | 0.823 | no effect; spring guard fails |
+| the curve + 0.09 | 0.186 | 0.009 | 0.163 | 1.199 | 6.872 / 7.286 / 6.731 | 2.37 | 8/9 | 0.815 | no effect; spring guard fails |
+| the curve + 0.06 | 0.233 | 0.013 | 0.269 | 1.268 | 6.858 / 7.194 / 6.740 | 2.19 | 8/9 | 0.869 | partial; spring guard fails |
+| observed | 0.204 | about 0.48 | 0.364 | | | 2.06 | | | |
+
+Diatoms in mg C/L; the windows are aggregated as in §62.1. The rule: the summer is reopened if July–August
+diatoms reach 0.10; partial if they reach three times the base's; the spring guard is Feb-May / obs at most the
+base's + 0.05.
+
+- **No run reopens the summer.** With both levers, July–August diatoms are 0.009–0.013 against an observed 0.48.
+- **June is fixed.** It rises from 0.094 to 0.186 and 0.233, bracketing the observed 0.204.
+- **So June and July–August are different problems.** §70's reading treated them as one gap in net growth; closing
+  June does not carry a population through July.
+- The death rate keeps the gains and the costs §67 measured: 8 of 9 gate lines, with the spring above its guard and
+  the silica fit worse. The curve alone loses two gate lines.
+
+| prediction | result |
+|---|---|
+| P1: the base reproduces §69.10, July–August 0.004–0.008 | HELD |
+| P2: the curve alone has no effect | HELD |
+| P3: `KD_DIA_20` 0.09 alone has no effect on the summer, and a spring cost | HELD |
+| P4: both together reopen the summer at a spring cost (0.10–0.30) | REFUTED: 0.009 |
+| P5: the curve with 0.06 reopens it further | REFUTED: 0.013, partial |
+| P6: the two levers are more than additive | HELD in the letter (+0.0050 against +0.0044); every gain is under 0.01 |
+
+**Reading.** Temperature and death, at these doses, do not open July and August. In §70's budget the smallest
+July factor is light (0.25, and 0.20 in August), with phosphorus next: this is §40.1's light wall and §62.2's
+"light, phosphorus and death still bind", now with June separated from it. Nothing is adopted.
