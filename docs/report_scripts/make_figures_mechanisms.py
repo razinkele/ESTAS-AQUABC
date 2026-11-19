@@ -229,10 +229,14 @@ print("wrote", p)
 # --------------------------------------------------------------------------
 # Figure 3 -- ice transmittance sensitivity (doc section 45.3)
 # --------------------------------------------------------------------------
+# Re-measured 2026-11-19 on the adopted configuration as it now stands (corrected boundary,
+# allelopathy off): three full-record runs differing only in ICE_LIGHT_TRANS. CHLA and the
+# seasonal r are the validator's; FEB is diatom carbon with the model read at 00:00 of each KM
+# sampling date, mean over the February records.
 T = [0.02, 0.05, 0.15]
-CHLA = [23.8263, 23.8300, 23.8396]
-FEB = [0.270, 0.278, 0.309]
-SEAS_R = [0.74, 0.74, 0.73]
+CHLA = [24.0100, 24.0147, 24.0295]
+FEB = [0.372, 0.383, 0.418]
+SEAS_R = [0.78, 0.78, 0.77]
 FEB_OBS = 0.280
 
 fig, (axa, axb) = plt.subplots(1, 2, figsize=(10.2, 3.9))
@@ -281,7 +285,7 @@ axb.annotate("at ~40 % mean February ice cover the multiplier\n"
              "$1-f(1-T)$ is dominated by the FRACTION iced,\n"
              "not by what the ice transmits — the physics is\n"
              "carried by the measured CMEMS series",
-             xy=(0.05, FEB[1]), xytext=(0.0235, 0.2985), fontsize=7.3,
+             xy=(0.05, FEB[1]), xytext=(0.0235, 0.305), fontsize=7.3,
              color="#555555",
              arrowprops=dict(arrowstyle="->", color="#9e9e9e", linewidth=0.9))
 
