@@ -5931,3 +5931,44 @@ follow what the rivers deliver in autumn, not what is in the lagoon on 1 Septemb
 passes the seed rule only because its August concentration is 0.33 mg C/L, which these runs show is irrelevant to
 the autumn. The K3 line was set as the inoculum test (§62.1); it does not measure what it was meant to, and any
 future use of the rule should say so. Nothing is adopted.
+
+**69.8 2026-11-19: the autumn river supply alone restores the autumn diatoms, without the spring cost.**
+Registered as note item 104 before the runs; the result is item 105. Scorer:
+`diag_river_bsi_20261119/river_autumn.py`. The base and the 0.30 constant were re-run as references.
+
+| river diatoms | Oct-Nov diatoms (K2) | Sep-1 inoculum (K3) | Feb-May / obs | Φ / 2012-16 / 2017-21 | a/s | gate | DSi RMSE | TN RMSE | load, t C/yr |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.02 all year (base) | 0.101 | 1.3 % | 1.127 | 6.898 / 7.361 / 6.742 | 2.53 | 6/9 | 0.786 | 0.8193 | 372 |
+| 0.30 all year | 0.329 | 4.7 % | 1.296 | 6.775 / 7.230 / 6.623 | 2.31 | 6/9 | 0.758 | 0.8276 | 5583 |
+| 0.30 in September-November | 0.326 | 1.3 % | 1.141 | 6.830 / 7.297 / 6.677 | 2.55 | 7/9 | 0.774 | 0.8165 | 1394 |
+| 0.10 in September-November | 0.227 | 1.3 % | 1.135 | 6.852 / 7.317 / 6.698 | 2.54 | 7/9 | 0.780 | 0.8176 | 664 |
+| 0.30 in October-November | 0.302 | 1.3 % | 1.140 | 6.832 / 7.301 / 6.679 | 2.54 | 7/9 | 0.777 | 0.8162 | 1140 |
+
+The registered rule, for 0.30 in September–November: the autumn supply carries the autumn if its K2 is within 10 %
+of the constant's; there is no spring cost if Feb-May / obs is within 0.02 of the base's; the fit gain is kept if Φ
+is at most the midpoint of the base's and the constant's.
+
+- **It carries the autumn**: K2 0.326 against 0.329, with a quarter of the constant's annual load.
+- **No spring cost**: Feb-May / obs 1.141, 0.014 above the base.
+- **The fit gain is kept, narrowly**: Φ 6.830 against a midpoint of 6.836, 55 % of the constant's gain.
+- **7 of 9 gate lines**, against 6 for the base and for the constant. It gains the 2012–16 Φ line over the base and
+  keeps the seasonal-r and TN lines the constant loses. It does not hold the autumn/spring line (2.55, like the
+  base), and S1 fails in every run.
+- **At 0.10 the autumn line still holds** (K2 0.227). October–November alone gives 0.302, so September adds 0.024.
+
+| prediction | result |
+|---|---|
+| P1: the references reproduce §69.6 | HELD |
+| P2: it carries the autumn, K2 0.30–0.33 | HELD (0.326) |
+| P3: no spring cost, Feb-May 1.127–1.145 | HELD (1.141) |
+| P4: the fit gain is not kept, Φ 6.837–6.860 | REFUTED: Φ 6.830, kept |
+| P5: the inoculum is the base's | HELD (1.3 %) |
+| P6: October–November alone gives K2 0.26–0.31 | HELD (0.302) |
+| P7: 0.10 holds the autumn line without a spring cost | HELD (0.227; 1.135) |
+
+**Reading.** In the model the autumn diatoms are accounted for by what the rivers deliver in autumn. About half of
+the constant's fit gain comes with that, and the other half belonged to the rest of the year's supply (§69.5).
+Whether the rivers carry 0.10–0.30 mg C/L of live diatoms in September–November is not known. The measured BSi
+index is 1.45, 0.38 and 0.49 in those months (§69.6): high in September only, and BSi is an upper bound that
+includes dead frustules. This is a statement about the model's sensitivity, not a boundary input. Nothing is
+adopted.
