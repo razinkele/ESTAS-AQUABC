@@ -5890,7 +5890,7 @@ cost. The first four rows are re-runs on the current build and reproduce §69.3 
 does not help: the September-1 inoculum did not respond to twice the June supply, and the autumn diatoms fell with
 the September–November supply. A pattern seen after the runs, not registered: across all eight runs K3 follows the
 **August** concentration (0.30 → 4.7 %, 0.29 → 4.5–4.6 %, 0.10 → 2.1 %, 0.02 → 1.3 %). The BSi index for August is
-0.97, so no equal-mean shaped series could have moved it. An August-only variation would test that; it has not been
+0.97, close to the run mean, so this series left August almost where the constant had it and could not have moved K3. An August-only variation would test that; it has not been
 run. Two cautions on the data: BSi includes dead frustules and possibly lithogenic silica (§69.4), so its seasonal
 shape need not be the shape of live river diatoms; and a load-preserving series would carry 13 % more than this one.
 Nothing is adopted.
