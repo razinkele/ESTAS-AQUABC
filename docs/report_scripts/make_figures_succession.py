@@ -26,6 +26,11 @@ every number in the panel traces to a committed file.
 
 Env: CL29_FIG_OUT overrides the model output directory (default OUTPUTS_CL29);
 CL29_JSONL overrides the NDJSON path.
+
+If the NDJSON is not on disk, the observed side is read back from the committed
+cl29_succession_observed.csv (the ``class`` and ``group_obs`` rows this script wrote
+from the NDJSON), so the figure can be redrawn against a new model run without the raw
+export. The observed rows are then written back unchanged; only ``group_model`` moves.
 """
 import collections
 import csv
@@ -130,6 +135,27 @@ def observed():
     return climatology(smp_class), climatology(smp_group), kept, n_samples
 
 
+def observed_from_csv(path):
+    """The observed side as this script last wrote it -> same shape as observed().
+
+    The species-row count is not in the table, so it comes back as None.
+    """
+    by_class = collections.defaultdict(dict)
+    by_group = collections.defaultdict(dict)
+    n_samples = collections.Counter()
+    with open(path, newline="", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if row["level"] not in ("class", "group_obs"):
+                continue
+            m = int(row["month"])
+            target = by_class if row["level"] == "class" else by_group
+            target[row["name"]][m] = float(row["value"])
+            n_samples[m] = int(row["n_samples"])
+    if not by_class or not by_group:
+        raise SystemExit(f"{path} has no observed rows and the NDJSON is missing: {JSONL}")
+    return dict(by_class), dict(by_group), None, n_samples
+
+
 def modelled():
     """{group: {month: mean mg C/L}} over the mapped boxes, same years."""
     boxes = set(mapped_stations().values())
@@ -151,7 +177,12 @@ def modelled():
 
 
 def main():
-    by_class, by_group, n, n_samples = observed()
+    csv_path = os.path.join(HERE, "cl29_succession_observed.csv")
+    from_table = not os.path.exists(JSONL)
+    if from_table:
+        by_class, by_group, n, n_samples = observed_from_csv(csv_path)
+    else:
+        by_class, by_group, n, n_samples = observed()
     sampled = {m for m in MONTHS if n_samples.get(m, 0) > 0}
     unsampled = [m for m in MONTHS if m not in sampled]
     mod = modelled()
@@ -201,7 +232,6 @@ def main():
     fig.savefig(out_png, dpi=200)
     plt.close(fig)
 
-    csv_path = os.path.join(HERE, "cl29_succession_observed.csv")
     with open(csv_path, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
         w.writerow(["level", "name", "month", "value", "units", "n_samples"])
@@ -217,7 +247,10 @@ def main():
                     w.writerow(["group_model", g, m, f"{mod[g][m]:.6g}", "mg C/L", ""])
 
     print(f"{out_png}\n{csv_path}")
-    print(f"species rows kept {n} (mapped LTK stations, {min(YEARS)}-{max(YEARS)})")
+    if from_table:
+        print(f"observed side read back from {os.path.basename(csv_path)} (NDJSON not on disk: {JSONL})")
+    else:
+        print(f"species rows kept {n} (mapped LTK stations, {min(YEARS)}-{max(YEARS)})")
     print(f"classes {len(by_class)}; plotted top {len(top)}")
     print(f"months sampled {sorted(sampled)}; unsampled (shown as gaps) {unsampled}")
 
