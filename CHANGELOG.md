@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Output-box selector on the Mass Balance and Observations tabs.** They used the run's first output box only;
   each now lists the run's `PELAGIC_BOX` files (refreshed when the setup changes) and computes from the chosen one.
 
+### Changed
+- **The app targets Shiny 1.9 and shiny_deckgl 1.16.** `shiny_app/requirements.txt` now needs `shiny>=1.9.0` and
+  installs `shiny_deckgl` 1.16.0 from its release tag (PyPI carries 1.12 only); `ipyleaflet` is no longer needed.
+- **The Map tab is drawn with deck.gl through `shiny_deckgl`** instead of ipyleaflet. The map is built once and then
+  driven by messages (camera, basemap, layers), so it no longer rebuilds on every control change. The pitch and
+  elevation-scale sliders, which had no effect under Leaflet, now tilt the view and scale the station columns.
+  Basemaps: Carto Voyager / Positron / Dark and OpenStreetMap Liberty as vector styles; Esri satellite and
+  OpenTopoMap as raster tile layers. The old raster "OpenStreetMap" choice is replaced by the vector one.
+- **Deprecated Shiny calls replaced**: `ui.output_text_verbatim` (deprecated in Shiny 1.8) by `ui.output_code` with
+  `@render.code` for the build log, the command preview and the mini run log (same markup); the two remaining
+  `@reactive.Effect` by `@reactive.effect`.
+
 ### Documentation
 - **`docs/CL29_phenology_diagnosis.md` §69.6**: a river diatom supply shaped by the measured BSi seasonal index
   (Vybernaite-Lubiene et al. 2018, Table 2) does not do better than a flat supply: partial seed with a spring cost at

@@ -1,9 +1,10 @@
-shiny>=1.7.0,<2.0
+shiny>=1.9.0,<2.0
 pandas>=2.0,<3.0
 numpy>=2.2.6,<3.0
 plotly>=6.9.0,<7.0
 shinywidgets>=0.3,<1.0
 ipywidgets>=8.1.9,<9.0
-ipyleaflet>=0.20.0,<1.0
+# PyPI carries shiny_deckgl 1.12 only; 1.16 is installed from its release tag.
+shiny_deckgl @ git+https://github.com/razinkele/shiny_deckgl@v1.16.0
 networkx>=3.4.2,<4.0
 python-dotenv>=1.2.3,<2.0

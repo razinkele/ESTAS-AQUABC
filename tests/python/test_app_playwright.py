@@ -241,3 +241,47 @@ class TestBuildPanel:
         page.wait_for_timeout(2000)
         navigate_to(page, "nav_model_build")
         expect(page.locator("#model_build-build_log")).to_be_visible()
+
+
+# ---------------------------------------------------------------------------
+# Map tab (deck.gl through shiny_deckgl)
+# ---------------------------------------------------------------------------
+
+class TestMapTab:
+    """The map lives in a panel that is hidden at start-up, where a WebGL map
+    can come up blank. So this checks the drawn map, not just the markup."""
+
+    def test_map_draws_and_follows_controls(self, page: Page, app: ShinyAppProc):
+        from shiny_deckgl.testing import MapWidgetController
+
+        page.goto(app.url)
+        page.wait_for_timeout(2000)
+        navigate_to(page, "nav_map")
+
+        m = MapWidgetController(page, "map-deck_map")
+        m.wait_ready(timeout=30000)
+        assert m.layer_ids() == ["stations"]
+
+        # the canvas has a real size (a map built at zero size stays blank)
+        box = page.locator("#map-deck_map .maplibregl-canvas").bounding_box()
+        assert box is not None and box["width"] > 200 and box["height"] > 200
+
+        # the radius slider reaches the layer
+        page.evaluate("Shiny.setInputValue('map-map_point_radius', 2500)")
+        page.wait_for_timeout(1500)
+        assert m.layer("stations")["radius"] == 2500
+
+        # a raster basemap adds its tile layer under the stations
+        page.evaluate("Shiny.setInputValue('map-map_style', 'satellite')")
+        m.expect_layers(["basemap_raster", "stations"])
+
+        # the camera controls move the existing map instead of rebuilding it
+        page.evaluate("Shiny.setInputValue('map-map_zoom', 12)")
+        m.expect_zoom(12, timeout=8000)
+
+        # a vector basemap swaps the style and drops the raster layer
+        page.evaluate("Shiny.setInputValue('map-map_style', 'dark')")
+        m.expect_layers(["stations"])
+        page.wait_for_timeout(1500)
+        assert "dark-matter" in (m.style_url() or "")
+
