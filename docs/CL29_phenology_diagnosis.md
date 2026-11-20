@@ -6300,7 +6300,10 @@ The chlorophyll peak month is September in every run (observed August).
   against the 0.175 bar (4.8 % of samples below it; June 0.237), so nothing is drawn down. August guild carbon
   doubles and again misses the 0.8 bar; the fixers lose more than the guild gains. Unlike in §38, the variant now
   scores better than the adopted configuration on most pooled errors. A scores-only reading would adopt it; the
-  registered signature is what says no.
+  registered signature is what says no. *(Correction, 2026-11-20: not "most". The variant is better on 6 of 12
+  pooled errors (chlorophyll, TN, TP, both cyanobacterial carbons, zooplankton) and worse on 6 (NH4, NO3, PO4,
+  diatom, other-algae and total phytoplankton carbon), with a worse chlorophyll bias (−5.4 against −3.7). A reading
+  on chlorophyll, nutrients and phase alone could still favour it.)*
 
 **Predictions.** Held: legacy zooplankton bias and June gap; legacy gate within 15 % of the 4 m/s run; staging
 reversed raises the chlorophyll error by at least 0.5, the PO4 error by at least 10 %, and lowers the fixer bias; all
@@ -6315,7 +6318,10 @@ only sign was the option echo in the log. The generator is corrected separately;
 or misordered file. *(Correction, 2026-11-20: the reader now checks the name on each option's comment line and stops
 on a misplaced, skipped or misnamed option; a file may still end early.)*
 
-**Limits.** Each run switches one mechanism in a set of constants fitted with it in place. The differences are
+**Limits.** Each run switches one mechanism in a set of constants fitted with it in place. *(Correction,
+2026-11-20: for the ratchet this holds only in part. The search of §21 that found the growth constants scored its
+trials on the then-default inputs, which had no positioning state (§60.4); the constants were adopted on runs with
+it on.)* The differences are
 marginal contributions, not adoption tests, and a small one does not show that the mechanism was unnecessary when
 adopted. Nothing is adopted or changed by this section.
 
@@ -6374,6 +6380,10 @@ chlorophyll at least 41.2 (45.1); seasonal r within 0.05 and peak in September; 
 legacy-gate run; August fixer carbon below the legacy-gate run (2.552 against 2.582).
 
 **Limits.** One pair of runs; every constant was chosen with positioning on. Nothing is adopted or changed.
+*(Correction, 2026-11-20: not every constant. The zooplankton constants predate positioning (§13), and the search
+of §21 that found the growth constants scored its trials on the then-default inputs, which had transparent-water
+optics and no positioning state (§60.4). The staged fixer (§31) was chosen with positioning on, and the growth
+constants were adopted on runs with it on.)*
 
 **Figure.** The observed-succession figure (`make_figures_succession.py`) is redrawn against `ngbase`. The species
 export it was built from is not on the working machine, so the script now reads the observed side back from the
