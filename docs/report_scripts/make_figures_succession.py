@@ -186,6 +186,10 @@ def main():
     sampled = {m for m in MONTHS if n_samples.get(m, 0) > 0}
     unsampled = [m for m in MONTHS if m not in sampled]
     mod = modelled()
+    if not mod:
+        # Stop before anything is written: an empty folder would otherwise strip the
+        # group_model rows from the committed table and save a figure without the model.
+        raise SystemExit(f"no model output for the mapped boxes in {OUT_DIR} (set CL29_FIG_OUT)")
 
     # Panel (a): the classes that actually carry the assemblage.
     totals = {c: sum(m.values()) for c, m in by_class.items()}
