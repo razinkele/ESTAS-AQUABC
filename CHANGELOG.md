@@ -15,8 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 > The app now needs Python 3.11+, Shiny 1.9+ and `shiny_deckgl` 1.16 (installed from its tagged commit). The optional
 > block of `PELAGIC_MODEL_OPTIONS.txt` is checked name by name: a file with an option misplaced, skipped or misnamed
 > **now stops the run** instead of being read silently with the wrong values. The Mass Balance and Observations tabs
-> get an output-box selector. **Results are unchanged from v0.12.0 for a valid options file** (a 346-day CL29 run
-> compared identical); the CL29 diagnosis record gains §69.6-§72.
+> get an output-box selector. **Results are unchanged from v0.12.0 for the shipped setups** (a 346-day CL29 run
+> compared identical). A constants file that omits a temperature decay constant on the name-based path now gets
+> the plateau defaults and does change. The CL29 diagnosis record gains §69.6-§72.
 
 ### Added
 - **Output-box selector on the Mass Balance and Observations tabs.** They used the run's first output box only;
