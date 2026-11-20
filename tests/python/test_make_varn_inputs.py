@@ -434,9 +434,19 @@ def test_options_five_pairs_inserted_at_exact_position(fixture_src, tmp_path):
 
     # exactly the 10 inserted lines sit between V_SETTLE_AKI's value and the anchor --
     # not appended at EOF, not scattered elsewhere.
-    between = lines[i_vsettle_val + 1: i_anchor]
+    n_pre = 2 * len(mvi.OPTIONS_BEFORE_QUOTA)
+    pre = lines[i_vsettle_val + 1: i_vsettle_val + 1 + n_pre]
+    between = lines[i_vsettle_val + 1 + n_pre: i_anchor]
     assert between == mvi.OPTIONS_INSERT
-    assert i_anchor == i_vsettle_val + 1 + len(mvi.OPTIONS_INSERT)
+    assert i_anchor == i_vsettle_val + 1 + n_pre + len(mvi.OPTIONS_INSERT)
+
+    # the seven pairs the reader takes BEFORE the quota switch, in its order, at
+    # their defaults -- without them the quota switch's "1" is read as
+    # LIGHT_DAYLENGTH_OPTION and the quota stays off
+    assert [l.split()[1] for l in pre[0::2]] == [
+        "LIGHT_DAYLENGTH_OPTION", "NOST_FIX_SWITCH", "K_FIX_NOST", "R_FIX_NOST",
+        "CYANO_POS_GUILDS", "PHYTO_CLOSURE_MODEL", "PHYTO_CLOSURE_REF"]
+    assert [l.strip() for l in pre[1::2]] == ["0", "0", "0.008", "1.0", "0", "0", "1.0"]
 
     # order and values, read as comment/value pairs the same way the Fortran reader does
     assert between[0].startswith("# CYN_VARIABLE_N")
@@ -454,6 +464,47 @@ def test_options_five_pairs_inserted_at_exact_position(fixture_src, tmp_path):
     orig = _lines(fixture_src / "PELAGIC_MODEL_OPTIONS.txt")
     i_anchor_orig = next(i for i, l in enumerate(orig) if l.strip() == "# CYN_ALLELOPATHY_FILE_NAME")
     assert lines[i_anchor:] == orig[i_anchor_orig:]
+
+
+def _with_options(fixture_src, extra):
+    """The fixture's options file with `extra` lines written before the anchor."""
+    p = fixture_src / "PELAGIC_MODEL_OPTIONS.txt"
+    lines = _lines(p)
+    i = lines.index("# CYN_ALLELOPATHY_FILE_NAME")
+    p.write_text("\n".join(lines[:i] + extra + lines[i:]) + "\n")
+
+
+def test_options_existing_leading_pairs_are_kept_not_duplicated(fixture_src, tmp_path):
+    _with_options(fixture_src, ["# LIGHT_DAYLENGTH_OPTION (0=legacy)", "            2",
+                                "# NOST_FIX_SWITCH (0=legacy)", "            1"])
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst)
+    lines = _lines(dst / "PELAGIC_MODEL_OPTIONS.txt")
+    names = [l.split()[1] for l in lines if l.startswith("# ")]
+    i = names.index("LIGHT_DAYLENGTH_OPTION")
+    assert names[i:i + 8] == ["LIGHT_DAYLENGTH_OPTION", "NOST_FIX_SWITCH", "K_FIX_NOST", "R_FIX_NOST",
+                              "CYANO_POS_GUILDS", "PHYTO_CLOSURE_MODEL", "PHYTO_CLOSURE_REF", "CYN_VARIABLE_N"]
+    assert names.count("LIGHT_DAYLENGTH_OPTION") == 1
+    # the source's own values survive
+    assert lines[lines.index("# LIGHT_DAYLENGTH_OPTION (0=legacy)") + 1].strip() == "2"
+    assert lines[lines.index("# NOST_FIX_SWITCH (0=legacy)") + 1].strip() == "1"
+
+
+def test_options_compact_comment_form_counts_as_present(fixture_src, tmp_path):
+    _with_options(fixture_src, ["#LIGHT_DAYLENGTH_OPTION", "            2"])
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst)
+    lines = _lines(dst / "PELAGIC_MODEL_OPTIONS.txt")
+    assert sum("LIGHT_DAYLENGTH_OPTION" in l for l in lines) == 1
+    i = lines.index("#LIGHT_DAYLENGTH_OPTION")
+    # six pairs follow it, then the quota switch: 2 + 12 lines on
+    assert lines[i + 14].startswith("# CYN_VARIABLE_N")
+
+
+def test_options_out_of_order_pairs_raise(fixture_src, tmp_path):
+    _with_options(fixture_src, ["# NOST_FIX_SWITCH (0=legacy)", "            1"])
+    with pytest.raises(ValueError, match="leading run"):
+        mvi.generate(fixture_src, tmp_path / "out")
 
 
 # --------------------------------------------------------------------------
