@@ -6486,3 +6486,31 @@ agreement of the two paths within 6 µg/L (7.4); its peak is in September as pre
 **Limits.** Gates shut throughout; seven of the eight fitted constants are reverted as one set (growth and nutrient constants are not
 separated); the non-fixer growth constant sits in the traits block. Nothing is adopted or changed.
 
+### 73.3 2026-11-20: in today's configuration the fitted set acts through its growth constants
+
+**Why.** §73.2 reverted seven of the eight constants fitted at the adoption as one set. This splits them into the three
+growth constants (diatom, other algae, and the fixer engine, which has sat on the staged guild since §31) and the four
+nutrient constants (KHS_DIP_DIA, KDISS_PON, K_NITR, K_MIN_DOC_NO3N).
+
+**Design** (running note items 191–192; `diag_fitsplit_20261120/`). The §73 gates-shut binary, rebuilt byte-identical;
+both runs on today's gates-shut configuration (45.1 µg/L in August), one block reverted each.
+
+**Result** (August chlorophyll, µg/L; observed 50.8; every light gate shut).
+
+| | August | non-fixers / fixers (mg C/L; observed 2.30 / 1.61) |
+|---|---|---|
+| today | 45.1 | 0.83 / 2.55 |
+| growth constants reverted | 33.4 | 2.03 / 0.40 |
+| nutrient constants reverted | 45.0 | 0.78 / 2.59 |
+| all seven reverted (§73.2) | 33.3 | 2.14 / 0.25 |
+
+**Reading.** In today's configuration the three growth constants carry the whole contribution of the fitted set (11.7
+of 11.8 µg/L, with no interaction), and with it the shift from non-fixers to fixers; the four nutrient constants change
+August by 0.1. Which of the three growth constants matters is not separated, and the split is not measured on step
+one's base.
+
+**Predictions.** All four held: the growth block lowers August more than the nutrient block, by at least 8; the
+nutrient block by at most 4; interaction within 3.
+
+**Limits.** Gates shut; one configuration. Nothing is adopted or changed.
+

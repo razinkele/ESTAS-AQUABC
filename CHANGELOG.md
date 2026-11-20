@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
   configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- **§73.3**: in today's configuration the constants fitted at the adoption act through their three growth constants
+  (11.7 of 11.8 µg/L of August chlorophyll, with the composition shift from non-fixers to fixers); the four nutrient
+  constants change August by 0.1. Nothing adopted.
 - **§73.2**: today's gates-shut August chlorophyll (45.1 µg/L) decomposed from an anchor that reproduces §15's
   impose-only probe on today's code (16.3 against 16.2): averaged over both orders, the seven constants fitted at the
   adoption carry about half (15.5 µg/L) and the staged fixer with the later inputs the other half (13.8). Without
