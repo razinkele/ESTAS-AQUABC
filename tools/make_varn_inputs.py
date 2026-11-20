@@ -46,6 +46,9 @@ PELAGIC_MODEL_OPTIONS.txt themselves):
       columns shifted right
 
   PELAGIC_MODEL_OPTIONS.txt
+    - the seven option pairs the reader expects between V_SETTLE_AKI and
+      the quota block (LIGHT_DAYLENGTH_OPTION ... PHYTO_CLOSURE_REF) are
+      written at their defaults where the source file lacks them
     - the five CYN_VARIABLE_N / CYN_N_QMIN / CYN_N_QMAX / CYN_N_VMAX /
       CYN_N_KHS_UPT comment+value pairs inserted immediately before the
       `# CYN_ALLELOPATHY_FILE_NAME` line -- the exact position
@@ -436,10 +439,49 @@ OPTIONS_INSERT = [
 
 OPTIONS_ANCHOR = "# CYN_ALLELOPATHY_FILE_NAME"
 
+# The options file is read by POSITION, and READ_PELAGIC_MODEL_OPTIONS reads
+# these seven comment+value pairs between V_SETTLE_AKI and CYN_VARIABLE_N.
+# Setups that predate them stop reading at the allelopathy line, which is
+# harmless -- until the quota block is inserted there: its "1" is then read as
+# LIGHT_DAYLENGTH_OPTION and the quota stays off, without any error. So every
+# pair the source file lacks is written here at its default (the values the
+# reader itself asserts before reading). Order and defaults MUST match
+# mod_PELAGIC_ECOLOGY.f90.
+OPTIONS_BEFORE_QUOTA = [
+    ("LIGHT_DAYLENGTH_OPTION", "# LIGHT_DAYLENGTH_OPTION (0=legacy 24 h light, default; 1=Form A; 2=Form B)", "0"),
+    ("NOST_FIX_SWITCH", "# NOST_FIX_SWITCH (0=legacy fixed fixation share, default; 1=DIN-gated)", "0"),
+    ("K_FIX_NOST", "# K_FIX_NOST (half-saturation of the fixation switch, mg N/L)", "0.008"),
+    ("R_FIX_NOST", "# R_FIX_NOST (relative productivity of the fixing channel; 1.0=no cost, default)", "1.0"),
+    ("CYANO_POS_GUILDS", "# CYANO_POS_GUILDS (0=ratchet on all guilds, default)", "0"),
+    ("PHYTO_CLOSURE_MODEL", "# PHYTO_CLOSURE_MODEL (0=linear death, default; 1=quadratic)", "0"),
+    ("PHYTO_CLOSURE_REF", "# PHYTO_CLOSURE_REF (closure reference biomass, mg C/L)", "1.0"),
+]
+
+
+def _option_name(line):
+    """The option name of a `# NAME ...` comment line, else None."""
+    f = line.strip().split()
+    return f[1] if len(f) >= 2 and f[0] == "#" else None
+
 
 def transform_options(lines):
     idx = _find(lines, lambda l: l.strip() == OPTIONS_ANCHOR)
-    return lines[:idx] + list(OPTIONS_INSERT) + lines[idx:]
+    names = [n for n, _, _ in OPTIONS_BEFORE_QUOTA]
+    present = [_option_name(l) for l in lines[:idx] if _option_name(l) in names]
+    # The reader is positional: whatever is already there must be a leading
+    # run of the expected sequence, sitting directly before the anchor.
+    if present != names[:len(present)]:
+        raise ValueError(
+            "PELAGIC_MODEL_OPTIONS.txt: the options before the quota block are "
+            f"{present}, expected a leading run of {names}")
+    if present and [_option_name(l) for l in lines[idx - 2 * len(present):idx:2]] != present:
+        raise ValueError(
+            "PELAGIC_MODEL_OPTIONS.txt: the options before the quota block do "
+            f"not sit directly before `{OPTIONS_ANCHOR}`")
+    missing = []
+    for _, comment, default in OPTIONS_BEFORE_QUOTA[len(present):]:
+        missing += [comment, "            " + default]
+    return lines[:idx] + missing + list(OPTIONS_INSERT) + lines[idx:]
 
 
 # --------------------------------------------------------------------------
@@ -647,7 +689,8 @@ def main(argv=None):
     print(f"INIT_CONC files transformed: {result['init_conc']}")
     print(f"FORC_TS files transformed: {result['forc_ts']}")
     print(f"box-state forcing-assignment files transformed (discovered): {result['boxstate']}")
-    print("PELAGIC_MODEL_OPTIONS.txt: five CYN_VARIABLE_N/CYN_N_* pairs inserted")
+    print("PELAGIC_MODEL_OPTIONS.txt: five CYN_VARIABLE_N/CYN_N_* pairs inserted "
+          "(after the option pairs the reader expects before them)")
     if args.degenerate_cyn:
         print(f"--degenerate-cyn: zeroed IC+boundary for phyto/zoo state vars "
               f"{DEGENERATE_ZERO_PHYTO_ZOO}, zeroed boundary for N pools "
