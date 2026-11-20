@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **Fortran compiler**: gfortran (default), ifort, or ifx
-- **Python 3.10+** with micromamba shiny environment at `/opt/micromamba/envs/shiny`
+- **Python 3.11+** with micromamba shiny environment at `/opt/micromamba/envs/shiny`
 - **Make** for build orchestration
 
 ## Quick Start

@@ -119,7 +119,7 @@ def input_files_server(input, output, session, state):
 
     # populate file list on start and when refresh button is clicked, category
     # changes, or the active setup changes
-    @reactive.Effect
+    @reactive.effect
     def _():
         # Depend on file_list_version and category filter to trigger refresh
         file_list_version.get()

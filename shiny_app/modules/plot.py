@@ -342,7 +342,7 @@ def plot_server(input, output, session, state):
         return _get_cached_data(max_rows=max_rows, file_path=file_path)
 
     # load available Y variables from output file header
-    @reactive.Effect
+    @reactive.effect
     @reactive.event(input.plot_output_file, input.output_format, input.output_dir_select)
     def _update_variable_choices():
         """Update variable choices when output file, format, or directory changes"""

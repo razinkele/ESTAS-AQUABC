@@ -180,7 +180,7 @@ def model_build_ui(compilers, build_types):
                     class_="d-flex justify-content-between align-items-center w-100"
                 )
             ),
-            ui.output_text_verbatim("build_log", placeholder=True),
+            ui.output_code("build_log", placeholder=True),
             style="height: 500px; overflow-y: auto;",
             fill=True
         ),
@@ -329,7 +329,7 @@ def model_build_server(input, output, session, state):
             ui.tags.small(f"Last built: {info['modified']}", class_="text-muted")
         )
 
-    @render.text
+    @render.code
     def build_log():
         """Render the build log - polls every 0.5s for updates"""
         reactive.invalidate_later(0.5)

@@ -183,7 +183,7 @@ def run_control_ui():
 
                 # Command preview
                 ui.tags.strong("Command Preview", class_="small mt-2"),
-                ui.output_text_verbatim("cmd_preview", placeholder=True),
+                ui.output_code("cmd_preview", placeholder=True),
                 ui.output_ui("constants_validation_status"),
 
                 ui.tags.hr(class_="my-2"),
@@ -214,7 +214,7 @@ def run_control_ui():
                         class_="d-flex justify-content-between align-items-center w-100"
                     )
                 ),
-                ui.output_text_verbatim("run_log_mini", placeholder=True),
+                ui.output_code("run_log_mini", placeholder=True),
 
                 fill=False
             ),
@@ -401,7 +401,7 @@ def run_control_server(input, output, session, state):
         with reactive.isolate():
             _load_output_config(announce=False)
 
-    @render.text
+    @render.code
     def cmd_preview():
         """Show preview of the command that will be executed"""
         cmd = build_estas_command()
@@ -537,7 +537,7 @@ def run_control_server(input, output, session, state):
         ui.notification_show("Run log copied to clipboard!", type="message", duration=2)
 
     # Mini run log for Model Control panel
-    @render.text
+    @render.code
     def run_log_mini():
         """Abbreviated run log for sidebar"""
         # Poll every 500ms to catch updates from background threads
