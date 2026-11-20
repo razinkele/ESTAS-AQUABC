@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §73**: with every cyanobacterial light gate shut, today's adopted configuration
+  still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
+  The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
+  configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- `docs/report_scripts/make_figures_succession.py` reads the observed side back from the committed
+  `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
+  of the adopted configuration as it now stands.
+
 ## [0.13.0] - 2026-11-20
 
 > 🎉 **Released — [AQUABC v0.13.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.13.0)**

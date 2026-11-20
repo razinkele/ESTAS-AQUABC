@@ -6319,3 +6319,62 @@ on a misplaced, skipped or misnamed option; a file may still end early.)*
 marginal contributions, not adoption tests, and a small one does not show that the mechanism was unnecessary when
 adopted. Nothing is adopted or changed by this section.
 
+
+---
+
+## 73. 2026-11-20: with every light gate shut, today's configuration still reaches 89 % of the August chlorophyll
+
+**Why.** §72 found that replacing the positional ratchet with the legacy daily gate costs 7 % of August chlorophyll.
+That left one question: how much does the legacy gate itself carry? §18–§20 concluded, in the configuration of
+August 2026, that depth-averaged light could not produce the summer bloom at any growth rate (14.9 µg/L against an
+observed 50.8) and that a surface-positioning state was required (34.6 with the ratchet).
+
+**A correction first.** The "no gate" rung of §19 (14.9) was the legacy daily gate, not a closed gate: the option
+`CYANO_BOUYANT_STATE_SIMULATION` is read and never used (§16), `CYANO_POS_MODEL` did not exist yet, and its default
+0 is byte-identical to that code. The legacy-gate run of §72 (45.8) is therefore the same rung on today's
+configuration: 14.9 → 45.8.
+
+**Design** (running note items 169–170; `diag_nogate_20261120/`). Two runs on the adopted inputs:
+
+- `ngbase`: unchanged, on the live binary;
+- `ng`: `CYANO_POS_MODEL` 0, on a diagnostic binary in which the three light gates (non-fixing cyanobacteria,
+  fixers, staged Nostocales) always integrate light over the full box depth. The patch is six lines, kept in the
+  folder; it is not in the repository.
+
+**Result** (2012–2022; August chlorophyll observed 50.8 µg/L).
+
+| | ratchet (adopted) | legacy gate (§72) | gates shut |
+|---|---|---|---|
+| August chlorophyll | 49.0 | 45.8 | 45.1 |
+| chlorophyll RMSE (bias) | 24.01 (−3.7) | 23.86 (−4.9) | 23.84 (−5.2) |
+| seasonal r | +0.78 | +0.78 | +0.78 |
+| autumn:spring (observed 2.06) | 2.53 | 2.35 | 2.32 |
+| PO4 RMSE | 0.0157 | 0.0161 | 0.0166 |
+| TN RMSE | 0.819 | 0.792 | 0.788 |
+| TP RMSE | 0.0423 | 0.0365 | 0.0363 |
+| August non-fixing cyanobacteria (observed 2.30) | 0.39 | 0.84 | 0.83 |
+| August fixers (observed 1.61) | 3.31 | 2.58 | 2.55 |
+
+The chlorophyll peak month is September in all three.
+
+**Reading.** In today's configuration the legacy gate carries 0.7 µg/L of August chlorophyll and all positioning
+together 3.9 µg/L (8 %). With no positioning at all the model reaches 89 % of the observed August value. The
+conclusion of §18–§20 that the bloom cannot be produced without a surface-positioning state does not hold for
+today's configuration. What changed between the two dates is the growth-engine search of §21 on, the staged fixer
+(§31) and the later constants; this section does not separate them. The run without the staged fixer in §72 (36.2
+with the ratchet) shows the staged fixer is a large part of it.
+
+**What this does not show.** It does not show the bloom is right for the right reason. The diatom and fixer growth
+constants sit at about 2.2 times their transparent-water values (§21), the August composition is wrong in all three
+columns (non-fixers a sixth to a third of the observed, fixers 1.6 to 2 times), and the peak is a month late. Nor
+does it bear on the lagoon itself, where surface scums are observed.
+
+**Predictions.** All held: `ngbase` reproduces the base of §72 (chlorophyll RMSE 24.0147); gates shut, August
+chlorophyll at least 41.2 (45.1); seasonal r within 0.05 and peak in September; chlorophyll RMSE within 5 % of the
+legacy-gate run; August fixer carbon below the legacy-gate run (2.552 against 2.582).
+
+**Limits.** One pair of runs; every constant was chosen with positioning on. Nothing is adopted or changed.
+
+**Figure.** The observed-succession figure (`make_figures_succession.py`) is redrawn against `ngbase`. The species
+export it was built from is not on the working machine, so the script now reads the observed side back from the
+committed `cl29_succession_observed.csv` when the export is missing; the observed rows are unchanged.
