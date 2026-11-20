@@ -6411,6 +6411,11 @@ With the gates shut, staging reversed: chlorophyll RMSE 25.39 (bias −9.1), sea
 peak September; August non-fixing cyanobacteria 0.41 and fixers 2.07 mg C/L (observed 2.30 and 1.61). The repeat
 `ng2` reproduces §73 exactly.
 
+*(Correction, 2026-11-20, §73.2: the 21.6 of §15 is not a floor for this comparison. It came from that search's
+constants, and on the same base the constants fitted at the adoption (§21–§23) reach 35.0 with every gate shut, so the
+23.5 µg/L "gap" and the 0.42 share below are withdrawn. The staged fixer's 9.9 µg/L, measured on today's inputs, stands.
+§73.2 gives the decomposition that replaces this reading.)*
+
 **Reading.** The staged fixer carries 9.9 of the 23.5 µg/L between the §15 search and today's gates-shut run, a share
 of 0.42: by the registered rule, most of the gap lies in the other changes since §15 (the refitted nutrient cycle,
 the other growth constants and traits, real wind, the boundary, silica, settling and ice corrections, allelopathy
@@ -6422,4 +6427,58 @@ more than 21.6, a contribution within 4 µg/L of the 12.8 measured with the ratc
 
 **Limits.** Each run switches settings inside constants chosen or adopted with the staged fixer and positioning on.
 Nothing is adopted or changed.
+
+### 73.2 2026-11-20: the fitted constants and everything else carry about half each
+
+**Why.** §73.1 compared today's gates-shut run with the 21.6 µg/L of §15's step two. That run cannot be repeated
+(its inputs and its constants were not kept), and it had the legacy gate under placeholder wind. This section replaces
+the comparison with one made entirely on today's binary, from a configuration that reproduces a recorded run.
+
+**The anchor reproduces §15's impose-only probe.** The adopted inputs with every input change since §15 reversed (by
+`git show` of the data repository) and the seven non-C:Chl constants of the adoption commit reverted (KG_DIA 3.7,
+KG_FIX_CYN 3.5, KG_OPA 2.9, KHS_DIP_DIA 0.0045, KDISS_PON 0.30, K_NITR 1.88, K_MIN_DOC_NO3N 2.99) differ from the
+pre-search constants file only in the measured C:Chl and K_B_E, which the probe imposed. On the live binary, with the
+legacy gate and the placeholder wind, this configuration gives February 12.1, March 24.7 and August 16.3 µg/L against
+the probe's 12.1, 24.6 and 16.2. Today's code and validator therefore reproduce the August-2026 probe.
+
+**Design** (running note items 181–186; `diag_blocks_20261120/`). Gates-shut binary of §73 throughout. Seven input
+blocks reversed one at a time on today's gates-shut run (wind, sea boundary, river silica, settling series,
+non-fixer traits, ice, allelopathy), all seven with the staging reversal, the same with the fitted constants reverted
+(the anchor), and today's inputs with only the fitted constants reverted. A first river block was void: it restored a
+summer phosphate boost that had been removed locally on 2026-08-06, before §15, although the data repository
+published the change only in November.
+
+**Result** (August chlorophyll, µg/L; observed 50.8; every light gate shut).
+
+| | fitted constants reverted | fitted constants as adopted |
+|---|---|---|
+| inputs and staging of §15 | 15.8 (anchor) | 35.0 |
+| today's inputs and staged fixer | 33.3 | 45.1 |
+
+Single blocks on today's run: wind 45.7, sea boundary 45.6, river silica 45.1, settling series 48.1, non-fixer
+traits 48.0, ice 45.0, allelopathy on 43.2; staging reversed 35.2 (§73.1).
+
+**Reading.** Of the 29.3 µg/L between the anchor and today, the fitted constants add 19.2 if added first and 11.8 if
+added last; the staged fixer and the later inputs add 10.1 or 17.5. Averaged over both orders, the fitted constants
+carry 15.5 and everything else 13.8: about half each, with an interaction of 7.4. Most later input changes, reversed
+singly, raise August; only the staged fixer and allelopathy lower it.
+
+Composition separates the two halves. Without the fitted constants, today's inputs give August non-fixing
+cyanobacteria 2.14 mg C/L against an observed 2.30 and fixers 0.25 against 1.61; with them, 0.83 and 2.55. The fitted
+set raises August chlorophyll while moving carbon from the non-fixing guild to the fixers.
+
+**Consequences.** §15's "doubling the growth engine recovers only ~4 µg/L" is true of that search's constants; the set
+fitted at the adoption, on the same base, reaches 35.0 with every gate shut. The premise that the bloom needed a
+positioning state (§19–§20) therefore held for the constants tried before the adoption, and was not tested against the
+constants adopted with the ratchet. Those constants came from a search whose trials were scored on other inputs (§60.4).
+
+**Predictions.** Batch 1: largest single drop under 6.8 and ice and wind under 1 held; the sea boundary lowering August
+was refuted; the all-blocks and interaction predictions were void (river) and, rescored on the corrected runs, refuted
+(35.0 against 18–30; interaction 51 % of the joint drop). Batch 2: all five held (anchor within 2 µg/L of all three
+targets; gates shut 15.8 against 16.3 with the legacy gate; corrected all-blocks 35.0 below 41.4; fitted constants
++19.2 along path A; river silica 0.0). Batch 3: the fourth corner at 33.3 refuted both its range (20–32) and the
+agreement of the two paths within 6 µg/L (7.4); its peak is in September as predicted.
+
+**Limits.** Gates shut throughout; the fitted constants are reverted as one set (growth and nutrient constants are not
+separated); the non-fixer growth constant sits in the traits block. Nothing is adopted or changed.
 

@@ -13,7 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
   configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
-- **`docs/CL29_phenology_diagnosis.md` §73.1**: with every light gate shut, reversing the staged fixer lowers August
+- **§73.2**: today's gates-shut August chlorophyll (45.1 µg/L) decomposed from an anchor that reproduces §15's
+  impose-only probe on today's code (16.3 against 16.2): averaged over both orders, the seven constants fitted at the
+  adoption carry about half (15.5 µg/L) and the staged fixer with the later inputs the other half (13.8). Without
+  the fitted constants the August non-fixer carbon is nearly right and the fixers far too low. §73.1's 0.42 share,
+  measured against §15's 21.6, is withdrawn (dated correction). Nothing adopted.
+- **`docs/CL29_phenology_diagnosis.md` §73.1**: *(Superseded by §73.2: the share is withdrawn.)* with every light gate shut, reversing the staged fixer lowers August
   chlorophyll from 45.1 to 35.2 µg/L, so it carries 42 % of the gap between the §15 search (21.6) and today; the rest
   lies in the other changes since, which are not separated. Positioning adds 1.0 µg/L without the staged fixer.
   Nothing adopted.
