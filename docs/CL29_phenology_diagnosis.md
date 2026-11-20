@@ -6466,7 +6466,8 @@ by 1.9, and river silica and ice change it by 0.1 or less.
 
 Composition separates the two halves. Without the fitted constants, today's inputs give August non-fixing
 cyanobacteria 2.14 mg C/L against an observed 2.30 and fixers 0.25 against 1.61; with them, 0.83 and 2.55. The fitted
-set adds about 1 mg C/L of cyanobacterial carbon (2.39 → 3.38), which carries nearly the whole chlorophyll gain, and
+set adds about 1 mg C/L of cyanobacterial carbon (2.39 → 3.38), which accounts for the whole chlorophyll gain (12.7 µg/L
+at C:Chl 78 against 11.8), and
 moves carbon from the non-fixing guild to the fixers on top of it. The run without it also reverts the fixer's own
 growth constant (the staged guild's 7.6 → 3.5), so part of its fixer deficit is by construction. *(Wording corrected
 2026-11-20 after a fact-check.)*
@@ -6483,7 +6484,8 @@ targets; gates shut 15.8 against 16.3 with the legacy gate; corrected all-blocks
 +19.2 along path A; river silica 0.0). Batch 3: the fourth corner at 33.3 refuted both its range (20–32) and the
 agreement of the two paths within 6 µg/L (7.4); its peak is in September as predicted.
 
-**Limits.** Gates shut throughout; seven of the eight fitted constants are reverted as one set (growth and nutrient constants are not
+**Limits.** Gates shut throughout; seven of the eight fitted constants are reverted as one set (split into growth
+and nutrient constants on today's configuration in §73.3) (growth and nutrient constants are not
 separated); the non-fixer growth constant sits in the traits block. Nothing is adopted or changed.
 
 ### 73.3 2026-11-20: in today's configuration the fitted set acts through its growth constants
