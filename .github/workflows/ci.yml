@@ -69,6 +69,10 @@ jobs:
           python -m pytest tests/python/test_app_playwright.py \
                            tests/python/test_tutorial_playwright.py -v --tb=short
 
+      # Needs the binary built above; skipped in the lint/unit job, which has none.
+      - name: Run the options-reader tests against the built binary
+        run: python -m pytest tests/python/test_options_reader.py -v --tb=short
+
   build-and-run:
     runs-on: ${{ matrix.os }}
     # Compiler/platform matrix. Currently gfortran-on-Ubuntu only; the structure

@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Output-box selector on the Mass Balance and Observations tabs.** They used the run's first output box only;
   each now lists the run's `PELAGIC_BOX` files (refreshed when the setup changes) and computes from the chosen one.
 
+### Fixed
+- **The options reader refuses an option in the wrong place.** The optional block of `PELAGIC_MODEL_OPTIONS.txt`
+  (everything from `TEMPERATURE_MODEL` on) is read by position. A file with an option misplaced, skipped or
+  misnamed was read without complaint: the value went to a different option and the next failed read ended the
+  block silently. A quota test of 2026-11-20 ran that way, with the quota off and day-length weighting on. The
+  reader now checks the name on each comment line (`# NAME` or `#NAME`) before reading its value and stops with a
+  message naming the expected option; a missing or wrongly typed value also stops the run. A file may still end
+  early, at end of file or at the `CYN_ALLELOPATHY_FILE_NAME` line, and keep the defaults for the rest. No result
+  changes for a valid file; all 43 option files in the working tree pass.
+
 ### Changed
 - **The app targets Shiny 1.9 and shiny_deckgl 1.16.** `shiny_app/requirements.txt` now needs `shiny>=1.9.0` and
   installs `shiny_deckgl` 1.16.0 from the commit behind its `v1.16.0` tag (PyPI carries 1.12 only). It needs

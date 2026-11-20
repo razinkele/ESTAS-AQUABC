@@ -1124,6 +1124,7 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     real(kind = DBL) :: K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN
     real(kind = DBL) :: T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN
     real(kind = DBL) :: CYN_N_QMIN_IN, CYN_N_QMAX_IN, CYN_N_VMAX_IN, CYN_N_KHS_UPT_IN
+    integer :: IOS
 
     read(IN_FILE + 1, *)
     read(IN_FILE + 1, *) ZOOPLANKTON_OPTION
@@ -1185,10 +1186,21 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
         write(*,*) 'Allelopathy will not be considered.'
     end if
 
-    ! Temperature-response model (0 = plateau, 1 = CTMI). Read gracefully so option
-    ! files without this line default to plateau. This sets the AQUABC-side flag that
-    ! GROWTH_AT_TEMP reads. The trailing CYN_ALLELOPATHY_FILE_NAME lines (if present)
-    ! are consumed harmlessly here; the file is closed right after this routine.
+    ! THE OPTIONAL BLOCK. Everything from TEMPERATURE_MODEL on is optional and
+    ! POSITIONAL: a file may stop after any option (the rest keep the defaults set
+    ! just below), but the options it carries must come in the order of the reads
+    ! below. Each option is a comment line naming it ("# NAME ..." or "#NAME ...")
+    ! followed by a value line. NEXT_OPTION checks the name before the value is
+    ! read: the block ends cleanly at end of file or at the trailing
+    ! CYN_ALLELOPATHY_FILE_NAME line, and any other name stops the run. Before
+    ! this check a file with an option in the wrong place was read without
+    ! complaint -- its value went to a different option and the next failed read
+    ! ended the block silently (a quota run that ran with the quota off and
+    ! day-length weighting on, 2026-11-20).
+    !
+    ! Temperature-response model (0 = plateau, 1 = CTMI). Option files without
+    ! this line default to plateau. This sets the AQUABC-side flag that
+    ! GROWTH_AT_TEMP reads. The file is closed right after this routine.
     K_POS_UP_IN = 3.0D0; K_POS_DISP_IN = 10.0D0; W_DISP_POS_IN = 4.0D0
     T_GERM_STG_IN = 12.0D0; I_FORM_IN = 120.0D0; KR_GERM_BED_IN = 0.05D0
     K_MORT_BED_IN = 1.0D-3; V_SETTLE_IN = 0.5D0
@@ -1204,51 +1216,62 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     CYANO_POS_GUILDS = 0        ! explicit: 0 = ratchet on all guilds, byte-identical
     PHYTO_CLOSURE_MODEL = 0     ! explicit: 0 = linear phyto death, byte-identical
     PHYTO_CLOSURE_REF = 1.0D0   ! mg C/L; at this biomass the specific rate equals KD
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) TEMP_MODEL_OPT
+    if (.not. NEXT_OPTION('TEMPERATURE_MODEL')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) TEMP_MODEL_OPT
+    call CHECK_OPTION_VALUE('TEMPERATURE_MODEL')
     USE_CTMI_TEMP = (TEMP_MODEL_OPT == 1)
 
     ! FePO4 solubility product log10(Ksp), read gracefully so option files without
     ! this line keep the default (-26.4). Must sit immediately after TEMPERATURE_MODEL
     ! in the file and before the trailing CYN_ALLELOPATHY_FILE_NAME lines.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) FEPO4_KSP_LOG10
+    if (.not. NEXT_OPTION('FEPO4_KSP_LOG10')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) FEPO4_KSP_LOG10
+    call CHECK_OPTION_VALUE('FEPO4_KSP_LOG10')
 
     ! Zooplankton food-limitation model (0 = legacy summed Monods, 1 = saturating
     ! total-food response) and its total-food half saturation (mg C/L). Read
     ! gracefully like the two options above; option files without these lines keep
     ! the defaults set in mod_GLOBAL (0 and 0.5 -> legacy, byte-identical).
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) ZOO_FOOD_MODEL
+    if (.not. NEXT_OPTION('ZOO_FOOD_MODEL')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) ZOO_FOOD_MODEL
+    call CHECK_OPTION_VALUE('ZOO_FOOD_MODEL')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) KHS_FOOD_TOT_ZOO
+    if (.not. NEXT_OPTION('KHS_FOOD_TOT_ZOO')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) KHS_FOOD_TOT_ZOO
+    call CHECK_OPTION_VALUE('KHS_FOOD_TOT_ZOO')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) ZOO_CLOSURE_REF
+    if (.not. NEXT_OPTION('ZOO_CLOSURE_REF')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) ZOO_CLOSURE_REF
+    call CHECK_OPTION_VALUE('ZOO_CLOSURE_REF')
 
     ! Sub-daily positioning gate (0 = legacy; 1 = calm-fraction surface blend)
     ! and the surface-layer depth it uses. Graceful like everything above.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYANO_POS_MODEL
+    if (.not. NEXT_OPTION('CYANO_POS_MODEL')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYANO_POS_MODEL
+    call CHECK_OPTION_VALUE('CYANO_POS_MODEL')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) H_SURF_POS
+    if (.not. NEXT_OPTION('H_SURF_POS')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) H_SURF_POS
+    call CHECK_OPTION_VALUE('H_SURF_POS')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) W_CRIT_POS_MIN
+    if (.not. NEXT_OPTION('W_CRIT_POS_MIN')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) W_CRIT_POS_MIN
+    call CHECK_OPTION_VALUE('W_CRIT_POS_MIN')
 
     ! Positional-ratchet constants (CYANO_POS_MODEL = 2): surfacing rate (1/d),
     ! storm-dispersal rate (1/d), dispersal wind threshold (m/s). Graceful;
     ! defaults live in AQUABC_POSITIONING_STATE.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) K_POS_UP_IN
+    if (.not. NEXT_OPTION('K_POS_UP')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) K_POS_UP_IN
+    call CHECK_OPTION_VALUE('K_POS_UP')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) K_POS_DISP_IN
+    if (.not. NEXT_OPTION('K_POS_DISP')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) K_POS_DISP_IN
+    call CHECK_OPTION_VALUE('K_POS_DISP')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) W_DISP_POS_IN
+    if (.not. NEXT_OPTION('W_DISP_POS')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) W_DISP_POS_IN
+    call CHECK_OPTION_VALUE('W_DISP_POS')
 
     ! NOST akinete life-cycle staging (0 = legacy akinete gates, default; 1 = bed
     ! akinete bank with a radiation-driven formation/germination latch) and its
@@ -1256,23 +1279,29 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! irradiance threshold (W/m2), bed germination rate (1/d), bed mortality
     ! (burial) rate (1/d), and akinete settling velocity (m/d). Graceful like
     ! everything above; defaults live in mod_GLOBAL and this routine's locals.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) NOST_STAGE_MODEL
+    if (.not. NEXT_OPTION('NOST_STAGE_MODEL')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) NOST_STAGE_MODEL
+    call CHECK_OPTION_VALUE('NOST_STAGE_MODEL')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) T_GERM_STG_IN
+    if (.not. NEXT_OPTION('T_GERM_AKI_STAGE')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) T_GERM_STG_IN
+    call CHECK_OPTION_VALUE('T_GERM_AKI_STAGE')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) I_FORM_IN
+    if (.not. NEXT_OPTION('I_FORM_AKI')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) I_FORM_IN
+    call CHECK_OPTION_VALUE('I_FORM_AKI')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) KR_GERM_BED_IN
+    if (.not. NEXT_OPTION('KR_GERM_BED')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) KR_GERM_BED_IN
+    call CHECK_OPTION_VALUE('KR_GERM_BED')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) K_MORT_BED_IN
+    if (.not. NEXT_OPTION('K_MORT_BED_AKI')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) K_MORT_BED_IN
+    call CHECK_OPTION_VALUE('K_MORT_BED_AKI')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) V_SETTLE_IN
+    if (.not. NEXT_OPTION('V_SETTLE_AKI')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) V_SETTLE_IN
+    call CHECK_OPTION_VALUE('V_SETTLE_AKI')
 
     ! Day-length weighting of the light limitation (0 = legacy 24 h, default;
     ! 1 = Form A, photoperiod weight only -- discards (1-FDAY) of the daily dose,
@@ -1282,64 +1311,76 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     ! mod_AQUABC_II_GLOBAL and is re-asserted explicitly above.
     !
     ! Placement matters: this must sit immediately after V_SETTLE_AKI and before
-    ! the CYN Droop block. No shipped options file carries the CYN lines, so the
-    ! reader always exits at 900 on CYN_VARIABLE_N -- a read placed after that
-    ! block would be unreachable for every existing setup.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) LIGHT_DAYLENGTH_OPTION
+    ! the CYN Droop block. No shipped options file carries the CYN lines, so an
+    ! option read after that block could only be set by a file that also carries
+    ! the whole CYN block.
+    if (.not. NEXT_OPTION('LIGHT_DAYLENGTH_OPTION')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) LIGHT_DAYLENGTH_OPTION
+    call CHECK_OPTION_VALUE('LIGHT_DAYLENGTH_OPTION')
 
     ! Nostocales fixation switch (0 = legacy fixed FRAC_NOST_GROWTH, default;
     ! 1 = DIN-gated inverse Monod, mirroring the switch FIX_CYN already uses) and
     ! its half-saturation in mg N/L. Graceful like everything above; defaults live
     ! in mod_AQUABC_II_GLOBAL and are re-asserted explicitly above. Placement is
     ! load-bearing for the same reason as the line above -- see that comment.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) NOST_FIX_SWITCH
+    if (.not. NEXT_OPTION('NOST_FIX_SWITCH')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) NOST_FIX_SWITCH
+    call CHECK_OPTION_VALUE('NOST_FIX_SWITCH')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) K_FIX_NOST
+    if (.not. NEXT_OPTION('K_FIX_NOST')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) K_FIX_NOST
+    call CHECK_OPTION_VALUE('K_FIX_NOST')
 
     ! Relative productivity of the Nostocales fixing channel (1.0 = no cost,
     ! default and byte-identical; < 1 = an energetic cost on N2 fixation).
     ! Graceful; default lives in mod_AQUABC_II_GLOBAL.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) R_FIX_NOST
+    if (.not. NEXT_OPTION('R_FIX_NOST')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) R_FIX_NOST
+    call CHECK_OPTION_VALUE('R_FIX_NOST')
 
     ! Which guilds the positional ratchet applies to (0 = all, default and
     ! byte-identical; 1 = NOST only; 2 = CYN only; 3 = the fixers only).
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYANO_POS_GUILDS
+    if (.not. NEXT_OPTION('CYANO_POS_GUILDS')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYANO_POS_GUILDS
+    call CHECK_OPTION_VALUE('CYANO_POS_GUILDS')
 
     ! Density-dependent (quadratic) closure on the cyanobacterial guilds' death
     ! rate (0 = linear, default and byte-identical; 1 = quadratic) and its
     ! reference biomass in mg C/L. Graceful; defaults in mod_AQUABC_II_GLOBAL.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) PHYTO_CLOSURE_MODEL
+    if (.not. NEXT_OPTION('PHYTO_CLOSURE_MODEL')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) PHYTO_CLOSURE_MODEL
+    call CHECK_OPTION_VALUE('PHYTO_CLOSURE_MODEL')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) PHYTO_CLOSURE_REF
+    if (.not. NEXT_OPTION('PHYTO_CLOSURE_REF')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) PHYTO_CLOSURE_REF
+    call CHECK_OPTION_VALUE('PHYTO_CLOSURE_REF')
 
     ! CYN nitrogen-quota (Droop) mechanism (0 = legacy Monod CYN N-limitation,
     ! default; 1 = variable-stoichiometry quota N storage/uptake -- VARN build
     ! only, nstate = 33) and its four parameters: quota floor and ceiling (gN/gC),
     ! max N-uptake rate (gN/gC/d), and uptake half-saturation (mg N/L). Graceful
     ! like everything above; defaults live in mod_GLOBAL and this routine's locals.
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYN_VARIABLE_N
+    if (.not. NEXT_OPTION('CYN_VARIABLE_N')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYN_VARIABLE_N
+    call CHECK_OPTION_VALUE('CYN_VARIABLE_N')
 
     if (CYN_VARIABLE_N > 0 .and. nstate /= 33) error stop 'CYN_VARIABLE_N=1 requires the VARN build (nstate=33)'
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMIN_IN
+    if (.not. NEXT_OPTION('CYN_N_QMIN')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYN_N_QMIN_IN
+    call CHECK_OPTION_VALUE('CYN_N_QMIN')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_QMAX_IN
+    if (.not. NEXT_OPTION('CYN_N_QMAX')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYN_N_QMAX_IN
+    call CHECK_OPTION_VALUE('CYN_N_QMAX')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_VMAX_IN
+    if (.not. NEXT_OPTION('CYN_N_VMAX')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYN_N_VMAX_IN
+    call CHECK_OPTION_VALUE('CYN_N_VMAX')
 
-    read(IN_FILE + 1, *, end = 900, err = 900)
-    read(IN_FILE + 1, *, end = 900, err = 900) CYN_N_KHS_UPT_IN
+    if (.not. NEXT_OPTION('CYN_N_KHS_UPT')) goto 900
+    read(IN_FILE + 1, *, iostat = IOS) CYN_N_KHS_UPT_IN
+    call CHECK_OPTION_VALUE('CYN_N_KHS_UPT')
 900 continue
     call SET_POSITIONING_PARAMS(K_POS_UP_IN, K_POS_DISP_IN, W_DISP_POS_IN)
     call SET_NOST_STAGING_PARAMS(T_GERM_STG_IN, I_FORM_IN, KR_GERM_BED_IN, K_MORT_BED_IN, V_SETTLE_IN)
@@ -1394,6 +1435,62 @@ subroutine READ_PELAGIC_MODEL_OPTIONS(IN_FILE)
     else
         write(*,*) 'Temperature model: plateau (piecewise, default).'
     end if
+
+contains
+
+    ! Read the next comment line of the optional block and check that it names
+    ! the option the caller is about to read. Returns .false. where the block
+    ! legitimately ends (end of file, or the CYN_ALLELOPATHY_FILE_NAME line);
+    ! stops the run if the line names anything else.
+    logical function NEXT_OPTION(EXPECTED)
+        character(len = *), intent(in) :: EXPECTED
+        character(len = 512) :: LINE
+        character(len = 64)  :: FOUND
+        integer :: IOS_LINE, I, J
+
+        NEXT_OPTION = .false.
+        read(IN_FILE + 1, '(A)', iostat = IOS_LINE) LINE
+        if (IOS_LINE < 0) return      ! end of file: the remaining options keep their defaults
+        if (IOS_LINE > 0) then
+            write(*,*) 'PELAGIC_MODEL_OPTIONS: cannot read the line where option ', EXPECTED, ' is expected.'
+            error stop 'PELAGIC_MODEL_OPTIONS: unreadable line in the optional block'
+        end if
+
+        ! The name is the first word after the leading '#'.
+        LINE = adjustl(LINE)
+        FOUND = ' '
+        if (LINE(1:1) == '#') then
+            LINE = adjustl(LINE(2:))
+            I = scan(LINE, ' (' // achar(9))
+            if (I == 0) I = len_trim(LINE) + 1
+            J = min(I - 1, len(FOUND))
+            if (J >= 1) FOUND = LINE(1:J)
+        end if
+
+        if (trim(FOUND) == EXPECTED) then
+            NEXT_OPTION = .true.
+        else if (trim(FOUND) == 'CYN_ALLELOPATHY_FILE_NAME') then
+            return                    ! the optional block ends here
+        else
+            write(*,*) 'PELAGIC_MODEL_OPTIONS: expected the option ', EXPECTED, ' here, but found the line:'
+            write(*,*) '   ', trim(LINE)
+            write(*,*) 'The optional block is read by position. Every option the file carries must be'
+            write(*,*) 'present in the order of READ_PELAGIC_MODEL_OPTIONS, each as a "# NAME" line'
+            write(*,*) 'followed by its value; the file may stop early but may not skip or reorder.'
+            error stop 'PELAGIC_MODEL_OPTIONS: option out of place or misnamed'
+        end if
+    end function NEXT_OPTION
+
+    ! After a value read: stop if the value line was missing or not of the
+    ! option's type (IOS is the host's iostat of that read).
+    subroutine CHECK_OPTION_VALUE(NAME)
+        character(len = *), intent(in) :: NAME
+
+        if (IOS /= 0) then
+            write(*,*) 'PELAGIC_MODEL_OPTIONS: the value of option ', NAME, ' is missing or not of its type.'
+            error stop 'PELAGIC_MODEL_OPTIONS: bad or missing option value'
+        end if
+    end subroutine CHECK_OPTION_VALUE
 
 end subroutine READ_PELAGIC_MODEL_OPTIONS
 
