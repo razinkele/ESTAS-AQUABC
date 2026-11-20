@@ -490,6 +490,17 @@ def test_options_existing_leading_pairs_are_kept_not_duplicated(fixture_src, tmp
     assert lines[lines.index("# NOST_FIX_SWITCH (0=legacy)") + 1].strip() == "1"
 
 
+def test_options_compact_comment_form_counts_as_present(fixture_src, tmp_path):
+    _with_options(fixture_src, ["#LIGHT_DAYLENGTH_OPTION", "            2"])
+    dst = tmp_path / "out"
+    mvi.generate(fixture_src, dst)
+    lines = _lines(dst / "PELAGIC_MODEL_OPTIONS.txt")
+    assert sum("LIGHT_DAYLENGTH_OPTION" in l for l in lines) == 1
+    i = lines.index("#LIGHT_DAYLENGTH_OPTION")
+    # six pairs follow it, then the quota switch: 2 + 12 lines on
+    assert lines[i + 14].startswith("# CYN_VARIABLE_N")
+
+
 def test_options_out_of_order_pairs_raise(fixture_src, tmp_path):
     _with_options(fixture_src, ["# NOST_FIX_SWITCH (0=legacy)", "            1"])
     with pytest.raises(ValueError, match="leading run"):

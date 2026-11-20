@@ -459,9 +459,14 @@ OPTIONS_BEFORE_QUOTA = [
 
 
 def _option_name(line):
-    """The option name of a `# NAME ...` comment line, else None."""
-    f = line.strip().split()
-    return f[1] if len(f) >= 2 and f[0] == "#" else None
+    """The option name of a `# NAME ...` or `#NAME ...` comment line, else None.
+    The reader skips comment records without looking at them, so both forms are
+    valid in a setup and both must count as the option being present."""
+    t = line.strip()
+    if not t.startswith("#"):
+        return None
+    f = t.lstrip("#").split()
+    return f[0] if f else None
 
 
 def transform_options(lines):
