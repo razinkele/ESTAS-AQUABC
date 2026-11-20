@@ -6516,3 +6516,31 @@ nutrient block by at most 4; interaction within 3.
 
 **Limits.** Gates shut; one configuration. Nothing is adopted or changed.
 
+### 73.4 2026-11-20: the fitted fixer growth constant carries it
+
+**Why.** §73.3 found that the fitted set acts, in today's configuration, through its three growth constants. This
+reverts them one at a time.
+
+**Design** (running note items 197–198; `diag_growthsplit_20261120/`). The §73 gates-shut binary, rebuilt
+byte-identical; each run reverts one constant on today's gates-shut configuration (45.1 µg/L in August): diatom
+8.10 → 3.7, other algae 2.58 → 2.9, and the fixer engine, which has sat on the staged guild since §31, 7.6 → 3.5.
+
+**Result** (August chlorophyll, µg/L; observed 50.8; every light gate shut).
+
+| constant reverted | August | non-fixers / fixers (mg C/L; observed 2.30 / 1.61) |
+|---|---|---|
+| none (today) | 45.1 | 0.83 / 2.55 |
+| fixer engine | 32.6 | 1.98 / 0.38 |
+| diatom | 46.4 | 0.88 / 2.61 |
+| other algae | 45.1 | 0.83 / 2.55 |
+| all three (§73.3) | 33.4 | 2.03 / 0.40 |
+
+**Reading.** The fixer growth constant fitted at the adoption (3.5 → 7.6, about 2.2 times) carries the whole
+contribution of the fitted set to today's August chlorophyll beneath the light cap (12.5 µg/L; interaction 0.5), and
+the shift from non-fixers to fixers with it. The fitted diatom constant lowers August slightly (1.3) and the
+other-algae constant does nothing. Today's configuration only.
+
+**Predictions.** All four held: the fixer engine largest, by at least 7; other algae within 1; interaction within 3.
+
+**Limits.** Gates shut; one configuration. Nothing is adopted or changed.
+

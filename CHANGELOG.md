@@ -13,6 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
   configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- **§73.4**: of the three fitted growth constants, the fixer engine (3.5 → 7.6, on the staged guild since §31) carries
+  the whole contribution (12.5 µg/L of August chlorophyll with the light gates shut, and the non-fixer → fixer shift);
+  the fitted diatom constant lowers August by 1.3 and the other-algae constant does nothing. Nothing adopted.
 - **§73.3**: in today's configuration the constants fitted at the adoption act through their three growth constants
   (11.7 of 11.8 µg/L of August chlorophyll, with the composition shift from non-fixers to fixers); the four nutrient
   constants change August by 0.1. Nothing adopted.
