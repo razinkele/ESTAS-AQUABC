@@ -6312,7 +6312,8 @@ position, the reader has gained seven option pairs before the quota switch since
 `tools/make_varn_inputs.py` still wrote the quota block in the old place. The switch's `1` was read as
 `LIGHT_DAYLENGTH_OPTION`, the next read failed without a message, and the run went ahead with the quota off. The
 only sign was the option echo in the log. The generator is corrected separately; the reader still accepts a short
-or misordered file.
+or misordered file. *(Correction, 2026-11-20: the reader now checks the name on each option's comment line and stops
+on a misplaced, skipped or misnamed option; a file may still end early.)*
 
 **Limits.** Each run switches one mechanism in a set of constants fitted with it in place. The differences are
 marginal contributions, not adoption tests, and a small one does not show that the mechanism was unnecessary when

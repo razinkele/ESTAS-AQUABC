@@ -1449,19 +1449,28 @@ contains
         integer :: IOS_LINE, I, J
 
         NEXT_OPTION = .false.
-        read(IN_FILE + 1, '(A)', iostat = IOS_LINE) LINE
-        if (IOS_LINE < 0) return      ! end of file: the remaining options keep their defaults
-        if (IOS_LINE > 0) then
-            write(*,*) 'PELAGIC_MODEL_OPTIONS: cannot read the line where option ', EXPECTED, ' is expected.'
-            error stop 'PELAGIC_MODEL_OPTIONS: unreadable line in the optional block'
-        end if
+        do
+            read(IN_FILE + 1, '(A)', iostat = IOS_LINE) LINE
+            if (IOS_LINE < 0) return  ! end of file: the remaining options keep their defaults
+            if (IOS_LINE > 0) then
+                write(*,*) 'PELAGIC_MODEL_OPTIONS: cannot read the line where option ', EXPECTED, ' is expected.'
+                error stop 'PELAGIC_MODEL_OPTIONS: unreadable line in the optional block'
+            end if
+            ! Tabs and the carriage return of a Windows line ending count as blanks.
+            do I = 1, len(LINE)
+                if (LINE(I:I) == achar(9) .or. LINE(I:I) == achar(13)) LINE(I:I) = ' '
+            end do
+            ! Blank lines carry nothing (a file often ends with one): skip them,
+            ! as the list-directed reads this replaces did.
+            if (len_trim(LINE) > 0) exit
+        end do
 
         ! The name is the first word after the leading '#'.
         LINE = adjustl(LINE)
         FOUND = ' '
         if (LINE(1:1) == '#') then
             LINE = adjustl(LINE(2:))
-            I = scan(LINE, ' (' // achar(9))
+            I = scan(LINE, ' (')
             if (I == 0) I = len_trim(LINE) + 1
             J = min(I - 1, len(FOUND))
             if (J >= 1) FOUND = LINE(1:J)

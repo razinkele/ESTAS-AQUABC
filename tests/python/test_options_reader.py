@@ -80,8 +80,9 @@ def setup(tmp_path):
     k = next(n for n, line in enumerate(shipped) if line.startswith("# TEMPERATURE_MODEL"))
     head = shipped[:k]
 
-    def run(lines):
-        opt.write_text("\n".join(head + lines) + "\n")
+    def run(lines, newline="\n", trailing=""):
+        # the mandatory head keeps its own line endings; the optional block gets `newline`
+        opt.write_bytes(("\n".join(head) + "\n" + newline.join(lines) + newline + trailing).encode())
         return subprocess.run([str(BINARY), "INPUT.txt"], cwd=tmp_path, capture_output=True, text=True,
                               timeout=600, env=dict(os.environ))
 
@@ -101,6 +102,24 @@ def test_short_file_ending_at_the_allelopathy_line_runs(setup):
 def test_file_ending_without_the_allelopathy_line_runs(setup):
     r = setup(_pairs(OPTIONAL[:1]))
     assert r.returncode == 0, _text(r)[-2000:]
+
+
+def test_trailing_blank_lines_after_an_early_end_run(setup):
+    # the old reader ended the block cleanly here; a blank line names no option
+    r = setup(_pairs(OPTIONAL[:3]), trailing="\n   \n\n")
+    assert r.returncode == 0, _text(r)[-2000:]
+
+
+def test_blank_lines_between_options_run(setup):
+    lines = _pairs(OPTIONAL[:2]) + [""] + _pairs(OPTIONAL[2:5]) + ["", ""] + TAIL
+    r = setup(lines)
+    assert r.returncode == 0, _text(r)[-2000:]
+
+
+def test_windows_line_endings_and_tabs_run(setup):
+    r = setup(_pairs(OPTIONAL, comment="#\t{}\t(test)") + TAIL, newline="\r\n")
+    assert r.returncode == 0, _text(r)[-2000:]
+    assert "CYN variable N (Droop): OFF" in r.stdout
 
 
 def test_full_block_runs_and_compact_comments_are_accepted(setup):
