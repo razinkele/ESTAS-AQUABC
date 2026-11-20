@@ -8,20 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-20
+
+> 🎉 **Released — [AQUABC v0.13.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.13.0)**
+> (Linux binary attached). **Map tab on deck.gl, Shiny 1.9, and an options reader that refuses misplaced options.**
+> The app now needs Python 3.11+, Shiny 1.9+ and `shiny_deckgl` 1.16 (installed from its tagged commit). The optional
+> block of `PELAGIC_MODEL_OPTIONS.txt` is checked name by name: a file with an option misplaced, skipped or misnamed
+> **now stops the run** instead of being read silently with the wrong values. The Mass Balance and Observations tabs
+> get an output-box selector. **Results are unchanged from v0.12.0 for the shipped setups** (a 346-day CL29 run
+> compared identical). A constants file that omits a temperature decay constant on the name-based path now gets
+> the plateau defaults and does change. The CL29 diagnosis record gains §69.6-§72.
+
 ### Added
 - **Output-box selector on the Mass Balance and Observations tabs.** They used the run's first output box only;
   each now lists the run's `PELAGIC_BOX` files (refreshed when the setup changes) and computes from the chosen one.
-
-### Fixed
-- **The options reader refuses an option in the wrong place.** The optional block of `PELAGIC_MODEL_OPTIONS.txt`
-  (everything from `TEMPERATURE_MODEL` on) is read by position. A file with an option misplaced, skipped or
-  misnamed was read without complaint: the value went to a different option and the next failed read ended the
-  block silently. A quota test of 2026-11-20 ran that way, with the quota off and day-length weighting on. The
-  reader now checks the name on each comment line (`# NAME` or `#NAME`) before reading its value and stops with a
-  message naming the expected option; a missing or wrongly typed value also stops the run. A file may still end
-  early, at end of file or at the `CYN_ALLELOPATHY_FILE_NAME` line, and keep the defaults for the rest; blank lines,
-  tabs and Windows line endings are accepted. No result changes for a valid file: all 43 option files in the working
-  tree pass, and a file saved by the app's Model Options tab keeps its comment lines.
 
 ### Changed
 - **The app targets Shiny 1.9 and shiny_deckgl 1.16.** `shiny_app/requirements.txt` now needs `shiny>=1.9.0` and
@@ -37,6 +37,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Deprecated Shiny calls replaced**: `ui.output_text_verbatim` (deprecated in Shiny 1.8) by `ui.output_code` with
   `@render.code` for the build log, the command preview and the mini run log (same markup); the two remaining
   `@reactive.Effect` by `@reactive.effect`.
+
+### Fixed
+- **The options reader refuses an option in the wrong place.** The optional block of `PELAGIC_MODEL_OPTIONS.txt`
+  (everything from `TEMPERATURE_MODEL` on) is read by position. A file with an option misplaced, skipped or
+  misnamed was read without complaint: the value went to a different option and the next failed read ended the
+  block silently. A quota test of 2026-11-20 ran that way, with the quota off and day-length weighting on. The
+  reader now checks the name on each comment line (`# NAME` or `#NAME`) before reading its value and stops with a
+  message naming the expected option; a missing or wrongly typed value also stops the run. A file may still end
+  early, at end of file or at the `CYN_ALLELOPATHY_FILE_NAME` line, and keep the defaults for the rest; blank lines,
+  tabs and Windows line endings are accepted. No result changes for a valid file: all 43 option files in the working
+  tree pass, and a file saved by the app's Model Options tab keeps its comment lines.
+- **The in-code default temperature constants were CTMI-style while the default model is plateau**
+  (`DEFAULT_PELAGIC_MODEL_CONSTANTS`: `KAPPA_*_UNDER_OPT_TEMP = 0`, `KAPPA_*_OVER_OPT_TEMP = T_max`). A constants
+  file that omitted one of them on the name-based path (0D example, interface) got no cold limitation and a collapse
+  just above the plateau -- the same mismatch the Standard file had. The defaults are now the plateau decay rates of
+  `INPUTS/WCONST_04.txt`. No shipped run changes: the 0D example's file and every ESTAS setup give these constants
+  explicitly (0D golden unchanged; Standard 30 d and CL29 90 d byte-identical).
+- **`tools/make_varn_inputs.py` wrote the quota switch where the reader expected older options.** The options file is
+  positional, and seven option pairs added since the tool was written come before `CYN_VARIABLE_N`. The tool now
+  writes those pairs at their defaults when they are absent, accepts `# NAME` and `#NAME` comments, and refuses a
+  file whose pairs are out of order.
 
 ### Documentation
 - **`docs/CL29_phenology_diagnosis.md` §69.6**: a river diatom supply shaped by the measured BSi seasonal index
@@ -64,6 +85,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **§71**: a summary table of every lever tested on the missing summer and autumn diatoms (§62-§70.2) with its
   verdict, and what has not been tested. No new measurement.
 - **§57.2**: a label corrected. The boundary section it re-tests is Paper II §3.14, not Paper I's.
+- **§72**: what each adopted mechanism contributes today, as off/on pairs on the adopted configuration (legacy
+  zooplankton, the surface-position ratchet, the staged fixer, the nitrogen quota). The quota's signature is refuted
+  again; nothing adopted or withdrawn.
+- `docs/report_scripts/zoo_legacy_monthly.csv`: the legacy-zooplankton series of the zooplankton figure is
+  re-measured on the adopted configuration as it now stands (the adopted form gives 9.9 times the legacy one at the June peak).
 - `docs/report_scripts/make_figures_phase.py`: the hard-coded monthly values of the phase and composition figures are
   those of the adopted configuration as it now stands (seasonal r +0.78; September non-fixing share 0.17), with how
   they were obtained.
@@ -72,14 +98,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Remaining stale plans from the audit**: `shiny_app/NAVIGATION_GUIDE.md` no longer calls the Parameters, Initial
   Conditions and Model Options tabs "Coming Soon"; `AQUABC_FRONTEND_ANALYSIS_AND_PLAN.md` is marked historical;
   `TODO_IMPLEMENTATION_PLAN.md` §1.8 and §1.10 carry a v0.12.0 update note.
-
-### Fixed
-- **The in-code default temperature constants were CTMI-style while the default model is plateau**
-  (`DEFAULT_PELAGIC_MODEL_CONSTANTS`: `KAPPA_*_UNDER_OPT_TEMP = 0`, `KAPPA_*_OVER_OPT_TEMP = T_max`). A constants
-  file that omitted one of them on the name-based path (0D example, interface) got no cold limitation and a collapse
-  just above the plateau -- the same mismatch the Standard file had. The defaults are now the plateau decay rates of
-  `INPUTS/WCONST_04.txt`. No shipped run changes: the 0D example's file and every ESTAS setup give these constants
-  explicitly (0D golden unchanged; Standard 30 d and CL29 90 d byte-identical).
 
 ### Notes
 - **`docs/CL29_phenology_diagnosis.md` §3.1**: the FIX_CYN temperature factor (0.414 / 0.287) was read from the
