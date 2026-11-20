@@ -247,6 +247,22 @@ class TestBuildPanel:
 # Map tab (deck.gl through shiny_deckgl)
 # ---------------------------------------------------------------------------
 
+MAP_CDN_MARKS = ("deck.gl", "deck-gl", "maplibre", "luma.gl", "loaders.gl", "mapbox-gl-draw")
+
+
+def _until(predicate, timeout_ms=8000, step_ms=100):
+    """Poll `predicate` until it is true; fail with its last value otherwise."""
+    import time
+    deadline = time.monotonic() + timeout_ms / 1000
+    last = None
+    while time.monotonic() < deadline:
+        last = predicate()
+        if last:
+            return
+        time.sleep(step_ms / 1000)
+    raise AssertionError(f"condition not met within {timeout_ms} ms (last value: {last!r})")
+
+
 class TestMapTab:
     """The map lives in a panel that is hidden at start-up, where a WebGL map
     can come up blank. So this checks the drawn map, not just the markup."""
@@ -268,12 +284,12 @@ class TestMapTab:
 
         # the radius slider reaches the layer
         page.evaluate("Shiny.setInputValue('map-map_point_radius', 2500)")
-        page.wait_for_timeout(1500)
-        assert m.layer("stations")["radius"] == 2500
+        _until(lambda: (m.layer("stations") or {}).get("radius") == 2500)
 
-        # a raster basemap adds its tile layer under the stations
+        # a raster basemap adds its tile layer under the stations, with its credit
         page.evaluate("Shiny.setInputValue('map-map_style', 'satellite')")
         m.expect_layers(["basemap_raster", "stations"])
+        expect(page.locator("#map-map_credit")).to_contain_text("Esri")
 
         # the camera controls move the existing map instead of rebuilding it
         page.evaluate("Shiny.setInputValue('map-map_zoom', 12)")
@@ -282,6 +298,28 @@ class TestMapTab:
         # a vector basemap swaps the style and drops the raster layer
         page.evaluate("Shiny.setInputValue('map-map_style', 'dark')")
         m.expect_layers(["stations"])
-        page.wait_for_timeout(1500)
-        assert "dark-matter" in (m.style_url() or "")
+        _until(lambda: "dark-matter" in (m.style_url() or ""))
 
+    def test_other_tabs_work_without_the_map_cdn(self, page: Page, app: ShinyAppProc):
+        """The map's scripts are requested on every page load. If their CDN is
+        unreachable, only the Map tab may suffer."""
+        blocked = []
+
+        def _route(route):
+            url = route.request.url
+            if any(mark in url for mark in MAP_CDN_MARKS):
+                blocked.append(url)
+                route.abort()
+            else:
+                route.continue_()
+
+        page.route("**/*", _route)
+        page.goto(app.url)
+        page.wait_for_timeout(2000)
+        assert blocked, "expected the page to request the map libraries"
+        expect(page.locator("#custom-sidebar")).to_be_visible()
+        navigate_to(page, "nav_model_build")
+        expect(page.locator("#model_build-build_log")).to_be_visible()
+        # outputs still arrive from the server (the websocket session is alive)
+        navigate_to(page, "nav_map")
+        expect(page.locator("#map-map_info")).to_contain_text("Curonian Lagoon")

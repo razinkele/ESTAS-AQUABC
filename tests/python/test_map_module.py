@@ -13,7 +13,7 @@ def nid(module_id: str, input_id: str) -> str:
 
 def test_map_ui_namespaces_ids():
     html = str(map_ui("map"))
-    for raw in ("deck_map", "map_info"):
+    for raw in ("deck_map", "map_info", "map_credit"):
         assert nid("map", raw) in html, f"missing namespaced id for {raw}"
     # the module UI must NOT carry the nav wrapper (that stays in create_ui)
     assert "panel_conditional" not in html
@@ -34,8 +34,13 @@ def test_every_basemap_choice_resolves():
     assert map_mod.DEFAULT_STYLE in keys
     for k in keys:
         assert map_mod.style_url(k).startswith("https://")
+        assert map_mod.basemap_credit(k).strip()
     # an unknown key falls back to a real style instead of failing
     assert map_mod.style_url("no-such-style").startswith("https://")
+    assert map_mod.basemap_credit("no-such-style")
+    # the raster providers require their credit to be shown
+    assert "Esri" in map_mod.basemap_credit("satellite")
+    assert "OpenTopoMap" in map_mod.basemap_credit("topo")
 
 
 def test_layers_follow_the_controls():

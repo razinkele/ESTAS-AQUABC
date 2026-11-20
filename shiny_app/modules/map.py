@@ -33,21 +33,30 @@ MAP_ID = "deck_map"
 DEFAULT_VIEW = {"longitude": 21.10, "latitude": 55.32, "zoom": 10, "pitch": 45, "bearing": 0}
 
 # Vector basemaps (MapLibre style URLs).
+_CARTO_CREDIT = "© CARTO, © OpenStreetMap contributors"
 VECTOR_STYLES = {
-    "voyager": ("Streets (Carto Voyager)", CARTO_VOYAGER),
-    "positron": ("Light (Carto)", CARTO_POSITRON),
-    "dark": ("Dark (Carto)", CARTO_DARK),
-    "osm": ("OpenStreetMap (Liberty)", OSM_LIBERTY),
+    "voyager": ("Streets (Carto Voyager)", CARTO_VOYAGER, _CARTO_CREDIT),
+    "positron": ("Light (Carto)", CARTO_POSITRON, _CARTO_CREDIT),
+    "dark": ("Dark (Carto)", CARTO_DARK, _CARTO_CREDIT),
+    "osm": ("OpenStreetMap (Liberty)", OSM_LIBERTY,
+            "OpenFreeMap, © OpenMapTiles, data from OpenStreetMap"),
 }
 
 # Raster basemaps have no MapLibre style of their own: they are drawn as a
-# deck.gl tile layer over the light vector basemap.
+# deck.gl tile layer over the light vector basemap. A deck.gl layer shows no
+# credit by itself, and both providers require one: `basemap_credit` supplies
+# the line shown under the map.
 RASTER_TILES = {
     "satellite": (
         "Satellite (Esri)",
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
     ),
-    "topo": ("Topographic (OpenTopoMap)", "https://a.tile.opentopomap.org/{z}/{x}/{y}.png"),
+    "topo": (
+        "Topographic (OpenTopoMap)",
+        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+        "Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)",
+    ),
 }
 
 DEFAULT_STYLE = "voyager"
@@ -106,6 +115,12 @@ def style_url(style_key):
     if style_key in VECTOR_STYLES:
         return VECTOR_STYLES[style_key][1]
     return CARTO_POSITRON
+
+
+def basemap_credit(style_key):
+    """The credit line for a basemap choice."""
+    entry = VECTOR_STYLES.get(style_key) or RASTER_TILES.get(style_key) or VECTOR_STYLES[DEFAULT_STYLE]
+    return entry[2]
 
 
 def _map_widget():
@@ -180,6 +195,7 @@ def map_ui():
             ui.card(
                 ui.card_header("Map View"),
                 _map_widget().ui(height="600px"),
+                ui.output_ui("map_credit"),
                 fill=True
             ),
             col_widths=[3, 9]
@@ -232,6 +248,11 @@ def map_server(input, output, session, state):
             pitch=float(input.map_pitch() or 0),
             duration=600,
         )
+
+    @render.ui
+    def map_credit():
+        """Credit for the chosen basemap (required by the tile providers)."""
+        return ui.tags.small(basemap_credit(input.map_style() or DEFAULT_STYLE), class_="text-muted")
 
     @render.ui
     def map_info():
