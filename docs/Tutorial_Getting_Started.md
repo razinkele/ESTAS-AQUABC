@@ -68,7 +68,7 @@ for later exploration.
 |---|---|
 | **Operating System** | Linux (tested on Ubuntu 22.04+) |
 | **Fortran Compiler** | `gfortran` (GCC 9+) or Intel `ifort`/`ifx` |
-| **Python** | 3.10 or newer |
+| **Python** | 3.11 or newer |
 | **Python packages** | `shiny`, `plotly`, `pandas`, `numpy`, `openpyxl`, `ipywidgets`, `shinywidgets`, `fpdf2` (see `shiny_app/requirements.txt`) |
 | **Make** | GNU Make |
 | **Browser** | Any modern browser (Chrome, Firefox, Edge) |
