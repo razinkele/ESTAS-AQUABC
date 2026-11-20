@@ -6460,12 +6460,16 @@ traits 48.0, ice 45.0, allelopathy on 43.2; staging reversed 35.2 (§73.1).
 
 **Reading.** Of the 29.3 µg/L between the anchor and today, the fitted constants add 19.2 if added first and 11.8 if
 added last; the staged fixer and the later inputs add 10.1 or 17.5. Averaged over both orders, the fitted constants
-carry 15.5 and everything else 13.8: about half each, with an interaction of 7.4. Most later input changes, reversed
-singly, raise August; only the staged fixer and allelopathy lower it.
+carry 15.5 and everything else 13.8: about half each, with an interaction of 7.4. Four of the seven later input
+changes, reversed singly, raise August (settling and traits by about 3, wind and sea by under 1); allelopathy lowers it
+by 1.9, and river silica and ice change it by 0.1 or less.
 
 Composition separates the two halves. Without the fitted constants, today's inputs give August non-fixing
 cyanobacteria 2.14 mg C/L against an observed 2.30 and fixers 0.25 against 1.61; with them, 0.83 and 2.55. The fitted
-set raises August chlorophyll while moving carbon from the non-fixing guild to the fixers.
+set adds about 1 mg C/L of cyanobacterial carbon (2.39 → 3.38), which carries nearly the whole chlorophyll gain, and
+moves carbon from the non-fixing guild to the fixers on top of it. The run without it also reverts the fixer's own
+growth constant (the staged guild's 7.6 → 3.5), so part of its fixer deficit is by construction. *(Wording corrected
+2026-11-20 after a fact-check.)*
 
 **Consequences.** §15's "doubling the growth engine recovers only ~4 µg/L" is true of that search's constants; the set
 fitted at the adoption, on the same base, reaches 35.0 with every gate shut. The premise that the bloom needed a
@@ -6479,6 +6483,6 @@ targets; gates shut 15.8 against 16.3 with the legacy gate; corrected all-blocks
 +19.2 along path A; river silica 0.0). Batch 3: the fourth corner at 33.3 refuted both its range (20–32) and the
 agreement of the two paths within 6 µg/L (7.4); its peak is in September as predicted.
 
-**Limits.** Gates shut throughout; the fitted constants are reverted as one set (growth and nutrient constants are not
+**Limits.** Gates shut throughout; seven of the eight fitted constants are reverted as one set (growth and nutrient constants are not
 separated); the non-fixer growth constant sits in the traits block. Nothing is adopted or changed.
 
