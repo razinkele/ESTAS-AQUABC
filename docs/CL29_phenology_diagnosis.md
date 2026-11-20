@@ -6247,3 +6247,74 @@ July–August 0.004, Feb-May / obs 1.127.
 - October–November river and sea diatom measurements: the river series on hand ends in early October (§69.9).
 
 Nothing is adopted in any of these sections.
+
+---
+
+## 72. 2026-11-20: what each adopted mechanism contributes in today's configuration
+
+**Why.** The adoption scores of the zooplankton food response (§12–§14), the positional ratchet (§20), the staged
+fixer (§31) and the quota test (§38) compare the model before and after each step, on the inputs of August 2026.
+Those inputs have since changed (corrected sea boundary, seasonal river silica, extended settling series, allelopathy
+off: §57–§60), so the comparisons cannot be repeated. What can be measured is the difference each mechanism makes
+now. Rule and predictions were registered before the runs.
+
+**Runs.** Full record, daily output, adopted inputs, each differing from the base only as stated:
+- legacy zooplankton: `ZOO_FOOD_MODEL` 1 → 0;
+- ratchet threshold: `W_DISP_POS` 8 → 4 (the contrast of §20);
+- legacy gate: `CYANO_POS_MODEL` 2 → 0;
+- staging reversed: all four changes of §31 undone (`NOST_STAGE_MODEL` 0, `KG_NOST_VEG_HET_OPT_TEMP` 1.29,
+  `NOST_VEG_HET_OPT_TEMP_LR` 16, `KG_FIX_CYN_OPT_TEMP` 7.62);
+- quota on: the VARN build with `CYN_VARIABLE_N` 1 and the constants of §38.
+
+**Result.** Pooled RMSE against the monitoring record; August carbon is the mean on the sampling dates of the six
+plankton boxes.
+
+| | base | legacy zooplankton | threshold 4 m/s | legacy gate | staging reversed | quota on |
+|---|---|---|---|---|---|---|
+| chlorophyll RMSE (bias) | 24.01 (−3.7) | 24.14 (−4.3) | 23.93 (−4.3) | 23.86 (−4.9) | 25.40 (−8.8) | 23.85 (−5.4) |
+| seasonal r | +0.78 | +0.77 | +0.78 | +0.78 | +0.81 | +0.81 |
+| autumn:spring (observed 2.06) | 2.53 | 2.45 | 2.43 | 2.35 | 1.96 | 2.30 |
+| August chlorophyll (observed 50.8) | 49.0 | 47.6 | 47.5 | 45.8 | 36.2 | 43.2 |
+| PO4 RMSE | 0.0157 | 0.0156 | 0.0160 | 0.0161 | 0.0175 | 0.0160 |
+| TN RMSE | 0.819 | 0.812 | 0.802 | 0.792 | 0.911 | 0.786 |
+| TP RMSE | 0.0423 | 0.0411 | 0.0387 | 0.0365 | 0.0425 | 0.0326 |
+| fixer bias | +0.76 | +0.72 | +0.55 | +0.37 | +0.43 | +0.30 |
+| zooplankton bias | −0.009 | −0.034 | −0.008 | −0.008 | +0.005 | −0.009 |
+| August non-fixing cyanobacteria (observed 2.30) | 0.39 | 0.39 | 0.61 | 0.84 | 0.24 | 0.77 |
+| August fixers (observed 1.61) | 3.31 | 3.19 | 2.96 | 2.58 | 2.30 | 2.43 |
+
+The chlorophyll peak month is September in every run (observed August).
+
+**Reading, by mechanism**
+- **Zooplankton.** The legacy form leaves zooplankton 8.5 times below the June records (2.4 times with the adopted
+  form) and peaks in January. The chlorophyll phase does not measurably change (r 0.771 against 0.778), so the phase
+  gain seen at adoption is not a property of the formulation today.
+- **Ratchet.** The doubling of August chlorophyll in §20 is gone: the two thresholds differ by 3 %, and the legacy
+  gate by 7 %. With the legacy gate the pooled chlorophyll, TN and TP errors are slightly lower and August non-fixing
+  cyanobacteria twice as high; PO4 and the chlorophyll bias are worse. The numbers are consistent with the ratchet now
+  moving summer carbon towards the fixer; that reading was not tested.
+- **Staged fixer.** Still the largest contribution: without it the chlorophyll error is 1.39 higher and the PO4 error
+  11 % higher. But the exact August peak of §31 no longer holds with or without it, r is lower with it, and the
+  autumn:spring ratio now overshoots the observed one.
+- **Quota.** The verdict of §38 repeats. No sample leaves the permitted band; the August quota averages 0.222 gN/gC
+  against the 0.175 bar (4.8 % of samples below it; June 0.237), so nothing is drawn down. August guild carbon
+  doubles and again misses the 0.8 bar; the fixers lose more than the guild gains. Unlike in §38, the variant now
+  scores better than the adopted configuration on most pooled errors. A scores-only reading would adopt it; the
+  registered signature is what says no.
+
+**Predictions.** Held: legacy zooplankton bias and June gap; legacy gate within 15 % of the 4 m/s run; staging
+reversed raises the chlorophyll error by at least 0.5, the PO4 error by at least 10 %, and lowers the fixer bias; all
+four quota predictions. Held in sign only: the zooplankton phase effect (0.007 in r). **Refuted:** that the 4 m/s
+threshold would cut August chlorophyll by at least 30 % (it cut 3 %).
+
+**A void run, and a defect.** The first quota run was not a quota test. `PELAGIC_MODEL_OPTIONS.txt` is read by
+position, the reader has gained seven option pairs before the quota switch since §38, and
+`tools/make_varn_inputs.py` still wrote the quota block in the old place. The switch's `1` was read as
+`LIGHT_DAYLENGTH_OPTION`, the next read failed without a message, and the run went ahead with the quota off. The
+only sign was the option echo in the log. The generator is corrected separately; the reader still accepts a short
+or misordered file.
+
+**Limits.** Each run switches one mechanism in a set of constants fitted with it in place. The differences are
+marginal contributions, not adoption tests, and a small one does not show that the mechanism was unnecessary when
+adopted. Nothing is adopted or changed by this section.
+
