@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
   configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- **`docs/CL29_phenology_diagnosis.md` §73.1**: with every light gate shut, reversing the staged fixer lowers August
+  chlorophyll from 45.1 to 35.2 µg/L, so it carries 42 % of the gap between the §15 search (21.6) and today; the rest
+  lies in the other changes since, which are not separated. Positioning adds 1.0 µg/L without the staged fixer.
+  Nothing adopted.
 - **§72 and §73 corrected** (dated notes): the quota variant is better on 6 of 12 pooled errors, not "most"; and
   the growth constants were not chosen with positioning on (the §21 search scored its trials on inputs without it,
   §60.4), so "every constant was chosen with positioning on" (§73) and "fitted with it in place" (§72, for the

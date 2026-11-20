@@ -6388,3 +6388,38 @@ constants were adopted on runs with it on.)*
 **Figure.** The observed-succession figure (`make_figures_succession.py`) is redrawn against `ngbase`. The species
 export it was built from is not on the working machine, so the script now reads the observed side back from the
 committed `cl29_succession_observed.csv` when the export is missing; the observed rows are unchanged.
+
+### 73.1 2026-11-20: with the gates shut, the staged fixer carries 42 % of the gap; the rest lies elsewhere
+
+**Why.** §73 left open what reaches the bloom beneath the capped light factor. The measured-optics search of §15
+reached 21.6 µg/L of August chlorophyll; today's configuration with every light gate shut reaches 45.1. Reversing the
+staged fixer with the ratchet on gives 36.2 (§72), but that pair still had positioning.
+
+**Design** (running note items 177–178; `diag_decomp_20261120/`). The §73 diagnostic binary rebuilt from the saved
+patch (byte-identical). `ng2` repeats §73's gates-shut run; `ngst` adds the §72 staging reversal (staging off and the
+three growth and temperature constants of the unstaged fixer). Registered rule: staging's share of the 21.6 → 45.1 gap
+is (45.1 − ngst) / 23.5; a share of 0.5 or more means the staged fixer carries most of it.
+
+**Result** (2012–2022; August chlorophyll observed 50.8 µg/L).
+
+| | staged fixer | staging reversed |
+|---|---|---|
+| ratchet on (§72) | 49.0 | 36.2 |
+| every light gate shut | 45.1 | 35.2 |
+
+With the gates shut, staging reversed: chlorophyll RMSE 25.39 (bias −9.1), seasonal r +0.79, autumn:spring 1.90,
+peak September; August non-fixing cyanobacteria 0.41 and fixers 2.07 mg C/L (observed 2.30 and 1.61). The repeat
+`ng2` reproduces §73 exactly.
+
+**Reading.** The staged fixer carries 9.9 of the 23.5 µg/L between the §15 search and today's gates-shut run, a share
+of 0.42: by the registered rule, most of the gap lies in the other changes since §15 (the refitted nutrient cycle,
+the other growth constants and traits, real wind, the boundary, silica, settling and ice corrections, allelopathy
+off), which are not separated. In the unstaged configuration positioning adds 1.0 µg/L. So no single change carries
+today's bloom, and positioning carries little of it in either configuration.
+
+**Predictions.** All five held: `ng2` reproduces §73; with the gates shut, staging reversed gives less than 36.2,
+more than 21.6, a contribution within 4 µg/L of the 12.8 measured with the ratchet on (9.9), and a September peak.
+
+**Limits.** Each run switches settings inside constants chosen or adopted with the staged fixer and positioning on.
+Nothing is adopted or changed.
+
