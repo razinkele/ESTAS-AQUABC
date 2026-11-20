@@ -66,3 +66,20 @@ def test_station_rows_are_lon_lat_and_coloured_by_value():
     assert high["color"][0] > low["color"][0]  # more red with a higher value
     assert high["color"][1] < low["color"][1]  # less green
 
+
+def test_camera_target_moves_only_the_axis_whose_control_changed():
+    previous = {"longitude": 21.10, "latitude": 55.32, "zoom": 10.0, "pitch": 45.0}
+    # the user panned and scroll-zoomed on the map, then moved the pitch slider
+    viewport = {"longitude": 21.50, "latitude": 55.60, "zoom": 12.4, "pitch": 45.0, "bearing": 10}
+    controls = dict(previous, pitch=20.0)
+    assert map_mod.camera_target(controls, previous, viewport) == {
+        "longitude": 21.50, "latitude": 55.60, "zoom": 12.4, "pitch": 20.0}
+
+    # a changed centre uses the typed value; zoom stays where the map is
+    controls = dict(previous, latitude=55.40)
+    t = map_mod.camera_target(controls, previous, viewport)
+    assert t["latitude"] == 55.40 and t["longitude"] == 21.50 and t["zoom"] == 12.4
+
+    # before the map has reported a view, the controls are all there is
+    assert map_mod.camera_target(controls, previous, {}) == {k: float(controls[k]) for k in map_mod.CAMERA_KEYS}
+

@@ -295,6 +295,16 @@ class TestMapTab:
         page.evaluate("Shiny.setInputValue('map-map_zoom', 12)")
         m.expect_zoom(12, timeout=8000)
 
+        # changing one control keeps what the user did on the map itself:
+        # after a jump on the map, the pitch slider must not restore the old centre
+        m.jump_to(21.60, 55.70, 11)
+        page.wait_for_timeout(800)  # let the map report its new view
+        page.evaluate("Shiny.setInputValue('map-map_pitch', 20)")
+        _until(lambda: abs(m.view_state().get("pitch", 99) - 20) < 0.5)
+        vs = m.view_state()
+        assert abs(vs["longitude"] - 21.60) < 0.01 and abs(vs["latitude"] - 55.70) < 0.01
+        assert abs(vs["zoom"] - 11) < 0.05
+
         # a vector basemap swaps the style and drops the raster layer
         page.evaluate("Shiny.setInputValue('map-map_style', 'dark')")
         m.expect_layers(["stations"])

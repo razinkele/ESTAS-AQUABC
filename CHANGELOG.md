@@ -14,8 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - **The app targets Shiny 1.9 and shiny_deckgl 1.16.** `shiny_app/requirements.txt` now needs `shiny>=1.9.0` and
-  installs `shiny_deckgl` 1.16.0 from the commit behind its `v1.16.0` tag (PyPI carries 1.12 only; it needs
-  Python 3.11 or newer); `ipyleaflet` is no longer needed.
+  installs `shiny_deckgl` 1.16.0 from the commit behind its `v1.16.0` tag (PyPI carries 1.12 only). It needs
+  Python 3.11 or newer, so `pyproject.toml` now declares `requires-python >= 3.11`, as the README already did; `ipyleaflet` is no longer needed.
 - **The Map tab is drawn with deck.gl through `shiny_deckgl`** instead of ipyleaflet. The map is built once and then
   driven by messages (camera, basemap, layers), so it no longer rebuilds on every control change. The pitch and
   elevation-scale sliders, which had no effect under Leaflet, now tilt the view and scale the station columns.

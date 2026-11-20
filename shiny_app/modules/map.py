@@ -123,6 +123,27 @@ def basemap_credit(style_key):
     return entry[2]
 
 
+CAMERA_KEYS = ("longitude", "latitude", "zoom", "pitch")
+
+
+def camera_target(controls, previous, viewport):
+    """Where to move the camera after a control changed.
+
+    Only the axes whose control moved take the control's value. The others
+    keep what the map shows now (`viewport`, as the map last reported it), so
+    that changing the pitch does not undo a pan or a scroll-zoom the user made
+    on the map itself. An axis the map has not reported yet falls back to its
+    control.
+    """
+    target = {}
+    for k in CAMERA_KEYS:
+        if controls[k] != previous.get(k) or viewport.get(k) is None:
+            target[k] = float(controls[k])
+        else:
+            target[k] = float(viewport[k])
+    return target
+
+
 def _map_widget():
     """The map widget. Call inside the module's UI and server functions."""
     return MapWidget(
@@ -216,6 +237,8 @@ def map_server(input, output, session, state):
     # `state` is accepted for the uniform x_server(id, state) convention; the
     # map tab is self-contained and uses nothing from it.
     widget = _map_widget()
+    # The camera controls as last applied, to tell which one the user moved.
+    last_controls = {k: float(DEFAULT_VIEW[k]) for k in CAMERA_KEYS}
 
     @reactive.effect
     async def _push_layers():
@@ -240,14 +263,19 @@ def map_server(input, output, session, state):
         lat, lon = input.map_lat(), input.map_lon()
         if lat is None or lon is None:
             return  # a numeric box being edited
-        await widget.ease_to(
-            session,
-            longitude=float(lon),
-            latitude=float(lat),
-            zoom=float(input.map_zoom() or DEFAULT_VIEW["zoom"]),
-            pitch=float(input.map_pitch() or 0),
-            duration=600,
-        )
+        controls = {
+            "longitude": float(lon),
+            "latitude": float(lat),
+            "zoom": float(input.map_zoom() or DEFAULT_VIEW["zoom"]),
+            "pitch": float(input.map_pitch() or 0),
+        }
+        try:
+            viewport = input[widget.view_state_input_id]() or {}
+        except Exception:
+            viewport = {}  # the map has not reported a view yet
+        target = camera_target(controls, last_controls, viewport)
+        last_controls.update(controls)
+        await widget.ease_to(session, duration=600, **target)
 
     @render.ui
     def map_credit():

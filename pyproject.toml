@@ -1,10 +1,10 @@
 [project]
 name = "aquabc"
 version = "0.12.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 120
 include = ["shiny_app/**/*.py", "tests/python/**/*.py", "tools/**/*.py", "pest/**/*.py"]
 
@@ -55,7 +55,7 @@ testpaths = ["tests/python"]
 pythonpath = ["."]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
