@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
   configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- **§72 and §73 corrected** (dated notes): the quota variant is better on 6 of 12 pooled errors, not "most"; and
+  the growth constants were not chosen with positioning on (the §21 search scored its trials on inputs without it,
+  §60.4), so "every constant was chosen with positioning on" (§73) and "fitted with it in place" (§72, for the
+  ratchet) are qualified. Found by an independent fact-check of the papers.
 - `docs/report_scripts/make_figures_succession.py` reads the observed side back from the committed
   `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
   of the adopted configuration as it now stands.
