@@ -6508,7 +6508,8 @@ both runs on today's gates-shut configuration (45.1 µg/L in August), one block 
 
 **Reading.** In today's configuration the three growth constants carry the whole contribution of the fitted set (11.7
 of 11.8 µg/L, with no interaction), and with it the shift from non-fixers to fixers; the four nutrient constants change
-August by 0.1. Which of the three growth constants matters is not separated, and the split is not measured on step
+August by 0.1. Which of the three growth constants matters is not separated here (§73.4 separates it: the fixer
+constant), and the split is not measured on step
 one's base.
 
 **Predictions.** All four held: the growth block lowers August more than the nutrient block, by at least 8; the
