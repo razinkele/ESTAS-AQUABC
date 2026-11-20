@@ -6535,10 +6535,10 @@ byte-identical; each run reverts one constant on today's gates-shut configuratio
 | other algae | 45.1 | 0.83 / 2.55 |
 | all three (§73.3) | 33.4 | 2.03 / 0.40 |
 
-**Reading.** The fixer growth constant fitted at the adoption (3.5 → 7.6, about 2.2 times) carries the whole
-contribution of the fitted set to today's August chlorophyll beneath the light cap (12.5 µg/L; interaction 0.5), and
-the shift from non-fixers to fixers with it. The fitted diatom constant lowers August slightly (1.3) and the
-other-algae constant does nothing. Today's configuration only.
+**Reading.** The fixer growth constant fitted at the adoption (3.5 → 7.6, about 2.2 times) carries the fitted set's
+contribution to today's August chlorophyll beneath the light cap, and the shift from non-fixers to fixers with it.
+Reverting it alone lowers August by 12.5 µg/L, more than the 11.7 of all three together, because the fitted diatom
+constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). The other-algae constant does nothing. Today's configuration only.
 
 **Predictions.** All four held: the fixer engine largest, by at least 7; other algae within 1; interaction within 3.
 
