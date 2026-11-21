@@ -86,6 +86,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `FTNCHEK_TRIAGE.md` is kept as history, with a dated note.
 
 ### Fixed
+- **Carbonate chemistry is evaluated at the water temperature, not at 0 °C (RESULT-CHANGING).** The pelagic and
+  sediment models read CO2SYS's output-condition columns: pH (18), HCO₃/CO₃/CO₂ (21–23) and the phosphate K1–K3
+  (75–77). Every call site set the output temperature `TEMPOUT` to 0 ("does not matter"), so pH, the carbonate
+  species and the phosphate constants were those of 0 °C water. `TEMPOUT` is now the in-situ temperature: the water
+  temperature in the pelagic model, and the layer temperature already given as `TEMPIN` at the four sediment sites.
+  All five lines date at least from the repository's first commit (0419a2c, 2026-01-18), so every result since
+  then, including the CL29 calibration, used the 0 °C chemistry.
+  - **CL29** (adopted inputs, full record, scored with today's validator):
+    - July–August pH is 0.31 lower at boxes 11 and 23, and winter pH is unchanged.
+    - Every pooled RMSE changes by less than 1 %; the largest change is PO₄ at −0.62 %.
+    - The pooled TN/TP RMSE goes from 0.805 / 0.0319 to 0.806 / 0.0319.
+    - For the scored variables at observation times, pooled model means move by less than 1 %, except nitrate at
+      +2.5 %.
+    - Daily means of the unscored pools move more, and the scorecard cannot see it. The dissolved organic pools fall:
+      DON −1.9 % over all days and −6.7 % in July–August (median box), and −7 % and −16 % at box 29. DOP and DOC
+      behave alike. Totals barely move (daily-mean TN −0.3 %, TP −0.3 %, median box).
+  - **0D example:**
+    - Totals barely move: TN +0.3 % and TP 0.0 %, of the pools the 0D prints.
+    - The pools shift: detrital N +11.8 %, non-fixing cyanobacteria +11 %, DON −8.6 %.
+    - The dissolved organic pools fall in CL29 too, but the detrital and cyanobacterial shifts appear only in 0D,
+      and their cause is not established.
+    - Its golden, `tests/regression/pelagic_0D_golden.csv`, is regenerated with the method that reproduces the old
+      golden byte for byte.
+  - **Sediment model** (`MODEL_SEDIMENTS 2`): on `INPUT_sediment_test.txt` the sediment edits alone move sediment
+    outputs by up to 1.7 % in two days, so at least one per-layer site runs. The two single-vector sites are dead
+    code (`SINGLE_VECTOR_CO2SYS = 0` is a parameter); they were edited for consistency and are not exercised.
+  - **Guard:** `tests/python/test_co2sys_output_conditions.py` is a text check that fails if any call site sets
+    `TEMPOUT` to a constant. The behavioural check of the pelagic site is the 0D golden.
+  - **Old behaviour:** old results stay reproducible from the commit before this change; no switch for the old
+    behaviour is provided.
 - **A run that aborts now exits with a non-zero status.** 105 aborts in the Fortran sources ended with a plain `STOP`
   (no code, or a text code), which exits with status 0. That covered the solver's unrealistic-value guard, AQUABC's
   NaN checks, failed allocations, time-series and input errors, and lines that printed "error stop". The app then

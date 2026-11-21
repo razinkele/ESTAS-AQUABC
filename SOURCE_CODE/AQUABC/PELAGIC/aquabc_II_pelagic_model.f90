@@ -527,9 +527,12 @@ contains
             CO2SYS_PAR2TYPE     (1:nkn) = 2
             CO2SYS_SALT         (1:nkn) = SALT(1:nkn)
             CO2SYS_TEMPIN       (1:nkn) = TEMP(1:nkn)
-            CO2SYS_TEMPOUT      (1:nkn) = 0.0D0  !Does not matter for this case
-            CO2SYS_PRESIN       (1:nkn) = 0.0D0  !Does not matter for this case
-            CO2SYS_PRESOUT      (1:nkn) = 0.0D0  !Does not matter for this case
+            ! The model reads CO2SYS's OUTPUT-condition columns (pH 18, HCO3/CO3/CO2 21-23, phosphate K's
+            ! 75-77), so the output conditions must be the in-situ ones. Until 2026-11-21 TEMPOUT was 0, which
+            ! evaluated the carbonate chemistry at 0 C (review finding SED-1).
+            CO2SYS_TEMPOUT      (1:nkn) = TEMP(1:nkn)
+            CO2SYS_PRESIN       (1:nkn) = 0.0D0  ! surface pressure, in and out
+            CO2SYS_PRESOUT      (1:nkn) = 0.0D0
             CO2SYS_SI           (1:nkn) = (Diss_SI(1:nkn) / 28.0855D0) * 1.0D3
             CO2SYS_PO4          (1:nkn) = (PO4_P  (1:nkn) / 30.9737D0) * 1.0D3
             CO2SYS_pHSCALEIN    (1:nkn) = 1
