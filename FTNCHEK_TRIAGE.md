@@ -5,7 +5,8 @@
 > CI's filter read that frozen report rather than the fresh one. Run on each tracked file, ftnchek 3.3 crashes on 28
 > of 87 files. On the other 59 it reports about 3,500 diagnostics that the ignore list does not cover, mostly because
 > it cannot parse standard Fortran 90 (it reads `module X` or `use X` as one identifier "with embedded space"). The
-> `implicit none` rule is enforced by the compiler instead: every gfortran build type uses `-fimplicit-none`. The
+> model and library build compiles with `-fimplicit-none`, a partial guard for the `implicit none` rule (it makes
+> implicit typing an error but does not check that the statement is present; the unit-test build does not use it). The
 > files named below (`tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`, the ignore list and the reports) no longer
 > exist. See the CHANGELOG.
 

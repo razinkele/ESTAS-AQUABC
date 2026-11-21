@@ -251,8 +251,10 @@ end do
 ## Fortran Conventions
 
 ### Mandatory rules
-- **`implicit none`** in every program unit, subroutine, and function — no exceptions. Every gfortran build type
-  compiles with `-fimplicit-none`, so an undeclared name fails the build (and CI).
+- **`implicit none`** in every program unit, subroutine, and function — no exceptions. The model and library build
+  (`make_lib.sh` with the Makefile's debug, fast and release flags) compiles with `-fimplicit-none`, so an undeclared
+  name there fails the build (and CI). That is a partial guard: it does not check that the statement is present, a
+  unit's own `IMPLICIT` statement would override it, and the unit-test and 0D-example builds do not use the flag.
 - **Division guard**: always protect against zero denominators: `result = numerator / max(denominator, 1.0D-20)`.
   No tool checks this; it is a review rule.
 
@@ -376,7 +378,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on push to `main` and all PRs:
 - **python-lint-test**: ruff lint + pytest on `tests/python/`
-- **build-and-run**: Fortran build (gfortran with `-fimplicit-none`) → integration checks (fail-loud constants, abort exit status) → 0D example tests and regression (checks for NaN/negative CHLA) → Fortran unit tests
+- **build-and-run**: Fortran build (the library with `-fimplicit-none`) → integration checks (fail-loud constants, abort exit status) → 0D example tests and regression (checks for NaN/negative CHLA) → Fortran unit tests
 
 ---
 
@@ -515,8 +517,9 @@ The `ALLELOPATHY` module declares all its variables as `real(kind = DBL_ALLEL)`.
 `aquabc_II_pelagic_lib_FIX_CYANOBACTERIA.f90` implements per-process rate clamping. When a process rate exceeds a threshold, the rate is clamped and a counter is incremented. `make test-unit-limiter` runs a dedicated test for this logic.
 
 ### Undeclared-name errors in CI
-gfortran builds use `-fimplicit-none`, so a name that is not declared stops the compile ("Symbol ... has no IMPLICIT
-type"). Declare it, and keep `implicit none` in every program unit — there are no legitimate exceptions. (CI ran
+The model and library build uses `-fimplicit-none`, so a name that is not declared stops the compile ("Symbol ... has
+no IMPLICIT type"). Declare it, and keep the `implicit none` statement in every program unit — there are no legitimate
+exceptions (the flag does not check that the statement is present, and the unit-test build does not use it). (CI ran
 `ftnchek` until 2026-11-21; it was removed because ftnchek 3.3 cannot parse this Fortran 90 code.)
 
 ### Fortran compilation order errors

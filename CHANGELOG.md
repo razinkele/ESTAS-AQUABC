@@ -63,8 +63,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     crashes on 28. On the other 59 it reports 3,496 diagnostics that the ignore list does not cover. Most come from
     its failure to parse standard Fortran 90: it reads `module X` or `use X` as one identifier "with embedded
     space". So no ignore list makes it a meaningful check.
-  - **What still guards `implicit none`:** every gfortran build type compiles with `-fimplicit-none`, so an
-    undeclared name fails the build on CI. `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
+  - **What still guards `implicit none`, in part:** the model and library build (`make_lib.sh` with the Makefile's
+    debug, fast and release flags) compiles with `-fimplicit-none`, so an undeclared name there fails the build on CI.
+    It does not check that the statement is present, and the unit-test and 0D-example builds do not use the flag.
+    `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
   - **Removed files:** the six CI steps, `tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`,
     `tools/ftnchek_ignore_patterns.txt`, `tools/ftnchek_report.txt`, `tools/ftnchek_report_ESTAS.txt` and
     `tools/ftnchek_unexpected.txt`.
