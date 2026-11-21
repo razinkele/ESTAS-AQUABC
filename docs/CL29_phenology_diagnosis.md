@@ -6556,7 +6556,7 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
   - The CO2SYS unit test sets the output temperature equal to the input one, so it cannot see this.
 - **TOOL-2.** `tools/validate_cl29_vs_epa.py` adds the akinete carbon `AKI_C` to the phytoplankton carbon in TN and
   TP as mg/L. But CL29's `PELAGIC_INPUTS.txt` gives `AKI_C` output type 2, so the writer multiplies it by the box's
-  mean depth (g/m²).
+  mean depth (g/m²). `AKI_C` is the only one of CL29's 36 state variables written that way.
 
 **Design** (running note items 218–219; `diag_co2sys_20261121/`).
 - Two builds of `72e104d` in a worktree:
@@ -6578,6 +6578,9 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 - Summer DOP mineralisation is unchanged (×0.99, ×1.01).
 - Every pooled score moves by less than 1 %. The largest change is TP RMSE, +0.79 %. Chl-a: −0.34 %, August
   49.0 → 49.4 µg/L, peak still September, seasonal r +0.78.
+- No seasonal score moves by 2 % or more; the largest summer change is TN RMSE, −0.93 %. This was checked after
+  the run; the registered rule was on annual scores. Summer modelled NO₃ rises from 0.0021 to 0.0028 mg/L,
+  against 0.018 observed.
 
 **Result: TOOL-2** (unmodified run; pooled over the validator's boxes).
 
@@ -6588,10 +6591,15 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 | divided by the box depth | 0.805 | +0.385 | 0.0319 | +0.0063 |
 
 **Reading.**
-- **SED-1** is real. The in-situ pH is about 0.3 lower in summer, and summer nitrification rises by a third,
-  because its pH optimum ends at 8.2, below the model's pH in both runs. The mineralisation optimum ends at 9.0, and
-  that correction is mostly inactive at the model's pH of 8.9–9.1. At today's constants the fix is nearly
-  score-neutral. pH, DIC and alkalinity are not scored against observations.
+- **SED-1** is real. The in-situ pH is about 0.3 lower in summer.
+  - Summer nitrification rises by a third at box 11 and by two thirds at box 23. Its pH optimum ends at 8.2, below
+    the model's pH at both boxes in both runs.
+  - At box 11 the rise matches the pH correction: exp(0.31) = 1.36 against 1.32. The excess at box 23 is not
+    separated.
+  - The mineralisation optimum ends at 9.0. Box 11's pH is mostly below it; at box 23 (9.0–9.2 all year) the
+    correction is modestly active, yet summer DOP mineralisation does not change.
+  - At today's constants the fix is score-neutral, by season as well as overall. pH, DIC and alkalinity are not
+    scored against observations.
 - **TOOL-2** is material for TP. The as-now TP RMSE (0.04235) contains the unit error; without it TP scores 0.032.
   - The effect sits in the deep, heavily sampled boxes 7 (10.8 m) and 11 (8.1 m). Together they hold 1,885 of the
     3,225 TN observations.
@@ -6606,6 +6614,7 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
   - P6: some score moves by at least 2 %.
 - TP's change was not registered.
 
-**Limits.** One configuration and today's constants. Older runs with larger akinete pools are not measured. Nothing
+**Limits.** One configuration and today's constants. pH and the process rates were read at boxes 11 and 23 only.
+Older runs with larger akinete pools are not measured. Nothing
 is adopted or changed; neither the model nor the validator is fixed here.
 
