@@ -96,7 +96,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **CL29** (adopted inputs, full record, scored with today's validator):
     - July–August pH is 0.31 lower at boxes 11 and 23, and winter pH is unchanged.
     - Every pooled RMSE changes by less than 1 %; the largest change is PO₄ at −0.62 %.
-    - The pooled TN/TP RMSE goes from 0.805 / 0.0319 to 0.807 / 0.0319.
+    - The pooled TN/TP RMSE goes from 0.805 / 0.0319 to 0.806 / 0.0319.
     - For the scored variables at observation times, pooled model means move by less than 1 %, except nitrate at
       +2.5 %.
     - Daily means of the unscored pools move more, and the scorecard cannot see it. The dissolved organic pools fall:
