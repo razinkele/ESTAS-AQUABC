@@ -44,6 +44,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
   of the adopted configuration as it now stands.
 
+### Fixed
+- **The validator no longer adds the akinete carbon in g/m² to TN and TP in mg/L.** ESTAS writes a state variable
+  whose `OUTPUT_TYPE` is 2 per area: concentration × the box's VOLUME/AREA. In CL29 and the Standard set that is
+  `AKI_C`, the water-column akinete pool, which TN and TP include.
+  - **What changes.** `load_box_output` in `tools/validate_cl29_vs_epa.py` divides such columns by VOLUME/AREA. The
+    output types come from the run's own `PELAGIC_INPUTS.txt` (found through its master input file, as the C:Chl
+    ratios are, or given by the new `--pelagic-inputs`), and VOLUME/AREA from the run's `WATER_LEVELS.out`.
+  - **When that cannot be done**, TN and TP are not scored and the validator says why.
+  - **On the adopted CL29 run:**
+    - pooled TN RMSE 0.819 → 0.805 and bias +0.448 → +0.385;
+    - TP RMSE 0.04235 → 0.0319 and bias +0.0135 → +0.0063;
+    - every other score is unchanged.
+  - **What else moves with it.** The figures, the PEST forward run and the Supplementary Table S2 script all use the
+    same loader. TN/TP scores from before and after the fix are not comparable. Calibration and Morris objectives
+    do not include TN or TP.
+  - Measured in `docs/CL29_phenology_diagnosis.md` §74.
+
 ## [0.13.0] - 2026-11-20
 
 > 🎉 **Released — [AQUABC v0.13.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.13.0)**

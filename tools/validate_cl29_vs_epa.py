@@ -16,6 +16,13 @@ still deferred (it needs a CO2SYS solve from INORG_C + TOT_ALK).
 Model time: ``PELAGIC_BOX_*.out`` column TIME_DAYS is days since Jan 1 of the run
 BASE_YEAR (INPUT_CL29.txt); e.g. TIME_DAYS 0.0 == 2012-01-01 for the CL29 config.
 
+Units: ESTAS writes a state variable whose OUTPUT_TYPE is 2 in PELAGIC_INPUTS.txt per area
+(concentration x the box's VOLUME/AREA, g/m2). In CL29 and the Standard set that is AKI_C, the
+water-column akinete pool. load_box_output divides such columns by VOLUME/AREA from the run's
+WATER_LEVELS.out, so every column it returns is g/m3 and TN/TP add like with like. If the run's
+PELAGIC_INPUTS.txt or WATER_LEVELS.out cannot be found, AKI_C is set to NaN and TN/TP are not
+scored rather than scored with a g/m2 term (see --pelagic-inputs).
+
 Standard library + pandas + numpy; matplotlib only if plots are requested.
 """
 from __future__ import annotations
@@ -42,7 +49,8 @@ DIRECT_COL = {
 }
 # Stoichiometry for the derived totals, from INPUTS_CL29/WCONST_04.txt: every
 # group carries N:C 0.22, P:C 0.024; C:Chl-a is 30 (diatoms, OPA) or 40 (cyano,
-# fixing cyano, Nostocales). Chl-a excludes dormant akinetes (AKI_C).
+# fixing cyano, Nostocales). Chl-a excludes dormant akinetes (AKI_C); TN/TP include them, as
+# g/m3 (load_box_output converts the g/m2 that ESTAS writes for AKI_C).
 N_TO_C, P_TO_C = 0.22, 0.024
 PHYTO_C = ["DIA_C", "CYN_C", "FIX_CYN_C", "OPA_C", "NOST_VEG_HET_C", "AKI_C"]
 C_TO_CHLA = {"DIA_C": 30.0, "CYN_C": 40.0, "FIX_CYN_C": 40.0,
@@ -70,19 +78,36 @@ def load_c_to_chla(wconst_path):
     return out
 
 
-def _master_folders(path):
-    """(input folder, output folder) named by an ESTAS master input file, or (None, None)."""
+def _master_entries(path):
+    """{"INPUT FOLDER", "OUTPUT FOLDER", "INPUT FILE"} -> value, as named by an ESTAS master input file."""
     try:
         lines = open(path, errors="replace").read().split("\n")
     except OSError:
-        return None, None
+        return {}
     found = {}
     for i, ln in enumerate(lines):
-        for key in ("INPUT FOLDER", "OUTPUT FOLDER"):
+        for key in ("INPUT FOLDER", "OUTPUT FOLDER", "INPUT FILE"):
             if ln.lstrip().startswith("#") and f"PELAGIC MODEL {key}" in ln.upper():
                 nxt = next((x.strip() for x in lines[i + 1:] if x.strip()), "")
                 found[key] = nxt
+    return found
+
+
+def _master_folders(path):
+    """(input folder, output folder) named by an ESTAS master input file, or (None, None)."""
+    found = _master_entries(path)
     return found.get("INPUT FOLDER"), found.get("OUTPUT FOLDER")
+
+
+def _run_masters(outputs_dir):
+    """(run directory, entries) of each master input file whose output folder resolves to outputs_dir."""
+    target = os.path.realpath(outputs_dir)
+    for d in {os.path.dirname(target), os.path.realpath(os.getcwd())}:
+        for master in glob.glob(os.path.join(d, "INPUT*.txt")):
+            found = _master_entries(master)
+            inp, out = found.get("INPUT FOLDER"), found.get("OUTPUT FOLDER")
+            if inp and out and os.path.realpath(os.path.join(d, out)) == target:
+                yield d, found
 
 
 def find_run_wconst(outputs_dir):
@@ -94,18 +119,124 @@ def find_run_wconst(outputs_dir):
     master file are relative to the directory it is run from, taken to be its own. Several
     masters naming the same inputs are fine; masters that disagree make the answer unknown.
     """
-    target = os.path.realpath(outputs_dir)
-    dirs = {os.path.dirname(target), os.path.realpath(os.getcwd())}
     hits = set()
-    for d in dirs:
-        for master in glob.glob(os.path.join(d, "INPUT*.txt")):
-            inp, out = _master_folders(master)
-            if not inp or not out or os.path.realpath(os.path.join(d, out)) != target:
-                continue
-            wconst = os.path.realpath(os.path.join(d, inp, "WCONST_04.txt"))
-            if os.path.exists(wconst):
-                hits.add(wconst)
+    for d, found in _run_masters(outputs_dir):
+        wconst = os.path.realpath(os.path.join(d, found["INPUT FOLDER"], "WCONST_04.txt"))
+        if os.path.exists(wconst):
+            hits.add(wconst)
     return hits.pop() if len(hits) == 1 else None
+
+
+def find_run_pelagic_inputs(outputs_dir):
+    """The PELAGIC_INPUTS file of the run that wrote outputs_dir, or None (same rules as find_run_wconst)."""
+    hits = set()
+    for d, found in _run_masters(outputs_dir):
+        name = found.get("INPUT FILE") or "PELAGIC_INPUTS.txt"
+        path = os.path.realpath(os.path.join(d, found["INPUT FOLDER"], name))
+        if os.path.exists(path):
+            hits.add(path)
+    return hits.pop() if len(hits) == 1 else None
+
+
+def state_output_types(pelagic_inputs):
+    """{state variable name: OUTPUT_TYPE} from the state-variable block of a PELAGIC_INPUTS file.
+
+    OUTPUT_TYPE 1 writes g/m3; 2 writes per area, g/m2 = concentration x the box's VOLUME/AREA
+    (sub_WRITE_PELAGIC_OUTPUT). Block rows are: number, name, boxes with measured values,
+    measurement error, OUTPUT_TYPE, INITIAL_CONDITION_TYPE.
+    """
+    types, in_block = {}, False
+    for ln in open(pelagic_inputs, errors="replace"):
+        if "PELAGIC STATE VARIABLES" in ln.upper():
+            in_block = True
+            continue
+        if not in_block or not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        f = ln.split()
+        if len(f) == 6 and f[0].isdigit() and not re.fullmatch(r"[-+.\deE]+", f[1]):
+            types[f[1]] = int(float(f[4]))
+        elif types:
+            break
+    return types
+
+
+def box_depths(outputs_dir):
+    """{box: (TIME days, VOLUME/AREA m)} from the run's WATER_LEVELS.out, or None if it is absent.
+
+    VOLUME/AREA is the factor sub_WRITE_PELAGIC_OUTPUT multiplies OUTPUT_TYPE 2 columns by. It is
+    the sixth column (written since 2026-01-18; labelled in the header since 2026-11-08). A file
+    without a finite sixth column counts as absent.
+    """
+    path = os.path.join(outputs_dir, "WATER_LEVELS.out")
+    if not os.path.exists(path):
+        return None
+    w = pd.read_csv(path, skiprows=1, header=None, skipinitialspace=True,
+                    names=["t", "box", "elev", "volume", "depth", "v_over_a"])
+    if w.empty or not np.isfinite(w["v_over_a"].to_numpy(float)).all():
+        return None
+    return {int(b): (g["t"].to_numpy(float), g["v_over_a"].to_numpy(float)) for b, g in w.groupby("box")}
+
+
+_ACTIVE_PELAGIC_INPUTS = None   # set by main() from --pelagic-inputs; None = the run's own, auto-detected
+_AREA_BASIS_CACHE = {}
+
+
+def area_basis(outputs_dir):
+    """(names of the state variables written per area, box depths) for the run that wrote outputs_dir.
+
+    Either part is None when it cannot be told: the names without the run's PELAGIC_INPUTS file
+    (found through its master input file, or given by --pelagic-inputs), the depths without
+    WATER_LEVELS.out in the output folder.
+    """
+    key = (os.path.realpath(outputs_dir), _ACTIVE_PELAGIC_INPUTS)
+    if key not in _AREA_BASIS_CACHE:
+        pin = _ACTIVE_PELAGIC_INPUTS or find_run_pelagic_inputs(outputs_dir)
+        names = None if not pin else {n for n, t in state_output_types(pin).items() if t > 1}
+        _AREA_BASIS_CACHE[key] = (names, box_depths(outputs_dir))
+    return _AREA_BASIS_CACHE[key]
+
+
+def to_concentrations(df, outputs_dir, box):
+    """Divide the per-area columns of one box's output by its VOLUME/AREA, in place, so all are g/m3.
+
+    If that cannot be done, the per-area columns (or AKI_C, the one written per area in every
+    shipped input set, when the run's output types are unknown) are set to NaN: the derived
+    TN/TP then come out NaN instead of adding g/m2 to g/m3.
+    """
+    names, depths = area_basis(outputs_dir)
+    if names is not None and not names:
+        return df
+    if names is not None and depths is not None and box in depths:
+        t, v_over_a = depths[box]
+        factor = np.interp(df["TIME_DAYS"].to_numpy(float), t, v_over_a)
+        for c in sorted(names & set(df.columns)):
+            df[c] = df[c].astype(float) / factor
+        return df
+    for c in sorted((names if names is not None else {"AKI_C"}) & set(df.columns)):
+        df[c] = np.nan
+    return df
+
+
+def area_basis_problem(outputs_dir):
+    """Why this run's per-area columns cannot be converted (TN/TP are then not scored), or None."""
+    boxes = [p for p in sorted(glob.glob(os.path.join(outputs_dir, "PELAGIC_BOX_*.out")))
+             if not p.endswith("_PROCESS_RATES.out")]
+    if not boxes:
+        return None
+    with open(boxes[0]) as fh:
+        cols = set(fh.readline().split())
+    names, depths = area_basis(outputs_dir)
+    if names is None:
+        if "AKI_C" not in cols:
+            return None
+        return ("this run's output types could not be read (no master input file names this output "
+                "folder), and its AKI_C is written per area (g/m2) in every shipped input set")
+    if not names & cols:
+        return None
+    if depths is None or any(box_number(p) not in depths for p in boxes):
+        return (f"this run writes {', '.join(sorted(names & cols))} per area (g/m2), and its "
+                "WATER_LEVELS.out with VOLUME/AREA for every box was not found")
+    return None
 # EPA key -> comparison column: a direct .out column, or a derived column of the
 # same name added by add_derived().
 MODEL_COL = {**DIRECT_COL, "TN": "TN", "TP": "TP", "CHLA": "CHLA"}
@@ -182,11 +313,16 @@ def add_derived(df):
 
 
 def load_box_output(path, base_year):
-    """Load a PELAGIC_BOX_*.out into a DataFrame with ``date`` + derived columns."""
+    """Load a PELAGIC_BOX_*.out into a DataFrame with ``date`` + derived columns.
+
+    Columns ESTAS wrote per area (OUTPUT_TYPE 2, e.g. AKI_C) are converted to g/m3 first
+    (to_concentrations), so the derived TN/TP add like with like.
+    """
     df = pd.read_csv(path, sep=r"\s+")
     base = dt.date(base_year, 1, 1)
     df["date"] = df["TIME_DAYS"].map(
         lambda d: base + dt.timedelta(days=float(d)))
+    to_concentrations(df, os.path.dirname(path), box_number(path))
     return add_derived(df)
 
 
@@ -449,11 +585,17 @@ def main(argv=None):
     p.add_argument("--template-c-to-chla", action="store_true",
                    help="score Chl-a with the template ratios (30/40) when the run's own cannot "
                         "be found; CL29 itself uses 53/78")
+    p.add_argument("--pelagic-inputs", default=None,
+                   help="read the state variables' OUTPUT_TYPE from this PELAGIC_INPUTS.txt. By default "
+                        "it is the run's own, found through the master input file that wrote --outputs. "
+                        "Columns written per area (type 2, g/m2: AKI_C) are divided by VOLUME/AREA from "
+                        "the run's WATER_LEVELS.out; if either cannot be found, TN and TP are not scored")
     a = p.parse_args(argv)
 
     if not os.path.isdir(a.outputs):
         p.error(f"model output folder not found: {a.outputs}")
-    global _ACTIVE_C_TO_CHLA
+    global _ACTIVE_C_TO_CHLA, _ACTIVE_PELAGIC_INPUTS
+    _ACTIVE_PELAGIC_INPUTS = a.pelagic_inputs
     wconst, how, chla_unknown = a.wconst, "", False
     if not wconst and not a.template_c_to_chla:
         wconst = find_run_wconst(a.outputs)
@@ -472,6 +614,16 @@ def main(argv=None):
               "file names this output folder). Pass --wconst <run inputs>/WCONST_04.txt, or "
               "--template-c-to-chla for the template 30/40.")
         obs = {k: v for k, v in obs.items() if k[1] != "CHLA"}
+    problem = area_basis_problem(a.outputs)
+    if problem:
+        print(f"TN and TP not scored: {problem}. Pass --pelagic-inputs <run inputs>/PELAGIC_INPUTS.txt "
+              "if the master input file is missing.")
+        obs = {k: v for k, v in obs.items() if k[1] not in ("TN", "TP")}
+    else:
+        names, _ = area_basis(a.outputs)
+        if names:
+            print("Per-area outputs converted to g/m3 by VOLUME/AREA (WATER_LEVELS.out): "
+                  + ", ".join(sorted(names)))
     rows = build_table(a.outputs, a.base_year, obs)
     print_table(rows)
     if not rows:
