@@ -9,8 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Documentation
-- **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201, open) measured for adoption.
-  Nothing is adopted.
+- **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201) measured for adoption, and the
+  adoption recorded: #201 merged on 2026-11-21, and Paper II's adopted-run numbers regenerated (ESTAS-AQUABC-DATA #27).
+  Paper I's numbers (except the regenerated adopted scores its version note quotes), the comparison runs and the fitted
+  constants stay on the 0 °C chemistry. Runs on the 0 °C chemistry are not comparable with runs on the in-situ
+  chemistry; the break follows the binary, not the merge date.
   - **CL29:** July–August pH −0.31; every pooled RMSE changes by less than 1 %. Unscored dissolved organic pools fall
     several percent in summer; totals barely move.
   - **0D example:** pools shift by up to 12 % while totals don't.
@@ -28,7 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - §72's TN/TP rows carry a dated pointer note.
   - TN/TP scored before #196 are not comparable with later scores.
 - **`docs/CL29_phenology_diagnosis.md` §74**: two defects found by a 2026-11-21 code review, measured on the adopted
-  CL29 configuration. Nothing is adopted or fixed.
+  CL29 configuration. Nothing is adopted or fixed in §74 itself; both defects are fixed below, under **Fixed**.
   - **Carbonate chemistry at 0 °C.** The pelagic model reads CO2SYS's output-condition columns, which it computes
     at 0 °C. In-situ conditions lower summer pH by 0.31 and raise summer nitrification by a third to two thirds (at
     the two boxes read), but move every pooled score by less than 1 % and no seasonal score by 2 % or more.

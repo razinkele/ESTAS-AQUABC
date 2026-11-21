@@ -6623,6 +6623,9 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 Older runs with larger akinete pools are not measured. Nothing
 is adopted or changed; neither the model nor the validator is fixed here.
 
+*(Note, 2026-11-22: both defects were fixed later, the validator in §74.1 (#196) and the carbonate chemistry in §74.2
+(#201, adopted 2026-11-21).)*
+
 
 ### 74.1 2026-11-21: the validator fixed; TN and TP of the adopted run and of Paper I's comparisons rescored
 
@@ -6674,14 +6677,14 @@ this record before §74, the papers up to Paper I v0.18 and Paper II v2.23, and 
 - The legacy zooplankton and threshold 4 m/s runs were not re-run.
 - Paper II's §2.1 (TN −4.1 %) and §4.6 (TP −9 %) comparisons and its §3.1 table are older runs, not re-measured.
 
-### 74.2 2026-11-21: the carbonate-chemistry fix (ESTAS-AQUABC #201) measured for adoption — open, not adopted
+### 74.2 2026-11-21: the carbonate-chemistry fix (ESTAS-AQUABC #201) measured for adoption — adopted 2026-11-21
 
 **What #201 changes.** Every CO2SYS call site set the output temperature `TEMPOUT` to 0, but the model reads the
 output-condition columns: pH (18), HCO₃/CO₃/CO₂ (21–23) and the phosphate K1–K3 (75–77). So the carbonate chemistry
 was that of 0 °C water (§74). #201 passes the in-situ temperature at all five sites: one pelagic, and four sediment
 sites, of which two are dead code. The line dates at least from the repository's first commit (0419a2c, 2026-01-18),
-so every result in this record, the CL29 calibration included, used the 0 °C chemistry. #201 is open; merging it is
-the adoption decision.
+so every result in this record, the CL29 calibration included, used the 0 °C chemistry. When this was measured #201
+was open, and merging it was the adoption decision. It was merged on 2026-11-21 (**Adoption**, below).
 
 **Design** (running note items 248–250; `diag_sed1_20261121/`).
 - **Anchor 1:** an unmodified build of main equals the live binary (d57dff16).
@@ -6708,7 +6711,7 @@ the adoption decision.
 
 **Paper exposure** (note items 257–259; `diag_paperexposure_20261121/classification.md`).
 - Every score, table and figure would need regenerating; for example, Paper II's Figure 8 TN bias goes from +0.38 to
-  +0.37.
+  +0.37. *(2026-11-22: done for Paper II's adopted-run numbers; Paper I's are unchanged. See **Adoption**.)*
 - No pH value is quoted. Several historical numbers in Paper II come from earlier configurations.
 - The adopted nitrification (`K_NITR_20` 1.94) and DOC-on-nitrate mineralisation (`K_MIN_DOC_NO3N_20` 2.98) constants
   sit on their fit's upper bounds (2.0, 3.0) and were fitted under the 0 °C chemistry.
@@ -6749,4 +6752,45 @@ the adoption decision.
 - The scan can show whether the adopted point stops being optimal along each line; it cannot supply new constants.
   Only a recalibration under the fix can.
 - The 0D-only shifts are unexplained (0D variant runs would split the causes).
-- Nothing here is adopted. Adoption = merging #201, rebuilding the live binary, and regenerating the papers' numbers.
+- Everything above was measured before the adoption, which is recorded below.
+
+**Adoption** (2026-11-21, recorded 2026-11-22; running note items 269–270).
+- **Code:** #201 was merged at 23:19 EET as `d7a036a`, and this section (#202) at 23:20 as `3196503`.
+- **Live binary:** rebuilt at 23:26 from `3196503`. Its sha256 (50c0173d…) equals that of the build behind the fix
+  run, the scan above and Paper II v2.25. The previous live binary (d57dff16) is kept locally and still reproduces
+  results on the 0 °C chemistry.
+- **Papers** (ESTAS-AQUABC-DATA #27, `a46a91c`, merged at 23:21):
+  - Paper II v2.25 regenerates its adopted-run numbers from the fix run: the §3.17 scorecard, the phase sentence,
+    Table S2, the captions of Figures 3–10 and 12, the Figure 13 paragraph, the Abstract, the Conclusions and §2.1's
+    summer nitrate. Each generator first reproduces v2.24's text exactly from the base run. Observed means are
+    unchanged.
+  - Its Figures 3–13 are regenerated from the fix run into `diag_figs_s1t_20261121/`. The DOCX is not yet rebuilt
+    with them.
+  - Its comparisons with variant runs (the positioning and ice runs) keep the 0 °C chemistry and are marked.
+  - Paper I v0.20 changes no number, because nearly all of them compare the adopted configuration with a variant run.
+    A version note gives the regenerated adopted scores.
+- **Not adopted; still on the 0 °C chemistry:**
+  - The variant runs behind both papers' comparisons were not redone. So the two papers disagree on the adopted
+    score: chlorophyll RMSE 24.01 in Paper I's text (its version note quotes 23.93), 23.93 in Paper II.
+  - The constants were not recalibrated under the fix (see **Limits**).
+  - The fix is in no release yet; v0.13.0's binary has the 0 °C chemistry.
+
+**Comparability.** The break follows the chemistry in the binary, not the merge date. Runs whose binary lacks #201's
+change (the 0 °C chemistry) are not comparable, as a model change, with runs whose binary has it. Pooled scores move by
+less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved organic pools move more.
+- **On the 0 °C chemistry:**
+  - this record before this section, except §74's in-situ probe column;
+  - Paper II up to v2.24, and in v2.25 everything except the regenerated items listed under **Adoption** (the marked
+    comparisons and the calibration history among them);
+  - Paper I up to v0.20, except the regenerated adopted scores that v0.20's version note and its inline marker quote
+    (chlorophyll RMSE 23.93, phosphate RMSE 0.0156);
+  - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run);
+  - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`);
+  - v0.13.0's binary.
+- **On the in-situ chemistry, though some predate the merge:**
+  - §74's in-situ probe, which Anchor 3 shows equal to #201 on the CL29 path;
+  - the fix run `s1t` (`diag_sed1_20261121/`), the scan's fix column and Paper II v2.25's regenerated numbers, all
+    from build 50c0173d (#201's own build, and today's live binary);
+  - every run with a binary built from `d7a036a` or later.
+
+Earlier sections keep their numbers. `s1t` is the reference run for the in-situ chemistry.
