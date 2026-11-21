@@ -6,7 +6,8 @@
 > of 87 files. On the other 59 it reports about 3,500 diagnostics that the ignore list does not cover, mostly because
 > it cannot parse standard Fortran 90 (it reads `module X` or `use X` as one identifier "with embedded space"). The
 > gfortran build of the model and library compiles with `-fimplicit-none`, a partial guard for the `implicit none` rule (it makes
-> implicit typing an error but does not check that the statement is present; the unit-test build does not use it). The
+> implicit typing an error but does not check that the statement is present). The unit-test build has used the flag
+> too since a later 2026-11-21 change; the 0D-example build does not. The
 > files named below (`tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`, the ignore list and the reports) no longer
 > exist. See the CHANGELOG.
 

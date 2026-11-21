@@ -154,4 +154,4 @@ GitHub Actions runs on every push to `main` and on PRs:
 
 - **python-lint-test**: ruff lint + pytest on `tests/python/`
 - **build-and-run**: gfortran build (the model and library compile with `-fimplicit-none`, so an undeclared name there fails it) + fail-loud and
-  abort exit-status checks + unit tests + 0D example regression test
+  abort exit-status checks + unit tests (also compiled with `-fimplicit-none`) + 0D example regression test
