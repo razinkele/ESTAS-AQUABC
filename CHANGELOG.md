@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §74.1**: TN and TP rescored after the validator fix (#196).
+  - **Adopted run:** TN 0.819 → 0.805, TP 0.04235 → 0.0319.
+  - **Paper I's comparisons**, on four re-runs that reproduce the earlier scores exactly:
+    - the legacy gate's TP advantage falls from 14 % to 3 %;
+    - the quota variant's TP advantage falls from 23 % to 6 % (it is still better on 6 of 12 pooled errors);
+    - the staging-reversed TN penalty falls from 11 % to 3 %;
+    - the ice result holds.
+  - §72's TN/TP rows carry a dated pointer note.
+  - TN/TP scored before #196 are not comparable with later scores.
 - **`docs/CL29_phenology_diagnosis.md` §74**: two defects found by a 2026-11-21 code review, measured on the adopted
   CL29 configuration. Nothing is adopted or fixed.
   - **Carbonate chemistry at 0 °C.** The pelagic model reads CO2SYS's output-condition columns, which it computes

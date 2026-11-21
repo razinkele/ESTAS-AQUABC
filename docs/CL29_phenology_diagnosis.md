@@ -6285,6 +6285,10 @@ plankton boxes.
 
 The chlorophyll peak month is September in every run (observed August).
 
+*(Note, 2026-11-21: the TN and TP rows above were scored with the akinete carbon added in g m⁻² as if it were a
+concentration. §74.1 rescores them: base 0.805 / 0.0319, legacy gate 0.791 / 0.0308, staging reversed 0.833 / 0.0313,
+quota on 0.788 / 0.0301. The legacy zooplankton and threshold 4 m/s runs were not re-measured.)*
+
 **Reading, by mechanism**
 - **Zooplankton.** The legacy form leaves zooplankton 8.5 times below the June records (2.4 times with the adopted
   form) and peaks in January. The chlorophyll phase does not measurably change (r 0.771 against 0.778), so the phase
@@ -6619,3 +6623,53 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 Older runs with larger akinete pools are not measured. Nothing
 is adopted or changed; neither the model nor the validator is fixed here.
 
+
+### 74.1 2026-11-21: the validator fixed; TN and TP of the adopted run and of Paper I's comparisons rescored
+
+**What changed.** ESTAS-AQUABC #196 (`f806cb7`) makes the validator divide every per-area output (OUTPUT_TYPE 2:
+`AKI_C`, the water-column akinete pool) by the box's VOLUME/AREA from the run's `WATER_LEVELS.out` before it enters
+TN and TP. Before, it was added in g m⁻² as if it were a concentration (§74). Every other score is unchanged.
+
+**Design** (running note items 220–224; `diag_papers_tntp_20261121/`).
+- **Anchor 1:** scoring with `AKI_C` read as type 1 reproduces the earlier sums byte for byte. That is the
+  "old-style" column below.
+- **Anchor 2:** the kept base run of §72 scores byte-identically to today's adopted run.
+- **Re-runs:** three of the §72 variants (legacy gate, staging reversed, quota on with the VARN build) and the
+  ice-off run behind Paper I's ice table (running note items 134 and 145). Each one's old-style scores equal its kept scores exactly, and they reproduce every figure Paper I
+  printed.
+
+**Result** (pooled RMSE, old-style → fixed).
+
+| run | TN | TP | variant lower than base, TN / TP |
+|---|---|---|---|
+| base (adopted) | 0.819 → 0.805 | 0.04235 → 0.0319 | |
+| legacy gate | 0.792 → 0.791 | 0.0365 → 0.0308 | 3.3 / 13.8 % → 1.8 / 3.4 % |
+| staging reversed | 0.911 → 0.833 | 0.0425 → 0.0313 | −11.2 / −0.4 % → −3.4 / +1.8 % |
+| quota on | 0.786 → 0.788 | 0.0326 → 0.0301 | 4.1 / 23.0 % → 2.1 / 5.8 % |
+| ice off | 0.808 → 0.794 | 0.0424 → 0.0321 | 1.4 / −0.1 % → 1.4 / −0.5 % |
+
+The pooled biases fall in every run. On the adopted run TN goes from +0.448 to +0.385 and TP from +0.0135 to +0.0063.
+The September 2026 run (still on disk) gives the size of the error in that era: TP RMSE 0.0461 → 0.0334, TN bias
++0.559 → +0.487.
+
+**Reading.**
+- The TP advantages that Paper I gave the legacy gate (14 %) and the quota variant (23 %) were mostly this error,
+  about three quarters of each. Those runs carry 71 % and 41 % of the adopted run's akinete carbon, so less of the
+  g m⁻² term inflated their sums.
+- Reversing the staged fixer carries 190 %, so its TN penalty shrinks from 11 % to 3 %. Its sign holds.
+- The ice result holds.
+- The quota variant is still better on six of twelve pooled errors, with the same set as in §72's correction.
+
+**Comparability.** TN and TP scored before #196 are not comparable with later ones as a model change. That covers
+this record before §74, the papers up to Paper I v0.18 and Paper II v2.23, and the tracked
+`docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run). Earlier sections keep their numbers.
+
+**Predictions.** All four held:
+- the two akinete-linked TP claims shrink by more than a third;
+- at least one of the four claims changes size;
+- the ice-off TN gap keeps its sign;
+- six of twelve stands.
+
+**Limits.**
+- The legacy zooplankton and threshold 4 m/s runs were not re-run.
+- Paper II's §2.1 (TN −4.1 %) and §4.6 (TP −9 %) comparisons and its §3.1 table are older runs, not re-measured.
