@@ -50,7 +50,7 @@ subroutine DBGSTR_PEL_GEN_01(STATE_VARIABLES, nkn, nstate, node_active, error)
         end if
     end do
 
-    if(error .eq. 1) stop
+    if(error .eq. 1) error stop
 end subroutine DBGSTR_PEL_GEN_01
 
 
@@ -107,7 +107,7 @@ subroutine DBGSTR_PEL_FE_II_DISS_EQ_01(STATE_VARIABLES, PH, TIME, nkn, nstate, n
 
         deallocate(STRANGERS)
         deallocate(NODES_STRANGE)
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_FE_II_DISS_EQ_01
 
@@ -169,7 +169,7 @@ subroutine DBGSTR_PEL_R_ZOO_GROWTH_01(TIME, nkn, nstate, node_active, error)
         write(*,*) '    KG_ZOO_DET_PART_ORG_C        : ', KG_ZOO_DET_PART_ORG_C
         write(*,*) '    KG_ZOO_DET_PART_ORG_C        : ', KG_ZOO_DET_PART_ORG_C
         write(*,*) '    KG_ZOO                       : ', KG_ZOO
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_R_ZOO_GROWTH_01
 
@@ -225,7 +225,7 @@ subroutine DBGSTR_PEL_R_ZOO_RESP_01(TIME, nkn, nstate, node_active, error)
         write(*,*) '-----------------'
         write(*,*) 'R_ZOO_GROWTH      : ', R_ZOO_GROWTH
         write(*,*) 'EFF_ZOO_GROWTH    : ', EFF_ZOO_GROWTH
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_R_ZOO_RESP_01
 
@@ -316,7 +316,7 @@ subroutine DBGSTR_PEL_NH4N_01(PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDI
 
         deallocate(STRANGERS)
         deallocate(NODES_STRANGE)
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_NH4N_01
 
@@ -387,7 +387,7 @@ subroutine DBGSTR_PEL_PO4P_01(PROCESS_RATES, DERIVATIVES, TIME, nkn, nstate, NDI
 
         deallocate(STRANGERS)
         deallocate(NODES_STRANGE)
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_PO4P_01
 
@@ -514,7 +514,7 @@ subroutine DBGSTR_PEL_DOXY_01(PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nsta
         print *,'ELEVATION=', (ELEVATION  (NODES_STRANGE(j)),j=1,nstrange)
         print *,'DEPTH    =', (DEPTH      (NODES_STRANGE(j)),j=1,nstrange)
 
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_DOXY_01
 
@@ -566,7 +566,7 @@ subroutine DBGSTR_PEL_CYNC_01 &
         write(*,*) 'R_CYN_DEATH              : ', R_CYN_DEATH
         write(*,*) ''
         write(*,*) 'R_ZOO_FEEDING_CYN        : ', R_ZOO_FEEDING_CYN
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_CYNC_01
 
@@ -618,7 +618,7 @@ subroutine DBGSTR_PEL_ZOOC_01 &
         write(*,*) 'R_ZOO_EX_DOC                           : ', R_ZOO_EX_DOC
         write(*,*) 'R_ZOO_TOT_RESP                         : ', R_ZOO_TOT_RESP
         write(*,*) 'R_ZOO_DEATH                            : ', R_ZOO_DEATH
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_ZOOC_01
 
@@ -669,7 +669,7 @@ subroutine DBGSTR_PEL_DET_PART_ORG_C_01 &
         write(*,*) '    THETA_KDISS_DET_PART_ORG_C     : ', THETA_KDISS_DET_PART_ORG_C
         write(*,*) '    DET_PART_ORG_C                 : ', DET_PART_ORG_C
         write(*,*) '    DISS_OXYGEN                    : ', DISS_OXYGEN
-        stop
+        error stop
     end if
 
 end subroutine DBGSTR_PEL_DET_PART_ORG_C_01
@@ -754,7 +754,7 @@ subroutine DBGSTR_PEL_DET_DISS_ORG_N_01 &
         deallocate(STRANGERS)
         deallocate(NODES_STRANGE)
 
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_DET_DISS_ORG_N_01
 
@@ -815,7 +815,7 @@ subroutine DBGSTR_PEL_DET_CH4_C_01 &
 
         deallocate(STRANGERS)
         deallocate(NODES_STRANGE)
-        stop
+        error stop
     end if
 end subroutine DBGSTR_PEL_DET_CH4_C_01
 
@@ -893,7 +893,7 @@ subroutine DBGSTR_PEL_DET_TOT_ALK_01 &
         deallocate(NODES_STRANGE_ext)
     end if
 
-    if(error .eq. 1) stop
+    if(error .eq. 1) error stop
 end subroutine DBGSTR_PEL_DET_TOT_ALK_01
 
 
@@ -949,6 +949,6 @@ subroutine DBGSTR_PEL_GEN_02(PROCESS_RATES, DERIVATIVES, FLAGS, TIME, nkn, nstat
         end if
     end do
 
-    if(error .eq. 1) stop
+    if(error .eq. 1) error stop
 
 end subroutine DBGSTR_PEL_GEN_02

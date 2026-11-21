@@ -68,7 +68,7 @@ contains
         i = para_index_value(name)
         if( i == 0 ) then
           write(6,*) 'name = ',trim(name)
-          stop 'error stop para_get_value: name does not exist'
+          error stop 'para_get_value: name does not exist'
         end if
         value = values(i)
     end subroutine
@@ -81,11 +81,11 @@ contains
         i = para_index_value(name)
         if( i > 0 ) then
           write(6,*) 'name = ',trim(name)
-          stop 'error stop para_add_value: name already exists'
+          error stop 'para_add_value: name already exists'
         end if
         nfill = nfill + 1
         if( nfill > ndim ) then
-          stop 'error stop para_add_value: nfill > ndim'
+          error stop 'para_add_value: nfill > ndim'
         end if
         names(nfill) = name
         values(nfill) = value
@@ -99,7 +99,7 @@ contains
         i = para_index_value(name)
         if( i == 0 ) then
           write(6,*) 'name = ',trim(name)
-          stop 'error stop para_put_value: name does not exist'
+          error stop 'para_put_value: name does not exist'
         end if
         names(i) = name
         values(i) = value

@@ -698,7 +698,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(NH4_N                         (nkn), stat=ierr)
     if (ierr /= 0) then
         write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: state variables allocation failed, nkn=', nkn
-        stop
+        error stop
     end if
     allocate(NO3_N                         (nkn))
     allocate(PO4_P                         (nkn))
@@ -738,7 +738,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(TEMP                          (nkn), stat=ierr)
     if (ierr /= 0) then
         write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: driving functions allocation failed, nkn=', nkn
-        stop
+        error stop
     end if
     allocate(FDAY                          (nkn))
     allocate(DEPTH                         (nkn))
@@ -755,7 +755,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(R_FE_II_OXIDATION             (nkn), stat=ierr)
     if (ierr /= 0) then
         write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: main process rates allocation failed, nkn=', nkn
-        stop
+        error stop
     end if
     allocate(R_FE_III_REDUCTION            (nkn))
     allocate(R_MN_II_OXIDATION             (nkn))
@@ -852,7 +852,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(R_DENITRIFICATION             (nkn), stat=ierr)
     if (ierr /= 0) then
         write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: derived process rates allocation failed, nkn=', nkn
-        stop
+        error stop
     end if
     allocate(R_DET_PART_ORG_N_DISSOLUTION  (nkn))
     allocate(LIM_N_DISS_DET_PART_ORG_N     (nkn))
@@ -865,7 +865,7 @@ subroutine ALLOC_AQUABC_PELAGIC_INTERNAL(nkn)
     allocate(DISS_OXYGEN_SAT               (nkn), stat=ierr)
     if (ierr /= 0) then
         write(*,*) 'ERROR: ALLOC_AQUABC_PELAGIC_INTERNAL: auxillary variables allocation failed, nkn=', nkn
-        stop
+        error stop
     end if
     allocate(CHLA                          (nkn))
     allocate(K_E                           (nkn))

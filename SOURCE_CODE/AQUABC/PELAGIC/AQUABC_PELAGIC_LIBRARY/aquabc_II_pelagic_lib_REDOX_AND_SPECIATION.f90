@@ -310,7 +310,7 @@ subroutine REDOX_AND_SPECIATION &
        print *,'BETA_4_FE_OH_3:', BETA_4_FE_OH_3
        print *,'H_PLUS_OVER_4:' , H_PLUS_OVER_4
        print *,'FE_III_FREE:'   , FE_III_FREE
-       stop
+       error stop
     end if
 
 

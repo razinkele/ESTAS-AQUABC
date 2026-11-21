@@ -1664,7 +1664,7 @@ subroutine READ_PELAGIC_MODEL_CONSTANTS(file)
     open(iu,file=file,status='old',form='formatted',iostat=ios)
     if( ios /= 0 ) then
         write(6,*) 'cannot open file ',trim(file)
-        stop 'error stop READ_PELAGIC_MODEL_CONSTANTS: no such file'
+        error stop 'READ_PELAGIC_MODEL_CONSTANTS: no such file'
     end if
 
     nconsts = para_get_fill()
@@ -1714,7 +1714,7 @@ subroutine WRITE_PELAGIC_MODEL_CONSTANTS(file)
     open(iu,file=file,status='unknown',form='formatted',iostat=ios)
     if( ios /= 0 ) then
         write(6,*) 'cannot open file ',trim(file)
-        stop 'error stop WRITE_PELAGIC_MODEL_CONSTANTS: cannot open file'
+        error stop 'WRITE_PELAGIC_MODEL_CONSTANTS: cannot open file'
     end if
 
     nconsts = para_get_fill()

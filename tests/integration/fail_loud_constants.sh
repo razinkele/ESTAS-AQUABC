@@ -99,6 +99,55 @@ run_box_case "box number out of range -> abort"      "$RANGE" ""                
 run_box_case "per-box constants, lenient -> warn"    "$BOX2"  "AQUABC_LENIENT_CONSTANTS=1"   LENIENT "$DIFFERS"
 run_box_case "lenient needs exactly 1 -> abort"      "$BOX2"  "AQUABC_LENIENT_CONSTANTS=10"  FAIL    "$DIFFERS"
 
+# A constants file that does not exist, named in the table or on the command line, used to fall
+# back silently to WCONST_04.txt and run the whole simulation on it (review finding XC-6). It must
+# abort; AQUABC_LENIENT_CONSTANTS=1 keeps the fallback, with a warning on stderr.
+# $1 desc  $2 awk-doctor for the table rows ("" = table unchanged)  $3 extra-env
+# $4 constants file given as the second argument ("" = none)  $5 mode(FAIL|LENIENT)  $6 stderr regex
+run_missing_case() {
+    local d; d=$(mktemp -d) || { echo "FAIL [$1]  (mktemp failed)"; fail=1; return; }
+    [ -n "$d" ] && [ -d "$d" ] || { echo "FAIL [$1]  (no temp dir)"; fail=1; return; }
+    cp INPUT.txt "$d/"; cp -r INPUTS "$d/INPUTS"
+    mkdir -p "$d/OUTPUTS"          # the lenient case runs past the reader
+    if [ -n "$2" ]; then
+        awk '/PELAGIC MODEL CONSTANTS FILE NAME/ { sec = 1; print; next }
+             /^#/ { sec = 0 }
+             sec { '"$2"' }
+             { print }' INPUTS/PELAGIC_INPUTS.txt > "$d/INPUTS/PELAGIC_INPUTS.txt"
+        if [ ! -s "$d/INPUTS/PELAGIC_INPUTS.txt" ] || cmp -s INPUTS/PELAGIC_INPUTS.txt "$d/INPUTS/PELAGIC_INPUTS.txt"; then
+            echo "FAIL [$1]  (could not doctor PELAGIC_INPUTS.txt)"; fail=1; rm -rf "$d"; return
+        fi
+    fi
+    local rc
+    ( cd "$d" && env $3 ESTAS_HOLD_VOLUME=1 timeout 90 "$BIN" INPUT.txt $4 ) >"$d/out.log" 2>"$d/err.log"
+    rc=$?
+    if [ "$5" = FAIL ]; then
+        if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ] && grep -Eq "$6" "$d/err.log" \
+             && ! grep -q 'TIME :' "$d/out.log"; then
+            echo "PASS [$1]  (exit=$rc, stderr matches, no time stepping)"
+        else
+            echo "FAIL [$1]  (exit=$rc, expected an abort before time stepping + stderr /$6/)"
+            sed 's/^/    /' "$d/err.log"; fail=1
+        fi
+    else   # LENIENT: warn, fall back, then actually run (124 = still running at the timeout)
+        if { [ "$rc" -eq 0 ] || [ "$rc" -eq 124 ]; } && grep -Eq "$6" "$d/err.log" \
+             && grep -q 'Falling back to WCONST_04.txt' "$d/err.log" && grep -q 'TIME :' "$d/out.log"; then
+            echo "PASS [$1]  (exit=$rc, warned, fell back and the run started stepping)"
+        else
+            echo "FAIL [$1]  (exit=$rc, expected a fallback warning + a running model)"
+            sed 's/^/    /' "$d/err.log"; fail=1
+        fi
+    fi
+    rm -rf "$d"
+}
+
+NOPE='if ($1 == 1) { print "                   1                          WCONST_NOPE.txt"; next }'
+NOTFOUND='constants file "[^"]*WCONST_NOPE\.txt" not found'
+
+run_missing_case "missing constants file in the table -> abort"    "$NOPE" ""                           ""                FAIL    "$NOTFOUND"
+run_missing_case "missing constants file as argument -> abort"     ""      ""                           "WCONST_NOPE.txt" FAIL    "$NOTFOUND"
+run_missing_case "missing constants file, lenient -> fall back"    "$NOPE" "AQUABC_LENIENT_CONSTANTS=1" ""                LENIENT "$NOTFOUND"
+
 if [ "$fail" -eq 0 ]; then
     echo "fail_loud_constants: ALL checks passed"
 else

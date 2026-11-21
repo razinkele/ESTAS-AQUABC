@@ -119,7 +119,7 @@ contains
             allocate(BOUND_CONCS        (NUM_OPEN_BOUNDARIES , NUM_PELAGIC_STATE_VARS), stat=i)
             if (i /= 0) then
                 write(*,*) 'ERROR: SOLVE: allocation of solver arrays failed'
-                stop
+                error stop
             end if
             allocate(SETTLING_VELOCITIES(NUM_PELAGIC_BOXES   , NUM_PELAGIC_STATE_VARS), stat=i)
             allocate(SETTLING_VELOCITIES_FRESH(NUM_PELAGIC_BOXES, NUM_PELAGIC_STATE_VARS), stat=i)
@@ -284,7 +284,7 @@ contains
                         end do
 
                         !$omp end critical
-                        stop
+                        error stop
                     end if
                 end do
             end do
@@ -500,7 +500,7 @@ contains
                             write(*,*) '!!! ERROR IN RK2 SOLVER: UNREALISTIC VALUE !!!'
                             write(*,*) 'TIME=', TIME, ' BOX=', i, ' STATE=', j
                             write(*,*) 'CONC=', PELAGIC_BOX_MODEL_DATA % PELAGIC_BOXES(i) % CONCENTRATIONS(j)
-                            stop
+                            error stop
                         end if
                     end do
                 end do
@@ -1522,7 +1522,7 @@ contains
                     close(88)
                     write(unit = *, fmt = *) 'Calculated pelagic concentration is a NaN ...'
                     write(unit = *, fmt = *) 'See the file ERROR_LOG.txt for further investigation ...'
-                    stop
+                    error stop
                 end if
             end do
         end do

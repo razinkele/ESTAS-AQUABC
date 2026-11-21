@@ -184,7 +184,7 @@ contains
 
                 write(*,*) 'Subroutine : RUN_SIMULATION'
                 write(*,*) 'Related allocate statement returned stat code ', MEM_ERROR
-                stop
+                error stop
             else
                 write(*,*) 'Memory allocated for the pelagic model state variable results '
                 write(*,*) 'memory output array'
@@ -207,7 +207,7 @@ contains
 
                 write(*,*) 'Subroutine : RUN_SIMULATION'
                 write(*,*) 'Related allocate statement returned stat code ', MEM_ERROR
-                stop
+                error stop
             else
                 write(*,*) 'Memory allocated for the pelagic model process rate results '
                 write(*,*) 'memory output array'
@@ -229,7 +229,7 @@ contains
 
                 write(*,*) 'Subroutine : RUN_SIMULATION'
                 write(*,*) 'Related allocate statement returned stat code ', MEM_ERROR
-                stop
+                error stop
             else
                 write(*,*) 'Memory allocated for the pelagic model saved outputs '
                 write(*,*) 'memory output array'
@@ -252,7 +252,7 @@ contains
 
                     write(*,*) 'Subroutine : RUN_SIMULATION'
                     write(*,*) 'Related allocate statement returned stat code ', MEM_ERROR
-                    stop
+                    error stop
                 else
                     write(*,*) 'Memory allocated for the pelagic model exegy memory output array'
                     write(*,*)

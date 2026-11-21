@@ -210,7 +210,7 @@ contains
             write(unit = *, fmt = '(a47, i10)') 'Argument : pHSCALEIN    , Number of elements = ', VECLENGTHS(12)
             write(unit = *, fmt = '(a47, i10)') 'Argument : K1K2CONSTANTS, Number of elements = ', VECLENGTHS(13)
             write(unit = *, fmt = '(a47, i10)') 'Argument : KSO4CONSTANTS, Number of elements = ', VECLENGTHS(14)
-            stop
+            error stop
         endif
 
         if (DEBUG .eq. 1) then
@@ -3115,7 +3115,7 @@ contains
                 write(*,*) TAx
                 write(*,*) 'Total inorganic carbon dump'
                 write(*,*) TCx
-                stop
+                error stop
             end if
         end do
 

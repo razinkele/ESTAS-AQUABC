@@ -71,7 +71,7 @@ subroutine CALCULATE_PH_CORR(PH_CORR, PH, PH_MIN, PH_MAX, nkn)
             error=1
         end if
 
-        if (error .eq. 1) stop
+        if (error .eq. 1) error stop
     end do
 
 

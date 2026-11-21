@@ -451,7 +451,7 @@ contains
             if (NUM_SED_TYPES < 1) then
                 write(*, *) 'READ_BOTTOM_SEDIMENTS_MODEL_INPUTS: NUM_SED_TYPES = ', &
                     NUM_SED_TYPES, ' is invalid (must be >= 1)'
-                stop
+                error stop
             end if
         else
             backspace(IN_FILE)
@@ -474,7 +474,7 @@ contains
                     write(*, *) 'READ_BOTTOM_SEDIMENTS_MODEL_INPUTS: box ', i, &
                         ' has sediment type index ', bsed%SED_TYPE_PER_BOX(i), &
                         ' out of range [1, ', NUM_SED_TYPES, ']'
-                    stop
+                    error stop
                 end if
             end do
 

@@ -219,7 +219,7 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
         write(*,*) 'Wrong option was entered for the pelagic process output option'
         write(*,*) 'Enter 1 for the volume based output - g/m^3/day'
         write(*,*) 'Enter 2 for the area   based output - g/m^2/day'
-        stop
+        error stop
     else
         if (PEL_PROCESS_RATE_OUTPUT_OPTION.eq.1) then
             write(*,*) 'Process rates will be written in g/m^3/day'
@@ -279,7 +279,10 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
         end if
         constants_row_seen(AUX_INT) = .true.
 
-        ! Determine which constants file to use and fallback to WCONST_04.txt
+        ! Determine which constants file to use. The file named here (or on the command line) is
+        ! looked up in the pelagic input folder. A missing file stops the run: falling back to
+        ! another file would run the whole simulation with constants nobody chose.
+        ! AQUABC_LENIENT_CONSTANTS=1 keeps the old fallback to WCONST_04.txt, with a warning.
 
         if (USE_PELAGIC_CONSTANTS_FILE_NAME > 0) then
             constants_file = trim(adjustl(PELAGIC_CONSTANTS_FILE_NAME))
@@ -290,13 +293,20 @@ subroutine READ_PELAGIC_BOX_MODEL_INPUTS(PELAGIC_BOX_MODEL_DATA, IN_FILE, OUT_FI
         constants_path = trim(adjustl(PELAGIC_INPUT_FOLDER)) // constants_file
         inquire(file=trim(constants_path), exist=exists)
         if (.not. exists) then
-            write(*,*) 'Warning: constants file "', trim(constants_file), '" not found. Falling back to WCONST_04.txt'
+            write(error_unit, *) 'READ_PELAGIC_BOX_MODEL_INPUTS: constants file "', &
+                trim(constants_path), '" not found'
+            if (.not. LENIENT_CONSTANTS()) then
+                error stop 'READ_PELAGIC_BOX_MODEL_INPUTS: constants file not found (see stderr above)'
+            end if
+            write(error_unit, *) 'Warning: constants file "', trim(constants_file), &
+                '" not found. Falling back to WCONST_04.txt (AQUABC_LENIENT_CONSTANTS=1)'
             constants_file = 'WCONST_04.txt'
             constants_path = trim(adjustl(PELAGIC_INPUT_FOLDER)) // constants_file
             inquire(file=trim(constants_path), exist=exists)
             if (.not. exists) then
-                write(*,*) 'Error: fallback constants file "WCONST_04.txt" not found in ', trim(adjustl(PELAGIC_INPUT_FOLDER))
-                stop 'Missing constants file'
+                write(error_unit, *) 'Error: fallback constants file "WCONST_04.txt" not found in ', &
+                    trim(adjustl(PELAGIC_INPUT_FOLDER))
+                error stop 'READ_PELAGIC_BOX_MODEL_INPUTS: missing constants file'
             end if
         end if
 

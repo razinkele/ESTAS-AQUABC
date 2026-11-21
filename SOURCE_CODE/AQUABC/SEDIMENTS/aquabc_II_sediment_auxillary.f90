@@ -71,7 +71,7 @@ function SED_MOD_1_ALUKAS_MOLDI_C(SVARNO, T, SAL, TVAR) result(MOL_DIFF)
         print *,'SED_MOD_1_ALUKAS_MOLDI_C:'
         print *,'To get values correctly by Molecular diffusion'
         print *,'BS statevars No should not gt than 24 but is', SVARNO
-        stop
+        error stop
     end if
 
     TK = T + 273.16D0
@@ -269,7 +269,7 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II &
         print *,'FLX_SED_MOD_1_TO_ALUKAS_II:'
         print *,'To get values correctly by FLUXES_TO_ALUKAS'
         print *,'num. of statevars should be 30 but is', NUM_FLUXES_TO_ALUKAS
-        stop
+        error stop
     end if
 
     !NH4 FLUX TO ALUKAS
@@ -375,7 +375,7 @@ subroutine FLX_SED_MOD_1_TO_ALUKAS_II_VEC &
         print *,'FLX_SED_MOD_1_TO_ALUKAS_II_VEC:'
         print *,'To get values correctly by FLUXES_TO_ALUKAS'
         print *,'num. of statevars should be', NSTATE_CHECK, 'but is', NUM_FLUXES_TO_ALUKAS
-        stop
+        error stop
     end if
 
     !NH4 FLUX TO ALUKAS
@@ -470,7 +470,7 @@ subroutine SED_MOD_1_ALUKAS_MOLDI_C_VEC(T,  SAL, nkn, NUM_SED_LAYERS, NUM_SED_VA
         print *,'SED_MOD_1_ALUKAS_MOLDI_C_VEC:'
         print *,'To get values correctly by Molecular diffusion'
         print *,'BS statevars No should be', SED_VARS_CHECK, 'but is', NUM_SED_VARS
-        stop
+        error stop
     end if
 
     TK = T + 273.16D0

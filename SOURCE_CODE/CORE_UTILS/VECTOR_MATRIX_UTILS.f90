@@ -58,7 +58,7 @@ contains
         allocate(ARRAY_TO(size(ARRAY_FROM)), stat=ierr)
         if (ierr /= 0) then
             write(*,*) 'ERROR: ASSIGN_DBL_VECTOR_CONTENT: allocation failed, size=', size(ARRAY_FROM)
-            stop
+            error stop
         end if
         ARRAY_TO(:) = ARRAY_FROM(:)
     end subroutine ASSIGN_DBL_VECTOR_CONTENT
@@ -80,7 +80,7 @@ contains
         allocate(ARRAY_TO(size(ARRAY_FROM)), stat=ierr)
         if (ierr /= 0) then
             write(*,*) 'ERROR: ASSIGN_INT_VECTOR_CONTENT: allocation failed, size=', size(ARRAY_FROM)
-            stop
+            error stop
         end if
         ARRAY_TO(:) = ARRAY_FROM(:)
     end subroutine ASSIGN_INT_VECTOR_CONTENT
@@ -101,7 +101,7 @@ contains
         allocate(INT_VECTOR(size(LOGICAL_VECTOR)), stat=ierr)
         if (ierr /= 0) then
             write(*,*) 'ERROR: LOGICAL_VECTOR_TO_INT_VECTOR: allocation failed, size=', size(LOGICAL_VECTOR)
-            stop
+            error stop
         end if
         
             INT_VECTOR = 0
@@ -114,7 +114,7 @@ contains
             write(*,*) 'LOGICAL_VECTOR_TO_INT_VECTOR(LOGICAL_VECTOR, INT_VECTOR)'
             write(*,*) 'The size of the argument LOGICAL_VECTOR passed to subroutine '
             write(*,*) 'LOGICAL_VECTOR_TO_INT_VECTOR should be greater than zero'
-            stop            
+            error stop            
         end if
     end subroutine LOGICAL_VECTOR_TO_INT_VECTOR
 
@@ -134,7 +134,7 @@ contains
         allocate(INDEX_ARRAY(sum(INDEX_ARRAY_MASK)), stat=ierr)
         if (ierr /= 0) then
             write(*,*) 'ERROR: GENERATE_INDEX_ARRAY: allocation failed, size=', sum(INDEX_ARRAY_MASK)
-            stop
+            error stop
         end if
         j = 1
 
