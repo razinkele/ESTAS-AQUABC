@@ -6776,10 +6776,12 @@ was open, and merging it was the adoption decision. It was merged on 2026-11-21 
   - The fix is in no release yet; v0.13.0's binary has the 0 °C chemistry.
 
 **Comparability.** Runs made before `d7a036a`, or with an older binary, are not comparable with later ones as a model
-change. Pooled scores move by less than 1 %, but pH, the carbonate species and the unscored dissolved organic pools move
-more. That covers:
+change. Pooled scores move by less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved organic
+pools move more. That covers:
 - this record before this section;
-- Paper II up to v2.24 and v2.25's marked comparisons, and every number in Paper I up to v0.20;
+- Paper II up to v2.24, and in v2.25 everything except the regenerated items listed under **Adoption** (the marked
+  comparisons and the calibration history among them);
+- every number in Paper I up to v0.20;
 - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run);
 - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`);
 - v0.13.0's binary.
