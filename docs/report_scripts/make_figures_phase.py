@@ -36,17 +36,19 @@ C_MODEL, C_OBS = "#2a78d6", "#eb6834"
 C_TEXT, C_TEXT2, C_GRID = "#0b0b0b", "#52514e", "#d9d8d4"
 MON = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
-# Obs-matched monthly climatologies of the adopted configuration as run on 2026-11-19 (corrected
-# boundary, allelopathy off). Chlorophyll: the validator's --phase table. Group carbon: the model
-# read at 00:00 of each KM sampling date in the six KM boxes, monthly means of the pairs.
+# Obs-matched monthly climatologies of the adopted configuration with the in-situ carbonate chemistry
+# (#201; full record, run s1t of diag_sed1_20261121, 2026-11-21). Chlorophyll: the validator's --phase
+# table. Group carbon: the model read at 00:00 of each KM sampling date in the six KM boxes, monthly means
+# of the pairs (diag_papers_20261119/monthly_cyano.py). The same scripts on the previous chemistry (run
+# s1b) reproduce the values this replaced exactly.
 CHLA_OBS = {1: 17.6, 2: 10.2, 3: 25.1, 4: 30.8, 5: 29.5, 6: 20.9,
             7: 26.2, 8: 50.8, 9: 50.2, 10: 46.4, 11: 24.0}
-CHLA_MOD = {1: 2.6, 2: 6.9, 3: 20.0, 4: 19.9, 5: 23.1, 6: 33.5,
-            7: 43.5, 8: 49.0, 9: 51.2, 10: 32.6, 11: 12.3}
+CHLA_MOD = {1: 2.6, 2: 6.9, 3: 20.0, 4: 19.9, 5: 23.0, 6: 33.3,
+            7: 43.7, 8: 49.4, 9: 51.7, 10: 33.0, 11: 12.5}
 CYN_OBS = {8: 2.304, 9: 1.875, 10: 1.056, 11: 0.343}
 FIX_OBS = {8: 1.606, 9: 1.980, 10: 0.812, 11: 0.457}
-CYN_MOD = {8: 0.391, 9: 0.625, 10: 0.721, 11: 0.514}
-FIX_MOD = {8: 3.306, 9: 3.077, 10: 1.607, 11: 0.042}
+CYN_MOD = {8: 0.390, 9: 0.622, 10: 0.719, 11: 0.515}
+FIX_MOD = {8: 3.345, 9: 3.120, 10: 1.638, 11: 0.043}
 
 
 def style(ax):
@@ -69,7 +71,7 @@ def fig_phase():
     ax.set_ylabel("chlorophyll-a (µg L$^{-1}$)", color=C_TEXT2, fontsize=9)
     style(ax)
     ax.legend(frameon=False, fontsize=9, loc="upper left")
-    ax.annotate("model peak\nSep", xy=(9, 51.2), xytext=(9.5, 61), fontsize=8, color=C_MODEL,
+    ax.annotate("model peak\nSep", xy=(9, 51.7), xytext=(9.5, 61), fontsize=8, color=C_MODEL,
                 arrowprops=dict(arrowstyle="->", color=C_MODEL, lw=1))
     ax.annotate("observed peak\nAug", xy=(8, 50.8), xytext=(5.6, 61), fontsize=8, color=C_OBS,
                 arrowprops=dict(arrowstyle="->", color=C_OBS, lw=1))
@@ -93,7 +95,7 @@ def fig_composition():
            color=C_MODEL, label="model")
     a1.set_xticks(list(x)); a1.set_xticklabels([MON[k - 1] for k in m])
     a1.set_ylabel("mg C L$^{-1}$", color=C_TEXT2, fontsize=9)
-    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Sep within 6 %, Oct 25 % over)",
+    a1.set_title("TOTAL cyanobacterial carbon\n(Aug–Sep within 5 %, Oct 26 % over)",
                  fontsize=9.5, color=C_TEXT, loc="left")
     style(a1); a1.legend(frameon=False, fontsize=9)
     # right: the split -- entirely wrong
@@ -105,7 +107,7 @@ def fig_composition():
     a2.set_xticks(list(x)); a2.set_xticklabels([MON[k - 1] for k in m])
     a2.set_ylabel("CYN share of cyanobacterial carbon", color=C_TEXT2, fontsize=9)
     a2.set_ylim(0, 1)
-    a2.set_title("The SPLIT between the two guilds\n(Aug–Oct: model 0.11–0.31 vs observed 0.49–0.59)",
+    a2.set_title("The SPLIT between the two guilds\n(Aug–Oct: model 0.10–0.31 vs observed 0.49–0.59)",
                  fontsize=9.5, color=C_TEXT, loc="left")
     style(a2)
     fig.suptitle("Right total, wrong guild — the autumn partitioning error",
