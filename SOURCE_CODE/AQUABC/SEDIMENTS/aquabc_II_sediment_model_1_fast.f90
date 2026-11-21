@@ -943,7 +943,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             ALL_LAYERS_CO2SYS_pHSCALEIN    (:) = 1
             ALL_LAYERS_CO2SYS_K1K2CONSTANTS(:) = 4
             ALL_LAYERS_CO2SYS_KSO4CONSTANTS(:) = 1
-            ALL_LAYERS_CO2SYS_TEMPOUT      (:) = 0.0D0  !Does not matter for this example
+            ALL_LAYERS_CO2SYS_TEMPOUT      (:) = ALL_LAYERS_CO2SYS_TEMPIN(:)  ! in situ (SED-1)
             ALL_LAYERS_CO2SYS_PRESIN       (:) = 0.0D0  !Does not matter for this example
             ALL_LAYERS_CO2SYS_PRESOUT      (:) = 0.0D0  !Does not matter for this example
 
@@ -1025,7 +1025,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             CO2SYS_PAR2TYPE     (:) = 2
             CO2SYS_SALT         (:) = SALT(:,i)
             CO2SYS_TEMPIN       (:) = SED_TEMPS(:,i)
-            CO2SYS_TEMPOUT      (:) = 0.0D0  !Does not matter for this example
+            CO2SYS_TEMPOUT      (:) = CO2SYS_TEMPIN(:)  ! in situ (SED-1)
             CO2SYS_PRESIN       (:) = 0.0D0  !Does not matter for this example
             CO2SYS_PRESOUT      (:) = 0.0D0  !Does not matter for this example
             CO2SYS_SI           (:) = (SED_DSI (:,i) / 28.0855D0) * 1.0D3
@@ -2124,7 +2124,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     ALL_LAYERS_CO2SYS_pHSCALEIN    (:) = 1
                     ALL_LAYERS_CO2SYS_K1K2CONSTANTS(:) = 4
                     ALL_LAYERS_CO2SYS_KSO4CONSTANTS(:) = 1
-                    ALL_LAYERS_CO2SYS_TEMPOUT      (:) = 0.0D0  !Does not matter for this example
+                    ALL_LAYERS_CO2SYS_TEMPOUT      (:) = ALL_LAYERS_CO2SYS_TEMPIN(:)  ! in situ (SED-1)
                     ALL_LAYERS_CO2SYS_PRESIN       (:) = 0.0D0  !Does not matter for this example
                     ALL_LAYERS_CO2SYS_PRESOUT      (:) = 0.0D0  !Does not matter for this example
 
@@ -2211,7 +2211,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                         CO2SYS_PAR2TYPE     (:) = 2
                         CO2SYS_SALT         (:) = SALT(:,i)
                         CO2SYS_TEMPIN       (:) = SED_TEMPS(:,i)
-                        CO2SYS_TEMPOUT      (:) = 0.0D0  !Does not matter for this example
+                        CO2SYS_TEMPOUT      (:) = CO2SYS_TEMPIN(:)  ! in situ (SED-1)
                         CO2SYS_PRESIN       (:) = 0.0D0  !Does not matter for this example
                         CO2SYS_PRESOUT      (:) = 0.0D0  !Does not matter for this example
                         CO2SYS_SI           (:) = (SED_DSI (:,i) / 28.0855D0) * 1.0D3
