@@ -6673,3 +6673,80 @@ this record before §74, the papers up to Paper I v0.18 and Paper II v2.23, and 
 **Limits.**
 - The legacy zooplankton and threshold 4 m/s runs were not re-run.
 - Paper II's §2.1 (TN −4.1 %) and §4.6 (TP −9 %) comparisons and its §3.1 table are older runs, not re-measured.
+
+### 74.2 2026-11-21: the carbonate-chemistry fix (ESTAS-AQUABC #201) measured for adoption — open, not adopted
+
+**What #201 changes.** Every CO2SYS call site set the output temperature `TEMPOUT` to 0, but the model reads the
+output-condition columns: pH (18), HCO₃/CO₃/CO₂ (21–23) and the phosphate K1–K3 (75–77). So the carbonate chemistry
+was that of 0 °C water (§74). #201 passes the in-situ temperature at all five sites: one pelagic, and four sediment
+sites, of which two are dead code. The line dates at least from the repository's first commit (0419a2c, 2026-01-18),
+so every result in this record, the CL29 calibration included, used the 0 °C chemistry. #201 is open; merging it is
+the adoption decision.
+
+**Design** (running note items 248–250; `diag_sed1_20261121/`).
+- **Anchor 1:** an unmodified build of main equals the live binary (d57dff16).
+- **Anchor 2:** the base run with the live binary (adopted inputs, full record) reproduces the adopted run's kept
+  post-#196 scores byte for byte: TN 0.805, TP 0.0319.
+- **Anchor 3:** the fix run, scored old-style, reproduces §74's probe scores byte for byte, and its pH summary at
+  boxes 11 and 23 is identical. On the CL29 path, #201 is the measured probe (CL29 runs `MODEL_SEDIMENTS 1`).
+
+**Result, CL29** (fix against base; today's validator).
+- **pH:** July–August pH falls 0.31 at boxes 11 and 23; winter pH is unchanged.
+- **Scores:** every pooled RMSE changes by less than 1 % (largest PO₄ −0.62 %; TN 0.8053 → 0.8065, TP 0.03190 →
+  0.03194, Chl-a 24.01 → 23.93); most improve slightly. The full-record Φ6 goes 6.898 → 6.866.
+- **Scored-variable means** change by less than 1 %, except nitrate at +2.5 %.
+- **Unscored pools** (daily means, note items 252–255; `diag_0dgap_20261121/`): the dissolved organic pools fall, DON
+  −1.9 % over all days and −6.7 % in July–August (median box), −7 % and −16 % at box 29; DOP and DOC behave alike.
+  Totals barely move (TN −0.3 %, TP −0.3 %). Summer nitrate rises ~27 % but from ~0.004 mg N/L.
+
+**Result, elsewhere.**
+- **0D example:** totals barely move (TN +0.3 %, TP 0.0 %, of the printed pools), but the pools shift: detrital N
+  +11.8 %, non-fixing cyanobacteria +11 %, DON −8.6 %. The detrital and cyanobacterial shifts appear only in 0D, and
+  their cause is not established; the 0D box sits at pH ≈ 10.25 at a constant 14 °C. Its golden is regenerated in #201.
+- **Sediment model** (`INPUT_sediment_test.txt`): the sediment edits alone move sediment outputs by up to 1.7 % in two
+  days.
+
+**Paper exposure** (note items 257–259; `diag_paperexposure_20261121/classification.md`).
+- Every score, table and figure would need regenerating; for example, Paper II's Figure 8 TN bias goes from +0.38 to
+  +0.37.
+- No pH value is quoted. Several historical numbers in Paper II come from earlier configurations.
+- The adopted nitrification (`K_NITR_20` 1.94) and DOC-on-nitrate mineralisation (`K_MIN_DOC_NO3N_20` 2.98) constants
+  sit on their fit's upper bounds (2.0, 3.0) and were fitted under the 0 °C chemistry.
+
+**Bounded scan of those two constants** (note items 260–261; `diag_sed1scan_20261121/`).
+- **Design:** each constant was lowered one at a time to three values, under both chemistries (12 runs; adopted inputs,
+  full record). Φ6 is the full-record Φ over NH₄, NO₃, PO₄, DO, Si and Chl-a (Σ RMSE/obs mean); Φ11 adds the five
+  group carbons. The base run's Φ6, 6.898, equals the adopted configuration's full-record Φ in §60.
+- **Provenance:** both values come from the closure-DE optimum adopted on 2026-08-15 (data `a7e633e`). On that date,
+  every parameter set of `tools/calibrate_cl29.py` that contained them (b8c4e26) bounded them at 0.3–3.0 and 0.2–2.0,
+  so both sit on their upper bounds. Which set that DE ran is not identified here. That fit's window and objective may differ from this
+  full-record Φ, and the model has changed since, so the scan cannot say which explains the result below.
+
+| constant | value | Φ6 old → fix | Φ11 old → fix |
+|---|---|---|---|
+| `K_NITR_20` | 1.94 (adopted) | 6.898 → 6.866 | 16.544 → 16.521 |
+|  | 1.6 | 6.924 → 6.891 | 16.573 → 16.549 |
+|  | 1.3 | 6.962 → 6.929 | 16.618 → 16.590 |
+|  | 1 | 7.028 → 6.996 | 16.689 → 16.661 |
+| `K_MIN_DOC_NO3N_20` | 2.98 (adopted) | 6.898 → 6.866 | 16.544 → 16.521 |
+|  | 2.4 | 6.884 → 6.857 | 16.496 → 16.476 |
+|  | 1.9 | 6.893 → 6.865 | 16.463 → 16.438 |
+|  | 1.5 | 6.918 → 6.911 | 16.445 → 16.429 |
+
+- **Same best grid point under both chemistries**, on this four-point grid, on both lines; the fix does not move it.
+  The fix lowers Φ6 by 0.007–0.033. The shift is smallest at `K_MIN_DOC_NO3N_20` = 1.5, where the fix raises
+  nitrate's error term (1.362 → 1.375) while every other term falls.
+- **`K_NITR_20`:** the adopted value, on its bound, is the best point under both chemistries. The optimum is at or
+  beyond the bound, so the scan cannot see whether it moves.
+- **`K_MIN_DOC_NO3N_20`:** the adopted value is not the best point under either chemistry. Φ6 is lowest at 2.4
+  (−0.2 %), and Φ11 at 1.5 and still falling (−0.6 %). This is consistent with what was already known: Paper II
+  l.581's full-record grid saturates near 2.0, and §60's recalibration moved the constant to 2.52.
+- **Registered predictions:** P1 (old: the adopted point is the best on both lines) and P2 (fix: still the best;
+  adjacent changes under 1 %) were both refuted, on the `K_MIN_DOC_NO3N_20` line, and for a reason the fix does not
+  cause.
+
+**Limits.**
+- The scan can show whether the adopted point stops being optimal along each line; it cannot supply new constants.
+  Only a recalibration under the fix can.
+- The 0D-only shifts are unexplained (0D variant runs would split the causes).
+- Nothing here is adopted. Adoption = merging #201, rebuilding the live binary, and regenerating the papers' numbers.
