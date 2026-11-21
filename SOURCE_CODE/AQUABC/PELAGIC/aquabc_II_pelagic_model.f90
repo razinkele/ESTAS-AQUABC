@@ -340,7 +340,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (nstate .ne. NSTATE_CHECK) then
         write(*,*) 'PELAGIC_KINETICS: Number of state variables is wrong : ', nstate
         write(*,*) 'Expected: ', NSTATE_CHECK
-        stop
+        error stop
     end if
 
     NH4_N           (:)      = STATE_VARIABLES(:,NH4_N_INDEX         )     ! AMMONIUM NITROGEN
@@ -380,7 +380,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if(n_driving_functions .ne. NDRIV_CHECK) then
        write(*,*) 'PELAGIC_KINETICS: Number of elements in DRIVING_FUNCTIONS is wrong', n_driving_functions
        write(*,*) 'Expected: ', NDRIV_CHECK
-       stop
+       error stop
     end if
 
     TEMP     (1:nkn) = DRIVING_FUNCTIONS(1:nkn, 1)
@@ -411,7 +411,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if(nflags .ne. NFLAGS_CHECK) then
        write(*,*) 'PELAGIC_KINETICS: Number of elements in FLAGS is wrong', nflags
        write(*,*) 'Expected: ', NFLAGS_CHECK
-       stop
+       error stop
     end if
 
     SAFE_MODE                  = FLAGS(1)
@@ -424,7 +424,7 @@ subroutine AQUABC_PELAGIC_KINETICS &
     if (nconst .ne. NCONST_CHECK) then
         write(*,*) 'PELAGIC_KINETICS: Number of elements in MODEL_CONSTANTS is wrong', nconst
         write(*,*) 'Expected: ', NCONST_CHECK
-        stop
+        error stop
     end if
 
     ! Calling CO2SYS
@@ -2524,7 +2524,7 @@ contains
                 write(6,'(A,6ES12.4)') '  PROCESS_RATES(1:6)=', PROCESS_RATES(i,FIX_CYN_C_INDEX,1:6)
                 write(6,'(A,3ES14.6)') '  NH4_N/NO3_N/PO4_P=', NH4_N(i), NO3_N(i), PO4_P(i)
                 !$omp end critical
-                stop
+                error stop
             end if
 
             ! New diagnostic: check actual process rates (indices 1-5) for unusually large values

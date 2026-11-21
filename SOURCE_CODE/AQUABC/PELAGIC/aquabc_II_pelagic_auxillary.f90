@@ -421,7 +421,7 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
                 GAM = 6.5D0
             else
                 WRITE(*,*) 'KAWIND : WRONG VALUE FOR WATERBODY TYPE'
-                STOP
+                error stop
             end if
         end if
 
@@ -474,7 +474,7 @@ double precision function KAWIND(WINDS, TW, TA, DEPTH, WTYPE)
 
     if ((ERR.GT.0.005).AND.(N.EQ.9)) then
         WRITE(*,*) 'KAWIND : SOLUTION DID NOT CONVERGE'
-        STOP
+        error stop
     end if
 
     CDDRAG = SRCD**2.0D0
@@ -624,7 +624,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     do i = 1, nkn
         if (.not. ieee_is_finite(TEMP1(i))) then
             write(6,*) 'LIM_LIGHT: NON-FINITE TEMP1 at i=', i, 'ke=', ke(i), 'H=', H(i), 'TEMP1=', TEMP1(i)
-            stop
+            error stop
         end if
     end do
 
@@ -657,7 +657,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
     else
      if (abs(K_LIGHT_SAT) .lt. 1.0D-20) then
          write(6,*) 'LIM_LIGHT: K_LIGHT_SAT is zero or near-zero, cannot compute TEMP2'
-         stop
+         error stop
      end if
      TEMP2     = 1.0D0/K_LIGHT_SAT
      LIGHT_SAT = K_LIGHT_SAT
@@ -670,7 +670,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
         write(6,*) 'TEMP2=',TEMP2
         write(6,*) 'GITMAX=', GITMAX
         write(6,*) 'CCHL_RATIO=', CCHL_RATIO
-        stop
+        error stop
     end if
 
     ! Photoinhibition: multiply TEMP2 (= 1/I_s) by (1+BETA) to shift
@@ -718,7 +718,7 @@ subroutine LIM_LIGHT(Ia, TCHLA, GITMAX, H, ke, LLIGHT, CCHL_RATIO, K_LIGHT_SAT, 
         write(6,*) 'K_LIGHT_SAT=', K_LIGHT_SAT
         write(6,*) 'ke=', ke
         write(6,*) 'H=', H
-        stop
+        error stop
     end if
 
 
@@ -815,7 +815,7 @@ subroutine CUR_SMITH(Ia, TCHLA, CCHLXI, GITMAX, H, ke, LLIGHT, CCHLX)
 
     if (GITMAX .lt. 1D-20 .or. CCHL1 .lt. 1D-20) then
         write(6,*) 'SMITH: TEMP2 is NaN ', 'GITMAX=', GITMAX,'CCHL1=', CCHL1
-        stop
+        error stop
     end if
 
     ! Guard against division by zero when TEMP1 (extinction * depth) is very small
@@ -1006,7 +1006,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
         print *, 'FLX_ALUKAS_II_TO_SED_MOD_1:'
         print *, 'To get values correctly by fluxes from WC and not deposited fluxes'
         print *, 'number of state variables should be equal to', nstate, 'but is ', NUM_VARS
-        stop
+        error stop
     end if
 
         ! Added by PZem 2019-07-23
@@ -1046,7 +1046,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1 &
         print *, 'To get values correctly by fluxes to sediments and not deposited fluxes'
         print *, 'number of BS state vars(fluxes) should be equal to', NUM_FLUXES_TO_SEDIMENTS, &
                  'but is ', NUM_FLUXES
-        stop
+        error stop
     end if
 
     !AMMONIA NITROGEN FLUX
@@ -1253,7 +1253,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
         print *, 'FLX_ALUKAS_II_TO_SED_MOD_1_VEC:'
         print *, 'To get values correctly by fluxes from WC and not deposited fluxes'
         print *, 'number of state variables should be equal to', nstate, 'but is ', NUM_VARS
-        stop
+        error stop
     end if
 
     ! FLUXES FROM WC TO BS FOR BS VARIABLES
@@ -1262,7 +1262,7 @@ subroutine FLX_ALUKAS_II_TO_SED_MOD_1_VEC &
         print *, 'To get values correctly by fluxes to sediments and not deposited fluxes'
         print *, 'number of BS state vars(fluxes) should be equal to', NUM_FLUXES_TO_SEDIMENTS, &
                  'but is ', NUM_FLUXES
-        stop
+        error stop
     end if
 
     SETTLING_FACTORS = BOTTOM_FACTOR * (1.0D+0 - DISSOLVED_FRACTIONS) * SETTLING_VELOCITIES

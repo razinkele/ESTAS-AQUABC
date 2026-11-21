@@ -377,7 +377,7 @@ subroutine SED_REDOX_AND_SPECIATION &
            end do
        end do
 
-       stop
+       error stop
     end if
 
 

@@ -1676,7 +1676,7 @@ subroutine CALCULATE_SETTLING_SUPRESSION(SETTLING_VELOCITY_FACTORS)
             ' DERIV_CYN=', pcore%DERIVATIVES(nd, CYN_C_INDEX)
         CHLA_DUMP_DONE = .true.
         ! Stop to preserve dump in logs for analysis
-        stop
+        error stop
     end if
 
     ! ---------------------------------------------------------------------------

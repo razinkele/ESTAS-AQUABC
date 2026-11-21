@@ -207,7 +207,7 @@ contains
                 AQUATIC_MODEL_DATA % PELAGIC_BOX_MODEL_DATA % NUM_MODEL_CONSTANTS
 
             write (*,*) 'The number of pelagic model constants requested by AQUABC : ', nconst
-            stop "error stop"
+            error stop 'READ_AQUATIC_MODEL_INPUTS: pelagic model constants count differs from AQUABC'
         end if
 
         allocate(pcore%node_active(nkn)                                      )
@@ -584,7 +584,7 @@ contains
                 write(unit = *, fmt = *) &
                       'Bottom sediments are not coupled with resuspension ' // &
                       'in this version of ESTAS-AQUABC. Program halted.'
-                stop
+                error stop
             end if
 
             read(unit = IN_FILE, fmt = *)

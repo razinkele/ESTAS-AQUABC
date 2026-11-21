@@ -132,13 +132,13 @@ subroutine aquabc_init                        ( &
     if( nstate_g /= nstate ) then
         write(6,*) 'nstate given is ',nstate_g
         write(6,*) 'nstate must be  ',nstate
-        stop 'error stop: nstate_g /= nstate'
+        error stop 'nstate_g /= nstate'
     end if
 
     if( n_driving_functions_g /= n_driving_functions ) then
         write(6,*) 'n_driving_functions given is ',n_driving_functions_g
         write(6,*) 'n_driving_functions must be  ',n_driving_functions
-        stop 'error stop: n_driving_functions_g /= n_driving_functions'
+        error stop 'n_driving_functions_g /= n_driving_functions'
     end if
 
     binitialized = .true.
@@ -216,13 +216,13 @@ subroutine aquabc_init_flags                ( &
     if( nflags_g /= nflags_l ) then
         write(6,*) 'nflags given is ',nflags_g
         write(6,*) 'nflags must be  ',nflags_l
-        stop 'error stop: nflags_g /= nflags_l'
+        error stop 'nflags_g /= nflags_l'
     end if
 
     if( .not. binitialized ) then
         write(6,*) 'AQUABC is not initialized'
         write(6,*) 'must call aquabc_init first'
-        stop 'error stop aquabc_init_flags: AQUABC not initialized'
+        error stop 'aquabc_init_flags: AQUABC not initialized'
     end if
 
     FLAGS(1:5) = flags_g(1:5)
@@ -274,7 +274,7 @@ subroutine aquabc_run                       ( &
         if( .not. binitialized ) then
             write(6,*) 'AQUABC is not initialized'
             write(6,*) 'must call aquabc_init first'
-            stop 'error stop aquabc_run: AQUABC not initialized'
+            error stop 'aquabc_run: AQUABC not initialized'
         end if
 
         DAY_OF_YEAR   = 1 + mod(int(TIME)-1,365)
@@ -348,7 +348,7 @@ subroutine aquabc_read_constants(file)
     if( .not. binitialized ) then
       write(6,*) 'model has not been initialized.'
       write(6,*) 'must call aquabc_init before.'
-      stop 'error stop aquabc_read_constants: not initialized'
+      error stop 'aquabc_read_constants: not initialized'
     end if
 
     call READ_PELAGIC_MODEL_CONSTANTS(file)     !reads from file into array
@@ -369,7 +369,7 @@ subroutine aquabc_write_constants(file)
     if( .not. binitialized ) then
       write(6,*) 'model has not been initialized.'
       write(6,*) 'must call aquabc_init before.'
-      stop 'error stop aquabc_write_constants: not initialized'
+      error stop 'aquabc_write_constants: not initialized'
     end if
 
     call WRITE_PELAGIC_MODEL_CONSTANTS(file)

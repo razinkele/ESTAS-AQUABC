@@ -99,7 +99,7 @@ subroutine chlorophyl_a_vec &
                 write(6,*) 'ALERT: FIX_CYN flipped sign between CHLA calls at node 1'
                 write(6,*) '  PREV_FIX_CYN_C_1=', prev_FIX_CYN_C_1, ' CUR_FIX_CYN_C=', FIX_CYN_C(1)
                 write(6,*) '  DIA_C=', DIA_C(1), ' CYN_C=', CYN_C(1), ' FIX_CYN_C=', FIX_CYN_C(1), ' OPA_C=', OPA_C(1)
-                stop
+                error stop
             end if
             prev_FIX_CYN_C_1 = FIX_CYN_C(1)
             prev_init = .true.

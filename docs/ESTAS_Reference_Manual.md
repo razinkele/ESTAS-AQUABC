@@ -606,14 +606,23 @@ The build discovers all `.f90` files in `SOURCE_CODE/` and compiles them via `ma
 ./ESTAS_II INPUT_gf_release.txt
 
 # With constant override file
-./ESTAS_II INPUT.txt WCONST_02.txt
+./ESTAS_II INPUT.txt WCONST_04.txt
 
 # With constant override + binary output
-./ESTAS_II INPUT.txt WCONST_02.txt output.bin
+./ESTAS_II INPUT.txt WCONST_04.txt output.bin
 
 # Full: input + constants + binary + shear stress
-./ESTAS_II INPUT.txt WCONST_02.txt output.bin CRITICAL_SHEAR_STRESSES.txt
+./ESTAS_II INPUT.txt WCONST_04.txt output.bin CRITICAL_SHEAR_STRESSES.txt
 ```
+
+The constants file, whether it is named on the command line or in the pelagic input file's constants table, is
+looked up in the pelagic input folder named in the control file. If it does not exist the run stops before the
+first time step. `AQUABC_LENIENT_CONSTANTS=1` restores the old behaviour, a fallback to `WCONST_04.txt`, with a
+warning on stderr.
+
+Every abort, whether an input error or a runtime guard (an unrealistic or NaN value, a failed allocation), ends with
+`ERROR STOP` and a non-zero exit status (1 with gfortran), so scripts should treat a non-zero status as a failed
+run. Before this change these aborts exited with status 0.
 
 ## Running Tests
 

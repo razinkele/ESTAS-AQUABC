@@ -111,7 +111,7 @@ contains
                 write(6,*) 'Number of variables in the time serie : ', &
                             NUMBER_OF_VARIABLES
 
-                stop
+                error stop
             end if
         else
             DATA_SIZE = size(VALUE_ARRAY, dim = 1)
@@ -121,7 +121,7 @@ contains
                 write(6,*) 'ERROR'
                 write(6,*) 'SUBROUTINE : TIMES_AND_VALUES_TO_TIME_SERIE'
                 write(6,*) 'The time serie should contain at least one variable.'
-                stop
+                error stop
             else
                 call ALLOCATE_TIME_SERIE(TIME_FUNCTION, DATA_SIZE, NUMBER_OF_VARIABLES)
             end if
@@ -225,7 +225,7 @@ contains
             write(6,*) 'ERROR'
             write(6,*) 'FUNCTION : VALUE_FROM_TIME_SERIE'
             write(6,*) 'The required variable is not found in the time serie.'
-            stop
+            error stop
         end if
 
         if (TIME_FUNCTION % ALLOCATED == 0) then 
@@ -343,7 +343,7 @@ contains
 
             write(6,*) 'The column that should be multiplied with a scalar ', &
             &          'does not exist in the time serie.'
-            stop
+            error stop
         end if
 
         do i = 1, DATA_SIZE
@@ -373,7 +373,7 @@ contains
 
             write(6,*) 'The column that should be added with a scalar ', &
                        'does not exist in the time serie.'
-            stop
+            error stop
         end if
 
         do i = 1, DATA_SIZE

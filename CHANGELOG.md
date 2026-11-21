@@ -54,6 +54,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   of the adopted configuration as it now stands.
 
 ### Fixed
+- **A run that aborts now exits with a non-zero status.** 105 aborts in the Fortran sources ended with a plain `STOP`
+  (no code, or a text code), which exits with status 0. That covered the solver's unrealistic-value guard, AQUABC's
+  NaN checks, failed allocations, time-series and input errors, and lines that printed "error stop". The app then
+  reported "Model run completed successfully", and `tools/calibrate_cl29.py` scored the truncated record instead of
+  the penalty. Each is now `ERROR STOP` (exit status 1 with gfortran). Messages are unchanged, apart from dropping a
+  redundant "error stop" prefix and naming the routine at one site.
+  - **Guard:** `tests/python/test_fortran_error_stop.py` fails on any `STOP` without an integer code.
+  - **Test:** `tests/integration/abort_exit_status.sh` forces the guard and checks the exit status.
+  - **Output:** a full CL29 run is byte-identical to one from the previous build.
+  - **The live binary is not rebuilt by this change.** Callers keep seeing exit status 0 on an abort until it is.
+- **A constants file that does not exist now stops the run.** Before, a misspelt name, whether in the constants
+  table or on the command line, fell back to `WCONST_04.txt` with only a line on stdout, and the whole run used
+  constants nobody had chosen. `AQUABC_LENIENT_CONSTANTS=1` keeps the fallback, with the warning moved to stderr.
+  - **Tests:** three new cases in `tests/integration/fail_loud_constants.sh`.
+  - **Setups that now stop:** the tracked variant files `INPUTS/PELAGIC_INPUTS_WCONST_02.txt`,
+    `PELAGIC_INPUTS_before_dissolved_fractions_fixing.txt.txt` and `PELAGIC_INPUTS_zero_nost_boundary.txt` name
+    `WCONST_02.txt` or `WCONST_03.txt`, which are not in `INPUTS/`, so until now they ran on `WCONST_04.txt`. No
+    tracked control file uses them.
+  - **Manual:** the command-line examples in `docs/ESTAS_Reference_Manual.md` named a missing `WCONST_02.txt`.
 - **The validator no longer adds the akinete carbon in g/m² to TN and TP in mg/L.** ESTAS writes a state variable
   whose `OUTPUT_TYPE` is 2 per area: concentration × the box's VOLUME/AREA. In CL29 and the Standard set that is
   `AKI_C`, the water-column akinete pool, which TN and TP include.

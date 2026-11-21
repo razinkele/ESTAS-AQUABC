@@ -184,7 +184,7 @@ contains
         return
 
      99 write(*,*) 'ERROR: ALLOC_ALLEOPATHY: allocation failed, nkn=', nkn
-        stop 'ALLOC_ALLEOPATHY: memory allocation failed'
+        error stop 'ALLOC_ALLEOPATHY: memory allocation failed'
     end subroutine ALLOC_ALLEOPATHY
 
 

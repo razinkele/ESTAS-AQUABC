@@ -79,6 +79,6 @@ subroutine CALCULATE_PH_CORR_SED(PH_CORR, PH, PH_MIN, PH_MAX, nkn, nlay)
         end do
     end do
 
-   if(error .eq. 1)stop
+   if(error .eq. 1)error stop
 
 end subroutine CALCULATE_PH_CORR_SED

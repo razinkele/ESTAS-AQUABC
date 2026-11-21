@@ -143,6 +143,13 @@ jobs:
         if: runner.os == 'Linux'
         run: bash tests/integration/fail_loud_constants.sh
 
+      - name: Abort exit-status check
+        # Forces the solver's unrealistic-value guard on a temp copy of the standard setup and asserts the
+        # run exits non-zero (a plain STOP used to exit 0, so callers scored aborted runs). Linux-only
+        # (uses `timeout`).
+        if: runner.os == 'Linux'
+        run: bash tests/integration/abort_exit_status.sh
+
       - name: Run example tests
         run: make -C SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D test
 

@@ -604,20 +604,20 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     if (CHECK_NUM_SED_LAYERS == 1) then
         if(NUM_SED_LAYERS .ne. 7) then
            print *, 'SEDIMENT_MODEL_1: Wrong number of layers'
-           stop
+           error stop
         end if
     end if
 
     if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
         print *, 'SEDIMENT_MODEL_1: Wrong number of state variables', NUM_SED_VARS
         print *, 'Expected: ', SED_VARS_CHECK
-        stop
+        error stop
     end if
 
     if(NUM_SED_OUTPUTS .ne. SED_OUTPUTS_CHECK) then
         print *, 'SEDIMENT_MODEL_1: Wrong number of outputs', NUM_SED_OUTPUTS
         print *, 'Expected: ', SED_OUTPUTS_CHECK
-        stop
+        error stop
     end if
 
     !------------- EXECUTION CONTROLS--------------------
@@ -762,7 +762,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
     if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
         print *, 'SEDIMENT_MODEL: Number of state variables is wrong', NUM_SED_VARS
         print *, 'Expected: ', SED_VARS_CHECK
-        stop
+        error stop
     end if
 
     IN_WHICH_PHASE(1)  = 2 !2  !Amonia
@@ -804,7 +804,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             end do
         end do
 
-        if (error .eq. 1) stop
+        if (error .eq. 1) error stop
     end if
 
     !NUM_FLUXES_TO_SEDIMENTS = NUM_SED_VARS
@@ -840,12 +840,12 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
         end do ! j-variables
     end if ! debug_stranger
 
-    if (error .eq. 1) stop
+    if (error .eq. 1) error stop
 
     if(NUM_SED_VARS .ne. SED_VARS_CHECK) then
         print *, 'SEDIMENT_MODEL: Number of state variables is wrong', NUM_SED_VARS
         print *, 'Expected: ', SED_VARS_CHECK
-        stop
+        error stop
     end if
 
     !INITIALIZE SEDIMENT STATE VARIABLES
@@ -1467,7 +1467,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do
             end do
 
-                if(error .eq. 1) stop
+                if(error .eq. 1) error stop
         end if !debug_stranger
 
         SED_SAVED_OUTPUTS(:,:,1) = DISS_FE_II_CONC_TS_END  / FE_II
@@ -1593,7 +1593,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do
             end do
 
-                        if(error .eq. 1) stop
+                        if(error .eq. 1) error stop
         end if !debug_stranger
 
         !++++++++++++++++++++++++++PREPARATION FOR CALCULATION DERIVATIVES++++++++++++++++++++++++++++++++++
@@ -1723,7 +1723,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                     error = 1
                                 end if
                             end do
-                            if(error .eq. 1) stop
+                            if(error .eq. 1) error stop
                         end if !debug_stranger
 
                         DIFF_CORRECTION_FACTOR(:) = 1.0D0 / &
@@ -1822,7 +1822,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                         end if
                                     end do
 
-                                    if(error .eq. 1) stop
+                                    if(error .eq. 1) error stop
                                 end if !debug_stranger
 
                                 PART_MIXING_RATES(:,i, j) = &
@@ -1868,7 +1868,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                                     end if
                                 end do
 
-                                if(error .eq. 1) stop
+                                if(error .eq. 1) error stop
                             end if
 
                             PART_MIXING_RATES(:,i, j) = &
@@ -2866,7 +2866,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                     end if
                end do     ! i-layers
 
-               if (error .eq. 1) stop
+               if (error .eq. 1) error stop
             end if      !debug_stranger
 
             KINETIC_DERIVS(:,:, 2)  = R_NITR(:,:) - R_DENITR(:,:)
@@ -3352,7 +3352,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-                        if (error .eq. 1) stop
+                        if (error .eq. 1) error stop
         end if      ! debug_stranger
 
 
@@ -3394,7 +3394,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-                        if (error .eq. 1) stop
+                        if (error .eq. 1) error stop
         end if      !debug_stranger
 
 
@@ -3430,10 +3430,10 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-            if (error .eq. 1) stop
+            if (error .eq. 1) error stop
         end if      ! debug_stranger
 
-        if (error .eq. 1) stop
+        if (error .eq. 1) error stop
         ! END CHECK FOR STRANGERS BEFORE TIME INTEGRATION
 
         !SUMMING DERIVATIVES AND TIME INTEGRATION
@@ -3520,7 +3520,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-                    if (error .eq. 1) stop
+                    if (error .eq. 1) error stop
 
             end if !debug_stranger
 
@@ -3611,7 +3611,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
                 end do ! j-variables
             end do     ! i-layers
 
-            if (error .eq. 1) stop
+            if (error .eq. 1) error stop
         end if
 
         INTERMED_RESULTS(:,:,:) = INTERMED_RESULTS_(:,:,:)
@@ -3652,7 +3652,7 @@ subroutine AQUABC_SEDIMENT_MODEL_1 &
             end do !j - variables
         end do !i - layers
 
-                if (error .eq. 1) stop
+                if (error .eq. 1) error stop
     end if  !  debug_stranger
 
 
