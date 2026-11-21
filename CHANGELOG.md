@@ -97,11 +97,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     - July–August pH is 0.31 lower at boxes 11 and 23, and winter pH is unchanged.
     - Every pooled RMSE changes by less than 1 %; the largest change is PO₄ at −0.62 %.
     - The pooled TN/TP RMSE goes from 0.805 / 0.0319 to 0.807 / 0.0319.
-    - Pooled model means move by less than 1 %, except nitrate at +2.5 %. Scores barely move, but the output
-      does change.
-  - **The 0D example moves much more.** Column means shift by up to +11.8 % (detrital N), +11 % (non-fixing
-    cyanobacteria) and −8.6 % (DON). Its golden, `tests/regression/pelagic_0D_golden.csv`, is regenerated with the
-    method that reproduces the old golden byte for byte.
+    - For the scored variables at observation times, pooled model means move by less than 1 %, except nitrate at
+      +2.5 %.
+    - Daily means of the unscored pools move more, and the scorecard cannot see it. The dissolved organic pools fall:
+      DON −1.9 % over all days and −6.7 % in July–August (median box), and −7 % and −16 % at box 29. DOP and DOC
+      behave alike. Totals barely move (daily-mean TN −0.3 %, TP −0.3 %, median box).
+  - **0D example:**
+    - Totals barely move: TN +0.3 % and TP 0.0 %, of the pools the 0D prints.
+    - The pools shift: detrital N +11.8 %, non-fixing cyanobacteria +11 %, DON −8.6 %.
+    - The dissolved organic pools fall in CL29 too, but the detrital and cyanobacterial shifts appear only in 0D,
+      and their cause is not established.
+    - Its golden, `tests/regression/pelagic_0D_golden.csv`, is regenerated with the method that reproduces the old
+      golden byte for byte.
   - **Sediment model** (`MODEL_SEDIMENTS 2`): on `INPUT_sediment_test.txt` the sediment edits alone move sediment
     outputs by up to 1.7 % in two days, so at least one per-layer site runs. The two single-vector sites are dead
     code (`SINGLE_VECTOR_CO2SYS = 0` is a parameter); they were edited for consistency and are not exercised.
