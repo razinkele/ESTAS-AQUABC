@@ -11,8 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Documentation
 - **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201) measured for adoption, and the
   adoption recorded: #201 merged on 2026-11-21, and Paper II's adopted-run numbers regenerated (ESTAS-AQUABC-DATA #27).
-  Paper I's numbers, the comparison runs and the fitted constants stay on the 0 °C chemistry. Scores from runs before
-  the fix are not comparable with later ones.
+  Paper I's numbers (except the regenerated adopted scores its version note quotes), the comparison runs and the fitted
+  constants stay on the 0 °C chemistry. Runs on the 0 °C chemistry are not comparable with runs on the in-situ
+  chemistry; the break follows the binary, not the merge date.
   - **CL29:** July–August pH −0.31; every pooled RMSE changes by less than 1 %. Unscored dissolved organic pools fall
     several percent in summer; totals barely move.
   - **0D example:** pools shift by up to 12 % while totals don't.

@@ -6771,20 +6771,26 @@ was open, and merging it was the adoption decision. It was merged on 2026-11-21 
     A version note gives the regenerated adopted scores.
 - **Not adopted; still on the 0 °C chemistry:**
   - The variant runs behind both papers' comparisons were not redone. So the two papers disagree on the adopted
-    score: chlorophyll RMSE 24.01 in Paper I, 23.93 in Paper II.
+    score: chlorophyll RMSE 24.01 in Paper I's text (its version note quotes 23.93), 23.93 in Paper II.
   - The constants were not recalibrated under the fix (see **Limits**).
   - The fix is in no release yet; v0.13.0's binary has the 0 °C chemistry.
 
-**Comparability.** Runs made before `d7a036a`, or with an older binary, are not comparable with later ones as a model
-change. Pooled scores move by less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved organic
-pools move more. That covers:
-- this record before this section;
-- Paper II up to v2.24, and in v2.25 everything except the regenerated items listed under **Adoption** (the marked
-  comparisons and the calibration history among them);
-- every number in Paper I up to v0.20;
-- the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run);
-- the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`);
-- v0.13.0's binary.
+**Comparability.** The break follows the chemistry in the binary, not the merge date. Runs whose binary lacks #201's
+change (the 0 °C chemistry) are not comparable, as a model change, with runs whose binary has it. Pooled scores move by
+less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved organic pools move more.
+- **On the 0 °C chemistry:**
+  - this record before this section, except §74's in-situ probe column;
+  - Paper II up to v2.24, and in v2.25 everything except the regenerated items listed under **Adoption** (the marked
+    comparisons and the calibration history among them);
+  - Paper I up to v0.20, except the regenerated adopted scores that v0.20's version note and its inline marker quote
+    (chlorophyll RMSE 23.93, phosphate RMSE 0.0156);
+  - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run);
+  - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`);
+  - v0.13.0's binary.
+- **On the in-situ chemistry, though some predate the merge:**
+  - §74's in-situ probe, which Anchor 3 shows equal to #201 on the CL29 path;
+  - the fix run `s1t` (`diag_sed1_20261121/`), the scan's fix column and Paper II v2.25's regenerated numbers, all
+    from build 50c0173d (#201's own build, and today's live binary);
+  - every run with a binary built from `d7a036a` or later.
 
-Earlier sections keep their numbers. The fix run `s1t` (`diag_sed1_20261121/`) is the reference run for the in-situ
-chemistry.
+Earlier sections keep their numbers. `s1t` is the reference run for the in-situ chemistry.
