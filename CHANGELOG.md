@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §74**: two defects found by a 2026-11-21 code review, measured on the adopted
+  CL29 configuration. Nothing is adopted or fixed.
+  - **Carbonate chemistry at 0 °C.** The pelagic model reads CO2SYS's output-condition columns, which it computes
+    at 0 °C. In-situ conditions lower summer pH by 0.31 and raise summer nitrification by a third to two thirds (at
+    the two boxes read), but move every pooled score by less than 1 % and no seasonal score by 2 % or more.
+  - **Akinete units in the validator.** `tools/validate_cl29_vs_epa.py` adds the akinete carbon, written in g/m²,
+    to TN and TP as mg/L. Without that error the pooled TP RMSE is 0.032 instead of 0.04235.
 - **`docs/CL29_phenology_diagnosis.md` §73**: with every cyanobacterial light gate shut, today's adopted configuration
   still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
   The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's

@@ -6545,3 +6545,77 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 
 **Limits.** Gates shut; one configuration. Nothing is adopted or changed.
 
+## 74. 2026-11-21: two code-review findings measured — the carbonate chemistry is read at 0 °C, and the validator adds akinetes in g/m²
+
+**Why.** A read-only review of the code on 2026-11-21 found two defects that bear on the CL29 scores.
+
+- **SED-1.** The pelagic model calls CO2SYS with output temperature and pressure 0 ("does not matter"). It then
+  reads the output-condition columns: pH (18), HCO₃/CO₃/CO₂ (21–23) and the phosphate K1–K3 (75–77). So the
+  carbonate chemistry used at every step is evaluated at 0 °C, not at water temperature.
+  - The sediment calls do the same; CL29 (`MODEL_SEDIMENTS = 1`) does not reach them.
+  - The CO2SYS unit test sets the output temperature equal to the input one, so it cannot see this.
+- **TOOL-2.** `tools/validate_cl29_vs_epa.py` adds the akinete carbon `AKI_C` to the phytoplankton carbon in TN and
+  TP as mg/L. But CL29's `PELAGIC_INPUTS.txt` gives `AKI_C` output type 2, so the writer multiplies it by the box's
+  mean depth (g/m²). `AKI_C` is the only one of CL29's 36 state variables written that way.
+
+**Design** (running note items 218–219; `diag_co2sys_20261121/`).
+- Two builds of `72e104d` in a worktree:
+  - unmodified, byte-identical to the live binary;
+  - with the pelagic call's output conditions set to the in-situ ones.
+- Both run the adopted inputs over the full record, with process rates on boxes 11 and 23 to read the pH.
+- The unmodified run reproduces the scores of the 2026-11-20 export run exactly.
+- TOOL-2 was sized on the unmodified run's output by scoring TN and TP three ways. The tracked validator is
+  untouched.
+
+**Result: SED-1.**
+
+| box | July–August pH, as now → in situ | December–February mean \|ΔpH\| | July–August nitrification, in situ / as now |
+|---|---|---|---|
+| 11 | 8.905 → 8.595 | 0.026 | ×1.32 |
+| 23 | 9.148 → 8.835 | 0.017 | ×1.64 |
+
+- ΔpH follows water temperature: r = −0.997 and −0.996, slope −0.0154 per °C.
+- Summer DOP mineralisation is unchanged (×0.99, ×1.01).
+- Every pooled score moves by less than 1 %. The largest change is TP RMSE, +0.79 %. Chl-a: −0.34 %, August
+  49.0 → 49.4 µg/L, peak still September, seasonal r +0.78.
+- No seasonal score moves by 2 % or more; the largest summer change is TN RMSE, −0.93 %. This was checked after
+  the run; the registered rule was on annual scores. Summer modelled NO₃ rises from 0.0021 to 0.0028 mg/L,
+  against 0.018 observed.
+
+**Result: TOOL-2** (unmodified run; pooled over the validator's boxes).
+
+| akinete term | TN RMSE | TN bias | TP RMSE | TP bias |
+|---|---|---|---|---|
+| as now (g/m² added as mg/L) | 0.819 | +0.448 | 0.04235 | +0.01348 |
+| left out | 0.809 | +0.376 | 0.0320 | +0.0053 |
+| divided by the box depth | 0.805 | +0.385 | 0.0319 | +0.0063 |
+
+**Reading.**
+- **SED-1** is real. The in-situ pH is about 0.3 lower in summer.
+  - Summer nitrification rises by a third at box 11 and by two thirds at box 23. Its pH optimum ends at 8.2, below
+    the model's pH at both boxes in both runs.
+  - At box 11 the rise matches the pH correction: exp(0.31) = 1.36 against 1.32. The excess at box 23 is not
+    separated.
+  - The mineralisation optimum ends at 9.0. Box 11's pH is mostly below it; at box 23 (9.0–9.2 all year) the
+    correction is modestly active, yet summer DOP mineralisation does not change.
+  - At today's constants the fix is score-neutral, by season as well as overall. pH, DIC and alkalinity are not
+    scored against observations.
+- **TOOL-2** is material for TP. The as-now TP RMSE (0.04235) contains the unit error; without it TP scores 0.032.
+  - The effect sits in the deep, heavily sampled boxes 7 (10.8 m) and 11 (8.1 m). Together they hold 1,885 of the
+    3,225 TN observations.
+  - TN RMSE moves only 1.3–1.7 %, but TN bias falls from +0.448 to +0.376 or +0.385 (14–16 %); Paper II's TN bias
+    (+0.45) and its Figure 8 model mean (1.76) carry the error too.
+  - The as-now values are the scorecard of Paper II v2.23 (its Table S2).
+
+**Predictions.**
+- Held: P0 (anchor), P1 (pH shift), P3 (DO bias falls), P5 (NO₃ rises), P7 (nothing over 10 %), P8 (TN within 2 %).
+- Refuted:
+  - P2: summer pH above 9.0 at both boxes; box 11 is at 8.905.
+  - P4: PO₄ rises.
+  - P6: some score moves by at least 2 %.
+- TP's change was not registered.
+
+**Limits.** One configuration and today's constants. pH and the process rates were read at boxes 11 and 23 only.
+Older runs with larger akinete pools are not measured. Nothing
+is adopted or changed; neither the model nor the validator is fixed here.
+
