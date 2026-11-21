@@ -54,19 +54,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   of the adopted configuration as it now stands.
 
 ### Removed
-- **The ftnchek check in CI, and its tools.** It never checked the code.
-  - **The gate read a frozen file.** Its filter (`tools/filter_ftnchek.sh`) ignored its argument and read the
-    committed `tools/ftnchek_report.txt`, not the report CI had just written. That committed report ends in an
-    ftnchek crash ("buffer overflow detected") after its first file, which the ignore list skips whole. On CI, the
+- **The ftnchek check in CI, and its tools.** It never checked the code CI built.
+  - **The gate read a frozen file.** From its first wiring (59eec3e, 2026-01-19), the filter
+    (`tools/filter_ftnchek.sh`) ignored its argument and read the committed `tools/ftnchek_report.txt`, not the report
+    CI had just written. Every committed version of that report covers one file, which the ignore list skips whole,
+    and ends in an ftnchek crash ("buffer overflow detected"). On CI, the
     fresh run also crashed, inside the tenth file it read (`mod_PELAGIC_LINK.f90`; the report artifact of main run
     44900895691 covers nine files before it), and `|| true` hid it.
   - **ftnchek cannot parse this code.** Run on each of the 87 tracked `.f90` files with CI's flags, ftnchek 3.3
     crashes on 28. On the other 59 it reports 3,496 diagnostics that the ignore list does not cover. Most come from
-    its failure to parse standard Fortran 90: it reads `module X` or `use X` as one identifier "with embedded
-    space". So no ignore list makes it a meaningful check.
-  - **What still guards `implicit none`, in part:** the model and library build (`make_lib.sh` with the Makefile's
-    debug, fast and release flags) compiles with `-fimplicit-none`, so an undeclared name there fails the build on CI.
-    It does not check that the statement is present, and the unit-test and 0D-example builds do not use the flag.
+    its failure to parse standard Fortran 90: it does not know `module`, `use` or `end ...`, and reads them with the
+    following name as one identifier "with embedded space". Forcing free-form source changes nothing. So no ignore
+    list makes it a meaningful check.
+  - **What still guards `implicit none`, in part:** the gfortran build of the model and library (`make_lib.sh` with the
+    Makefile's debug, fast and release flags) compiles with `-fimplicit-none`, so an undeclared name there fails the
+    build on CI (checked with a throwaway file). It does not check that the statement is present; the unit-test and
+    0D-example builds do not use the flag, and the Intel builds only warn (`-warn all`).
     `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
   - **Removed files:** the six CI steps, `tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`,
     `tools/ftnchek_ignore_patterns.txt`, `tools/ftnchek_report.txt`, `tools/ftnchek_report_ESTAS.txt` and
