@@ -58,7 +58,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **The gate read a frozen file.** Its filter (`tools/filter_ftnchek.sh`) ignored its argument and read the
     committed `tools/ftnchek_report.txt`, not the report CI had just written. That committed report ends in an
     ftnchek crash ("buffer overflow detected") after its first file, which the ignore list skips whole. On CI, the
-    fresh run also crashed after about five files (main run 44900895691), and `|| true` hid it.
+    fresh run also crashed, inside the tenth file it read (`mod_PELAGIC_LINK.f90`; the report artifact of main run
+    44900895691 covers nine files before it), and `|| true` hid it.
   - **ftnchek cannot parse this code.** Run on each of the 87 tracked `.f90` files with CI's flags, ftnchek 3.3
     crashes on 28. On the other 59 it reports 3,496 diagnostics that the ignore list does not cover. Most come from
     its failure to parse standard Fortran 90: it reads `module X` or `use X` as one identifier "with embedded
