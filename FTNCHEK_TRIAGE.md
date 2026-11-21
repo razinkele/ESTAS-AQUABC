@@ -1,5 +1,14 @@
 # ftnchek Triage Report and Action Plan ✅
 
+> **Historical (2026-11-21): the ftnchek CI check and its tools are removed.** This report's "0 unexpected lines"
+> came from a committed report that ends in an ftnchek crash ("buffer overflow detected") after its first file, and
+> CI's filter read that frozen report rather than the fresh one. Run on each tracked file, ftnchek 3.3 crashes on 28
+> of 87 files. On the other 59 it reports about 3,500 diagnostics that the ignore list does not cover, mostly because
+> it cannot parse standard Fortran 90 (it reads `module X` or `use X` as one identifier "with embedded space"). The
+> `implicit none` rule is enforced by the compiler instead: every gfortran build type uses `-fimplicit-none`. The
+> files named below (`tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`, the ignore list and the reports) no longer
+> exist. See the CHANGELOG.
+
 ## Summary
 - I ran `ftnchek` across the Fortran sources and triaged the output.
 - Main root causes found:

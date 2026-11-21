@@ -53,6 +53,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
   of the adopted configuration as it now stands.
 
+### Removed
+- **The ftnchek check in CI, and its tools.** It never checked the code.
+  - **The gate read a frozen file.** Its filter (`tools/filter_ftnchek.sh`) ignored its argument and read the
+    committed `tools/ftnchek_report.txt`, not the report CI had just written. That committed report ends in an
+    ftnchek crash ("buffer overflow detected") after its first file, which the ignore list skips whole. On CI, the
+    fresh run also crashed after about five files (main run 44900895691), and `|| true` hid it.
+  - **ftnchek cannot parse this code.** Run on each of the 87 tracked `.f90` files with CI's flags, ftnchek 3.3
+    crashes on 28. On the other 59 it reports 3,496 diagnostics that the ignore list does not cover. Most come from
+    its failure to parse standard Fortran 90: it reads `module X` or `use X` as one identifier "with embedded
+    space". So no ignore list makes it a meaningful check.
+  - **What still guards `implicit none`:** every gfortran build type compiles with `-fimplicit-none`, so an
+    undeclared name fails the build on CI. `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
+  - **Removed files:** the six CI steps, `tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`,
+    `tools/ftnchek_ignore_patterns.txt`, `tools/ftnchek_report.txt`, `tools/ftnchek_report_ESTAS.txt` and
+    `tools/ftnchek_unexpected.txt`.
+  - `FTNCHEK_TRIAGE.md` is kept as history, with a dated note.
+
 ### Fixed
 - **A run that aborts now exits with a non-zero status.** 105 aborts in the Fortran sources ended with a plain `STOP`
   (no code, or a text code), which exits with status 0. That covered the solver's unrealistic-value guard, AQUABC's
