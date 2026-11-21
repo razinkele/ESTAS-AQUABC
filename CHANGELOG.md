@@ -53,6 +53,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
   of the adopted configuration as it now stands.
 
+### Changed
+- **The Fortran unit tests compile with `-fimplicit-none`** (`tests/fortran/Makefile`), as the model and library
+  build already does. An undeclared name in a test program is now a compile error, not a silent implicit type.
+  - **Today:** all 35 test sources already carry `implicit none`, and every test passes exactly as before (47 identical
+    pass/fail summary lines). So this guards future test code.
+  - **Proof that it bites:** a unit without `implicit none` that uses an undeclared name compiles with the old flags
+    and fails with the new.
+  - The 0D-example build (`SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/Makefile`) still does not use the flag.
+
 ### Removed
 - **The ftnchek check in CI, and its tools.** It never checked the code CI built.
   - **The gate read a frozen file.** From its first wiring (59eec3e, 2026-01-19), the filter
@@ -68,9 +77,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     list makes it a meaningful check.
   - **What still guards `implicit none`, in part:** the gfortran build of the model and library (`make_lib.sh` with the
     Makefile's debug, fast and release flags) compiles with `-fimplicit-none`, so an undeclared name there fails the
-    build on CI (checked with a throwaway file). It does not check that the statement is present; the unit-test and
-    0D-example builds do not use the flag, and the Intel builds only warn (`-warn all`).
-    `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
+    build on CI (checked with a throwaway file). It does not check that the statement is present; the 0D-example
+    build does not use the flag (the unit-test build now does, see "Changed"), and the Intel builds only warn
+    (`-warn all`). `.github/copilot-instructions.md` and `CONTRIBUTING.md` now say so.
   - **Removed files:** the six CI steps, `tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`,
     `tools/ftnchek_ignore_patterns.txt`, `tools/ftnchek_report.txt`, `tools/ftnchek_report_ESTAS.txt` and
     `tools/ftnchek_unexpected.txt`.

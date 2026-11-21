@@ -7,9 +7,10 @@
 #   make test_do_saturation - Compile and run DO saturation tests
 #   make test_chla          - Compile and run CHLA tests
 
-# Compiler settings
+# Compiler settings. -fimplicit-none makes an undeclared name a compile error, as in the model and library build
+# (the top-level Makefile); every test program also carries its own `implicit none` statement.
 FC = gfortran
-FFLAGS = -O2 -Wall -Wextra -fcheck=all -fbacktrace
+FFLAGS = -O2 -Wall -Wextra -fcheck=all -fbacktrace -fimplicit-none
 
 # Source directories
 AQUABC_SRC = ../../SOURCE_CODE/AQUABC
