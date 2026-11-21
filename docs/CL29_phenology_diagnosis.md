@@ -6603,7 +6603,8 @@ constant offsets 1.3 and the interaction adds 0.5 (12.5 − 1.3 + 0.5 = 11.7). T
 - **TOOL-2** is material for TP. The as-now TP RMSE (0.04235) contains the unit error; without it TP scores 0.032.
   - The effect sits in the deep, heavily sampled boxes 7 (10.8 m) and 11 (8.1 m). Together they hold 1,885 of the
     3,225 TN observations.
-  - TN moves 1–2 %.
+  - TN RMSE moves only 1.3–1.7 %, but TN bias falls from +0.448 to +0.376 or +0.385 (14–16 %); Paper II's TN bias
+    (+0.45) and its Figure 8 model mean (1.76) carry the error too.
   - The as-now values are the scorecard of Paper II v2.23 (its Table S2).
 
 **Predictions.**
