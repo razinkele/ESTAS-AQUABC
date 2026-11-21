@@ -9,6 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201, open) measured for adoption.
+  Nothing is adopted.
+  - **CL29:** July–August pH −0.31; every pooled RMSE changes by less than 1 %. Unscored dissolved organic pools fall
+    several percent in summer; totals barely move.
+  - **0D example:** pools shift by up to 12 % while totals don't.
+  - **Paper exposure:** every printed score would shift slightly.
+  - **Scan of the nitrification and DOC-on-nitrate constants:** both sit on their fit's upper bounds. The fix does not
+    move their best grid point. `K_MIN_DOC_NO3N_20` is already below optimal under the old chemistry, as Paper II
+    and §60 had found.
 - **`docs/CL29_phenology_diagnosis.md` §74.1**: TN and TP rescored after the validator fix (#196).
   - **Adopted run:** TN 0.819 → 0.805, TP 0.04235 → 0.0319.
   - **Paper I's comparisons**, on four re-runs that reproduce the earlier scores exactly:
