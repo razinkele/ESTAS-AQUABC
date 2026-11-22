@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The 0D example compiles with `-fimplicit-none`**
+  (`SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/Makefile`), as the model, library and unit-test builds
+  already do. The flag reaches the 0D driver program (`aquabc_II_pelagic_0D.f90`). The library it links has the flag
+  only when it was built first by `make build-lib`, as on CI; a standalone 0D build makes the library through
+  `SOURCE_CODE/build/make_lib.sh`, whose default `FFLAGS` (`-O2`) do not include it. The build is clean, and the 0D
+  output is byte-identical to the build without the flag.
+
 ## [0.14.0] - 2026-11-22
 
 > 🎉 **Released — [AQUABC v0.14.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.14.0)**
