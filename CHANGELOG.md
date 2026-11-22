@@ -8,62 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Documentation
-- **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201) measured for adoption, and the
-  adoption recorded: #201 merged on 2026-11-21, and Paper II's adopted-run numbers regenerated (ESTAS-AQUABC-DATA #27).
-  Paper I's numbers (except the regenerated adopted scores its version note quotes), the comparison runs and the fitted
-  constants stay on the 0 °C chemistry. Runs on the 0 °C chemistry are not comparable with runs on the in-situ
-  chemistry; the break follows the binary, not the merge date.
-  - **CL29:** July–August pH −0.31; every pooled RMSE changes by less than 1 %. Unscored dissolved organic pools fall
-    several percent in summer; totals barely move.
-  - **0D example:** pools shift by up to 12 % while totals don't.
-  - **Paper exposure:** every printed score would shift slightly.
-  - **Scan of the nitrification and DOC-on-nitrate constants:** both sit on their fit's upper bounds. The fix does not
-    move their best grid point. `K_MIN_DOC_NO3N_20` is already below optimal under the old chemistry, as Paper II
-    and §60 had found.
-- **`docs/CL29_phenology_diagnosis.md` §74.1**: TN and TP rescored after the validator fix (#196).
-  - **Adopted run:** TN 0.819 → 0.805, TP 0.04235 → 0.0319.
-  - **Paper I's comparisons**, on four re-runs that reproduce the earlier scores exactly:
-    - the legacy gate's TP advantage falls from 14 % to 3 %;
-    - the quota variant's TP advantage falls from 23 % to 6 % (it is still better on 6 of 12 pooled errors);
-    - the staging-reversed TN penalty falls from 11 % to 3 %;
-    - the ice result holds.
-  - §72's TN/TP rows carry a dated pointer note.
-  - TN/TP scored before #196 are not comparable with later scores.
-- **`docs/CL29_phenology_diagnosis.md` §74**: two defects found by a 2026-11-21 code review, measured on the adopted
-  CL29 configuration. Nothing is adopted or fixed in §74 itself; both defects are fixed below, under **Fixed**.
-  - **Carbonate chemistry at 0 °C.** The pelagic model reads CO2SYS's output-condition columns, which it computes
-    at 0 °C. In-situ conditions lower summer pH by 0.31 and raise summer nitrification by a third to two thirds (at
-    the two boxes read), but move every pooled score by less than 1 % and no seasonal score by 2 % or more.
-  - **Akinete units in the validator.** `tools/validate_cl29_vs_epa.py` adds the akinete carbon, written in g/m²,
-    to TN and TP as mg/L. Without that error the pooled TP RMSE is 0.032 instead of 0.04235.
-- **`docs/CL29_phenology_diagnosis.md` §73**: with every cyanobacterial light gate shut, today's adopted configuration
-  still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
-  The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
-  configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
-- **§73.4**: of the three fitted growth constants, the fixer engine (3.5 → 7.6, on the staged guild since §31) carries
-  the set's contribution and the non-fixer → fixer shift: reverting it alone lowers August chlorophyll by 12.5 µg/L
-  with the light gates shut, against 11.7 for all three (diatom −1.3, interaction +0.5); the other-algae constant
-  does nothing. Nothing adopted.
-- **§73.3**: in today's configuration the constants fitted at the adoption act through their three growth constants
-  (11.7 of 11.8 µg/L of August chlorophyll, with the composition shift from non-fixers to fixers); the four nutrient
-  constants change August by 0.1. Nothing adopted.
-- **§73.2**: today's gates-shut August chlorophyll (45.1 µg/L) decomposed from an anchor that reproduces §15's
-  impose-only probe on today's code (16.3 against 16.2): averaged over both orders, the seven constants fitted at the
-  adoption carry about half (15.5 µg/L) and the staged fixer with the later inputs the other half (13.8). Without
-  the fitted constants the August non-fixer carbon is nearly right and the fixers far too low. §73.1's 0.42 share,
-  measured against §15's 21.6, is withdrawn (dated correction). Nothing adopted.
-- **`docs/CL29_phenology_diagnosis.md` §73.1**: *(Superseded by §73.2: the share is withdrawn.)* with every light gate shut, reversing the staged fixer lowers August
-  chlorophyll from 45.1 to 35.2 µg/L, so it carries 42 % of the gap between the §15 search (21.6) and today; the rest
-  lies in the other changes since, which are not separated. Positioning adds 1.0 µg/L without the staged fixer.
-  Nothing adopted.
-- **§72 and §73 corrected** (dated notes): the quota variant is better on 6 of 12 pooled errors, not "most"; and
-  the growth constants were not chosen with positioning on (the §21 search scored its trials on inputs without it,
-  §60.4), so "every constant was chosen with positioning on" (§73) and "fitted with it in place" (§72, for the
-  ratchet) are qualified. Found by an independent fact-check of the papers.
-- `docs/report_scripts/make_figures_succession.py` reads the observed side back from the committed
-  `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
-  of the adopted configuration as it now stands.
+## [0.14.0] - 2026-11-22
+
+> 🎉 **Released — [AQUABC v0.14.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.14.0)**
+> (Linux binary attached). **Carbonate chemistry at the water temperature (results change), aborts that exit
+> non-zero, and the validator's TN and TP corrected.** CO2SYS's output conditions were evaluated at 0 °C; they are
+> now in situ. On the adopted CL29 setup every pooled score changes by less than 1 %, but July–August pH falls 0.31 and
+> the unscored dissolved organic pools fall several percent in summer, so **results from v0.13.0 and earlier are not
+> comparable** as a model change. A run that aborts now exits with status 1, and a constants file that does not exist
+> stops the run. The validator divides the per-area akinete pool by VOLUME/AREA before adding it to TN and TP (TP RMSE
+> 0.04235 → 0.0319 on the adopted run). CI no longer runs ftnchek, which never checked the code it built. The CL29
+> diagnosis record gains §74–§74.2.
 
 ### Changed
 - **The Fortran unit tests compile with `-fimplicit-none`** (`tests/fortran/Makefile`), as the model and library
@@ -137,7 +92,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - **Guard:** `tests/python/test_fortran_error_stop.py` fails on any `STOP` without an integer code.
   - **Test:** `tests/integration/abort_exit_status.sh` forces the guard and checks the exit status.
   - **Output:** a full CL29 run is byte-identical to one from the previous build.
-  - **The live binary is not rebuilt by this change.** Callers keep seeing exit status 0 on an abort until it is.
 - **A constants file that does not exist now stops the run.** Before, a misspelt name, whether in the constants
   table or on the command line, fell back to `WCONST_04.txt` with only a line on stdout, and the whole run used
   constants nobody had chosen. `AQUABC_LENIENT_CONSTANTS=1` keeps the fallback, with the warning moved to stderr.
@@ -162,6 +116,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
     same loader. TN/TP scores from before and after the fix are not comparable. Calibration and Morris objectives
     do not include TN or TP.
   - Measured in `docs/CL29_phenology_diagnosis.md` §74.
+
+### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §74.2**: the carbonate-chemistry fix (#201) measured for adoption, and the
+  adoption recorded: #201 merged on 2026-11-21, and Paper II's adopted-run numbers regenerated (ESTAS-AQUABC-DATA #27).
+  Paper I's numbers (except the regenerated adopted scores its version note quotes), the comparison runs and the fitted
+  constants stay on the 0 °C chemistry. Runs on the 0 °C chemistry are not comparable with runs on the in-situ
+  chemistry; the break follows the binary, not the merge date.
+  - **CL29:** July–August pH −0.31; every pooled RMSE changes by less than 1 %. Unscored dissolved organic pools fall
+    several percent in summer; totals barely move.
+  - **0D example:** pools shift by up to 12 % while totals don't.
+  - **Paper exposure:** every printed score would shift slightly.
+  - **Scan of the nitrification and DOC-on-nitrate constants:** both sit on their fit's upper bounds. The fix does not
+    move their best grid point. `K_MIN_DOC_NO3N_20` is already below optimal under the old chemistry, as Paper II
+    and §60 had found.
+- **`docs/CL29_phenology_diagnosis.md` §74.1**: TN and TP rescored after the validator fix (#196).
+  - **Adopted run:** TN 0.819 → 0.805, TP 0.04235 → 0.0319.
+  - **Paper I's comparisons**, on four re-runs that reproduce the earlier scores exactly:
+    - the legacy gate's TP advantage falls from 14 % to 3 %;
+    - the quota variant's TP advantage falls from 23 % to 6 % (it is still better on 6 of 12 pooled errors);
+    - the staging-reversed TN penalty falls from 11 % to 3 %;
+    - the ice result holds.
+  - §72's TN/TP rows carry a dated pointer note.
+  - TN/TP scored before #196 are not comparable with later scores.
+- **`docs/CL29_phenology_diagnosis.md` §74**: two defects found by a 2026-11-21 code review, measured on the adopted
+  CL29 configuration. Nothing is adopted or fixed in §74 itself; both defects are fixed below, under **Fixed**.
+  - **Carbonate chemistry at 0 °C.** The pelagic model reads CO2SYS's output-condition columns, which it computes
+    at 0 °C. In-situ conditions lower summer pH by 0.31 and raise summer nitrification by a third to two thirds (at
+    the two boxes read), but move every pooled score by less than 1 % and no seasonal score by 2 % or more.
+  - **Akinete units in the validator.** `tools/validate_cl29_vs_epa.py` adds the akinete carbon, written in g/m²,
+    to TN and TP as mg/L. Without that error the pooled TP RMSE is 0.032 instead of 0.04235.
+- **`docs/CL29_phenology_diagnosis.md` §73**: with every cyanobacterial light gate shut, today's adopted configuration
+  still reaches 45.1 µg/L of August chlorophyll (observed 50.8; 49.0 with the ratchet, 45.8 with the legacy gate).
+  The conclusion of §18-§20 that the bloom needs a surface-positioning state does not hold for today's
+  configuration. The "no gate" rung of §19 was the legacy daily gate. Nothing adopted.
+- **§73.4**: of the three fitted growth constants, the fixer engine (3.5 → 7.6, on the staged guild since §31) carries
+  the set's contribution and the non-fixer → fixer shift: reverting it alone lowers August chlorophyll by 12.5 µg/L
+  with the light gates shut, against 11.7 for all three (diatom −1.3, interaction +0.5); the other-algae constant
+  does nothing. Nothing adopted.
+- **§73.3**: in today's configuration the constants fitted at the adoption act through their three growth constants
+  (11.7 of 11.8 µg/L of August chlorophyll, with the composition shift from non-fixers to fixers); the four nutrient
+  constants change August by 0.1. Nothing adopted.
+- **§73.2**: today's gates-shut August chlorophyll (45.1 µg/L) decomposed from an anchor that reproduces §15's
+  impose-only probe on today's code (16.3 against 16.2): averaged over both orders, the seven constants fitted at the
+  adoption carry about half (15.5 µg/L) and the staged fixer with the later inputs the other half (13.8). Without
+  the fitted constants the August non-fixer carbon is nearly right and the fixers far too low. §73.1's 0.42 share,
+  measured against §15's 21.6, is withdrawn (dated correction). Nothing adopted.
+- **`docs/CL29_phenology_diagnosis.md` §73.1**: *(Superseded by §73.2: the share is withdrawn.)* with every light gate shut, reversing the staged fixer lowers August
+  chlorophyll from 45.1 to 35.2 µg/L, so it carries 42 % of the gap between the §15 search (21.6) and today; the rest
+  lies in the other changes since, which are not separated. Positioning adds 1.0 µg/L without the staged fixer.
+  Nothing adopted.
+- **§72 and §73 corrected** (dated notes): the quota variant is better on 6 of 12 pooled errors, not "most"; and
+  the growth constants were not chosen with positioning on (the §21 search scored its trials on inputs without it,
+  §60.4), so "every constant was chosen with positioning on" (§73) and "fitted with it in place" (§72, for the
+  ratchet) are qualified. Found by an independent fact-check of the papers.
+- `docs/report_scripts/make_figures_succession.py` reads the observed side back from the committed
+  `cl29_succession_observed.csv` when the species export is not on disk; the modelled rows of that table are those
+  of the adopted configuration as it now stands.
 
 ## [0.13.0] - 2026-11-20
 
