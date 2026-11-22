@@ -6811,7 +6811,8 @@ chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. Th
   - The gates-shut runs of §73–§73.4, with the gates-shut patch applied to main.
   - Bases: `s1t`.
   - Not repeated: the two void runs of §73.2 (the first river block and its all-blocks run), a duplicate of the
-    gates-shut run, and Paper I's transmittance sweep (no recipe was kept).
+    gates-shut run, and Paper I's transmittance sweep (no recipe was kept). *(2026-11-22, later: wrong — running
+    note item 145 gives the sweep's recipe; the sweep and the ice runs are repeated in §74.5.)*
 - **Inputs:** every kept options file and constants file of these runs equals the regenerated one.
 - **Anchors:** one run per binary family, rebuilt with the previous chemistry, reproduces its kept validation metrics
   byte for byte for every variable except TN and TP (those were kept before #196). The four are the legacy gate (live
@@ -6894,14 +6895,15 @@ chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. Th
   µg/L or of a percent.
 - The exception is the allelopathy block, which appears only in §73.2's single-block list and is not part of the
   adopted configuration.
-- The papers' comparisons can now be regenerated from these runs; they are not edited here.
+- The papers' comparisons can now be regenerated from these runs; they are not edited here. *(2026-11-22: regenerated
+  in Paper I v0.21 and Paper II v2.28, §74.5.)*
 
 **Also.** `docs/report_scripts/cl29_validation_metrics_adopted.csv`, until now the September run's scores, is replaced
 by `s1t`'s validation metrics. `tools/make_table_s2.py` on it reproduces all 124 rows of Paper II's Table S2 (v2.25 and
 later).
 
 **Limits.**
-- Paper I's transmittance sweep is not repeated.
+- Paper I's transmittance sweep is not repeated. *(2026-11-22: repeated in §74.5.)*
 - The runs without an anchor or a §74.1 re-run have no comparable previous TN and TP.
 - The allelopathy result is unexplained.
 
@@ -6934,3 +6936,75 @@ under 0.05, and no abort.
   gain by 8 % at box 11 and 2 % at box 23. But that gain is about 1 × 10⁻⁶ per day against an alkalinity of 3.05, which
   moves by 2 × 10⁻⁶ (`pel1_alk.out`), so pH does not move.
 - No fix is proposed here; a fix would matter for setups in which the surrogate grows.
+
+### 74.5 2026-11-22: the papers' comparisons regenerated; the ice runs and the transmittance sweep repeated
+
+**Why.** §74.3 repeated the comparison runs but left the papers unedited, and its 24 runs did not cover what Paper I §3.4
+and Paper II §3.18 quote: the February diatom rows of the ice pair, the run with ice for gas exchange only, and the
+transmittance sweep. §74.3 also said the sweep had no recipe. That is wrong: running note item 145 (2026-11-19) gives it,
+`ICE_LIGHT_TRANS` 0.02 and 0.15 through the diagnostic case builder, with the scores kept in `diag_papers_20261119/`.
+
+**Design** (running note items 299–300; `diag_papers_cmp_20261122/`).
+- **Runs (7, from the kept recipes):**
+  - In situ, live binary 50c0173d: ice off and legacy zooplankton, again; their raw output had been deleted, and both
+    figures and the February rows read it. Ice for gas exchange only (`ICE_LIGHT_TRANS` 1.0, as item 134), and
+    transmittance 0.02 and 0.15. `s1t` is the transmittance-0.05 point: each new input folder differs from `s1t`'s only
+    in its one intended line and in the process-rate output flags.
+  - Previous chemistry, d57dff16: ice for gas exchange only, and transmittance 0.15.
+- **Anchors:**
+  - Ice off and legacy zooplankton reproduce §74.3's validation metrics byte for byte.
+  - Gas exchange only, on the previous chemistry, reproduces item 134's February diatoms, 0.869 (3.10×).
+  - Transmittance 0.15, on the previous chemistry, reproduces its kept validation metrics for every variable except TN
+    and TP, and its February diatoms (0.418).
+- **Generators:**
+  - February carbon by the drafts' rule (`feb_diatoms.py`, and a copy that takes the variable). On `s1b` they
+    reproduce the printed adopted row: diatoms 0.383 (1.36×), March to May 1.55 / 1.10 / 0.92, and total phytoplankton
+    0.444 (1.10×).
+  - The akinete bank (`akinete_bank.py`). On `s1b` it reproduces 15.5 → 20.8 and the 1.33 formation-to-germination
+    ratio.
+  - The mechanism-figure generator (`docs/report_scripts/make_figures_mechanisms.py`). On `s1b`, with its previous
+    inputs, it reproduces the shared akinete and ice-sensitivity images byte for byte. The zooplankton image matches to
+    20 pixels at one colour unit, with the same annotations.
+
+**Result** (previous → in-situ chemistry).
+
+| quantity | previous | in situ |
+|---|---|---|
+| February diatoms, ice off / with ice / ice for gas exchange only | 3.07× / 1.36× / 3.10× | 3.07× / 1.37× / 3.10× |
+| February total phytoplankton, ice off / with ice | 2.28× / 1.10× | 2.29× / 1.10× |
+| Transmittance 0.02 / 0.05 / 0.15: February diatoms | 1.33× / 1.36× / 1.49× | 1.33× / 1.37× / 1.49× |
+| the same: Chl-a RMSE spread; seasonal r | 0.0195; +0.78 / +0.78 / +0.77 | 0.0194; +0.78 throughout |
+| Legacy zooplankton, June deficit (figure's measure) | 9.9× | 9.8× |
+| Akinete bank, fullest box 2012 → 2022; formed / germinated | 15.5 → 20.8; 1.33 | 15.7 → 21.1; 1.34 |
+
+- **Predictions** (item 300): P1 the February rows within ±0.05 of the previous values; P2 the sweep's Chl-a RMSE spread
+  under 0.05 and its seasonal r within 0.01; P3 the zooplankton figure's ratio within 9.9 ± 0.5; P4 no abort. All held.
+
+**The papers** (Paper I v0.21 and Paper II v2.28 in ESTAS-AQUABC-DATA).
+- **Method.** A script (`regen.py`) regenerates 38 sentences and table blocks: the today's-configuration comparisons
+  in Paper I (abstract, Table 1, §3.1–§3.4, §3.6, §4.2, §5) and Paper II (§3.11, §3.12, §3.18, §4, the taxonomy
+  table).
+  - It renders each one from the previous-chemistry quantities. The result must occur exactly once in the current text.
+  - Then it renders it again from the in-situ quantities.
+  - Every verbal claim (largest, nearer, all three, about a third, under 3 %) is asserted on both sides.
+  - Paper I's adopted scores now equal Paper II §3.17's (`cross_check.py`).
+- **Sizes move by a few tenths:**
+  - gates shut 45.1 → 45.5, which is 89 % → 90 % of observed;
+  - the ratchet 49.0 → 49.4, the legacy gate 45.8 → 46.1, staging reversed 36.2 → 36.5;
+  - the decomposition's gap 29 → 30, its averages 15.5 / 13.8 → 15.7 / 14.4;
+  - February diatoms with ice 1.36× → 1.37×.
+- **Three wordings change with their numbers:**
+  - the ratchet's phosphate lead over the legacy gate is 3.0 % (2.98 % → 3.004 %), no longer "under 3 %";
+  - the seasonal correlation is 0.79 with the legacy gate and with every gate shut, against 0.78 with the ratchet;
+  - Paper II §4 prints 33.5 and 45.5 to one decimal, because both round on the half.
+- **The allelopathy block** is given in Paper II §3.12 as a number with an authors' marker, and is not interpreted.
+- **Still on the previous chemistry:**
+  - the numbers of each adoption's own date;
+  - Figure 3 of Paper I, which is forcing only;
+  - Paper II §3.11's reproduction of step one (16.3 against 16.2; under the in-situ chemistry step one's inputs give
+    15.8).
+
+**Figures.** This PR changes the generator's inputs: the sweep arrays, and `zoo_legacy_monthly.csv` from the in-situ
+legacy run. Run on `s1t`, the generator then redraws Paper I's Figures 2, 4 and 5 byte-identical to the checked
+redraws in `diag_papers_cmp_20261122/figs_s1t/`. The shared image folder is not updated until this PR and the papers
+PR are merged.
