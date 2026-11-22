@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Documentation
+- **`docs/CL29_phenology_diagnosis.md` §74.3**: the comparison runs of §72–§74.1 repeated under the in-situ carbonate
+  chemistry (24 runs; one previous-chemistry anchor per binary family reproduces its kept scores byte for byte).
+  Every comparison holds, with sizes changing by a few tenths. The exception is the single block that switches
+  allelopathy back on, which now lowers August chlorophyll by 12.1 µg/L instead of 1.9; allelopathy is off in the
+  adopted configuration. The papers are not edited here.
+- **`docs/CL29_phenology_diagnosis.md` §74.4**: PEL-1 (nitrate and DON uptake of the unstaged fixer surrogate dropped
+  when Nostocales are on; alkalinity counts the Nostocales term twice) measured with a probe build. Every pooled RMSE
+  moves by at most 0.01 % and summer pH by less than 0.0001. No fix proposed.
+- **§74.2** gains dated notes: the DOCX is rebuilt, the fix is released in v0.14.0, and the variant runs are redone
+  (§74.3).
+- **`docs/report_scripts/cl29_validation_metrics_adopted.csv`** now holds the adopted run's scores under the in-situ
+  chemistry (run `s1t`) instead of the September 2026 run's. `tools/make_table_s2.py` on it reproduces Paper II's
+  Table S2 (v2.25 and later).
+
 ## [0.14.0] - 2026-11-22
 
 > 🎉 **Released — [AQUABC v0.14.0](https://github.com/razinkele/ESTAS-AQUABC/releases/tag/v0.14.0)**

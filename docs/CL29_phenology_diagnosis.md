@@ -6764,16 +6764,17 @@ was open, and merging it was the adoption decision. It was merged on 2026-11-21 
     Table S2, the captions of Figures 3–10 and 12, the Figure 13 paragraph, the Abstract, the Conclusions and §2.1's
     summer nitrate. Each generator first reproduces v2.24's text exactly from the base run. Observed means are
     unchanged.
-  - Its Figures 3–13 are regenerated from the fix run into `diag_figs_s1t_20261121/`. The DOCX is not yet rebuilt
-    with them.
+  - Its Figures 3–13 are regenerated from the fix run into `diag_figs_s1t_20261121/`. On 2026-11-22 they replaced the
+    earlier images in the shared figure folder and were built into the DOCX (v2.25, then v2.26).
   - Its comparisons with variant runs (the positioning and ice runs) keep the 0 °C chemistry and are marked.
   - Paper I v0.20 changes no number, because nearly all of them compare the adopted configuration with a variant run.
     A version note gives the regenerated adopted scores.
 - **Not adopted; still on the 0 °C chemistry:**
   - The variant runs behind both papers' comparisons were not redone. So the two papers disagree on the adopted
     score: chlorophyll RMSE 24.01 in Paper I's text (its version note quotes 23.93), 23.93 in Paper II.
+    *(2026-11-22: the variant runs are redone under the fix in §74.3; the papers are not yet updated.)*
   - The constants were not recalibrated under the fix (see **Limits**).
-  - The fix is in no release yet; v0.13.0's binary has the 0 °C chemistry.
+  - The fix is in no release yet; v0.13.0's binary has the 0 °C chemistry. *(2026-11-22: released in v0.14.0.)*
 
 **Comparability.** The break follows the chemistry in the binary, not the merge date. Runs whose binary lacks #201's
 change (the 0 °C chemistry) are not comparable, as a model change, with runs whose binary has it. Pooled scores move by
@@ -6784,8 +6785,10 @@ less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved or
     comparisons and the calibration history among them);
   - Paper I up to v0.20, except the regenerated adopted scores that v0.20's version note and its inline marker quote
     (chlorophyll RMSE 23.93, phosphate RMSE 0.0156);
-  - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run);
-  - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`);
+  - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run) until 2026-11-22, when it
+    was replaced by `s1t`'s scores (§74.3);
+  - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`; an export rebuilt from `s1t` is proposed there in
+    ESTAS-AQUABC-DATA #30);
   - v0.13.0's binary.
 - **On the in-situ chemistry, though some predate the merge:**
   - §74's in-situ probe, which Anchor 3 shows equal to #201 on the CL29 path;
@@ -6794,3 +6797,116 @@ less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved or
   - every run with a binary built from `d7a036a` or later.
 
 Earlier sections keep their numbers. `s1t` is the reference run for the in-situ chemistry.
+
+### 74.3 2026-11-22: the comparison runs repeated under the in-situ chemistry
+
+**Why.** The adoption of §74.2 left every comparison of the adopted configuration with a variant run on the 0 °C
+chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. This repeats them with the in-situ chemistry.
+
+**Design** (running note items 290–293 and 295; `diag_cmpfix_20261122/`).
+- **Runs (24), from the kept recipes, unchanged:**
+  - Paper I's variant pairs: legacy zooplankton, threshold 4 m/s, legacy gate, staging reversed and ice off, on the live
+    binary; quota on, on a VARN build of main.
+  - The gates-shut runs of §73–§73.4, with the gates-shut patch applied to main.
+  - Bases: `s1t`.
+  - Not repeated: the two void runs of §73.2 (the first river block and its all-blocks run), a duplicate of the
+    gates-shut run, and Paper I's transmittance sweep (no recipe was kept).
+- **Inputs:** every kept options file and constants file of these runs equals the regenerated one.
+- **Anchors:** one run per binary family, rebuilt with the previous chemistry, reproduces its kept validation metrics
+  byte for byte for every variable except TN and TP (those were kept before #196). The four are the legacy gate (live
+  binary d57dff16), the gates-shut run and the all-blocks run (gates-shut build of 8979bac), and quota on (VARN build of
+  8979bac). In the VARN worktree, the standard build of 8979bac equals d57dff16 byte for byte.
+- **Scoring:** as before (today's validator, `--phase --by-season`).
+  - Previous side: today's-validator scores where they exist (the four anchors, `s1b` and the re-runs of §74.1).
+  - Otherwise: the kept scores, without TN and TP.
+
+**Result** (August chlorophyll, µg/L; observed 50.8; previous → in-situ chemistry).
+
+| run | August | run | August |
+|---|---|---|---|
+| adopted (ratchet) | 49.0 → 49.4 | gates shut | 45.1 → 45.5 |
+| legacy gate | 45.8 → 46.1 | gates shut, staging reversed | 35.2 → 35.6 |
+| staging reversed | 36.2 → 36.5 | anchor of §73.2 | 15.8 → 15.4 |
+| quota on | 43.2 → 43.7 | inputs and staging of §15, fitted constants as adopted | 35.0 → 34.7 |
+| ice off | 48.9 → 49.2 | today's inputs, fitted constants reverted | 33.3 → 33.5 |
+| legacy zooplankton | 47.6 → 48.0 | growth constants reverted | 33.4 → 33.6 |
+| threshold 4 m/s | 47.5 → 47.8 | fixer growth constant reverted | 32.6 → 32.8 |
+| | | allelopathy on (single block) | **43.2 → 33.4** |
+
+- **§73.2 decomposition:**
+  - the gap from the anchor goes from 29.3 to 30.1;
+  - the fitted constants carry 15.5 → 15.7 of it, and everything else 13.8 → 14.4;
+  - so the fitted constants' share goes from 0.53 to 0.52, and the interaction from 7.4 to 7.3.
+- **§73.3:** the growth constants carry 11.7 → 11.9 of the fitted set's 11.8 → 12.0; the nutrient constants carry 0.1 →
+  0.1.
+- **§73.4:** reverting the fixer growth constant alone lowers August by 12.5 → 12.7. The diatom constant offsets −1.3 →
+  −1.3, and the other-algae constant does nothing.
+- **§73:** gates shut against the ratchet, 0.92 → 0.92.
+- **The other single blocks** move by 0.0–0.4, as the base does.
+- **Paper I's pairs** (variant lower than base, % of the base's pooled RMSE):
+
+  | pair | TN | TP | other |
+  |---|---|---|---|
+  | legacy gate | 1.8 → 1.7 | 3.4 → 3.3 | |
+  | quota on | 2.1 → 1.8 | 5.8 → 5.8 | better on 8 → 8 of 14 pooled errors |
+  | staging reversed | −3.4 → −4.6 | +1.8 → −0.3 | PO₄ −12.1 → −11.9, Chl-a −5.8 → −5.3 |
+  | ice off | 1.4 → 1.6 | −0.5 → −0.6 | |
+
+- **Sign flips:** 2 of 80 variant-minus-base differences of pooled RMSE change sign. Staging reversed on TP goes +1.8
+  → −0.3 %, and quota on for zooplankton +0.1 → 0.0 % (rounding).
+- **One large change: allelopathy.** The single block that switches allelopathy back on (§73.2) gives August 33.4
+  instead of 43.2, and its Chl-a RMSE rises 24.92 → 27.21. On today's gates-shut run, allelopathy on now lowers August
+  by 12.1 instead of 1.9. The cause is not established. Allelopathy is off in the adopted configuration (§58), so no
+  adopted result carries it.
+
+**Predictions** (item 290).
+- Held:
+  - C1: the four anchors.
+  - C2: gates-shut August 45.5, within 45.1 ± 2.
+  - C3: fitted share 0.52, within [0.35, 0.65].
+  - C4: the fixer constant carries 1.06 of the fitted set, at least 0.9.
+  - C5: Paper I's named comparisons keep their sign. The staging-reversed TP that flips is not one of them; Paper I
+    states the staged fixer's chlorophyll and phosphate advantage, which holds.
+  - C6: no run aborted.
+- Not predicted: the allelopathy block's change.
+
+**Reading.**
+- Every comparison of §72–§74.1 holds under the in-situ chemistry. Sizes change by a few tenths of a µg/L or of a
+  percent.
+- The exception is the allelopathy block, which appears only in §73.2's single-block list and is not part of the
+  adopted configuration.
+- The papers' comparisons can now be regenerated from these runs; they are not edited here.
+
+**Also.** `docs/report_scripts/cl29_validation_metrics_adopted.csv`, until now the September run's scores, is replaced
+by `s1t`'s validation metrics. `tools/make_table_s2.py` on it reproduces all 124 rows of Paper II's Table S2 (v2.25 and
+later).
+
+**Limits.**
+- Paper I's transmittance sweep is not repeated.
+- The runs without an anchor or a §74.1 re-run have no comparable previous TN and TP.
+- The allelopathy result is unexplained.
+
+### 74.4 2026-11-22: PEL-1 measured; negligible in the adopted configuration
+
+**What PEL-1 is** (code review of 2026-11-21). With both fixer guilds on, as in CL29, the nitrate and DON uptake terms
+(process slot 6) hold only the Nostocales uptake. So the non-fixing uptake of the unstaged fixer surrogate is never
+removed from the water, and nitrogen is created. The alkalinity gain from nitrate uptake adds slot 6 twice.
+
+**Design** (running note items 294–295; `diag_cmpfix_20261122/pel1_probe.patch`).
+- **Probe build:** main 80e5a04, `make build-estas`. Unmodified, that build reproduces the live binary 50c0173d.
+- **Probe edit:** slot 6 of nitrate and of DON becomes the Nostocales term plus the surrogate's term, with the formulas
+  the code already uses when Nostocales are off. The alkalinity gain takes the two terms separately.
+- **Run:** `s1t`'s inputs, full record; compared with `s1t`.
+
+**Result.**
+- Every pooled RMSE moves by at most 0.01 %.
+- The pooled TN model mean goes from 1.68632 to 1.68628 (−0.002 %).
+- July–August pH at boxes 11 and 23 is unchanged to four decimals.
+- 11-year means of NH₄, NO₃ and DON at those boxes change by at most 0.01 %.
+
+**Predictions** (item 294). E1–E4 held: RMSE changes under 1 %, the TN model mean falls by less than 1 %, pH changes
+under 0.05, and no abort.
+
+**Reading.** PEL-1 is a real conservation defect, but in the adopted configuration it moves nothing measurable. The
+surrogate holds about 0.0035 mg C/L in the lagoon, against 1.2 for the staged guild. No fix is proposed here; a fix
+would matter for setups in which the surrogate grows.
