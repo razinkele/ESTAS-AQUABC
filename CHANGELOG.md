@@ -32,6 +32,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`docs/report_scripts/cl29_validation_metrics_adopted.csv`** now holds the adopted run's scores under the in-situ
   chemistry (run `s1t`) instead of the September 2026 run's. `tools/make_table_s2.py` on it reproduces Paper II's
   Table S2 (v2.25 and later).
+- **`docs/CL29_phenology_diagnosis.md` §74.5**: the papers' comparisons with today's configuration regenerated under
+  the in-situ chemistry (Paper I v0.21, Paper II v2.28 in ESTAS-AQUABC-DATA). Each sentence is rendered from the
+  previous-chemistry values, which must reproduce the current text, and then from the in-situ values. The ice runs and
+  Paper I's transmittance sweep are repeated, with previous-chemistry anchors. §74.3's "no recipe" for the sweep was
+  wrong and is corrected. Sizes move by a few tenths (gates shut 45.1 → 45.5 µg/L, 89 % → 90 % of observed). §74.2's
+  comparability list names the two new paper versions.
+- **`docs/report_scripts/make_figures_mechanisms.py`** and **`zoo_legacy_monthly.csv`**: the inputs of Paper I's
+  Figures 2 and 5 (the sweep values and the legacy zooplankton series) are now the in-situ runs'. Figure 4 reads the
+  adopted run directly. Run on `s1t`, the generator redraws all three.
 
 ## [0.14.0] - 2026-11-22
 

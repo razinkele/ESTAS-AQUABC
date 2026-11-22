@@ -229,14 +229,16 @@ print("wrote", p)
 # --------------------------------------------------------------------------
 # Figure 3 -- ice transmittance sensitivity (doc section 45.3)
 # --------------------------------------------------------------------------
-# Re-measured 2026-11-19 on the adopted configuration as it now stands (corrected boundary,
-# allelopathy off): three full-record runs differing only in ICE_LIGHT_TRANS. CHLA and the
-# seasonal r are the validator's; FEB is diatom carbon with the model read at 00:00 of each KM
-# sampling date, mean over the February records.
+# Re-measured 2026-11-22 under the in-situ carbonate chemistry (ESTAS-AQUABC #201; doc section
+# 74.5) on the adopted configuration: three full-record runs differing only in ICE_LIGHT_TRANS,
+# the middle one the adopted run s1t. CHLA and the seasonal r are the validator's; FEB is diatom
+# carbon with the model read at 00:00 of each KM sampling date, mean over the February records.
+# Previous chemistry (2026-11-19): CHLA 24.0100 / 24.0147 / 24.0295, FEB 0.372 / 0.383 / 0.418,
+# r 0.78 / 0.78 / 0.77.
 T = [0.02, 0.05, 0.15]
-CHLA = [24.0100, 24.0147, 24.0295]
-FEB = [0.372, 0.383, 0.418]
-SEAS_R = [0.78, 0.78, 0.77]
+CHLA = [23.9296, 23.9342, 23.9490]
+FEB = [0.373, 0.383, 0.419]
+SEAS_R = [0.78, 0.78, 0.78]
 FEB_OBS = 0.280
 
 fig, (axa, axb) = plt.subplots(1, 2, figsize=(10.2, 3.9))
