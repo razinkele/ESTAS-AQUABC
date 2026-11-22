@@ -41,6 +41,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`docs/report_scripts/make_figures_mechanisms.py`** and **`zoo_legacy_monthly.csv`**: the inputs of Paper I's
   Figures 2 and 5 (the sweep values and the legacy zooplankton series) are now the in-situ runs'. Figure 4 reads the
   adopted run directly. Run on `s1t`, the generator redraws all three.
+- **§74.5 and §74.2** gain dated notes: after the merges, the redrawn figures were copied into the shared image folder
+  and the Paper I v0.21 / Paper II v2.28 DOCX were built and verified (not uploaded). §74.2's two paper bullets that
+  kept the 0 °C chemistry point to §74.5.
 
 ## [0.14.0] - 2026-11-22
 

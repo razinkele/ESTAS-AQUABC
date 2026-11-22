@@ -6765,10 +6765,12 @@ was open, and merging it was the adoption decision. It was merged on 2026-11-21 
     summer nitrate. Each generator first reproduces v2.24's text exactly from the base run. Observed means are
     unchanged.
   - Its Figures 3–13 are regenerated from the fix run into `diag_figs_s1t_20261121/`. On 2026-11-22 they replaced the
-    earlier images in the shared figure folder and were built into the DOCX (v2.25, then v2.26).
+    earlier images in the shared figure folder and were built into the DOCX (v2.25, then v2.26, v2.27 and v2.28).
   - Its comparisons with variant runs (the positioning and ice runs) keep the 0 °C chemistry and are marked.
+    *(2026-11-22: regenerated under the in-situ chemistry in v2.28, §74.5.)*
   - Paper I v0.20 changes no number, because nearly all of them compare the adopted configuration with a variant run.
-    A version note gives the regenerated adopted scores.
+    A version note gives the regenerated adopted scores. *(2026-11-22: Paper I v0.21 regenerates its comparisons with
+    today's configuration, §74.5.)*
 - **Not adopted; still on the 0 °C chemistry:**
   - The variant runs behind both papers' comparisons were not redone. So the two papers disagree on the adopted
     score: chlorophyll RMSE 24.01 in Paper I's text (its version note quotes 23.93), 23.93 in Paper II.
@@ -7019,3 +7021,9 @@ redraws in `diag_papers_cmp_20261122/figs_s1t/`. The command is `CL29_FIG_OUT=OU
 CL29_FIG_ZOOLEGACY=/nonexistent python docs/report_scripts/make_figures_mechanisms.py`. The second variable makes the
 tracked CSV the legacy source, because an `OUT_ZOOLEGACY` folder, if present, takes precedence over it (none exists in
 `~/aquabc` on 2026-11-22). The shared image folder is not updated until this PR and the papers PR are merged.
+*(2026-11-22: both merged at 12:19, this PR as `0b399ca` and the papers as ESTAS-AQUABC-DATA #32. The three images were
+then copied into the shared folder; the other 27 files there are unchanged, and the replaced images are kept in
+`diag_papers_cmp_20261122/figs_shared_before/`. Paper I v0.21 and Paper II v2.28 were built as DOCX from data main
+`2c191af` and verified: Paper II's 13 images equal v2.27's, Paper I has exactly the three new images, and each text
+diff equals its markdown diff (`diag_docx_20261122/verify_v021_v228.out`). They are not uploaded. Running note items
+303–304.)*
