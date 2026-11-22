@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The 0D example compiles with `-fimplicit-none`**
+  (`SOURCE_CODE/AQUABC/AQUABC_EXAMPLES/AQUABC_PELAGIC_0D/Makefile`), as the model, library and unit-test builds
+  already do. The flag reaches the 0D driver program (`aquabc_II_pelagic_0D.f90`). The library it links has the flag
+  only when it was built first by `make build-lib`, as on CI; a standalone 0D build makes the library through
+  `SOURCE_CODE/build/make_lib.sh`, whose default `FFLAGS` (`-O2`) do not include it. The build is clean, and the 0D
+  output is byte-identical to the build without the flag.
+
 ### Documentation
 - **`docs/CL29_phenology_diagnosis.md` §74.3**: the comparison runs of §72–§74.1 repeated under the in-situ carbonate
   chemistry (24 runs; one previous-chemistry anchor per binary family reproduces its kept scores byte for byte).
@@ -19,7 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   when Nostocales are on; alkalinity counts the Nostocales term twice) measured with a probe build. Every pooled RMSE
   moves by at most 0.01 % and summer pH by less than 0.0001. No fix proposed.
 - **§74.2** gains dated notes: the DOCX is rebuilt, the fix is released in v0.14.0, and the variant runs are redone
-  (§74.3).
+  (§74.3). Its comparability list puts the CL29 export rebuilt from `s1t` (ESTAS-AQUABC-DATA `exports/cl29_20261122/`,
+  merged 2026-11-22) on the in-situ chemistry.
 - **`docs/report_scripts/cl29_validation_metrics_adopted.csv`** now holds the adopted run's scores under the in-situ
   chemistry (run `s1t`) instead of the September 2026 run's. `tools/make_table_s2.py` on it reproduces Paper II's
   Table S2 (v2.25 and later).

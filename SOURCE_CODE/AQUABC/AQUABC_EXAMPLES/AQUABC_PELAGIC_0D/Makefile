@@ -14,7 +14,8 @@ EXES = aquabc_II_pelagic_0D aquabc_II_pelagic_0D_old aquabc_II_pelagic_0D_orig
 F77 = gfortran
 FFLAGS = 
 FFLAGS = -fcheck=all -g
-FFLAGS = -O
+# -fimplicit-none makes an undeclared name a compile error, as in the model, library and unit-test builds
+FFLAGS = -O -fimplicit-none
 
 #-----------------------------------------------------------
 #

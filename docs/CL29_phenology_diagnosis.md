@@ -6787,13 +6787,14 @@ less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved or
     (chlorophyll RMSE 23.93, phosphate RMSE 0.0156);
   - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run) until 2026-11-22, when it
     was replaced by `s1t`'s scores (§74.3);
-  - the CL29 export in ESTAS-AQUABC-DATA (`exports/cl29_20261120/`; an export rebuilt from `s1t` is proposed there in
-    ESTAS-AQUABC-DATA #30);
+  - the CL29 export `exports/cl29_20261120/` in ESTAS-AQUABC-DATA;
   - v0.13.0's binary.
 - **On the in-situ chemistry, though some predate the merge:**
   - §74's in-situ probe, which Anchor 3 shows equal to #201 on the CL29 path;
   - the fix run `s1t` (`diag_sed1_20261121/`), the scan's fix column and Paper II v2.25's regenerated numbers, all
     from build 50c0173d (#201's own build, and today's live binary);
+  - the CL29 export `exports/cl29_20261122/` in ESTAS-AQUABC-DATA, rebuilt from `s1t` (ESTAS-AQUABC-DATA #30, merged
+    2026-11-22);
   - every run with a binary built from `d7a036a` or later.
 
 Earlier sections keep their numbers. `s1t` is the reference run for the in-situ chemistry.

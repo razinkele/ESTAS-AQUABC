@@ -7,7 +7,7 @@
 > it cannot parse standard Fortran 90 (it reads `module X` or `use X` as one identifier "with embedded space"). The
 > gfortran build of the model and library compiles with `-fimplicit-none`, a partial guard for the `implicit none` rule (it makes
 > implicit typing an error but does not check that the statement is present). The unit-test build has used the flag
-> too since a later 2026-11-21 change; the 0D-example build does not. The
+> too since a later 2026-11-21 change, and the 0D-example build since 2026-11-22. The
 > files named below (`tools/run_ftnchek.sh`, `tools/filter_ftnchek.sh`, the ignore list and the reports) no longer
 > exist. See the CHANGELOG.
 
