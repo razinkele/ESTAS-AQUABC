@@ -36,7 +36,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the in-situ chemistry (Paper I v0.21, Paper II v2.28 in ESTAS-AQUABC-DATA). Each sentence is rendered from the
   previous-chemistry values, which must reproduce the current text, and then from the in-situ values. The ice runs and
   Paper I's transmittance sweep are repeated, with previous-chemistry anchors. §74.3's "no recipe" for the sweep was
-  wrong and is corrected. Sizes move by a few tenths (gates shut 45.1 → 45.5 µg/L, 89 % → 90 % of observed).
+  wrong and is corrected. Sizes move by a few tenths (gates shut 45.1 → 45.5 µg/L, 89 % → 90 % of observed). §74.2's
+  comparability list names the two new paper versions.
 - **`docs/report_scripts/make_figures_mechanisms.py`** and **`zoo_legacy_monthly.csv`**: the inputs of Paper I's
   Figures 2 and 5 (the sweep values and the legacy zooplankton series) are now the in-situ runs'. Figure 4 reads the
   adopted run directly. Run on `s1t`, the generator redraws all three.

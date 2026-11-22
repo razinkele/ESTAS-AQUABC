@@ -6781,10 +6781,12 @@ change (the 0 °C chemistry) are not comparable, as a model change, with runs wh
 less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved organic pools move more.
 - **On the 0 °C chemistry:**
   - this record before this section, except §74's in-situ probe column;
-  - Paper II up to v2.24, and in v2.25 everything except the regenerated items listed under **Adoption** (the marked
-    comparisons and the calibration history among them);
+  - Paper II up to v2.24, and in v2.25 to v2.27 everything except the regenerated items listed under **Adoption** (the
+    marked comparisons and the calibration history among them);
   - Paper I up to v0.20, except the regenerated adopted scores that v0.20's version note and its inline marker quote
     (chlorophyll RMSE 23.93, phosphate RMSE 0.0156);
+  - from Paper I v0.21 and Paper II v2.28 on (§74.5), only the numbers of each adoption's own date, Paper II's
+    calibration history (§3.1–§3.10) and Paper II §3.11's reproduction of step one;
   - the tracked `docs/report_scripts/cl29_validation_metrics_adopted.csv` (the September run) until 2026-11-22, when it
     was replaced by `s1t`'s scores (§74.3);
   - the CL29 export `exports/cl29_20261120/` in ESTAS-AQUABC-DATA;
@@ -6795,6 +6797,7 @@ less than 1 %, but summer pH, nitrate's model mean and the unscored dissolved or
     from build 50c0173d (#201's own build, and today's live binary);
   - the CL29 export `exports/cl29_20261122/` in ESTAS-AQUABC-DATA, rebuilt from `s1t` (ESTAS-AQUABC-DATA #30, merged
     2026-11-22);
+  - Paper I v0.21 and Paper II v2.28 (§74.5), apart from the items listed above;
   - every run with a binary built from `d7a036a` or later.
 
 Earlier sections keep their numbers. `s1t` is the reference run for the in-situ chemistry.
@@ -6944,7 +6947,7 @@ and Paper II §3.18 quote: the February diatom rows of the ice pair, the run wit
 transmittance sweep. §74.3 also said the sweep had no recipe. That is wrong: running note item 145 (2026-11-19) gives it,
 `ICE_LIGHT_TRANS` 0.02 and 0.15 through the diagnostic case builder, with the scores kept in `diag_papers_20261119/`.
 
-**Design** (running note items 299–300; `diag_papers_cmp_20261122/`).
+**Design** (running note items 299–301; `diag_papers_cmp_20261122/`).
 - **Runs (7, from the kept recipes):**
   - In situ, live binary 50c0173d: ice off and legacy zooplankton, again; their raw output had been deleted, and both
     figures and the February rows read it. Ice for gas exchange only (`ICE_LIGHT_TRANS` 1.0, as item 134), and
@@ -6993,10 +6996,16 @@ transmittance sweep. §74.3 also said the sweep had no recipe. That is wrong: ru
   - the ratchet 49.0 → 49.4, the legacy gate 45.8 → 46.1, staging reversed 36.2 → 36.5;
   - the decomposition's gap 29 → 30, its averages 15.5 / 13.8 → 15.7 / 14.4;
   - February diatoms with ice 1.36× → 1.37×.
-- **Three wordings change with their numbers:**
+- **Wordings that change with their numbers** (each listed in `regen_apply.out`):
   - the ratchet's phosphate lead over the legacy gate is 3.0 % (2.98 % → 3.004 %), no longer "under 3 %";
-  - the seasonal correlation is 0.79 with the legacy gate and with every gate shut, against 0.78 with the ratchet;
-  - Paper II §4 prints 33.5 and 45.5 to one decimal, because both round on the half.
+  - seasonal correlations that were equal no longer are, and the reverse:
+    - 0.79 with the legacy gate and with every gate shut, against 0.78 with the ratchet (Paper I §3.2, Paper II §3.12);
+    - 0.78 with either zooplankton form (Paper I §3.1);
+    - +0.78 at every transmittance (Paper I §3.4 and the Figure 5 caption);
+  - Paper II §3.11 keeps its step-one reproduction as a previous-chemistry check and adds the in-situ value;
+  - Paper II §4.3 prints 33.5 and 45.5 to one decimal, because both round on the half;
+  - the three previous-chemistry markers (Paper I §3.4, Paper II §3.12 and §3.18) are rewritten, and Paper II §3.12
+    gains the allelopathy marker.
 - **The allelopathy block** is given in Paper II §3.12 as a number with an authors' marker, and is not interpreted.
 - **Still on the previous chemistry:**
   - the numbers of each adoption's own date;
