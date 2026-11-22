@@ -7015,5 +7015,7 @@ transmittance sweep. §74.3 also said the sweep had no recipe. That is wrong: ru
 
 **Figures.** This PR changes the generator's inputs: the sweep arrays, and `zoo_legacy_monthly.csv` from the in-situ
 legacy run. Run on `s1t`, the generator then redraws Paper I's Figures 2, 4 and 5 byte-identical to the checked
-redraws in `diag_papers_cmp_20261122/figs_s1t/`. The shared image folder is not updated until this PR and the papers
-PR are merged.
+redraws in `diag_papers_cmp_20261122/figs_s1t/`. The command is `CL29_FIG_OUT=OUTPUTS_CL29_s1t
+CL29_FIG_ZOOLEGACY=/nonexistent python docs/report_scripts/make_figures_mechanisms.py`. The second variable makes the
+tracked CSV the legacy source, because an `OUT_ZOOLEGACY` folder, if present, takes precedence over it (none exists in
+`~/aquabc` on 2026-11-22). The shared image folder is not updated until this PR and the papers PR are merged.
