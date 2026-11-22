@@ -6816,7 +6816,11 @@ chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. Th
   byte for byte for every variable except TN and TP (those were kept before #196). The four are the legacy gate (live
   binary d57dff16), the gates-shut run and the all-blocks run (gates-shut build of 8979bac), and quota on (VARN build of
   8979bac). In the VARN worktree, the standard build of 8979bac equals d57dff16 byte for byte.
-- **Scoring:** as before (today's validator, `--phase --by-season`).
+  - A fifth anchor, registered after the results (item 296): the allelopathy single block, the only run that moved by
+    more than 0.5 µg/L, on the gates-shut build of 8979bac. It also reproduces its kept metrics byte for byte (August
+    43.2).
+- **Scoring:** as before (today's validator, `--phase --by-season`). Collected by a summary script and by the
+  families' own collect scripts, with their folder redirected (item 296).
   - Previous side: today's-validator scores where they exist (the four anchors, `s1b` and the re-runs of §74.1).
   - Otherwise: the kept scores, without TN and TP.
 
@@ -6848,20 +6852,33 @@ chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. Th
   | pair | TN | TP | other |
   |---|---|---|---|
   | legacy gate | 1.8 → 1.7 | 3.4 → 3.3 | |
-  | quota on | 2.1 → 1.8 | 5.8 → 5.8 | better on 8 → 8 of 14 pooled errors |
+  | quota on | 2.1 → 1.8 | 5.8 → 5.8 | better on 6 → 6 of the 12 pooled errors counted in §72 (the same six) |
   | staging reversed | −3.4 → −4.6 | +1.8 → −0.3 | PO₄ −12.1 → −11.9, Chl-a −5.8 → −5.3 |
   | ice off | 1.4 → 1.6 | −0.5 → −0.6 | |
 
+- **The families' other rows:**
+  - Fixer bias: adopted +0.765 → +0.776, legacy gate +0.367 → +0.380, staging reversed +0.430 → +0.440, quota on
+    +0.296 → +0.319.
+  - Zooplankton bias: unchanged within 0.001.
+  - August non-fixers and fixers move by at most 0.06 mg C/L (adopted 0.391 / 3.306 → 0.390 / 3.345).
+  - The quota signature is unchanged: no quota sample lies outside [0.095, 0.255].
+  - The chlorophyll peak month is September in every run under both chemistries, except §73.2's two impose-only
+    anchors (March under both) and the allelopathy block (below).
 - **Sign flips:** 2 of 80 variant-minus-base differences of pooled RMSE change sign. Staging reversed on TP goes +1.8
   → −0.3 %, and quota on for zooplankton +0.1 → 0.0 % (rounding).
 - **One large change: allelopathy.** The single block that switches allelopathy back on (§73.2) gives August 33.4
   instead of 43.2, and its Chl-a RMSE rises 24.92 → 27.21. On today's gates-shut run, allelopathy on now lowers August
-  by 12.1 instead of 1.9. The cause is not established. Allelopathy is off in the adopted configuration (§58), so no
-  adopted result carries it.
+  by 12.1 instead of 1.9.
+  - **The composition shifts with it.** August fixers fall from 2.50 to 0.88 mg C/L and non-fixers rise from 0.73 to
+    1.47; the fixer bias goes from +0.350 to −0.368.
+  - **The peak moves** to August (33.4, against September's 33.1).
+  - **The fifth anchor** reproduces the kept run, so the change comes from the chemistry; its mechanism is not
+    established.
+  - Allelopathy is off in the adopted configuration (§58), so no adopted result carries it.
 
 **Predictions** (item 290).
 - Held:
-  - C1: the four anchors.
+  - C1: the four anchors, and the fifth (item 296).
   - C2: gates-shut August 45.5, within 45.1 ± 2.
   - C3: fitted share 0.52, within [0.35, 0.65].
   - C4: the fixer constant carries 1.06 of the fitted set, at least 0.9.
@@ -6871,8 +6888,9 @@ chemistry: §72–§73.4 and §74.1 here, and the comparisons in both papers. Th
 - Not predicted: the allelopathy block's change.
 
 **Reading.**
-- Every comparison of §72–§74.1 holds under the in-situ chemistry. Sizes change by a few tenths of a µg/L or of a
-  percent.
+- Every comparison of §72–§74.1 that was rescored holds under the in-situ chemistry: August chlorophyll, the pooled
+  errors, the fixer and zooplankton biases, August group carbon and the peak month. Sizes change by a few tenths of a
+  µg/L or of a percent.
 - The exception is the allelopathy block, which appears only in §73.2's single-block list and is not part of the
   adopted configuration.
 - The papers' comparisons can now be regenerated from these runs; they are not edited here.
@@ -6907,6 +6925,11 @@ removed from the water, and nitrogen is created. The alkalinity gain from nitrat
 **Predictions** (item 294). E1–E4 held: RMSE changes under 1 %, the TN model mean falls by less than 1 %, pH changes
 under 0.05, and no abort.
 
-**Reading.** PEL-1 is a real conservation defect, but in the adopted configuration it moves nothing measurable. The
-surrogate holds about 0.0035 mg C/L in the lagoon, against 1.2 for the staged guild. No fix is proposed here; a fix
-would matter for setups in which the surrogate grows.
+**Reading.**
+- PEL-1 is a real conservation defect, but in the adopted configuration it moves nothing measurable.
+- The missing uptake is small because the surrogate holds about 0.0035 mg C/L in the lagoon, against 1.2 for the staged
+  guild.
+- The alkalinity derivative is on in CL29, so the double count is live. Removing it lowers the nitrate-uptake alkalinity
+  gain by 8 % at box 11 and 2 % at box 23. But that gain is about 1 × 10⁻⁶ per day against an alkalinity of 3.05, which
+  moves by 2 × 10⁻⁶ (`pel1_alk.out`), so pH does not move.
+- No fix is proposed here; a fix would matter for setups in which the surrogate grows.
