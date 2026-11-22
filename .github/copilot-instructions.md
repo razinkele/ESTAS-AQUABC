@@ -252,10 +252,10 @@ end do
 
 ### Mandatory rules
 - **`implicit none`** in every program unit, subroutine, and function — no exceptions. The gfortran builds of the model
-  and library (`make_lib.sh` with the Makefile's debug, fast and release flags) and of the unit tests
-  (`tests/fortran/Makefile`) compile with `-fimplicit-none`, so an undeclared name there fails the build (and CI). That
-  is a partial guard: it does not check that the statement is present, a unit's own `IMPLICIT` statement would
-  override it, the 0D-example build does not use the flag, and Intel builds only warn.
+  and library (`make_lib.sh` with the Makefile's debug, fast and release flags), of the unit tests
+  (`tests/fortran/Makefile`) and of the 0D example compile with `-fimplicit-none`, so an undeclared name there fails
+  the build (and CI). That is a partial guard: it does not check that the statement is present, a unit's own
+  `IMPLICIT` statement would override it, and Intel builds only warn.
 - **Division guard**: always protect against zero denominators: `result = numerator / max(denominator, 1.0D-20)`.
   No tool checks this; it is a review rule.
 
